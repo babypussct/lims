@@ -3,8 +3,6 @@ import { Component, inject, output, input, signal, computed } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../services/state.service';
-import { BatchService } from '../services/batch.service';
-import { PrintService } from '../services/print.service';
 import { AuthService } from '../services/auth.service';
 import { Sop } from '../models/sop.model';
 
@@ -20,11 +18,10 @@ import { Sop } from '../models/sop.model';
           <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Tìm kiếm quy trình..." 
             class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm">
         </div>
-        <!-- Add SOP Button (Manager Only) -->
         @if(state.isAdmin()) {
-          <button (click)="viewChange.emit('editor')" 
+          <button (click)="createNewSop.emit()" 
                   class="w-10 shrink-0 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition shadow-sm"
-                  title="Quản lý / Thêm mới SOP">
+                  title="Thêm mới SOP">
              <i class="fa-solid fa-plus"></i>
           </button>
         }
@@ -33,18 +30,14 @@ import { Sop } from '../models/sop.model';
       <div class="flex-1 overflow-y-auto p-2 space-y-1">
         @for (sop of filteredSops(); track sop.id) {
           <div (click)="selectSop.emit(sop)" 
-               class="p-3 m-2 rounded-lg cursor-pointer transition border relative"
+               class="p-3 m-2 rounded-lg transition border relative cursor-pointer"
                [class]="activeSopId() === sop.id ? 'bg-blue-50 border-blue-200 shadow-sm' : 'border-transparent hover:bg-slate-100'">
+            
             <div class="flex justify-between items-start">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{sop.category}}</span>
-              <div class="flex gap-1">
-                 @if(batchService.isSelected(sop.id)) {
-                   <i class="fa-solid fa-check-square text-purple-500 text-xs" title="Selected for batch"></i>
-                 }
-                 @if(activeSopId() === sop.id) {
-                   <i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>
-                 }
-              </div>
+              @if(activeSopId() === sop.id) {
+                 <i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>
+              }
             </div>
             <div class="text-sm font-semibold text-slate-700 mt-0.5 line-clamp-2">{{sop.name}}</div>
           </div>
@@ -53,15 +46,14 @@ import { Sop } from '../models/sop.model';
 
       <div class="p-3 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] space-y-1">
         
-        <!-- Batch Print Action -->
-        <button (click)="printBatch()" 
-           class="w-full flex items-center justify-center gap-2 p-2.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-sm font-bold transition mb-3 border border-purple-200"
-           [disabled]="batchService.count() === 0" [class.opacity-50]="batchService.count() === 0">
-           <i class="fa-solid fa-print"></i> 
-           In các SOP đã chọn 
-           @if(batchService.count() > 0) {
-              <span class="bg-purple-600 text-white text-[10px] px-1.5 rounded-full">{{batchService.count()}}</span>
-           }
+        <button (click)="viewChange.emit('printing')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group relative bg-purple-50 border border-purple-100 mb-2">
+          <div class="flex items-center gap-3">
+             <div class="w-6 text-center"><i class="fa-solid fa-print text-purple-500"></i></div>
+             <div class="text-sm font-bold">Hàng đợi In</div>
+          </div>
+          @if (state.printableLogs().length > 0) {
+            <span class="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{state.printableLogs().length}}</span>
+          }
         </button>
 
         <button (click)="viewChange.emit('requests')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group relative">
@@ -81,23 +73,6 @@ import { Sop } from '../models/sop.model';
           </div>
         </button>
 
-        <!-- Manager Only Links -->
-        @if(state.isAdmin()) {
-          <button (click)="viewChange.emit('editor')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group">
-            <div class="flex items-center gap-3">
-               <div class="w-6 text-center"><i class="fa-solid fa-pen-ruler text-teal-600"></i></div>
-               <div class="text-sm font-bold">SOP Editor</div>
-            </div>
-          </button>
-
-          <button (click)="viewChange.emit('config')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group border border-transparent hover:border-slate-200">
-            <div class="flex items-center gap-3">
-               <div class="w-6 text-center"><i class="fa-solid fa-gears text-slate-500"></i></div>
-               <div class="text-sm font-bold">Cấu hình</div>
-            </div>
-          </button>
-        }
-
         <button (click)="viewChange.emit('inventory')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg shadow-md transition group mt-2">
           <div class="flex items-center gap-3">
             <i class="fa-solid fa-boxes-stacked text-orange-400"></i>
@@ -109,7 +84,14 @@ import { Sop } from '../models/sop.model';
           <i class="fa-solid fa-chevron-right text-xs opacity-50"></i>
         </button>
         
-        <!-- User Profile removed from here as it is now in Header -->
+        <!-- Separator for Config -->
+        @if(state.isAdmin()) {
+          <div class="pt-4 mt-2 border-t border-slate-100">
+             <button (click)="viewChange.emit('config')" class="w-full flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition text-xs font-bold gap-2">
+                 <i class="fa-solid fa-gears"></i> Cấu hình Hệ thống
+             </button>
+          </div>
+        }
       </div>
     </aside>
   `
@@ -117,12 +99,11 @@ import { Sop } from '../models/sop.model';
 export class SidebarComponent {
   state = inject(StateService);
   auth = inject(AuthService);
-  batchService = inject(BatchService);
-  printService = inject(PrintService);
 
   activeSopId = input<string | null>(null);
   selectSop = output<Sop>();
   viewChange = output<string>();
+  createNewSop = output<void>();
 
   searchTerm = signal('');
 
@@ -133,11 +114,4 @@ export class SidebarComponent {
       sop.category.toLowerCase().includes(term)
     );
   });
-
-  printBatch() {
-    const items = this.batchService.getSelectedItems();
-    if (items.length > 0) {
-      this.printService.print(items);
-    }
-  }
 }

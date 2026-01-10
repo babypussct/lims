@@ -1,21 +1,20 @@
 
-import { Component, inject, input, effect, signal, computed } from '@angular/core';
+import { Component, inject, input, output, effect, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { StateService } from '../services/state.service';
 import { Sop, CalculatedItem } from '../models/sop.model';
 import { CalculatorService } from '../services/calculator.service';
-import { BatchService } from '../services/batch.service';
 import { PrintService } from '../services/print.service';
 import { formatNum, cleanName } from '../utils/utils';
 import { startWith } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-calculator',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <!-- MAIN SCREEN UI (Hidden when printing via CSS) -->
     <div class="max-w-7xl mx-auto pb-20 fade-in h-full flex flex-col no-print">
       @if (sop(); as currentSop) {
         <div class="flex items-center justify-between mb-4 shrink-0">
@@ -28,22 +27,17 @@ import { startWith } from 'rxjs/operators';
            </div>
            
            <div class="flex gap-2">
-              <label class="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg cursor-pointer transition select-none shadow-sm hover:bg-slate-50"
-                     [class.border-purple-300]="isBatchSelected()" [class.bg-purple-50]="isBatchSelected()">
-                 <input type="checkbox" [checked]="isBatchSelected()" (change)="toggleBatch()" class="accent-purple-600 w-4 h-4 cursor-pointer">
-                 <span class="text-sm font-bold" [class.text-purple-700]="isBatchSelected()" [class.text-slate-600]="!isBatchSelected()">Gộp In</span>
-              </label>
-
-              <button (click)="printSingle()" title="In ngay phiếu này"
-                      class="px-5 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition text-sm shadow-md flex items-center gap-2">
-                  <i class="fa-solid fa-print"></i> <span>In Phiếu</span>
-              </button>
+              @if(state.isAdmin()) {
+                <button (click)="onEditSop()" title="Sửa SOP này"
+                        class="px-5 py-2 bg-white border border-slate-300 text-slate-600 font-bold rounded-lg hover:bg-slate-50 transition text-sm shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> <span>Sửa</span>
+                </button>
+              }
            </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 items-start h-full overflow-hidden">
             
-            <!-- LEFT: INPUT FORM -->
             <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-sm border border-slate-200 p-5 overflow-y-auto max-h-full">
                <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
                   <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
@@ -84,15 +78,20 @@ import { startWith } from 'rxjs/operators';
                   </div>
                </form>
 
-               <div class="mt-8">
+               <div class="mt-8 space-y-2">
                   <button (click)="sendRequest(currentSop)" 
-                          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition flex items-center justify-center gap-2 group">
+                          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-200 transition flex items-center justify-center gap-2 group">
                       <i class="fa-regular fa-paper-plane group-hover:translate-x-1 transition"></i> Gửi Yêu Cầu Duyệt
                   </button>
+                  @if(state.isAdmin()) {
+                     <button (click)="approveAndCreatePrintJob(currentSop)"
+                             class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2 group">
+                         <i class="fa-solid fa-check-double group-hover:scale-110 transition"></i> Duyệt & Tạo Phiếu In
+                     </button>
+                  }
                </div>
             </div>
 
-            <!-- RIGHT: RESULTS -->
             <div class="w-full lg:w-2/3 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-full">
                 <div class="bg-slate-50/50 px-5 py-3 border-b border-slate-200">
                   <h3 class="font-bold text-slate-700 flex items-center gap-2">
@@ -167,54 +166,57 @@ import { startWith } from 'rxjs/operators';
     </div>
   `
 })
-export class CalculatorComponent {
+export class CalculatorComponent implements OnDestroy {
   sop = input<Sop | null>(null);
+  editSop = output<Sop>();
   
   private fb: FormBuilder = inject(FormBuilder);
-  private state = inject(StateService);
+  public state = inject(StateService);
   private calcService = inject(CalculatorService);
-  private batchService = inject(BatchService);
-  private printService = inject(PrintService);
-
-  form: FormGroup = this.fb.group({
-    safetyMargin: [10]
-  });
+  
+  form: FormGroup = this.fb.group({ safetyMargin: [10] });
+  private formValueSub?: Subscription;
 
   calculatedItems = signal<CalculatedItem[]>([]);
   safetyMargin = signal<number>(10);
   
-  isBatchSelected = computed(() => {
-    return this.batchService.isSelected(this.sop()?.id);
-  });
-
   cleanName = cleanName;
   formatNum = formatNum;
 
   constructor() {
-    effect(() => {
+    effect((onCleanup) => {
       const s = this.sop();
+      this.formValueSub?.unsubscribe();
+
       if (s) {
-        const controls: any = { safetyMargin: [10] };
-        s.inputs.forEach(i => {
-          controls[i.var] = [i.default || 0];
-        });
+        const initialValues: Record<string, any> = { safetyMargin: 10 };
+        s.inputs.forEach(i => initialValues[i.var] = i.default);
         
+        const controls: Record<string, any> = { safetyMargin: [initialValues['safetyMargin']] };
+        s.inputs.forEach(i => controls[i.var] = [initialValues[i.var]]);
         this.form = this.fb.group(controls);
         
-        this.form.valueChanges.pipe(startWith(this.form.value)).subscribe(vals => {
-             // Handle checkbox booleans in context if needed
+        this.formValueSub = this.form.valueChanges.pipe(
+          startWith(this.form.value)
+        ).subscribe(vals => {
              this.runCalculation(s, vals);
              this.safetyMargin.set(vals.safetyMargin || 0);
-             
-             if (this.batchService.isSelected(s.id)) {
-                this.batchService.toggle(s, vals, vals.safetyMargin || 0);
-             }
         });
+        
+        onCleanup(() => this.formValueSub?.unsubscribe());
       }
     });
   }
   
-  // Resolve Name from ID
+  ngOnDestroy(): void {
+    this.formValueSub?.unsubscribe();
+  }
+
+  onEditSop() {
+    const s = this.sop();
+    if (s) this.editSop.emit(s);
+  }
+
   resolveName(id: string): string {
     const item = this.state.inventoryMap()[id];
     return item ? (item.name || item.id) : id;
@@ -224,48 +226,13 @@ export class CalculatorComponent {
      const results = this.calcService.calculateSopNeeds(sop, values, values.safetyMargin || 0);
      this.calculatedItems.set(results);
   }
-  
-  toggleBatch() {
-     const s = this.sop();
-     if (s) {
-       this.batchService.toggle(s, this.form.value, this.safetyMargin());
-     }
-  }
-
-  printSingle() {
-    const s = this.sop();
-    if (s) {
-      this.printService.print([{
-        sop: s,
-        inputs: this.form.value,
-        margin: this.safetyMargin()
-      }]);
-    }
-  }
 
   sendRequest(sop: Sop) {
-    const itemsToRequest: any[] = [];
-    this.calculatedItems().forEach(item => {
-        if (item.isComposite) {
-            item.breakdown.forEach((sub: any) => {
-                itemsToRequest.push({
-                    name: sub.name,
-                    totalQty: sub.displayAmount, 
-                    totalNeed: sub.totalNeed,
-                    unit: sub.unit,
-                    stockUnit: sub.stockUnit
-                });
-            });
-        } else {
-            itemsToRequest.push({
-                name: item.name,
-                totalQty: item.totalQty,
-                totalNeed: item.stockNeed,
-                unit: item.unit,
-                stockUnit: item.stockUnit
-            });
-        }
-    });
-    this.state.submitRequest(sop, itemsToRequest);
+    this.state.submitRequest(sop, this.calculatedItems(), this.form.value);
+  }
+  
+  async approveAndCreatePrintJob(sop: Sop) {
+    if (!this.state.isAdmin()) return;
+    await this.state.directApproveAndPrint(sop, this.calculatedItems(), this.form.value);
   }
 }

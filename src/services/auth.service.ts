@@ -1,6 +1,14 @@
 
 import { Injectable, inject, signal } from '@angular/core';
-import { getAuth, signInWithEmailAndPassword, signOut, User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  User 
+} from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 
@@ -22,7 +30,7 @@ export class AuthService {
 
   constructor() {
     // Restore session on load
-    onAuthStateChanged(this.auth, async (user) => {
+    onAuthStateChanged(this.auth, async (user: User | null) => {
       if (user) {
         await this.fetchUserProfile(user);
       } else {

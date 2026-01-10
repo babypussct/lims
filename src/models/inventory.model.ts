@@ -1,6 +1,10 @@
 
 export interface InventoryItem {
-  id: string;          // Khóa chính (VD: "meoh_hplc"). Không được sửa.
+  /**
+   * Primary key (e.g., "meoh_hplc"). This ID is used to link with SOPs.
+   * It should not be changed after creation as it will break SOP links.
+   */
+  id: string;
   name: string;        // Tên tiếng Việt (VD: "Methanol chạy máy").
   
   stock: number;       // Số lượng tồn

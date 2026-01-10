@@ -9,6 +9,7 @@ import { Sop } from '../models/sop.model';
 import { CalculatorService } from '../services/calculator.service';
 import { cleanName, formatNum, UNIT_OPTIONS, generateSlug } from '../utils/utils';
 import { ToastService } from '../services/toast.service';
+import { ConfirmationService } from '../services/confirmation.service';
 
 @Component({
   selector: 'app-inventory',
@@ -44,7 +45,7 @@ import { ToastService } from '../services/toast.service';
         <!-- TAB: LIST -->
         @if (activeTab() === 'list') {
           <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row gap-4 justify-between items-center shrink-0">
-            <div class="flex gap-2 w-full md:w-auto">
+            <div class="flex gap-2 w-full md:w-auto items-center">
                 <div class="relative w-full md:w-64 group">
                    <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 group-focus-within:text-blue-500 transition"></i>
                    <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearch($event)" placeholder="Tìm tên hoặc mã..." 
@@ -59,29 +60,45 @@ import { ToastService } from '../services/toast.service';
                 </select>
             </div>
             
-            @if (state.isAdmin()) {
-              <button (click)="openModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition font-bold text-sm flex items-center gap-2">
-                 <i class="fa-solid fa-plus"></i> Thêm Hóa chất
-              </button>
-            }
+            <div class="flex gap-2">
+               @if (state.isAdmin() && selectedIds().size > 0) {
+                  <button (click)="zeroOutSelected()" 
+                          class="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg shadow-sm hover:bg-red-50 transition font-bold text-sm flex items-center gap-2">
+                     <i class="fa-solid fa-ban"></i> Đặt về 0 ({{selectedIds().size}})
+                  </button>
+               }
+               
+               @if (state.isAdmin()) {
+                 <button (click)="openModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Thêm Hóa chất
+                 </button>
+               }
+            </div>
           </div>
 
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm text-left border-collapse">
               <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
                 <tr>
+                  <th class="px-3 py-3 border-b w-10 text-center">
+                     <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll()" class="w-4 h-4 accent-blue-600">
+                  </th>
                   <th class="px-5 py-3 border-b">Tên Hóa chất (Name)</th>
                   <th class="px-5 py-3 border-b w-40">Mã ID</th>
                   <th class="px-5 py-3 border-b w-32">Phân loại</th>
                   <th class="px-5 py-3 border-b w-24 text-center">Đơn vị</th>
                   <th class="px-5 py-3 border-b w-40 text-right">Tồn kho</th>
                   <th class="px-5 py-3 border-b w-48 text-right">Cập nhật nhanh</th>
-                  <th class="px-5 py-3 border-b w-10"></th>
+                  <th class="px-5 py-3 border-b w-24 text-center">H.động</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (item of paginatedItems(); track item.id) {
-                  <tr class="hover:bg-slate-50 transition border-b border-slate-100 group">
+                  <tr class="hover:bg-slate-50 transition border-b border-slate-100 group" 
+                      [class.bg-blue-50]="selectedIds().has(item.id)">
+                    <td class="px-3 py-3 border-b text-center align-middle">
+                       <input type="checkbox" [checked]="selectedIds().has(item.id)" (change)="toggleSelection(item.id)" class="w-4 h-4 accent-blue-600">
+                    </td>
                     <td class="px-5 py-3 border-b align-middle">
                       <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg shadow-sm"
@@ -131,15 +148,22 @@ import { ToastService } from '../services/toast.service';
                         </div>
                       }
                     </td>
-                    <td class="px-5 py-3 border-b text-right">
+                    <td class="px-5 py-3 border-b text-center">
                        @if (state.isAdmin()) {
-                        <button (click)="openModal(item)" class="text-slate-300 hover:text-blue-600 p-2"><i class="fa-solid fa-pen"></i></button>
+                        <div class="flex items-center justify-center gap-1 opacity-50 group-hover:opacity-100">
+                          <button (click)="openModal(item)" class="text-slate-400 hover:text-blue-600 p-2 transition rounded-md" title="Sửa">
+                              <i class="fa-solid fa-pen"></i>
+                          </button>
+                          <button (click)="deleteItem(item)" class="text-slate-400 hover:text-red-600 p-2 transition rounded-md" title="Xóa">
+                              <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
                        }
                     </td>
                   </tr>
                 } @empty {
                     <tr>
-                        <td colspan="7" class="text-center py-12 text-slate-400">
+                        <td colspan="8" class="text-center py-12 text-slate-400">
                             <i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i>
                             <p>Không tìm thấy hóa chất nào.</p>
                         </td>
@@ -175,7 +199,7 @@ import { ToastService } from '../services/toast.service';
           </div>
         }
 
-        <!-- TAB: CAPACITY -->
+        <!-- TAB: CAPACITY (Unchanged) -->
         @if (activeTab() === 'capacity') {
            <div class="flex flex-col md:flex-row h-full">
               <!-- Left: SOP Selector -->
@@ -196,8 +220,23 @@ import { ToastService } from '../services/toast.service';
               <!-- Right: Result -->
               <div class="flex-1 p-6 overflow-y-auto bg-white">
                  @if (selectedSopForCap(); as sop) {
-                    <div class="flex items-center justify-between mb-6">
-                       <h3 class="text-xl font-bold text-slate-800">{{sop.name}}</h3>
+                    <div class="flex items-start justify-between mb-6">
+                       <div>
+                           <h3 class="text-xl font-bold text-slate-800">{{sop.name}}</h3>
+                           <!-- Calculation Mode Switch -->
+                           <div class="flex items-center bg-slate-100 rounded-lg p-1 mt-2 w-fit border border-slate-200">
+                              <button (click)="capacityMode.set('marginal')" 
+                                      class="px-3 py-1.5 text-xs font-bold rounded-md transition"
+                                      [class]="capacityMode() === 'marginal' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                                 Theo Từng Mẫu (1 Mẫu)
+                              </button>
+                              <button (click)="capacityMode.set('standard')"
+                                      class="px-3 py-1.5 text-xs font-bold rounded-md transition"
+                                      [class]="capacityMode() === 'standard' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                                 Theo Mẻ Chuẩn (SOP Default)
+                              </button>
+                           </div>
+                       </div>
                        <div class="text-right">
                           <div class="text-xs text-slate-500 uppercase">Năng lực tối đa</div>
                           <div class="text-3xl font-bold text-blue-600">{{capacityResult()?.maxBatches || 0}} <span class="text-sm text-slate-400 font-medium">mẻ</span></div>
@@ -325,25 +364,21 @@ import { ToastService } from '../services/toast.service';
                   <!-- Extra Info (Explicitly marked Optional) -->
                   <div class="grid grid-cols-2 gap-4">
                      <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vị trí (Location) <span class="text-slate-400 font-normal italic lowercase ml-1">(tùy chọn)</span></label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vị trí (Location) <span class="text-slate-400 font-normal lowercase italic">(tùy chọn)</span></label>
                         <input formControlName="location" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none" placeholder="VD: Tủ lạnh A">
                      </div>
                      <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hãng / NCC <span class="text-slate-400 font-normal italic lowercase ml-1">(tùy chọn)</span></label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hãng / NCC <span class="text-slate-400 font-normal lowercase italic">(tùy chọn)</span></label>
                         <input formControlName="supplier" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none" placeholder="VD: Merck">
                      </div>
                   </div>
                   
                   <div>
-                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ghi chú <span class="text-slate-400 font-normal italic lowercase ml-1">(tùy chọn)</span></label>
+                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ghi chú <span class="text-slate-400 font-normal lowercase italic">(tùy chọn)</span></label>
                      <textarea formControlName="notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none"></textarea>
                   </div>
 
-                  <div class="pt-4 flex gap-3 shrink-0">
-                     @if (isEditing()) {
-                        <button type="button" (click)="deleteItem()" class="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-sm transition">Xóa</button>
-                     }
-                     <div class="flex-1"></div>
+                  <div class="pt-4 flex justify-end gap-3 shrink-0">
                      <button type="button" (click)="closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold text-sm transition">Hủy</button>
                      <button type="submit" [disabled]="form.invalid" class="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-bold text-sm shadow-lg shadow-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
                         {{ isEditing() ? 'Lưu Thay đổi' : 'Tạo Mới' }}
@@ -361,6 +396,7 @@ export class InventoryComponent {
   inventoryService = inject(InventoryService);
   toast = inject(ToastService);
   calcService = inject(CalculatorService);
+  confirmationService = inject(ConfirmationService);
   private fb: FormBuilder = inject(FormBuilder);
 
   activeTab = signal<'list' | 'capacity'>('list');
@@ -370,16 +406,22 @@ export class InventoryComponent {
   searchTerm = signal('');
   filterType = signal('all');
   
+  // Selection
+  selectedIds = signal<Set<string>>(new Set());
+
   // Pagination State
   currentPage = signal(1);
   pageSize = signal(20);
 
   // Capacity Tab State
   selectedSopForCap = signal<Sop | null>(null);
+  capacityMode = signal<'marginal' | 'standard'>('marginal'); // 'marginal' = 1 sample, 'standard' = SOP default
+
   capacityResult = computed(() => {
     const s = this.selectedSopForCap();
+    const mode = this.capacityMode();
     if (!s) return null;
-    return this.calcService.calculateCapacity(s, {});
+    return this.calcService.calculateCapacity(s, mode);
   });
 
   // Modal State
@@ -428,21 +470,79 @@ export class InventoryComponent {
   totalItems = computed(() => this.allFilteredItems().length);
   totalPages = computed(() => Math.ceil(this.totalItems() / this.pageSize()));
 
+  // 3. Selection Logic
+  areAllSelected = computed(() => {
+    const visibleItems = this.paginatedItems();
+    return visibleItems.length > 0 && visibleItems.every(i => this.selectedIds().has(i.id));
+  });
+
+  toggleSelection(id: string) {
+    this.selectedIds.update(current => {
+      const newSet = new Set(current);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  }
+
+  toggleSelectAll() {
+    const visibleItems = this.paginatedItems();
+    if (this.areAllSelected()) {
+       // Deselect all visible
+       this.selectedIds.update(current => {
+          const newSet = new Set(current);
+          visibleItems.forEach(i => newSet.delete(i.id));
+          return newSet;
+       });
+    } else {
+       // Select all visible
+       this.selectedIds.update(current => {
+          const newSet = new Set(current);
+          visibleItems.forEach(i => newSet.add(i.id));
+          return newSet;
+       });
+    }
+  }
+
+  async zeroOutSelected() {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+
+    const confirmed = await this.confirmationService.confirm({
+      message: `Bạn có chắc chắn muốn đặt tồn kho về 0 cho ${ids.length} mục đã chọn?`,
+      confirmText: 'Xác nhận (Zero Out)',
+      isDangerous: true
+    });
+
+    if (confirmed) {
+       try {
+          await this.inventoryService.bulkZeroStock(ids);
+          this.toast.show(`Đã cập nhật ${ids.length} mục về 0.`, 'success');
+          this.selectedIds.set(new Set());
+       } catch (e) {
+          this.toast.show('Lỗi cập nhật', 'error');
+       }
+    }
+  }
+
   // Events to reset pagination
   onSearch(val: string) {
     this.searchTerm.set(val);
     this.currentPage.set(1);
+    this.selectedIds.set(new Set()); // Reset selection on search
   }
 
   onFilter(val: string) {
     this.filterType.set(val);
     this.currentPage.set(1);
+    this.selectedIds.set(new Set());
   }
 
   changePage(delta: number) {
      const next = this.currentPage() + delta;
      if (next >= 1 && next <= this.totalPages()) {
         this.currentPage.set(next);
+        this.selectedIds.set(new Set()); // Optional: Reset selection on page change
      }
   }
 
@@ -458,7 +558,7 @@ export class InventoryComponent {
   // --- Helpers ---
 
   cleanName = cleanName;
-  formatNum = formatNum;
+  formatNum = formatNum; // Uses standard formatter (up to 2 decimals)
 
   resolveName(id: string): string {
     return this.state.inventoryMap()[id]?.name || id;
@@ -555,15 +655,20 @@ export class InventoryComponent {
     }
   }
 
-  async deleteItem() {
-    const id = this.form.getRawValue().id;
-    if (confirm(`Xóa hóa chất ${id}?`)) {
+  async deleteItem(item: InventoryItem) {
+    if (!item) return;
+    const confirmed = await this.confirmationService.confirm({
+      message: `Bạn có chắc chắn muốn xóa hóa chất "${item.name || item.id}"? Hành động này không thể hoàn tác.`,
+      confirmText: 'Xác nhận Xóa',
+      isDangerous: true
+    });
+
+    if (confirmed) {
       try {
-        await this.inventoryService.deleteItem(id!);
+        await this.inventoryService.deleteItem(item.id);
         this.toast.show('Đã xóa hóa chất');
-        this.closeModal();
       } catch (e) {
-        this.toast.show('Lỗi xóa', 'error');
+        this.toast.show('Lỗi khi xóa', 'error');
       }
     }
   }

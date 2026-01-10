@@ -9,19 +9,29 @@ export interface SopInput {
 }
 
 export interface Ingredient {
+  /**
+   * The ID of the chemical from the inventory. Must match an `InventoryItem.id`.
+   */
   name: string;
   amount: number;
   unit: string;
 }
 
 export interface Consumable {
+  /**
+   * For 'simple' type: The ID of the item from inventory. Must match an `InventoryItem.id`.
+   * For 'composite' type: A descriptive name for the mixture (e.g., "Hỗn hợp làm sạch B").
+   */
   name: string;
   formula: string; // e.g. "total_n * 2"
   unit: string;
   base_note?: string; 
   type: 'simple' | 'composite';
   condition?: string; // e.g. "!use_b2"
-  ingredients?: Ingredient[]; // If type is composite
+  /**
+   * Used only if type is 'composite'. Lists the raw chemicals from inventory.
+   */
+  ingredients?: Ingredient[];
 }
 
 export interface Sop {
@@ -32,6 +42,11 @@ export interface Sop {
   inputs: SopInput[];
   variables: { [key: string]: string }; 
   consumables: Consumable[];
+  
+  // Version Control Fields
+  version?: number;
+  lastModified?: any;
+  archivedAt?: any; // Used only for history records
 }
 
 // --- Calculated Results ---

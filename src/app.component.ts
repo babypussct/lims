@@ -9,11 +9,15 @@ import { StatisticsComponent } from './components/statistics.component';
 import { SopEditorComponent } from './components/sop-editor.component';
 import { ConfigComponent } from './components/config.component';
 import { LoginComponent } from './components/login.component';
-import { PrintLayoutComponent } from './components/print-layout.component'; // Import PrintLayout
+import { PrintLayoutComponent } from './components/print-layout.component';
+import { ConfirmationModalComponent } from './components/confirmation-modal.component';
+import { BatchPrintComponent } from './components/print-preview.component';
+import { PrintQueueComponent } from './components/print-queue.component';
 import { StateService } from './services/state.service';
 import { AuthService } from './services/auth.service';
 import { Sop } from './models/sop.model';
 import { ToastService } from './services/toast.service';
+import { PrintService } from './services/print.service';
 
 @Component({
   selector: 'app-root',
@@ -28,7 +32,10 @@ import { ToastService } from './services/toast.service';
     SopEditorComponent,
     ConfigComponent,
     LoginComponent,
-    PrintLayoutComponent
+    PrintLayoutComponent,
+    ConfirmationModalComponent,
+    BatchPrintComponent,
+    PrintQueueComponent
   ],
   template: `
     <app-login class="no-print"></app-login>
@@ -44,6 +51,19 @@ import { ToastService } from './services/toast.service';
         </div>
       }
     </div>
+
+    <!-- Print Loading Overlay -->
+    @if (printService.isProcessing()) {
+      <div class="fixed inset-0 z-[101] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm no-print fade-in">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex items-center gap-4">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i>
+          <span class="font-bold text-slate-700">Đang xử lý...</span>
+        </div>
+      </div>
+    }
+
+    <!-- Confirmation Modal (Global) -->
+    <app-confirmation-modal></app-confirmation-modal>
 
     <!-- Main App: Visible to ANY logged in user (Staff or Manager) -->
     @if (state.currentUser()) {
@@ -92,14 +112,18 @@ import { ToastService } from './services/toast.service';
            <app-sidebar 
               [activeSopId]="currentSop()?.id || null"
               (selectSop)="onSelectSop($event)" 
-              (viewChange)="currentView.set($event)">
+              (viewChange)="currentView.set($event)"
+              (createNewSop)="handleNewSop()">
            </app-sidebar>
            
            <main class="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-6 relative w-full">
               @switch (currentView()) {
                  @case ('calculator') {
                     @if (currentSop(); as sop) {
-                        <app-calculator [sop]="sop"></app-calculator>
+                        <app-calculator 
+                           [sop]="sop" 
+                           (editSop)="handleEditSop()">
+                        </app-calculator>
                     } @else {
                         <div class="flex flex-col items-center justify-center h-full text-center text-slate-400">
                            <i class="fa-regular fa-clipboard text-6xl mb-4 text-slate-300"></i>
@@ -110,10 +134,21 @@ import { ToastService } from './services/toast.service';
                  @case ('inventory') { <app-inventory></app-inventory> }
                  @case ('requests') { <app-request-list></app-request-list> }
                  @case ('stats') { <app-statistics></app-statistics> }
+                 @case ('printing') { 
+                    <app-print-queue (navigateToPrint)="currentView.set('batch-print')"></app-print-queue>
+                 }
+                 @case ('batch-print') { 
+                    <app-batch-print (closeView)="onCloseBatchPrint()"></app-batch-print>
+                 }
                  
-                 <!-- Restricted Views (Fallback if manually accessed) -->
                  @case ('editor') { 
-                    @if(state.isAdmin()) { <app-sop-editor></app-sop-editor> }
+                    @if(state.isAdmin()) { 
+                       <app-sop-editor 
+                          [sopToEdit]="currentSop()"
+                          (sopSaved)="onSopSaved($event)"
+                          (cancelEdit)="onCancelEdit()">
+                       </app-sop-editor> 
+                    }
                     @else { <div class="p-8 text-center text-red-500 font-bold">Access Denied</div> }
                  }
                  @case ('config') { 
@@ -126,7 +161,6 @@ import { ToastService } from './services/toast.service';
       </div>
     }
 
-    <!-- Global Print Layout -->
     <app-print-layout></app-print-layout>
   `
 })
@@ -134,6 +168,7 @@ export class AppComponent {
   state = inject(StateService);
   auth = inject(AuthService);
   toast = inject(ToastService);
+  printService = inject(PrintService);
   
   currentView = signal<string>('calculator');
   currentSop = signal<Sop | null>(null);
@@ -141,6 +176,32 @@ export class AppComponent {
   onSelectSop(sop: Sop) {
     this.currentSop.set(sop);
     this.currentView.set('calculator');
+  }
+
+  handleNewSop() {
+    this.currentSop.set(null);
+    this.currentView.set('editor');
+  }
+
+  handleEditSop() {
+    this.currentView.set('editor');
+  }
+
+  onSopSaved(savedSop: Sop) {
+    this.currentSop.set(savedSop);
+    this.currentView.set('calculator');
+  }
+
+  onCancelEdit() {
+    if (!this.currentSop()) {
+        this.currentView.set('calculator');
+    } else {
+        this.currentView.set('calculator');
+    }
+  }
+
+  onCloseBatchPrint() {
+    this.currentView.set('printing');
   }
 
   logout() {

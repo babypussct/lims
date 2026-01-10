@@ -53,7 +53,7 @@ import { cleanName, formatNum, formatDate } from '../utils/utils';
                                 </tr>
                                 @for (item of req.items; track item.name) {
                                     <tr class="border-t border-slate-100">
-                                        <td class="py-1.5 font-medium text-slate-700">{{cleanName(item.name)}}</td>
+                                        <td class="py-1.5 font-medium text-slate-700">{{resolveName(item.name)}}</td>
                                         <td class="py-1.5 text-right font-bold text-slate-600">
                                             {{formatNum(item.displayAmount)}} <span class="text-[10px] text-slate-400 font-normal">{{item.unit}}</span>
                                         </td>
@@ -112,4 +112,8 @@ export class RequestListComponent {
         ? this.state.requests() 
         : this.state.approvedRequests();
   });
+
+  resolveName(id: string): string {
+    return this.state.inventoryMap()[id]?.name || id;
+  }
 }

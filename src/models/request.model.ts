@@ -1,3 +1,4 @@
+
 export interface RequestItem {
   name: string;
   amount: number; // The amount to be deducted in STOCK UNIT
@@ -16,4 +17,8 @@ export interface Request {
   approvedAt?: any;
   rejectedAt?: any;
   user?: string;
+
+  // Added fields to store calculation context for re-printing
+  inputs?: any;
+  margin?: number;
 }

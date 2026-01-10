@@ -17,12 +17,12 @@ export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: numb
   'kit': { type: 'qty', val: 1 }, 'test': { type: 'qty', val: 1 }, 'rxn': { type: 'qty', val: 1 }
 };
 
-// Standard list for Dropdowns
+// Standard list for Dropdowns - Prioritize ML and G
 export const UNIT_OPTIONS = [
-  { value: 'ml', label: 'ml (Milliliter)' },
-  { value: 'l', label: 'l (Liter)' },
+  { value: 'ml', label: 'ml (Milliliter) - Chuẩn' },
+  { value: 'g', label: 'g (Gram) - Chuẩn' },
   { value: 'µl', label: 'µl (Microliter)' },
-  { value: 'g', label: 'g (Gram)' },
+  { value: 'l', label: 'l (Liter)' },
   { value: 'mg', label: 'mg (Milligram)' },
   { value: 'kg', label: 'kg (Kilogram)' },
   { value: 'pcs', label: 'pcs (Cái)' },
@@ -81,4 +81,39 @@ export function generateSlug(text: string): string {
     .replace(/\_\_+/g, '_') // Replace multiple underscores
     .replace(/^_+/, '') // Trim underscores from start
     .replace(/_+$/, ''); // Trim underscores from end
+}
+
+/**
+ * Recursively removes properties with `undefined` values from an object.
+ * Firestore does not support `undefined` and will throw an error.
+ * This is a defensive measure to ensure data written to Firestore is clean.
+ * @param obj The object to sanitize.
+ * @returns A new object with `undefined` properties removed.
+ */
+export function sanitizeForFirebase<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirebase(item)) as any;
+  }
+
+  // We only want to sanitize plain JavaScript objects, not special classes like Timestamps.
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      // Use hasOwnProperty to ensure we don't process properties from the prototype chain.
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = (obj as any)[key];
+        if (value !== undefined) {
+          newObj[key] = sanitizeForFirebase(value);
+        }
+        // Properties with `undefined` are implicitly skipped.
+      }
+    }
+    return newObj as T;
+  }
+
+  return obj;
 }

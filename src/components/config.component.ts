@@ -6,6 +6,7 @@ import { FirebaseService } from '../services/firebase.service';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { HealthCheckItem } from '../models/config.model';
+import { ConfirmationService } from '../services/confirmation.service';
 
 @Component({
   selector: 'app-config',
@@ -62,7 +63,7 @@ import { HealthCheckItem } from '../models/config.model';
                     <p class="font-bold text-slate-800"><i class="fa-solid fa-circle-info text-blue-500"></i> Logic Phân Quyền:</p>
                     <ul class="list-disc list-inside space-y-1 ml-1 text-xs">
                        <li><b>Staff (Mặc định):</b> Xem kho, tính toán SOP, gửi yêu cầu.</li>
-                       <li><b>Manager:</b> Sửa kho, sửa SOP, duyệt yêu cầu, xem thống kê.</li>
+                       <li><b>Manager:</b> Sửa kho, sửa SOP, duyệt yêu cầu, xem thống kê, xóa dữ liệu.</li>
                     </ul>
                     
                     <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded text-xs">
@@ -85,8 +86,7 @@ import { HealthCheckItem } from '../models/config.model';
                 <i class="fa-solid fa-shield-cat text-orange-500"></i> Cấu hình Bảo mật (Firestore Rules)
             </h3>
             <p class="text-sm text-slate-600 mb-3">
-                Để hệ thống hoạt động chính xác và bảo mật, hãy copy đoạn mã dưới đây vào tab <b>Rules</b> trong Firebase Console.
-                <br><span class="text-xs text-orange-600 italic">Lưu ý: Đoạn mã này đã được tùy chỉnh tự động cho App ID hiện tại: <b>{{fb.APP_ID}}</b></span>
+                <span class="text-red-600 font-bold">Quan trọng:</span> Hãy copy đoạn mã mới dưới đây và dán vào tab <b>Rules</b> trong Firebase Console để khắc phục lỗi phân quyền (bao gồm lỗi xóa hàng loạt).
             </p>
 
             <div class="relative group">
@@ -202,6 +202,7 @@ export class ConfigComponent implements OnInit {
   fb = inject(FirebaseService);
   auth = inject(AuthService);
   toast = inject(ToastService);
+  confirmationService = inject(ConfirmationService);
 
   appIdControl = new FormControl('');
   
@@ -218,51 +219,52 @@ service cloud.firestore {
     
     // Helper function to check if user is manager
     function isManager() {
-      return get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager';
+      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager';
     }
 
     // 1. User Profiles (For RBAC)
-    // Users can read their own profile to know their role.
     match /artifacts/${appId}/users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // Only manually set by Admin in Console
+      allow write: if false; 
     }
 
-    // 2. Inventory (Public Read, Manager Write)
+    // 2. Inventory (Public Read, Manager Write/Delete)
     match /artifacts/${appId}/inventory/{itemId} {
       allow read: if request.auth != null;
-      allow write: if isManager();
+      allow write, delete: if isManager();
     }
 
-    // 3. SOPs (Public Read, Manager Write)
+    // 3. SOPs (Public Read, Manager Write/Delete)
     match /artifacts/${appId}/sops/{sopId} {
       allow read: if request.auth != null;
-      allow write: if isManager();
+      allow write, delete: if isManager();
     }
 
-    // 4. Requests (Staff create, Manager approve/update)
+    // 4. Requests (Staff create, Manager approve/update/delete)
     match /artifacts/${appId}/requests/{reqId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null; // Staff can create
-      allow update: if isManager(); // Only Manager can change status
+      allow create: if request.auth != null; 
+      allow update, delete: if isManager(); 
     }
 
-    // 5. Logs (Manager Read/Write, System writes via backend logic usually, but here client writes)
+    // 5. Logs (Manager Read/Write/Delete)
     match /artifacts/${appId}/logs/{logId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null; // Allow logging actions
+      allow create: if request.auth != null; 
+      allow delete: if isManager(); 
     }
 
-    // 6. Stats (Read All, Write Manager)
+    // 6. Stats (Read All, Manager Write/Delete)
     match /artifacts/${appId}/stats/{statId} {
       allow read: if request.auth != null;
-      allow write: if isManager();
+      allow write, delete: if isManager();
     }
     
-    // 7. Config (Read All for Health Check)
+    // 7. Config (Read All for Health Check, Manager Write)
     match /artifacts/${appId}/config/{docId} {
       allow read: if request.auth != null;
-      allow write: if isManager();
+      allow write, delete: if isManager();
     }
   }
 }`;
@@ -273,10 +275,11 @@ service cloud.firestore {
       this.checkHealth();
   }
 
-  saveAppId() {
+  async saveAppId() {
       const val = this.appIdControl.value;
       if (val && val !== this.fb.APP_ID) {
-          if(confirm('Chuyển đổi App Context sẽ tải lại trang. Tiếp tục?')) {
+          const confirmed = await this.confirmationService.confirm('Chuyển đổi App Context sẽ tải lại trang. Tiếp tục?');
+          if(confirmed) {
               this.fb.setAppId(val);
           }
       }
@@ -326,7 +329,13 @@ service cloud.firestore {
       const file = event.target.files[0];
       if (!file) return;
       
-      if (!confirm('CẢNH BÁO: Restore sẽ GHI ĐÈ dữ liệu hiện tại. Bạn có chắc chắn?')) {
+      const confirmed = await this.confirmationService.confirm({
+        message: 'CẢNH BÁO: Restore sẽ GHI ĐÈ dữ liệu hiện tại. Bạn có chắc chắn?',
+        confirmText: 'Restore & Ghi đè',
+        isDangerous: true
+      });
+
+      if (!confirmed) {
           event.target.value = '';
           return;
       }
@@ -347,22 +356,32 @@ service cloud.firestore {
   }
 
   async resetDefaults() {
-      if (confirm('CỰC KỲ NGUY HIỂM: Bạn có chắc chắn muốn XÓA SẠCH dữ liệu? (Type "YES" to confirm)')) {
-          const check = prompt('Type "YES" to confirm wipe:');
-          if (check === 'YES') {
-              try {
-                  await this.fb.resetToDefaults();
-                  this.toast.show('System wiped successfully.', 'info');
-                  setTimeout(() => window.location.reload(), 1500);
-              } catch (e) {
-                  this.toast.show('Wipe failed', 'error');
-              }
+      const confirmed = await this.confirmationService.confirm({
+        message: 'CỰC KỲ NGUY HIỂM: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu (inventory, sops, logs, stats, phiếu in...)?\n\nHành động này không thể hoàn tác.',
+        confirmText: 'Xóa Sạch Dữ Liệu',
+        isDangerous: true
+      });
+      
+      if (confirmed) {
+          try {
+              await this.fb.resetToDefaults();
+              this.toast.show('System wiped successfully.', 'info');
+              setTimeout(() => window.location.reload(), 1500);
+          } catch (e) {
+              console.error(e);
+              this.toast.show('Wipe failed: ' + (e as any).message, 'error');
           }
       }
   }
 
   async loadSampleData() {
-    if (confirm('Hành động này sẽ XÓA dữ liệu hiện tại và nạp bộ SOP mẫu NAFI6. Tiếp tục?')) {
+    const confirmed = await this.confirmationService.confirm({
+      message: 'Hành động này sẽ XÓA dữ liệu hiện tại và nạp bộ SOP mẫu NAFI6. Tiếp tục?',
+      confirmText: 'Xóa và Nạp Mẫu',
+      isDangerous: true
+    });
+
+    if (confirmed) {
         try {
             await this.fb.loadSampleData();
             this.toast.show('Đã nạp dữ liệu mẫu! Đang tải lại...', 'success');

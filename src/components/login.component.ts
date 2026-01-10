@@ -104,7 +104,7 @@ export class LoginComponent {
       await this.auth.login(this.email, this.password);
     } catch (e: any) {
       console.error("Login Error:", e);
-      this.handleError(e);
+      this.handleError(e, false);
     } finally {
       this.isLoading.set(false);
     }
@@ -122,7 +122,7 @@ export class LoginComponent {
       if (e.code === 'auth/popup-closed-by-user') {
         // User closed popup, just stop loading
       } else {
-        this.handleError(e);
+        this.handleError(e, true);
       }
     } finally {
       this.isLoading.set(false);
@@ -130,8 +130,14 @@ export class LoginComponent {
     }
   }
 
-  private handleError(e: any) {
-      if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+  private handleError(e: any, isGoogle: boolean) {
+      if (e.code === 'auth/invalid-credential') {
+          if (isGoogle) {
+             this.errorMsg.set('Lỗi cấu hình: Google Provider chưa được bật trong Firebase Console.');
+          } else {
+             this.errorMsg.set('Email hoặc mật khẩu không chính xác.');
+          }
+      } else if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
           this.errorMsg.set('Tài khoản hoặc mật khẩu không đúng!');
           this.password = '';
       } else if (e.code === 'auth/too-many-requests') {

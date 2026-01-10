@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { 
   doc, setDoc, updateDoc, deleteDoc, 
-  collection, addDoc, serverTimestamp 
+  collection, addDoc, serverTimestamp, writeBatch 
 } from 'firebase/firestore';
 import { InventoryItem } from '../models/inventory.model';
 import { ToastService } from './toast.service';
@@ -45,6 +45,23 @@ export class InventoryService {
 
     const actionType = adjustment > 0 ? 'STOCK_IN' : 'STOCK_OUT';
     await this.logAction(actionType, `Điều chỉnh kho ${id}: ${adjustment > 0 ? '+' : ''}${adjustment} -> Tồn: ${newStock}`);
+  }
+
+  async bulkZeroStock(ids: string[]) {
+    if (!ids || ids.length === 0) return;
+
+    const batch = writeBatch(this.fb.db);
+    
+    ids.forEach(id => {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
+      batch.update(ref, { 
+        stock: 0, 
+        lastUpdated: serverTimestamp() 
+      });
+    });
+
+    await batch.commit();
+    await this.logAction('BULK_ZERO', `Đặt tồn kho về 0 cho ${ids.length} mục.`);
   }
 
   // --- Internal Logging ---
