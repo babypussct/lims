@@ -26,14 +26,16 @@ import { AuthService } from '../../core/services/auth.service';
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Email</label>
                     <input type="email" [(ngModel)]="email" (keyup.enter)="login()"
-                           class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100 outline-none transition shadow-soft-md placeholder:text-gray-300" 
+                           class="w-full border rounded-xl px-4 py-3 text-sm focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100 outline-none transition shadow-soft-md placeholder:text-gray-300" 
+                           [class.border-red-500]="errorMsg()" [class.border-gray-200]="!errorMsg()"
                            placeholder="yourname@lims.com"
                            [disabled]="isLoading()">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Mật khẩu</label>
                     <input type="password" [(ngModel)]="password" (keyup.enter)="login()"
-                           class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100 outline-none transition shadow-soft-md placeholder:text-gray-300" 
+                           class="w-full border rounded-xl px-4 py-3 text-sm focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100 outline-none transition shadow-soft-md placeholder:text-gray-300" 
+                           [class.border-red-500]="errorMsg()" [class.border-gray-200]="!errorMsg()"
                            placeholder="••••••••"
                            [disabled]="isLoading()">
                 </div>
@@ -96,26 +98,30 @@ export class LoginComponent {
   }
 
   private handleError(e: any, isGoogle: boolean) {
-      console.error("Auth Error:", e);
-      if (e.code === 'auth/invalid-credential') {
+      console.warn("Auth Attempt Failed:", e);
+      
+      const code = e.code || '';
+      const msg = e.message || '';
+
+      if (code === 'auth/invalid-credential' || msg.includes('invalid-credential')) {
           if (isGoogle) {
-             this.errorMsg.set('Lỗi Domain (Netlify): Vui lòng thêm domain này vào "Authorized Domains" trong Firebase Authentication.');
+             this.errorMsg.set('Lỗi: Domain chưa được cấp quyền (Authorized Domain) hoặc API Key bị hạn chế.');
           } else {
-             this.errorMsg.set('Email hoặc mật khẩu không chính xác.');
+             this.errorMsg.set('Thông tin đăng nhập không hợp lệ hoặc cấu hình dự án sai.');
           }
-      } else if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+      } else if (code === 'auth/user-not-found' || code === 'auth/wrong-password') {
           this.errorMsg.set('Tài khoản hoặc mật khẩu không đúng.');
           this.password = '';
-      } else if (e.code === 'auth/too-many-requests') {
+      } else if (code === 'auth/too-many-requests') {
           this.errorMsg.set('Quá nhiều lần thử sai. Vui lòng đợi.');
-      } else if (e.code === 'auth/network-request-failed') {
+      } else if (code === 'auth/network-request-failed') {
           this.errorMsg.set('Lỗi kết nối mạng. Kiểm tra internet.');
-      } else if (e.code === 'auth/popup-blocked') {
+      } else if (code === 'auth/popup-blocked') {
           this.errorMsg.set('Trình duyệt đã chặn cửa sổ bật lên (Popup).');
-      } else if (e.code === 'auth/operation-not-allowed') {
-          this.errorMsg.set('Lỗi cấu hình: Google Login chưa được bật.');
+      } else if (code === 'auth/operation-not-allowed') {
+          this.errorMsg.set('Lỗi cấu hình: Phương thức đăng nhập này chưa được bật.');
       } else {
-          this.errorMsg.set('Lỗi: ' + (e.message || e.code));
+          this.errorMsg.set('Lỗi: ' + (msg || code));
       }
   }
 }

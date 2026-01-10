@@ -14,6 +14,7 @@ import { StateService } from './core/services/state.service';
 import { AuthService } from './core/services/auth.service';
 import { ToastService } from './core/services/toast.service';
 import { PrintService } from './core/services/print.service';
+import { Sop } from './core/models/sop.model';
 
 @Component({
   selector: 'app-root',
@@ -27,15 +28,41 @@ import { PrintService } from './core/services/print.service';
     LoginComponent
   ],
   template: `
-    <!-- Notifications & Loaders -->
-    <div class="fixed top-6 right-6 z-[110] space-y-3 no-print pointer-events-none w-full max-w-sm px-4 md:px-0 md:w-auto">
+    <!-- Notifications (Mobile First Position: Bottom Center) -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
       @for (t of toast.toasts(); track t.id) {
-        <div class="px-6 py-4 rounded-xl shadow-soft-xl border border-white/50 backdrop-blur-md text-sm font-bold animate-bounce-in pointer-events-auto flex items-center gap-3"
-             [class.bg-white]="true" [class.text-green-600]="t.type === 'success'" [class.text-red-500]="t.type === 'error'" [class.text-blue-500]="t.type === 'info'">
-             <div class="break-words max-w-xs">{{t.message}}</div>
+        <div class="pointer-events-auto flex items-center gap-4 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up min-w-[300px]"
+             [class.bg-white/90]="true" 
+             [class.border-l-4]="true"
+             [class.border-l-emerald-500]="t.type === 'success'" [class.text-emerald-800]="t.type === 'success'"
+             [class.border-l-red-500]="t.type === 'error'" [class.text-red-800]="t.type === 'error'"
+             [class.border-l-blue-500]="t.type === 'info'" [class.text-blue-800]="t.type === 'info'"
+             [class.border-y-white]="true" [class.border-r-white]="true">
+             
+             <!-- Icon -->
+             <div class="shrink-0 text-xl">
+                @if(t.type === 'success') { <i class="fa-solid fa-circle-check text-emerald-500"></i> }
+                @else if(t.type === 'error') { <i class="fa-solid fa-circle-xmark text-red-500"></i> }
+                @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
+             </div>
+
+             <!-- Content -->
+             <div class="flex-1">
+                 <div class="text-xs font-bold uppercase opacity-60 tracking-wider">
+                    {{ t.type === 'success' ? 'Thành công' : t.type === 'error' ? 'Lỗi' : 'Thông báo' }}
+                 </div>
+                 <div class="text-sm font-bold leading-tight">{{t.message}}</div>
+             </div>
+
+             <!-- Close (Auto close mostly, but visual cue) -->
+             <div class="h-8 w-[1px] bg-gray-200"></div>
+             <button (click)="toast.remove(t.id)" class="text-gray-400 hover:text-gray-600 transition active:scale-90">
+                 <i class="fa-solid fa-xmark"></i>
+             </button>
         </div>
       }
     </div>
+
     @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
     <app-confirmation-modal></app-confirmation-modal>
 
@@ -59,7 +86,7 @@ import { PrintService } from './core/services/print.service';
                      <code class="text-sm font-mono font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 flex-1 truncate select-all">{{user.uid}}</code>
                   </div>
                </div>
-               <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">
+               <button (click)="auth.logout()" class="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition active:scale-95">
                   <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng xuất
                </button>
             </div>
@@ -71,7 +98,11 @@ import { PrintService } from './core/services/print.service';
               <!-- Overlay for mobile sidebar -->
               @if (state.sidebarOpen()) { <div class="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" (click)="state.closeSidebar()"></div> }
               
-              <app-sidebar></app-sidebar>
+              <app-sidebar 
+                  (viewChange)="onSidebarViewChange($event)"
+                  (selectSop)="onSidebarSelectSop($event)"
+                  (createNewSop)="onSidebarCreateSop()">
+              </app-sidebar>
               
               <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out rounded-xl overflow-hidden"
                     [class.md:ml-64]="!state.sidebarCollapsed()" [class.md:ml-20]="state.sidebarCollapsed()">
@@ -88,9 +119,22 @@ import { PrintService } from './core/services/print.service';
                           <div class="flex items-center md:hidden"><button (click)="state.toggleSidebar()" class="w-10 h-10 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition active:scale-95"><i class="fa-solid fa-bars text-lg"></i></button></div>
                           <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-lg md:text-base">{{ pageTitle() }}</h6></div>
                        </div>
-                       <div class="flex items-center gap-2 ml-auto">
+                       
+                       <!-- Right Action Buttons -->
+                       <div class="flex items-center gap-3 ml-auto">
                            <div class="hidden sm:flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
-                           <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Logout"><i class="fa-solid fa-power-off text-lg"></i></button>
+                           
+                           <!-- Config/Profile Button -->
+                           <button (click)="router.navigate(['/config'])" 
+                                   class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg active:scale-95" 
+                                   [title]="auth.canManageSystem() ? 'Cấu hình Hệ thống' : 'Tài khoản cá nhân'">
+                               <i class="fa-solid" [class.fa-gears]="auth.canManageSystem()" [class.fa-user-gear]="!auth.canManageSystem()"></i>
+                           </button>
+
+                           <!-- Logout Button -->
+                           <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Đăng xuất">
+                               <i class="fa-solid fa-power-off text-lg"></i>
+                           </button>
                        </div>
                     </div>
                  </nav>
@@ -115,7 +159,14 @@ import { PrintService } from './core/services/print.service';
     } 
     @else { <app-login class="no-print"></app-login> }
     <app-print-layout></app-print-layout>
-  `
+  `,
+  styles: [`
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  `]
 })
 export class AppComponent {
   state = inject(StateService);
@@ -129,6 +180,24 @@ export class AppComponent {
   constructor() {
     this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => { this.updatePageHeader(); });
     this.updatePageHeader();
+  }
+
+  // Sidebar Handlers
+  onSidebarViewChange(view: string) {
+      this.router.navigate(['/' + view]);
+      this.state.closeSidebar();
+  }
+
+  onSidebarSelectSop(sop: Sop) {
+      this.state.selectedSop.set(sop);
+      this.router.navigate(['/calculator']);
+      this.state.closeSidebar();
+  }
+
+  onSidebarCreateSop() {
+      this.state.editingSop.set(null);
+      this.router.navigate(['/editor']);
+      this.state.closeSidebar();
   }
 
   private updatePageHeader() {

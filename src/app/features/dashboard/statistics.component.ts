@@ -171,7 +171,7 @@ interface NxtReportItem {
                                 @if(isLoading()) {
                                     <div class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center flex-col gap-3">
                                         <div class="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-                                        <span class="text-sm font-bold text-slate-600">Đang tổng hợp dữ liệu...</span>
+                                        <span class="text-sm font-bold text-slate-600">Đang tải và tổng hợp dữ liệu...</span>
                                     </div>
                                 }
 
@@ -204,7 +204,7 @@ interface NxtReportItem {
                                         } @empty {
                                             <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">
                                                 @if(!hasGenerated()) { Nhấn "Tính Toán" để xem báo cáo. } 
-                                                @else { Không có dữ liệu trong khoảng thời gian này. }
+                                                @else { Không có dữ liệu. }
                                             </td></tr>
                                         }
                                     </tbody>
@@ -246,7 +246,12 @@ interface NxtReportItem {
                                         @for (item of consumptionData(); track item.name; let i = $index) {
                                             <tr class="hover:bg-slate-50 transition">
                                                 <td class="px-6 py-3 text-center text-xs font-bold text-slate-400">{{i+1}}</td>
-                                                <td class="px-6 py-3 font-semibold text-slate-700">{{resolveName(item.name)}}</td>
+                                                <td class="px-6 py-3 font-semibold text-slate-700">
+                                                    {{item.displayName}}
+                                                    @if(item.name !== item.displayName) {
+                                                        <span class="text-[10px] text-slate-400 font-mono ml-1">({{item.name}})</span>
+                                                    }
+                                                </td>
                                                 <td class="px-6 py-3 text-right font-bold text-slate-800 font-mono text-base">{{formatNum(item.amount)}}</td>
                                                 <td class="px-6 py-3 text-center">
                                                     <span [class]="getUnitClass(item.unit)" class="px-3 py-1 rounded-full text-[10px] font-bold border uppercase inline-block shadow-sm">{{item.unit}}</span>
@@ -316,7 +321,7 @@ interface NxtReportItem {
 })
 export class StatisticsComponent {
   state = inject(StateService);
-  auth = inject(AuthService); // Inject Auth Service for permission check
+  auth = inject(AuthService); 
   invService = inject(InventoryService);
   formatDate = formatDate;
   formatNum = formatNum;
@@ -329,7 +334,7 @@ export class StatisticsComponent {
   endDate = signal<string>(this.getToday());
 
   barChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('barChartCanvas');
-  private barChart: any = null; // Type 'any' because Chart type is imported dynamically
+  private barChart: any = null;
 
   isLoading = signal(false);
   hasGenerated = signal(false);
@@ -366,22 +371,22 @@ export class StatisticsComponent {
   private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
   private getFirstDayOfYear(): string { return new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]; }
 
-  resolveName(id: string): string { return this.state.inventoryMap()[id]?.name || id; }
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
-  // --- NXT REPORT LOGIC (Corrected) ---
+  // --- NXT REPORT LOGIC (UPDATED: Fetch Inventory On Demand) ---
   async generateNxtReport() {
       this.isLoading.set(true);
       this.nxtData.set([]);
       
       const start = new Date(this.startDate());
       const end = new Date(this.endDate());
-      // Adjust End Date to include the full day
       const endTime = new Date(end); endTime.setHours(23,59,59,999);
       
       try {
-          const inventory = this.state.inventory();
-          // We fetch logs from StartDate until Now (to back-calculate)
+          // 1. Fetch ALL Inventory (Single Read)
+          const inventory = await this.invService.getAllInventory();
+          
+          // 2. Fetch logs from StartDate until Now
           const today = new Date();
           const logs = await this.invService.getLogsByDateRange(start, today);
           
@@ -412,16 +417,10 @@ export class StatisticsComponent {
               changes.forEach(change => {
                   if (!movements.has(change.id)) movements.set(change.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 });
                   const entry = movements.get(change.id)!;
-
-                  // Logic: 
-                  // Current Stock is "Now".
-                  // To get "End of Period Stock", we subtract changes that happened AFTER the period.
-                  // To get "Start of Period Stock", we verify movements WITHIN the period.
                   
                   if (logTime > endFilterTime) {
                       entry.futureNetChange += change.delta;
                   } else {
-                      // Within period (Start <= Log <= End)
                       if (change.delta > 0) entry.inPeriodImport += change.delta;
                       else entry.inPeriodExport += Math.abs(change.delta);
                   }
@@ -436,9 +435,7 @@ export class StatisticsComponent {
               const m = movements.get(id) || { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 };
               
               const currentStock = item ? item.stock : 0;
-              // End Stock of Period = Current Stock - (Net Changes after period)
               const endStock = currentStock - m.futureNetChange;
-              // Start Stock of Period = End Stock - Imports + Exports
               const startStock = endStock - m.inPeriodImport + m.inPeriodExport;
 
               if (startStock !== 0 || m.inPeriodImport !== 0 || m.inPeriodExport !== 0 || endStock !== 0 || item) {
@@ -462,9 +459,7 @@ export class StatisticsComponent {
   }
 
   async exportNxtExcel() {
-      // Dynamic Import for XLSX
       const XLSX = await import('xlsx');
-
       const data = this.nxtData().map((row, index) => ({
           'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
           'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
@@ -485,44 +480,62 @@ export class StatisticsComponent {
   });
 
   consumptionData = computed(() => {
-    const history = this.state.approvedRequests(); // In StateService, this should ideally be filtered by date too, but using full history for chart demo
-    const map = new Map<string, {amount: number, unit: string}>();
+    const history = this.state.approvedRequests();
+    const map = new Map<string, {amount: number, unit: string, displayName: string}>();
+
     history.forEach(req => {
         req.items.forEach(item => {
-            const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit };
-            map.set(item.name, { amount: current.amount + item.amount, unit: current.unit });
+            const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
+            map.set(item.name, { 
+                amount: current.amount + item.amount, 
+                unit: current.unit,
+                displayName: item.displayName || current.displayName || item.name
+            });
         });
     });
-    return Array.from(map.entries()).map(([name, val]) => ({ name, ...val })).sort((a,b) => b.amount - a.amount);
+
+    return Array.from(map.entries())
+        .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
+        .sort((a,b) => b.amount - a.amount);
   });
 
   sopFrequencyData = computed(() => {
     const history = this.state.approvedRequests();
     const total = history.length;
     if (total === 0) return [];
-    const map = new Map<string, { count: number, samples: number, qcs: number }>();
+
+    const map = new Map<string, number>();
     history.forEach(req => {
-        const current = map.get(req.sopName) || { count: 0, samples: 0, qcs: 0 };
-        const n_sample = (req.inputs && req.inputs['n_sample']) ? Number(req.inputs['n_sample']) : 0;
-        const n_qc = (req.inputs && req.inputs['n_qc']) ? Number(req.inputs['n_qc']) : 0;
-        map.set(req.sopName, { count: current.count + 1, samples: current.samples + n_sample, qcs: current.qcs + n_qc });
+        const count = map.get(req.sopName) || 0;
+        map.set(req.sopName, count + 1);
     });
-    return Array.from(map.entries()).map(([name, val]) => ({ name, ...val, percent: (val.count / total) * 100 })).sort((a,b) => b.count - a.count);
+
+    return Array.from(map.entries())
+        .map(([name, count]) => ({ name, count, percent: (count/total)*100 }))
+        .sort((a,b) => b.count - a.count);
   });
 
   async createConsumptionBarChart() {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
+      
+      const { default: Chart } = await import('chart.js/auto');
+
+      // CRITICAL FIX: Destroy existing chart instance attached to this canvas
+      const existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+      if (this.barChart) {
+          this.barChart.destroy();
+          this.barChart = null;
+      }
+
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Dynamic Import for Chart.js
-      const { default: Chart } = await import('chart.js/auto');
-
       const data = this.consumptionData().slice(0, 10);
-      const labels = data.map(d => this.resolveName(d.name));
+      const labels = data.map(d => d.displayName || d.name);
       const values = data.map(d => d.amount);
-      if (this.barChart) this.barChart.destroy();
+      
       this.barChart = new Chart(ctx, {
           type: 'bar',
           data: {

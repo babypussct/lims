@@ -24,6 +24,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/standards/standards.component').then(m => m.StandardsComponent)
   },
   {
+    path: 'recipes',
+    loadComponent: () => import('./features/recipes/recipe-manager.component').then(m => m.RecipeManagerComponent)
+  },
+  {
     path: 'requests',
     loadComponent: () => import('./features/requests/request-list.component').then(m => m.RequestListComponent)
   },

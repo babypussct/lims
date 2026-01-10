@@ -23,6 +23,10 @@ export const PERMISSIONS = {
   STANDARD_VIEW: 'standard.view',
   STANDARD_EDIT: 'standard.edit', // Create, Update, Delete Standards & Logs
 
+  // Recipes (Thư viện công thức)
+  RECIPE_VIEW: 'recipe.view',
+  RECIPE_EDIT: 'recipe.edit',
+
   // SOPs (Quy trình)
   SOP_VIEW: 'sop.view',
   SOP_EDIT: 'sop.edit', // Create/Edit SOP Structure
@@ -59,6 +63,9 @@ export class AuthService {
   
   canViewStandards = computed(() => this.hasPermission(PERMISSIONS.STANDARD_VIEW));
   canEditStandards = computed(() => this.hasPermission(PERMISSIONS.STANDARD_EDIT));
+
+  canViewRecipes = computed(() => this.hasPermission(PERMISSIONS.RECIPE_VIEW));
+  canEditRecipes = computed(() => this.hasPermission(PERMISSIONS.RECIPE_EDIT));
 
   canViewSop = computed(() => this.hasPermission(PERMISSIONS.SOP_VIEW));
   canEditSop = computed(() => this.hasPermission(PERMISSIONS.SOP_EDIT));

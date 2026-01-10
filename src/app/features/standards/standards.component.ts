@@ -4,13 +4,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
-import { StandardService } from './standard.service';
+import { StandardService, StandardsPage } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standards',
@@ -55,51 +57,25 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
              <div class="flex flex-col md:flex-row gap-4">
                  <div class="relative flex-1 group">
                     <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm group-focus-within:text-indigo-500 transition-colors"></i>
-                    <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
+                    <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                            class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
-                           placeholder="Tìm kiếm thông minh (VD: Methanol loc:TủA exp:<30 cas:67-56-1)...">
-                    
-                    <!-- Search Syntax Hints -->
-                    <div class="absolute right-3 top-3 hidden md:flex gap-2">
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono" title="Tìm theo vị trí">loc:A1</span>
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono" title="Tìm theo CAS">cas:50-00-0</span>
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono" title="Hết hạn trong X ngày">exp:<30</span>
-                    </div>
+                           placeholder="Tìm kiếm theo mã ID...">
                  </div>
 
                  <!-- View Mode Toggle -->
                  <div class="flex bg-slate-200/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
-                    <button (click)="switchViewMode('list')" [class]="viewMode() === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
+                    <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
                         <i class="fa-solid fa-list"></i>
                     </button>
-                    <button (click)="switchViewMode('grid')" [class]="viewMode() === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Lưới (Thẻ)">
+                    <button (click)="viewMode.set('grid')" [class]="viewMode() === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Lưới (Thẻ)">
                         <i class="fa-solid fa-border-all"></i>
                     </button>
                  </div>
              </div>
-
-             <!-- Quick Filters (Presets) -->
-             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button (click)="searchTerm.set('')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap border"
-                        [class]="!searchTerm() ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
-                    Tất cả ({{filteredStandards().length}})
-                </button>
-                <button (click)="searchTerm.set('exp:<0')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap border"
-                        [class]="searchTerm().includes('exp:<0') ? 'bg-red-600 text-white border-red-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-red-50 hover:text-red-600'">
-                    Đã hết hạn
-                </button>
-                <button (click)="searchTerm.set('exp:<180')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap border"
-                        [class]="searchTerm().includes('exp:<180') && !searchTerm().includes('exp:<0') ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-orange-50 hover:text-orange-600'">
-                    Sắp hết (6 tháng)
-                </button>
-             </div>
           </div>
 
           <!-- Content Body (Scroll Container) -->
-          <div #scrollContainer class="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-50/30 will-change-scroll" (scroll)="onScroll($event)">
+          <div class="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-50/30">
              
              <!-- VIEW MODE: LIST (TABLE) -->
              @if (viewMode() === 'list') {
@@ -137,10 +113,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                     </tr>
                                 }
                            } @else {
-                               <!-- Top Spacer -->
-                               <tr [style.height.px]="virtualData().topPadding"></tr>
-
-                               @for (std of virtualData().items; track std.id) {
+                               @for (std of items(); track std.id) {
                                   <tr class="hover:bg-slate-50 transition group h-24 border-b border-slate-50">
                                      <!-- Col 1: Location & Name -->
                                      <td class="px-6 py-3 align-top">
@@ -208,12 +181,9 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                      </td>
                                   </tr>
                                } 
-                               @if (filteredStandards().length === 0) {
+                               @if (items().length === 0) {
                                   <tr><td colspan="6" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu chuẩn phù hợp.</td></tr>
                                }
-
-                               <!-- Bottom Spacer -->
-                               <tr [style.height.px]="virtualData().bottomPadding"></tr>
                            }
                         </tbody>
                      </table>
@@ -222,7 +192,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
              
              <!-- VIEW MODE: GRID (CARDS) -->
              @else {
-                 <div class="p-4 relative">
+                 <div class="p-4">
                     @if (isLoading()) {
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             @for (i of [1,2,3,4,5,6]; track i) {
@@ -234,87 +204,88 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                             }
                         </div>
                     } @else {
-                        @if (filteredStandards().length === 0) {
+                        @if (items().length === 0) {
                             <div class="py-16 text-center text-slate-400 italic w-full">
                                 <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
                                 <p>Không tìm thấy dữ liệu chuẩn phù hợp.</p>
                             </div>
                         } @else {
-                            <!-- Virtual Grid Container -->
-                            <div [style.height.px]="virtualData().totalHeight" class="relative w-full">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 absolute top-0 left-0 w-full"
-                                     [style.transform]="'translateY(' + virtualData().topPadding + 'px)'">
-                                    
-                                    @for (std of virtualData().items; track std.id) {
-                                        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col relative group"
-                                             style="height: 280px;"> <!-- Fixed Height for Grid Cards -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                @for (std of items(); track std.id) {
+                                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col relative group h-[280px]">
+                                        <!-- Card Header -->
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                                <i class="fa-solid fa-location-dot mr-1"></i> {{std.internal_id || 'NO-LOC'}}
+                                            </span>
                                             
-                                            <!-- Card Header -->
-                                            <div class="flex justify-between items-start mb-2">
-                                                <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                                                    <i class="fa-solid fa-location-dot mr-1"></i> {{std.internal_id || 'NO-LOC'}}
-                                                </span>
-                                                
-                                                <div class="flex items-center gap-1">
-                                                    @if(std.certificate_ref) {
-                                                        <button (click)="openCoaPreview(std.certificate_ref, $event)" class="text-indigo-500 hover:text-indigo-700 p-1" title="Xem CoA">
-                                                            <i class="fa-solid fa-file-contract"></i>
-                                                        </button>
-                                                    }
-                                                    <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase border" [class]="getExpiryStatusClass(std.expiry_date)">
-                                                        {{ getExpiryStatus(std.expiry_date) }}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Title -->
-                                            <h3 (click)="openEditModal(std)" class="font-bold text-slate-800 text-sm leading-snug mb-3 cursor-pointer hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">
-                                                {{std.name}}
-                                            </h3>
-
-                                            <!-- Details Grid -->
-                                            <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                                <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Lot No.</span> <span class="font-mono text-slate-700">{{std.lot_number || '-'}}</span></div>
-                                                <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Code</span> <span class="font-mono text-slate-700">{{std.product_code || '-'}}</span></div>
-                                                <div><span class="font-bold text-slate-400 text-[9px] uppercase block">CAS</span> <span class="font-mono text-slate-700">{{std.cas_number || '-'}}</span></div>
-                                                <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Purity</span> <span class="font-bold text-indigo-600">{{std.purity || '-'}}</span></div>
-                                            </div>
-
-                                            <!-- Stock & Actions -->
-                                            <div class="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
-                                                <div class="flex-1">
-                                                    <div class="flex justify-between items-end mb-1">
-                                                        <span class="text-[9px] font-bold text-slate-400 uppercase">Tồn kho</span>
-                                                        <span class="font-black text-indigo-600 text-base leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400">{{std.unit}}</small></span>
-                                                    </div>
-                                                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                        <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="flex gap-1">
-                                                    <button (click)="openWeighModal(std)" class="w-8 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center active:scale-95" title="Cân">
-                                                        <i class="fa-solid fa-weight-scale text-xs"></i>
+                                            <div class="flex items-center gap-1">
+                                                @if(std.certificate_ref) {
+                                                    <button (click)="openCoaPreview(std.certificate_ref, $event)" class="text-indigo-500 hover:text-indigo-700 p-1" title="Xem CoA">
+                                                        <i class="fa-solid fa-file-contract"></i>
                                                     </button>
-                                                    <button (click)="viewHistory(std)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition flex items-center justify-center active:scale-95" title="Lịch sử">
-                                                        <i class="fa-solid fa-clock-rotate-left text-xs"></i>
-                                                    </button>
+                                                }
+                                                <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase border" [class]="getExpiryStatusClass(std.expiry_date)">
+                                                    {{ getExpiryStatus(std.expiry_date) }}
                                                 </div>
                                             </div>
-                                            
-                                            <!-- Delete Hover (Desktop) -->
-                                            @if(state.isAdmin()) {
-                                                <button (click)="deleteStandard(std)" class="absolute top-2 right-2 w-6 h-6 bg-white/90 text-red-400 hover:text-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm border border-slate-100">
-                                                    <i class="fa-solid fa-trash text-[10px]"></i>
-                                                </button>
-                                            }
                                         </div>
-                                    }
-                                </div>
+
+                                        <!-- Title -->
+                                        <h3 (click)="openEditModal(std)" class="font-bold text-slate-800 text-sm leading-snug mb-3 cursor-pointer hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">
+                                            {{std.name}}
+                                        </h3>
+
+                                        <!-- Details Grid -->
+                                        <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Lot No.</span> <span class="font-mono text-slate-700">{{std.lot_number || '-'}}</span></div>
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Code</span> <span class="font-mono text-slate-700">{{std.product_code || '-'}}</span></div>
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">CAS</span> <span class="font-mono text-slate-700">{{std.cas_number || '-'}}</span></div>
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Purity</span> <span class="font-bold text-indigo-600">{{std.purity || '-'}}</span></div>
+                                        </div>
+
+                                        <!-- Stock & Actions -->
+                                        <div class="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
+                                            <div class="flex-1">
+                                                <div class="flex justify-between items-end mb-1">
+                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Tồn kho</span>
+                                                    <span class="font-black text-indigo-600 text-base leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400">{{std.unit}}</small></span>
+                                                </div>
+                                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex gap-1">
+                                                <button (click)="openWeighModal(std)" class="w-8 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center active:scale-95" title="Cân">
+                                                    <i class="fa-solid fa-weight-scale text-xs"></i>
+                                                </button>
+                                                <button (click)="viewHistory(std)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition flex items-center justify-center active:scale-95" title="Lịch sử">
+                                                    <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Hover (Desktop) -->
+                                        @if(state.isAdmin()) {
+                                            <button (click)="deleteStandard(std)" class="absolute top-2 right-2 w-6 h-6 bg-white/90 text-red-400 hover:text-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm border border-slate-100">
+                                                <i class="fa-solid fa-trash text-[10px]"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                }
                             </div>
                         }
                     }
                  </div>
+             }
+             
+             @if (hasMore() && !isLoading()) {
+                <div class="text-center p-4">
+                    <button (click)="loadMore()" class="text-xs font-bold text-gray-500 hover:text-indigo-600 transition active:scale-95 bg-white border border-gray-200 px-4 py-2 rounded-full shadow-sm">
+                        Xem thêm...
+                    </button>
+                </div>
              }
           </div>
       </div>
@@ -352,7 +323,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         </div>
       }
 
-      <!-- ... (OTHER MODALS kept same as before) ... -->
+      <!-- ... (OTHER MODALS - Add/Edit, Weigh, History) ... -->
       @if (showModal()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -407,7 +378,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">CAS Number</label><input formControlName="cas_number" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-mono text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500"></div>
                                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Độ tinh khiết (Purity)</label><input formControlName="purity" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold text-indigo-600 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: 99.8%"></div>
                                        <div class="col-span-2 border-t border-slate-100 pt-2"></div>
-                                       <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nhà sản xuất (Hãng)</label><input formControlName="manufacturer" list="manufacturerOptions" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"><datalist id="manufacturerOptions">@for (man of uniqueManufacturers(); track man) { <option [value]="man"></option> }</datalist></div>
+                                       <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nhà sản xuất (Hãng)</label><input formControlName="manufacturer" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
                                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Quy cách</label><input formControlName="pack_size" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: 100mg"></div>
                                        
                                        <!-- Upload Section -->
@@ -499,25 +470,27 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
     </div>
   `
 })
-export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
+export class StandardsComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   stdService = inject(StandardService);
-  firebaseService = inject(FirebaseService); // Inject generic FirebaseService for upload
+  firebaseService = inject(FirebaseService); 
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   private fb: FormBuilder = inject(FormBuilder);
   
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
-
   isLoading = signal(true);
   isUploading = signal(false);
 
-  // New State for View Mode
   viewMode = signal<'list' | 'grid'>('list');
-
   searchTerm = signal('');
-  filterStatus = signal<'all' | 'warning' | 'expired'>('all'); // Deprecated but kept for UI binding
+  searchSubject = new Subject<string>();
+
+  // Data State
+  items = signal<ReferenceStandard[]>([]);
+  lastDoc = signal<QueryDocumentSnapshot | null>(null);
+  hasMore = signal(true);
+
   activeModalTab = signal<'general' | 'stock' | 'origin'>('general');
   unitOptions = UNIT_OPTIONS;
 
@@ -535,21 +508,10 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
   showModal = signal(false);
   isEditing = signal(false);
   
-  // CoA Preview State
-  previewUrl = signal<SafeResourceUrl | null>(null); // Iframe
-  previewImgUrl = signal<string>(''); // Image
+  previewUrl = signal<SafeResourceUrl | null>(null);
+  previewImgUrl = signal<string>('');
   previewType = signal<'iframe' | 'image'>('iframe');
   previewRawUrl = signal<string>('');
-
-  // --- VIRTUAL SCROLL STATE ---
-  scrollTop = signal(0);
-  viewportHeight = signal(600); // Default, updated by resize observer
-  gridColumns = signal(1); 
-  private resizeObserver!: ResizeObserver;
-
-  // Constants
-  readonly LIST_ITEM_HEIGHT = 96; // Approximate row height in pixels (h-24)
-  readonly GRID_ITEM_HEIGHT = 280 + 16; // Card height + gap (approx)
 
   form = this.fb.group({
       id: [''], 
@@ -563,55 +525,59 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   formatNum = formatNum;
 
+  constructor() {
+      // Debounce Search
+      this.searchSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe(term => {
+          this.searchTerm.set(term);
+          this.refreshData();
+      });
+  }
+
   ngOnInit() {
-      if (this.state.standards().length > 0) {
+      this.refreshData();
+  }
+
+  ngOnDestroy() { this.searchSubject.complete(); }
+
+  // --- Data Loading ---
+  async refreshData() {
+      this.isLoading.set(true);
+      this.items.set([]);
+      this.lastDoc.set(null);
+      this.hasMore.set(true);
+      await this.loadMore(true);
+  }
+
+  async loadMore(isRefresh = false) {
+      if (!this.hasMore() && !isRefresh) return;
+      
+      // Don't set loading if just scrolling, only initial or refresh
+      if (isRefresh) this.isLoading.set(true);
+
+      try {
+          const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm());
+          
+          if (isRefresh) this.items.set(page.items);
+          else this.items.update(c => [...c, ...page.items]);
+          
+          this.lastDoc.set(page.lastDoc);
+          this.hasMore.set(page.hasMore);
+      } catch (e) {
+          console.error(e);
+          this.toast.show('Lỗi tải dữ liệu', 'error');
+      } finally {
           this.isLoading.set(false);
-      } else {
-          setTimeout(() => this.isLoading.set(false), 800);
       }
   }
 
-  ngAfterViewInit() {
-      if (this.scrollContainer) {
-          // Initialize observer to update viewport dimensions
-          this.resizeObserver = new ResizeObserver(entries => {
-              for (const entry of entries) {
-                  this.viewportHeight.set(entry.contentRect.height);
-                  // Calculate grid columns approximately based on width
-                  const width = entry.contentRect.width;
-                  if (width >= 1280) this.gridColumns.set(4);      // xl
-                  else if (width >= 1024) this.gridColumns.set(3); // lg
-                  else if (width >= 768) this.gridColumns.set(2);  // md
-                  else this.gridColumns.set(1);
-              }
-          });
-          this.resizeObserver.observe(this.scrollContainer.nativeElement);
-      }
-  }
+  onSearchInput(val: string) { this.searchSubject.next(val); }
 
-  ngOnDestroy() {
-      if (this.resizeObserver) this.resizeObserver.disconnect();
-  }
-
-  onScroll(event: Event) {
-      const target = event.target as HTMLElement;
-      this.scrollTop.set(target.scrollTop);
-  }
-
-  switchViewMode(mode: 'list' | 'grid') {
-      this.viewMode.set(mode);
-      this.scrollTop.set(0); // Reset scroll to top
-      if(this.scrollContainer) this.scrollContainer.nativeElement.scrollTop = 0;
-  }
-
-  // --- Preview Logic (Updated) ---
+  // --- Preview Logic ---
   openCoaPreview(url: string, event: Event) {
       event.stopPropagation();
       if (!url) return;
       
       this.previewRawUrl.set(url);
-      
-      // Smart Detection: Check extension (ignoring query params like ?alt=media)
       const cleanUrl = url.split('?')[0].toLowerCase();
       const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
 
@@ -620,7 +586,6 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
           this.previewImgUrl.set(url);
       } else {
           this.previewType.set('iframe');
-          // Normalize for Embedding (Handle Drive Links)
           const embedUrl = this.normalizeToPreviewUrl(url);
           this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl));
       }
@@ -637,174 +602,51 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
           let id = '';
           const matchId = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
           const matchOpen = url.match(/id=([a-zA-Z0-9_-]+)/);
-
           if (matchId && matchId[1]) id = matchId[1];
           else if (matchOpen && matchOpen[1]) id = matchOpen[1];
-
-          if (id) {
-              return `https://drive.google.com/file/d/${id}/preview`;
-          }
+          if (id) return `https://drive.google.com/file/d/${id}/preview`;
       }
       return url;
   }
 
-  // --- Upload Logic (New) ---
+  // --- Upload Logic ---
   async uploadCoaFile(event: any) {
       const file = event.target.files[0];
       if (!file) return;
-
-      // Validation
       const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-          this.toast.show('File quá lớn (Max 10MB)', 'error');
-          return;
-      }
+      if (file.size > maxSize) { this.toast.show('File quá lớn (Max 10MB)', 'error'); return; }
 
       this.isUploading.set(true);
       try {
           const url = await this.firebaseService.uploadFile('coa_files', file);
           this.form.patchValue({ certificate_ref: url });
           this.toast.show('Upload thành công!', 'success');
-      } catch (e: any) {
-          console.error(e);
-          this.toast.show('Lỗi Upload: ' + e.message, 'error');
-      } finally {
-          this.isUploading.set(false);
-          event.target.value = ''; // Reset input
-      }
+      } catch (e: any) { this.toast.show('Lỗi Upload: ' + e.message, 'error'); } 
+      finally { this.isUploading.set(false); event.target.value = ''; }
   }
-
-  uniqueManufacturers = computed(() => {
-      const stds = this.state.standards();
-      const manufacturers = stds.map(s => s.manufacturer ? s.manufacturer.trim() : '').filter(m => m.length > 0) as string[];
-      return [...new Set(manufacturers)].sort();
-  });
-
-  // OMNIBOX SEARCH & FILTER LOGIC
-  filteredStandards = computed(() => {
-    const rawTerm = this.searchTerm().trim().toLowerCase();
-    
-    // Default filter if empty (show all)
-    let baseList = this.state.standards();
-    
-    if (!rawTerm) return baseList;
-
-    // 1. Parsing the Search Term into Criteria
-    const criteria = {
-        general: [] as string[],
-        loc: null as string | null,
-        cas: null as string | null,
-        exp: null as number | null // Days remaining (can be negative for expired)
-    };
-
-    // Split by spaces but respect tokens
-    const parts = rawTerm.split(/\s+/);
-    
-    for (const part of parts) {
-        if (part.startsWith('loc:')) {
-            criteria.loc = part.substring(4);
-        } else if (part.startsWith('cas:')) {
-            criteria.cas = part.substring(4);
-        } else if (part.startsWith('exp:<')) {
-            const val = part.substring(5);
-            const num = parseInt(val);
-            if (!isNaN(num)) criteria.exp = num;
-        } else {
-            criteria.general.push(part);
-        }
-    }
-
-    const today = new Date();
-    today.setHours(0,0,0,0); // Normalize today
-
-    return baseList.filter(std => {
-       // A. Check Specific Token Criteria
-       
-       // Location (Internal ID)
-       if (criteria.loc && !std.internal_id?.toLowerCase().includes(criteria.loc)) return false;
-
-       // CAS Number
-       if (criteria.cas && !std.cas_number?.toLowerCase().includes(criteria.cas)) return false;
-
-       // Expiry Logic (Less than X days)
-       if (criteria.exp !== null) {
-           if (!std.expiry_date) return false; // No expiry date means can't evaluate
-           const expDate = new Date(std.expiry_date);
-           const diffTime = expDate.getTime() - today.getTime();
-           const diffDays = diffTime / (1000 * 3600 * 24);
-           
-           // exp:<30 means "expires in less than 30 days" (including expired items which are negative)
-           if (diffDays > criteria.exp) return false; 
-       }
-
-       // B. Check General Search Terms (Must match ALL general terms found)
-       if (criteria.general.length > 0) {
-           const fullText = (std.name + ' ' + (std.internal_id||'') + ' ' + (std.lot_number||'') + ' ' + (std.cas_number||'') + ' ' + (std.product_code||'')).toLowerCase();
-           const matchesAllGeneral = criteria.general.every(term => fullText.includes(term));
-           if (!matchesAllGeneral) return false;
-       }
-
-       return true;
-    });
-  });
-
-  // --- VIRTUAL SCROLL COMPUTED ---
-  virtualData = computed(() => {
-      const items = this.filteredStandards();
-      const mode = this.viewMode();
-      const scrollTop = this.scrollTop();
-      const viewportH = this.viewportHeight();
-      
-      let itemHeight = this.LIST_ITEM_HEIGHT;
-      let cols = 1;
-
-      if (mode === 'grid') {
-          itemHeight = this.GRID_ITEM_HEIGHT;
-          cols = this.gridColumns();
-      }
-
-      // Calculate total rows
-      const totalRows = Math.ceil(items.length / cols);
-      const totalHeight = totalRows * itemHeight;
-
-      // Determine visible range
-      const startRow = Math.floor(scrollTop / itemHeight);
-      const visibleRows = Math.ceil(viewportH / itemHeight);
-      
-      // Buffer rows to smooth scrolling (2 above, 2 below)
-      const renderStartRow = Math.max(0, startRow - 2);
-      const renderEndRow = Math.min(totalRows, startRow + visibleRows + 2);
-
-      const startIndex = renderStartRow * cols;
-      const endIndex = Math.min(items.length, renderEndRow * cols);
-
-      // Padding for top and bottom to simulate full height
-      const topPadding = renderStartRow * itemHeight;
-      const bottomPadding = (totalRows - renderEndRow) * itemHeight;
-
-      return {
-          items: items.slice(startIndex, endIndex),
-          topPadding,
-          bottomPadding,
-          totalHeight
-      };
-  });
 
   async handleImport(event: any) {
      const file = event.target.files[0];
-     if (file) { await this.stdService.importFromExcel(file); event.target.value = ''; }
+     if (file) { 
+         try {
+             await this.stdService.importFromExcel(file); 
+             this.refreshData();
+         } finally {
+             event.target.value = ''; 
+         }
+     }
   }
 
   async deleteAll() {
       if (await this.confirmationService.confirm({ message: 'Xóa toàn bộ dữ liệu Chuẩn?', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); } 
+          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } 
           catch (e) { this.toast.show('Lỗi xóa dữ liệu', 'error'); }
       }
   }
 
   async deleteStandard(std: ReferenceStandard) {
       if (await this.confirmationService.confirm({message: 'Xóa chuẩn này?', confirmText: 'Xóa', isDangerous: true})) {
-          try { await this.stdService.deleteStandard(std.id); this.toast.show('Đã xóa'); }
+          try { await this.stdService.deleteStandard(std.id); this.toast.show('Đã xóa'); this.refreshData(); }
           catch (e) { this.toast.show('Lỗi', 'error'); }
       }
   }
@@ -849,9 +691,11 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
           else await this.stdService.addStandard(std);
           this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công');
           this.closeModal();
+          this.refreshData();
       } catch (e) { this.toast.show('Lỗi lưu dữ liệu', 'error'); }
   }
 
+  // --- Logs & Weighing ---
   async viewHistory(std: ReferenceStandard) { 
       this.historyStd.set(std);
       this.loadingHistory.set(true);
@@ -888,10 +732,13 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (amount > std.current_amount) { this.toast.show('Lượng cân vượt quá tồn kho!', 'error'); return; }
       try {
           await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, purpose: 'Cân mẫu', timestamp: Date.now() });
-          this.toast.show('Đã cập nhật!'); this.selectedStd.set(null);
+          this.toast.show('Đã cập nhật!'); 
+          this.selectedStd.set(null);
+          this.refreshData(); // Refresh list to show new stock
       } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
+  // --- Display Helpers ---
   getExpiryStatus(dateStr: string | undefined): string {
       if (!dateStr) return 'N/A';
       const exp = new Date(dateStr); const today = new Date();
@@ -901,15 +748,6 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
       return 'Còn hạn';
   }
   
-  getExpiryClass(dateStr: string | undefined): string {
-      if (!dateStr) return 'text-slate-400';
-      const exp = new Date(dateStr); const today = new Date();
-      if (exp < today) return 'text-red-600 line-through';
-      const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
-      if (diffMonths < 6) return 'text-orange-500';
-      return 'text-emerald-600';
-  }
-
   getExpiryStatusClass(dateStr: string | undefined): string {
       if (!dateStr) return 'border-slate-200 text-slate-400 bg-slate-50';
       const exp = new Date(dateStr); const today = new Date();
@@ -919,12 +757,37 @@ export class StandardsComponent implements OnInit, AfterViewInit, OnDestroy {
       return 'border-emerald-200 text-emerald-600 bg-emerald-50';
   }
 
-  getStorageIcons(condition: string | undefined): { icon: string, bg: string, border: string, color: string }[] {
-      const c = (condition || '').toLowerCase(); const icons: any[] = [];
-      if (c.includes('ft') || c.includes('-20') || c.includes('âm')) icons.push({ icon: 'fa-snowflake', bg: 'bg-cyan-50', border: 'border-cyan-100', color: 'text-cyan-500' });
-      else if (c.includes('ct') || c.includes('2-8') || c.includes('lạnh')) icons.push({ icon: 'fa-temperature-low', bg: 'bg-blue-50', border: 'border-blue-100', color: 'text-blue-500' });
-      else icons.push({ icon: 'fa-temperature-half', bg: 'bg-orange-50', border: 'border-orange-100', color: 'text-orange-500' });
-      if (c.includes('d') || c.includes('tối')) icons.push({ icon: 'fa-moon', bg: 'bg-purple-50', border: 'border-purple-100', color: 'text-purple-600' });
+  getStorageIcons(condition: string | undefined): { icon: string, color: string, bg: string, border: string }[] {
+      if (!condition) return [];
+      const icons: { icon: string, color: string, bg: string, border: string }[] = [];
+      const lower = condition.toLowerCase();
+      
+      // FT / Frozen
+      if (lower.includes('ft') || lower.includes('tủ đông') || lower.includes('-20')) {
+          icons.push({ icon: 'fa-snowflake', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' });
+      }
+      // CT / Cool
+      if (lower.includes('ct') || lower.includes('tủ mát') || lower.includes('2-8')) {
+          icons.push({ icon: 'fa-temperature-low', color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' });
+      }
+      // RT / Room
+      if (lower.includes('rt') || lower.includes('tủ c') || lower.includes('thường')) {
+          icons.push({ icon: 'fa-sun', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' });
+      }
+      // d / Dark
+      if (lower.includes('d:') || lower.match(/\\bd\\b/) || lower.includes('tối') || lower.includes('dark')) {
+          icons.push({ icon: 'fa-moon', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200' });
+      }
+      
       return icons;
+  }
+
+  getExpiryClass(dateStr: string | undefined): string {
+      if (!dateStr) return 'text-slate-400';
+      const exp = new Date(dateStr); const today = new Date();
+      if (exp < today) return 'text-red-600 line-through decoration-2'; // Expired
+      const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
+      if (diffMonths < 6) return 'text-orange-600'; // Warning
+      return 'text-indigo-600'; // Normal
   }
 }

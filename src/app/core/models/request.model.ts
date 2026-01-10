@@ -1,6 +1,7 @@
 
 export interface RequestItem {
-  name: string;
+  name: string; // ID of the item
+  displayName?: string; // Human readable name (Denormalized)
   amount: number;
   displayAmount: number;
   unit: string;
@@ -19,5 +20,5 @@ export interface Request {
   user?: string;
   inputs?: any;
   margin?: number;
-  analysisDate?: string; // New field YYYY-MM-DD
+  analysisDate?: string; 
 }

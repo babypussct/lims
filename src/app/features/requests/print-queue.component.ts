@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
-import { AuthService } from '../../core/services/auth.service'; // Added
+import { AuthService } from '../../core/services/auth.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
 import { Log } from '../../core/models/log.model';
 import { cleanName, formatNum, formatDate } from '../../shared/utils/utils';
@@ -50,7 +50,6 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @if(isLoading()) {
-                            <!-- SKELETON ROWS -->
                             @for(i of [1,2,3,4,5]; track i) {
                                 <tr>
                                     <td class="px-3 py-3 text-center"><app-skeleton shape="rect" width="16px" height="16px" class="mx-auto"></app-skeleton></td>
@@ -107,17 +106,15 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 })
 export class PrintQueueComponent implements OnInit {
   state = inject(StateService);
-  auth = inject(AuthService); // Inject Auth
+  auth = inject(AuthService); 
   printService = inject(PrintService);
   router: Router = inject(Router);
   
   isLoading = signal(true);
   selectedLogIds = signal<Set<string>>(new Set());
-  
   formatDate = formatDate;
 
   ngOnInit() {
-      // Simulate fetch
       if (this.state.printableLogs().length > 0) {
           this.isLoading.set(false);
       } else {
@@ -125,18 +122,11 @@ export class PrintQueueComponent implements OnInit {
       }
   }
 
-  // Filter logs logic: Managers see all; Staff sees only logs where log.user == current displayName
   filteredLogs = computed(() => {
       const all = this.state.printableLogs();
       const user = this.auth.currentUser();
-      
-      // If no user loaded yet or error, return empty
       if (!user) return [];
-
-      // Manager sees all
       if (user.role === 'manager') return all;
-
-      // Staff sees only their own logs (Matching by Display Name stored in log)
       return all.filter(log => log.user === user.displayName);
   });
 
@@ -148,11 +138,8 @@ export class PrintQueueComponent implements OnInit {
   toggleSelection(logId: string) {
     this.selectedLogIds.update(currentSet => {
       const newSet = new Set(currentSet);
-      if (newSet.has(logId)) {
-        newSet.delete(logId);
-      } else {
-        newSet.add(logId);
-      }
+      if (newSet.has(logId)) newSet.delete(logId);
+      else newSet.add(logId);
       return newSet;
     });
   }
@@ -183,9 +170,7 @@ export class PrintQueueComponent implements OnInit {
     const ids = this.selectedLogIds();
     if (ids.size === 0) return;
 
-    // Only print from filtered visible logs
     const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
-    
     const jobs: PrintJob[] = logsToPrint.map(log => ({
         ...log.printData!,
         date: log.timestamp.toDate(), 

@@ -1,15 +1,17 @@
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, output, input, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
+import { Sop } from '../../core/models/sop.model';
 import { getAvatarUrl } from '../../shared/utils/utils';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <aside class="fixed inset-y-0 left-0 bg-white shadow-soft-xl z-50 flex flex-col transition-all duration-300 ease-in-out md:m-4 md:rounded-2xl"
            [class.w-64]="!state.sidebarCollapsed()"
@@ -36,7 +38,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
 
       <hr class="h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent opacity-25 mx-4" />
 
-      <!-- 2. Modules Menu -->
+      <!-- 2. Modules Menu (Simplified) -->
       <div class="px-4 py-4 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
          
          <!-- Dashboard: Public -->
@@ -54,36 +56,38 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             }
          </div>
 
-         <!-- SOP Gallery: Protected (SOP_VIEW) -->
+         <!-- SOP (Vận hành): Protected (SOP_VIEW) -->
+         <!-- Note: Recipes are now part of this flow -->
          @if(auth.canViewSop()) {
              <div (click)="navigateTo('calculator')" 
                   class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/calculator') || isActive('/editor') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Chạy Quy trình (SOP)' : ''">
+                  [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
+                  [title]="state.sidebarCollapsed() ? 'Vận hành (SOP)' : ''">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
                      [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/calculator') || isActive('/editor') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
+                     [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
                    <i class="fa-solid fa-play text-xs pl-0.5"></i>
                 </div>
                 @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/calculator') || isActive('/editor') ? 'text-gray-700 font-bold' : 'text-gray-500'">Chạy Quy trình</span>
+                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'text-gray-700 font-bold' : 'text-gray-500'">Vận hành (SOP)</span>
                 }
              </div>
          }
 
-         <!-- Inventory: Protected (INVENTORY_VIEW) -->
+         <!-- Inventory (Kho & Tem): Protected (INVENTORY_VIEW) -->
+         <!-- Note: Labels are now a tab inside Inventory -->
          @if(auth.canViewInventory()) {
              <div (click)="navigateTo('inventory')" 
                   class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/inventory') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
+                  [class]="isActive('/inventory') || isActive('/labels') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
                   [title]="state.sidebarCollapsed() ? 'Kho Hóa chất' : ''">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
                      [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/inventory') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
+                     [class]="isActive('/inventory') || isActive('/labels') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
                    <i class="fa-solid fa-boxes-stacked text-xs"></i>
                 </div>
                 @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/inventory') ? 'text-gray-700 font-bold' : 'text-gray-500'">Kho Hóa chất</span>
+                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/inventory') || isActive('/labels') ? 'text-gray-700 font-bold' : 'text-gray-500'">Kho Hóa chất</span>
                 }
              </div>
          }
@@ -105,15 +109,16 @@ import { getAvatarUrl } from '../../shared/utils/utils';
              </div>
          }
 
-         <!-- Requests: Protected (SOP_VIEW proxy) -->
+         <!-- Requests (Yêu cầu & In ấn): Protected (SOP_VIEW proxy) -->
+         <!-- Note: Printing Queue is now a tab inside Requests -->
          @if(auth.canViewSop()) {
              <div (click)="navigateTo('requests')" 
                   class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/requests') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Yêu cầu' : ''">
+                  [class]="isActive('/requests') || isActive('/printing') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
+                  [title]="state.sidebarCollapsed() ? 'Yêu cầu & In phiếu' : ''">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0 relative"
                      [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/requests') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
+                     [class]="isActive('/requests') || isActive('/printing') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
                    <i class="fa-solid fa-clipboard-list text-xs"></i>
                    @if(state.sidebarCollapsed() && state.requests().length > 0) {
                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
@@ -121,7 +126,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 </div>
                 @if (!state.sidebarCollapsed()) {
                     <div class="flex-1 flex justify-between items-center ml-3 fade-in">
-                        <span class="text-sm font-medium" [class]="isActive('/requests') ? 'text-gray-700 font-bold' : 'text-gray-500'">Yêu cầu</span>
+                        <span class="text-sm font-medium" [class]="isActive('/requests') || isActive('/printing') ? 'text-gray-700 font-bold' : 'text-gray-500'">Quản lý Yêu cầu</span>
                         @if(state.requests().length > 0) {
                             <span class="bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-md shadow-sm">{{state.requests().length}}</span>
                         }
@@ -146,65 +151,34 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 }
              </div>
          }
-         
-         <!-- Printing: Protected (SOP_VIEW proxy) -->
-         @if(auth.canViewSop()) {
-             <div (click)="navigateTo('printing')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/printing') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'In ấn' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/printing') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-print text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/printing') ? 'text-gray-700 font-bold' : 'text-gray-500'">In Phiếu</span>
-                }
-             </div>
-         }
-         
-         <!-- Labels: Protected (INVENTORY_VIEW proxy) -->
-         @if(auth.canViewInventory()) {
-             <div (click)="navigateTo('labels')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/labels') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Tem nhãn' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/labels') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-tag text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/labels') ? 'text-gray-700 font-bold' : 'text-gray-500'">Tem Nhãn</span>
-                }
-             </div>
-         }
       </div>
 
-      <!-- 3. Bottom Config -->
-      @if (!state.sidebarCollapsed()) {
-          <div class="p-4 mx-4 mb-4 bg-gradient-dark rounded-xl shadow-soft-xl text-white relative overflow-hidden fade-in shrink-0">
-              <i class="fa-solid fa-shapes absolute -top-2 -right-4 text-6xl text-white opacity-10"></i>
-              <div class="relative z-10">
-                  <div class="text-xs font-bold opacity-80 mb-1">Cần hỗ trợ?</div>
-                  <div class="text-sm font-bold mb-3">
-                      @if(auth.canManageSystem()) { Cấu hình Hệ thống } @else { Tài khoản của tôi }
+      <!-- 3. Footer: Version & Status -->
+      <div class="px-4 py-4 mt-auto border-t border-gray-100 bg-white rounded-b-2xl">
+          @if(!state.sidebarCollapsed()) {
+              <div class="flex items-center justify-between fade-in">
+                  <div class="text-[10px] font-bold text-gray-400">
+                      Version <span class="text-gray-600">{{state.systemVersion()}}</span>
                   </div>
-                  <button (click)="navigateTo('config')" class="text-[10px] font-bold bg-white text-gray-800 px-3 py-1.5 rounded-lg shadow-sm hover:scale-105 transition-transform active:scale-95 flex items-center gap-2">
-                      <img [src]="getAvatarUrl(auth.currentUser()?.displayName)" class="w-4 h-4 rounded-full bg-slate-200">
-                      @if(auth.canManageSystem()) { Mở Cấu hình } @else { Xem Profile }
-                  </button>
+                  @if(isOnline()) {
+                      <div class="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Online</span>
+                      </div>
+                  } @else {
+                      <div class="flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-full border border-red-100">
+                          <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                          <span class="text-[9px] font-bold text-red-600 uppercase tracking-wider">Offline</span>
+                      </div>
+                  }
               </div>
-          </div>
-      } @else {
-          <!-- Mini Avatar Button -->
-          <div class="px-4 mb-4 text-center shrink-0">
-             <button (click)="navigateTo('config')" class="w-10 h-10 rounded-xl bg-slate-800 text-white shadow-soft-md transition mx-auto flex items-center justify-center hover:scale-110 active:scale-95 p-0.5" title="Cấu hình / Profile">
-                 <img [src]="getAvatarUrl(auth.currentUser()?.displayName)" class="w-full h-full rounded-lg bg-white object-cover">
-             </button>
-          </div>
-      }
+          } @else {
+              <!-- Collapsed Indicator -->
+              <div class="flex justify-center">
+                  <div class="w-2 h-2 rounded-full" [class]="isOnline() ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'"></div>
+              </div>
+          }
+      </div>
       
       <!-- Collapse Toggle Button (Desktop Only) -->
       <button (click)="state.toggleSidebarCollapse()" 
@@ -215,17 +189,33 @@ import { getAvatarUrl } from '../../shared/utils/utils';
     </aside>
   `
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   auth = inject(AuthService);
   router: Router = inject(Router);
   getAvatarUrl = getAvatarUrl;
 
+  isOnline = signal(navigator.onLine);
+
+  private onlineListener: any;
+  private offlineListener: any;
+
+  ngOnInit() {
+      this.onlineListener = () => this.isOnline.set(true);
+      this.offlineListener = () => this.isOnline.set(false);
+      window.addEventListener('online', this.onlineListener);
+      window.addEventListener('offline', this.offlineListener);
+  }
+
+  ngOnDestroy() {
+      window.removeEventListener('online', this.onlineListener);
+      window.removeEventListener('offline', this.offlineListener);
+  }
+
   navigateTo(path: string) {
       this.router.navigate(['/' + path]);
       this.state.closeSidebar();
       
-      // Reset selected SOP if leaving calculator context, but don't force logic here.
       if (path !== 'calculator' && path !== 'editor') {
           this.state.selectedSop.set(null);
       }

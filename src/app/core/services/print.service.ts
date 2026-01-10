@@ -119,9 +119,9 @@ export class PrintService {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      // DYNAMIC IMPORTS: Only load when exporting
-      const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
-      const { jsPDF } = await import('https://esm.sh/jspdf@2.5.1');
+      // DYNAMIC IMPORTS: Updated to use package names instead of CDN URLs
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
 
       const doc = new jsPDF('p', 'mm', 'a4'); 
       const pdfWidth = 210;

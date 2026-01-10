@@ -1,12 +1,23 @@
 
-import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { InventoryService } from '../inventory/inventory.service';
+import { StandardService } from '../standards/standard.service'; 
+import { InventoryItem } from '../../core/models/inventory.model';
+import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
-import { formatNum, formatDate } from '../../shared/utils/utils';
+import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+
+interface PriorityStandard {
+    name: string;
+    daysLeft: number;
+    date: string;
+    status: 'expired' | 'warning' | 'safe';
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -15,107 +26,156 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
   template: `
     <div class="space-y-6 fade-in pb-10">
         
+        <!-- 0. WELCOME HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
+            <!-- Decorative Background -->
+            <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-blue-50/50 to-transparent pointer-events-none"></div>
+            
+            <div class="relative z-10 flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-200 shrink-0 transform group-hover:scale-105 transition-transform duration-500">
+                    <img [src]="getAvatarUrl(state.currentUser()?.displayName)" class="w-full h-full rounded-[14px] bg-white object-cover border-2 border-white">
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">{{getGreeting()}},</p>
+                    
+                    @if (state.currentUser()?.displayName) {
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">
+                            {{state.currentUser()?.displayName}}
+                        </h1>
+                    } @else {
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">...</h1>
+                    }
+                    
+                    <!-- Dynamic Quote / Status -->
+                    <div class="flex items-center gap-2 text-sm font-medium text-slate-500 mt-1">
+                        <i class="fa-solid fa-quote-left text-[10px] text-slate-300 -translate-y-1"></i>
+                        <span class="italic text-xs md:text-sm">{{ randomQuote() }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative z-10 flex gap-3">
+                <div class="text-right hidden md:block">
+                    <div class="text-xs font-bold text-slate-400 uppercase">Hôm nay</div>
+                    <div class="text-lg font-black text-slate-700">{{today | date:'dd/MM/yyyy'}}</div>
+                </div>
+            </div>
+        </div>
+
         <!-- 1. Stats Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            
             <!-- Pending Requests -->
             <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-28 justify-center"
-                 [class.cursor-pointer]="auth.canViewSop()" 
-                 [class.hover:-translate-y-1]="auth.canViewSop()"
-                 [class.active:scale-95]="auth.canViewSop()"
-                 [class.opacity-60]="!auth.canViewSop()">
-                <div class="p-4 flex items-center justify-between">
+                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
+                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-clock text-6xl text-blue-600 transform rotate-12"></i>
+                </div>
+                <div class="p-5 flex items-center justify-between relative z-10">
                     <div class="w-full">
-                        <p class="mb-0 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            Chờ Duyệt @if(!auth.canViewSop()) { <i class="fa-solid fa-lock text-[10px]"></i> }
-                        </p>
-                        @if (isLoading()) {
-                           <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton>
-                        } @else {
-                           <h5 class="mb-0 font-bold text-slate-700 text-xl mt-1">
-                               {{state.requests().length}} <span class="text-xs font-normal text-slate-400">yêu cầu</span>
-                           </h5>
+                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Yêu cầu Chờ duyệt</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                        @else {
+                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{state.requests().length}}</h5>
+                           @if(state.requests().length > 0) {
+                               <span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md mt-2 inline-block">Cần xử lý</span>
+                           } @else {
+                               <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md mt-2 inline-block">Đã hoàn thành</span>
+                           }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-clock"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-clipboard-check text-lg"></i>
                     </div>
                 </div>
             </div>
 
             <!-- Low Stock Alert -->
             <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-28 justify-center"
-                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:-translate-y-1]="auth.canViewInventory()"
-                 [class.active:scale-95]="auth.canViewInventory()"
-                 [class.opacity-60]="!auth.canViewInventory()">
-                <div class="p-4 flex items-center justify-between">
+                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
+                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-triangle-exclamation text-6xl text-red-600 transform -rotate-12"></i>
+                </div>
+                <div class="p-5 flex items-center justify-between relative z-10">
                     <div class="w-full">
-                        <p class="mb-0 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            Cảnh báo Kho @if(!auth.canViewInventory()) { <i class="fa-solid fa-lock text-[10px]"></i> }
-                        </p>
-                        @if (isLoading()) {
-                           <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton>
-                        } @else {
-                           <h5 class="mb-0 font-bold text-slate-700 text-xl mt-1">
-                               {{lowStockCount()}} <span class="text-xs font-normal text-slate-400">mục sắp hết</span>
-                           </h5>
+                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Cảnh báo Kho</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                        @else {
+                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{lowStockItems().length}}</h5>
+                           @if(lowStockItems().length > 0) {
+                                <span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-md mt-2 inline-block animate-pulse">Sắp hết hàng</span>
+                           } @else {
+                                <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Ổn định</span>
+                           }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-orange-400 flex items-center justify-center text-white shadow-lg shadow-red-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-red-500 to-orange-400 flex items-center justify-center text-white shadow-lg shadow-red-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-boxes-stacked text-lg"></i>
                     </div>
                 </div>
             </div>
 
             <!-- Total SOPs -->
             <div (click)="auth.canViewSop() ? navTo('calculator') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-28 justify-center"
-                 [class.cursor-pointer]="auth.canViewSop()" 
-                 [class.hover:-translate-y-1]="auth.canViewSop()"
-                 [class.active:scale-95]="auth.canViewSop()"
-                 [class.opacity-60]="!auth.canViewSop()">
-                <div class="p-4 flex items-center justify-between">
+                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
+                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-flask text-6xl text-purple-600 transform rotate-6"></i>
+                </div>
+                <div class="p-5 flex items-center justify-between relative z-10">
                     <div class="w-full">
-                        <p class="mb-0 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            Quy trình (SOP) @if(!auth.canViewSop()) { <i class="fa-solid fa-lock text-[10px]"></i> }
-                        </p>
-                        @if (isLoading()) {
-                           <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton>
-                        } @else {
-                           <h5 class="mb-0 font-bold text-slate-700 text-xl mt-1">
-                               {{state.sops().length}} <span class="text-xs font-normal text-slate-400">quy trình</span>
-                           </h5>
+                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Quy trình (SOP)</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                        @else {
+                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{state.sops().length}}</h5>
+                           <span class="text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-md mt-2 inline-block">Đang kích hoạt</span>
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-flask"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-purple-700 to-fuchsia-500 flex items-center justify-center text-white shadow-lg shadow-purple-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-list-check text-lg"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Standards -->
+            <!-- Standards Priority -->
             <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-28 justify-center"
-                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewStandards()"
-                 [class.active:scale-95]="auth.canViewStandards()"
-                 [class.opacity-60]="!auth.canViewStandards()">
-                <div class="p-4 flex items-center justify-between">
-                    <div class="w-full">
-                        <p class="mb-0 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            Chuẩn Đối Chiếu @if(!auth.canViewStandards()) { <i class="fa-solid fa-lock text-[10px]"></i> }
-                        </p>
+                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95"
+                 [class.border-red-200]="priorityStandard()?.status === 'expired'"
+                 [class.border-orange-200]="priorityStandard()?.status === 'warning'">
+                <div class="p-5 flex items-center justify-between">
+                    <div class="w-full min-w-0 pr-2">
                         @if (isLoading()) {
-                           <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton>
+                           <app-skeleton width="50%" height="12px" class="mb-2 block"></app-skeleton>
+                           <app-skeleton width="70%" height="24px" class="block"></app-skeleton>
                         } @else {
-                           <h5 class="mb-0 font-bold text-slate-700 text-xl mt-1">
-                               {{state.standards().length}} <span class="text-xs font-normal text-slate-400">lọ</span>
-                           </h5>
+                           @if (priorityStandard(); as std) {
+                               <p class="mb-1 font-sans text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                                  [class.text-red-500]="std.status === 'expired'"
+                                  [class.text-orange-500]="std.status === 'warning'"
+                                  [class.text-slate-400]="std.status === 'safe'">
+                                   {{std.status === 'expired' ? 'Hết hạn SD:' : std.status === 'warning' ? 'Sắp hết hạn:' : 'Chuẩn Đối Chiếu'}}
+                               </p>
+                               <div class="mt-0">
+                                   <div class="font-bold text-slate-800 text-sm truncate" [title]="std.name">{{std.name}}</div>
+                                   @if(std.status !== 'safe') {
+                                       <div class="text-xs font-black mt-1" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
+                                            {{std.date | date:'dd/MM/yyyy'}} ({{std.daysLeft}} ngày)
+                                       </div>
+                                   } @else {
+                                       <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Kho chuẩn an toàn</span>
+                                   }
+                               </div>
+                           } @else {
+                               <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Chuẩn Đối Chiếu</p>
+                               <h5 class="mb-0 font-bold text-slate-700 text-sm mt-1">Chưa có dữ liệu</h5>
+                           }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-vial-circle-check"></i>
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform"
+                         [ngClass]="priorityStandard()?.status === 'expired' ? 'bg-gradient-to-tl from-red-600 to-rose-400 shadow-red-200' : 
+                                    priorityStandard()?.status === 'warning' ? 'bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-orange-200' : 
+                                    'bg-gradient-to-tl from-emerald-500 to-teal-400 shadow-emerald-200'">
+                        @if(priorityStandard()?.status === 'expired') { <i class="fa-solid fa-triangle-exclamation text-lg"></i> }
+                        @else if(priorityStandard()?.status === 'warning') { <i class="fa-solid fa-clock text-lg"></i> }
+                        @else { <i class="fa-solid fa-shield-halved text-lg"></i> }
                     </div>
                 </div>
             </div>
@@ -124,237 +184,293 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         <!-- 2. Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- Left Column (2/3): Welcome & Actions -->
-            <div class="lg:col-span-2 space-y-6">
-                
-                <!-- Welcome Card -->
-                <div class="relative bg-white rounded-2xl p-6 shadow-soft-xl overflow-hidden group border border-slate-100">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-tl from-purple-100 to-pink-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-60"></div>
-                    
-                    <div class="relative z-10 flex justify-between items-center">
-                        <div class="w-full md:w-auto">
-                            <p class="text-sm font-bold text-slate-500 mb-1">{{getGreeting()}},</p>
-                            @if(isLoading()) {
-                                <app-skeleton width="200px" height="36px" class="mb-2 block"></app-skeleton>
-                                <app-skeleton width="100%" height="16px" class="mb-1 block"></app-skeleton>
-                                <app-skeleton width="80%" height="16px" class="mb-6 block"></app-skeleton>
-                            } @else {
-                                <h2 class="text-3xl font-black text-slate-800 tracking-tight mb-2">
-                                    {{state.currentUser()?.displayName}}
-                                </h2>
-                                <p class="text-sm text-slate-500 max-w-md leading-relaxed">
-                                    Hệ thống LIMS sẵn sàng. Hôm nay bạn có <strong class="text-blue-600">{{state.requests().length}} yêu cầu</strong> đang chờ xử lý. 
-                                    @if(lowStockCount() > 0) { <span class="text-red-500 font-bold">Cảnh báo: {{lowStockCount()}} mục sắp hết hàng.</span> }
-                                </p>
-                            }
-                            
-                            @if(auth.canViewSop()) {
-                                <div class="mt-6 flex gap-3">
-                                    <button (click)="navTo('calculator')" class="bg-gradient-to-tl from-purple-700 to-pink-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                                        <i class="fa-solid fa-play mr-2"></i> Chạy Mẫu Mới
-                                    </button>
-                                    <button (click)="navTo('requests')" class="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
-                                        Xem Yêu Cầu
-                                    </button>
-                                </div>
-                            } @else {
-                                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl inline-flex items-center gap-2 text-xs font-bold text-blue-700">
-                                    <i class="fa-solid fa-circle-info"></i> Tài khoản chỉ xem (Viewer)
-                                </div>
-                            }
-                        </div>
-                        <div class="hidden md:block pr-6 text-slate-200">
-                            <i class="fa-solid fa-microscope text-8xl"></i>
+            <!-- Left Column (2/3): PERFORMANCE CHART -->
+            <div class="lg:col-span-2">
+                <div class="relative bg-white rounded-3xl p-6 shadow-soft-xl overflow-hidden group border border-slate-100 flex flex-col h-[540px]">
+                    <div class="relative z-10 flex justify-between items-start mb-6 shrink-0">
+                        <div>
+                            <h2 class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-indigo-500"></i> Hiệu suất Phân tích
+                            </h2>
+                            <p class="text-xs text-slate-400 font-medium">Số mẫu (Sample) & Số mẻ (Batch) trong 7 ngày qua</p>
                         </div>
                     </div>
+
+                    <!-- Chart Area -->
+                    <div class="flex-1 relative w-full min-h-0">
+                        @if(isLoading()) {
+                            <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
+                        } @else {
+                            <canvas #activityChart class="w-full h-full"></canvas>
+                        }
+                    </div>
                 </div>
-
-                <!-- Shortcuts Grid (Secure Permissions) -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    
-                    <!-- Inventory Shortcut -->
-                    <button (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()" 
-                            class="bg-white p-4 rounded-2xl shadow-soft-xl border border-slate-100 transition-all text-left group flex flex-col items-center justify-center gap-2 relative overflow-hidden"
-                            [class.hover:border-blue-300]="auth.canViewInventory()" [class.hover:shadow-md]="auth.canViewInventory()" [class.active:scale-95]="auth.canViewInventory()"
-                            [class.opacity-50]="!auth.canViewInventory()" [class.cursor-not-allowed]="!auth.canViewInventory()">
-                        @if(!auth.canViewInventory()) { <div class="absolute top-2 right-2 text-slate-300"><i class="fa-solid fa-lock"></i></div> }
-                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center transition-transform" [class.group-hover:scale-110]="auth.canViewInventory()">
-                            <i class="fa-solid fa-boxes-stacked"></i>
-                        </div>
-                        <div class="text-center">
-                            <h4 class="font-bold text-slate-700 text-sm">Kho Hóa chất</h4>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Tra cứu tồn kho</p>
-                        </div>
-                    </button>
-
-                    <!-- Standards Shortcut -->
-                    <button (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()" 
-                            class="bg-white p-4 rounded-2xl shadow-soft-xl border border-slate-100 transition-all text-left group flex flex-col items-center justify-center gap-2 relative overflow-hidden"
-                            [class.hover:border-emerald-300]="auth.canViewStandards()" [class.hover:shadow-md]="auth.canViewStandards()" [class.active:scale-95]="auth.canViewStandards()"
-                            [class.opacity-50]="!auth.canViewStandards()" [class.cursor-not-allowed]="!auth.canViewStandards()">
-                        @if(!auth.canViewStandards()) { <div class="absolute top-2 right-2 text-slate-300"><i class="fa-solid fa-lock"></i></div> }
-                        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center transition-transform" [class.group-hover:scale-110]="auth.canViewStandards()">
-                            <i class="fa-solid fa-vial"></i>
-                        </div>
-                        <div class="text-center">
-                            <h4 class="font-bold text-slate-700 text-sm">Chuẩn Đối chiếu</h4>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Quản lý hạn dùng</p>
-                        </div>
-                    </button>
-
-                    <!-- Labels Shortcut -->
-                    <button (click)="auth.canViewInventory() ? navTo('labels') : denyAccess()" 
-                            class="bg-white p-4 rounded-2xl shadow-soft-xl border border-slate-100 transition-all text-left group flex flex-col items-center justify-center gap-2 relative overflow-hidden"
-                            [class.hover:border-orange-300]="auth.canViewInventory()" [class.hover:shadow-md]="auth.canViewInventory()" [class.active:scale-95]="auth.canViewInventory()"
-                            [class.opacity-50]="!auth.canViewInventory()" [class.cursor-not-allowed]="!auth.canViewInventory()">
-                        @if(!auth.canViewInventory()) { <div class="absolute top-2 right-2 text-slate-300"><i class="fa-solid fa-lock"></i></div> }
-                        <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-print"></i>
-                        </div>
-                        <div class="text-center">
-                            <h4 class="font-bold text-slate-700 text-sm">In Tem Nhãn</h4>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Tạo mã QR/Barcode</p>
-                        </div>
-                    </button>
-                    
-                    <!-- Printing Queue -->
-                    <button (click)="auth.canViewSop() ? navTo('printing') : denyAccess()" 
-                            class="bg-white p-4 rounded-2xl shadow-soft-xl border border-slate-100 transition-all text-left group flex flex-col items-center justify-center gap-2 relative overflow-hidden"
-                            [class.hover:border-purple-300]="auth.canViewSop()" [class.hover:shadow-md]="auth.canViewSop()" [class.active:scale-95]="auth.canViewSop()"
-                            [class.opacity-50]="!auth.canViewSop()" [class.cursor-not-allowed]="!auth.canViewSop()">
-                        @if(!auth.canViewSop()) { <div class="absolute top-2 right-2 text-slate-300"><i class="fa-solid fa-lock"></i></div> }
-                        <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-file-invoice"></i>
-                        </div>
-                        <div class="text-center">
-                            <h4 class="font-bold text-slate-700 text-sm">Phiếu Dự Trù</h4>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Hàng đợi in ấn</p>
-                        </div>
-                    </button>
-                </div>
-
             </div>
 
-            <!-- Right Column (1/3): Alerts & Feed -->
-            <div class="space-y-6">
+            <!-- Right Column (1/3): Activity Feed -->
+            <div class="bg-white rounded-3xl shadow-soft-xl overflow-hidden border border-slate-100 flex flex-col h-[540px]">
+                <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center shrink-0">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-yellow-500"></i> Hoạt động gần đây
+                    </h3>
+                    <button (click)="navTo('stats')" class="text-[10px] font-bold text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">Xem tất cả</button>
+                </div>
                 
-                <!-- Low Stock Alert List -->
-                <div class="bg-white rounded-2xl shadow-soft-xl overflow-hidden flex flex-col max-h-[300px] border border-slate-100">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                            Cần bổ sung gấp
-                        </h3>
-                        @if(auth.canViewInventory()) {
-                            <button (click)="navTo('inventory')" class="text-[10px] font-bold text-blue-600 hover:underline">Xem tất cả</button>
+                <div class="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                    @if (isLoading()) {
+                        @for(i of [1,2,3,4]; track i) {
+                            <div class="flex gap-4">
+                                <app-skeleton width="32px" height="32px" shape="circle"></app-skeleton>
+                                <div class="flex-1 space-y-2">
+                                    <app-skeleton width="90%" height="14px"></app-skeleton>
+                                    <app-skeleton width="40%" height="10px"></app-skeleton>
+                                </div>
+                            </div>
                         }
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                        @if (isLoading()) {
-                            <!-- Skeleton List -->
-                            @for (i of [1,2,3]; track i) {
-                                <div class="flex items-center gap-3 p-3 border-b border-slate-50">
-                                    <app-skeleton shape="rect" width="32px" height="32px"></app-skeleton>
-                                    <div class="flex-1">
-                                        <app-skeleton width="80%" height="12px" class="mb-1 block"></app-skeleton>
-                                        <app-skeleton width="40%" height="10px" class="block"></app-skeleton>
+                    } @else {
+                        @for (log of recentLogs(); track log.id; let last = $last) {
+                            <div class="relative flex gap-4 group">
+                                @if(!last) { <div class="absolute left-4 top-10 bottom-[-24px] w-[2px] bg-slate-100 group-hover:bg-slate-200 transition-colors"></div> }
+                                <div class="relative z-10 shrink-0">
+                                    <img [src]="getAvatarUrl(log.user)" class="w-8 h-8 rounded-full bg-white border-2 border-white shadow-md object-cover" [title]="log.user">
+                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white shadow-sm"
+                                         [class.bg-blue-500]="log.action.includes('APPROVE')"
+                                         [class.bg-emerald-500]="log.action.includes('STOCK_IN')"
+                                         [class.bg-orange-500]="log.action.includes('STOCK_OUT')"
+                                         [class.bg-slate-400]="!log.action.includes('APPROVE') && !log.action.includes('STOCK')">
+                                        @if(log.action.includes('APPROVE')) { <i class="fa-solid fa-check"></i> }
+                                        @else if(log.action.includes('STOCK')) { <i class="fa-solid fa-box"></i> }
+                                        @else { <i class="fa-solid fa-info"></i> }
                                     </div>
                                 </div>
-                            }
-                        } @else {
-                            @for (item of lowStockItems(); track item.id) {
-                                <div class="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition border-b border-slate-50 last:border-0 cursor-pointer active:scale-[0.98]">
-                                    <div class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0 font-bold text-xs">
-                                        !
+                                <div class="flex-1 pb-1">
+                                    <div class="text-xs text-slate-800 font-bold leading-tight">
+                                        <span class="text-blue-600">{{log.user}}</span>
+                                        <span class="font-normal text-slate-600"> {{getLogActionText(log.action)}}</span>
                                     </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-bold text-slate-700 truncate">{{item.name}}</div>
-                                        <div class="text-[10px] text-slate-400">
-                                            Còn: <span class="font-bold text-red-600">{{formatNum(item.stock)}} {{item.unit}}</span> 
-                                            (Min: {{item.threshold}})
-                                        </div>
+                                    <div class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1.5">
+                                        {{log.details}}
+                                    </div>
+                                    <div class="text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                                        <i class="fa-regular fa-clock"></i> {{getTimeDiff(log.timestamp)}}
                                     </div>
                                 </div>
-                            } @empty {
-                                <div class="p-8 text-center text-slate-400 text-xs italic">
-                                    <i class="fa-solid fa-check-circle text-2xl mb-2 text-emerald-300"></i>
-                                    <br>Kho đang ổn định.
-                                </div>
-                            }
+                            </div>
+                        } @empty {
+                            <div class="text-center text-slate-400 text-xs italic py-10">Chưa có hoạt động nào.</div>
                         }
-                    </div>
+                    }
                 </div>
-
-                <!-- Recent Logs Mini -->
-                <div class="bg-white rounded-2xl shadow-soft-xl overflow-hidden border border-slate-100">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                        <h3 class="font-bold text-slate-700 text-sm">Hoạt động gần đây</h3>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        @if(isLoading()) {
-                            @for (i of [1,2,3]; track i) {
-                                <div class="flex gap-3 relative pl-4 border-l border-slate-200">
-                                    <div class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300"></div>
-                                    <div class="w-full">
-                                        <app-skeleton width="30%" height="10px" class="mb-1 block"></app-skeleton>
-                                        <app-skeleton width="90%" height="12px" class="mb-1 block"></app-skeleton>
-                                        <app-skeleton width="20%" height="8px" class="block"></app-skeleton>
-                                    </div>
-                                </div>
-                            }
-                        } @else {
-                            @for (log of recentLogs(); track log.id) {
-                                <div class="flex gap-3 relative pl-4 border-l border-slate-200">
-                                    <div class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white"
-                                         [class]="log.action.includes('APPROVE') ? 'bg-blue-500' : 'bg-slate-300'"></div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-700">{{log.user}}</div>
-                                        <div class="text-[10px] text-slate-500 line-clamp-2 leading-tight mt-0.5">{{log.details}}</div>
-                                        <div class="text-[9px] text-slate-400 mt-1">{{getTimeDiff(log.timestamp)}}</div>
-                                    </div>
-                                </div>
-                            } @empty {
-                                <div class="text-center text-slate-400 text-xs italic">Chưa có hoạt động.</div>
-                            }
-                        }
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
   `
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   state = inject(StateService);
-  auth = inject(AuthService); // Inject Auth Service for permission checks
+  invService = inject(InventoryService); 
+  stdService = inject(StandardService);
+  auth = inject(AuthService); 
   router: Router = inject(Router);
   toast = inject(ToastService);
   formatNum = formatNum;
+  getAvatarUrl = getAvatarUrl;
   
   isLoading = signal(true);
+  lowStockItems = signal<InventoryItem[]>([]); 
+  
+  priorityStandard = signal<PriorityStandard | null>(null);
+  recentLogs = computed(() => this.state.logs().slice(0, 8)); 
+  today = new Date();
+  
+  // Motivational Quotes
+  quotes = [
+      "Chất lượng không phải là một hành động, nó là một thói quen. (Aristotle)",
+      "Sự cẩn thận là người bạn tốt nhất của nhà hóa học.",
+      "Một thí nghiệm thành công bắt đầu từ sự chuẩn bị kỹ lưỡng.",
+      "Khoa học là cách chúng ta hiểu thế giới.",
+      "An toàn phòng thí nghiệm là ưu tiên số một.",
+      "Ghi chép tỉ mỉ là chìa khóa của sự chính xác.",
+      "Sáng tạo bắt đầu từ sự tò mò.",
+      "Đừng sợ thất bại, đó là bước đệm của thành công."
+  ];
+  randomQuote = signal(this.quotes[0]);
 
-  // Derived Signals
-  lowStockCount = computed(() => this.state.inventory().filter(i => i.stock <= (i.threshold || 5)).length);
-  lowStockItems = computed(() => this.state.inventory().filter(i => i.stock <= (i.threshold || 5)).slice(0, 5));
-  recentLogs = computed(() => this.state.logs().slice(0, 5));
+  // Chart
+  chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
+  chartInstance: any = null;
 
-  ngOnInit() {
-      if (this.state.inventory().length > 0) {
+  constructor() {
+      this.randomQuote.set(this.quotes[Math.floor(Math.random() * this.quotes.length)]);
+      
+      // Re-trigger chart on data load
+      effect(() => {
+          const reqs = this.state.approvedRequests();
+          if (reqs.length >= 0 && !this.isLoading()) {
+              setTimeout(() => this.initChart(), 300);
+          }
+      });
+  }
+
+  async ngOnInit() {
+      this.isLoading.set(true);
+      try {
+          const [lowStock, nearestStd] = await Promise.all([
+              this.invService.getLowStockItems(5),
+              this.stdService.getNearestExpiry()
+          ]);
+          this.lowStockItems.set(lowStock);
+          this.processPriorityStandard(nearestStd);
+      } catch(e) {
+          console.error("Dashboard fetch error", e);
+      } finally {
           this.isLoading.set(false);
-      } else {
-          setTimeout(() => this.isLoading.set(false), 1000);
       }
   }
 
-  navTo(path: string) {
-      this.router.navigate(['/' + path]);
+  ngOnDestroy(): void {
+      if (this.chartInstance) {
+          this.chartInstance.destroy();
+          this.chartInstance = null;
+      }
   }
 
-  // Security Helper for Locked Buttons
-  denyAccess() {
-      this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error');
+  async initChart() {
+      const canvas = this.chartCanvas()?.nativeElement;
+      if (!canvas) return;
+
+      const { default: Chart } = await import('chart.js/auto');
+
+      // --- CRITICAL FIX: Destroy existing chart on this canvas ---
+      const existingChart = Chart.getChart(canvas);
+      if (existingChart) existingChart.destroy();
+      
+      if (this.chartInstance) {
+          this.chartInstance.destroy();
+          this.chartInstance = null;
+      }
+      // -----------------------------------------------------------
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // 1. Prepare 7-day Data Buckets
+      const days = 7;
+      const labels = [];
+      const sampleData = new Array(days).fill(0);
+      const runData = new Array(days).fill(0);
+      
+      const now = new Date();
+      now.setHours(0,0,0,0);
+
+      // Initialize Map for O(1) lookup
+      const dateMap = new Map<string, number>(); // "DD/MM" -> index
+      
+      for (let i = days - 1; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          const key = `${d.getDate()}/${d.getMonth() + 1}`;
+          labels.push(key);
+          dateMap.set(key, days - 1 - i);
+      }
+
+      // 2. Aggregate Data from Approved Requests
+      const history = this.state.approvedRequests();
+      
+      history.forEach(req => {
+          const ts = req.approvedAt || req.timestamp;
+          if (!ts) return;
+          
+          const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts);
+          const key = `${d.getDate()}/${d.getMonth() + 1}`;
+          
+          const idx = dateMap.get(key);
+          if (idx !== undefined) {
+              // Count Runs (Batches)
+              runData[idx]++;
+              
+              // Count Samples
+              let samples = 0;
+              if (req.inputs) {
+                  if (req.inputs['n_sample']) samples = Number(req.inputs['n_sample']);
+                  else if (req.inputs['sample_count']) samples = Number(req.inputs['sample_count']);
+              }
+              sampleData[idx] += (samples || 0); 
+          }
+      });
+
+      // 3. Render Mixed Chart
+      this.chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: labels,
+              datasets: [
+                  {
+                      label: 'Số mẫu (Samples)',
+                      data: sampleData,
+                      backgroundColor: 'rgba(79, 70, 229, 0.8)', // Indigo
+                      borderRadius: 4,
+                      order: 2,
+                      yAxisID: 'y'
+                  },
+                  {
+                      label: 'Số mẻ (Runs)',
+                      data: runData,
+                      type: 'line',
+                      borderColor: '#f97316', // Orange
+                      backgroundColor: '#f97316',
+                      borderWidth: 2,
+                      pointRadius: 4,
+                      pointBackgroundColor: '#fff',
+                      pointBorderColor: '#f97316',
+                      tension: 0.3,
+                      order: 1,
+                      yAxisID: 'y1'
+                  }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10, weight: 'bold' } } } },
+              scales: {
+                  x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } },
+                  y: { 
+                      type: 'linear', display: true, position: 'left', beginAtZero: true,
+                      grid: { color: '#f1f5f9' },
+                      title: { display: false, text: 'Mẫu' },
+                      ticks: { stepSize: 5 }
+                  },
+                  y1: {
+                      type: 'linear', display: true, position: 'right', beginAtZero: true,
+                      grid: { display: false },
+                      title: { display: false, text: 'Mẻ' },
+                      ticks: { stepSize: 1, color: '#f97316' }
+                  }
+              },
+              interaction: { intersect: false, mode: 'index' },
+          }
+      });
   }
+
+  processPriorityStandard(std: ReferenceStandard | null) {
+      if (!std || !std.expiry_date) {
+          this.priorityStandard.set(null);
+          return;
+      }
+      const expiry = new Date(std.expiry_date);
+      const today = new Date();
+      const diffMs = expiry.getTime() - today.getTime();
+      const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      let status: 'expired' | 'warning' | 'safe';
+      if (daysLeft < 0) status = 'expired';
+      else if (daysLeft < 60) status = 'warning';
+      else status = 'safe';
+      this.priorityStandard.set({ name: std.name, daysLeft, date: std.expiry_date, status });
+  }
+
+  navTo(path: string) { this.router.navigate(['/' + path]); }
+  denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
   getGreeting(): string {
       const h = new Date().getHours();
@@ -369,11 +485,19 @@ export class DashboardComponent implements OnInit {
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffMins = Math.floor(diffMs / 60000);
-      
       if (diffMins < 1) return 'Vừa xong';
       if (diffMins < 60) return `${diffMins} phút trước`;
       const diffHours = Math.floor(diffMins / 60);
       if (diffHours < 24) return `${diffHours} giờ trước`;
       return `${Math.floor(diffHours / 24)} ngày trước`;
+  }
+
+  getLogActionText(action: string): string {
+      if (action.includes('APPROVE')) return 'đã duyệt yêu cầu';
+      if (action.includes('STOCK_IN')) return 'đã nhập kho';
+      if (action.includes('STOCK_OUT')) return 'đã xuất kho';
+      if (action.includes('CREATE')) return 'đã tạo mới';
+      if (action.includes('DELETE')) return 'đã xóa';
+      return 'đã cập nhật';
   }
 }

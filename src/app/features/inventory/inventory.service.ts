@@ -6,7 +6,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, 
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
-  QueryConstraint, QueryDocumentSnapshot, runTransaction 
+  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer
 } from 'firebase/firestore';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -24,27 +24,106 @@ export class InventoryService {
   private state = inject(StateService);
   private toast = inject(ToastService);
 
-  // --- HELPER: Audit Diff Generator ---
-  private generateDiff(oldItem: InventoryItem, newItem: InventoryItem): LogDiff[] {
-      const diffs: LogDiff[] = [];
-      const keys = ['name', 'stock', 'unit', 'category', 'threshold', 'location', 'supplier', 'notes'];
-      
-      keys.forEach(key => {
-          const k = key as keyof InventoryItem;
-          // Loose equality check for simple types
-          if (oldItem[k] != newItem[k]) {
-              diffs.push({
-                  field: key,
-                  oldValue: oldItem[k] ?? '(empty)',
-                  newValue: newItem[k] ?? '(empty)'
-              });
-          }
-      });
-      return diffs;
+  // --- OPTIMIZED READ Operations ---
+
+  /**
+   * Lấy tổng số lượng item trong kho (dùng cho thống kê dashboard)
+   */
+  async getInventoryCount(): Promise<number> {
+      try {
+          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
+          const snapshot = await getCountFromServer(colRef);
+          return snapshot.data().count;
+      } catch (e) {
+          console.error("Count error:", e);
+          return 0;
+      }
   }
 
-  // --- READ Operations (Paginated) ---
+  /**
+   * Lấy danh sách item theo mảng ID (dùng cho Calculator)
+   * Tự động chia nhỏ batch nếu > 30 items
+   * FIX: Added 5s Timeout to prevent infinite loading loops.
+   */
+  async getItemsByIds(ids: string[]): Promise<InventoryItem[]> {
+    if (!ids || ids.length === 0) return [];
+    
+    // 1. Sanitize IDs: Remove empty, duplicates, and invalid chars ('/')
+    const validIds = [...new Set(ids)].filter(id => {
+        if (!id || typeof id !== 'string') return false;
+        const trimmed = id.trim();
+        return trimmed.length > 0 && !trimmed.includes('/'); 
+    });
 
+    if (validIds.length === 0) return [];
+    
+    const chunks = [];
+    const chunkSize = 30; // Firestore 'in' limit
+
+    for (let i = 0; i < validIds.length; i += chunkSize) {
+        chunks.push(validIds.slice(i, i + chunkSize));
+    }
+
+    const results: InventoryItem[] = [];
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
+
+    // Helper to fetch one chunk with timeout
+    const fetchChunk = async (chunk: string[]) => {
+        try {
+            // Using '__name__' is often safer for document ID queries in some contexts
+            const q = query(colRef, where('__name__', 'in', chunk));
+            
+            // Race between fetch and a 5-second timeout
+            const snapshot = await Promise.race([
+                getDocs(q),
+                new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout fetching inventory')), 5000)
+                )
+            ]);
+
+            snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() } as InventoryItem));
+        } catch (e) {
+            console.warn("Chunk fetch failed or timed out (skipping chunk):", chunk, e);
+            // We catch errors here to ensure partial results are returned instead of throwing
+        }
+    };
+
+    // Execute all chunks
+    await Promise.all(chunks.map(chunk => fetchChunk(chunk)));
+    
+    return results;
+  }
+
+  /**
+   * Lấy danh sách sắp hết hàng (dùng cho Dashboard)
+   */
+  async getLowStockItems(limitCount: number = 5): Promise<InventoryItem[]> {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
+      // Simple query: Lowest absolute stock first.
+      const q = query(colRef, orderBy('stock', 'asc'), limit(limitCount * 4)); 
+      
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+      
+      // Filter client-side để chính xác với threshold của từng item
+      const lowItems = items.filter(i => i.stock <= (i.threshold || 5));
+      
+      return lowItems.slice(0, limitCount);
+  }
+
+  /**
+   * Lấy TOÀN BỘ kho (Chỉ dùng cho Báo cáo NXT hoặc Phân tích Năng lực)
+   * Cẩn thận khi dùng hàm này.
+   */
+  async getAllInventory(): Promise<InventoryItem[]> {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
+      const snapshot = await getDocs(colRef);
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+  }
+
+  /**
+   * Phân trang danh sách kho (Main List)
+   */
   async getInventoryPage(
     pageSize: number, 
     lastDoc: QueryDocumentSnapshot | null, 
@@ -78,6 +157,7 @@ export class InventoryService {
     const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
     
     let finalItems = items;
+    // Client-side filtering for 'low' if not searching (since threshold is dynamic)
     if (!searchTerm && filterType === 'low') {
         finalItems = items.filter(i => i.stock <= (i.threshold || 5));
     }
@@ -119,20 +199,8 @@ export class InventoryService {
   async upsertItem(item: InventoryItem, isNew: boolean = false, reason: string = '') {
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.id);
     
-    // Retrieve old state for Diff (if not new)
-    let diffs: LogDiff[] = [];
-    if (!isNew) {
-        const oldItem = this.state.inventoryMap()[item.id];
-        if (oldItem) {
-            diffs = this.generateDiff(oldItem, item);
-        }
-    }
-
     await runTransaction(this.fb.db, async (transaction) => {
-        // Main Update
         transaction.set(ref, { ...item, lastUpdated: serverTimestamp() }, { merge: true });
-
-        // History Log (Only if new, or if stock specifically changed via edit modal)
         if (isNew) {
             const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.id, 'history'));
             const historyEntry: StockHistoryItem = {
@@ -147,37 +215,26 @@ export class InventoryService {
         }
     });
     
-    this.state.updateLocalInventoryItem(item);
-
     if (isNew) {
-      await this.logAction('CREATE_ITEM', `Tạo mới hóa chất: ${item.id}`, item.id, reason, []);
-    } else if (diffs.length > 0) {
-      const details = diffs.map(d => `${d.field}: ${d.oldValue} -> ${d.newValue}`).join(', ');
-      await this.logAction('UPDATE_INFO', `Cập nhật: ${details}`, item.id, reason, diffs);
+      await this.logAction('CREATE_ITEM', `Tạo mới hóa chất: ${item.id}`, item.id, reason);
+    } else {
+      await this.logAction('UPDATE_INFO', `Cập nhật: ${item.id}`, item.id, reason);
     }
   }
 
   async deleteItem(id: string, reason: string = '') {
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
     await deleteDoc(ref);
-    this.state.deleteLocalInventoryItem(id);
     await this.logAction('DELETE_ITEM', `Xóa hóa chất: ${id}`, id, reason);
   }
 
   async updateStock(id: string, currentStock: number, adjustment: number, reason: string = '') {
     const newStock = currentStock + adjustment;
     const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
-    
     const currentUser = this.state.getCurrentUserName();
 
     await runTransaction(this.fb.db, async (transaction) => {
-        // 1. Update Stock
-        transaction.update(ref, { 
-          stock: newStock,
-          lastUpdated: serverTimestamp()
-        });
-
-        // 2. Add History
+        transaction.update(ref, { stock: newStock, lastUpdated: serverTimestamp() });
         const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'));
         const historyEntry: StockHistoryItem = {
             timestamp: serverTimestamp(),
@@ -190,78 +247,35 @@ export class InventoryService {
         transaction.set(historyRef, historyEntry);
     });
 
-    const cachedItem = this.state.inventoryMap()[id];
-    if (cachedItem) {
-        this.state.updateLocalInventoryItem({ ...cachedItem, stock: newStock });
-    }
-
     const actionType = adjustment > 0 ? 'STOCK_IN' : 'STOCK_OUT';
-    const diffs: LogDiff[] = [{ field: 'stock', oldValue: currentStock, newValue: newStock }];
-    
-    await this.logAction(
-        actionType, 
-        `Điều chỉnh kho ${id}: ${adjustment > 0 ? '+' : ''}${adjustment} -> Tồn: ${newStock}`, 
-        id, 
-        reason,
-        diffs
-    );
+    await this.logAction(actionType, `Điều chỉnh kho ${id}: ${adjustment > 0 ? '+' : ''}${adjustment}`, id, reason);
   }
 
   async bulkZeroStock(ids: string[], reason: string = '') {
     if (!ids || ids.length === 0) return;
-
     const batch = writeBatch(this.fb.db);
     const currentUser = this.state.getCurrentUserName();
-    
     ids.forEach(id => {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
       const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history'));
-      
-      batch.update(ref, { 
-        stock: 0, 
-        lastUpdated: serverTimestamp() 
-      });
-
+      batch.update(ref, { stock: 0, lastUpdated: serverTimestamp() });
       batch.set(historyRef, {
           timestamp: serverTimestamp(),
           actionType: 'ADJUST',
-          amountChange: 0, 
-          stockAfter: 0,
-          reference: reason || 'Bulk Zero Out',
-          user: currentUser
+          amountChange: 0, stockAfter: 0, reference: reason || 'Bulk Zero Out', user: currentUser
       } as StockHistoryItem);
-      
-      const cached = this.state.inventoryMap()[id];
-      if(cached) {
-          this.state.updateLocalInventoryItem({...cached, stock: 0});
-      }
     });
-
     await batch.commit();
     await this.logAction('BULK_ZERO', `Đặt tồn kho về 0 cho ${ids.length} mục.`, 'BATCH', reason);
   }
 
-  // --- Enhanced Logging ---
-  private async logAction(action: string, details: string, targetId?: string, reason?: string, diff?: LogDiff[]) {
+  private async logAction(action: string, details: string, targetId?: string, reason?: string) {
     try {
-      // Ensure we get the latest user from state
       const currentUser = this.state.getCurrentUserName();
-      
-      const logData: any = {
-        action,
-        details,
-        timestamp: serverTimestamp(),
-        user: currentUser // Removed "|| 'Admin'" to allow StateService to handle fallback
-      };
-      
-      // Add optional ISO fields
+      const logData: any = { action, details, timestamp: serverTimestamp(), user: currentUser };
       if (targetId) logData.targetId = targetId;
       if (reason) logData.reason = reason;
-      if (diff) logData.diff = diff;
-
       await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), logData);
-    } catch (e) {
-      console.error('Log error', e);
-    }
+    } catch (e) { console.error('Log error', e); }
   }
 }

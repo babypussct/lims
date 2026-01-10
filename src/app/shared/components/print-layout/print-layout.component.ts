@@ -10,26 +10,28 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="print-container font-sans text-slate-900 text-sm p-4">
+    <!-- Container -->
+    <div class="print-container font-roboto text-black">
        @for (group of groupedJobs(); track $index) {
-         <!-- A4 Page Container -->
+         <!-- A4 Page Container - Fixed Size for Capture -->
          <div class="print-page bg-white relative mx-auto flex flex-col overflow-hidden">
             
+            <!-- Stack 2 slips vertically. Each slip is strictly 50% of A4 height -->
             @for (job of group; track job.sop.id; let i = $index) {
                 <div class="h-1/2 relative flex flex-col px-6 py-4 border-slate-900 overflow-hidden box-border"
                      [class.border-b-2]="i === 0"
                      [class.border-dashed]="i === 0">
                     
-                    <!-- 1. Header -->
+                    <!-- 1. Header (Table Layout for PDF Stability) -->
                     <table class="w-full border-collapse mb-2 border-b-2 border-black">
                         <tr>
+                            <!-- Left: Title & Meta -->
                             <td class="align-bottom text-left pb-2">
-                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <div class="flex items-center gap-2 mb-1">
                                     <span class="text-[10px] font-bold border border-black px-1.5 py-0.5 rounded-sm uppercase whitespace-nowrap inline-block">
                                         {{job.sop.category}}
                                     </span>
                                     
-                                    <!-- Ref Display -->
                                     @if(job.sop.ref) {
                                         <span class="text-[10px] font-bold text-slate-600 print:text-black whitespace-nowrap">
                                             Ref: {{job.sop.ref}}
@@ -45,6 +47,7 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                                     {{job.sop.name}}
                                 </h1>
                             </td>
+                            <!-- Right: Performer -->
                             <td class="align-bottom w-[140px] pb-2">
                                 <div class="flex flex-col items-center justify-end w-full">
                                     <div class="text-[9px] font-bold text-slate-500 print:text-black uppercase mb-0.5 text-center whitespace-nowrap">
@@ -71,6 +74,7 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                                 </div>
                              }
                         }
+                        <!-- Margin Info -->
                         <div class="flex items-center gap-1.5 ml-auto pl-4 border-l border-slate-300 print:border-black whitespace-nowrap shrink-0">
                             <span class="text-slate-500 print:text-black uppercase text-[9px]">Hao hụt:</span>
                             <span class="font-bold text-black text-[10px]">+{{job.margin}}%</span>
@@ -93,7 +97,7 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                                     <tr class="break-inside-avoid">
                                         <td class="py-1.5 align-top pr-1">
                                             <span class="font-bold text-black text-[11px] block break-words uppercase">
-                                                {{resolveName(item.name) || item.name}}
+                                                {{ item.displayName || item.name }}
                                             </span>
                                             @if(item.displayWarning) { 
                                                 <div class="text-[9px] font-bold border border-black inline-block px-1 rounded mt-0.5">{{item.displayWarning}}</div> 
@@ -118,7 +122,7 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                                                         @for (sub of item.breakdown; track sub.name) {
                                                             <tr>
                                                                 <td class="py-0.5 w-[45%] text-slate-900 print:text-black font-medium align-top">
-                                                                   • {{resolveName(sub.name)}}
+                                                                   • {{ sub.displayName || sub.name }}
                                                                 </td>
                                                                 <td class="py-0.5 w-[15%] text-right font-mono font-bold align-top text-black">
                                                                     {{formatNum(sub.displayAmount)}}
@@ -164,6 +168,7 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                         </tr>
                     </table>
 
+                    <!-- Cut Icon -->
                     @if (i === 0) { 
                         <div class="absolute -bottom-3 -left-2 text-black bg-white z-10 px-1 rotate-90 print:block">
                             <i class="fa-solid fa-scissors text-xs"></i>
@@ -178,19 +183,41 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
   styles: [`
     :host { display: none; }
     :host.preview-mode { display: block; }
-    .print-page { width: 210mm; height: 296mm; box-sizing: border-box; page-break-after: always; background-color: white; padding: 0; }
+
+    .font-roboto { font-family: 'Roboto', sans-serif; }
+
+    /* Fix dimensions for exact A4 capture */
+    .print-page {
+        width: 210mm;
+        height: 296mm; /* Exact A4 */
+        box-sizing: border-box;
+        page-break-after: always;
+        background-color: white;
+        /* Padding ensures content doesn't touch the edge during capture */
+        padding: 0; 
+    }
     .print-page:last-child { page-break-after: auto; }
+
     .whitespace-nowrap { white-space: nowrap !important; }
+
     @media print {
         :host { display: block !important; }
-        @page { size: A4 portrait; margin: 0; }
+        @page { 
+            size: A4 portrait; 
+            margin: 0; 
+        }
         body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .print-page { margin: 0; border: none; }
         * { color: black !important; border-color: black !important; }
         .bg-slate-50 { background-color: transparent !important; }
     }
+
     @media screen {
-        .print-page { margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+        .print-page {
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
     }
   `]
 })
@@ -204,12 +231,14 @@ export class PrintLayoutComponent {
   groupedJobs = computed(() => {
     const jobs = this.printService.jobs();
     const groups: PrintJob[][] = [];
-    for (let i = 0; i < jobs.length; i += 2) groups.push(jobs.slice(i, i + 2));
+    const itemsPerPage = 2; 
+    
+    for (let i = 0; i < jobs.length; i += itemsPerPage) {
+      groups.push(jobs.slice(i, i + itemsPerPage));
+    }
     return groups;
   });
 
-  resolveName(id: string): string { const item = this.state.inventoryMap()[id]; return item ? (item.name || id) : id; }
-  
   stdUnit(unit: string): string {
       if (!unit) return '';
       const u = unit.toLowerCase().trim();
@@ -220,15 +249,11 @@ export class PrintLayoutComponent {
       return unit;
   }
 
-  // Display specific Analysis Date or Fallback to Creation Date
   getDisplayDate(job: PrintJob): string {
       if (job.analysisDate) {
-          // Input is YYYY-MM-DD
           const parts = job.analysisDate.split('-');
           if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
-      
-      // Fallback to job.date (Force DD/MM/YYYY)
       const d = new Date(job.date);
       const day = d.getDate().toString().padStart(2, '0');
       const month = (d.getMonth() + 1).toString().padStart(2, '0');

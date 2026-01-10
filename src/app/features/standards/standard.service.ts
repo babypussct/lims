@@ -4,16 +4,85 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
   updateDoc, setDoc, getDocs, deleteDoc, 
-  query, orderBy, runTransaction, increment 
+  query, orderBy, runTransaction, increment, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug } from '../../shared/utils/utils';
 
+export interface StandardsPage {
+  items: ReferenceStandard[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StandardService {
   private fb = inject(FirebaseService);
   private toast = inject(ToastService);
+
+  // --- OPTIMIZED READ FOR DASHBOARD ---
+  async getNearestExpiry(): Promise<ReferenceStandard | null> {
+      try {
+          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+          // Query: Get 1 item with expiry date, ordered by oldest first.
+          // This efficiently finds the most critical item (expired or soonest to expire)
+          // without reading the whole collection.
+          const q = query(colRef, 
+              where('expiry_date', '!=', ''), // Filter out missing dates
+              orderBy('expiry_date', 'asc'), 
+              limit(1)
+          );
+          
+          const snapshot = await getDocs(q);
+          if (snapshot.empty) return null;
+          
+          const doc = snapshot.docs[0];
+          return { id: doc.id, ...doc.data() } as ReferenceStandard;
+      } catch (e) {
+          console.warn("Nearest expiry fetch failed:", e);
+          return null;
+      }
+  }
+
+  // --- PAGINATION READ ---
+  async getStandardsPage(
+    pageSize: number, 
+    lastDoc: QueryDocumentSnapshot | null, 
+    searchTerm: string
+  ): Promise<StandardsPage> {
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+    let constraints: QueryConstraint[] = [];
+
+    // Search Logic (Simple Prefix Search on Name or ID)
+    if (searchTerm) {
+      const term = searchTerm.trim();
+      // Searching by name/id prefix
+      constraints.push(where('id', '>=', term));
+      constraints.push(where('id', '<=', term + '\uf8ff'));
+      constraints.push(orderBy('id'));
+    } else {
+      // Default: Newest updated first
+      constraints.push(orderBy('lastUpdated', 'desc'));
+    }
+
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+    
+    constraints.push(limit(pageSize));
+
+    const q = query(colRef, ...constraints);
+    const snapshot = await getDocs(q);
+    
+    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+    
+    return {
+      items,
+      lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  }
 
   // --- CRUD Operations (Parent) ---
   

@@ -9,6 +9,7 @@ import { StateService } from '../../core/services/state.service';
 import { HealthCheckItem } from '../../core/models/config.model';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { SopService } from '../sop/services/sop.service';
 
 @Component({
   selector: 'app-config',
@@ -41,47 +42,35 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             @if (activeTab() === 'general') {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     
-                    <!-- 1. SYSTEM HEALTH -->
+                    <!-- 1. SYSTEM SETTINGS (App ID & Version) -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-heart-pulse"></i></div>
-                                Trạng thái Kết nối
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
+                                Cài đặt chung
                             </h3>
-                            <button (click)="checkHealth()" class="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition flex items-center gap-1">
-                                <i class="fa-solid fa-rotate" [class.fa-spin]="loadingHealth()"></i> Refresh
-                            </button>
                         </div>
                         
-                        <div class="border border-slate-100 rounded-xl overflow-hidden">
-                            <table class="w-full text-xs text-left">
-                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
-                                    <tr>
-                                        <th class="px-4 py-2">Collection</th>
-                                        <th class="px-4 py-2 text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50">
-                                    @for (item of healthItems(); track item.collection) {
-                                        <tr>
-                                            <td class="px-4 py-2 font-bold text-slate-700 capitalize">{{item.collection}}</td>
-                                            <td class="px-4 py-2 text-right">
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                                      [class]="item.status === 'Online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                                                    {{item.status}}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                        <div class="space-y-4">
+                            <!-- Version Control -->
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số hiệu Phiên bản (System Version)</label>
+                                <div class="flex gap-2">
+                                    <input [formControl]="versionControl" class="flex-1 border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:bg-white focus:border-blue-500 transition" placeholder="VD: V1.0 FINAL">
+                                    <button (click)="saveVersion()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm">Lưu</button>
+                                </div>
+                                <p class="text-[9px] text-slate-400 mt-1 italic">Thay đổi này sẽ cập nhật hiển thị phiên bản trên toàn hệ thống.</p>
+                            </div>
 
-                        <div class="pt-3 border-t border-slate-100">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Switch App Context ID (Advanced)</label>
-                            <div class="flex gap-2">
-                                <input [formControl]="appIdControl" class="flex-1 border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition">
-                                <button (click)="saveAppId()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-black transition">Switch</button>
+                            <hr class="border-slate-100">
+
+                            <!-- App ID Switch -->
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Switch App Context ID (Advanced)</label>
+                                <div class="flex gap-2">
+                                    <input [formControl]="appIdControl" class="flex-1 border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition">
+                                    <button (click)="saveAppId()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-black transition">Switch</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -127,7 +116,44 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                         }
                     </div>
 
-                    <!-- 3. PRINT CONFIG -->
+                    <!-- 3. CONNECTION HEALTH -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-heart-pulse"></i></div>
+                                Trạng thái Kết nối
+                            </h3>
+                            <button (click)="checkHealth()" class="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition flex items-center gap-1">
+                                <i class="fa-solid fa-rotate" [class.fa-spin]="loadingHealth()"></i> Refresh
+                            </button>
+                        </div>
+                        
+                        <div class="border border-slate-100 rounded-xl overflow-hidden">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-4 py-2">Collection</th>
+                                        <th class="px-4 py-2 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-50">
+                                    @for (item of healthItems(); track item.collection) {
+                                        <tr>
+                                            <td class="px-4 py-2 font-bold text-slate-700 capitalize">{{item.collection}}</td>
+                                            <td class="px-4 py-2 text-right">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                      [class]="item.status === 'Online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                                                    {{item.status}}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 4. PRINT CONFIG -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
@@ -142,11 +168,11 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                         </div>
                     </div>
 
-                    <!-- 4. SECURITY RULES & BACKUP -->
+                    <!-- 5. SECURITY RULES & BACKUP -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                         <div class="flex justify-between items-start">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                                <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-shield-cat"></i></div>
+                                <div class="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center"><i class="fa-solid fa-shield-cat"></i></div>
                                 Security & Backup
                             </h3>
                         </div>
@@ -168,11 +194,12 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                                 <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules</span>
                                 <button (click)="copyRules()" class="text-[10px] text-blue-600 font-bold hover:underline">Copy</button>
                             </div>
-                            <textarea readonly class="w-full h-24 bg-slate-800 text-green-400 font-mono text-[10px] p-2 rounded-lg focus:outline-none resize-none leading-relaxed" spellcheck="false">{{firestoreRules()}}</textarea>
+                            <textarea readonly class="w-full h-32 bg-slate-800 text-green-400 font-mono text-[10px] p-2 rounded-lg focus:outline-none resize-none leading-relaxed" spellcheck="false">{{firestoreRules()}}</textarea>
+                            <p class="text-[9px] text-slate-400 mt-1 italic"><i class="fa-solid fa-circle-info"></i> Hãy copy và dán vào tab "Rules" trên Firebase Console nếu gặp lỗi "Missing Permissions".</p>
                         </div>
                     </div>
 
-                    <!-- 5. DANGER ZONE -->
+                    <!-- 6. DANGER ZONE -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 md:col-span-2">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                             <div class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
@@ -180,6 +207,8 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                         </h3>
                         
                         <div class="flex flex-col md:flex-row gap-4">
+                            <!-- Removed Normalize Button as requested -->
+
                             <button (click)="loadSampleData()" class="flex-1 p-4 border border-red-100 bg-red-50/30 rounded-xl hover:bg-red-50 transition flex items-center justify-center gap-3 text-red-700 font-bold text-sm">
                                  <i class="fa-solid fa-flask-vial text-lg"></i>
                                  Nạp Dữ liệu Mẫu (NAFI6)
@@ -382,9 +411,12 @@ export class ConfigComponent implements OnInit {
   auth = inject(AuthService);
   state = inject(StateService);
   toast = inject(ToastService);
+  sopService = inject(SopService);
   confirmationService = inject(ConfirmationService);
   
   appIdControl = new FormControl('');
+  versionControl = new FormControl(''); // New control for Version
+  
   printConfig = this.state.printConfig;
   
   activeTab = signal<'general' | 'users'>('general');
@@ -398,6 +430,8 @@ export class ConfigComponent implements OnInit {
       { val: PERMISSIONS.INVENTORY_EDIT, label: 'Sửa Kho (Thêm/Xóa/Sửa)' },
       { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
       { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa Chuẩn' },
+      { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem Công thức' },
+      { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa Công thức (Library)' },
       { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
       { val: PERMISSIONS.SOP_EDIT, label: 'Sửa SOP (Editor)' },
       { val: PERMISSIONS.SOP_APPROVE, label: 'Duyệt (Approve)' },
@@ -406,17 +440,36 @@ export class ConfigComponent implements OnInit {
   ];
   
   objectKeys = Object.keys;
-  getAvatarUrl = getAvatarUrl; // Expose helper
+  getAvatarUrl = getAvatarUrl; 
 
   firestoreRules = computed(() => {
     const appId = this.fb.APP_ID;
     return `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isManager() { return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; }
+    
+    // Check if user is manager based on their user profile doc
+    function isManager() { 
+      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
+    }
+
     match /artifacts/${appId} {
-        match /users/{userId} { allow read: if request.auth != null; allow write: if isManager() || request.auth.uid == userId; }
-        match /{document=**} { allow read, write: if request.auth != null; }
+        // Users: Self-read/write, Manager-write
+        match /users/{userId} { 
+          allow read: if request.auth != null; 
+          allow write: if isManager() || request.auth.uid == userId; 
+        }
+        
+        // Recipes: Authenticated users can read/write (Shared Library)
+        match /recipes/{recipeId} {
+           allow read, write: if request.auth != null;
+        }
+
+        // Fallback for other collections (inventory, sops, etc)
+        match /{document=**} { 
+          allow read, write: if request.auth != null; 
+        }
     }
   }
 }`;
@@ -425,6 +478,7 @@ service cloud.firestore {
   ngOnInit() {
       if (this.state.isAdmin()) {
           this.appIdControl.setValue(this.fb.APP_ID);
+          this.versionControl.setValue(this.state.systemVersion()); // Init version value
           this.checkHealth();
           this.loadUsers();
       }
@@ -434,6 +488,14 @@ service cloud.firestore {
       const val = this.appIdControl.value;
       if (val && val !== this.fb.APP_ID) {
           if(await this.confirmationService.confirm('Chuyển đổi App ID?')) this.fb.setAppId(val);
+      }
+  }
+
+  async saveVersion() {
+      const val = this.versionControl.value;
+      if (val) {
+          await this.state.saveSystemVersion(val);
+          this.toast.show('Đã cập nhật phiên bản!');
       }
   }
 
@@ -479,6 +541,8 @@ service cloud.firestore {
       }
   }
 
+  // NOTE: normalizeData() removed as requested.
+
   async resetDefaults() {
       if(await this.confirmationService.confirm({ message: 'XÓA SẠCH toàn bộ dữ liệu? Không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
           await this.fb.resetToDefaults();
@@ -517,12 +581,10 @@ service cloud.firestore {
   }
 
   updateRole(u: UserProfile, role: any) { 
-      // Immutably update the signal to trigger UI refresh
       this.userList.update(currentUsers => 
           currentUsers.map(user => {
               if (user.uid === u.uid) {
                   const updatedUser = { ...user, role: role };
-                  // Auto clear permissions if switching to restricted roles to maintain clean state
                   if (role === 'viewer' || role === 'pending') {
                       updatedUser.permissions = [];
                   }

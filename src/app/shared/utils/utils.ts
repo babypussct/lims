@@ -96,11 +96,14 @@ export function sanitizeForFirebase<T>(obj: T): T {
   return obj;
 }
 
-/**
- * Generates a DiceBear Bottts (Robot) avatar URL based on the user's name.
- * Uses API v7.x as requested.
- */
 export function getAvatarUrl(name: string | undefined | null): string {
   const seed = encodeURIComponent(name || 'User');
   return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+}
+
+/**
+ * Compares two strings using natural sort order (e.g. "Item 2" < "Item 10").
+ */
+export function naturalCompare(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
