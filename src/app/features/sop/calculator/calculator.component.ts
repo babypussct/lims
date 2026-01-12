@@ -28,7 +28,7 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
     <div class="max-w-8xl mx-auto pb-24 fade-in lg:h-full h-auto flex flex-col no-print px-4 md:px-6">
       
       @if (activeSop(); as currentSop) {
-        <!-- VIEW: CALCULATOR FORM -->
+        <!-- VIEW: CALCULATOR FORM (RUNNER) -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 shrink-0 gap-4 pt-4">
            <div>
               <div class="flex items-center gap-2 mb-1.5">
@@ -58,6 +58,17 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                <div class="p-5 lg:overflow-y-auto lg:flex-1 lg:min-h-0 custom-scrollbar">
                    @if (form()) {
                        <form [formGroup]="form()" class="space-y-5">
+                          <!-- Date Field -->
+                          <div class="group">
+                             <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Ngày phân tích</label>
+                             <div class="relative">
+                                <input type="date" formControlName="analysisDate"
+                                       class="w-full pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm">
+                             </div>
+                          </div>
+
+                          <div class="h-px bg-slate-100 my-2"></div>
+
                           @for (inp of currentSop.inputs; track inp.var) {
                             <div class="group">
                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">{{inp.label}}</label>
@@ -187,8 +198,13 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
       } 
       @else {
         <!-- LIBRARY VIEW (Search & List) -->
-        <div class="flex flex-col h-full animate-fade-in">
+        <div class="flex flex-col h-full animate-fade-in relative">
             
+            <!-- Backdrop for Menu -->
+            @if(activeMenuSopId()) {
+                <div class="fixed inset-0 z-10" (click)="closeMenu()"></div>
+            }
+
             <!-- TABS SWITCHER -->
             <div class="flex justify-between items-end border-b border-slate-200 mb-6 shrink-0 pt-4 px-1">
                 <div class="flex gap-6">
@@ -210,15 +226,18 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
             <!-- TAB CONTENT: SOP LIST -->
             @if (libraryTab() === 'sops') {
                 <div class="flex flex-col h-full animate-slide-up">
+                    
+                    <!-- Search & Actions -->
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
-                        <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto ml-auto">
-                            <div class="relative flex-1 md:w-72">
-                                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
-                                       class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm" 
-                                       placeholder="Tìm kiếm SOP...">
-                            </div>
-                            @if(auth.canEditSop()) {
+                        <div class="relative flex-1 md:max-w-md">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
+                                   class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm transition" 
+                                   placeholder="Tìm kiếm SOP...">
+                        </div>
+                        
+                        @if(auth.canEditSop()) {
+                            <div class="flex gap-2 self-end md:self-auto">
                                 <button (click)="importFileInput.click()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shrink-0 active:scale-95" title="Import SOP từ file JSON">
                                     <i class="fa-solid fa-file-import"></i> <span class="hidden md:inline">Import</span>
                                 </button>
@@ -227,47 +246,71 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                                 <button (click)="createNew()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95">
                                     <i class="fa-solid fa-plus"></i> <span class="hidden md:inline">Tạo mới</span>
                                 </button>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-10 custom-scrollbar p-1">
-                        @for (sop of filteredSops(); track sop.id) {
-                            <div (click)="selectSop(sop)" class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col h-full min-h-[180px] relative overflow-hidden">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border border-slate-200">{{sop.category}}</span>
-                                    @if(sop.version) { <span class="text-[10px] font-mono text-slate-400">v{{sop.version}}</span> }
-                                </div>
-                                <h3 class="font-bold text-slate-700 text-lg leading-snug mb-2 group-hover:text-blue-700 transition-colors line-clamp-2 pr-6">{{sop.name}}</h3>
-                                <div class="mt-auto border-t border-slate-50 pt-3 flex justify-between items-center text-xs text-slate-400 font-medium">
-                                    <span>{{sop.consumables.length}} thành phần</span>
-                                    <span>{{formatDate(sop.lastModified)}}</span>
-                                </div>
-
-                                <!-- Quick Actions (Hover) -->
-                                <div class="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                                    <button (click)="exportSop(sop, $event)" class="w-8 h-8 bg-white border border-slate-200 rounded-full text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 shadow-sm flex items-center justify-center transition active:scale-90" title="Export JSON">
-                                        <i class="fa-solid fa-download text-xs"></i>
-                                    </button>
-                                    @if(auth.canEditSop()) {
-                                        <button (click)="duplicateSop(sop, $event)" class="w-8 h-8 bg-white border border-slate-200 rounded-full text-purple-600 hover:bg-purple-50 hover:border-purple-300 shadow-sm flex items-center justify-center transition active:scale-90" title="Nhân bản (Duplicate)">
-                                            <i class="fa-solid fa-copy text-xs"></i>
-                                        </button>
-                                        <button (click)="editDirect(sop, $event)" class="w-8 h-8 bg-white border border-slate-200 rounded-full text-blue-600 hover:bg-blue-50 hover:border-blue-300 shadow-sm flex items-center justify-center transition active:scale-90" title="Chỉnh sửa">
-                                            <i class="fa-solid fa-pen text-xs"></i>
-                                        </button>
-                                        <button (click)="deleteSop(sop, $event)" class="w-8 h-8 bg-white border border-slate-200 rounded-full text-red-500 hover:bg-red-50 hover:border-red-300 shadow-sm flex items-center justify-center transition active:scale-90" title="Xóa">
-                                            <i class="fa-solid fa-trash text-xs"></i>
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        } @empty {
-                            <div class="col-span-full py-20 text-center text-slate-400 italic flex flex-col items-center">
-                                <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
-                                <p>Chưa có quy trình nào phù hợp.</p>
                             </div>
                         }
+                    </div>
+
+                    <!-- SOP LIST (FLAT GRID SORTED BY CATEGORY) -->
+                    <div class="overflow-y-auto pb-10 custom-scrollbar p-1 flex-1">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            @for (sop of filteredSops(); track sop.id) {
+                                <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 group relative flex flex-col h-full min-h-[160px]"
+                                     (click)="selectSop(sop)">
+                                    
+                                    <!-- Top Row: Category Badge & Actions -->
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-[10px] font-bold uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 truncate max-w-[120px]" [title]="sop.category">
+                                                {{sop.category}}
+                                            </span>
+                                            @if(sop.version) { 
+                                                <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">v{{sop.version}}</span> 
+                                            }
+                                        </div>
+                                        
+                                        <!-- MENU BUTTON -->
+                                        <button (click)="toggleMenu(sop.id, $event)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition relative z-20 -mr-2 -mt-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+
+                                        <!-- DROPDOWN MENU -->
+                                        @if (activeMenuSopId() === sop.id) {
+                                            <div class="absolute top-8 right-2 bg-white rounded-xl shadow-xl border border-slate-100 py-1 w-48 z-30 animate-slide-up overflow-hidden" (click)="$event.stopPropagation()">
+                                                <button (click)="exportSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition">
+                                                    <i class="fa-solid fa-download text-emerald-500 w-4"></i> Export JSON
+                                                </button>
+                                                @if(auth.canEditSop()) {
+                                                    <button (click)="duplicateSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition">
+                                                        <i class="fa-solid fa-copy text-purple-500 w-4"></i> Nhân bản (Copy)
+                                                    </button>
+                                                    <button (click)="editDirect(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition">
+                                                        <i class="fa-solid fa-pen text-blue-500 w-4"></i> Chỉnh sửa
+                                                    </button>
+                                                    <div class="h-px bg-slate-100 my-1"></div>
+                                                    <button (click)="softDeleteSop(sop, $event)" class="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition">
+                                                        <i class="fa-solid fa-box-archive w-4"></i> Lưu trữ (Xóa)
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <h3 class="font-bold text-slate-700 text-lg leading-snug mb-2 group-hover:text-blue-700 transition-colors pr-2 line-clamp-2">
+                                        {{sop.name}}
+                                    </h3>
+                                    
+                                    <div class="mt-auto pt-3 border-t border-slate-50 flex justify-between items-center text-xs text-slate-400 font-medium">
+                                        <span>{{sop.consumables.length}} chất</span>
+                                        <span>{{formatDate(sop.lastModified)}}</span>
+                                    </div>
+                                </div>
+                            } @empty {
+                                <div class="col-span-full py-20 text-center text-slate-400 italic flex flex-col items-center">
+                                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
+                                    <p>Chưa có quy trình nào phù hợp.</p>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             }
@@ -285,7 +328,6 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 })
 export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
-  editSop = output<Sop>(); 
   
   private fb: FormBuilder = inject(FormBuilder);
   public state = inject(StateService);
@@ -304,6 +346,7 @@ export class CalculatorComponent implements OnDestroy {
   // Library View State
   libraryTab = signal<'sops' | 'recipes'>('sops');
   searchTerm = signal('');
+  activeMenuSopId = signal<string | null>(null);
   
   // Track current SOP ID to prevent form resetting loop
   private currentFormSopId: string | null = null;
@@ -312,18 +355,29 @@ export class CalculatorComponent implements OnDestroy {
   localRecipeMap = signal<Record<string, Recipe>>({});
   isLoadingInventory = signal(false);
 
+  // Filtered & Sorted SOPs (Flat List)
   filteredSops = computed(() => {
       const term = this.searchTerm().toLowerCase();
-      const list = this.state.sops().filter(s => s.name.toLowerCase().includes(term) || s.category.toLowerCase().includes(term));
-      return list.sort((a, b) => {
-          const catCompare = naturalCompare(a.category, b.category);
+      // Filter out archived sops (soft deleted)
+      const allSops = this.state.sops().filter(s => !s.isArchived);
+      
+      const filtered = allSops.filter(s => s.name.toLowerCase().includes(term) || s.category.toLowerCase().includes(term));
+      
+      // Sort by Category (Natural Sort) then Name (Natural Sort)
+      return filtered.sort((a, b) => {
+          const catA = (a.category || '').toLowerCase();
+          const catB = (b.category || '').toLowerCase();
+          
+          // Use naturalCompare for Categories to handle H-9.2 vs H-9.10 vs H-9.21 correctly
+          const catCompare = naturalCompare(catA, catB);
           if (catCompare !== 0) return catCompare;
+          
           return naturalCompare(a.name, b.name);
       });
   });
 
-  // Init form as null to prevent template rendering before init
-  form = signal<FormGroup>(this.fb.group({ safetyMargin: [10] }));
+  // Init form
+  form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
   private formValueSub?: Subscription;
 
   calculatedItems = signal<CalculatedItem[]>([]);
@@ -342,7 +396,10 @@ export class CalculatorComponent implements OnDestroy {
         this.formValueSub?.unsubscribe();
 
         // 1. Initialize Form
-        const controls: Record<string, any> = { safetyMargin: [10] };
+        const controls: Record<string, any> = { 
+            safetyMargin: [10],
+            analysisDate: [this.getTodayDate()] 
+        };
         s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
         const newForm = this.fb.group(controls);
         this.form.set(newForm);
@@ -386,6 +443,10 @@ export class CalculatorComponent implements OnDestroy {
   }
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
+
+  getTodayDate(): string {
+      return new Date().toISOString().split('T')[0];
+  }
 
   // Decoupled Fetch with Shared Recipe Support
   async fetchData(sop: Sop) {
@@ -450,6 +511,21 @@ export class CalculatorComponent implements OnDestroy {
      }
   }
 
+  // --- Menu Interactions ---
+  toggleMenu(id: string, event: Event) {
+      event.stopPropagation();
+      if (this.activeMenuSopId() === id) {
+          this.activeMenuSopId.set(null);
+      } else {
+          this.activeMenuSopId.set(id);
+      }
+  }
+
+  closeMenu() {
+      this.activeMenuSopId.set(null);
+  }
+
+  // --- Actions ---
   selectSop(s: Sop) { this.state.selectedSop.set(s); }
   clearSelection() { 
       this.state.selectedSop.set(null); 
@@ -463,28 +539,32 @@ export class CalculatorComponent implements OnDestroy {
 
   editDirect(sop: Sop, event: Event) {
       event.stopPropagation();
+      this.closeMenu();
       this.state.editingSop.set(sop);
       this.router.navigate(['/editor']);
   }
 
-  async deleteSop(sop: Sop, event: Event) {
+  // Soft Delete Implementation
+  async softDeleteSop(sop: Sop, event: Event) {
       event.stopPropagation();
+      this.closeMenu();
       if (await this.confirmation.confirm({ 
-          message: `Xóa quy trình "${sop.name}"?\nHành động này không thể hoàn tác.`, 
-          confirmText: 'Xóa vĩnh viễn', 
+          message: `Lưu trữ quy trình "${sop.name}"?\nNó sẽ bị ẩn khỏi danh sách chính.`, 
+          confirmText: 'Lưu trữ (Xóa)', 
           isDangerous: true 
       })) {
           try {
-              await this.sopService.deleteSop(sop.id);
-              this.toast.show('Đã xóa SOP');
+              await this.sopService.archiveSop(sop.id);
+              this.toast.show('Đã lưu trữ SOP.');
           } catch (e: any) {
-              this.toast.show('Lỗi xóa: ' + e.message, 'error');
+              this.toast.show('Lỗi: ' + e.message, 'error');
           }
       }
   }
 
   exportSop(sop: Sop, event: Event) {
       event.stopPropagation();
+      this.closeMenu();
       try {
           const json = JSON.stringify(sop, null, 2);
           const blob = new Blob([json], { type: 'application/json' });
@@ -514,6 +594,7 @@ export class CalculatorComponent implements OnDestroy {
               data.version = 1;
               data.lastModified = null;
               data.archivedAt = null;
+              data.isArchived = false;
 
               if(await this.confirmation.confirm(`Import SOP: "${data.name}"?`)) {
                   await this.sopService.saveSop(data);
@@ -530,6 +611,7 @@ export class CalculatorComponent implements OnDestroy {
 
   async duplicateSop(sop: Sop, event: Event) {
       event.stopPropagation();
+      this.closeMenu();
       if(await this.confirmation.confirm(`Nhân bản SOP: "${sop.name}"?`)) {
           try {
               const newSop: Sop = JSON.parse(JSON.stringify(sop));
@@ -538,6 +620,7 @@ export class CalculatorComponent implements OnDestroy {
               newSop.version = 1;
               newSop.lastModified = null;
               newSop.archivedAt = null;
+              newSop.isArchived = false;
               
               await this.sopService.saveSop(newSop);
               this.toast.show('Đã nhân bản SOP!', 'success');
@@ -548,9 +631,11 @@ export class CalculatorComponent implements OnDestroy {
   }
 
   onPrintDraft(sop: Sop) {
+    const inputs = this.form().value;
     const job: PrintJob = {
-      sop: sop, inputs: this.form().value, margin: this.safetyMargin(), items: this.calculatedItems(),
+      sop: sop, inputs: inputs, margin: this.safetyMargin(), items: this.calculatedItems(),
       date: new Date(), user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',
+      analysisDate: inputs.analysisDate // Pass explicit date
     };
     this.printService.prepareSinglePrint(job);
     this.router.navigate(['/batch-print']);

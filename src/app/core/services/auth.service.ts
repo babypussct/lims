@@ -1,185 +1,127 @@
 
 import { Injectable, inject, signal, computed } from '@angular/core';
-import * as Auth from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  User,
+  Auth
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 
-// --- RBAC DEFINITIONS ---
-// Defined granular permissions for the entire system
 export const PERMISSIONS = {
-  // Inventory (Kho hóa chất)
-  INVENTORY_VIEW: 'inventory.view',
-  INVENTORY_EDIT: 'inventory.edit', // Create, Update, Delete Items
-  
-  // Standards (Chuẩn đối chiếu)
-  STANDARD_VIEW: 'standard.view',
-  STANDARD_EDIT: 'standard.edit', // Create, Update, Delete Standards & Logs
-
-  // Recipes (Thư viện công thức)
-  RECIPE_VIEW: 'recipe.view',
-  RECIPE_EDIT: 'recipe.edit',
-
-  // SOPs (Quy trình)
-  SOP_VIEW: 'sop.view',
-  SOP_EDIT: 'sop.edit', // Create/Edit SOP Structure
-  SOP_APPROVE: 'sop.approve', // Approve Requests & Direct Print (Managerial Task)
-  
-  // Reports & System
-  REPORT_VIEW: 'report.view', // Access Statistics
-  USER_MANAGE: 'user.manage', // Manage Users & Config (Highest Level)
+  INVENTORY_VIEW: 'inventory_view',
+  INVENTORY_EDIT: 'inventory_edit',
+  STANDARD_VIEW: 'standard_view',
+  STANDARD_EDIT: 'standard_edit',
+  RECIPE_VIEW: 'recipe_view',
+  RECIPE_EDIT: 'recipe_edit',
+  SOP_VIEW: 'sop_view',
+  SOP_EDIT: 'sop_edit',
+  SOP_APPROVE: 'sop_approve',
+  REPORT_VIEW: 'report_view',
+  USER_MANAGE: 'user_manage'
 };
 
 export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
-  role: 'manager' | 'staff' | 'viewer' | 'pending'; // Added 'pending'
-  permissions?: string[]; // Granular permissions
-  lastLogin?: any;
+  role: 'manager' | 'staff' | 'viewer' | 'pending';
+  permissions?: string[];
+  photoURL?: string;
+  createdAt?: any;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private fb = inject(FirebaseService);
-  private auth = Auth.getAuth(this.fb.db.app);
+  private auth: Auth;
 
-  // Signal holding current user state
   currentUser = signal<UserProfile | null>(null);
-  loading = signal<boolean>(true);
-
-  // Computed Permission Checkers for UI Convenience
-  // Note: 'Manager' role automatically returns TRUE for all these via hasPermission()
-  
-  canViewInventory = computed(() => this.hasPermission(PERMISSIONS.INVENTORY_VIEW));
-  canEditInventory = computed(() => this.hasPermission(PERMISSIONS.INVENTORY_EDIT));
-  
-  canViewStandards = computed(() => this.hasPermission(PERMISSIONS.STANDARD_VIEW));
-  canEditStandards = computed(() => this.hasPermission(PERMISSIONS.STANDARD_EDIT));
-
-  canViewRecipes = computed(() => this.hasPermission(PERMISSIONS.RECIPE_VIEW));
-  canEditRecipes = computed(() => this.hasPermission(PERMISSIONS.RECIPE_EDIT));
-
-  canViewSop = computed(() => this.hasPermission(PERMISSIONS.SOP_VIEW));
-  canEditSop = computed(() => this.hasPermission(PERMISSIONS.SOP_EDIT));
-  canApprove = computed(() => this.hasPermission(PERMISSIONS.SOP_APPROVE));
-  
-  canViewReports = computed(() => this.hasPermission(PERMISSIONS.REPORT_VIEW));
-  canManageSystem = computed(() => this.hasPermission(PERMISSIONS.USER_MANAGE));
 
   constructor() {
-    // Restore session on load
-    Auth.onAuthStateChanged(this.auth, async (user: Auth.User | null) => {
-      if (user) {
-        await this.fetchUserProfile(user);
+    this.auth = getAuth(this.fb.app);
+    
+    onAuthStateChanged(this.auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        await this.syncUser(firebaseUser);
       } else {
         this.currentUser.set(null);
       }
-      this.loading.set(false);
     });
   }
 
-  // Core Permission Check Logic
-  hasPermission(perm: string): boolean {
-    const user = this.currentUser();
-    if (!user) return false;
-    
-    // 0. Pending users have NO permissions
-    if (user.role === 'pending') return false;
-
-    // 1. Manager has ALL permissions overrides
-    if (user.role === 'manager') return true;
-    
-    // 2. Check explicit permissions array
-    return user.permissions?.includes(perm) || false;
-  }
-
   async login(email: string, pass: string) {
-    try {
-      const credential = await Auth.signInWithEmailAndPassword(this.auth, email, pass);
-      await this.fetchUserProfile(credential.user);
-    } catch (e: any) {
-      console.error(e);
-      throw e;
-    }
+    await signInWithEmailAndPassword(this.auth, email, pass);
   }
 
   async loginWithGoogle() {
-    try {
-      const provider = new Auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      const credential = await Auth.signInWithPopup(this.auth, provider);
-      await this.fetchUserProfile(credential.user);
-    } catch (e: any) {
-      console.error(e);
-      throw e;
-    }
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(this.auth, provider);
   }
 
   async logout() {
+    await signOut(this.auth);
+    // Signal update happens in onAuthStateChanged
+  }
+
+  private async syncUser(firebaseUser: User) {
+    const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
+    
     try {
-      await Auth.signOut(this.auth);
+        const snap = await getDoc(userRef);
+
+        if (snap.exists()) {
+          this.currentUser.set(snap.data() as UserProfile);
+        } else {
+          // Create new user profile
+          const newUser: UserProfile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            displayName: firebaseUser.displayName || 'User',
+            role: 'pending',
+            permissions: [],
+            photoURL: firebaseUser.photoURL || '',
+            createdAt: serverTimestamp()
+          };
+          await setDoc(userRef, newUser);
+          this.currentUser.set(newUser);
+        }
     } catch (e) {
-      console.error('Logout error (ignored)', e);
-    } finally {
-      window.location.reload();
+        console.error("Error syncing user:", e);
+        // Fallback for permission errors or network issues
+        this.currentUser.set(null);
     }
   }
 
-  private async fetchUserProfile(user: Auth.User) {
-    try {
-      const userDocRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
-      const snapshot = await getDoc(userDocRef);
-
-      let profile: UserProfile;
-
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        profile = {
-          uid: user.uid,
-          email: user.email!,
-          displayName: data['displayName'] || user.displayName || user.email?.split('@')[0] || 'User',
-          role: data['role'] || 'pending', // Default fallback to pending if data missing
-          permissions: data['permissions'] || []
-        };
-      } else {
-        // ZERO TRUST DEFAULT:
-        // New users get 'pending' role and NO permissions.
-        profile = {
-          uid: user.uid,
-          email: user.email!,
-          displayName: user.displayName || user.email?.split('@')[0] || 'Guest',
-          role: 'pending',
-          permissions: [] 
-        };
-      }
-
-      // Update basic info (last login, display name) without overwriting permissions if existing
-      try {
-          await setDoc(userDocRef, {
-              email: profile.email,
-              displayName: profile.displayName,
-              lastLogin: serverTimestamp(),
-              // Only set default role/permissions if document didn't exist
-              ...(!snapshot.exists() ? { role: profile.role, permissions: profile.permissions } : {})
-          }, { merge: true });
-      } catch (writeErr: any) {
-          console.warn('Could not update user profile (likely permission issue):', writeErr.message);
-      }
-
-      this.currentUser.set(profile);
-
-    } catch (e: any) {
-      if (e.code === 'permission-denied') {
-        console.warn('Profile read denied. Using default Pending role.');
-      }
-      // Fallback for restricted users / errors
-      this.currentUser.set({
-        uid: user.uid,
-        email: user.email!,
-        displayName: user.displayName || 'User',
-        role: 'pending',
-        permissions: []
-      });
-    }
+  // --- Permission Checks ---
+  
+  hasPermission(perm: string): boolean {
+    const u = this.currentUser();
+    if (!u) return false;
+    if (u.role === 'manager') return true;
+    return u.permissions?.includes(perm) || false;
   }
+
+  canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }
+  
+  canEditInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_EDIT); }
+  canViewInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_VIEW); }
+  
+  canEditSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_EDIT); }
+  canViewSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_VIEW); }
+  
+  canEditRecipes(): boolean { return this.hasPermission(PERMISSIONS.RECIPE_EDIT); }
+  canViewRecipes(): boolean { return this.hasPermission(PERMISSIONS.RECIPE_VIEW); }
+  
+  canEditStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT); }
+  canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
+  
+  canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
+  canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }
 }

@@ -207,8 +207,15 @@ export class StateService implements OnDestroy {
     try {
       const requestItems = this.mapToRequestItems(calculatedItems, invMap);
       await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), {
-        sopId: sop.id, sopName: sop.name, items: requestItems, status: 'pending', timestamp: serverTimestamp(), 
-        user: this.getCurrentUserName(), inputs: formInputs, margin: formInputs.safetyMargin || 0,
+        sopId: sop.id, 
+        sopName: sop.name, 
+        items: requestItems, 
+        status: 'pending', 
+        timestamp: serverTimestamp(), 
+        user: this.getCurrentUserName(), 
+        inputs: formInputs, 
+        margin: formInputs.safetyMargin || 0,
+        analysisDate: formInputs.analysisDate || null // Save analysis date
       });
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
@@ -239,11 +246,26 @@ export class StateService implements OnDestroy {
 
         const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
         transaction.set(reqRef, {
-            sopId: sop.id, sopName: sop.name, items: requestItems, status: 'approved', timestamp: serverTimestamp(),
-            approvedAt: serverTimestamp(), user: this.getCurrentUserName(), inputs: formInputs, margin: formInputs.safetyMargin || 0,
+            sopId: sop.id, 
+            sopName: sop.name, 
+            items: requestItems, 
+            status: 'approved', 
+            timestamp: serverTimestamp(),
+            approvedAt: serverTimestamp(), 
+            user: this.getCurrentUserName(), 
+            inputs: formInputs, 
+            margin: formInputs.safetyMargin || 0,
+            analysisDate: formInputs.analysisDate || null // Save analysis date
         });
 
-        const printData: PrintData = { sop, inputs: formInputs, margin: formInputs.safetyMargin || 0, items: calculatedItems };
+        // Pass analysisDate into printData so it shows on the log/print
+        const printData: PrintData = { 
+            sop, 
+            inputs: formInputs, 
+            margin: formInputs.safetyMargin || 0, 
+            items: calculatedItems,
+            analysisDate: formInputs.analysisDate
+        };
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         transaction.set(logRef, {
           action: 'DIRECT_APPROVE', details: `Duyệt trực tiếp SOP: ${sop.name}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(),
@@ -299,7 +321,14 @@ export class StateService implements OnDestroy {
                 }
             });
 
-            const printData: PrintData = { sop, inputs: req.inputs, margin: req.margin || 0, items: calculatedItems };
+            // Ensure analysisDate from request is passed to printData
+            const printData: PrintData = { 
+                sop, 
+                inputs: req.inputs, 
+                margin: req.margin || 0, 
+                items: calculatedItems,
+                analysisDate: req.analysisDate 
+            };
             transaction.set(logRef, {
               action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(),
               printable: true, printData: sanitizeForFirebase(printData)

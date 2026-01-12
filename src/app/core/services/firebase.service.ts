@@ -1,6 +1,6 @@
 
 import { Injectable } from '@angular/core';
-import * as firebase from 'firebase/app';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
@@ -26,7 +26,7 @@ const firebaseConfig = {
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
-  public app: firebase.FirebaseApp;
+  public app: FirebaseApp;
   public db: Firestore;
   public storage: FirebaseStorage;
   public APP_ID: string;
@@ -34,7 +34,7 @@ export class FirebaseService {
   private readonly APP_ID_KEY = 'lims_app_id';
 
   constructor() {
-    this.app = firebase.initializeApp(firebaseConfig);
+    this.app = initializeApp(firebaseConfig);
     
     this.db = initializeFirestore(this.app, {
       localCache: persistentLocalCache({

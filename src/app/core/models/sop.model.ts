@@ -60,6 +60,9 @@ export interface Sop {
   version?: number;
   lastModified?: any;
   archivedAt?: any; // Used only for history records
+  
+  // Soft Delete Flag
+  isArchived?: boolean; 
 }
 
 // --- Calculated Results ---
