@@ -1,202 +1,128 @@
-
-import { Component, inject, output, input, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, Output, EventEmitter, input, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { StateService } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
-import { Sop } from '../../core/models/sop.model';
-import { getAvatarUrl } from '../../shared/utils/utils';
+import { Sop } from '../models/sop.model';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <aside class="fixed inset-y-0 left-0 bg-white shadow-soft-xl z-50 flex flex-col transition-all duration-300 ease-in-out md:m-4 md:rounded-2xl"
-           [class.w-64]="!state.sidebarCollapsed()"
-           [class.w-20]="state.sidebarCollapsed()"
-           [class.-translate-x-full]="!state.sidebarOpen()"
-           [class.md:translate-x-0]="true"
-           [class.translate-x-0]="state.sidebarOpen()">
-      
-      <!-- 1. Brand -->
-      <div class="h-20 flex items-center px-6 shrink-0 relative"
-           [class.justify-center]="state.sidebarCollapsed()">
-         <div (click)="state.toggleSidebarCollapse()" class="w-8 h-8 rounded-lg bg-gradient-soft flex items-center justify-center shadow-soft-md shrink-0 cursor-pointer hover:scale-105 transition-transform">
-             <i class="fa-solid fa-flask text-white text-xs"></i>
-         </div>
-         @if (!state.sidebarCollapsed()) {
-            <span class="font-bold text-gray-700 text-sm tracking-wide ml-3 fade-in">LIMS Cloud <span class="font-light">Pro</span></span>
-         }
-         
-         <!-- Mobile Close -->
-         <button (click)="state.closeSidebar()" class="md:hidden ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 active:bg-gray-200">
-             <i class="fa-solid fa-times"></i>
-         </button>
+    <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full flex-shrink-0">
+      <div class="p-4 border-b border-slate-100 bg-slate-50 flex gap-2">
+        <div class="relative group flex-1">
+          <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400"></i>
+          <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Tìm kiếm quy trình..." 
+            class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm">
+        </div>
+        <!-- Create SOP Button (Protected by SOP_EDIT) -->
+        @if(auth.canEditSop()) {
+          <button (click)="createNewSop.emit()" 
+                  class="w-10 shrink-0 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition shadow-sm"
+                  title="Thêm mới SOP">
+             <i class="fa-solid fa-plus"></i>
+          </button>
+        }
       </div>
-
-      <hr class="h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent opacity-25 mx-4" />
-
-      <!-- 2. Modules Menu (Simplified) -->
-      <div class="px-4 py-4 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
-         
-         <!-- Dashboard: Public -->
-         <div (click)="navigateTo('dashboard')" 
-              class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-              [class]="isActive('/dashboard') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-              [title]="state.sidebarCollapsed() ? 'Trang chủ' : ''">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                 [class.mx-auto]="state.sidebarCollapsed()"
-                 [class]="isActive('/dashboard') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-               <i class="fa-solid fa-house text-xs"></i>
+      
+      <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        @for (sop of filteredSops(); track sop.id) {
+          <div (click)="selectSop.emit(sop)" 
+               class="p-3 m-2 rounded-lg transition border relative cursor-pointer"
+               [class]="activeSopId() === sop.id ? 'bg-blue-50 border-blue-200 shadow-sm' : 'border-transparent hover:bg-slate-100'">
+            
+            <div class="flex justify-between items-start">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{sop.category}}</span>
+              @if(activeSopId() === sop.id) {
+                 <i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>
+              }
             </div>
-            @if (!state.sidebarCollapsed()) {
-                <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/dashboard') ? 'text-gray-700 font-bold' : 'text-gray-500'">Trang chủ</span>
-            }
-         </div>
-
-         <!-- SOP (Vận hành): Protected (SOP_VIEW) -->
-         <!-- Note: Recipes are now part of this flow -->
-         @if(auth.canViewSop()) {
-             <div (click)="navigateTo('calculator')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Vận hành (SOP)' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-play text-xs pl-0.5"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/calculator') || isActive('/editor') || isActive('/recipes') ? 'text-gray-700 font-bold' : 'text-gray-500'">Vận hành (SOP)</span>
-                }
-             </div>
-         }
-
-         <!-- Inventory (Kho & Tem): Protected (INVENTORY_VIEW) -->
-         <!-- Note: Labels are now a tab inside Inventory -->
-         @if(auth.canViewInventory()) {
-             <div (click)="navigateTo('inventory')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/inventory') || isActive('/labels') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Kho Hóa chất' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/inventory') || isActive('/labels') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-boxes-stacked text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/inventory') || isActive('/labels') ? 'text-gray-700 font-bold' : 'text-gray-500'">Kho Hóa chất</span>
-                }
-             </div>
-         }
-
-         <!-- Standards: Protected (STANDARD_VIEW) -->
-         @if(auth.canViewStandards()) {
-             <div (click)="navigateTo('standards')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/standards') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Chuẩn Đối chiếu' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/standards') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-vial-circle-check text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/standards') ? 'text-gray-700 font-bold' : 'text-gray-500'">Chuẩn Đối chiếu</span>
-                }
-             </div>
-         }
-
-         <!-- Requests (Yêu cầu & In ấn): Protected (SOP_VIEW proxy) -->
-         <!-- Note: Printing Queue is now a tab inside Requests -->
-         @if(auth.canViewSop()) {
-             <div (click)="navigateTo('requests')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/requests') || isActive('/printing') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Yêu cầu & In phiếu' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0 relative"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/requests') || isActive('/printing') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-clipboard-list text-xs"></i>
-                   @if(state.sidebarCollapsed() && state.requests().length > 0) {
-                       <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                   }
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <div class="flex-1 flex justify-between items-center ml-3 fade-in">
-                        <span class="text-sm font-medium" [class]="isActive('/requests') || isActive('/printing') ? 'text-gray-700 font-bold' : 'text-gray-500'">Quản lý Yêu cầu</span>
-                        @if(state.requests().length > 0) {
-                            <span class="bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-md shadow-sm">{{state.requests().length}}</span>
-                        }
-                    </div>
-                }
-             </div>
-         }
-
-         <!-- Reports: Protected (REPORT_VIEW) -->
-         @if(auth.canViewReports()) {
-             <div (click)="navigateTo('stats')" 
-                  class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95"
-                  [class]="isActive('/stats') ? 'bg-white shadow-soft-md' : 'hover:bg-gray-100'"
-                  [title]="state.sidebarCollapsed() ? 'Báo cáo' : ''">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-soft-sm transition-all shrink-0"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/stats') ? 'bg-gradient-soft text-white' : 'bg-white text-gray-700 group-hover:text-fuchsia-600'">
-                   <i class="fa-solid fa-chart-pie text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-medium ml-3 fade-in" [class]="isActive('/stats') ? 'text-gray-700 font-bold' : 'text-gray-500'">Báo cáo</span>
-                }
-             </div>
-         }
+            <div class="text-sm font-semibold text-slate-700 mt-0.5 line-clamp-2">{{sop.name}}</div>
+          </div>
+        }
       </div>
 
-      <!-- 3. Footer: Version & Status -->
-      <div class="px-4 py-4 mt-auto border-t border-gray-100 bg-white rounded-b-2xl">
-          @if(!state.sidebarCollapsed()) {
-              <div class="flex items-center justify-between fade-in">
-                  <div class="text-[10px] font-bold text-gray-400">
-                      Version <span class="text-gray-600">{{state.systemVersion()}}</span>
-                  </div>
-                  @if(isOnline()) {
-                      <div class="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                          <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Online</span>
-                      </div>
-                  } @else {
-                      <div class="flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                          <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                          <span class="text-[9px] font-bold text-red-600 uppercase tracking-wider">Offline</span>
-                      </div>
-                  }
-              </div>
-          } @else {
-              <!-- Collapsed Indicator -->
-              <div class="flex justify-center">
-                  <div class="w-2 h-2 rounded-full" [class]="isOnline() ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'"></div>
-              </div>
+      <div class="p-3 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] space-y-1">
+        
+        <button (click)="viewChange.emit('printing')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group relative bg-purple-50 border border-purple-100 mb-2">
+          <div class="flex items-center gap-3">
+             <div class="w-6 text-center"><i class="fa-solid fa-print text-purple-500"></i></div>
+             <div class="text-sm font-bold">Hàng đợi In</div>
+          </div>
+          @if (state.printableLogs().length > 0) {
+            <span class="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{state.printableLogs().length}}</span>
           }
-      </div>
-      
-      <!-- Collapse Toggle Button (Desktop Only) -->
-      <button (click)="state.toggleSidebarCollapse()" 
-              class="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full items-center justify-center shadow-md text-gray-500 hover:text-fuchsia-600 z-50 transition hover:scale-110">
-          <i class="fa-solid text-[10px]" [class.fa-chevron-left]="!state.sidebarCollapsed()" [class.fa-chevron-right]="state.sidebarCollapsed()"></i>
-      </button>
+        </button>
 
+        <button (click)="viewChange.emit('requests')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group relative">
+          <div class="flex items-center gap-3">
+             <div class="w-6 text-center"><i class="fa-solid fa-clipboard-check text-blue-500"></i></div>
+             <div class="text-sm font-bold">Trạng thái Yêu cầu</div>
+          </div>
+          @if (state.requests().length > 0) {
+            <span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{state.requests().length}}</span>
+          }
+        </button>
+
+        <!-- Stats: Protected by REPORT_VIEW -->
+        @if(auth.canViewReports()) {
+          <button (click)="viewChange.emit('stats')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-slate-700 rounded-lg transition group">
+            <div class="flex items-center gap-3">
+               <div class="w-6 text-center"><i class="fa-solid fa-chart-simple text-purple-500"></i></div>
+               <div class="text-sm font-bold">Báo cáo</div>
+            </div>
+          </button>
+        }
+
+        <button (click)="viewChange.emit('inventory')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg shadow-md transition group mt-2">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-boxes-stacked text-orange-400"></i>
+            <div class="text-left">
+              <div class="font-bold text-sm">Quản lý Kho</div>
+              <div class="text-[10px] text-slate-400 group-hover:text-slate-200">Tồn kho & Năng lực</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs opacity-50"></i>
+        </button>
+        
+        <!-- Config / Profile Separator -->
+        <div class="pt-4 mt-2 border-t border-slate-100">
+           <!-- System Config: Protected by USER_MANAGE -->
+           @if(auth.canManageSystem()) {
+             <button (click)="viewChange.emit('config')" class="w-full flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition text-xs font-bold gap-2">
+                 <i class="fa-solid fa-gears"></i> Cấu hình Hệ thống
+             </button>
+           } @else {
+             <button (click)="viewChange.emit('config')" class="w-full flex items-center justify-center p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition text-xs font-bold gap-2">
+                 <i class="fa-solid fa-user-circle"></i> Tài khoản của tôi
+             </button>
+           }
+        </div>
+      </div>
     </aside>
   `
 })
 export class SidebarComponent implements OnInit, OnDestroy {
-  state = inject(StateService);
-  auth = inject(AuthService);
-  router: Router = inject(Router);
-  getAvatarUrl = getAvatarUrl;
+  state: StateService = inject(StateService);
+  auth: AuthService = inject(AuthService);
+  
+  // Inputs
+  activeSopId = input<string | null>(null);
+  
+  // Fix: Use @Output instead of output() signal to prevent build errors in Angular 18
+  @Output() selectSop = new EventEmitter<Sop>();
+  @Output() viewChange = new EventEmitter<string>();
+  @Output() createNewSop = new EventEmitter<void>();
+
+  searchTerm = signal('');
+  filteredSops = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    return this.state.sops().filter(sop => sop.name.toLowerCase().includes(term) || sop.category.toLowerCase().includes(term));
+  });
 
   isOnline = signal(navigator.onLine);
-
   private onlineListener: any;
   private offlineListener: any;
 
@@ -211,15 +137,4 @@ export class SidebarComponent implements OnInit, OnDestroy {
       window.removeEventListener('online', this.onlineListener);
       window.removeEventListener('offline', this.offlineListener);
   }
-
-  navigateTo(path: string) {
-      this.router.navigate(['/' + path]);
-      this.state.closeSidebar();
-      
-      if (path !== 'calculator' && path !== 'editor') {
-          this.state.selectedSop.set(null);
-      }
-  }
-
-  isActive(path: string): boolean { return this.router.url.includes(path); }
 }
