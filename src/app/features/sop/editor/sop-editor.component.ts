@@ -342,10 +342,20 @@ export class SopEditorComponent implements OnDestroy {
   constructor() {
     effect((onCleanup) => {
       const sop = this.state.editingSop();
-      if (sop) { if (sop.id) this.loadSop(sop); else { this.loadSop(sop); this.currentId.set(null); this.currentVersion.set(1); this.form.patchValue({ id: '', version: 1 }); } } else { this.createNew(); }
+      if (sop) { 
+          if (sop.id) this.loadSop(sop); 
+          else { 
+              this.loadSop(sop); 
+              this.currentId.set(null); 
+              this.currentVersion.set(1); 
+              this.form.patchValue({ id: '', version: 1 }); 
+          } 
+      } else { 
+          this.createNew(); 
+      }
       const sub = this.form.valueChanges.pipe(debounceTime(300)).subscribe(val => { this.runPreview(val); });
       onCleanup(() => sub.unsubscribe());
-    });
+    }, { allowSignalWrites: true }); // FIX NG0600: Allow writes to signals within effect
 
     // Unified Search Listener
     this.searchSubject.pipe(
