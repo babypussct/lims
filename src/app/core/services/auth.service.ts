@@ -1,14 +1,6 @@
 
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  User 
-} from 'firebase/auth';
+import * as Auth from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 
@@ -49,7 +41,7 @@ export interface UserProfile {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private fb = inject(FirebaseService);
-  private auth = getAuth(this.fb.db.app);
+  private auth = Auth.getAuth(this.fb.db.app);
 
   // Signal holding current user state
   currentUser = signal<UserProfile | null>(null);
@@ -76,7 +68,7 @@ export class AuthService {
 
   constructor() {
     // Restore session on load
-    onAuthStateChanged(this.auth, async (user: User | null) => {
+    Auth.onAuthStateChanged(this.auth, async (user: Auth.User | null) => {
       if (user) {
         await this.fetchUserProfile(user);
       } else {
@@ -103,7 +95,7 @@ export class AuthService {
 
   async login(email: string, pass: string) {
     try {
-      const credential = await signInWithEmailAndPassword(this.auth, email, pass);
+      const credential = await Auth.signInWithEmailAndPassword(this.auth, email, pass);
       await this.fetchUserProfile(credential.user);
     } catch (e: any) {
       console.error(e);
@@ -113,9 +105,9 @@ export class AuthService {
 
   async loginWithGoogle() {
     try {
-      const provider = new GoogleAuthProvider();
+      const provider = new Auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      const credential = await signInWithPopup(this.auth, provider);
+      const credential = await Auth.signInWithPopup(this.auth, provider);
       await this.fetchUserProfile(credential.user);
     } catch (e: any) {
       console.error(e);
@@ -125,7 +117,7 @@ export class AuthService {
 
   async logout() {
     try {
-      await signOut(this.auth);
+      await Auth.signOut(this.auth);
     } catch (e) {
       console.error('Logout error (ignored)', e);
     } finally {
@@ -133,7 +125,7 @@ export class AuthService {
     }
   }
 
-  private async fetchUserProfile(user: User) {
+  private async fetchUserProfile(user: Auth.User) {
     try {
       const userDocRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
       const snapshot = await getDoc(userDocRef);

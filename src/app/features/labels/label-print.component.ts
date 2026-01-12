@@ -4,10 +4,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 
-// Declare external libs
-declare const html2canvas: any;
-declare const jspdf: any;
-
 type PrintMode = 'brother' | 'sheet_a5' | 'sheet_a4';
 
 interface LabelCell {
@@ -568,12 +564,16 @@ export class LabelPrintComponent {
       await new Promise(resolve => setTimeout(resolve, 150));
 
       try {
-          const { jsPDF } = jspdf;
+          // Dynamic imports fix ESM issues
+          const { jsPDF } = await import('jspdf');
+          const html2canvas = (await import('html2canvas')).default;
+
           const isA5 = this.printMode() === 'sheet_a5';
           const isLandscape = this.layoutMode() === 'landscape' && isA5;
           
           let format = isA5 ? 'a5' : 'a4';
-          let orientation = (isA5 && isLandscape) ? 'l' : 'p';
+          // Fix: Type orientation explicitly to satisfy jsPDF constructor
+          let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
           
           // PDF Dimensions (mm)
           let pdfW = 210; let pdfH = 297; // A4 Portrait

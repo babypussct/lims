@@ -74,7 +74,7 @@ export class StateService implements OnDestroy {
       } else {
         this.cleanupListeners();
       }
-    });
+    }, { allowSignalWrites: true }); // FIX: NG0600 - Allow writing to signals inside effect
   }
 
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
@@ -162,7 +162,6 @@ export class StateService implements OnDestroy {
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
 
   // --- ACTIONS (Calculations, Requests, Approvals...) ---
-  // (Existing methods remain unchanged below)
   
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
       const itemsToDeduct: Map<string, number> = new Map();
