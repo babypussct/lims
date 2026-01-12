@@ -32,18 +32,29 @@ import { Sop } from './core/models/sop.model';
     <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
       @for (t of toast.toasts(); track t.id) {
         <div class="pointer-events-auto flex items-center gap-4 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up min-w-[300px]"
-             [class.bg-white/90]="true" 
+             [class.bg-white]="true" 
+             [class.bg-opacity-90]="true"
              [class.border-l-4]="true"
-             [class.border-l-emerald-500]="t.type === 'success'" [class.text-emerald-800]="t.type === 'success'"
-             [class.border-l-red-500]="t.type === 'error'" [class.text-red-800]="t.type === 'error'"
-             [class.border-l-blue-500]="t.type === 'info'" [class.text-blue-800]="t.type === 'info'"
-             [class.border-y-white]="true" [class.border-r-white]="true">
+             [class.border-l-emerald-500]="t.type === 'success'" 
+             [class.text-emerald-800]="t.type === 'success'"
+             [class.border-l-red-500]="t.type === 'error'" 
+             [class.text-red-800]="t.type === 'error'"
+             [class.border-l-blue-500]="t.type === 'info'" 
+             [class.text-blue-800]="t.type === 'info'"
+             [class.border-y-white]="true" 
+             [class.border-r-white]="true">
              
              <!-- Icon -->
              <div class="shrink-0 text-xl">
-                @if(t.type === 'success') { <i class="fa-solid fa-circle-check text-emerald-500"></i> }
-                @else if(t.type === 'error') { <i class="fa-solid fa-circle-xmark text-red-500"></i> }
-                @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
+                @if(t.type === 'success') { 
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i> 
+                }
+                @else if(t.type === 'error') { 
+                    <i class="fa-solid fa-circle-xmark text-red-500"></i> 
+                }
+                @else { 
+                    <i class="fa-solid fa-circle-info text-blue-500"></i> 
+                }
              </div>
 
              <!-- Content -->
@@ -54,7 +65,7 @@ import { Sop } from './core/models/sop.model';
                  <div class="text-sm font-bold leading-tight">{{t.message}}</div>
              </div>
 
-             <!-- Close (Auto close mostly, but visual cue) -->
+             <!-- Close -->
              <div class="h-8 w-[1px] bg-gray-200"></div>
              <button (click)="toast.remove(t.id)" class="text-gray-400 hover:text-gray-600 transition active:scale-90">
                  <i class="fa-solid fa-xmark"></i>

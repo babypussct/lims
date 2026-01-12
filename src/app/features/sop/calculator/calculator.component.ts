@@ -361,7 +361,7 @@ export class CalculatorComponent implements OnDestroy {
             debounceTime(50) 
         ).subscribe(vals => {
              this.runCalculation(s, vals);
-             const margin = Number(vals.safetyMargin);
+             const margin = Number(vals['safetyMargin']);
              this.safetyMargin.set(isNaN(margin) ? 0 : margin);
         });
 

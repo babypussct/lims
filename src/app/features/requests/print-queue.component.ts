@@ -72,8 +72,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                     <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <div class="font-bold text-slate-700">{{log.printData?.sop.name}}</div>
-                                        <div class="text-xs text-slate-400">{{log.printData?.sop.category}}</div>
+                                        <div class="font-bold text-slate-700">{{log.printData?.sop?.name}}</div>
+                                        <div class="text-xs text-slate-400">{{log.printData?.sop?.category}}</div>
                                     </td>
                                     <td class="px-4 py-2 text-slate-600 font-medium">{{log.user}}</td>
                                     <td class="px-4 py-2 text-slate-500 text-xs">{{formatDate(log.timestamp)}}</td>

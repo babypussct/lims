@@ -504,14 +504,25 @@ export class StatisticsComponent {
     const total = history.length;
     if (total === 0) return [];
 
-    const map = new Map<string, number>();
+    const map = new Map<string, {count: number, samples: number, qcs: number}>();
     history.forEach(req => {
-        const count = map.get(req.sopName) || 0;
-        map.set(req.sopName, count + 1);
+        const current = map.get(req.sopName) || { count: 0, samples: 0, qcs: 0 };
+        
+        let s = 0; let q = 0;
+        if (req.inputs) {
+            if(req.inputs['n_sample']) s = Number(req.inputs['n_sample']);
+            if(req.inputs['n_qc']) q = Number(req.inputs['n_qc']);
+        }
+
+        map.set(req.sopName, { 
+            count: current.count + 1,
+            samples: current.samples + s,
+            qcs: current.qcs + q
+        });
     });
 
     return Array.from(map.entries())
-        .map(([name, count]) => ({ name, count, percent: (count/total)*100 }))
+        .map(([name, val]) => ({ name, count: val.count, samples: val.samples, qcs: val.qcs, percent: (val.count/total)*100 }))
         .sort((a,b) => b.count - a.count);
   });
 

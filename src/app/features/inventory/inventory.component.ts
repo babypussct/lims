@@ -297,7 +297,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                             </div>
                             <div class="text-right bg-gray-50 p-3 md:p-4 rounded-xl border border-gray-100 w-full md:w-auto flex justify-between md:block items-center">
                                 <div class="text-xs font-bold text-gray-400 uppercase">Năng lực tối đa</div>
-                                <div class="text-2xl md:text-3xl font-bold text-fuchsia-600">{{capacityResult()?.maxBatches || 0}} <span class="text-sm text-gray-400 font-normal">mẻ</span></div>
+                                <div class="text-2xl md:text-3xl font-bold text-fuchsia-600">{{(capacityResult()?.maxBatches || 0)}} <span class="text-sm text-gray-400 font-normal">mẻ</span></div>
                             </div>
                         </div>
                         
@@ -331,8 +331,8 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                        <td class="px-4 py-3 text-right text-gray-500 font-mono border-r border-gray-50/50">{{formatNum(row.stock)}}</td>
                                        <td class="px-4 py-3 text-right text-gray-500 font-mono border-r border-gray-50/50">{{formatNum(row.need)}}</td>
                                        <td class="px-4 py-3 text-center font-bold font-mono" 
-                                           [class.text-red-500]="row.batches === capacityResult()?.maxBatches"
-                                           [class.text-fuchsia-600]="row.batches > capacityResult()?.maxBatches">
+                                           [class.text-red-500]="row.batches === (capacityResult()?.maxBatches ?? 0)"
+                                           [class.text-fuchsia-600]="row.batches > (capacityResult()?.maxBatches ?? 0)">
                                           {{formatNum(row.batches)}}
                                        </td>
                                     </tr>
@@ -612,7 +612,7 @@ export class InventoryComponent implements OnDestroy {
       this.isLoading.set(true);
       try { 
           const raw = this.form.getRawValue();
-          const reason = raw.reason;
+          const reason = raw.reason || ''; // FIX TS2345
           const { reason: _, ...itemData } = raw; 
 
           await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason); 
