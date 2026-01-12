@@ -182,7 +182,7 @@ export class RecipeManagerComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
-  fb = inject(FormBuilder);
+  fb: FormBuilder = inject(FormBuilder);
   formatNum = formatNum;
   unitOptions = UNIT_OPTIONS;
 
