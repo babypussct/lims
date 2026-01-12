@@ -14,7 +14,6 @@ import { StateService } from './core/services/state.service';
 import { AuthService } from './core/services/auth.service';
 import { ToastService } from './core/services/toast.service';
 import { PrintService } from './core/services/print.service';
-import { Sop } from './core/models/sop.model';
 
 @Component({
   selector: 'app-root',
@@ -109,14 +108,13 @@ import { Sop } from './core/models/sop.model';
               <!-- Overlay for mobile sidebar -->
               @if (state.sidebarOpen()) { <div class="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" (click)="state.closeSidebar()"></div> }
               
-              <app-sidebar 
-                  (viewChange)="onSidebarViewChange($event)"
-                  (selectSop)="onSidebarSelectSop($event)"
-                  (createNewSop)="onSidebarCreateSop()">
-              </app-sidebar>
+              <!-- Sidebar Component (Handles navigation internally) -->
+              <app-sidebar></app-sidebar>
               
+              <!-- Main Content: Matches Sidebar Width (ml-64 when expanded, ml-20 when collapsed) -->
               <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out rounded-xl overflow-hidden"
-                    [class.md:ml-64]="!state.sidebarCollapsed()" [class.md:ml-20]="state.sidebarCollapsed()">
+                    [class.md:ml-64]="!state.sidebarCollapsed()" 
+                    [class.md:ml-20]="state.sidebarCollapsed()">
                  
                  <!-- Navbar -->
                  <nav class="relative flex flex-col justify-center px-4 py-2 mx-4 md:mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
@@ -193,30 +191,13 @@ export class AppComponent {
     this.updatePageHeader();
   }
 
-  // Sidebar Handlers
-  onSidebarViewChange(view: string) {
-      this.router.navigate(['/' + view]);
-      this.state.closeSidebar();
-  }
-
-  onSidebarSelectSop(sop: Sop) {
-      this.state.selectedSop.set(sop);
-      this.router.navigate(['/calculator']);
-      this.state.closeSidebar();
-  }
-
-  onSidebarCreateSop() {
-      this.state.editingSop.set(null);
-      this.router.navigate(['/editor']);
-      this.state.closeSidebar();
-  }
-
   private updatePageHeader() {
     const url = this.router.url;
     if (url.includes('/dashboard')) this.pageTitle.set('Dashboard');
     else if (url.includes('/calculator')) this.pageTitle.set('Chạy Quy trình');
     else if (url.includes('/inventory')) this.pageTitle.set('Kho Hóa chất');
     else if (url.includes('/standards')) this.pageTitle.set('Chuẩn Đối chiếu');
+    else if (url.includes('/recipes')) this.pageTitle.set('Thư viện Công thức');
     else if (url.includes('/requests')) this.pageTitle.set('Quản lý Yêu cầu');
     else if (url.includes('/stats')) this.pageTitle.set('Báo cáo & Thống kê');
     else if (url.includes('/printing')) this.pageTitle.set('In Phiếu Dự trù');
