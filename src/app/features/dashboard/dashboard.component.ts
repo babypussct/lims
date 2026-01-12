@@ -11,6 +11,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import Chart from 'chart.js/auto'; // STANDARD IMPORT FOR BUILD
 
 interface PriorityStandard {
     name: string;
@@ -339,8 +340,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
 
-      const { default: Chart } = await import('chart.js/auto');
-
+      // Ensure chart.js is properly loaded via NPM import
+      // If auto-registering via 'chart.js/auto', we can use it directly.
+      
       // --- CRITICAL FIX: Destroy existing chart on this canvas ---
       const existingChart = Chart.getChart(canvas);
       if (existingChart) existingChart.destroy();

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { InventoryService } from '../../features/inventory/inventory.service';
 import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
+import Chart from 'chart.js/auto'; // STANDARD IMPORT
 
 interface NxtReportItem {
   id: string;
@@ -530,7 +531,7 @@ export class StatisticsComponent {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
       
-      const { default: Chart } = await import('chart.js/auto');
+      // Standard import of Chart.js (already imported at top)
 
       // CRITICAL FIX: Destroy existing chart instance attached to this canvas
       const existing = Chart.getChart(canvas);
