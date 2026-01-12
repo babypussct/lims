@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="LIMS Cloud - Hệ thống quản lý phòng thí nghiệm Soft UI">
+  <meta name="author" content="Otada Technology">
+  <meta name="theme-color" content="#f8f9fa"> 
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  
+  <title>LIMS Cloud Pro | Soft UI</title>
+  
+  <!-- 1. Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- 2. Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { 
+      theme: { 
+        extend: { 
+          fontFamily: { 
+            sans: ['"Open Sans"', 'sans-serif'],
+            display: ['"Inter"', 'sans-serif'],
+          }, 
+          colors: { 
+            gray: {
+              50: '#f8f9fa', // Soft UI Background
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              500: '#64748b', // Body Text
+              600: '#475569',
+              700: '#344767', // Heading Text (Soft UI Dark Blue)
+              800: '#1e293b',
+              900: '#0f172a',
+            },
+            // Soft UI Brand Colors
+            fuchsia: { 500: '#cb0c9f', 600: '#830051' }, // Purple
+            pink: { 500: '#d63384' },
+          },
+          boxShadow: {
+            'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow
+            'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', // Input/Button
+            'soft-sm': '0 2px 4px 0 rgba(0,0,0,0.02)',
+            'navbar': '0 2px 12px 0 rgba(0,0,0,0.06)',
+          },
+          borderRadius: {
+            'xl': '1rem',   // 16px
+            '2xl': '1.25rem' // 20px
+          },
+          backgroundImage: {
+            'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // The Signature Gradient
+            'gradient-dark': 'linear-gradient(310deg, #141727, #3a416f)',
+          }
+        } 
+      } 
+    }
+  </script>
+
+  <!-- 3. Global CSS -->
+  <style>
+    body { 
+        background-color: #f8f9fa; 
+        color: #67748e; 
+        font-family: 'Open Sans', sans-serif;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+    
+    /* Animations */
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    .bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bounceIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+    /* Print Overrides */
+    @media print {
+      @page { size: A4 portrait; margin: 10mm; }
+      body { background: white; color: black; }
+      .no-print, aside, nav, .shadow-soft-xl { display: none !important; }
+      main { margin: 0 !important; width: 100% !important; padding: 0 !important; }
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
+    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
+    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
+    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
+    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
+    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
+    "jspdf": "https://esm.sh/jspdf@^4.0.0?external=rxjs",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5?external=rxjs",
+    "firebase/auth": "https://esm.sh/firebase@^12.7.0/auth?external=rxjs",
+    "firebase/storage": "https://esm.sh/firebase@^12.7.0/storage?external=rxjs",
+    "firebase/firestore": "https://esm.sh/firebase@^12.7.0/firestore?external=rxjs",
+    "firebase/app": "https://esm.sh/firebase@^12.7.0/app?external=rxjs",
+    "@angular/forms": "https://esm.sh/@angular/forms@^21.0.8?external=rxjs",
+    "chart.js/auto": "https://esm.sh/chart.js@^4.5.1/auto?external=rxjs",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1?external=rxjs",
+    "@angular/router": "https://esm.sh/@angular/router@^21.0.8?external=rxjs",
+    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.0.8?external=rxjs",
+    "@angular/common": "https://esm.sh/@angular/common@^21.0.8?external=rxjs",
+    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.0.8?external=rxjs",
+    "@angular/core": "https://esm.sh/@angular/core@^21.0.8?external=rxjs",
+    "zone.js": "https://esm.sh/zone.js@^0.16.0?external=rxjs"
+  }
+}
+</script>
+</head>
+<body class="antialiased text-gray-600 bg-gray-50 h-full overflow-hidden">
+  <app-root></app-root>
+</body>
+</html>
