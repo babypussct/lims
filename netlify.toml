@@ -1,0 +1,6 @@
+[build]
+  command = "npm run build"
+  publish = "dist/lims-cloud-pro/browser"
+
+[[plugins]]
+  package = "@netlify/plugin-angular-universal"
