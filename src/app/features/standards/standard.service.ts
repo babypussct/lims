@@ -22,7 +22,6 @@ export class StandardService {
   private toast = inject(ToastService);
 
   // --- HELPER: SEARCH KEY GENERATOR ---
-  // Tạo chuỗi tìm kiếm không dấu, chữ thường
   private generateSearchKey(std: ReferenceStandard): string {
     const parts = [
       std.name,
@@ -34,84 +33,88 @@ export class StandardService {
       std.id
     ];
     
-    // Nối lại, chuyển về chữ thường, bỏ dấu tiếng Việt
     return parts
-      .filter(p => p) // Bỏ null/undefined
+      .filter(p => p)
       .join(' ')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ') // Xóa khoảng trắng thừa
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
-  // --- HELPER: VIETNAMESE DATE PARSER ---
-  // Ưu tiên dd/MM/yyyy hoặc dd-MM-yy
-  private parseVietnameseDate(val: any): string {
+  // --- HELPER: STRICT VIETNAMESE DATE PARSER ---
+  // Định dạng bắt buộc: dd/MM/yyyy hoặc dd-MM-yy
+  // KHÔNG dùng Date.parse() để tránh nhầm lẫn tháng/ngày
+  private parseVietnameseDateStrict(val: any): string {
       if (!val) return '';
       const strVal = val.toString().trim();
       if (['-', '/', 'na', 'n/a', 'unknown', ''].includes(strVal.toLowerCase())) return '';
 
-      // 1. Excel Serial Date (Trường hợp Excel tự convert thành số)
+      // 1. Excel Serial Date (Trường hợp Excel tự convert thành số nguyên)
       if (typeof val === 'number' || (strVal.match(/^\d+$/) && Number(strVal) > 30000)) {
-          // Excel base date: Dec 30 1899
           const date = new Date(Math.round((Number(val) - 25569) * 86400 * 1000));
           return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
       }
 
-      // 2. Regex dd/MM/yyyy hoặc dd-MM-yy (Ưu tiên số 1 theo yêu cầu)
-      // Chấp nhận separator là / - hoặc .
-      // Group 1: Day, Group 2: Month, Group 3: Year (2 hoặc 4 số)
-      const dmyMatch = strVal.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
-      if (dmyMatch) {
-          const day = dmyMatch[1].padStart(2, '0');
-          const month = dmyMatch[2].padStart(2, '0');
-          let year = dmyMatch[3];
-          if (year.length === 2) year = '20' + year; // Convert 25 -> 2025
+      // 2. Manual Split: dd/mm/yyyy or dd-mm-yy
+      // Tách chuỗi dựa trên ký tự phân cách common
+      const parts = strVal.split(/[\/\-\.]/);
+      
+      if (parts.length >= 3) {
+          // ÉP KIỂU CỨNG: [0]=Ngày, [1]=Tháng, [2]=Năm
+          const day = parts[0].padStart(2, '0');
+          const month = parts[1].padStart(2, '0');
+          let year = parts[2];
           
-          return `${year}-${month}-${day}`; // Trả về ISO YYYY-MM-DD để lưu DB
+          // Xử lý năm 2 số (25 -> 2025)
+          if (year.length === 2) year = '20' + year;
+          
+          // Kiểm tra tính hợp lệ cơ bản
+          if (Number(day) > 31 || Number(month) > 12) return ''; 
+
+          return `${year}-${month}-${day}`; // ISO format for DB
       }
 
-      // 3. Fallback: ISO format already?
-      if (strVal.match(/^\d{4}-\d{2}-\d{2}$/)) return strVal;
-
-      return ''; // Không parse được thì trả về rỗng
+      return ''; 
   }
 
   // --- HELPER: LOG PARSER ---
-  // Parse chuỗi log phức tạp hoặc số đơn thuần
   private parseUsageLogString(val: any, defaultDate: string): UsageLog | null {
       if (val === null || val === undefined || val === '') return null;
       const str = val.toString().trim();
       if (!str) return null;
 
       // Case A: Chuỗi đầy đủ (Multi-line)
-      // "Ngày pha chế: 15/10/2025 Người pha chế: MAI Lượng dùng: 0.2"
-      // Regex linh hoạt chấp nhận khoảng trắng, xuống dòng và case
+      // "Ngày pha chế: 15/10/2025..."
       const dateMatch = str.match(/ng[àa]y\s*pha\s*ch[ếe]:\s*([\d\/\-\.]+)/i);
-      const userMatch = str.match(/ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*([^\n\r]+)/i); // Lấy đến hết dòng
+      const userMatch = str.match(/ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*([^\n\r]+)/i); 
       const amountMatch = str.match(/l[ưượng\s*d[ùu]ng:\s*([\d\.]+)/i);
 
-      if (dateMatch && amountMatch) {
-          const dateRaw = dateMatch[1].trim();
-          const userRaw = userMatch ? userMatch[1].trim() : 'Unknown';
+      if (amountMatch) {
           const amountRaw = parseFloat(amountMatch[1].trim());
-
           if (!isNaN(amountRaw)) {
+              let logDate = defaultDate;
+              // Nếu tìm thấy ngày trong log, parse lại bằng Strict Mode
+              if (dateMatch && dateMatch[1]) {
+                  const parsedLogDate = this.parseVietnameseDateStrict(dateMatch[1].trim());
+                  if (parsedLogDate) logDate = parsedLogDate;
+              }
+
               return {
-                  date: this.parseVietnameseDate(dateRaw) || defaultDate, // Parse lại ngày log
-                  user: userRaw,
+                  date: logDate,
+                  user: userMatch ? userMatch[1].trim() : 'Unknown',
                   amount_used: amountRaw,
                   purpose: 'Import Log'
               };
           }
       }
 
-      // Case B: Chỉ là số (0.2)
-      // Kiểm tra xem chuỗi có phải là số thuần túy không (không chứa ký tự lạ ngoài số và dấu chấm)
-      if (!isNaN(parseFloat(str)) && isFinite(str as any)) { 
+      // Case B: Chỉ là số (VD: 30.75)
+      // Chỉ chấp nhận số và dấu chấm thập phân
+      if (/^[\d\.]+$/.test(str) && !isNaN(parseFloat(str))) { 
           return {
-              date: defaultDate, // Dùng ngày nhận hoặc ngày hiện tại
+              date: defaultDate, 
               user: 'Import Data',
               amount_used: parseFloat(str),
               purpose: 'Import Log'
@@ -136,10 +139,7 @@ export class StandardService {
     let constraints: QueryConstraint[] = [];
 
     if (searchTerm) {
-      // Tìm kiếm trên search_key (Normalized)
       const term = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      
-      // Firestore range query simulation for text search
       constraints.push(where('search_key', '>=', term));
       constraints.push(where('search_key', '<=', term + '\uf8ff'));
       constraints.push(orderBy('search_key'));
@@ -163,17 +163,13 @@ export class StandardService {
   // --- WRITE Operations ---
   
   async addStandard(std: ReferenceStandard) {
-      // Auto generate search key before saving
       std.search_key = this.generateSearchKey(std);
-      
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
   }
 
   async updateStandard(std: ReferenceStandard) {
-      // Update search key
       std.search_key = this.generateSearchKey(std);
-
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
   }
@@ -258,7 +254,7 @@ export class StandardService {
       });
   }
 
-  // --- SMART IMPORT LOGIC (UPDATED) ---
+  // --- SMART IMPORT LOGIC (STRICT DATE & INVENTORY SOURCE) ---
   async importFromExcel(file: File) {
     const XLSX = await import('xlsx');
 
@@ -277,12 +273,12 @@ export class StandardService {
           let opCount = 0; 
           const MAX_BATCH_SIZE = 400;
 
-          // Hàm làm sạch tiêu đề cột (xóa xuống dòng, khoảng trắng thừa)
+          // Normalize Key: Xóa xuống dòng, khoảng trắng thừa
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
           for (const rawRow of rawRows) {
              const row: Record<string, any> = {};
-             // Map key đã được làm sạch
+             // Map key sạch
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
              const name = row['tên chuẩn'];
@@ -291,34 +287,44 @@ export class StandardService {
              const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
              const packSize = (row['quy cách'] || '').toString().trim();
              const internalId = (row['số nhận diện'] || '').toString().trim();
+             
+             // --- LOGIC 1: INITIAL AMOUNT ---
              const initial = Number(row['khối lượng chai'] || 0);
              
-             // --- LOGIC: INTERNAL ID -> LOCATION ---
+             // --- LOGIC 2: CURRENT AMOUNT (Source of Truth from Excel) ---
+             // Lấy trực tiếp từ cột "Lượng còn lại".
+             // Nếu cột chứa chữ (VD: "228.13 mg/chai"), dùng Regex lấy số.
+             // Nếu cột trống, fallback về Initial.
+             let current = initial;
+             const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
+             
+             if (rawCurrentStr !== '') {
+                 const match = rawCurrentStr.match(/[\d\.]+/); // Lấy phần số (VD: 228.13)
+                 if (match) {
+                     const parsed = parseFloat(match[0]);
+                     if (!isNaN(parsed)) current = parsed;
+                 }
+             }
+
+             // --- LOGIC 3: LOCATION ---
              let location = '';
              if (internalId && internalId.length > 0) {
                  const firstChar = internalId.charAt(0).toUpperCase();
                  if (firstChar.match(/[A-Z]/)) location = `Tủ ${firstChar}`;
              }
 
-             // --- LOGIC: CURRENT AMOUNT ---
-             // Ưu tiên cột "Lượng còn lại" (đã normalized: 'lượng còn lại').
-             let current = Number(row['lượng còn lại']);
-             if (isNaN(current) || row['lượng còn lại'] === '') {
-                 current = initial;
-             }
-
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
              
-             // --- LOGIC: UNIT DETECTION ---
+             // --- LOGIC 4: UNIT DETECTION ---
              let unit = 'mg';
              const lowerPack = packSize.toLowerCase();
              if (lowerPack.includes('ml')) unit = 'mL';
              else if (lowerPack.includes('g') && !lowerPack.includes('mg')) unit = 'g';
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
 
-             // --- MAIN DATA MAPPING ---
-             const receivedDate = this.parseVietnameseDate(row['ngày nhận']);
-             const expiryDate = this.parseVietnameseDate(row['hạn sử dụng']);
+             // --- LOGIC 5: STRICT DATE PARSING ---
+             const receivedDate = this.parseVietnameseDateStrict(row['ngày nhận']);
+             const expiryDate = this.parseVietnameseDateStrict(row['hạn sử dụng']);
 
              const standard: ReferenceStandard = {
                  id, name: name.trim(),
@@ -332,7 +338,7 @@ export class StandardService {
                  expiry_date: expiryDate,
                  
                  initial_amount: isNaN(initial) ? 0 : initial,
-                 current_amount: current,
+                 current_amount: current, // Value is TRUSTED from Excel
                  unit: unit,
                  
                  product_code: (row['product code'] || '').toString().trim(),
@@ -350,41 +356,37 @@ export class StandardService {
              batch.set(stdRef, standard);
              opCount++;
 
-             // --- LOGIC: USAGE LOGS (LẦN CÂN 1 -> 5) ---
+             // --- LOGIC 6: USAGE LOGS (Lưu vết nhưng KHÔNG trừ tồn kho) ---
              for (let i = 1; i <= 5; i++) {
                  const colName = `lần cân ${i}`;
                  const cellValue = row[colName];
                  
-                 // Fallback date: Received date -> Created date -> Today
                  const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
 
                  if (cellValue) {
                      const logData = this.parseUsageLogString(cellValue, logDefaultDate);
                      
                      if (logData) {
-                         // Dùng timestamp để đảm bảo order, cộng thêm index i để tránh trùng tuyệt đối
                          const logId = `log_${i}_${Date.now()}`; 
                          const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs/${logId}`);
                          
                          batch.set(logRef, {
                              ...logData,
                              unit: unit, 
-                             timestamp: new Date().getTime() + i // Offset timestamp slightly
+                             timestamp: new Date().getTime() + i
                          });
                          opCount++;
                      }
                  }
              }
 
-             // Commit batch chunk
              if (opCount >= MAX_BATCH_SIZE) {
                  await batch.commit();
-                 batch = writeBatch(this.fb.db); // New batch
+                 batch = writeBatch(this.fb.db);
                  opCount = 0;
              }
           }
 
-          // Final commit
           if (opCount > 0) {
               await batch.commit();
           }
