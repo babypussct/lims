@@ -28,7 +28,7 @@ interface NxtReportItem {
     @if (auth.canViewReports()) {
         <div class="h-full flex flex-col space-y-5 pb-6 fade-in overflow-hidden relative font-sans text-slate-800">
             
-            <!-- 1. Header with Date Range Filter -->
+            <!-- 1. Header with Filters -->
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0 bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-20">
                 <div>
                     <h2 class="text-xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
@@ -40,8 +40,27 @@ interface NxtReportItem {
                     <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Phân tích hiệu suất & tiêu hao theo thời gian thực.</p>
                 </div>
 
-                <!-- Date Filter -->
-                <div class="flex flex-col md:flex-row gap-3 items-end md:items-center">
+                <!-- Filters Area -->
+                <div class="flex flex-col md:flex-row gap-3 items-end md:items-center flex-wrap">
+                    
+                    <!-- SOP Filter (NEW) -->
+                    <div class="relative group min-w-[200px]">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
+                        </div>
+                        <select [ngModel]="selectedSopId()" (ngModelChange)="selectedSopId.set($event)" 
+                                class="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-sm appearance-none cursor-pointer hover:bg-white">
+                            <option value="all">Tất cả Quy trình (SOP)</option>
+                            @for (sop of state.sops(); track sop.id) {
+                                <option [value]="sop.id">{{sop.name}}</option>
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-[10px]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Range Presets -->
                     <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                         <button (click)="setRange('today')" 
                                 class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95"
@@ -60,6 +79,7 @@ interface NxtReportItem {
                         </button>
                     </div>
 
+                    <!-- Date Pickers -->
                     <div class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-sm hover:border-blue-400 transition-colors group focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
                         <div class="flex flex-col">
                             <label class="text-[9px] font-bold text-slate-400 leading-none uppercase">Từ ngày</label>
@@ -87,7 +107,11 @@ interface NxtReportItem {
                 <button (click)="activeTab.set('nxt')" 
                     class="pb-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap active:scale-95"
                     [class]="activeTab() === 'nxt' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-400 hover:text-slate-600'">
-                    <i class="fa-solid fa-boxes-packing"></i> 2. Báo cáo NXT (Kho)
+                    @if (selectedSopId() === 'all') {
+                        <i class="fa-solid fa-boxes-packing"></i> 2. Báo cáo NXT (Kho)
+                    } @else {
+                        <i class="fa-solid fa-list-check"></i> 2. Chi tiết Xuất kho
+                    }
                 </button>
                 <button (click)="activeTab.set('consumption')"
                     class="pb-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap active:scale-95"
@@ -146,15 +170,22 @@ interface NxtReportItem {
                         </table>
                     }
 
-                    <!-- TAB 2: NXT REPORT (FULL) -->
+                    <!-- TAB 2: NXT / SOP EXPORT DETAIL -->
                     @if (activeTab() === 'nxt') {
                         <div class="flex flex-col h-full">
                             <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                                        <i class="fa-solid fa-table"></i> Bảng Kê Nhập - Xuất - Tồn
-                                    </h3>
-                                    <p class="text-xs text-slate-500 mt-0.5">Dữ liệu được tính toán ngược từ tồn kho hiện tại và nhật ký.</p>
+                                    @if (selectedSopId() === 'all') {
+                                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                            <i class="fa-solid fa-table"></i> Bảng Kê Nhập - Xuất - Tồn
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-0.5">Dữ liệu toàn cục của kho.</p>
+                                    } @else {
+                                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                            <i class="fa-solid fa-list-check"></i> Chi tiết Xuất kho theo Quy trình
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-0.5">Chỉ hiển thị lượng hóa chất đã xuất cho SOP: <span class="font-bold text-blue-600">{{getSelectedSopName()}}</span></p>
+                                    }
                                 </div>
                                 <div class="flex gap-2">
                                     <button (click)="generateNxtReport()" [disabled]="isLoading()" 
@@ -182,10 +213,14 @@ interface NxtReportItem {
                                             <th class="px-4 py-3 border-b text-center w-10">#</th>
                                             <th class="px-4 py-3 border-b">Tên Hóa chất / Vật tư</th>
                                             <th class="px-4 py-3 border-b w-24 text-center">ĐVT</th>
-                                            <th class="px-4 py-3 border-b text-right bg-blue-50/30 text-blue-800">Tồn Đầu</th>
-                                            <th class="px-4 py-3 border-b text-right text-emerald-700">Nhập</th>
-                                            <th class="px-4 py-3 border-b text-right text-orange-700">Xuất</th>
-                                            <th class="px-4 py-3 border-b text-right bg-purple-50/30 text-purple-800 font-bold border-l border-slate-100">Tồn Cuối</th>
+                                            @if (selectedSopId() === 'all') {
+                                                <th class="px-4 py-3 border-b text-right bg-blue-50/30 text-blue-800">Tồn Đầu</th>
+                                                <th class="px-4 py-3 border-b text-right text-emerald-700">Nhập</th>
+                                                <th class="px-4 py-3 border-b text-right text-orange-700">Xuất</th>
+                                                <th class="px-4 py-3 border-b text-right bg-purple-50/30 text-purple-800 font-bold border-l border-slate-100">Tồn Cuối</th>
+                                            } @else {
+                                                <th class="px-4 py-3 border-b text-right text-orange-700 font-bold bg-orange-50/20">Tổng Xuất ({{getSelectedSopName()}})</th>
+                                            }
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
@@ -197,13 +232,18 @@ interface NxtReportItem {
                                                     <div class="text-[10px] text-slate-400 font-mono">{{row.id}}</div>
                                                 </td>
                                                 <td class="px-4 py-3 text-center text-xs font-medium text-slate-500">{{row.unit}}</td>
-                                                <td class="px-4 py-3 text-right bg-blue-50/10 font-mono text-slate-600">{{formatNum(row.startStock)}}</td>
-                                                <td class="px-4 py-3 text-right font-mono text-emerald-600 font-bold">{{row.importQty > 0 ? '+' : ''}}{{formatNum(row.importQty)}}</td>
-                                                <td class="px-4 py-3 text-right font-mono text-orange-600 font-bold">{{row.exportQty > 0 ? '-' : ''}}{{formatNum(row.exportQty)}}</td>
-                                                <td class="px-4 py-3 text-right bg-purple-50/10 font-mono font-black text-slate-800 border-l border-slate-100">{{formatNum(row.endStock)}}</td>
+                                                
+                                                @if (selectedSopId() === 'all') {
+                                                    <td class="px-4 py-3 text-right bg-blue-50/10 font-mono text-slate-600">{{formatNum(row.startStock)}}</td>
+                                                    <td class="px-4 py-3 text-right font-mono text-emerald-600 font-bold">{{row.importQty > 0 ? '+' : ''}}{{formatNum(row.importQty)}}</td>
+                                                    <td class="px-4 py-3 text-right font-mono text-orange-600 font-bold">{{row.exportQty > 0 ? '-' : ''}}{{formatNum(row.exportQty)}}</td>
+                                                    <td class="px-4 py-3 text-right bg-purple-50/10 font-mono font-black text-slate-800 border-l border-slate-100">{{formatNum(row.endStock)}}</td>
+                                                } @else {
+                                                    <td class="px-4 py-3 text-right font-mono text-orange-600 font-bold text-base">{{formatNum(row.exportQty)}}</td>
+                                                }
                                             </tr>
                                         } @empty {
-                                            <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">
+                                            <tr><td [attr.colspan]="selectedSopId() === 'all' ? 7 : 4" class="p-16 text-center text-slate-400 italic">
                                                 @if(!hasGenerated()) { Nhấn "Tính Toán" để xem báo cáo. } 
                                                 @else { Không có dữ liệu. }
                                             </td></tr>
@@ -220,7 +260,8 @@ interface NxtReportItem {
                             <div class="h-64 shrink-0 px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex flex-col justify-center">
                                 <div class="flex justify-between items-center mb-2">
                                     <h4 class="text-xs uppercase font-bold text-slate-500 flex items-center gap-2">
-                                        <i class="fa-solid fa-chart-simple"></i> Top 10 Tiêu hao nhiều nhất
+                                        <i class="fa-solid fa-chart-simple"></i> Top 10 Tiêu hao
+                                        @if(selectedSopId() !== 'all') { <span class="text-blue-600">({{getSelectedSopName()}})</span> }
                                     </h4>
                                 </div>
                                 <div class="flex-1 relative w-full h-full min-h-0 bg-white rounded-xl border border-slate-100 p-2 shadow-sm">
@@ -259,7 +300,7 @@ interface NxtReportItem {
                                                 </td>
                                             </tr>
                                         } @empty {
-                                            <tr><td colspan="4" class="p-12 text-center text-slate-400 italic">Chưa có dữ liệu tiêu hao.</td></tr>
+                                            <tr><td colspan="4" class="p-12 text-center text-slate-400 italic">Chưa có dữ liệu tiêu hao cho tiêu chí lọc này.</td></tr>
                                         }
                                     </tbody>
                                 </table>
@@ -296,7 +337,7 @@ interface NxtReportItem {
                                         </td>
                                     </tr>
                                 } @empty {
-                                    <tr><td colspan="5" class="p-12 text-center text-slate-400 italic">Chưa chạy quy trình nào.</td></tr>
+                                    <tr><td colspan="5" class="p-12 text-center text-slate-400 italic">Chưa chạy quy trình nào trong thời gian này.</td></tr>
                                 }
                             </tbody>
                         </table>
@@ -333,6 +374,7 @@ export class StatisticsComponent {
   currentRangeType = signal<'today' | 'month' | 'year' | 'custom'>('month');
   startDate = signal<string>(this.getFirstDayOfMonth());
   endDate = signal<string>(this.getToday());
+  selectedSopId = signal<string>('all'); // New Signal for SOP Filter
 
   barChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('barChartCanvas');
   private barChart: any = null;
@@ -374,7 +416,14 @@ export class StatisticsComponent {
 
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
-  // --- NXT REPORT LOGIC (UPDATED: Fetch Inventory On Demand) ---
+  getSelectedSopName(): string {
+      const id = this.selectedSopId();
+      if (id === 'all') return 'Tất cả';
+      const sop = this.state.sops().find(s => s.id === id);
+      return sop ? sop.name : id;
+  }
+
+  // --- NXT / EXPORT DETAIL REPORT LOGIC ---
   async generateNxtReport() {
       this.isLoading.set(true);
       this.nxtData.set([]);
@@ -382,6 +431,7 @@ export class StatisticsComponent {
       const start = new Date(this.startDate());
       const end = new Date(this.endDate());
       const endTime = new Date(end); endTime.setHours(23,59,59,999);
+      const sopId = this.selectedSopId();
       
       try {
           // 1. Fetch ALL Inventory (Single Read)
@@ -391,69 +441,111 @@ export class StatisticsComponent {
           const today = new Date();
           const logs = await this.invService.getLogsByDateRange(start, today);
           
-          const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
-          inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
+          // Option 2: Separate logic based on Filter
+          if (sopId === 'all') {
+              // --- Logic NXT (Full Stock) ---
+              const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
+              inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
 
-          const parseLog = (log: Log) => {
-              const result: { id: string, delta: number }[] = [];
-              if (log.action.includes('STOCK')) {
-                  const match = log.details.match(/kho\s+([a-zA-Z0-9_-]+):\s*([+-]?\d+(?:\.\d+)?)/);
-                  if (match) { result.push({ id: match[1], delta: parseFloat(match[2]) }); }
-              }
-              else if (log.action.includes('APPROVE') && log.printData?.items) {
-                  log.printData.items.forEach(item => {
-                      if (item.isComposite) item.breakdown.forEach(sub => result.push({ id: sub.name, delta: -sub.totalNeed }));
-                      else result.push({ id: item.name, delta: -item.stockNeed });
-                  });
-              }
-              return result;
-          };
+              const endFilterTime = endTime.getTime();
 
-          const endFilterTime = endTime.getTime();
-
-          logs.forEach(log => {
-              const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
-              const changes = parseLog(log);
-              
-              changes.forEach(change => {
-                  if (!movements.has(change.id)) movements.set(change.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 });
-                  const entry = movements.get(change.id)!;
+              logs.forEach(log => {
+                  const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
                   
-                  if (logTime > endFilterTime) {
-                      entry.futureNetChange += change.delta;
-                  } else {
-                      if (change.delta > 0) entry.inPeriodImport += change.delta;
-                      else entry.inPeriodExport += Math.abs(change.delta);
+                  // Helper to parse log details
+                  const result: { id: string, delta: number }[] = [];
+                  if (log.action.includes('STOCK')) {
+                      const match = log.details.match(/kho\s+([a-zA-Z0-9_-]+):\s*([+-]?\d+(?:\.\d+)?)/);
+                      if (match) { result.push({ id: match[1], delta: parseFloat(match[2]) }); }
+                  }
+                  else if (log.action.includes('APPROVE') && log.printData?.items) {
+                      log.printData.items.forEach(item => {
+                          if (item.isComposite) item.breakdown.forEach(sub => result.push({ id: sub.name, delta: -sub.totalNeed }));
+                          else result.push({ id: item.name, delta: -item.stockNeed });
+                      });
+                  }
+
+                  result.forEach(change => {
+                      if (!movements.has(change.id)) movements.set(change.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 });
+                      const entry = movements.get(change.id)!;
+                      
+                      if (logTime > endFilterTime) {
+                          entry.futureNetChange += change.delta;
+                      } else {
+                          if (change.delta > 0) entry.inPeriodImport += change.delta;
+                          else entry.inPeriodExport += Math.abs(change.delta);
+                      }
+                  });
+              });
+
+              const report: NxtReportItem[] = [];
+              const allIds = new Set([...inventory.map(i => i.id), ...movements.keys()]);
+              
+              allIds.forEach(id => {
+                  const item = inventory.find(i => i.id === id);
+                  const m = movements.get(id) || { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 };
+                  
+                  const currentStock = item ? item.stock : 0;
+                  const endStock = currentStock - m.futureNetChange;
+                  const startStock = endStock - m.inPeriodImport + m.inPeriodExport;
+
+                  if (startStock !== 0 || m.inPeriodImport !== 0 || m.inPeriodExport !== 0 || endStock !== 0 || item) {
+                      report.push({
+                          id: id,
+                          name: item?.name || id,
+                          unit: item?.unit || '?',
+                          category: item?.category || 'Unknown',
+                          startStock: parseFloat(startStock.toFixed(3)),
+                          importQty: parseFloat(m.inPeriodImport.toFixed(3)),
+                          exportQty: parseFloat(m.inPeriodExport.toFixed(3)),
+                          endStock: parseFloat(endStock.toFixed(3))
+                      });
                   }
               });
-          });
+              this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
 
-          const report: NxtReportItem[] = [];
-          const allIds = new Set([...inventory.map(i => i.id), ...movements.keys()]);
-          
-          allIds.forEach(id => {
-              const item = inventory.find(i => i.id === id);
-              const m = movements.get(id) || { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 };
+          } else {
+              // --- Logic Specific SOP Consumption ---
+              const consumptionMap = new Map<string, number>();
               
-              const currentStock = item ? item.stock : 0;
-              const endStock = currentStock - m.futureNetChange;
-              const startStock = endStock - m.inPeriodImport + m.inPeriodExport;
+              logs.forEach(log => {
+                  const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
+                  
+                  // Filter by time range strictly within selected period
+                  if (logTime <= endTime.getTime()) {
+                      if (log.action.includes('APPROVE') && log.printData?.sop?.id === sopId && log.printData?.items) {
+                          log.printData.items.forEach(item => {
+                              if (item.isComposite) {
+                                  item.breakdown.forEach(sub => {
+                                      const cur = consumptionMap.get(sub.name) || 0;
+                                      consumptionMap.set(sub.name, cur + sub.totalNeed);
+                                  });
+                              } else {
+                                  const cur = consumptionMap.get(item.name) || 0;
+                                  consumptionMap.set(item.name, cur + item.stockNeed);
+                              }
+                          });
+                      }
+                  }
+              });
 
-              if (startStock !== 0 || m.inPeriodImport !== 0 || m.inPeriodExport !== 0 || endStock !== 0 || item) {
+              const report: NxtReportItem[] = [];
+              consumptionMap.forEach((qty, id) => {
+                  const item = inventory.find(i => i.id === id);
                   report.push({
                       id: id,
                       name: item?.name || id,
                       unit: item?.unit || '?',
                       category: item?.category || 'Unknown',
-                      startStock: parseFloat(startStock.toFixed(3)),
-                      importQty: parseFloat(m.inPeriodImport.toFixed(3)),
-                      exportQty: parseFloat(m.inPeriodExport.toFixed(3)),
-                      endStock: parseFloat(endStock.toFixed(3))
+                      startStock: 0, // N/A
+                      importQty: 0, // N/A
+                      exportQty: parseFloat(qty.toFixed(3)),
+                      endStock: 0 // N/A
                   });
-              }
-          });
+              });
+              this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
+          }
 
-          this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
           this.hasGenerated.set(true);
 
       } catch (e) { console.error(e); } finally { this.isLoading.set(false); }
@@ -461,30 +553,67 @@ export class StatisticsComponent {
 
   async exportNxtExcel() {
       const XLSX = await import('xlsx');
-      const data = this.nxtData().map((row, index) => ({
-          'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
-          'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
-      }));
+      let data: any[] = [];
+      let sheetName = 'Report';
+      let fileName = '';
+
+      if (this.selectedSopId() === 'all') {
+          data = this.nxtData().map((row, index) => ({
+              'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
+              'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
+          }));
+          sheetName = 'Báo cáo NXT';
+          fileName = `BaoCao_NXT_${this.startDate()}_${this.endDate()}.xlsx`;
+      } else {
+          data = this.nxtData().map((row, index) => ({
+              'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit,
+              'Tổng Lượng Xuất': row.exportQty
+          }));
+          sheetName = 'Chi tiết Xuất SOP';
+          fileName = `ChiTiet_SOP_${this.selectedSopId()}_${this.startDate()}.xlsx`;
+      }
+
       const ws: any = XLSX.utils.json_to_sheet(data);
       const wb: any = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo NXT');
-      XLSX.writeFile(wb, `BaoCao_NXT_${this.startDate()}_${this.endDate()}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, fileName);
   }
 
   filteredLogs = computed(() => {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const sopId = this.selectedSopId();
+
       return this.state.logs().filter(log => {
           const d = (log.timestamp as any).toDate ? (log.timestamp as any).toDate() : new Date(log.timestamp);
-          return d >= start && d <= end;
+          const inDate = d >= start && d <= end;
+          
+          if (!inDate) return false;
+          if (sopId === 'all') return true;
+          
+          // Advanced Filter: Only show logs related to this SOP
+          return log.printData?.sop?.id === sopId;
       });
   });
 
   consumptionData = computed(() => {
     const history = this.state.approvedRequests();
     const map = new Map<string, {amount: number, unit: string, displayName: string}>();
+    
+    // Date Filter Logic
+    const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+    const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+    const sopId = this.selectedSopId();
 
     history.forEach(req => {
+        // 1. Check Date
+        const ts = req.timestamp;
+        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        if (d < start || d > end) return;
+
+        // 2. Check SOP Filter
+        if (sopId !== 'all' && req.sopId !== sopId) return;
+
         req.items.forEach(item => {
             const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
             map.set(item.name, { 
@@ -502,11 +631,26 @@ export class StatisticsComponent {
 
   sopFrequencyData = computed(() => {
     const history = this.state.approvedRequests();
-    const total = history.length;
+    
+    // Date Filter Logic
+    const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+    const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+    const sopId = this.selectedSopId();
+
+    // Filter First
+    const filteredHistory = history.filter(req => {
+        const ts = req.timestamp;
+        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        if (d < start || d > end) return false;
+        if (sopId !== 'all' && req.sopId !== sopId) return false;
+        return true;
+    });
+
+    const total = filteredHistory.length;
     if (total === 0) return [];
 
     const map = new Map<string, {count: number, samples: number, qcs: number}>();
-    history.forEach(req => {
+    filteredHistory.forEach(req => {
         const current = map.get(req.sopName) || { count: 0, samples: 0, qcs: 0 };
         
         let s = 0; let q = 0;
@@ -531,9 +675,6 @@ export class StatisticsComponent {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
       
-      // Standard import of Chart.js (already imported at top)
-
-      // CRITICAL FIX: Destroy existing chart instance attached to this canvas
       const existing = Chart.getChart(canvas);
       if (existing) existing.destroy();
       if (this.barChart) {
