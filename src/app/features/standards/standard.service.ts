@@ -43,26 +43,40 @@ export class StandardService {
       .trim();
   }
 
-  // --- HELPER: STRICT VIETNAMESE DATE PARSER ---
-  // Định dạng bắt buộc: dd/MM/yyyy hoặc dd-MM-yy
-  // KHÔNG dùng Date.parse() để tránh nhầm lẫn tháng/ngày
-  private parseVietnameseDateStrict(val: any): string {
-      if (!val) return '';
+  // --- HELPER: ROBUST EXCEL DATE PARSER ---
+  // Xử lý triệt để Serial Number và Text dd/mm/yyyy
+  private parseExcelDate(val: any): string {
+      if (val === null || val === undefined) return '';
+      
+      // 1. Trường hợp là số (Excel Serial Date)
+      // Excel đếm ngày từ 30/12/1899. 
+      // Cần xử lý timezone offset để tránh bị lùi 1 ngày do GMT
+      if (typeof val === 'number') {
+          // Chỉ xử lý nếu số > 1000 (tránh nhầm lẫn với số lượng)
+          if (val > 1000) {
+              const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+              // Cộng thêm 12 tiếng để tránh lỗi timezone làm lùi ngày
+              date.setHours(date.getHours() + 12);
+              return date.toISOString().split('T')[0];
+          }
+          return '';
+      }
+
       const strVal = val.toString().trim();
       if (['-', '/', 'na', 'n/a', 'unknown', ''].includes(strVal.toLowerCase())) return '';
 
-      // 1. Excel Serial Date (Trường hợp Excel tự convert thành số nguyên)
-      if (typeof val === 'number' || (strVal.match(/^\d+$/) && Number(strVal) > 30000)) {
-          const date = new Date(Math.round((Number(val) - 25569) * 86400 * 1000));
-          return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+      // 2. Trường hợp chuỗi số (VD: "45817")
+      if (/^\d+$/.test(strVal) && Number(strVal) > 10000) {
+           const date = new Date(Math.round((Number(strVal) - 25569) * 86400 * 1000));
+           date.setHours(date.getHours() + 12);
+           return date.toISOString().split('T')[0];
       }
 
-      // 2. Manual Split: dd/mm/yyyy or dd-mm-yy
-      // Tách chuỗi dựa trên ký tự phân cách common
+      // 3. Trường hợp Text (dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy)
+      // Ép kiểu cứng: [0]=Ngày, [1]=Tháng
       const parts = strVal.split(/[\/\-\.]/);
       
       if (parts.length >= 3) {
-          // ÉP KIỂU CỨNG: [0]=Ngày, [1]=Tháng, [2]=Năm
           const day = parts[0].padStart(2, '0');
           const month = parts[1].padStart(2, '0');
           let year = parts[2];
@@ -70,10 +84,12 @@ export class StandardService {
           // Xử lý năm 2 số (25 -> 2025)
           if (year.length === 2) year = '20' + year;
           
-          // Kiểm tra tính hợp lệ cơ bản
-          if (Number(day) > 31 || Number(month) > 12) return ''; 
+          // Validate cơ bản
+          const nDay = Number(day);
+          const nMonth = Number(month);
+          if (nDay > 31 || nMonth > 12 || nDay === 0 || nMonth === 0) return '';
 
-          return `${year}-${month}-${day}`; // ISO format for DB
+          return `${year}-${month}-${day}`; // Format ISO cho Firestore
       }
 
       return ''; 
@@ -95,9 +111,8 @@ export class StandardService {
           const amountRaw = parseFloat(amountMatch[1].trim());
           if (!isNaN(amountRaw)) {
               let logDate = defaultDate;
-              // Nếu tìm thấy ngày trong log, parse lại bằng Strict Mode
               if (dateMatch && dateMatch[1]) {
-                  const parsedLogDate = this.parseVietnameseDateStrict(dateMatch[1].trim());
+                  const parsedLogDate = this.parseExcelDate(dateMatch[1].trim());
                   if (parsedLogDate) logDate = parsedLogDate;
               }
 
@@ -111,12 +126,13 @@ export class StandardService {
       }
 
       // Case B: Chỉ là số (VD: 30.75)
-      // Chỉ chấp nhận số và dấu chấm thập phân
-      if (/^[\d\.]+$/.test(str) && !isNaN(parseFloat(str))) { 
+      // Loại bỏ các ký tự ẩn, khoảng trắng
+      const cleanStr = str.replace(/[^\d\.-]/g, '');
+      if (cleanStr && !isNaN(parseFloat(cleanStr))) { 
           return {
               date: defaultDate, 
               user: 'Import Data',
-              amount_used: parseFloat(str),
+              amount_used: parseFloat(cleanStr),
               purpose: 'Import Log'
           };
       }
@@ -254,7 +270,7 @@ export class StandardService {
       });
   }
 
-  // --- SMART IMPORT LOGIC (STRICT DATE & INVENTORY SOURCE) ---
+  // --- SMART IMPORT LOGIC (STRICT DATE & DEDUPLICATION) ---
   async importFromExcel(file: File) {
     const XLSX = await import('xlsx');
 
@@ -273,7 +289,6 @@ export class StandardService {
           let opCount = 0; 
           const MAX_BATCH_SIZE = 400;
 
-          // Normalize Key: Xóa xuống dòng, khoảng trắng thừa
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
           for (const rawRow of rawRows) {
@@ -292,14 +307,11 @@ export class StandardService {
              const initial = Number(row['khối lượng chai'] || 0);
              
              // --- LOGIC 2: CURRENT AMOUNT (Source of Truth from Excel) ---
-             // Lấy trực tiếp từ cột "Lượng còn lại".
-             // Nếu cột chứa chữ (VD: "228.13 mg/chai"), dùng Regex lấy số.
-             // Nếu cột trống, fallback về Initial.
              let current = initial;
              const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
              
              if (rawCurrentStr !== '') {
-                 const match = rawCurrentStr.match(/[\d\.]+/); // Lấy phần số (VD: 228.13)
+                 const match = rawCurrentStr.match(/[\d\.]+/); 
                  if (match) {
                      const parsed = parseFloat(match[0]);
                      if (!isNaN(parsed)) current = parsed;
@@ -322,9 +334,10 @@ export class StandardService {
              else if (lowerPack.includes('g') && !lowerPack.includes('mg')) unit = 'g';
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
 
-             // --- LOGIC 5: STRICT DATE PARSING ---
-             const receivedDate = this.parseVietnameseDateStrict(row['ngày nhận']);
-             const expiryDate = this.parseVietnameseDateStrict(row['hạn sử dụng']);
+             // --- LOGIC 5: STRICT DATE PARSING (NEW) ---
+             // Cột B: ngày nhận, Cột I: hạn sử dụng (dựa trên header text)
+             const receivedDate = this.parseExcelDate(row['ngày nhận']);
+             const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
 
              const standard: ReferenceStandard = {
                  id, name: name.trim(),
@@ -338,7 +351,7 @@ export class StandardService {
                  expiry_date: expiryDate,
                  
                  initial_amount: isNaN(initial) ? 0 : initial,
-                 current_amount: current, // Value is TRUSTED from Excel
+                 current_amount: current, 
                  unit: unit,
                  
                  product_code: (row['product code'] || '').toString().trim(),
@@ -356,26 +369,36 @@ export class StandardService {
              batch.set(stdRef, standard);
              opCount++;
 
-             // --- LOGIC 6: USAGE LOGS (Lưu vết nhưng KHÔNG trừ tồn kho) ---
+             // --- LOGIC 6: USAGE LOGS DEDUPLICATION (NEW) ---
+             // Set để lưu chữ ký (Signature) của các log đã thêm trong dòng này
+             const addedLogs = new Set<string>();
+             const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
+
              for (let i = 1; i <= 5; i++) {
                  const colName = `lần cân ${i}`;
                  const cellValue = row[colName];
                  
-                 const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
-
                  if (cellValue) {
                      const logData = this.parseUsageLogString(cellValue, logDefaultDate);
                      
                      if (logData) {
-                         const logId = `log_${i}_${Date.now()}`; 
-                         const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs/${logId}`);
+                         // Tạo chữ ký: Ngày + Người + Lượng
+                         // Mục đích: Nếu Excel bị copy paste 3 cột giống hệt nhau, chỉ lấy 1.
+                         const logSignature = `${logData.date}_${logData.user}_${logData.amount_used}`;
                          
-                         batch.set(logRef, {
-                             ...logData,
-                             unit: unit, 
-                             timestamp: new Date().getTime() + i
-                         });
-                         opCount++;
+                         if (!addedLogs.has(logSignature)) {
+                             addedLogs.add(logSignature); // Đánh dấu đã thêm
+
+                             const logId = `log_${i}_${Date.now()}`; 
+                             const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs/${logId}`);
+                             
+                             batch.set(logRef, {
+                                 ...logData,
+                                 unit: unit, 
+                                 timestamp: new Date().getTime() + i
+                             });
+                             opCount++;
+                         }
                      }
                  }
              }
