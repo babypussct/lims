@@ -340,9 +340,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
 
-      // Ensure chart.js is properly loaded via NPM import
-      // If auto-registering via 'chart.js/auto', we can use it directly.
-      
       // --- CRITICAL FIX: Destroy existing chart on this canvas ---
       const existingChart = Chart.getChart(canvas);
       if (existingChart) existingChart.destroy();
@@ -380,11 +377,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const history = this.state.approvedRequests();
       
       history.forEach(req => {
-          const ts = req.approvedAt || req.timestamp;
-          if (!ts) return;
-          
-          const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts);
-          const key = `${d.getDate()}/${d.getMonth() + 1}`;
+          let key = '';
+
+          // PRIORITY 1: User-entered Analysis Date (Manual Entry)
+          if (req.analysisDate) {
+              const parts = req.analysisDate.split('-'); // YYYY-MM-DD
+              if (parts.length === 3) {
+                  // Normalize to match bucket format (remove leading zeros by parseInt)
+                  const day = parseInt(parts[2], 10);
+                  const month = parseInt(parts[1], 10);
+                  key = `${day}/${month}`;
+              }
+          }
+
+          // PRIORITY 2: Fallback to System Timestamp
+          if (!key) {
+              const ts = req.approvedAt || req.timestamp;
+              if (ts) {
+                  const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts);
+                  key = `${d.getDate()}/${d.getMonth() + 1}`;
+              }
+          }
           
           const idx = dateMap.get(key);
           if (idx !== undefined) {

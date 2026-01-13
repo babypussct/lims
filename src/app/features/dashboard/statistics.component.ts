@@ -179,7 +179,7 @@ interface NxtReportItem {
                                         <h3 class="font-bold text-slate-700 flex items-center gap-2">
                                             <i class="fa-solid fa-table"></i> Bảng Kê Nhập - Xuất - Tồn
                                         </h3>
-                                        <p class="text-xs text-slate-500 mt-0.5">Dữ liệu toàn cục của kho.</p>
+                                        <p class="text-xs text-slate-500 mt-0.5">Dữ liệu toàn cục của kho (theo ngày thực tế).</p>
                                     } @else {
                                         <h3 class="font-bold text-slate-700 flex items-center gap-2">
                                             <i class="fa-solid fa-list-check"></i> Chi tiết Xuất kho theo Quy trình
@@ -424,6 +424,7 @@ export class StatisticsComponent {
   }
 
   // --- NXT / EXPORT DETAIL REPORT LOGIC ---
+  // MAINTAINED LOGIC: Use system timestamp / logs for Inventory Accuracy
   async generateNxtReport() {
       this.isLoading.set(true);
       this.nxtData.set([]);
@@ -505,7 +506,7 @@ export class StatisticsComponent {
               this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
 
           } else {
-              // --- Logic Specific SOP Consumption ---
+              // --- Logic Specific SOP Consumption (System Time Based for Warehouse check) ---
               const consumptionMap = new Map<string, number>();
               
               logs.forEach(log => {
@@ -600,18 +601,34 @@ export class StatisticsComponent {
     const history = this.state.approvedRequests();
     const map = new Map<string, {amount: number, unit: string, displayName: string}>();
     
-    // Date Filter Logic
+    // UPDATED LOGIC: Use Analysis Date when available
     const start = new Date(this.startDate()); start.setHours(0,0,0,0);
     const end = new Date(this.endDate()); end.setHours(23,59,59,999);
     const sopId = this.selectedSopId();
 
     history.forEach(req => {
-        // 1. Check Date
-        const ts = req.timestamp;
-        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        // PRIORITY: Analysis Date -> Approved Date -> Timestamp
+        let d: Date;
+        if (req.analysisDate) {
+            // YYYY-MM-DD string. To ensure it's treated as local date, we parse parts.
+            // Or simpler: new Date(req.analysisDate) usually defaults to UTC in some browsers, 
+            // but for comparison with 'start' and 'end' created from string inputs, standard comparison works best.
+            // Let's ensure midnight alignment.
+            d = new Date(req.analysisDate);
+            // Fix timezone potential issues by using the string YYYY-MM-DD if possible, 
+            // but here we are comparing Date objects. 
+            // A safe way for comparison:
+            const parts = req.analysisDate.split('-');
+            d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        } else {
+            const ts = req.approvedAt || req.timestamp;
+            d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        }
+
+        // Compare
         if (d < start || d > end) return;
 
-        // 2. Check SOP Filter
+        // Check SOP Filter
         if (sopId !== 'all' && req.sopId !== sopId) return;
 
         req.items.forEach(item => {
@@ -632,15 +649,22 @@ export class StatisticsComponent {
   sopFrequencyData = computed(() => {
     const history = this.state.approvedRequests();
     
-    // Date Filter Logic
+    // UPDATED LOGIC: Use Analysis Date when available
     const start = new Date(this.startDate()); start.setHours(0,0,0,0);
     const end = new Date(this.endDate()); end.setHours(23,59,59,999);
     const sopId = this.selectedSopId();
 
     // Filter First
     const filteredHistory = history.filter(req => {
-        const ts = req.timestamp;
-        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        let d: Date;
+        if (req.analysisDate) {
+            const parts = req.analysisDate.split('-');
+            d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        } else {
+            const ts = req.approvedAt || req.timestamp;
+            d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+        }
+
         if (d < start || d > end) return false;
         if (sopId !== 'all' && req.sopId !== sopId) return false;
         return true;
