@@ -3,7 +3,8 @@ export interface UsageLog {
   id?: string;
   date: string;
   user: string; 
-  amount_used: number; 
+  amount_used: number;
+  unit?: string; // Đơn vị thực tế khi cân (VD: mg, ul)
   purpose?: string; 
   timestamp?: number;
 }
