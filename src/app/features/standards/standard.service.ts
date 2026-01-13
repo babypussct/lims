@@ -48,31 +48,32 @@ export class StandardService {
   private parseExcelDate(val: any): string {
       if (val === null || val === undefined) return '';
       
-      // 1. Trường hợp là số (Excel Serial Date)
-      // Excel đếm ngày từ 30/12/1899. 
-      // Cần xử lý timezone offset để tránh bị lùi 1 ngày do GMT
-      if (typeof val === 'number') {
-          // Chỉ xử lý nếu số > 1000 (tránh nhầm lẫn với số lượng)
-          if (val > 1000) {
-              const date = new Date(Math.round((val - 25569) * 86400 * 1000));
-              // Cộng thêm 12 tiếng để tránh lỗi timezone làm lùi ngày
-              date.setHours(date.getHours() + 12);
-              return date.toISOString().split('T')[0];
-          }
-          return '';
-      }
-
       const strVal = val.toString().trim();
       if (['-', '/', 'na', 'n/a', 'unknown', ''].includes(strVal.toLowerCase())) return '';
 
-      // 2. Trường hợp chuỗi số (VD: "45817")
-      if (/^\d+$/.test(strVal) && Number(strVal) > 10000) {
-           const date = new Date(Math.round((Number(strVal) - 25569) * 86400 * 1000));
-           date.setHours(date.getHours() + 12);
-           return date.toISOString().split('T')[0];
+      // 1. Trường hợp là số (Excel Serial Date)
+      // Excel đếm ngày từ 30/12/1899. 
+      // Nếu input là số hoặc chuỗi số (VD: 45817)
+      let serial = NaN;
+      if (typeof val === 'number') serial = val;
+      else if (/^\d+(\.\d+)?$/.test(strVal)) serial = parseFloat(strVal);
+
+      if (!isNaN(serial) && serial > 10000) {
+          // Tính toán ngày từ Serial Number
+          // 25569 là chênh lệch ngày giữa 1970-01-01 và 1900-01-01
+          // * 86400 * 1000 để ra milliseconds
+          const utcDays = Math.floor(serial - 25569);
+          const utcValue = utcDays * 86400 * 1000;
+          const dateInfo = new Date(utcValue);
+
+          // Do lỗi lệch múi giờ khi chuyển đổi, ta cộng thêm 12h để đảm bảo nằm giữa ngày
+          // Điều này giúp tránh việc 00:00:00 bị lùi về 23:00:00 ngày hôm trước
+          dateInfo.setHours(dateInfo.getHours() + 12);
+          
+          return dateInfo.toISOString().split('T')[0];
       }
 
-      // 3. Trường hợp Text (dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy)
+      // 2. Trường hợp Text (dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy)
       // Ép kiểu cứng: [0]=Ngày, [1]=Tháng
       const parts = strVal.split(/[\/\-\.]/);
       
@@ -101,7 +102,7 @@ export class StandardService {
       const str = val.toString().trim();
       if (!str) return null;
 
-      // Case A: Chuỗi đầy đủ (Multi-line)
+      // Case A: Chuỗi đầy đủ (Multi-line text từ phần mềm cũ hoặc ghi chú tay)
       // "Ngày pha chế: 15/10/2025..."
       const dateMatch = str.match(/ng[àa]y\s*pha\s*ch[ếe]:\s*([\d\/\-\.]+)/i);
       const userMatch = str.match(/ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*([^\n\r]+)/i); 
@@ -111,6 +112,7 @@ export class StandardService {
           const amountRaw = parseFloat(amountMatch[1].trim());
           if (!isNaN(amountRaw)) {
               let logDate = defaultDate;
+              // Nếu trong log text có ngày cụ thể, ưu tiên dùng nó
               if (dateMatch && dateMatch[1]) {
                   const parsedLogDate = this.parseExcelDate(dateMatch[1].trim());
                   if (parsedLogDate) logDate = parsedLogDate;
@@ -125,16 +127,21 @@ export class StandardService {
           }
       }
 
-      // Case B: Chỉ là số (VD: 30.75)
-      // Loại bỏ các ký tự ẩn, khoảng trắng
-      const cleanStr = str.replace(/[^\d\.-]/g, '');
+      // Case B: Chỉ là số lượng (VD: "30.75" hoặc "30,75")
+      // Loại bỏ các ký tự không phải số và dấu chấm/phẩy
+      // Chuyển phẩy thành chấm để parse
+      const cleanStr = str.replace(/,/g, '.').replace(/[^\d\.-]/g, '');
+      
       if (cleanStr && !isNaN(parseFloat(cleanStr))) { 
-          return {
-              date: defaultDate, 
-              user: 'Import Data',
-              amount_used: parseFloat(cleanStr),
-              purpose: 'Import Log'
-          };
+          const amount = parseFloat(cleanStr);
+          if (amount > 0) { // Chỉ nhận nếu lượng > 0
+              return {
+                  date: defaultDate, 
+                  user: 'Import Data',
+                  amount_used: amount,
+                  purpose: 'Import Log'
+              };
+          }
       }
 
       return null;
@@ -282,6 +289,7 @@ export class StandardService {
           const workbook = XLSX.read(data, { type: 'array' });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           
+          // Sử dụng header: 1 để lấy dòng đầu tiên làm mảng tiêu đề, giúp xử lý chính xác chỉ mục cột
           const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
@@ -335,7 +343,7 @@ export class StandardService {
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
 
              // --- LOGIC 5: STRICT DATE PARSING (NEW) ---
-             // Cột B: ngày nhận, Cột I: hạn sử dụng (dựa trên header text)
+             // Cột ngày nhận, hạn sử dụng
              const receivedDate = this.parseExcelDate(row['ngày nhận']);
              const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
 
