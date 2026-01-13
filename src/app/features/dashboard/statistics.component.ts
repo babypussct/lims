@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { InventoryService } from '../../features/inventory/inventory.service';
 import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import Chart from 'chart.js/auto'; // STANDARD IMPORT
 
 interface NxtReportItem {
@@ -23,7 +24,7 @@ interface NxtReportItem {
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateRangeFilterComponent],
   template: `
     @if (auth.canViewReports()) {
         <div class="h-full flex flex-col space-y-5 pb-6 fade-in overflow-hidden relative font-sans text-slate-800">
@@ -43,13 +44,13 @@ interface NxtReportItem {
                 <!-- Filters Area -->
                 <div class="flex flex-col md:flex-row gap-3 items-end md:items-center flex-wrap">
                     
-                    <!-- SOP Filter (NEW) -->
+                    <!-- SOP Filter -->
                     <div class="relative group min-w-[200px]">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
                         </div>
                         <select [ngModel]="selectedSopId()" (ngModelChange)="selectedSopId.set($event)" 
-                                class="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-sm appearance-none cursor-pointer hover:bg-white">
+                                class="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-sm appearance-none cursor-pointer hover:bg-white h-[42px]">
                             <option value="all">Tất cả Quy trình (SOP)</option>
                             @for (sop of state.sops(); track sop.id) {
                                 <option [value]="sop.id">{{sop.name}}</option>
@@ -60,39 +61,13 @@ interface NxtReportItem {
                         </div>
                     </div>
 
-                    <!-- Range Presets -->
-                    <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                        <button (click)="setRange('today')" 
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95"
-                                [class]="currentRangeType() === 'today' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                            Hôm nay
-                        </button>
-                        <button (click)="setRange('month')" 
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95"
-                                [class]="currentRangeType() === 'month' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                            Tháng này
-                        </button>
-                        <button (click)="setRange('year')" 
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95"
-                                [class]="currentRangeType() === 'year' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                            Năm nay
-                        </button>
-                    </div>
+                    <!-- REPLACED: Date Range Filter Component -->
+                    <app-date-range-filter 
+                        [initStart]="startDate()" 
+                        [initEnd]="endDate()"
+                        (dateChange)="onDateRangeChange($event)">
+                    </app-date-range-filter>
 
-                    <!-- Date Pickers -->
-                    <div class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-sm hover:border-blue-400 transition-colors group focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-                        <div class="flex flex-col">
-                            <label class="text-[9px] font-bold text-slate-400 leading-none uppercase">Từ ngày</label>
-                            <input type="date" [ngModel]="startDate()" (ngModelChange)="onDateChange('start', $event)" 
-                                class="text-xs font-bold text-slate-700 outline-none border-none p-0 bg-transparent w-24 cursor-pointer">
-                        </div>
-                        <div class="text-slate-300"><i class="fa-solid fa-arrow-right text-xs"></i></div>
-                        <div class="flex flex-col">
-                            <label class="text-[9px] font-bold text-slate-400 leading-none uppercase">Đến ngày</label>
-                            <input type="date" [ngModel]="endDate()" (ngModelChange)="onDateChange('end', $event)"
-                                class="text-xs font-bold text-slate-700 outline-none border-none p-0 bg-transparent w-24 cursor-pointer">
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -371,10 +346,10 @@ export class StatisticsComponent {
   getAvatarUrl = getAvatarUrl;
   
   activeTab = signal<'logs' | 'consumption' | 'sops' | 'nxt'>('logs');
-  currentRangeType = signal<'today' | 'month' | 'year' | 'custom'>('month');
+  
   startDate = signal<string>(this.getFirstDayOfMonth());
   endDate = signal<string>(this.getToday());
-  selectedSopId = signal<string>('all'); // New Signal for SOP Filter
+  selectedSopId = signal<string>('all'); 
 
   barChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('barChartCanvas');
   private barChart: any = null;
@@ -392,28 +367,15 @@ export class StatisticsComponent {
   }
 
   // --- Actions ---
-  onDateChange(type: 'start'|'end', val: string) {
-      if(type === 'start') this.startDate.set(val);
-      else this.endDate.set(val);
-      this.currentRangeType.set('custom');
-  }
-
-  setRange(type: 'today' | 'month' | 'year') {
-      this.currentRangeType.set(type);
-      if (type === 'today') {
-          const today = this.getToday();
-          this.startDate.set(today); this.endDate.set(today);
-      } else if (type === 'month') {
-          this.startDate.set(this.getFirstDayOfMonth()); this.endDate.set(this.getToday());
-      } else if (type === 'year') {
-          this.startDate.set(this.getFirstDayOfYear()); this.endDate.set(this.getToday());
-      }
+  onDateRangeChange(range: { start: string, end: string, label: string }) {
+      this.startDate.set(range.start);
+      this.endDate.set(range.end);
+      // No need to set 'range type' anymore, the component handles the label
   }
 
   private getToday(): string { return new Date().toISOString().split('T')[0]; }
   private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
-  private getFirstDayOfYear(): string { return new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]; }
-
+  
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
   getSelectedSopName(): string {
@@ -424,7 +386,6 @@ export class StatisticsComponent {
   }
 
   // --- NXT / EXPORT DETAIL REPORT LOGIC ---
-  // MAINTAINED LOGIC: Use system timestamp / logs for Inventory Accuracy
   async generateNxtReport() {
       this.isLoading.set(true);
       this.nxtData.set([]);
@@ -435,16 +396,11 @@ export class StatisticsComponent {
       const sopId = this.selectedSopId();
       
       try {
-          // 1. Fetch ALL Inventory (Single Read)
           const inventory = await this.invService.getAllInventory();
-          
-          // 2. Fetch logs from StartDate until Now
           const today = new Date();
           const logs = await this.invService.getLogsByDateRange(start, today);
           
-          // Option 2: Separate logic based on Filter
           if (sopId === 'all') {
-              // --- Logic NXT (Full Stock) ---
               const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
               inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
 
@@ -453,7 +409,6 @@ export class StatisticsComponent {
               logs.forEach(log => {
                   const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
                   
-                  // Helper to parse log details
                   const result: { id: string, delta: number }[] = [];
                   if (log.action.includes('STOCK')) {
                       const match = log.details.match(/kho\s+([a-zA-Z0-9_-]+):\s*([+-]?\d+(?:\.\d+)?)/);
@@ -506,13 +461,10 @@ export class StatisticsComponent {
               this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
 
           } else {
-              // --- Logic Specific SOP Consumption (System Time Based for Warehouse check) ---
               const consumptionMap = new Map<string, number>();
-              
               logs.forEach(log => {
                   const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
                   
-                  // Filter by time range strictly within selected period
                   if (logTime <= endTime.getTime()) {
                       if (log.action.includes('APPROVE') && log.printData?.sop?.id === sopId && log.printData?.items) {
                           log.printData.items.forEach(item => {
@@ -538,10 +490,10 @@ export class StatisticsComponent {
                       name: item?.name || id,
                       unit: item?.unit || '?',
                       category: item?.category || 'Unknown',
-                      startStock: 0, // N/A
-                      importQty: 0, // N/A
+                      startStock: 0, 
+                      importQty: 0, 
                       exportQty: parseFloat(qty.toFixed(3)),
-                      endStock: 0 // N/A
+                      endStock: 0 
                   });
               });
               this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
@@ -588,11 +540,8 @@ export class StatisticsComponent {
       return this.state.logs().filter(log => {
           const d = (log.timestamp as any).toDate ? (log.timestamp as any).toDate() : new Date(log.timestamp);
           const inDate = d >= start && d <= end;
-          
           if (!inDate) return false;
           if (sopId === 'all') return true;
-          
-          // Advanced Filter: Only show logs related to this SOP
           return log.printData?.sop?.id === sopId;
       });
   });
@@ -601,23 +550,13 @@ export class StatisticsComponent {
     const history = this.state.approvedRequests();
     const map = new Map<string, {amount: number, unit: string, displayName: string}>();
     
-    // UPDATED LOGIC: Use Analysis Date when available
     const start = new Date(this.startDate()); start.setHours(0,0,0,0);
     const end = new Date(this.endDate()); end.setHours(23,59,59,999);
     const sopId = this.selectedSopId();
 
     history.forEach(req => {
-        // PRIORITY: Analysis Date -> Approved Date -> Timestamp
         let d: Date;
         if (req.analysisDate) {
-            // YYYY-MM-DD string. To ensure it's treated as local date, we parse parts.
-            // Or simpler: new Date(req.analysisDate) usually defaults to UTC in some browsers, 
-            // but for comparison with 'start' and 'end' created from string inputs, standard comparison works best.
-            // Let's ensure midnight alignment.
-            d = new Date(req.analysisDate);
-            // Fix timezone potential issues by using the string YYYY-MM-DD if possible, 
-            // but here we are comparing Date objects. 
-            // A safe way for comparison:
             const parts = req.analysisDate.split('-');
             d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
         } else {
@@ -625,10 +564,7 @@ export class StatisticsComponent {
             d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
         }
 
-        // Compare
         if (d < start || d > end) return;
-
-        // Check SOP Filter
         if (sopId !== 'all' && req.sopId !== sopId) return;
 
         req.items.forEach(item => {
@@ -649,12 +585,10 @@ export class StatisticsComponent {
   sopFrequencyData = computed(() => {
     const history = this.state.approvedRequests();
     
-    // UPDATED LOGIC: Use Analysis Date when available
     const start = new Date(this.startDate()); start.setHours(0,0,0,0);
     const end = new Date(this.endDate()); end.setHours(23,59,59,999);
     const sopId = this.selectedSopId();
 
-    // Filter First
     const filteredHistory = history.filter(req => {
         let d: Date;
         if (req.analysisDate) {
@@ -676,18 +610,12 @@ export class StatisticsComponent {
     const map = new Map<string, {count: number, samples: number, qcs: number}>();
     filteredHistory.forEach(req => {
         const current = map.get(req.sopName) || { count: 0, samples: 0, qcs: 0 };
-        
         let s = 0; let q = 0;
         if (req.inputs) {
             if(req.inputs['n_sample']) s = Number(req.inputs['n_sample']);
             if(req.inputs['n_qc']) q = Number(req.inputs['n_qc']);
         }
-
-        map.set(req.sopName, { 
-            count: current.count + 1,
-            samples: current.samples + s,
-            qcs: current.qcs + q
-        });
+        map.set(req.sopName, { count: current.count + 1, samples: current.samples + s, qcs: current.qcs + q });
     });
 
     return Array.from(map.entries())
@@ -698,26 +626,17 @@ export class StatisticsComponent {
   async createConsumptionBarChart() {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
-      
       const existing = Chart.getChart(canvas);
       if (existing) existing.destroy();
-      if (this.barChart) {
-          this.barChart.destroy();
-          this.barChart = null;
-      }
-
+      if (this.barChart) { this.barChart.destroy(); this.barChart = null; }
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-
       const data = this.consumptionData().slice(0, 10);
-      const labels = data.map(d => d.displayName || d.name);
-      const values = data.map(d => d.amount);
-      
       this.barChart = new Chart(ctx, {
           type: 'bar',
           data: {
-              labels: labels,
-              datasets: [{ label: 'Tiêu thụ', data: values, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
+              labels: data.map(d => d.displayName || d.name),
+              datasets: [{ label: 'Tiêu thụ', data: data.map(d => d.amount), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
           },
           options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
       });

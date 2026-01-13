@@ -7,11 +7,12 @@ import { cleanName, formatNum, formatDate } from '../../shared/utils/utils';
 import { Request, RequestItem } from '../../core/models/request.model';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { PrintQueueComponent } from './print-queue.component';
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, PrintQueueComponent],
+  imports: [CommonModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative">
         <!-- Header & Tabs -->
@@ -45,6 +46,17 @@ import { PrintQueueComponent } from './print-queue.component';
                </button>
             </div>
         </div>
+
+        <!-- DATE FILTER (Only for History Tab) -->
+        @if (currentTab() === 'approved') {
+            <div class="mb-4 flex justify-end">
+                <app-date-range-filter 
+                    [initStart]="startDate()" 
+                    [initEnd]="endDate()" 
+                    (dateChange)="onDateRangeChange($event)">
+                </app-date-range-filter>
+            </div>
+        }
 
         <!-- CONTENT AREA -->
         <div class="flex-1 min-h-0 relative">
@@ -160,7 +172,7 @@ import { PrintQueueComponent } from './print-queue.component';
                                         <i class="fa-solid fa-inbox text-3xl"></i>
                                     </div>
                                     <p class="text-slate-500 font-medium text-sm">
-                                        {{ currentTab() === 'pending' ? 'Không có yêu cầu nào đang chờ.' : 'Chưa có lịch sử phê duyệt.' }}
+                                        {{ currentTab() === 'pending' ? 'Không có yêu cầu nào đang chờ.' : 'Không có dữ liệu lịch sử trong khoảng thời gian này.' }}
                                     </p>
                                 </div>
                             }
@@ -177,11 +189,13 @@ export class RequestListComponent implements OnInit {
   auth = inject(AuthService);
   cleanName = cleanName; formatNum = formatNum; formatDate = formatDate;
   
-  // Add 'printing' to types
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
-  
   processingId = signal<string | null>(null);
   isLoading = signal(true);
+
+  // Date Filters for History
+  startDate = signal<string>(this.getFirstDayOfMonth());
+  endDate = signal<string>(this.getToday());
 
   ngOnInit() {
       // Check data loaded
@@ -192,11 +206,39 @@ export class RequestListComponent implements OnInit {
       }
   }
 
+  private getToday(): string { return new Date().toISOString().split('T')[0]; }
+  private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
+
+  onDateRangeChange(range: { start: string, end: string, label: string }) {
+      this.startDate.set(range.start);
+      this.endDate.set(range.end);
+  }
+
   filteredHistory = computed(() => {
       const all = this.state.approvedRequests();
       const user = this.auth.currentUser();
-      if (user?.role === 'manager') return all;
-      return all.filter(r => r.user === user?.displayName);
+      
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+
+      return all.filter(req => {
+          // Date Filter
+          let d: Date;
+          // Priority: Analysis Date (if exists) -> Approved At -> Timestamp
+          if (req.analysisDate) {
+              const parts = req.analysisDate.split('-');
+              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+          } else {
+              const ts = req.approvedAt || req.timestamp;
+              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          }
+          
+          if (d < start || d > end) return false;
+
+          // User Filter
+          if (user?.role === 'manager') return true;
+          return req.user === user?.displayName;
+      });
   });
 
   displayRequests = computed(() => this.currentTab() === 'pending' ? this.state.requests() : this.filteredHistory());
