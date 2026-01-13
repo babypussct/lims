@@ -46,29 +46,30 @@ export class StandardService {
   }
 
   // --- HELPER: VIETNAMESE DATE PARSER ---
-  // Ưu tiên dd/MM/yyyy
+  // Ưu tiên dd/MM/yyyy hoặc dd-MM-yy
   private parseVietnameseDate(val: any): string {
       if (!val) return '';
       const strVal = val.toString().trim();
       if (['-', '/', 'na', 'n/a', 'unknown', ''].includes(strVal.toLowerCase())) return '';
 
-      // 1. Regex dd/MM/yyyy (Ưu tiên số 1 theo yêu cầu)
+      // 1. Excel Serial Date (Trường hợp Excel tự convert thành số)
+      if (typeof val === 'number' || (strVal.match(/^\d+$/) && Number(strVal) > 30000)) {
+          // Excel base date: Dec 30 1899
+          const date = new Date(Math.round((Number(val) - 25569) * 86400 * 1000));
+          return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+      }
+
+      // 2. Regex dd/MM/yyyy hoặc dd-MM-yy (Ưu tiên số 1 theo yêu cầu)
       // Chấp nhận separator là / - hoặc .
+      // Group 1: Day, Group 2: Month, Group 3: Year (2 hoặc 4 số)
       const dmyMatch = strVal.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
       if (dmyMatch) {
           const day = dmyMatch[1].padStart(2, '0');
           const month = dmyMatch[2].padStart(2, '0');
           let year = dmyMatch[3];
-          if (year.length === 2) year = '20' + year; // Đoán 20xx
+          if (year.length === 2) year = '20' + year; // Convert 25 -> 2025
           
           return `${year}-${month}-${day}`; // Trả về ISO YYYY-MM-DD để lưu DB
-      }
-
-      // 2. Excel Serial Date (Trường hợp Excel tự convert thành số)
-      if (typeof val === 'number' || (strVal.match(/^\d+$/) && Number(strVal) > 30000)) {
-          // Excel base date: Dec 30 1899
-          const date = new Date(Math.round((Number(val) - 25569) * 86400 * 1000));
-          return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
       }
 
       // 3. Fallback: ISO format already?
@@ -80,19 +81,21 @@ export class StandardService {
   // --- HELPER: LOG PARSER ---
   // Parse chuỗi log phức tạp hoặc số đơn thuần
   private parseUsageLogString(val: any, defaultDate: string): UsageLog | null {
-      if (!val) return null;
+      if (val === null || val === undefined || val === '') return null;
       const str = val.toString().trim();
       if (!str) return null;
 
-      // Case A: Chuỗi đầy đủ "Ngày pha chế: 15/10/2025 Người pha chế: MAI Lượng dùng: 0.2"
-      // Regex linh hoạt chấp nhận khoảng trắng và case
-      const fullPattern = /ng[àa]y\s*pha\s*ch[ếe]:\s*([0-9\/\-\.]+).*ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*(.*).*l[ưượng\s*d[ùu]ng:\s*([0-9\.]+)/i;
-      const match = str.match(fullPattern);
+      // Case A: Chuỗi đầy đủ (Multi-line)
+      // "Ngày pha chế: 15/10/2025 Người pha chế: MAI Lượng dùng: 0.2"
+      // Regex linh hoạt chấp nhận khoảng trắng, xuống dòng và case
+      const dateMatch = str.match(/ng[àa]y\s*pha\s*ch[ếe]:\s*([\d\/\-\.]+)/i);
+      const userMatch = str.match(/ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*([^\n\r]+)/i); // Lấy đến hết dòng
+      const amountMatch = str.match(/l[ưượng\s*d[ùu]ng:\s*([\d\.]+)/i);
 
-      if (match) {
-          const dateRaw = match[1].trim();
-          const userRaw = match[2].trim();
-          const amountRaw = parseFloat(match[3].trim());
+      if (dateMatch && amountMatch) {
+          const dateRaw = dateMatch[1].trim();
+          const userRaw = userMatch ? userMatch[1].trim() : 'Unknown';
+          const amountRaw = parseFloat(amountMatch[1].trim());
 
           if (!isNaN(amountRaw)) {
               return {
@@ -105,12 +108,12 @@ export class StandardService {
       }
 
       // Case B: Chỉ là số (0.2)
-      const num = parseFloat(str);
-      if (!isNaN(num) && str.length < 10) { // Check length để tránh nhầm chuỗi số dài
+      // Kiểm tra xem chuỗi có phải là số thuần túy không (không chứa ký tự lạ ngoài số và dấu chấm)
+      if (!isNaN(parseFloat(str)) && isFinite(str as any)) { 
           return {
               date: defaultDate, // Dùng ngày nhận hoặc ngày hiện tại
               user: 'Import Data',
-              amount_used: num,
+              amount_used: parseFloat(str),
               purpose: 'Import Log'
           };
       }
@@ -270,14 +273,16 @@ export class StandardService {
           const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
-          const batch = writeBatch(this.fb.db);
-          let opCount = 0; // Operation Counter
-          const MAX_BATCH_SIZE = 400; // Limit per batch commit
+          let batch = writeBatch(this.fb.db);
+          let opCount = 0; 
+          const MAX_BATCH_SIZE = 400;
 
-          const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').trim().toLowerCase();
+          // Hàm làm sạch tiêu đề cột (xóa xuống dòng, khoảng trắng thừa)
+          const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
           for (const rawRow of rawRows) {
              const row: Record<string, any> = {};
+             // Map key đã được làm sạch
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
              const name = row['tên chuẩn'];
@@ -296,7 +301,7 @@ export class StandardService {
              }
 
              // --- LOGIC: CURRENT AMOUNT ---
-             // Ưu tiên cột "Lượng còn lại" từ Excel. Nếu trống/không phải số -> Mặc định = Initial
+             // Ưu tiên cột "Lượng còn lại" (đã normalized: 'lượng còn lại').
              let current = Number(row['lượng còn lại']);
              if (isNaN(current) || row['lượng còn lại'] === '') {
                  current = initial;
@@ -304,11 +309,12 @@ export class StandardService {
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
              
-             // Unit detection
+             // --- LOGIC: UNIT DETECTION ---
              let unit = 'mg';
              const lowerPack = packSize.toLowerCase();
-             if (lowerPack.includes('ml')) unit = 'ml';
+             if (lowerPack.includes('ml')) unit = 'mL';
              else if (lowerPack.includes('g') && !lowerPack.includes('mg')) unit = 'g';
+             else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
 
              // --- MAIN DATA MAPPING ---
              const receivedDate = this.parseVietnameseDate(row['ngày nhận']);
@@ -318,7 +324,7 @@ export class StandardService {
                  id, name: name.trim(),
                  internal_id: internalId, 
                  location: location,
-                 pack_size: packSize, // Lưu chuỗi text để hiển thị, UI có thể parse để gợi ý
+                 pack_size: packSize, 
                  lot_number: lot,
                  contract_ref: (row['hợp đồng dự toán'] || row['hợp đồng'] || '').toString().trim(),
                  
@@ -338,7 +344,6 @@ export class StandardService {
                  lastUpdated: serverTimestamp()
              };
 
-             // Generate Search Key
              standard.search_key = this.generateSearchKey(standard);
 
              const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
@@ -346,43 +351,36 @@ export class StandardService {
              opCount++;
 
              // --- LOGIC: USAGE LOGS (LẦN CÂN 1 -> 5) ---
-             // Chúng ta tạo sub-collection cho mỗi lần cân
              for (let i = 1; i <= 5; i++) {
                  const colName = `lần cân ${i}`;
                  const cellValue = row[colName];
                  
+                 // Fallback date: Received date -> Created date -> Today
+                 const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
+
                  if (cellValue) {
-                     // Parse thông tin log
-                     const logData = this.parseUsageLogString(cellValue, receivedDate || new Date().toISOString().split('T')[0]);
+                     const logData = this.parseUsageLogString(cellValue, logDefaultDate);
                      
                      if (logData) {
-                         // Gán ID cho log để tránh trùng lặp nếu chạy lại (dùng index)
-                         const logId = `import_log_${i}`; 
+                         // Dùng timestamp để đảm bảo order, cộng thêm index i để tránh trùng tuyệt đối
+                         const logId = `log_${i}_${Date.now()}`; 
                          const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs/${logId}`);
                          
                          batch.set(logRef, {
                              ...logData,
-                             unit: unit, // Mặc định đơn vị giống chai chuẩn
-                             timestamp: new Date().getTime() // Order purpose
+                             unit: unit, 
+                             timestamp: new Date().getTime() + i // Offset timestamp slightly
                          });
                          opCount++;
                      }
                  }
              }
 
-             // Commit batch if limit reached to avoid error
+             // Commit batch chunk
              if (opCount >= MAX_BATCH_SIZE) {
-                 await batch.commit(); // Commit chunk
+                 await batch.commit();
+                 batch = writeBatch(this.fb.db); // New batch
                  opCount = 0;
-                 // Batch object is reused, but Firestore requires a new batch instance after commit?
-                 // No, in JS SDK `writeBatch()` returns a new batch. We need to re-instantiate or just create new one.
-                 // Correct way: loop structure needs refactoring for multi-batch.
-                 // For simplicity in this answer: We assume file size < 400 rows OR we accept recursive logic.
-                 // To make it safe: Let's simple create a NEW batch.
-                 // (NOTE: In a real heavy app, we'd use a robust chunking helper. Here we reset.)
-                 // But wait, `batch` variable is const. 
-                 // Simple fix: We won't reassign `batch`. We will rely on Firestore handling moderate sizes or
-                 // user splitting files. 400 ops is roughly 50-80 rows of standards (with logs). 
              }
           }
 
@@ -395,6 +393,7 @@ export class StandardService {
           resolve();
 
         } catch (err: any) {
+          console.error(err);
           this.toast.show('Lỗi đọc file Excel: ' + err.message, 'error');
           reject(err);
         }
