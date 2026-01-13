@@ -38,5 +38,8 @@ export interface ReferenceStandard {
   contract_ref?: string; // Số Hợp đồng / Dự án
   certificate_ref?: string; // Link đến file COA (URL)
   
+  // Search Optimization
+  search_key?: string; // Chuỗi tìm kiếm tổng hợp (normalized)
+
   lastUpdated?: any;
 }
