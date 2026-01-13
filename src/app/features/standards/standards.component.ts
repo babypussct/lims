@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -13,6 +13,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-standards',
@@ -31,19 +32,29 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
             </h2>
         </div>
         
-        <div class="flex gap-2">
-           @if(state.isAdmin()) {
+        <div class="flex gap-2 items-center">
+           @if(selectedIds().size > 0 && auth.canEditStandards()) {
+                <button (click)="deleteSelected()" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition font-bold text-xs flex items-center gap-2 animate-bounce-in">
+                    <i class="fa-solid fa-trash"></i> Xóa {{selectedIds().size}} mục
+                </button>
+                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+           }
+
+           @if(auth.canEditStandards()) {
              <button (click)="openAddModal()" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition font-bold text-xs flex items-center gap-2">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
-             <button (click)="deleteAll()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2">
-                <i class="fa-solid fa-trash"></i> Reset
+             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2">
+                <i class="fa-solid fa-file-excel"></i> Import
+             </button>
+             <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleImport($event)">
+           }
+           
+           @if(state.isAdmin()) {
+             <button (click)="deleteAll()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2" title="Xóa toàn bộ">
+                <i class="fa-solid fa-bomb"></i>
              </button>
            }
-           <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2">
-              <i class="fa-solid fa-file-excel"></i> Import
-           </button>
-           <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleImport($event)">
         </div>
       </div>
 
@@ -52,17 +63,13 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
           
           <!-- Omnibox Filters -->
           <div class="p-5 border-b border-slate-50 flex flex-col gap-4 bg-slate-50/30">
-             
-             <!-- Search Input Area -->
              <div class="flex flex-col md:flex-row gap-4">
                  <div class="relative flex-1 group">
                     <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm group-focus-within:text-indigo-500 transition-colors"></i>
                     <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                            class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
-                           placeholder="Tìm theo tên hóa chất (Hệ thống tự chuyển thành ID)...">
+                           placeholder="Tìm kiếm chuẩn, mã số, số lô...">
                  </div>
-
-                 <!-- View Mode Toggle -->
                  <div class="flex bg-slate-200/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
                     <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
                         <i class="fa-solid fa-list"></i>
@@ -79,67 +86,62 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
              
              <!-- VIEW MODE: LIST (TABLE) -->
              @if (viewMode() === 'list') {
-                 <div class="min-w-[800px] md:min-w-0"> 
+                 <div class="min-w-[900px] md:min-w-0"> 
                      <table class="w-full text-sm text-left relative">
                         <thead class="text-xs text-slate-400 font-bold uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-100 shadow-sm h-12">
                            <tr>
-                              <th class="px-6 py-4 w-80 bg-slate-50">Tên & Vị trí</th>
-                              <th class="px-6 py-4 hidden md:table-cell bg-slate-50">Thông tin Chi tiết</th>
-                              <th class="px-6 py-4 text-center w-28 hidden lg:table-cell bg-slate-50">Bảo quản</th>
-                              <th class="px-6 py-4 text-center w-32 hidden md:table-cell bg-slate-50">Hạn dùng</th>
-                              <th class="px-6 py-4 text-right w-36 bg-slate-50">Tồn kho</th>
-                              <th class="px-6 py-4 text-center w-32 bg-slate-50">Tác vụ</th>
+                              <th class="px-4 py-4 w-10 bg-slate-50 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer"></th>
+                              <th class="px-4 py-4 w-80 bg-slate-50">Tên Chuẩn / Vị trí</th>
+                              <th class="px-4 py-4 hidden md:table-cell bg-slate-50">Thông tin (Lô / Code)</th>
+                              <th class="px-4 py-4 text-center w-28 hidden lg:table-cell bg-slate-50">Bảo quản</th>
+                              <th class="px-4 py-4 text-center w-32 hidden md:table-cell bg-slate-50">Hạn dùng</th>
+                              <th class="px-4 py-4 text-right w-36 bg-slate-50">Tồn kho</th>
+                              <th class="px-4 py-4 text-center w-24 bg-slate-50">Tác vụ</th>
                            </tr>
                         </thead>
                         <tbody class="bg-white">
                            @if (isLoading()) {
                                 @for (i of [1,2,3,4,5]; track i) {
                                     <tr class="h-24">
-                                        <td class="px-6 py-4"><app-skeleton width="180px" height="14px"></app-skeleton></td>
-                                        <td class="px-6 py-4 hidden md:table-cell"><app-skeleton width="80px" height="10px"></app-skeleton></td>
-                                        <td class="px-6 py-4 hidden lg:table-cell text-center"><app-skeleton shape="circle" width="30px" height="30px" class="mx-auto"></app-skeleton></td>
-                                        <td class="px-6 py-4 text-center hidden md:table-cell"><app-skeleton width="80px" height="20px" class="mx-auto"></app-skeleton></td>
-                                        <td class="px-6 py-4 text-right"><app-skeleton width="60px" height="20px" class="ml-auto"></app-skeleton></td>
-                                        <td class="px-6 py-4 text-center"><app-skeleton width="60px" height="30px" class="mx-auto"></app-skeleton></td>
+                                        <td class="px-4"><app-skeleton width="16px" height="16px"></app-skeleton></td>
+                                        <td class="px-4"><app-skeleton width="180px" height="14px"></app-skeleton></td>
+                                        <td class="px-4 hidden md:table-cell"><app-skeleton width="80px" height="10px"></app-skeleton></td>
+                                        <td class="px-4 hidden lg:table-cell text-center"><app-skeleton shape="circle" width="30px" height="30px" class="mx-auto"></app-skeleton></td>
+                                        <td class="px-4 text-center hidden md:table-cell"><app-skeleton width="80px" height="20px" class="mx-auto"></app-skeleton></td>
+                                        <td class="px-4 text-right"><app-skeleton width="60px" height="20px" class="ml-auto"></app-skeleton></td>
+                                        <td class="px-4 text-center"><app-skeleton width="60px" height="30px" class="mx-auto"></app-skeleton></td>
                                     </tr>
                                 }
                            } @else {
                                @for (std of items(); track std.id) {
-                                  <tr class="hover:bg-slate-50 transition group h-24 border-b border-slate-50">
-                                     <!-- Col 1: Location & Name -->
-                                     <td class="px-6 py-3 align-top">
+                                  <tr class="hover:bg-slate-50 transition group h-24 border-b border-slate-50" [class.bg-indigo-50]="selectedIds().has(std.id)">
+                                     <td class="px-4 py-3 text-center align-top pt-4">
+                                         <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
+                                     </td>
+                                     <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-2">
                                                 <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1" title="Vị trí lưu kho">
                                                     <i class="fa-solid fa-location-dot text-[8px]"></i>
-                                                    {{std.internal_id || 'NO-LOC'}}
+                                                    {{std.location || std.internal_id || 'NO-LOC'}}
                                                 </span>
                                             </div>
                                             <div class="font-bold text-slate-700 text-sm leading-snug hover:text-indigo-600 transition cursor-pointer flex items-center gap-2 whitespace-pre-wrap" (click)="openEditModal(std)">
                                                 {{std.name}}
                                                 @if(std.certificate_ref) {
-                                                    <button (click)="openCoaPreview(std.certificate_ref, $event)" 
-                                                       class="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition shrink-0 ml-1" 
-                                                       title="Xem trước CoA">
-                                                        <i class="fa-solid fa-eye text-[10px]"></i>
-                                                    </button>
+                                                    <button (click)="openCoaPreview(std.certificate_ref, $event)" class="text-indigo-500 hover:text-indigo-700 transition" title="Xem CoA"><i class="fa-solid fa-file-pdf"></i></button>
                                                 }
                                             </div>
                                         </div>
                                      </td>
-
-                                     <!-- Col 2: Details -->
-                                     <td class="px-6 py-3 align-top hidden md:table-cell">
-                                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-10">Lot:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.lot_number || '---'}}</span></div>
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-10">Code:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.product_code || '---'}}</span></div>
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-10">CAS:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.cas_number || '---'}}</span></div>
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-10">Purity:</span><span class="font-mono font-bold text-indigo-600 select-all">{{std.purity || '---'}}</span></div>
+                                     <td class="px-4 py-3 align-top hidden md:table-cell">
+                                        <div class="grid grid-cols-1 gap-y-1 text-xs">
+                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Lot:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.lot_number || '-'}}</span></div>
+                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Code:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.product_code || '-'}}</span></div>
+                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Pack:</span><span class="font-mono font-bold text-slate-600">{{std.pack_size || '-'}}</span></div>
                                         </div>
                                      </td>
-
-                                     <!-- Col 3: Storage -->
-                                     <td class="px-6 py-3 text-center align-top hidden lg:table-cell">
+                                     <td class="px-4 py-3 text-center align-top hidden lg:table-cell">
                                         @let sIcons = getStorageIcons(std.storage_condition);
                                         <div class="flex justify-center gap-1" [title]="std.storage_condition">
                                             @for (icon of sIcons; track $index) {
@@ -147,43 +149,40 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
                                             }
                                         </div>
                                      </td>
-
-                                     <!-- Col 4: Expiry -->
-                                     <td class="px-6 py-3 text-center align-top hidden md:table-cell">
+                                     <td class="px-4 py-3 text-center align-top hidden md:table-cell">
                                         <div class="inline-flex flex-col items-center">
                                             <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
                                             <div class="text-[9px] font-bold mt-1 px-2 py-0.5 rounded border uppercase" [class]="getExpiryStatusClass(std.expiry_date)">{{ getExpiryStatus(std.expiry_date) }}</div>
                                         </div>
                                      </td>
-
-                                     <!-- Col 5: Stock -->
-                                     <td class="px-6 py-3 text-right align-top">
+                                     <td class="px-4 py-3 text-right align-top">
                                         <div class="font-black text-indigo-600 text-lg tracking-tight">{{formatNum(std.current_amount)}} <span class="text-xs font-bold text-slate-400">{{std.unit}}</span></div>
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden"><div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div></div>
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden relative">
+                                            <div class="h-1.5 rounded-full transition-all duration-500" 
+                                                 [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)"
+                                                 [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2"
+                                                 [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2">
+                                            </div>
+                                        </div>
                                      </td>
-
-                                     <!-- Col 6: Actions -->
-                                     <td class="px-6 py-3 text-center align-top">
+                                     <td class="px-4 py-3 text-center align-top">
                                         <div class="flex items-center justify-center gap-2">
                                            <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm" title="Cân chuẩn"><i class="fa-solid fa-weight-scale"></i></button>
                                            <button (click)="viewHistory(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-500 hover:bg-slate-200 transition" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left"></i></button>
-                                           @if(state.isAdmin()) { <button (click)="deleteStandard(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-500 hover:text-red-600 hover:bg-red-50 transition" title="Xóa"><i class="fa-solid fa-trash"></i></button> }
                                         </div>
                                      </td>
                                   </tr>
                                } 
                                @if (items().length === 0) {
-                                  <tr><td colspan="6" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu chuẩn phù hợp.</td></tr>
+                                  <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr>
                                }
                            }
                         </tbody>
                      </table>
                  </div>
              } 
-             <!-- ... (GRID VIEW CODE remains same, omitted for brevity but preserved in implementation) ... -->
              @else {
                  <div class="p-4">
-                    <!-- Same Grid as before -->
                     @if (isLoading()) { 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             @for(i of [1,2,3,4]; track i) { <app-skeleton height="200px"></app-skeleton> }
@@ -197,30 +196,37 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
                         } @else {
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 @for (std of items(); track std.id) {
-                                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col relative group h-[280px]">
-                                        <!-- Card Header -->
-                                        <div class="flex justify-between items-start mb-2">
-                                            <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                                                <i class="fa-solid fa-location-dot mr-1"></i> {{std.internal_id || 'NO-LOC'}}
-                                            </span>
-                                            <div class="flex items-center gap-1">
-                                                <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase border" [class]="getExpiryStatusClass(std.expiry_date)">
-                                                    {{ getExpiryStatus(std.expiry_date) }}
-                                                </div>
-                                            </div>
+                                    <div class="bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col relative group h-[280px]"
+                                         [class.border-slate-200]="!selectedIds().has(std.id)"
+                                         [class.border-indigo-400]="selectedIds().has(std.id)"
+                                         [class.shadow-lg]="selectedIds().has(std.id)"
+                                         [class.bg-indigo-50]="selectedIds().has(std.id)"
+                                         (click)="toggleSelection(std.id)">
+                                        
+                                        <!-- Card Header: Status Bar -->
+                                        <div class="w-full h-1.5 rounded-full mb-3 flex overflow-hidden bg-slate-100">
+                                            <div class="h-full" [style.width.%]="100" [class]="getExpiryBarClass(std.expiry_date)"></div>
                                         </div>
-                                        <!-- Title -->
-                                        <h3 (click)="openEditModal(std)" class="font-bold text-slate-800 text-sm leading-snug mb-3 cursor-pointer hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">
+
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100 truncate max-w-[120px]">
+                                                <i class="fa-solid fa-location-dot mr-1"></i> {{std.location || std.internal_id || 'NO-LOC'}}
+                                            </span>
+                                            <!-- Checkbox Overlay -->
+                                            <input type="checkbox" [checked]="selectedIds().has(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+                                        </div>
+
+                                        <h3 (click)="$event.stopPropagation(); openEditModal(std)" class="font-bold text-slate-800 text-sm leading-snug mb-3 cursor-pointer hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">
                                             {{std.name}}
                                         </h3>
-                                        <!-- Details Grid -->
-                                        <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
+
+                                        <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-slate-500 mb-4 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
                                             <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Lot No.</span> <span class="font-mono text-slate-700">{{std.lot_number || '-'}}</span></div>
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Code</span> <span class="font-mono text-slate-700">{{std.product_code || '-'}}</span></div>
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">CAS</span> <span class="font-mono text-slate-700">{{std.cas_number || '-'}}</span></div>
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Pack Size</span> <span class="font-bold text-slate-600">{{std.pack_size || '-'}}</span></div>
+                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Expiry</span> <span class="font-mono font-bold" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : '-'}}</span></div>
                                             <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Purity</span> <span class="font-bold text-indigo-600">{{std.purity || '-'}}</span></div>
                                         </div>
-                                        <!-- Stock & Actions -->
+
                                         <div class="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
                                             <div class="flex-1">
                                                 <div class="flex justify-between items-end mb-1">
@@ -232,7 +238,7 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
                                                 </div>
                                             </div>
                                             <div class="flex gap-1">
-                                                <button (click)="openWeighModal(std)" class="w-8 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center active:scale-95" title="Cân">
+                                                <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-8 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center active:scale-95" title="Cân">
                                                     <i class="fa-solid fa-weight-scale text-xs"></i>
                                                 </button>
                                             </div>
@@ -255,66 +261,154 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
           </div>
       </div>
 
-      <!-- ... (COA PREVIEW and ADD MODAL preserved) ... -->
-      
-      <!-- WEIGH MODAL (Updated with Unit Conversion) -->
+      <!-- ADD/EDIT MODAL (3 TABS) -->
+      @if (showModal()) {
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                
+                <!-- Modal Header -->
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-flask-vial text-indigo-600"></i>
+                        {{ isEditing() ? 'Cập nhật Chuẩn' : 'Thêm Chuẩn Mới' }}
+                    </h3>
+                    <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <!-- Tabs Header -->
+                <div class="flex bg-white border-b border-slate-100 px-6 shrink-0">
+                   <button (click)="activeModalTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'general' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">1. Thông tin chung</button>
+                   <button (click)="activeModalTab.set('stock')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'stock' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">2. Kho & Bảo quản</button>
+                   <button (click)="activeModalTab.set('docs')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="activeModalTab() === 'docs' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">3. Hồ sơ & Hạn dùng</button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white">
+                    <form [formGroup]="form" class="space-y-6">
+                        
+                        <!-- TAB 1: GENERAL INFO -->
+                        @if (activeModalTab() === 'general') {
+                            <div class="space-y-4 fade-in">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Tên Chuẩn <span class="text-red-500">*</span></label>
+                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: Sulfadiazine Standard">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white" placeholder="VD: 99.5%"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                                    <div><label class="text-[10px] font-bold text-indigo-700 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full border border-indigo-200 rounded-lg p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="VD: 10mg"></div>
+                                    <div><label class="text-[10px] font-bold text-indigo-700 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full border border-indigo-200 rounded-lg p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="VD: BCBW1234"></div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- TAB 2: STOCK & STORAGE -->
+                        @if (activeModalTab() === 'stock') {
+                            <div class="space-y-4 fade-in">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
+                                        <input formControlName="internal_id" (input)="onInternalIdChange($event)" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold font-mono outline-none focus:border-indigo-500 uppercase" placeholder="VD: AA01">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Vị trí (Location)</label>
+                                        <input formControlName="location" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50" placeholder="Tự động từ mã ID (VD: Tủ A)">
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 grid grid-cols-3 gap-4">
+                                    <div><label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full border border-white rounded-lg p-2 text-center font-bold outline-none"></div>
+                                    <div><label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full border border-white rounded-lg p-2 text-center font-bold text-indigo-600 outline-none text-lg"></div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Đơn vị</label>
+                                        <select formControlName="unit" class="w-full border border-white rounded-lg p-2.5 text-center font-bold outline-none bg-white h-[44px]">
+                                            @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Điều kiện bảo quản</label>
+                                    <input formControlName="storage_condition" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500" placeholder="VD: FT (Tủ đông), RT (Nhiệt độ phòng)...">
+                                </div>
+                            </div>
+                        }
+
+                        <!-- TAB 3: DOCS & EXPIRY -->
+                        @if (activeModalTab() === 'docs') {
+                            <div class="space-y-4 fade-in">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ngày nhận (Received)</label>
+                                        <input type="date" formControlName="received_date" class="w-full border border-slate-200 rounded-lg p-2 text-sm font-bold outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-red-400 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" formControlName="expiry_date" class="w-full border border-red-200 rounded-lg p-2 text-sm font-bold text-red-600 outline-none focus:border-red-500 bg-red-50">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500"></div>
+                                </div>
+                                
+                                <div class="pt-2 border-t border-slate-100">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">COA File (Link/Upload)</label>
+                                    <div class="flex gap-2">
+                                        <input formControlName="certificate_ref" class="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-500 text-blue-600 underline" placeholder="Paste URL here...">
+                                        <button type="button" (click)="uploadInput.click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                        </button>
+                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    </form>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+                    <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="saveStandard()" [disabled]="form.invalid" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                        {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }}
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+
+      <!-- Other Modals (Weigh, History, COA Preview) kept as is... -->
       @if (selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
                 <h3 class="font-black text-xl text-slate-800 mb-1">Cân chuẩn</h3>
                 <p class="text-sm text-slate-500 mb-6">{{selectedStd()?.name}}</p>
-                
-                <!-- Stock Display -->
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6 flex justify-between items-center">
                     <span class="text-xs font-bold text-indigo-800 uppercase">Tồn kho hiện tại</span>
                     <span class="font-mono font-black text-xl text-indigo-600">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
                 </div>
-                
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày pha chế</label>
-                        <input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Người pha chế</label>
-                        <input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    
-                    <!-- Weighing Amount with Unit Selector -->
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
                     <div class="grid grid-cols-3 gap-2">
-                        <div class="col-span-2">
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lượng cân</label>
-                            <input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 rounded-xl p-3 font-black text-2xl text-indigo-600 outline-none focus:border-indigo-500 text-center" placeholder="0.00" autofocus>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn vị</label>
-                            <select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 bg-slate-50 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">
-                                @for(u of unitOptions; track u.value) {
-                                    <option [value]="u.value">{{u.value}}</option>
-                                }
-                            </select>
-                        </div>
+                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 rounded-xl p-3 font-black text-2xl text-indigo-600 outline-none focus:border-indigo-500 text-center" placeholder="0.00" autofocus></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 bg-slate-50 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
                     </div>
-                    
-                    <!-- Conversion Hint -->
-                    @if(weighUnit() !== selectedStd()?.unit) {
-                        <div class="text-[10px] text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2">
-                            <i class="fa-solid fa-calculator"></i>
-                            <span>Hệ thống sẽ tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b> khi lưu.</span>
-                        </div>
-                    }
+                    @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
                 </div>
-                
-                <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">Xác nhận</button>
-                </div>
+                <div class="flex justify-end gap-3 mt-8"><button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button><button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">Xác nhận</button></div>
             </div>
          </div>
       }
       
-      <!-- History Modal (Includes Unit column now) -->
       @if (historyStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -323,55 +417,41 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
                   <button (click)="historyStd.set(null)" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-times text-xl"></i></button>
                </div>
                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                  <table class="w-full text-sm text-left">
-                     <thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase sticky top-0 border-b border-slate-100 shadow-sm">
-                        <tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()) { <th class="px-6 py-4 text-center w-24">Tác vụ</th> }</tr>
-                     </thead>
-                     <tbody class="divide-y divide-slate-50">
+                  <table class="w-full text-sm text-left"><thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase sticky top-0 border-b border-slate-100 shadow-sm"><tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()){<th class="px-6 py-4 text-center w-24">Tác vụ</th>}</tr></thead><tbody class="divide-y divide-slate-50">
                         @if (loadingHistory()) { <tr><td colspan="4" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr> } @else {
-                            @for (log of historyLogs(); track log.id) {
-                               <tr class="hover:bg-slate-50 transition group">
-                                  @if (editingLogId() !== log.id) {
-                                      <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td>
-                                      <td class="px-6 py-4"><div class="font-bold text-slate-700 text-xs">{{ log.user }}</div></td>
-                                      <td class="px-6 py-4 text-right">
-                                          <span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded text-xs">
-                                              -{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500">{{log.unit || historyStd()?.unit}}</span>
-                                          </span>
-                                      </td>
-                                      @if(state.isAdmin()) { <td class="px-6 py-4 text-center"><div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition"><button (click)="startEditLog(log)" class="w-7 h-7 flex items-center justify-center rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-[10px]"></i></button><button (click)="deleteLog(log)" class="w-7 h-7 flex items-center justify-center rounded bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-trash text-[10px]"></i></button></div></td> }
-                                  } @else {
-                                      <td class="px-4 py-2"><input type="date" [(ngModel)]="tempLog.date" class="w-full text-xs border rounded p-1"></td>
-                                      <td class="px-4 py-2"><input type="text" [(ngModel)]="tempLog.user" class="w-full text-xs border rounded p-1"></td>
-                                      <td class="px-4 py-2 text-right">
-                                          <div class="flex gap-1">
-                                              <input type="number" [(ngModel)]="tempLog.amount_used" class="w-16 text-xs border rounded p-1 text-right font-bold">
-                                              <select [(ngModel)]="tempLog.unit" class="w-14 text-[10px] border rounded">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select>
-                                          </div>
-                                      </td>
-                                      <td class="px-4 py-2 text-center"><div class="flex justify-center gap-1"><button (click)="saveLogEdit()" class="text-green-600 hover:text-green-800 p-1"><i class="fa-solid fa-check"></i></button><button (click)="cancelLogEdit()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-times"></i></button></div></td>
-                                  }
-                               </tr>
-                            } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Chưa có dữ liệu.</td></tr> }
+                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 transition group"> <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 text-xs">{{ log.user }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" class="text-red-500 hover:text-red-700 p-2"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Chưa có dữ liệu.</td></tr> }
                         }
-                     </tbody>
-                  </table>
+                  </tbody></table>
                </div>
             </div>
          </div>
+      }
+
+      <!-- COA PREVIEW -->
+      @if (previewUrl() || previewImgUrl()) {
+          <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in" (click)="closeCoaPreview()">
+              <div class="relative w-full max-w-5xl h-[85vh] bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+                  <div class="bg-slate-900 text-white p-3 flex justify-between items-center shrink-0"><span class="text-sm font-bold pl-2"><i class="fa-solid fa-file-pdf mr-2"></i> Preview Certificate of Analysis</span><div class="flex gap-3"><a [href]="previewRawUrl()" target="_blank" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition">Mở Tab mới</a><button (click)="closeCoaPreview()" class="text-white hover:text-red-400 transition"><i class="fa-solid fa-times text-lg"></i></button></div></div>
+                  <div class="flex-1 bg-slate-100 relative">
+                      @if(previewType() === 'image') { <div class="w-full h-full flex items-center justify-center overflow-auto"><img [src]="previewImgUrl()" class="max-w-full max-h-full object-contain shadow-lg"></div> } 
+                      @else { <iframe [src]="previewUrl()" class="w-full h-full border-none"></iframe> }
+                  </div>
+              </div>
+          </div>
       }
     </div>
   `
 })
 export class StandardsComponent implements OnInit, OnDestroy {
-  // ... (Injections same as before)
   state = inject(StateService);
+  auth = inject(AuthService);
   stdService = inject(StandardService);
   firebaseService = inject(FirebaseService); 
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   private fb: FormBuilder = inject(FormBuilder);
+  Math = Math; // For template
   
   isLoading = signal(true);
   isUploading = signal(false);
@@ -384,20 +464,20 @@ export class StandardsComponent implements OnInit, OnDestroy {
   lastDoc = signal<QueryDocumentSnapshot | null>(null);
   hasMore = signal(true);
 
-  activeModalTab = signal<'general' | 'stock' | 'origin'>('general');
+  // New: Selection & Tabs
+  selectedIds = signal<Set<string>>(new Set());
+  activeModalTab = signal<'general' | 'stock' | 'docs'>('general');
   unitOptions = UNIT_OPTIONS;
 
   selectedStd = signal<ReferenceStandard | null>(null);
   weighAmount = signal<number>(0);
   weighUser = signal<string>('');
   weighDate = signal<string>('');
-  weighUnit = signal<string>('mg'); // NEW: Signal for selected unit
+  weighUnit = signal<string>('mg');
   
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
   loadingHistory = signal(false);
-  editingLogId = signal<string | null>(null);
-  tempLog: UsageLog = { date: '', user: '', amount_used: 0, unit: 'mg' }; // Added unit
   
   showModal = signal(false);
   isEditing = signal(false);
@@ -410,30 +490,66 @@ export class StandardsComponent implements OnInit, OnDestroy {
   form = this.fb.group({
       id: [''], 
       name: ['', Validators.required], 
-      internal_id: [''], 
-      product_code: [''], cas_number: [''], purity: [''],
+      
+      // Tab 1
+      product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], 
+      pack_size: [''], lot_number: [''], 
+      
+      // Tab 2
+      internal_id: [''], location: [''], storage_condition: [''],
       initial_amount: [0, Validators.required], current_amount: [0, Validators.required], unit: ['mg', Validators.required], 
-      expiry_date: [''], received_date: [''], date_opened: [''], storage_condition: [''], 
-      lot_number: [''], manufacturer: [''], pack_size: [''], contract_ref: [''], certificate_ref: ['']
+      
+      // Tab 3
+      expiry_date: [''], received_date: [''], date_opened: [''], 
+      contract_ref: [''], certificate_ref: ['']
   });
 
   formatNum = formatNum;
 
   constructor() {
-      // Improved Debounce for Search (Simulating fuzzy search via generateSlug handled in Service)
       this.searchSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe(term => {
-          // If searching by Name, the service will convert it to a slug-like query
-          const slugTerm = generateSlug(term);
-          this.searchTerm.set(slugTerm); 
+          this.searchTerm.set(term); 
           this.refreshData();
       });
   }
 
-  ngOnInit() {
-      this.refreshData();
+  ngOnInit() { this.refreshData(); }
+  ngOnDestroy() { this.searchSubject.complete(); }
+
+  // --- Logic Tự động điền Vị trí ---
+  onInternalIdChange(event: any) {
+      const val = event.target.value.toUpperCase();
+      // Logic: Nếu nhập "AA01" -> Lấy chữ cái đầu "A" -> Gán vào Location "Tủ A"
+      if (val && val.length > 0 && !this.isEditing()) { // Chỉ tự động khi tạo mới hoặc người dùng chưa sửa location
+          const firstChar = val.charAt(0);
+          if (firstChar.match(/[A-Z]/)) {
+              this.form.patchValue({ location: `Tủ ${firstChar}` });
+          }
+      }
   }
 
-  ngOnDestroy() { this.searchSubject.complete(); }
+  // --- Selection Logic ---
+  toggleSelection(id: string) {
+      this.selectedIds.update(set => {
+          const newSet = new Set(set);
+          if (newSet.has(id)) newSet.delete(id);
+          else newSet.add(id);
+          return newSet;
+      });
+  }
+
+  isAllSelected() {
+      return this.items().length > 0 && this.items().every(i => this.selectedIds().has(i.id));
+  }
+
+  toggleAll() {
+      if (this.isAllSelected()) {
+          this.selectedIds.set(new Set());
+      } else {
+          const allIds = this.items().map(i => i.id);
+          this.selectedIds.set(new Set(allIds));
+      }
+  }
 
   // --- Data Loading ---
   async refreshData() {
@@ -441,6 +557,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.items.set([]);
       this.lastDoc.set(null);
       this.hasMore.set(true);
+      this.selectedIds.set(new Set());
       await this.loadMore(true);
   }
 
@@ -450,15 +567,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
       try {
           const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm());
-          
           if (isRefresh) this.items.set(page.items);
           else this.items.update(c => [...c, ...page.items]);
-          
           this.lastDoc.set(page.lastDoc);
           this.hasMore.set(page.hasMore);
-      } catch (e) {
-          console.error(e);
-          this.toast.show('Lỗi tải dữ liệu', 'error');
       } finally {
           this.isLoading.set(false);
       }
@@ -466,133 +578,101 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
 
-  // --- Preview Logic (Same as before) ---
-  openCoaPreview(url: string, event: Event) {
-      event.stopPropagation();
-      if (!url) return;
-      this.previewRawUrl.set(url);
-      const cleanUrl = url.split('?')[0].toLowerCase();
-      const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
-      if (isImage) { this.previewType.set('image'); this.previewImgUrl.set(url); } 
-      else { this.previewType.set('iframe'); const embedUrl = this.normalizeToPreviewUrl(url); this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl)); }
+  // --- CRUD Operations ---
+  openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
+  
+  openEditModal(std: ReferenceStandard) { 
+      if (!this.auth.canEditStandards()) return;
+      this.isEditing.set(true); 
+      this.activeModalTab.set('general'); 
+      this.form.patchValue(std as any); 
+      this.showModal.set(true); 
   }
-  closeCoaPreview() { this.previewUrl.set(null); this.previewImgUrl.set(''); this.previewRawUrl.set(''); }
-  private normalizeToPreviewUrl(url: string): string {
-      if (url.includes('drive.google.com')) {
-          let id = '';
-          const matchId = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-          const matchOpen = url.match(/id=([a-zA-Z0-9_-]+)/);
-          if (matchId && matchId[1]) id = matchId[1];
-          else if (matchOpen && matchOpen[1]) id = matchOpen[1];
-          if (id) return `https://drive.google.com/file/d/${id}/preview`;
+  
+  closeModal() { this.showModal.set(false); }
+  
+  onNameChange(event: any) { 
+      if (!this.isEditing()) { 
+          const lot = this.form.get('lot_number')?.value || ''; 
+          this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); 
+      } 
+  }
+
+  async saveStandard() {
+      if (this.form.invalid) {
+          this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error');
+          return;
       }
-      return url;
-  }
-
-  // --- Upload Logic (Same as before) ---
-  async uploadCoaFile(event: any) {
-      const file = event.target.files[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) { this.toast.show('File quá lớn (Max 10MB)', 'error'); return; }
-      this.isUploading.set(true);
+      const val = this.form.value;
+      if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
+      
+      const std: ReferenceStandard = { 
+          ...val as any, 
+          name: val.name?.trim(),
+          internal_id: val.internal_id?.toUpperCase().trim(),
+          location: val.location?.trim()
+      };
+      
       try {
-          const url = await this.firebaseService.uploadFile('coa_files', file);
-          this.form.patchValue({ certificate_ref: url });
-          this.toast.show('Upload thành công!', 'success');
-      } catch (e: any) { this.toast.show('Lỗi Upload', 'error'); } 
-      finally { this.isUploading.set(false); event.target.value = ''; }
+          if (this.isEditing()) await this.stdService.updateStandard(std);
+          else await this.stdService.addStandard(std);
+          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); 
+          this.closeModal(); 
+          this.refreshData();
+      } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
+  async deleteSelected() {
+      const ids = Array.from(this.selectedIds());
+      if (ids.length === 0) return;
+      if (await this.confirmationService.confirm({ 
+          message: `Bạn có chắc muốn xóa ${ids.length} chuẩn đã chọn?`, 
+          confirmText: 'Xóa vĩnh viễn', 
+          isDangerous: true 
+      })) {
+          try {
+              await this.stdService.deleteSelectedStandards(ids);
+              this.toast.show(`Đã xóa ${ids.length} mục.`, 'success');
+              this.refreshData();
+          } catch(e) { this.toast.show('Lỗi xóa', 'error'); }
+      }
+  }
+
+  async deleteAll() {
+      if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
+          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } 
+          catch (e) { this.toast.show('Lỗi xóa', 'error'); }
+      }
+  }
+
+  // --- File Operations ---
   async handleImport(event: any) {
      const file = event.target.files[0];
      if (file) { try { await this.stdService.importFromExcel(file); this.refreshData(); } finally { event.target.value = ''; } }
   }
 
-  async deleteAll() {
-      if (await this.confirmationService.confirm({ message: 'Xóa toàn bộ dữ liệu Chuẩn?', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } 
-          catch (e) { this.toast.show('Lỗi xóa dữ liệu', 'error'); }
-      }
-  }
-
-  async deleteStandard(std: ReferenceStandard) {
-      if (await this.confirmationService.confirm({message: 'Xóa chuẩn này?', confirmText: 'Xóa', isDangerous: true})) {
-          try { await this.stdService.deleteStandard(std.id); this.toast.show('Đã xóa'); this.refreshData(); }
-          catch (e) { this.toast.show('Lỗi', 'error'); }
-      }
-  }
-
-  // --- Modal Logic ---
-  openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
-  openEditModal(std: ReferenceStandard) { this.isEditing.set(true); this.activeModalTab.set('general'); this.form.patchValue(std as any); this.showModal.set(true); }
-  closeModal() { this.showModal.set(false); }
-  onNameChange(event: any) { if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } }
-
-  async saveStandard() {
-      if (this.form.invalid) return;
-      const val = this.form.value;
-      if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
-      const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), manufacturer: val.manufacturer?.trim(), lot_number: val.lot_number?.trim(), cas_number: val.cas_number?.trim(), internal_id: val.internal_id?.trim(), product_code: val.product_code?.trim() };
+  async uploadCoaFile(event: any) {
+      const file = event.target.files[0];
+      if (!file) return;
+      this.isUploading.set(true);
       try {
-          if (this.isEditing()) await this.stdService.updateStandard(std);
-          else await this.stdService.addStandard(std);
-          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); this.closeModal(); this.refreshData();
-      } catch (e) { this.toast.show('Lỗi lưu dữ liệu', 'error'); }
+          const url = await this.firebaseService.uploadFile('coa_files', file);
+          this.form.patchValue({ certificate_ref: url });
+          this.toast.show('Upload COA thành công!');
+      } catch (e) { this.toast.show('Lỗi Upload', 'error'); } 
+      finally { this.isUploading.set(false); event.target.value = ''; }
   }
 
-  // --- Logs & Weighing (UPDATED FOR UNIT CONVERSION) ---
-  async viewHistory(std: ReferenceStandard) { 
-      this.historyStd.set(std); this.loadingHistory.set(true); this.cancelLogEdit(); 
-      try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } 
-      catch (e) { this.toast.show('Lỗi tải lịch sử', 'error'); } 
-      finally { this.loadingHistory.set(false); }
+  // --- Helper Methods ---
+  getExpiryBarClass(dateStr: string | undefined): string {
+      if (!dateStr) return 'bg-slate-300';
+      const exp = new Date(dateStr); const today = new Date();
+      if (exp < today) return 'bg-red-500';
+      const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
+      if (diffDays < 180) return 'bg-orange-500'; // 6 months
+      return 'bg-emerald-500';
   }
 
-  startEditLog(log: UsageLog) { this.editingLogId.set(log.id || null); this.tempLog = { ...log }; }
-  cancelLogEdit() { this.editingLogId.set(null); }
-
-  async saveLogEdit() {
-      if (!this.editingLogId() || !this.historyStd()) return;
-      try { await this.stdService.updateUsageLog(this.historyStd()!.id, this.editingLogId()!, this.tempLog); this.toast.show('Đã cập nhật', 'success'); this.editingLogId.set(null); await this.viewHistory(this.historyStd()!); this.refreshData(); } 
-      catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
-  }
-
-  async deleteLog(log: UsageLog) {
-      if (!this.historyStd() || !log.id) return;
-      if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
-          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); this.refreshData(); } 
-          catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
-      }
-  }
-
-  openWeighModal(std: ReferenceStandard) { 
-      this.selectedStd.set(std); 
-      this.weighAmount.set(0); 
-      this.weighDate.set(new Date().toISOString().split('T')[0]); 
-      this.weighUser.set(this.state.currentUser()?.displayName || '');
-      this.weighUnit.set(std.unit); // Default to stock unit
-  }
-
-  async confirmWeigh() {
-      const std = this.selectedStd(); const amount = this.weighAmount();
-      if (!std || amount <= 0) return;
-      // Note: We don't check amount > current here because units might differ. Service will check after conversion.
-      try {
-          await this.stdService.recordUsage(std.id, { 
-              date: this.weighDate(), 
-              user: this.weighUser() || 'Unknown', 
-              amount_used: amount, 
-              unit: this.weighUnit(), // Pass the selected unit
-              purpose: 'Cân mẫu', 
-              timestamp: Date.now() 
-          });
-          this.toast.show('Đã cập nhật!'); 
-          this.selectedStd.set(null);
-          this.refreshData(); 
-      } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
-  }
-
-  // --- Display Helpers ---
   getExpiryStatus(dateStr: string | undefined): string {
       if (!dateStr) return 'N/A';
       const exp = new Date(dateStr); const today = new Date();
@@ -630,4 +710,53 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (diffMonths < 6) return 'text-orange-600'; 
       return 'text-indigo-600'; 
   }
+
+  // --- Weigh & History (Existing logic reused) ---
+  openWeighModal(std: ReferenceStandard) { 
+      this.selectedStd.set(std); 
+      this.weighAmount.set(0); 
+      this.weighDate.set(new Date().toISOString().split('T')[0]); 
+      this.weighUser.set(this.state.currentUser()?.displayName || '');
+      this.weighUnit.set(std.unit); 
+  }
+
+  async confirmWeigh() {
+      const std = this.selectedStd(); const amount = this.weighAmount();
+      if (!std || amount <= 0) return;
+      try {
+          await this.stdService.recordUsage(std.id, { 
+              date: this.weighDate(), user: this.weighUser() || 'Unknown', 
+              amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() 
+          });
+          this.toast.show('Đã cập nhật!'); 
+          this.selectedStd.set(null);
+          this.refreshData(); 
+      } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+  }
+
+  async viewHistory(std: ReferenceStandard) { 
+      this.historyStd.set(std); this.loadingHistory.set(true); 
+      try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } 
+      finally { this.loadingHistory.set(false); }
+  }
+
+  async deleteLog(log: UsageLog) {
+      if (!this.historyStd() || !log.id) return;
+      if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
+          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); this.refreshData(); } 
+          catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+      }
+  }
+
+  // --- COA Preview ---
+  openCoaPreview(url: string, event: Event) {
+      event.stopPropagation();
+      if (!url) return;
+      this.previewRawUrl.set(url);
+      const cleanUrl = url.split('?')[0].toLowerCase();
+      const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
+      if (isImage) { this.previewType.set('image'); this.previewImgUrl.set(url); } 
+      else { this.previewType.set('iframe'); this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); }
+  }
+  closeCoaPreview() { this.previewUrl.set(null); this.previewImgUrl.set(''); }
 }

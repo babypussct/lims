@@ -13,28 +13,28 @@ export interface ReferenceStandard {
   id: string; 
   name: string; 
   
-  // Identity (Tab 1)
-  internal_id?: string; // Mã quản lý / Mã nội bộ
+  // Tab 1: Identity & Pack
+  internal_id?: string; // Mã quản lý / Mã nội bộ (VD: AA01)
   cas_number?: string;
   product_code?: string; // Mã Catalog
   purity?: string; // Hàm lượng / Độ tinh khiết
   chemical_name?: string;
+  manufacturer?: string; // Hãng sản xuất
+  pack_size?: string; // Quy cách đóng gói (VD: 10mg)
+  lot_number?: string; // Số Lô
 
-  // Stock & Storage (Tab 2)
+  // Tab 2: Stock & Storage
   initial_amount: number;
   current_amount: number;
   unit: string;
-  location?: string; // Vị trí lưu kho (Tủ, Ngăn) - Quan trọng
+  location?: string; // Vị trí lưu kho (Tự động từ Internal ID)
   storage_condition?: string; // FT, CT, RT, d...
   storage_status?: string; 
+  
+  // Tab 3: Docs & Expiry
   expiry_date?: string;   
+  received_date?: string;
   date_opened?: string;   
-
-  // Origin & Docs (Tab 3)
-  manufacturer?: string;
-  lot_number?: string;
-  pack_size?: string; 
-  received_date?: string; 
   contract_ref?: string; // Số Hợp đồng / Dự án
   certificate_ref?: string; // Link đến file COA (URL)
   
