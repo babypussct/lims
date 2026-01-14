@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
-import { StandardService, StandardsPage } from './standard.service';
+import { StandardService, StandardsPage, ImportPreviewItem } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
@@ -47,7 +47,7 @@ import { AuthService } from '../../core/services/auth.service';
              <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2">
                 <i class="fa-solid fa-file-excel"></i> Import
              </button>
-             <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleImport($event)">
+             <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleFileSelect($event)">
            }
            
            @if(state.isAdmin()) {
@@ -384,7 +384,73 @@ import { AuthService } from '../../core/services/auth.service';
          </div>
       }
 
-      <!-- Other Modals (Weigh, History, COA Preview) kept as is... -->
+      <!-- NEW: IMPORT PREVIEW MODAL -->
+      @if (importPreviewData().length > 0) {
+         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-file-import text-emerald-600"></i> Xác nhận Import
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
+                    </div>
+                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-auto custom-scrollbar p-6">
+                    <div class="mb-4 bg-yellow-50 border border-yellow-100 rounded-lg p-3 flex gap-3 text-sm text-yellow-800">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Lưu ý ngày tháng:</span> Hệ thống đang ép kiểu ngày tháng theo định dạng <b>dd/mm/yyyy</b> (Việt Nam).<br>
+                            Ví dụ: Chuỗi <b>05/10/2024</b> sẽ được hiểu là ngày <b>5 tháng 10</b>. Hãy kiểm tra cột "Kết quả (Hệ thống hiểu)" bên dưới.
+                        </div>
+                    </div>
+
+                    <table class="w-full text-xs text-left border-collapse border border-slate-200">
+                        <thead class="bg-slate-100 text-slate-500 font-bold uppercase sticky top-0">
+                            <tr>
+                                <th class="p-2 border border-slate-200">Tên Chuẩn</th>
+                                <th class="p-2 border border-slate-200">Lô (Lot)</th>
+                                <th class="p-2 border border-slate-200 bg-red-50 text-red-700 w-32">Ngày nhận (Gốc)</th>
+                                <th class="p-2 border border-slate-200 bg-emerald-50 text-emerald-700 w-32">Kết quả (Hệ thống hiểu)</th>
+                                <th class="p-2 border border-slate-200">Hạn dùng (Parsed)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (item of importPreviewData().slice(0, 10); track $index) {
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-2 border border-slate-200 truncate max-w-[200px]" [title]="item.parsed.name">{{item.parsed.name}}</td>
+                                    <td class="p-2 border border-slate-200 font-mono">{{item.parsed.lot_number}}</td>
+                                    <td class="p-2 border border-slate-200 font-mono bg-red-50/30">{{item.raw['Ngày nhận (Gốc)']}}</td>
+                                    <td class="p-2 border border-slate-200 font-bold font-mono text-emerald-700 bg-emerald-50/30">
+                                        {{item.parsed.received_date ? (item.parsed.received_date | date:'dd/MM/yyyy') : '---'}}
+                                    </td>
+                                    <td class="p-2 border border-slate-200 font-mono">
+                                        {{item.parsed.expiry_date ? (item.parsed.expiry_date | date:'dd/MM/yyyy') : '---'}}
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if(importPreviewData().length > 10) {
+                        <p class="text-center text-xs text-slate-400 mt-2 italic">... và {{importPreviewData().length - 10}} dòng khác.</p>
+                    }
+                </div>
+
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+                    <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="confirmImport()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
+                        @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
+                        @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+
+      <!-- Weigh, History, COA Preview Modals... (No changes needed here) -->
       @if (selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
@@ -451,10 +517,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   private fb: FormBuilder = inject(FormBuilder);
-  Math = Math; // For template
+  Math = Math;
   
   isLoading = signal(true);
   isUploading = signal(false);
+  isImporting = signal(false); // Loading state for import commit
 
   viewMode = signal<'list' | 'grid'>('list');
   searchTerm = signal('');
@@ -464,10 +531,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
   lastDoc = signal<QueryDocumentSnapshot | null>(null);
   hasMore = signal(true);
 
-  // New: Selection & Tabs
   selectedIds = signal<Set<string>>(new Set());
   activeModalTab = signal<'general' | 'stock' | 'docs'>('general');
   unitOptions = UNIT_OPTIONS;
+
+  // Import Preview State
+  importPreviewData = signal<ImportPreviewItem[]>([]);
 
   selectedStd = signal<ReferenceStandard | null>(null);
   weighAmount = signal<number>(0);
@@ -488,189 +557,144 @@ export class StandardsComponent implements OnInit, OnDestroy {
   previewRawUrl = signal<string>('');
 
   form = this.fb.group({
-      id: [''], 
-      name: ['', Validators.required], 
-      
-      // Tab 1
-      product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], 
-      pack_size: [''], lot_number: [''], 
-      
-      // Tab 2
+      id: [''], name: ['', Validators.required], 
+      product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], pack_size: [''], lot_number: [''], 
       internal_id: [''], location: [''], storage_condition: [''],
       initial_amount: [0, Validators.required], current_amount: [0, Validators.required], unit: ['mg', Validators.required], 
-      
-      // Tab 3
-      expiry_date: [''], received_date: [''], date_opened: [''], 
-      contract_ref: [''], certificate_ref: ['']
+      expiry_date: [''], received_date: [''], date_opened: [''], contract_ref: [''], certificate_ref: ['']
   });
 
   formatNum = formatNum;
 
   constructor() {
       this.searchSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe(term => {
-          this.searchTerm.set(term); 
-          this.refreshData();
+          this.searchTerm.set(term); this.refreshData();
       });
   }
 
   ngOnInit() { this.refreshData(); }
   ngOnDestroy() { this.searchSubject.complete(); }
 
-  // --- Logic Tự động điền Vị trí ---
   onInternalIdChange(event: any) {
       const val = event.target.value.toUpperCase();
-      // Logic: Nếu nhập "AA01" -> Lấy chữ cái đầu "A" -> Gán vào Location "Tủ A"
-      if (val && val.length > 0 && !this.isEditing()) { // Chỉ tự động khi tạo mới hoặc người dùng chưa sửa location
+      if (val && val.length > 0 && !this.isEditing()) {
           const firstChar = val.charAt(0);
-          if (firstChar.match(/[A-Z]/)) {
-              this.form.patchValue({ location: `Tủ ${firstChar}` });
-          }
+          if (firstChar.match(/[A-Z]/)) this.form.patchValue({ location: `Tủ ${firstChar}` });
       }
   }
 
-  // --- Selection Logic ---
   toggleSelection(id: string) {
       this.selectedIds.update(set => {
           const newSet = new Set(set);
-          if (newSet.has(id)) newSet.delete(id);
-          else newSet.add(id);
+          if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
           return newSet;
       });
   }
 
-  isAllSelected() {
-      return this.items().length > 0 && this.items().every(i => this.selectedIds().has(i.id));
-  }
-
+  isAllSelected() { return this.items().length > 0 && this.items().every(i => this.selectedIds().has(i.id)); }
   toggleAll() {
-      if (this.isAllSelected()) {
-          this.selectedIds.set(new Set());
-      } else {
-          const allIds = this.items().map(i => i.id);
-          this.selectedIds.set(new Set(allIds));
-      }
+      if (this.isAllSelected()) this.selectedIds.set(new Set());
+      else this.selectedIds.set(new Set(this.items().map(i => i.id)));
   }
 
-  // --- Data Loading ---
   async refreshData() {
-      this.isLoading.set(true);
-      this.items.set([]);
-      this.lastDoc.set(null);
-      this.hasMore.set(true);
-      this.selectedIds.set(new Set());
-      await this.loadMore(true);
+      this.isLoading.set(true); this.items.set([]); this.lastDoc.set(null); this.hasMore.set(true); this.selectedIds.set(new Set()); await this.loadMore(true);
   }
 
   async loadMore(isRefresh = false) {
       if (!this.hasMore() && !isRefresh) return;
       if (isRefresh) this.isLoading.set(true);
-
       try {
           const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm());
-          if (isRefresh) this.items.set(page.items);
-          else this.items.update(c => [...c, ...page.items]);
-          this.lastDoc.set(page.lastDoc);
-          this.hasMore.set(page.hasMore);
-      } finally {
-          this.isLoading.set(false);
-      }
+          if (isRefresh) this.items.set(page.items); else this.items.update(c => [...c, ...page.items]);
+          this.lastDoc.set(page.lastDoc); this.hasMore.set(page.hasMore);
+      } finally { this.isLoading.set(false); }
   }
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
 
-  // --- CRUD Operations ---
   openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
-  
-  openEditModal(std: ReferenceStandard) { 
-      if (!this.auth.canEditStandards()) return;
-      this.isEditing.set(true); 
-      this.activeModalTab.set('general'); 
-      this.form.patchValue(std as any); 
-      this.showModal.set(true); 
-  }
-  
+  openEditModal(std: ReferenceStandard) { if (!this.auth.canEditStandards()) return; this.isEditing.set(true); this.activeModalTab.set('general'); this.form.patchValue(std as any); this.showModal.set(true); }
   closeModal() { this.showModal.set(false); }
   
   onNameChange(event: any) { 
-      if (!this.isEditing()) { 
-          const lot = this.form.get('lot_number')?.value || ''; 
-          this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); 
-      } 
+      if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
   }
 
   async saveStandard() {
-      if (this.form.invalid) {
-          this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error');
-          return;
-      }
+      if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
       const val = this.form.value;
       if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
-      
-      const std: ReferenceStandard = { 
-          ...val as any, 
-          name: val.name?.trim(),
-          internal_id: val.internal_id?.toUpperCase().trim(),
-          location: val.location?.trim()
-      };
-      
+      const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
       try {
-          if (this.isEditing()) await this.stdService.updateStandard(std);
-          else await this.stdService.addStandard(std);
-          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); 
-          this.closeModal(); 
-          this.refreshData();
+          if (this.isEditing()) await this.stdService.updateStandard(std); else await this.stdService.addStandard(std);
+          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); this.closeModal(); this.refreshData();
       } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
   async deleteSelected() {
       const ids = Array.from(this.selectedIds());
       if (ids.length === 0) return;
-      if (await this.confirmationService.confirm({ 
-          message: `Bạn có chắc muốn xóa ${ids.length} chuẩn đã chọn?`, 
-          confirmText: 'Xóa vĩnh viễn', 
-          isDangerous: true 
-      })) {
-          try {
-              await this.stdService.deleteSelectedStandards(ids);
-              this.toast.show(`Đã xóa ${ids.length} mục.`, 'success');
-              this.refreshData();
-          } catch(e) { this.toast.show('Lỗi xóa', 'error'); }
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa ${ids.length} chuẩn đã chọn?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
+          try { await this.stdService.deleteSelectedStandards(ids); this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); this.refreshData(); } catch(e) { this.toast.show('Lỗi xóa', 'error'); }
       }
   }
 
   async deleteAll() {
       if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } 
-          catch (e) { this.toast.show('Lỗi xóa', 'error'); }
+          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } catch (e) { this.toast.show('Lỗi xóa', 'error'); }
       }
   }
 
-  // --- File Operations ---
-  async handleImport(event: any) {
+  // --- NEW IMPORT LOGIC ---
+  async handleFileSelect(event: any) {
      const file = event.target.files[0];
-     if (file) { try { await this.stdService.importFromExcel(file); this.refreshData(); } finally { event.target.value = ''; } }
+     if (!file) return;
+     this.isLoading.set(true);
+     try {
+         const data = await this.stdService.parseExcelData(file);
+         this.importPreviewData.set(data);
+         this.toast.show(`Đã đọc ${data.length} dòng. Vui lòng kiểm tra ngày tháng.`);
+     } catch (e: any) {
+         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+     } finally {
+         this.isLoading.set(false);
+         event.target.value = ''; // Reset input
+     }
+  }
+
+  cancelImport() {
+      this.importPreviewData.set([]);
+  }
+
+  async confirmImport() {
+      if (this.importPreviewData().length === 0) return;
+      this.isImporting.set(true);
+      try {
+          await this.stdService.saveImportedData(this.importPreviewData());
+          this.toast.show('Import thành công!', 'success');
+          this.importPreviewData.set([]);
+          this.refreshData();
+      } catch (e: any) {
+          this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+      } finally {
+          this.isImporting.set(false);
+      }
   }
 
   async uploadCoaFile(event: any) {
-      const file = event.target.files[0];
-      if (!file) return;
-      this.isUploading.set(true);
-      try {
-          const url = await this.firebaseService.uploadFile('coa_files', file);
-          this.form.patchValue({ certificate_ref: url });
-          this.toast.show('Upload COA thành công!');
-      } catch (e) { this.toast.show('Lỗi Upload', 'error'); } 
-      finally { this.isUploading.set(false); event.target.value = ''; }
+      const file = event.target.files[0]; if (!file) return; this.isUploading.set(true);
+      try { const url = await this.firebaseService.uploadFile('coa_files', file); this.form.patchValue({ certificate_ref: url }); this.toast.show('Upload COA thành công!'); } 
+      catch (e) { this.toast.show('Lỗi Upload', 'error'); } finally { this.isUploading.set(false); event.target.value = ''; }
   }
 
-  // --- Helper Methods ---
+  // --- Helpers ---
   getExpiryBarClass(dateStr: string | undefined): string {
       if (!dateStr) return 'bg-slate-300';
       const exp = new Date(dateStr); const today = new Date();
       if (exp < today) return 'bg-red-500';
       const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
-      if (diffDays < 180) return 'bg-orange-500'; // 6 months
-      return 'bg-emerald-500';
+      if (diffDays < 180) return 'bg-orange-500'; return 'bg-emerald-500';
   }
 
   getExpiryStatus(dateStr: string | undefined): string {
@@ -678,8 +702,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const exp = new Date(dateStr); const today = new Date();
       if (exp < today) return 'Hết hạn';
       const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
-      if (diffMonths < 6) return '< 6 Tháng';
-      return 'Còn hạn';
+      if (diffMonths < 6) return '< 6 Tháng'; return 'Còn hạn';
   }
   
   getExpiryStatusClass(dateStr: string | undefined): string {
@@ -707,56 +730,32 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const exp = new Date(dateStr); const today = new Date();
       if (exp < today) return 'text-red-600 line-through decoration-2'; 
       const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
-      if (diffMonths < 6) return 'text-orange-600'; 
-      return 'text-indigo-600'; 
+      if (diffMonths < 6) return 'text-orange-600'; return 'text-indigo-600'; 
   }
 
-  // --- Weigh & History (Existing logic reused) ---
-  openWeighModal(std: ReferenceStandard) { 
-      this.selectedStd.set(std); 
-      this.weighAmount.set(0); 
-      this.weighDate.set(new Date().toISOString().split('T')[0]); 
-      this.weighUser.set(this.state.currentUser()?.displayName || '');
-      this.weighUnit.set(std.unit); 
-  }
-
+  openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
   async confirmWeigh() {
       const std = this.selectedStd(); const amount = this.weighAmount();
       if (!std || amount <= 0) return;
       try {
-          await this.stdService.recordUsage(std.id, { 
-              date: this.weighDate(), user: this.weighUser() || 'Unknown', 
-              amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() 
-          });
-          this.toast.show('Đã cập nhật!'); 
-          this.selectedStd.set(null);
-          this.refreshData(); 
+          await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() });
+          this.toast.show('Đã cập nhật!'); this.selectedStd.set(null); this.refreshData(); 
       } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
-  async viewHistory(std: ReferenceStandard) { 
-      this.historyStd.set(std); this.loadingHistory.set(true); 
-      try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } 
-      finally { this.loadingHistory.set(false); }
-  }
-
+  async viewHistory(std: ReferenceStandard) { this.historyStd.set(std); this.loadingHistory.set(true); try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } finally { this.loadingHistory.set(false); } }
   async deleteLog(log: UsageLog) {
       if (!this.historyStd() || !log.id) return;
       if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
-          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); this.refreshData(); } 
-          catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); this.refreshData(); } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
       }
   }
 
-  // --- COA Preview ---
   openCoaPreview(url: string, event: Event) {
-      event.stopPropagation();
-      if (!url) return;
-      this.previewRawUrl.set(url);
+      event.stopPropagation(); if (!url) return; this.previewRawUrl.set(url);
       const cleanUrl = url.split('?')[0].toLowerCase();
       const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
-      if (isImage) { this.previewType.set('image'); this.previewImgUrl.set(url); } 
-      else { this.previewType.set('iframe'); this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); }
+      if (isImage) { this.previewType.set('image'); this.previewImgUrl.set(url); } else { this.previewType.set('iframe'); this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); }
   }
   closeCoaPreview() { this.previewUrl.set(null); this.previewImgUrl.set(''); }
 }
