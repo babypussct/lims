@@ -33,6 +33,7 @@ export class StandardService {
   private generateSearchKey(std: ReferenceStandard): string {
     const parts = [
       std.name,
+      std.chemical_name, // Index chemical name too
       std.internal_id,
       std.cas_number,
       std.product_code,
@@ -378,13 +379,53 @@ export class StandardService {
              const row: Record<string, any> = {};
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
-             const name = row['tên chuẩn'];
+             // 1. NAME PARSING: Split primary and chemical/other names
+             const rawName = row['tên chuẩn'] || '';
+             const nameParts = rawName.split(/[\n\r]+/);
+             const name = nameParts[0]?.trim();
+             const chemicalName = nameParts.length > 1 ? nameParts.slice(1).join(' ').trim() : (row['tên khác'] || row['tên hóa học'] || '').toString().trim();
+
              if (!name) continue;
 
              const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
-             const packSize = (row['quy cách'] || '').toString().trim();
+             
+             // 2. PACK SIZE COMBINATION (Columns C & D)
+             const rawPackText = (row['quy cách'] || '').toString().trim(); // Column D
+             const rawAmount = row['khối lượng chai']; // Column C (can be number or string)
+             
+             let initial = 0;
+             if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
+                 // Try parsing C as a number, handle comma decimal
+                 const val = parseFloat(rawAmount.toString().replace(',', '.'));
+                 if (!isNaN(val)) initial = val;
+             } else {
+                 // Fallback: Try parsing from Pack Text
+                 initial = Number(row['khối lượng chai'] || 0);
+             }
+
+             // 3. UNIT DETECTION (Priority: mL > µg > kg > g > mg)
+             let unit = 'mg';
+             const lowerPack = rawPackText.toLowerCase();
+             
+             if (lowerPack.includes('ml') || lowerPack.includes('milliliter') || lowerPack.includes('lít')) unit = 'mL';
+             else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
+             else if (lowerPack.includes('kg')) unit = 'kg';
+             else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) unit = 'g';
+             else unit = 'mg'; // Default
+
+             // Construct final pack size string
+             let packSize = rawPackText;
+             const packHasNumber = /^[\d.,]+/.test(rawPackText);
+             // If Column D (Pack) doesn't start with number, prepend Column C (Amount)
+             if (!packHasNumber && initial > 0 && packSize) {
+                 packSize = `${initial} ${packSize}`;
+             }
+             // If Pack is empty, construct from Amount + Unit
+             if (!packSize) {
+                 packSize = `${initial} ${unit}`;
+             }
+
              const internalId = (row['số nhận diện'] || '').toString().trim();
-             const initial = Number(row['khối lượng chai'] || 0);
              
              let current = initial;
              const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
@@ -401,18 +442,13 @@ export class StandardService {
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
              
-             let unit = 'mg';
-             const lowerPack = packSize.toLowerCase();
-             if (lowerPack.includes('ml')) unit = 'mL';
-             else if (lowerPack.includes('g') && !lowerPack.includes('mg')) unit = 'g';
-             else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
-
              // Parse Main Dates
              const receivedDate = this.parseExcelDate(row['ngày nhận']);
              const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
 
              const standard: ReferenceStandard = {
-                 id, name: name.trim(), internal_id: internalId, location: location,
+                 id, name, chemical_name: chemicalName,
+                 internal_id: internalId, location: location,
                  pack_size: packSize, lot_number: lot,
                  contract_ref: (row['hợp đồng dự toán'] || row['hợp đồng'] || '').toString().trim(),
                  received_date: receivedDate, expiry_date: expiryDate,
@@ -422,7 +458,6 @@ export class StandardService {
                  manufacturer: (row['hãng'] || '').toString().trim(),
                  cas_number: (row['cas number'] || '').toString().trim(),
                  storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
-                 chemical_name: (row['tên khác'] || row['tên hóa học'] || '').toString().trim(),
                  storage_status: 'Sẵn sàng', purity: '', 
                  lastUpdated: null // Will set on save
              };
