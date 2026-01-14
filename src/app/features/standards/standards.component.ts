@@ -85,91 +85,158 @@ import { AuthService } from '../../core/services/auth.service';
           <!-- Content Body -->
           <div class="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-50/30">
              
-             <!-- VIEW MODE: LIST (TABLE) -->
+             <!-- VIEW MODE: LIST (HIGH DENSITY TABLE) -->
              @if (viewMode() === 'list') {
-                 <div class="min-w-[900px] md:min-w-0"> 
-                     <table class="w-full text-sm text-left relative">
-                        <thead class="text-xs text-slate-400 font-bold uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-100 shadow-sm h-12">
+                 <div class="min-w-[1000px]"> 
+                     <table class="w-full text-sm text-left relative border-collapse">
+                        <thead class="text-[11px] text-slate-500 font-bold uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-200 shadow-sm h-12 tracking-wide">
                            <tr>
-                              <th class="px-4 py-4 w-10 bg-slate-50 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer"></th>
-                              <th class="px-4 py-4 w-80 bg-slate-50">Tên Chuẩn / Vị trí</th>
-                              <th class="px-4 py-4 hidden md:table-cell bg-slate-50">Thông tin (Lô / Code)</th>
-                              <th class="px-4 py-4 text-center w-28 hidden lg:table-cell bg-slate-50">Bảo quản</th>
-                              <th class="px-4 py-4 text-center w-32 hidden md:table-cell bg-slate-50">Hạn dùng</th>
-                              <th class="px-4 py-4 text-right w-36 bg-slate-50">Tồn kho</th>
-                              <th class="px-4 py-4 text-center w-24 bg-slate-50">Tác vụ</th>
+                              <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer"></th>
+                              <th class="px-4 py-3 w-[25%]">Định danh & Vị trí</th>
+                              <th class="px-4 py-3 w-[20%]">Thông tin Lô/SX</th>
+                              <th class="px-4 py-3 w-[15%]">Tồn kho & Bảo quản</th>
+                              <th class="px-4 py-3 w-[15%]">Hạn dùng & Hồ sơ</th>
+                              <th class="px-4 py-3 w-[10%] text-center">Trạng thái</th>
+                              <th class="px-4 py-3 w-[10%] text-center">Tác vụ</th>
                            </tr>
                         </thead>
-                        <tbody class="bg-white">
+                        <tbody class="bg-white divide-y divide-slate-100">
                            @if (isLoading()) {
                                 @for (i of [1,2,3,4,5]; track i) {
                                     <tr class="h-24">
                                         <td class="px-4"><app-skeleton width="16px" height="16px"></app-skeleton></td>
-                                        <td class="px-4"><app-skeleton width="180px" height="14px"></app-skeleton></td>
-                                        <td class="px-4 hidden md:table-cell"><app-skeleton width="80px" height="10px"></app-skeleton></td>
-                                        <td class="px-4 hidden lg:table-cell text-center"><app-skeleton shape="circle" width="30px" height="30px" class="mx-auto"></app-skeleton></td>
-                                        <td class="px-4 text-center hidden md:table-cell"><app-skeleton width="80px" height="20px" class="mx-auto"></app-skeleton></td>
-                                        <td class="px-4 text-right"><app-skeleton width="60px" height="20px" class="ml-auto"></app-skeleton></td>
-                                        <td class="px-4 text-center"><app-skeleton width="60px" height="30px" class="mx-auto"></app-skeleton></td>
+                                        <td class="px-4 space-y-2"><app-skeleton width="80%" height="16px"></app-skeleton><app-skeleton width="40%" height="12px"></app-skeleton></td>
+                                        <td class="px-4 space-y-2"><app-skeleton width="90%" height="12px"></app-skeleton><app-skeleton width="60%" height="12px"></app-skeleton></td>
+                                        <td class="px-4 space-y-2"><app-skeleton width="50%" height="20px"></app-skeleton><app-skeleton width="100%" height="6px"></app-skeleton></td>
+                                        <td class="px-4 space-y-2"><app-skeleton width="70%" height="14px"></app-skeleton><app-skeleton width="40%" height="10px"></app-skeleton></td>
+                                        <td class="px-4 text-center"><app-skeleton width="80px" height="24px" class="mx-auto rounded-full"></app-skeleton></td>
+                                        <td class="px-4 text-center"><app-skeleton width="60px" height="24px" class="mx-auto"></app-skeleton></td>
                                     </tr>
                                 }
                            } @else {
                                @for (std of items(); track std.id) {
-                                  <tr class="hover:bg-slate-50 transition group h-24 border-b border-slate-50" [class.bg-indigo-50]="selectedIds().has(std.id)">
+                                  <tr class="hover:bg-indigo-50/30 transition group h-24" [class.bg-indigo-50]="selectedIds().has(std.id)">
+                                     <!-- Checkbox -->
                                      <td class="px-4 py-3 text-center align-top pt-4">
                                          <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
                                      </td>
+                                     
+                                     <!-- Col 1: Identity & Location -->
                                      <td class="px-4 py-3 align-top">
-                                        <div class="flex flex-col gap-1">
-                                            <div class="flex items-center gap-2">
-                                                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1" title="Vị trí lưu kho">
-                                                    <i class="fa-solid fa-location-dot text-[8px]"></i>
-                                                    {{std.location || std.internal_id || 'NO-LOC'}}
-                                                </span>
-                                            </div>
-                                            <div class="font-bold text-slate-700 text-sm leading-snug hover:text-indigo-600 transition cursor-pointer flex items-center gap-2 whitespace-pre-wrap" (click)="openEditModal(std)">
+                                        <div class="flex flex-col h-full">
+                                            <div class="font-bold text-slate-800 text-sm mb-0.5 hover:text-indigo-600 transition cursor-pointer leading-snug line-clamp-2" (click)="openEditModal(std)" [title]="std.name">
                                                 {{std.name}}
-                                                @if(std.certificate_ref) {
-                                                    <button (click)="openCoaPreview(std.certificate_ref, $event)" class="text-indigo-500 hover:text-indigo-700 transition" title="Xem CoA"><i class="fa-solid fa-file-pdf"></i></button>
+                                            </div>
+                                            @if(std.chemical_name) { 
+                                                <div class="text-xs text-slate-500 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> 
+                                            }
+                                            <div class="flex flex-wrap gap-1.5 mt-auto">
+                                                @if(std.internal_id) { 
+                                                    <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 tracking-tight">{{std.internal_id}}</span> 
+                                                }
+                                                @if(std.location) { 
+                                                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200 flex items-center gap-1">
+                                                        <i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}
+                                                    </span> 
                                                 }
                                             </div>
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 align-top hidden md:table-cell">
-                                        <div class="grid grid-cols-1 gap-y-1 text-xs">
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Lot:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.lot_number || '-'}}</span></div>
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Code:</span><span class="font-mono font-medium text-slate-700 select-all">{{std.product_code || '-'}}</span></div>
-                                            <div class="flex items-center gap-1"><span class="text-[9px] font-bold text-slate-400 uppercase w-8">Pack:</span><span class="font-mono font-bold text-slate-600">{{std.pack_size || '-'}}</span></div>
-                                        </div>
-                                     </td>
-                                     <td class="px-4 py-3 text-center align-top hidden lg:table-cell">
-                                        @let sIcons = getStorageIcons(std.storage_condition);
-                                        <div class="flex justify-center gap-1" [title]="std.storage_condition">
-                                            @for (icon of sIcons; track $index) {
-                                                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs shadow-sm border" [ngClass]="[icon.bg, icon.border]"><i class="fa-solid" [ngClass]="[icon.icon, icon.color]"></i></div>
+
+                                     <!-- Col 2: Info (Mfg, Lot, Code) -->
+                                     <td class="px-4 py-3 align-top border-l border-slate-50">
+                                        <div class="text-xs font-bold text-slate-700 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
+                                        <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px] text-slate-500">
+                                            <span class="font-bold text-slate-400">LOT:</span>
+                                            <span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
+                                            <span class="font-bold text-slate-400">CODE:</span>
+                                            <span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
+                                            @if(std.cas_number) {
+                                                <span class="font-bold text-slate-400">CAS:</span>
+                                                <span class="font-mono text-slate-700">{{std.cas_number}}</span>
                                             }
                                         </div>
-                                     </td>
-                                     <td class="px-4 py-3 text-center align-top hidden md:table-cell">
-                                        <div class="inline-flex flex-col items-center">
-                                            <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
-                                            <div class="text-[9px] font-bold mt-1 px-2 py-0.5 rounded border uppercase" [class]="getExpiryStatusClass(std.expiry_date)">{{ getExpiryStatus(std.expiry_date) }}</div>
+                                        <div class="mt-2 pt-1 border-t border-slate-100 text-[10px] flex items-center gap-2 text-slate-500">
+                                            @if(std.purity) { <span>Pur: <b class="text-slate-700">{{std.purity}}</b></span> }
+                                            @if(std.pack_size) { <span>Pack: <b class="text-slate-700">{{std.pack_size}}</b></span> }
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 text-right align-top">
-                                        <div class="font-black text-indigo-600 text-lg tracking-tight">{{formatNum(std.current_amount)}} <span class="text-xs font-bold text-slate-400">{{std.unit}}</span></div>
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden relative">
-                                            <div class="h-1.5 rounded-full transition-all duration-500" 
+
+                                     <!-- Col 3: Stock & Storage -->
+                                     <td class="px-4 py-3 align-top border-l border-slate-50">
+                                        <div class="flex items-baseline justify-between mb-1">
+                                            <span class="text-lg font-black text-indigo-600 leading-none">{{formatNum(std.current_amount)}}</span>
+                                            <span class="text-[10px] font-bold text-slate-400 ml-1">{{std.unit}}</span>
+                                        </div>
+                                        <!-- Progress Bar -->
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden relative">
+                                            <div class="h-full rounded-full transition-all duration-500" 
                                                  [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)"
                                                  [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2"
                                                  [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2">
                                             </div>
                                         </div>
+                                        <!-- Storage Icons -->
+                                        @let sIcons = getStorageIcons(std.storage_condition);
+                                        <div class="flex flex-wrap gap-1">
+                                            @for (icon of sIcons; track $index) {
+                                                <div class="px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 border" [ngClass]="[icon.bg, icon.border, icon.color]">
+                                                    <i class="fa-solid" [ngClass]="icon.icon"></i>
+                                                </div>
+                                            }
+                                        </div>
                                      </td>
-                                     <td class="px-4 py-3 text-center align-top">
-                                        <div class="flex items-center justify-center gap-2">
-                                           <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm" title="Cân chuẩn"><i class="fa-solid fa-weight-scale"></i></button>
-                                           <button (click)="viewHistory(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-500 hover:bg-slate-200 transition" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left"></i></button>
+
+                                     <!-- Col 4: Expiry & Docs -->
+                                     <td class="px-4 py-3 align-top border-l border-slate-50">
+                                        <div class="flex flex-col gap-0.5 mb-2">
+                                            <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">
+                                                {{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}
+                                            </div>
+                                            <div class="text-[10px] font-medium" [class]="getExpiryTimeClass(std.expiry_date)">
+                                                {{ getExpiryTimeLeft(std.expiry_date) }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex flex-col gap-1.5">
+                                            @if(std.certificate_ref) {
+                                                <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition w-fit">
+                                                    <i class="fa-solid fa-file-pdf"></i> CoA
+                                                </button>
+                                            }
+                                            @if(std.contract_ref) {
+                                                <div class="text-[10px] text-slate-400 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng">
+                                                    <i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}
+                                                </div>
+                                            }
+                                        </div>
+                                     </td>
+
+                                     <!-- Col 5: Status -->
+                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50">
+                                         @let status = getStandardStatus(std);
+                                         <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="status.class">
+                                             {{status.label}}
+                                         </span>
+                                     </td>
+
+                                     <!-- Col 6: Actions -->
+                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50">
+                                        <div class="flex flex-col items-center gap-2">
+                                           <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn">
+                                               <i class="fa-solid fa-weight-scale text-xs"></i>
+                                           </button>
+                                           
+                                           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                               <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-200" title="Lịch sử">
+                                                   <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
+                                               </button>
+                                               @if(auth.canEditStandards()) {
+                                                   <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition" title="Sửa">
+                                                       <i class="fa-solid fa-pen text-[10px]"></i>
+                                                   </button>
+                                               }
+                                           </div>
                                         </div>
                                      </td>
                                   </tr>
@@ -183,6 +250,7 @@ import { AuthService } from '../../core/services/auth.service';
                  </div>
              } 
              @else {
+                 <!-- Grid View remains unchanged/simplified as requested, focusing on List View improvements -->
                  <div class="p-4">
                     @if (isLoading()) { 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -213,7 +281,6 @@ import { AuthService } from '../../core/services/auth.service';
                                             <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100 truncate max-w-[120px]">
                                                 <i class="fa-solid fa-location-dot mr-1"></i> {{std.location || std.internal_id || 'NO-LOC'}}
                                             </span>
-                                            <!-- Checkbox Overlay -->
                                             <input type="checkbox" [checked]="selectedIds().has(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer">
                                         </div>
 
@@ -293,6 +360,12 @@ import { AuthService } from '../../core/services/auth.service';
                                     <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Tên Chuẩn <span class="text-red-500">*</span></label>
                                     <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: Sulfadiazine Standard">
                                 </div>
+                                <!-- NEW: Chemical Name Field -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Tên hóa học / Tên khác</label>
+                                    <input formControlName="chemical_name" class="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 italic text-slate-600" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
+                                </div>
+
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
                                     <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
@@ -558,7 +631,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   previewRawUrl = signal<string>('');
 
   form = this.fb.group({
-      id: [''], name: ['', Validators.required], 
+      id: [''], name: ['', Validators.required], chemical_name: [''],
       product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], pack_size: [''], lot_number: [''], 
       internal_id: [''], location: [''], storage_condition: [''],
       initial_amount: [0, Validators.required], current_amount: [0, Validators.required], unit: ['mg', Validators.required], 
@@ -740,6 +813,50 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (exp < today) return 'text-red-600 line-through decoration-2'; 
       const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
       if (diffMonths < 6) return 'text-orange-600'; return 'text-indigo-600'; 
+  }
+
+  // --- NEW HELPERS FOR HIGH DENSITY TABLE ---
+  
+  getExpiryTimeClass(dateStr: string | undefined): string {
+      if (!dateStr) return 'text-slate-400 italic';
+      const exp = new Date(dateStr); const today = new Date();
+      const diffDays = Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return 'text-red-600 font-bold';
+      if (diffDays < 180) return 'text-orange-600 font-bold';
+      return 'text-emerald-600 font-bold';
+  }
+
+  getExpiryTimeLeft(dateStr: string | undefined): string {
+      if (!dateStr) return '';
+      const exp = new Date(dateStr);
+      const now = new Date();
+      const diffTime = exp.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) return `Đã hết hạn ${Math.abs(diffDays)} ngày`;
+      if (diffDays === 0) return 'Hết hạn hôm nay';
+      return `Còn ${diffDays} ngày`;
+  }
+
+  getStandardStatus(std: ReferenceStandard): { label: string, class: string } {
+      if (std.current_amount <= 0) return { label: 'Hết hàng', class: 'bg-slate-100 text-slate-500 border-slate-200' };
+      
+      if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-slate-50 text-slate-500 border-slate-200' };
+      
+      const exp = new Date(std.expiry_date);
+      const today = new Date();
+      if (exp < today) return { label: 'Hết hạn SD', class: 'bg-red-50 text-red-600 border-red-200' };
+      
+      const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
+      if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-orange-50 text-orange-600 border-orange-200' };
+      
+      return { label: 'Đang sử dụng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+  }
+
+  copyText(text: string | undefined, event: Event) {
+      event.stopPropagation();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
   }
 
   openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
