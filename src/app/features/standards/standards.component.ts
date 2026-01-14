@@ -51,8 +51,9 @@ import { AuthService } from '../../core/services/auth.service';
            }
            
            @if(state.isAdmin()) {
-             <button (click)="deleteAll()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2" title="Xóa toàn bộ">
-                <i class="fa-solid fa-bomb"></i>
+             <button (click)="deleteAll()" [disabled]="isLoading()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
+                @if(isLoading()) { <i class="fa-solid fa-spinner fa-spin"></i> }
+                @else { <i class="fa-solid fa-bomb"></i> }
              </button>
            }
         </div>
@@ -641,8 +642,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   async deleteAll() {
-      if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          try { await this.stdService.deleteAllStandards(); this.toast.show('Đã xóa toàn bộ.', 'success'); this.refreshData(); } catch (e) { this.toast.show('Lỗi xóa', 'error'); }
+      if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hệ thống sẽ xóa sạch cả lịch sử dụng của từng chuẩn.\nHành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
+          this.isLoading.set(true);
+          try { 
+              await this.stdService.deleteAllStandards(); 
+              this.toast.show('Đã xóa toàn bộ dữ liệu và logs.', 'success'); 
+              this.refreshData(); 
+          } catch (e: any) { 
+              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+              this.isLoading.set(false);
+          }
       }
   }
 

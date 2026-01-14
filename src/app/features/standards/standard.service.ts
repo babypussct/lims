@@ -203,12 +203,49 @@ export class StandardService {
       await batch.commit();
   }
 
+  // Deep Delete: Deletes standards AND their sub-collections (logs)
   async deleteAllStandards() {
-    const ref = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
-    const snapshot = await getDocs(ref);
-    const batch = writeBatch(this.fb.db);
-    snapshot.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    const parentColRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
+    const parentSnapshot = await getDocs(parentColRef);
+    
+    let batch = writeBatch(this.fb.db);
+    let opCount = 0;
+    const MAX_BATCH_SIZE = 400; // Safe limit below 500
+
+    // Loop through each standard
+    for (const stdDoc of parentSnapshot.docs) {
+        
+        // 1. Get Logs Sub-collection
+        const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdDoc.id}/logs`);
+        const logsSnapshot = await getDocs(logsRef);
+
+        // 2. Queue Log Deletions
+        for (const logDoc of logsSnapshot.docs) {
+            batch.delete(logDoc.ref);
+            opCount++;
+            
+            if (opCount >= MAX_BATCH_SIZE) {
+                await batch.commit();
+                batch = writeBatch(this.fb.db);
+                opCount = 0;
+            }
+        }
+
+        // 3. Queue Parent Deletion
+        batch.delete(stdDoc.ref);
+        opCount++;
+
+        if (opCount >= MAX_BATCH_SIZE) {
+            await batch.commit();
+            batch = writeBatch(this.fb.db);
+            opCount = 0;
+        }
+    }
+
+    // Commit any remaining operations
+    if (opCount > 0) {
+        await batch.commit();
+    }
   }
 
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
