@@ -72,8 +72,6 @@ export class StandardService {
       }
 
       // 2. Trường hợp Text (dd/mm/yyyy) - ÉP KIỂU VIỆT NAM
-      // Code này giả định Input LÀ TEXT. Nếu thư viện Excel đọc ra "10/05/2024" (MM/DD) thì code này sẽ hiểu là ngày 10.
-      // Do đó quan trọng là bước đọc file phải trả về Text nguyên bản.
       const parts = strVal.split(/[\/\-\.]/);
       
       if (parts.length >= 3) {
@@ -98,46 +96,83 @@ export class StandardService {
       return ''; 
   }
 
-  // --- HELPER: LOG PARSER ---
-  private parseUsageLogString(val: any, defaultDate: string): UsageLog | null {
-      if (val === null || val === undefined || val === '') return null;
+  // --- HELPER: LOG PARSER (UPDATED LOGIC) ---
+  private parseLogContent(val: any, defaultDate: string): UsageLog | null {
+      if (!val) return null;
       const str = val.toString().trim();
       if (!str) return null;
 
-      const dateMatch = str.match(/ng[àa]y\s*pha\s*ch[ếe]:\s*([\d\/\-\.]+)/i);
-      const userMatch = str.match(/ng[ưươ][ờoi]i\s*pha\s*ch[ếe]:\s*([^\n\r]+)/i); 
-      const amountMatch = str.match(/l[ưượng\s*d[ùu]ng:\s*([\d\.]+)/i);
+      // Regex Patterns
+      // Capture 1: Date string (DD/MM/YY or DD-MM-YYYY)
+      const dateRegex = /(?:ng[àa]y|date)?\s*(?:pha\s*ch[ếe])?[:\-\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i;
+      // Capture 1: User name
+      const userRegex = /(?:ng[ưươ][ờoi]i|user)(?:\s*pha\s*ch[ếe])?\s*[:\-\s]*([^\d\n\r;]+)/i;
+      // Capture 1: Amount number
+      const amountRegex = /(?:l[ưượng|kl|amount)(?:\s*d[ùu]ng)?\s*[:\-\s]*([\d\.,]+)/i;
 
-      if (amountMatch) {
-          const amountRaw = parseFloat(amountMatch[1].trim());
-          if (!isNaN(amountRaw)) {
+      // CASE A: Detailed Text (Has specific keywords or structure)
+      if (str.length > 10 && isNaN(Number(str.replace(',','.')))) {
+          const amountMatch = str.match(amountRegex);
+          const dateMatch = str.match(dateRegex);
+          const userMatch = str.match(userRegex);
+
+          // We need at least an amount (explicitly or implicitly if string implies record)
+          // or at least date + user to consider it a log.
+          // Let's be strict: Must find Amount via regex OR assume content implies valid log if Date exists?
+          // To be safe: Only parse if Amount matches OR string is structured.
+          
+          let logAmount = 0;
+          if (amountMatch) {
+              logAmount = parseFloat(amountMatch[1].replace(',', '.'));
+          } else {
+              // Try finding standalone number at end of string? 
+              // E.g. "Ngày 25/07/25 Người A 10" -> regex might miss if "Lượng" keyword missing.
+              const parts = str.split(/\s+/);
+              const lastPart = parts[parts.length - 1].replace(',', '.');
+              if (!isNaN(parseFloat(lastPart))) logAmount = parseFloat(lastPart);
+          }
+
+          if (logAmount > 0) {
               let logDate = defaultDate;
-              if (dateMatch && dateMatch[1]) {
-                  const parsedLogDate = this.parseExcelDate(dateMatch[1].trim());
-                  if (parsedLogDate) logDate = parsedLogDate;
+              let logUser = 'Import Data';
+
+              if (dateMatch) {
+                  const rawDate = dateMatch[1];
+                  const parts = rawDate.split(/[\/\-\.]/);
+                  if (parts.length >= 3) {
+                      const d = parts[0].padStart(2, '0');
+                      const m = parts[1].padStart(2, '0');
+                      let y = parts[2];
+                      // Logic: 2-digit year "25" -> "2025"
+                      if (y.length === 2) y = '20' + y;
+                      logDate = `${y}-${m}-${d}`;
+                  }
+              }
+
+              if (userMatch) {
+                  logUser = userMatch[1].trim();
               }
 
               return {
                   date: logDate,
-                  user: userMatch ? userMatch[1].trim() : 'Unknown',
-                  amount_used: amountRaw,
+                  user: logUser,
+                  amount_used: logAmount,
                   purpose: 'Import Log'
               };
           }
       }
 
-      const cleanStr = str.replace(/,/g, '.').replace(/[^\d\.-]/g, '');
-      if (cleanStr && !isNaN(parseFloat(cleanStr))) { 
-          const amount = parseFloat(cleanStr);
-          if (amount > 0) { 
-              return {
-                  date: defaultDate, 
-                  user: 'Import Data',
-                  amount_used: amount,
-                  purpose: 'Import Log'
-              };
-          }
+      // CASE B: Number Only (Data Shortcut)
+      const cleanNum = parseFloat(str.replace(',', '.'));
+      if (!isNaN(cleanNum) && cleanNum > 0) {
+           return {
+                date: defaultDate, // Fallback to Received Date as requested
+                user: 'Import Data',
+                amount_used: cleanNum,
+                purpose: 'Import Log'
+            };
       }
+
       return null;
   }
 
@@ -314,13 +349,12 @@ export class StandardService {
       reader.onload = (e: any) => {
         try {
           const data = new Uint8Array(e.target.result);
-          // CRITICAL: cellDates: false forces strings/numbers, prevents US-Date auto-conversion
+          // CRITICAL: cellDates: false prevents auto-conversion to prevent Timezone issues
           const workbook = XLSX.read(data, { type: 'array', cellDates: false }); 
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           
-          // Use { raw: false } to get formatted strings (e.g. "05/10/2024") instead of numbers
-          // dateNF helps if cellDates were true, but with raw:false it tries to match Excel view
-          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false, dateNF: 'dd/mm/yyyy' });
+          // Using { raw: false } ensures we get "25/07/25" text instead of Excel Serial Number if formatted as text
+          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -359,7 +393,7 @@ export class StandardService {
              else if (lowerPack.includes('g') && !lowerPack.includes('mg')) unit = 'g';
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
 
-             // LOGIC QUAN TRỌNG: Parse Date
+             // Parse Main Dates
              const receivedDate = this.parseExcelDate(row['ngày nhận']);
              const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
 
@@ -374,21 +408,26 @@ export class StandardService {
                  manufacturer: (row['hãng'] || '').toString().trim(),
                  cas_number: (row['cas number'] || '').toString().trim(),
                  storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
+                 chemical_name: (row['tên khác'] || row['tên hóa học'] || '').toString().trim(),
                  storage_status: 'Sẵn sàng', purity: '', 
                  lastUpdated: null // Will set on save
              };
              standard.search_key = this.generateSearchKey(standard);
 
-             // Log Parsing
+             // Log Parsing Logic (M-Q)
              const logs: any[] = [];
              const addedLogs = new Set<string>();
              const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
 
-             for (let i = 1; i <= 5; i++) {
-                 const colName = `lần cân ${i}`;
-                 const cellValue = row[colName];
-                 if (cellValue) {
-                     const logData = this.parseUsageLogString(cellValue, logDefaultDate);
+             // Try to find columns "Lần 1", "Lần 2"... or just search keys
+             const keys = Object.keys(row);
+             
+             for (let i = 1; i <= 10; i++) { // Check up to 10 logs
+                 // Find key that contains "lần" and the number i
+                 const logKey = keys.find(k => k.includes(`lần`) && k.includes(`${i}`));
+                 
+                 if (logKey && row[logKey]) {
+                     const logData = this.parseLogContent(row[logKey], logDefaultDate);
                      if (logData) {
                          const logSignature = `${logData.date}_${logData.user}_${logData.amount_used}`;
                          if (!addedLogs.has(logSignature)) {
@@ -405,7 +444,7 @@ export class StandardService {
                  logs: logs,
                  isValid: true
              });
-          }
+          }XLSX 
           resolve(results);
         } catch (err: any) {
           reject(err);
