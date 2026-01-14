@@ -96,7 +96,7 @@ export class StandardService {
       return ''; 
   }
 
-  // --- HELPER: LOG PARSER (UPDATED LOGIC) ---
+  // --- HELPER: LOG PARSER (SMART IMPORT LOGIC) ---
   private parseLogContent(val: any, defaultDate: string): UsageLog | null {
       if (!val) return null;
       const str = val.toString().trim();
@@ -107,29 +107,31 @@ export class StandardService {
       const dateRegex = /(?:ng[àa]y|date)?\s*(?:pha\s*ch[ếe])?[:\-\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i;
       // Capture 1: User name
       const userRegex = /(?:ng[ưươ][ờoi]i|user)(?:\s*pha\s*ch[ếe])?\s*[:\-\s]*([^\d\n\r;]+)/i;
-      // Capture 1: Amount number
-      const amountRegex = /(?:l[ưượng|kl|amount)(?:\s*d[ùu]ng)?\s*[:\-\s]*([\d\.,]+)/i;
+      // Capture 1: Amount number (Corrected Regex)
+      const amountRegex = /(?:lượng|kl|amount)(?:\s*(?:d[ùu]ng|c[âa]n|used))?[:\s-]*([\d\.,]+)/i;
+
+      // Check if it's a pure number (Shortcut case)
+      const isNumberOnly = /^[0-9.,]+$/.test(str);
 
       // CASE A: Detailed Text (Has specific keywords or structure)
-      if (str.length > 10 && isNaN(Number(str.replace(',','.')))) {
+      if (!isNumberOnly && str.length > 5) {
           const amountMatch = str.match(amountRegex);
           const dateMatch = str.match(dateRegex);
           const userMatch = str.match(userRegex);
 
-          // We need at least an amount (explicitly or implicitly if string implies record)
-          // or at least date + user to consider it a log.
-          // Let's be strict: Must find Amount via regex OR assume content implies valid log if Date exists?
-          // To be safe: Only parse if Amount matches OR string is structured.
-          
           let logAmount = 0;
           if (amountMatch) {
               logAmount = parseFloat(amountMatch[1].replace(',', '.'));
           } else {
-              // Try finding standalone number at end of string? 
-              // E.g. "Ngày 25/07/25 Người A 10" -> regex might miss if "Lượng" keyword missing.
+              // Fallback: Try finding standalone number at end of string if regex failed
               const parts = str.split(/\s+/);
-              const lastPart = parts[parts.length - 1].replace(',', '.');
-              if (!isNaN(parseFloat(lastPart))) logAmount = parseFloat(lastPart);
+              for (const p of parts.reverse()) {
+                  const n = parseFloat(p.replace(',', '.'));
+                  if (!isNaN(n)) {
+                      logAmount = n;
+                      break;
+                  }
+              }
           }
 
           if (logAmount > 0) {
@@ -151,6 +153,17 @@ export class StandardService {
 
               if (userMatch) {
                   logUser = userMatch[1].trim();
+                  // Clean up user string (remove trailing keywords if regex grabbed too much)
+                  const splitKeywords = ['lượng', 'kl', 'amount', 'ngày', 'date'];
+                  const lowerUser = logUser.toLowerCase();
+                  for(const k of splitKeywords) {
+                      const idx = lowerUser.indexOf(k);
+                      if (idx > 0) {
+                          logUser = logUser.substring(0, idx).trim();
+                          break; 
+                      }
+                  }
+                  logUser = logUser.replace(/[:\-]+$/, '').trim();
               }
 
               return {
@@ -163,6 +176,7 @@ export class StandardService {
       }
 
       // CASE B: Number Only (Data Shortcut)
+      // Logic: If only "10", assume Amount=10, Date=ReceivedDate, User=Import
       const cleanNum = parseFloat(str.replace(',', '.'));
       if (!isNaN(cleanNum) && cleanNum > 0) {
            return {
@@ -417,6 +431,7 @@ export class StandardService {
              // Log Parsing Logic (M-Q)
              const logs: any[] = [];
              const addedLogs = new Set<string>();
+             // Default Date Logic: Fallback to Received Date if missing in log
              const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
 
              // Try to find columns "Lần 1", "Lần 2"... or just search keys
@@ -444,7 +459,7 @@ export class StandardService {
                  logs: logs,
                  isValid: true
              });
-          }XLSX 
+          }
           resolve(results);
         } catch (err: any) {
           reject(err);
