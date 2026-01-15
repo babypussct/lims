@@ -209,21 +209,19 @@ export class StandardService {
       pageSize: number, 
       lastDoc: QueryDocumentSnapshot | null, 
       searchTerm: string,
-      sortOption: string = 'updated_desc'
+      sortOption: string = 'received_desc' // Changed default as requested
   ): Promise<StandardsPage> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
     let constraints: QueryConstraint[] = [];
 
-    // Prioritize Search if present (requires specific indexes or simple filtering)
-    // Note: Firestore limitation - cannot range filter on 'search_key' AND sort by another field easily without Composite Indexes.
-    // To keep it simple and cost-effective, if searching, we prioritize search relevance (alphabetical by search_key).
+    // Prioritize Search if present
     if (searchTerm) {
       const term = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       constraints.push(where('search_key', '>=', term));
       constraints.push(where('search_key', '<=', term + '\uf8ff'));
       constraints.push(orderBy('search_key'));
     } else {
-      // Apply Sort Options (Only when not searching)
+      // Apply Sort Options
       switch (sortOption) {
           case 'name_asc':
               constraints.push(orderBy('name', 'asc'));
@@ -240,11 +238,14 @@ export class StandardService {
               constraints.push(orderBy('expiry_date', 'asc'));
               break;
           case 'expiry_desc':
+              constraints.push(where('expiry_date', '!=', ''));
               constraints.push(orderBy('expiry_date', 'desc'));
               break;
           case 'updated_desc':
-          default:
               constraints.push(orderBy('lastUpdated', 'desc'));
+              break;
+          default:
+              constraints.push(orderBy('received_date', 'desc')); // Default fallback
               break;
       }
     }

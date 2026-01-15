@@ -77,10 +77,10 @@ import { AuthService } from '../../core/services/auth.service';
                      <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
                      <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
                              class="bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer border-none py-2 pr-2">
+                         <option value="received_desc">Ngày nhận (Mới nhất)</option>
                          <option value="updated_desc">Mới cập nhật</option>
                          <option value="name_asc">Tên (A-Z)</option>
                          <option value="name_desc">Tên (Z-A)</option>
-                         <option value="received_desc">Ngày nhận (Mới nhất)</option>
                          <option value="expiry_asc">Hạn dùng (Gần nhất)</option>
                          <option value="expiry_desc">Hạn dùng (Xa nhất)</option>
                      </select>
@@ -615,7 +615,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   viewMode = signal<'list' | 'grid'>('list');
   searchTerm = signal('');
-  sortOption = signal<string>('updated_desc'); // New Sort State
+  sortOption = signal<string>('received_desc'); // New Default Sort State
   searchSubject = new Subject<string>();
 
   items = signal<ReferenceStandard[]>([]);
@@ -707,7 +707,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
   onSortChange(val: string) { this.sortOption.set(val); this.refreshData(); }
 
   openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
-  openEditModal(std: ReferenceStandard) { if (!this.auth.canEditStandards()) return; this.isEditing.set(true); this.activeModalTab.set('general'); this.form.patchValue(std as any); this.showModal.set(true); }
+  
+  openEditModal(std: ReferenceStandard) { 
+      if (!this.auth.canEditStandards()) return; 
+      this.isEditing.set(true); 
+      this.activeModalTab.set('general'); 
+      
+      // FIX: Reset form to clear previous data (like CoA link) before patching new data
+      this.form.reset({ 
+          initial_amount: 0, 
+          current_amount: 0, 
+          unit: 'mg' 
+      }); 
+      
+      this.form.patchValue(std as any); 
+      this.showModal.set(true); 
+  }
+  
   closeModal() { this.showModal.set(false); }
   
   onNameChange(event: any) { 
