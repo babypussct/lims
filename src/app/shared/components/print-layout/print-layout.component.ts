@@ -14,11 +14,27 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
   template: `
     <!-- Container -->
     <div class="print-root">
-       <!-- Loading Indicator (only shows if waiting) -->
+       <!-- Loading Indicator -->
        @if (isLoading()) {
          <div class="loading-overlay">
-            <div>Đang tải dữ liệu in...</div>
+            <div class="loader"></div>
+            <div style="margin-top: 10px;">Đang tải dữ liệu in...</div>
          </div>
+       }
+
+       <!-- FALLBACK TOOLBAR (Screen Only) -->
+       @if(isStandalone() && !isLoading()) {
+           <div class="screen-toolbar no-print">
+               <div class="toolbar-content">
+                   <div class="toolbar-title">Cửa sổ In ấn</div>
+                   <div class="toolbar-actions">
+                       <button (click)="triggerSystemPrint()" class="btn-print">🖨️ In Ngay</button>
+                       <button (click)="closeWindow()" class="btn-close">Đóng</button>
+                   </div>
+               </div>
+           </div>
+           <!-- Spacer to prevent content hiding behind fixed toolbar -->
+           <div class="h-[60px] no-print"></div> 
        }
 
        @for (group of groupedJobs(); track $index) {
@@ -178,9 +194,24 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
 
     .loading-overlay {
         position: fixed; inset: 0; background: white; 
-        display: flex; align-items: center; justify-content: center; 
-        z-index: 9999; font-weight: bold;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        z-index: 9999; font-weight: bold; font-size: 14px; color: #555;
     }
+    
+    /* Fallback Toolbar Styles */
+    .screen-toolbar {
+        position: fixed; top: 0; left: 0; right: 0; height: 50px;
+        background: #1e293b; color: white; z-index: 9000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .toolbar-content { width: 210mm; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+    .toolbar-title { font-weight: bold; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+    .toolbar-actions { display: flex; gap: 10px; }
+    .btn-print { background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .btn-print:hover { background: #2563eb; }
+    .btn-close { background: #64748b; color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .btn-close:hover { background: #475569; }
 
     /* Page Definition */
     .print-page {
@@ -370,8 +401,6 @@ export class PrintLayoutComponent implements OnInit, AfterViewInit {
               try {
                   const jobs = JSON.parse(storedData);
                   this.localJobs.set(jobs);
-                  // Clean up to prevent stale data later
-                  localStorage.removeItem('lims_print_queue');
               } catch (e) {
                   console.error("Failed to parse print job", e);
               }
@@ -384,12 +413,26 @@ export class PrintLayoutComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
       if (this.isStandalone()) {
-          // Wait for rendering then print
-          this.isLoading.set(false);
+          // Robust auto-print sequence
+          // 1. Wait for render cycle
           setTimeout(() => {
-              window.print();
-          }, 800); // 800ms delay to ensure fonts/layout settle
+              this.isLoading.set(false);
+              // 2. Wait for paint
+              setTimeout(() => {
+                  this.triggerSystemPrint();
+              }, 800);
+          }, 200);
       }
+  }
+
+  triggerSystemPrint() {
+      window.print();
+  }
+
+  closeWindow() {
+      // Clean up before closing
+      localStorage.removeItem('lims_print_queue');
+      window.close();
   }
 
   stdUnit(unit: string): string {

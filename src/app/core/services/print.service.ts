@@ -78,12 +78,14 @@ export class PrintService {
           const serializedData = JSON.stringify(jobsData);
           localStorage.setItem('lims_print_queue', serializedData);
 
-          // 2. Open the dedicated route
-          // We use hash routing in this app, so construct URL manually or via router
-          const url = this.router.serializeUrl(this.router.createUrlTree(['/print-job']));
+          // 2. Construct URL manually for Hash Strategy correctness
+          // window.location.href usually includes the hash if we are in the app.
+          // We want base url + #/print-job
+          const baseUrl = window.location.href.split('#')[0];
+          const targetUrl = `${baseUrl}#/print-job`;
           
           // Open in new window with specific specs to look like a popup dialog
-          const printWindow = window.open(url, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no');
+          const printWindow = window.open(targetUrl, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
 
           if (!printWindow) {
               this.toast.show('Trình duyệt đã chặn cửa sổ bật lên (Popup). Vui lòng cho phép để in.', 'error');
