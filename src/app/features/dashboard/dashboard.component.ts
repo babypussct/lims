@@ -1,7 +1,7 @@
 import { Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms'; // Added FormsModule
+import { FormsModule } from '@angular/forms'; 
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { InventoryService } from '../inventory/inventory.service';
@@ -11,6 +11,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component'; // Import Scanner
 import Chart from 'chart.js/auto'; 
 
 interface PriorityStandard {
@@ -23,7 +24,7 @@ interface PriorityStandard {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, FormsModule], // Import FormsModule
+  imports: [CommonModule, SkeletonComponent, FormsModule, QrScannerComponent], 
   template: `
     <div class="space-y-6 fade-in pb-10">
         
@@ -265,30 +266,57 @@ interface PriorityStandard {
             </div>
         </div>
 
-        <!-- SCAN QR MODAL -->
+        <!-- SCAN QR MODAL (Refined for Camera) -->
         @if (showScanModal()) {
-            <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in" (click)="closeScanModal()">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-bounce-in" (click)="$event.stopPropagation()">
-                    <div class="text-center mb-6">
-                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                            <i class="fa-solid fa-qrcode text-3xl"></i>
+            <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in" (click)="closeScanModal()">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col h-[500px] animate-bounce-in" (click)="$event.stopPropagation()">
+                    
+                    <!-- Mode Switcher Header -->
+                    <div class="flex border-b border-slate-100">
+                        <button (click)="scanMode.set('camera')" class="flex-1 py-3 text-xs font-bold uppercase transition" [class]="scanMode() === 'camera' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'">
+                            <i class="fa-solid fa-camera mr-1"></i> Camera
+                        </button>
+                        <button (click)="scanMode.set('manual')" class="flex-1 py-3 text-xs font-bold uppercase transition" [class]="scanMode() === 'manual' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'">
+                            <i class="fa-solid fa-keyboard mr-1"></i> Thủ công
+                        </button>
+                    </div>
+
+                    <!-- CAMERA MODE -->
+                    @if (scanMode() === 'camera') {
+                        <div class="flex-1 bg-black relative">
+                            <app-qr-scanner (scanSuccess)="onCameraScanSuccess($event)" (scanError)="onCameraError($event)"></app-qr-scanner>
+                            
+                            <button (click)="closeScanModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center z-30">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-800">Scan QR Code</h3>
-                        <p class="text-sm text-slate-500 mt-1">Dùng súng bắn mã hoặc nhập ID phiếu</p>
-                    </div>
-                    
-                    <input #scanInput 
-                           [ngModel]="scanCode" 
-                           (ngModelChange)="onScanInput($event)"
-                           (keyup.enter)="onScanSubmit()"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition mb-4"
-                           placeholder="Quét hoặc nhập mã..."
-                           autofocus>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <button (click)="closeScanModal()" class="py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">Đóng</button>
-                        <button (click)="onScanSubmit()" class="py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-md shadow-blue-200">Tra cứu</button>
-                    </div>
+                    }
+
+                    <!-- MANUAL MODE -->
+                    @if (scanMode() === 'manual') {
+                        <div class="p-6 flex flex-col justify-center h-full">
+                            <div class="text-center mb-6">
+                                <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                                    <i class="fa-solid fa-keyboard text-3xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-800">Nhập mã ID</h3>
+                                <p class="text-sm text-slate-500 mt-1">Sử dụng cho máy quét cầm tay hoặc nhập phím</p>
+                            </div>
+                            
+                            <input #scanInput 
+                                   [ngModel]="scanCode" 
+                                   (ngModelChange)="onScanInput($event)"
+                                   (keyup.enter)="onScanSubmit()"
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition mb-4 uppercase"
+                                   placeholder="CODE..."
+                                   autofocus>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <button (click)="closeScanModal()" class="py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">Đóng</button>
+                                <button (click)="onScanSubmit()" class="py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-md shadow-blue-200">Tra cứu</button>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -296,7 +324,7 @@ interface PriorityStandard {
   `
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // ... Services ...
+  // ... (Services remain same)
   state = inject(StateService);
   invService = inject(InventoryService); 
   stdService = inject(StandardService);
@@ -308,11 +336,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   isLoading = signal(true);
   lowStockItems = signal<InventoryItem[]>([]); 
-  
   priorityStandard = signal<PriorityStandard | null>(null);
   recentLogs = computed(() => this.state.logs().slice(0, 8)); 
   today = new Date();
   
+  // ... (Quotes and Chart variables remain same)
   quotes = [
       "Chất lượng không phải là một hành động, nó là một thói quen. (Aristotle)",
       "Sự cẩn thận là người bạn tốt nhất của nhà hóa học.",
@@ -324,12 +352,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       "Đừng sợ thất bại, đó là bước đệm của thành công."
   ];
   randomQuote = signal(this.quotes[0]);
-
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   chartInstance: any = null;
 
   // Scan Modal State
   showScanModal = signal(false);
+  scanMode = signal<'camera' | 'manual'>('camera');
   scanCode = '';
   scanInputRef = viewChild<ElementRef>('scanInput');
   private scanTimeout: any;
@@ -346,6 +374,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+      // ... (Same initialization logic)
       this.isLoading.set(true);
       try {
           const [lowStock, nearestStd] = await Promise.all([
@@ -368,7 +397,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
-  // ... (Chart logic remains same as original, omitted for brevity) ...
+  // ... (Chart and Data processing logic - hidden for brevity as it is unchanged) ...
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
@@ -455,19 +484,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // --- Scan Modal Logic ---
   openScanModal() {
       this.showScanModal.set(true);
+      // Determine mode based on device? For now default to Camera
+      this.scanMode.set('camera');
       this.scanCode = '';
-      setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
   }
 
   closeScanModal() {
       this.showScanModal.set(false);
   }
 
+  onCameraScanSuccess(result: string) {
+      // Auto-navigate logic
+      this.scanCode = result;
+      this.closeScanModal();
+      this.toast.show('Đã quét mã: ' + result, 'success');
+      this.router.navigate(['/traceability', result]);
+  }
+
+  onCameraError(err: any) {
+      // Fallback to manual if camera fails
+      this.toast.show('Lỗi Camera. Chuyển sang nhập tay.', 'info');
+      this.scanMode.set('manual');
+      setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
+  }
+
+  // Manual Mode Handlers
   onScanInput(val: string) {
       this.scanCode = val;
       if (this.scanTimeout) clearTimeout(this.scanTimeout);
-      
-      // Auto-submit debounce: if text exists and user stops typing for 300ms
       if (val && val.trim().length > 0) {
           this.scanTimeout = setTimeout(() => {
               this.onScanSubmit();
