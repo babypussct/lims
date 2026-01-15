@@ -1,4 +1,3 @@
-
 import { Injectable, inject, ApplicationRef, EnvironmentInjector, createComponent, ComponentRef, signal } from '@angular/core';
 import { CalculatorService } from './calculator.service';
 import { BatchItem } from './batch.service';
@@ -72,30 +71,18 @@ export class PrintService {
       this.appRef.attachView(this.printComponentRef.hostView);
       this.printComponentRef.changeDetectorRef.detectChanges();
 
-      // 5. Robust Print Trigger (Waits for Render)
-      // We use a small timeout only to ensure DOM paint, but cleanup relies on event.
+      // 5. Robust Print Trigger (Fire-and-Forget Logic)
       setTimeout(() => {
-          // Add listener BEFORE printing
-          const afterPrint = () => {
-              this.cleanup();
-              this.isProcessing.set(false);
-              window.removeEventListener('afterprint', afterPrint);
-          };
-          window.addEventListener('afterprint', afterPrint);
-
           // Execute Print
           window.print();
 
-          // Fallback: If 'afterprint' doesn't fire (rare browsers), cleanup manually after a long delay
-          // This prevents infinite blocking if the event is missed.
+          // SAFETY FALLBACK: Always unlock UI after a short delay.
+          // On Desktop (Blocking): This runs after dialog closes.
+          // On Mobile (Non-blocking): This runs immediately, ensuring UI doesn't hang.
           setTimeout(() => {
-              if (this.isProcessing()) {
-                  console.warn("Print event missing, forcing cleanup.");
-                  this.cleanup();
-                  this.isProcessing.set(false);
-                  window.removeEventListener('afterprint', afterPrint);
-              }
-          }, 5000); 
+              this.cleanup();
+              this.isProcessing.set(false);
+          }, 1000); 
 
       }, 500);
 

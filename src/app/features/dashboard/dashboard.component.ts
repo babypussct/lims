@@ -278,7 +278,8 @@ interface PriorityStandard {
                     </div>
                     
                     <input #scanInput 
-                           [(ngModel)]="scanCode" 
+                           [ngModel]="scanCode" 
+                           (ngModelChange)="onScanInput($event)"
                            (keyup.enter)="onScanSubmit()"
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition mb-4"
                            placeholder="Quét hoặc nhập mã..."
@@ -330,8 +331,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Scan Modal State
   showScanModal = signal(false);
   scanCode = '';
-  // FIX: Use signal-based viewChild correctly
   scanInputRef = viewChild<ElementRef>('scanInput');
+  private scanTimeout: any;
 
   constructor() {
       this.randomQuote.set(this.quotes[Math.floor(Math.random() * this.quotes.length)]);
@@ -455,12 +456,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
   openScanModal() {
       this.showScanModal.set(true);
       this.scanCode = '';
-      // FIX: Access signal value
       setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
   }
 
   closeScanModal() {
       this.showScanModal.set(false);
+  }
+
+  onScanInput(val: string) {
+      this.scanCode = val;
+      if (this.scanTimeout) clearTimeout(this.scanTimeout);
+      
+      // Auto-submit debounce: if text exists and user stops typing for 300ms
+      if (val && val.trim().length > 0) {
+          this.scanTimeout = setTimeout(() => {
+              this.onScanSubmit();
+          }, 300);
+      }
   }
 
   onScanSubmit() {
