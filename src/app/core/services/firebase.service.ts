@@ -1,7 +1,5 @@
-
 import { Injectable } from '@angular/core';
-import { initializeApp } from 'firebase/app';
-import type { FirebaseApp } from 'firebase/app';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 

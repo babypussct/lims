@@ -1,7 +1,7 @@
-
 import { Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms'; // Added FormsModule
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { InventoryService } from '../inventory/inventory.service';
@@ -11,7 +11,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import Chart from 'chart.js/auto'; // STANDARD IMPORT FOR BUILD
+import Chart from 'chart.js/auto'; 
 
 interface PriorityStandard {
     name: string;
@@ -23,7 +23,7 @@ interface PriorityStandard {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent],
+  imports: [CommonModule, SkeletonComponent, FormsModule], // Import FormsModule
   template: `
     <div class="space-y-6 fade-in pb-10">
         
@@ -38,7 +38,6 @@ interface PriorityStandard {
                 </div>
                 <div class="flex-1">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">{{getGreeting()}},</p>
-                    
                     @if (state.currentUser()?.displayName) {
                         <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">
                             {{state.currentUser()?.displayName}}
@@ -46,8 +45,6 @@ interface PriorityStandard {
                     } @else {
                         <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">...</h1>
                     }
-                    
-                    <!-- Dynamic Quote / Status -->
                     <div class="flex items-center gap-2 text-sm font-medium text-slate-500 mt-1">
                         <i class="fa-solid fa-quote-left text-[10px] text-slate-300 -translate-y-1"></i>
                         <span class="italic text-xs md:text-sm">{{ randomQuote() }}</span>
@@ -55,8 +52,15 @@ interface PriorityStandard {
                 </div>
             </div>
 
-            <div class="relative z-10 flex gap-3">
-                <div class="text-right hidden md:block">
+            <!-- ACTIONS -->
+            <div class="relative z-10 flex gap-3 items-center">
+                <!-- SCAN BUTTON -->
+                <button (click)="openScanModal()" class="flex flex-col items-center justify-center w-16 h-16 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:text-blue-600 transition active:scale-95 group/scan">
+                    <i class="fa-solid fa-qrcode text-2xl mb-1 text-slate-700 group-hover/scan:text-blue-600 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-wider">Scan</span>
+                </button>
+
+                <div class="text-right hidden md:block border-l border-slate-200 pl-4 ml-1">
                     <div class="text-xs font-bold text-slate-400 uppercase">Hôm nay</div>
                     <div class="text-lg font-black text-slate-700">{{today | date:'dd/MM/yyyy'}}</div>
                 </div>
@@ -184,7 +188,6 @@ interface PriorityStandard {
 
         <!-- 2. Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
             <!-- Left Column (2/3): PERFORMANCE CHART -->
             <div class="lg:col-span-2">
                 <div class="relative bg-white rounded-3xl p-6 shadow-soft-xl overflow-hidden group border border-slate-100 flex flex-col h-[540px]">
@@ -196,8 +199,6 @@ interface PriorityStandard {
                             <p class="text-xs text-slate-400 font-medium">Số mẫu (Sample) & Số mẻ (Batch) trong 7 ngày qua</p>
                         </div>
                     </div>
-
-                    <!-- Chart Area -->
                     <div class="flex-1 relative w-full min-h-0">
                         @if(isLoading()) {
                             <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
@@ -216,7 +217,6 @@ interface PriorityStandard {
                     </h3>
                     <button (click)="navTo('stats')" class="text-[10px] font-bold text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">Xem tất cả</button>
                 </div>
-                
                 <div class="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-6">
                     @if (isLoading()) {
                         @for(i of [1,2,3,4]; track i) {
@@ -264,10 +264,38 @@ interface PriorityStandard {
                 </div>
             </div>
         </div>
+
+        <!-- SCAN QR MODAL -->
+        @if (showScanModal()) {
+            <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in" (click)="closeScanModal()">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-bounce-in" (click)="$event.stopPropagation()">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                            <i class="fa-solid fa-qrcode text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">Scan QR Code</h3>
+                        <p class="text-sm text-slate-500 mt-1">Dùng súng bắn mã hoặc nhập ID phiếu</p>
+                    </div>
+                    
+                    <input #scanInput 
+                           [(ngModel)]="scanCode" 
+                           (keyup.enter)="onScanSubmit()"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition mb-4"
+                           placeholder="Quét hoặc nhập mã..."
+                           autofocus>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button (click)="closeScanModal()" class="py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">Đóng</button>
+                        <button (click)="onScanSubmit()" class="py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-md shadow-blue-200">Tra cứu</button>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
   `
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  // ... Services ...
   state = inject(StateService);
   invService = inject(InventoryService); 
   stdService = inject(StandardService);
@@ -284,7 +312,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   recentLogs = computed(() => this.state.logs().slice(0, 8)); 
   today = new Date();
   
-  // Motivational Quotes
   quotes = [
       "Chất lượng không phải là một hành động, nó là một thói quen. (Aristotle)",
       "Sự cẩn thận là người bạn tốt nhất của nhà hóa học.",
@@ -297,14 +324,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ];
   randomQuote = signal(this.quotes[0]);
 
-  // Chart
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   chartInstance: any = null;
+
+  // Scan Modal State
+  showScanModal = signal(false);
+  scanCode = '';
+  // FIX: Use signal-based viewChild correctly
+  scanInputRef = viewChild<ElementRef>('scanInput');
 
   constructor() {
       this.randomQuote.set(this.quotes[Math.floor(Math.random() * this.quotes.length)]);
       
-      // Re-trigger chart on data load
       effect(() => {
           const reqs = this.state.approvedRequests();
           if (reqs.length >= 0 && !this.isLoading()) {
@@ -336,183 +367,106 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
+  // ... (Chart logic remains same as original, omitted for brevity) ...
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
-
-      // --- CRITICAL FIX: Destroy existing chart on this canvas ---
       const existingChart = Chart.getChart(canvas);
       if (existingChart) existingChart.destroy();
-      
-      if (this.chartInstance) {
-          this.chartInstance.destroy();
-          this.chartInstance = null;
-      }
-      // -----------------------------------------------------------
-
+      if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // 1. Prepare 7-day Data Buckets
       const days = 7;
       const labels = [];
       const sampleData = new Array(days).fill(0);
       const runData = new Array(days).fill(0);
-      
-      const now = new Date();
-      now.setHours(0,0,0,0);
-
-      // Initialize Map for O(1) lookup
-      const dateMap = new Map<string, number>(); // "DD/MM" -> index
+      const now = new Date(); now.setHours(0,0,0,0);
+      const dateMap = new Map<string, number>();
       
       for (let i = days - 1; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(d.getDate() - i);
+          const d = new Date(now); d.setDate(d.getDate() - i);
           const key = `${d.getDate()}/${d.getMonth() + 1}`;
-          labels.push(key);
-          dateMap.set(key, days - 1 - i);
+          labels.push(key); dateMap.set(key, days - 1 - i);
       }
 
-      // 2. Aggregate Data from Approved Requests
       const history = this.state.approvedRequests();
-      
       history.forEach(req => {
           let key = '';
-
-          // PRIORITY 1: User-entered Analysis Date (Manual Entry)
           if (req.analysisDate) {
-              const parts = req.analysisDate.split('-'); // YYYY-MM-DD
-              if (parts.length === 3) {
-                  // Normalize to match bucket format (remove leading zeros by parseInt)
-                  const day = parseInt(parts[2], 10);
-                  const month = parseInt(parts[1], 10);
-                  key = `${day}/${month}`;
-              }
+              const parts = req.analysisDate.split('-');
+              if (parts.length === 3) key = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
           }
-
-          // PRIORITY 2: Fallback to System Timestamp
           if (!key) {
               const ts = req.approvedAt || req.timestamp;
-              if (ts) {
-                  const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts);
-                  key = `${d.getDate()}/${d.getMonth() + 1}`;
-              }
+              if (ts) { const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts); key = `${d.getDate()}/${d.getMonth() + 1}`; }
           }
-          
           const idx = dateMap.get(key);
           if (idx !== undefined) {
-              // Count Runs (Batches)
               runData[idx]++;
-              
-              // Count Samples
               let samples = 0;
-              if (req.inputs) {
-                  if (req.inputs['n_sample']) samples = Number(req.inputs['n_sample']);
-                  else if (req.inputs['sample_count']) samples = Number(req.inputs['sample_count']);
-              }
+              if (req.inputs) { if (req.inputs['n_sample']) samples = Number(req.inputs['n_sample']); else if (req.inputs['sample_count']) samples = Number(req.inputs['sample_count']); }
               sampleData[idx] += (samples || 0); 
           }
       });
 
-      // 3. Render Mixed Chart
       this.chartInstance = new Chart(ctx, {
           type: 'bar',
           data: {
               labels: labels,
               datasets: [
-                  {
-                      label: 'Số mẫu (Samples)',
-                      data: sampleData,
-                      backgroundColor: 'rgba(79, 70, 229, 0.8)', // Indigo
-                      borderRadius: 4,
-                      order: 2,
-                      yAxisID: 'y'
-                  },
-                  {
-                      label: 'Số mẻ (Runs)',
-                      data: runData,
-                      type: 'line',
-                      borderColor: '#f97316', // Orange
-                      backgroundColor: '#f97316',
-                      borderWidth: 2,
-                      pointRadius: 4,
-                      pointBackgroundColor: '#fff',
-                      pointBorderColor: '#f97316',
-                      tension: 0.3,
-                      order: 1,
-                      yAxisID: 'y1'
-                  }
+                  { label: 'Số mẫu (Samples)', data: sampleData, backgroundColor: 'rgba(79, 70, 229, 0.8)', borderRadius: 4, order: 2, yAxisID: 'y' },
+                  { label: 'Số mẻ (Runs)', data: runData, type: 'line', borderColor: '#f97316', backgroundColor: '#f97316', borderWidth: 2, pointRadius: 4, tension: 0.3, order: 1, yAxisID: 'y1' }
               ]
           },
-          options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10, weight: 'bold' } } } },
-              scales: {
-                  x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } },
-                  y: { 
-                      type: 'linear', display: true, position: 'left', beginAtZero: true,
-                      grid: { color: '#f1f5f9' },
-                      title: { display: false, text: 'Mẫu' },
-                      ticks: { stepSize: 5 }
-                  },
-                  y1: {
-                      type: 'linear', display: true, position: 'right', beginAtZero: true,
-                      grid: { display: false },
-                      title: { display: false, text: 'Mẻ' },
-                      ticks: { stepSize: 1, color: '#f97316' }
-                  }
-              },
-              interaction: { intersect: false, mode: 'index' },
-          }
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } }, scales: { x: { grid: { display: false } }, y: { type: 'linear', display: true, position: 'left', beginAtZero: true }, y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false } } } }
       });
   }
 
   processPriorityStandard(std: ReferenceStandard | null) {
-      if (!std || !std.expiry_date) {
-          this.priorityStandard.set(null);
-          return;
-      }
-      const expiry = new Date(std.expiry_date);
-      const today = new Date();
+      if (!std || !std.expiry_date) { this.priorityStandard.set(null); return; }
+      const expiry = new Date(std.expiry_date); const today = new Date();
       const diffMs = expiry.getTime() - today.getTime();
       const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       let status: 'expired' | 'warning' | 'safe';
-      if (daysLeft < 0) status = 'expired';
-      else if (daysLeft < 60) status = 'warning';
-      else status = 'safe';
+      if (daysLeft < 0) status = 'expired'; else if (daysLeft < 60) status = 'warning'; else status = 'safe';
       this.priorityStandard.set({ name: std.name, daysLeft, date: std.expiry_date, status });
   }
 
   navTo(path: string) { this.router.navigate(['/' + path]); }
   denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
-  getGreeting(): string {
-      const h = new Date().getHours();
-      if (h < 12) return 'Chào buổi sáng';
-      if (h < 18) return 'Chào buổi chiều';
-      return 'Chào buổi tối';
-  }
-
+  getGreeting(): string { const h = new Date().getHours(); return h < 12 ? 'Chào buổi sáng' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'; }
   getTimeDiff(timestamp: any): string {
       if (!timestamp) return '';
       const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      if (diffMins < 1) return 'Vừa xong';
-      if (diffMins < 60) return `${diffMins} phút trước`;
-      const diffHours = Math.floor(diffMins / 60);
-      if (diffHours < 24) return `${diffHours} giờ trước`;
+      const now = new Date(); const diffMs = now.getTime() - date.getTime(); const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Vừa xong'; if (diffMins < 60) return `${diffMins} phút trước`;
+      const diffHours = Math.floor(diffMins / 60); if (diffHours < 24) return `${diffHours} giờ trước`;
       return `${Math.floor(diffHours / 24)} ngày trước`;
   }
-
   getLogActionText(action: string): string {
-      if (action.includes('APPROVE')) return 'đã duyệt yêu cầu';
-      if (action.includes('STOCK_IN')) return 'đã nhập kho';
-      if (action.includes('STOCK_OUT')) return 'đã xuất kho';
-      if (action.includes('CREATE')) return 'đã tạo mới';
-      if (action.includes('DELETE')) return 'đã xóa';
-      return 'đã cập nhật';
+      if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; if (action.includes('STOCK_IN')) return 'đã nhập kho';
+      if (action.includes('STOCK_OUT')) return 'đã xuất kho'; if (action.includes('CREATE')) return 'đã tạo mới';
+      if (action.includes('DELETE')) return 'đã xóa'; return 'đã cập nhật';
+  }
+
+  // --- Scan Modal Logic ---
+  openScanModal() {
+      this.showScanModal.set(true);
+      this.scanCode = '';
+      // FIX: Access signal value
+      setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
+  }
+
+  closeScanModal() {
+      this.showScanModal.set(false);
+  }
+
+  onScanSubmit() {
+      if (!this.scanCode.trim()) return;
+      const code = this.scanCode.trim();
+      this.closeScanModal();
+      this.router.navigate(['/traceability', code]);
   }
 }

@@ -31,9 +31,17 @@ export class PrintService {
 
   // --- Dynamic Print (Direct Injection) ---
   async printDocument(jobs: PrintJob[]) {
+    // Null safety check for jobs
     if (!jobs || jobs.length === 0) {
       this.toast.show('Không có dữ liệu để in.', 'error');
       return;
+    }
+
+    // Sanitize jobs (Prevent NULL Access Error)
+    const validJobs = jobs.filter(j => j && j.sop && j.items);
+    if (validJobs.length === 0) {
+        this.toast.show('Dữ liệu in bị lỗi hoặc thiếu thông tin.', 'error');
+        return;
     }
 
     this.isProcessing.set(true);
@@ -57,22 +65,37 @@ export class PrintService {
       });
 
       // 3. Pass Data
-      this.printComponentRef.instance.jobs = jobs;
+      this.printComponentRef.instance.jobs = validJobs;
       this.printComponentRef.instance.isDirectPrint = true;
 
       // 4. Trigger Change Detection
       this.appRef.attachView(this.printComponentRef.hostView);
       this.printComponentRef.changeDetectorRef.detectChanges();
 
-      // 5. Wait for Rendering (Images/QR) -> Then Print
+      // 5. Robust Print Trigger (Waits for Render)
+      // We use a small timeout only to ensure DOM paint, but cleanup relies on event.
       setTimeout(() => {
-        window.print();
-        
-        // 6. Cleanup after a delay to ensure print dialog has captured the content
-        setTimeout(() => {
-           this.cleanup();
-           this.isProcessing.set(false);
-        }, 1000); 
+          // Add listener BEFORE printing
+          const afterPrint = () => {
+              this.cleanup();
+              this.isProcessing.set(false);
+              window.removeEventListener('afterprint', afterPrint);
+          };
+          window.addEventListener('afterprint', afterPrint);
+
+          // Execute Print
+          window.print();
+
+          // Fallback: If 'afterprint' doesn't fire (rare browsers), cleanup manually after a long delay
+          // This prevents infinite blocking if the event is missed.
+          setTimeout(() => {
+              if (this.isProcessing()) {
+                  console.warn("Print event missing, forcing cleanup.");
+                  this.cleanup();
+                  this.isProcessing.set(false);
+                  window.removeEventListener('afterprint', afterPrint);
+              }
+          }, 5000); 
 
       }, 500);
 

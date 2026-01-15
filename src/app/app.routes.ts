@@ -39,7 +39,6 @@ export const routes: Routes = [
     path: 'printing',
     loadComponent: () => import('./features/requests/print-queue.component').then(m => m.PrintQueueComponent)
   },
-  // Batch Print Preview Route is removed. Direct printing only.
   {
     path: 'labels',
     loadComponent: () => import('./features/labels/label-print.component').then(m => m.LabelPrintComponent)
@@ -51,6 +50,15 @@ export const routes: Routes = [
   {
     path: 'config',
     loadComponent: () => import('./features/config/config.component').then(m => m.ConfigComponent)
+  },
+  // --- NEW: Traceability Route ---
+  {
+    path: 'traceability',
+    loadComponent: () => import('./features/traceability/traceability.component').then(m => m.TraceabilityComponent)
+  },
+  {
+    path: 'traceability/:id',
+    loadComponent: () => import('./features/traceability/traceability.component').then(m => m.TraceabilityComponent)
   },
   {
     path: '**',
