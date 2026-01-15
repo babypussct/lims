@@ -131,146 +131,78 @@ import { AuthService } from '../../core/services/auth.service';
                            } @else {
                                @for (std of items(); track std.id) {
                                   <tr class="hover:bg-indigo-50/30 transition group h-24" [class.bg-indigo-50]="selectedIds().has(std.id)">
-                                     <!-- Checkbox -->
                                      <td class="px-4 py-3 text-center align-top pt-4">
                                          <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
                                      </td>
-                                     
-                                     <!-- Col 1: Identity & Location -->
                                      <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col h-full">
                                             <div class="font-bold text-slate-800 text-sm mb-0.5 hover:text-indigo-600 transition cursor-pointer leading-snug line-clamp-2" (click)="openEditModal(std)" [title]="std.name">
                                                 {{std.name}}
                                             </div>
-                                            @if(std.chemical_name) { 
-                                                <div class="text-xs text-slate-500 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> 
-                                            }
+                                            @if(std.chemical_name) { <div class="text-xs text-slate-500 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> }
                                             <div class="flex flex-wrap gap-1.5 mt-auto">
-                                                @if(std.internal_id) { 
-                                                    <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 tracking-tight">{{std.internal_id}}</span> 
-                                                }
-                                                @if(std.location) { 
-                                                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200 flex items-center gap-1">
-                                                        <i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}
-                                                    </span> 
-                                                }
+                                                @if(std.internal_id) { <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 tracking-tight">{{std.internal_id}}</span> }
+                                                @if(std.location) { <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200 flex items-center gap-1"><i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}</span> }
                                             </div>
                                         </div>
                                      </td>
-
-                                     <!-- Col 2: Info (Mfg, Lot, Code) -->
                                      <td class="px-4 py-3 align-top border-l border-slate-50">
                                         <div class="text-xs font-bold text-slate-700 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
                                         <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px] text-slate-500">
-                                            <span class="font-bold text-slate-400">LOT:</span>
-                                            <span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
-                                            <span class="font-bold text-slate-400">CODE:</span>
-                                            <span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
-                                            @if(std.cas_number) {
-                                                <span class="font-bold text-slate-400">CAS:</span>
-                                                <span class="font-mono text-slate-700">{{std.cas_number}}</span>
-                                            }
+                                            <span class="font-bold text-slate-400">LOT:</span><span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
+                                            <span class="font-bold text-slate-400">CODE:</span><span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
+                                            @if(std.cas_number) { <span class="font-bold text-slate-400">CAS:</span><span class="font-mono text-slate-700">{{std.cas_number}}</span> }
                                         </div>
                                         <div class="mt-2 pt-1 border-t border-slate-100 text-[10px] flex items-center gap-2 text-slate-500">
                                             @if(std.purity) { <span>Pur: <b class="text-slate-700">{{std.purity}}</b></span> }
                                             @if(std.pack_size) { <span>Pack: <b class="text-slate-700">{{std.pack_size}}</b></span> }
                                         </div>
                                      </td>
-
-                                     <!-- Col 3: Stock & Storage -->
                                      <td class="px-4 py-3 align-top border-l border-slate-50">
-                                        <div class="flex items-baseline justify-between mb-1">
-                                            <span class="text-lg font-black text-indigo-600 leading-none">{{formatNum(std.current_amount)}}</span>
-                                            <span class="text-[10px] font-bold text-slate-400 ml-1">{{std.unit}}</span>
-                                        </div>
-                                        <!-- Progress Bar -->
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden relative">
-                                            <div class="h-full rounded-full transition-all duration-500" 
-                                                 [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)"
-                                                 [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2"
-                                                 [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2">
-                                            </div>
-                                        </div>
-                                        <!-- Storage Icons with Details -->
+                                        <div class="flex items-baseline justify-between mb-1"><span class="text-lg font-black text-indigo-600 leading-none">{{formatNum(std.current_amount)}}</span><span class="text-[10px] font-bold text-slate-400 ml-1">{{std.unit}}</span></div>
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden relative"><div class="h-full rounded-full transition-all duration-500" [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)" [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2" [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2"></div></div>
                                         @let sInfo = getStorageInfo(std.storage_condition);
                                         <div class="flex flex-col gap-1 mt-1">
-                                            @for (info of sInfo; track $index) {
-                                                <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]">
-                                                    <i class="fa-solid" [ngClass]="info.icon"></i>
-                                                    <span class="font-bold">{{info.text}}</span>
-                                                </div>
-                                            }
+                                            @for (info of sInfo; track $index) { <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span></div> }
                                         </div>
                                      </td>
-
-                                     <!-- Col 4: Expiry & Docs -->
                                      <td class="px-4 py-3 align-top border-l border-slate-50">
                                         <div class="flex flex-col gap-0.5 mb-2">
-                                            <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">
-                                                {{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}
-                                            </div>
-                                            <div class="text-[10px] font-medium" [class]="getExpiryTimeClass(std.expiry_date)">
-                                                {{ getExpiryTimeLeft(std.expiry_date) }}
-                                            </div>
+                                            <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
+                                            <div class="text-[10px] font-medium" [class]="getExpiryTimeClass(std.expiry_date)">{{ getExpiryTimeLeft(std.expiry_date) }}</div>
                                         </div>
-                                        
                                         <div class="flex flex-col gap-1.5">
-                                            @if(std.certificate_ref) {
-                                                <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition w-fit">
-                                                    <i class="fa-solid fa-file-pdf"></i> CoA
-                                                </button>
-                                            }
-                                            @if(std.contract_ref) {
-                                                <div class="text-[10px] text-slate-400 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng">
-                                                    <i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}
-                                                </div>
-                                            }
+                                            @if(std.certificate_ref) { <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
+                                            @if(std.contract_ref) { <div class="text-[10px] text-slate-400 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
                                         </div>
                                      </td>
-
-                                     <!-- Col 5: Status -->
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50">
                                          @let status = getStandardStatus(std);
-                                         <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="status.class">
-                                             {{status.label}}
-                                         </span>
+                                         <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="status.class">{{status.label}}</span>
                                      </td>
-
-                                     <!-- Col 6: Actions -->
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50">
                                         <div class="flex flex-col items-center gap-2">
-                                           <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn">
-                                               <i class="fa-solid fa-weight-scale text-xs"></i>
-                                           </button>
-                                           
+                                           <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                               <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-200" title="Lịch sử">
-                                                   <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
-                                               </button>
-                                               @if(auth.canEditStandards()) {
-                                                   <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition" title="Sửa">
-                                                       <i class="fa-solid fa-pen text-[10px]"></i>
-                                                   </button>
-                                               }
+                                               <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-200" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
+                                               @if(auth.canEditStandards()) { <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition" title="Sửa"><i class="fa-solid fa-pen text-[10px]"></i></button> }
                                            </div>
                                         </div>
                                      </td>
                                   </tr>
                                } 
-                               @if (items().length === 0) {
-                                  <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr>
-                               }
+                               @if (items().length === 0) { <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr> }
                            }
                         </tbody>
                      </table>
                  </div>
              } 
              @else {
-                 <!-- Grid View remains unchanged/simplified as requested, focusing on List View improvements -->
+                 <!-- VIEW MODE: GRID (DATA-RICH CARD) -->
                  <div class="p-4">
                     @if (isLoading()) { 
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            @for(i of [1,2,3,4]; track i) { <app-skeleton height="200px"></app-skeleton> }
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            @for(i of [1,2,3,4]; track i) { <app-skeleton height="280px"></app-skeleton> }
                         </div> 
                     } @else {
                         @if (items().length === 0) {
@@ -281,50 +213,93 @@ import { AuthService } from '../../core/services/auth.service';
                         } @else {
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 @for (std of items(); track std.id) {
-                                    <div class="bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col relative group h-[280px]"
+                                    <div class="bg-white rounded-2xl border transition-all duration-200 flex flex-col relative group h-full hover:-translate-y-1 hover:shadow-lg overflow-hidden"
                                          [class.border-slate-200]="!selectedIds().has(std.id)"
                                          [class.border-indigo-400]="selectedIds().has(std.id)"
-                                         [class.shadow-lg]="selectedIds().has(std.id)"
-                                         [class.bg-indigo-50]="selectedIds().has(std.id)"
-                                         (click)="toggleSelection(std.id)">
+                                         [class.shadow-md]="selectedIds().has(std.id)"
+                                         [class.bg-indigo-50]="selectedIds().has(std.id)">
                                         
-                                        <!-- Card Header: Status Bar -->
-                                        <div class="w-full h-1.5 rounded-full mb-3 flex overflow-hidden bg-slate-100">
-                                            <div class="h-full" [style.width.%]="100" [class]="getExpiryBarClass(std.expiry_date)"></div>
+                                        <!-- Header: Status Bar -->
+                                        <div class="w-full h-1.5 flex bg-slate-100 shrink-0">
+                                            <div class="h-full w-full" [class]="getExpiryBarClass(std.expiry_date)"></div>
                                         </div>
 
-                                        <div class="flex justify-between items-start mb-2">
-                                            <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100 truncate max-w-[120px]">
-                                                <i class="fa-solid fa-location-dot mr-1"></i> {{std.location || std.internal_id || 'NO-LOC'}}
-                                            </span>
-                                            <input type="checkbox" [checked]="selectedIds().has(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer">
-                                        </div>
+                                        <div class="p-4 flex flex-col h-full">
+                                            <!-- Top: Location & Checkbox -->
+                                            <div class="flex justify-between items-start mb-3">
+                                                <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 truncate max-w-[140px] flex items-center gap-1 shadow-sm">
+                                                    <i class="fa-solid fa-location-dot"></i> {{std.location || std.internal_id || 'NO-LOC'}}
+                                                </span>
+                                                <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+                                            </div>
 
-                                        <h3 (click)="$event.stopPropagation(); openEditModal(std)" class="font-bold text-slate-800 text-sm leading-snug mb-3 cursor-pointer hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">
-                                            {{std.name}}
-                                        </h3>
+                                            <!-- Identity -->
+                                            <div class="mb-4 cursor-pointer" (click)="openEditModal(std)">
+                                                <h3 class="font-bold text-slate-800 text-sm leading-snug mb-1 hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">{{std.name}}</h3>
+                                                @if(std.chemical_name) { <p class="text-xs text-slate-500 italic line-clamp-1 font-medium">{{std.chemical_name}}</p> }
+                                            </div>
 
-                                        <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-slate-500 mb-4 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Lot No.</span> <span class="font-mono text-slate-700">{{std.lot_number || '-'}}</span></div>
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Pack Size</span> <span class="font-bold text-slate-600">{{std.pack_size || '-'}}</span></div>
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Expiry</span> <span class="font-mono font-bold" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : '-'}}</span></div>
-                                            <div><span class="font-bold text-slate-400 text-[9px] uppercase block">Purity</span> <span class="font-bold text-indigo-600">{{std.purity || '-'}}</span></div>
-                                        </div>
-
-                                        <div class="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-end mb-1">
-                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Tồn kho</span>
-                                                    <span class="font-black text-indigo-600 text-base leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400">{{std.unit}}</small></span>
+                                            <!-- Data Grid (Click to copy) -->
+                                            <div class="grid grid-cols-2 gap-px bg-slate-100 rounded-lg overflow-hidden border border-slate-100 mb-4 text-[10px]">
+                                                <div class="bg-white p-2 hover:bg-blue-50 transition cursor-pointer group/cell" (click)="copyText(std.lot_number, $event)" title="Copy Lot">
+                                                    <div class="text-slate-400 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.lot_number || '-'}}</div>
                                                 </div>
-                                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
+                                                <div class="bg-white p-2 hover:bg-blue-50 transition cursor-pointer group/cell" (click)="copyText(std.product_code, $event)" title="Copy Code">
+                                                    <div class="text-slate-400 font-bold uppercase mb-0.5 flex justify-between">Code <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.product_code || '-'}}</div>
+                                                </div>
+                                                <div class="bg-white p-2">
+                                                    <div class="text-slate-400 font-bold uppercase mb-0.5">Mfg</div>
+                                                    <div class="font-bold text-slate-700 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
+                                                </div>
+                                                <div class="bg-white p-2">
+                                                    <div class="text-slate-400 font-bold uppercase mb-0.5">CAS</div>
+                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.cas_number || '-'}}</div>
                                                 </div>
                                             </div>
-                                            <div class="flex gap-1">
-                                                <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-8 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center active:scale-95" title="Cân">
-                                                    <i class="fa-solid fa-weight-scale text-xs"></i>
-                                                </button>
+
+                                            <!-- Stock & Storage -->
+                                            <div class="mt-auto">
+                                                <div class="flex justify-between items-end mb-1">
+                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Tồn kho</span>
+                                                    <span class="font-black text-indigo-600 text-lg leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400">{{std.unit}}</small></span>
+                                                </div>
+                                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-3">
+                                                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
+                                                </div>
+                                                
+                                                <!-- Storage Badges -->
+                                                <div class="flex flex-wrap gap-1 mb-4 min-h-[22px]">
+                                                    @for (info of getStorageInfo(std.storage_condition); track $index) {
+                                                        <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1 border" [ngClass]="[info.bg, info.border, info.color]">
+                                                            <i class="fa-solid" [ngClass]="info.icon"></i>
+                                                            <span class="font-bold">{{info.text}}</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <!-- Footer Actions -->
+                                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                                <div class="flex flex-col">
+                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Hết hạn</span>
+                                                    <span class="text-xs font-bold" [class]="getExpiryTimeClass(std.expiry_date)">{{getExpiryTimeLeft(std.expiry_date) || 'N/A'}}</span>
+                                                </div>
+                                                
+                                                <div class="flex gap-1">
+                                                    @if(std.certificate_ref) {
+                                                        <button (click)="$event.stopPropagation(); openCoaPreview(std.certificate_ref, $event)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition flex items-center justify-center" title="Xem CoA">
+                                                            <i class="fa-solid fa-file-pdf text-xs"></i>
+                                                        </button>
+                                                    }
+                                                    <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition flex items-center justify-center" title="Lịch sử">
+                                                        <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                                                    </button>
+                                                    <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
+                                                        <i class="fa-solid fa-weight-scale"></i> Cân
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -613,9 +588,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isUploading = signal(false);
   isImporting = signal(false); // Loading state for import commit
 
-  viewMode = signal<'list' | 'grid'>('list');
+  viewMode = signal<'list' | 'grid'>('grid'); // CHANGED DEFAULT
   searchTerm = signal('');
-  sortOption = signal<string>('received_desc'); // New Default Sort State
+  sortOption = signal<string>('received_desc'); // CHANGED DEFAULT
   searchSubject = new Subject<string>();
 
   items = signal<ReferenceStandard[]>([]);
@@ -696,7 +671,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.hasMore() && !isRefresh) return;
       if (isRefresh) this.isLoading.set(true);
       try {
-          // Pass the sortOption to the service
           const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm(), this.sortOption());
           if (isRefresh) this.items.set(page.items); else this.items.update(c => [...c, ...page.items]);
           this.lastDoc.set(page.lastDoc); this.hasMore.set(page.hasMore);
@@ -713,7 +687,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isEditing.set(true); 
       this.activeModalTab.set('general'); 
       
-      // FIX: Reset form to clear previous data (like CoA link) before patching new data
+      // FIX: Reset to defaults FIRST to clear old values (like CoA link)
       this.form.reset({ 
           initial_amount: 0, 
           current_amount: 0, 
@@ -744,8 +718,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async deleteSelected() {
       const ids = Array.from(this.selectedIds());
       if (ids.length === 0) return;
-      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa ${ids.length} chuẩn đã chọn?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
-          try { await this.stdService.deleteSelectedStandards(ids); this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); this.refreshData(); } catch(e) { this.toast.show('Lỗi xóa', 'error'); }
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa vĩnh viễn ${ids.length} chuẩn đã chọn và TẤT CẢ lịch sử của chúng?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
+          this.isLoading.set(true);
+          try { 
+              await this.stdService.deleteSelectedStandards(ids); 
+              this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); 
+              this.refreshData(); 
+          } catch(e: any) { 
+              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+              this.isLoading.set(false);
+          }
       }
   }
 

@@ -104,17 +104,13 @@ export class StandardService {
       if (!str) return null;
 
       // Regex Patterns
-      // Capture 1: Date string (DD/MM/YY or DD-MM-YYYY)
       const dateRegex = /(?:ng[àa]y|date)?\s*(?:pha\s*ch[ếe])?[:\-\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i;
-      // Capture 1: User name
       const userRegex = /(?:ng[ưươ][ờoi]i|user)(?:\s*pha\s*ch[ếe])?\s*[:\-\s]*([^\d\n\r;]+)/i;
-      // Capture 1: Amount number (Corrected Regex)
       const amountRegex = /(?:lượng|kl|amount)(?:\s*(?:d[ùu]ng|c[âa]n|used))?[:\s-]*([\d\.,]+)/i;
 
-      // Check if it's a pure number (Shortcut case)
       const isNumberOnly = /^[0-9.,]+$/.test(str);
 
-      // CASE A: Detailed Text (Has specific keywords or structure)
+      // CASE A: Detailed Text
       if (!isNumberOnly && str.length > 5) {
           const amountMatch = str.match(amountRegex);
           const dateMatch = str.match(dateRegex);
@@ -124,7 +120,6 @@ export class StandardService {
           if (amountMatch) {
               logAmount = parseFloat(amountMatch[1].replace(',', '.'));
           } else {
-              // Fallback: Try finding standalone number at end of string if regex failed
               const parts = str.split(/\s+/);
               for (const p of parts.reverse()) {
                   const n = parseFloat(p.replace(',', '.'));
@@ -146,7 +141,6 @@ export class StandardService {
                       const d = parts[0].padStart(2, '0');
                       const m = parts[1].padStart(2, '0');
                       let y = parts[2];
-                      // Logic: 2-digit year "25" -> "2025"
                       if (y.length === 2) y = '20' + y;
                       logDate = `${y}-${m}-${d}`;
                   }
@@ -154,7 +148,6 @@ export class StandardService {
 
               if (userMatch) {
                   logUser = userMatch[1].trim();
-                  // Clean up user string (remove trailing keywords if regex grabbed too much)
                   const splitKeywords = ['lượng', 'kl', 'amount', 'ngày', 'date'];
                   const lowerUser = logUser.toLowerCase();
                   for(const k of splitKeywords) {
@@ -176,12 +169,11 @@ export class StandardService {
           }
       }
 
-      // CASE B: Number Only (Data Shortcut)
-      // Logic: If only "10", assume Amount=10, Date=ReceivedDate, User=Import
+      // CASE B: Number Only
       const cleanNum = parseFloat(str.replace(',', '.'));
       if (!isNaN(cleanNum) && cleanNum > 0) {
            return {
-                date: defaultDate, // Fallback to Received Date as requested
+                date: defaultDate,
                 user: 'Import Data',
                 amount_used: cleanNum,
                 purpose: 'Import Log'
@@ -201,52 +193,35 @@ export class StandardService {
       } catch (e) { return null; }
   }
 
-  /**
-   * Updated to support advanced server-side sorting
-   * @param sortOption: 'updated_desc' | 'name_asc' | 'name_desc' | 'received_desc' | 'expiry_asc' | 'expiry_desc'
-   */
   async getStandardsPage(
       pageSize: number, 
       lastDoc: QueryDocumentSnapshot | null, 
       searchTerm: string,
-      sortOption: string = 'received_desc' // Changed default as requested
+      sortOption: string = 'received_desc'
   ): Promise<StandardsPage> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
     let constraints: QueryConstraint[] = [];
 
-    // Prioritize Search if present
     if (searchTerm) {
       const term = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       constraints.push(where('search_key', '>=', term));
       constraints.push(where('search_key', '<=', term + '\uf8ff'));
       constraints.push(orderBy('search_key'));
     } else {
-      // Apply Sort Options
       switch (sortOption) {
-          case 'name_asc':
-              constraints.push(orderBy('name', 'asc'));
-              break;
-          case 'name_desc':
-              constraints.push(orderBy('name', 'desc'));
-              break;
-          case 'received_desc':
-              constraints.push(orderBy('received_date', 'desc'));
-              break;
-          case 'expiry_asc': // Critical for risk management
-              // Filter out empty expiry dates to ensure sorting works correctly
+          case 'name_asc': constraints.push(orderBy('name', 'asc')); break;
+          case 'name_desc': constraints.push(orderBy('name', 'desc')); break;
+          case 'received_desc': constraints.push(orderBy('received_date', 'desc')); break;
+          case 'expiry_asc': 
               constraints.push(where('expiry_date', '!=', ''));
-              constraints.push(orderBy('expiry_date', 'asc'));
+              constraints.push(orderBy('expiry_date', 'asc')); 
               break;
           case 'expiry_desc':
               constraints.push(where('expiry_date', '!=', ''));
               constraints.push(orderBy('expiry_date', 'desc'));
               break;
-          case 'updated_desc':
-              constraints.push(orderBy('lastUpdated', 'desc'));
-              break;
-          default:
-              constraints.push(orderBy('received_date', 'desc')); // Default fallback
-              break;
+          case 'updated_desc': constraints.push(orderBy('lastUpdated', 'desc')); break;
+          default: constraints.push(orderBy('received_date', 'desc')); break;
       }
     }
 
@@ -280,58 +255,60 @@ export class StandardService {
       await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
   }
 
+  /**
+   * DEEP DELETE: Deletes selected standards AND their 'logs' sub-collections.
+   */
   async deleteSelectedStandards(ids: string[]) {
-      const batch = writeBatch(this.fb.db);
-      ids.forEach(id => {
-          const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-          batch.delete(ref);
-      });
-      await batch.commit();
+      const BATCH_SIZE = 400;
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0;
+
+      for (const id of ids) {
+          // 1. Fetch and delete Logs first
+          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs`);
+          const logsSnapshot = await getDocs(logsRef);
+          
+          for (const logDoc of logsSnapshot.docs) {
+              batch.delete(logDoc.ref);
+              opCount++;
+              if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+          }
+
+          // 2. Delete Parent
+          const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
+          batch.delete(stdRef);
+          opCount++;
+          if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+      }
+
+      if (opCount > 0) await batch.commit();
   }
 
-  // Deep Delete: Deletes standards AND their sub-collections (logs)
+  // Deep Delete ALL
   async deleteAllStandards() {
     const parentColRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
     const parentSnapshot = await getDocs(parentColRef);
     
     let batch = writeBatch(this.fb.db);
     let opCount = 0;
-    const MAX_BATCH_SIZE = 400; // Safe limit below 500
+    const MAX_BATCH_SIZE = 400; 
 
-    // Loop through each standard
     for (const stdDoc of parentSnapshot.docs) {
-        
-        // 1. Get Logs Sub-collection
         const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdDoc.id}/logs`);
         const logsSnapshot = await getDocs(logsRef);
 
-        // 2. Queue Log Deletions
         for (const logDoc of logsSnapshot.docs) {
             batch.delete(logDoc.ref);
             opCount++;
-            
-            if (opCount >= MAX_BATCH_SIZE) {
-                await batch.commit();
-                batch = writeBatch(this.fb.db);
-                opCount = 0;
-            }
+            if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
         }
 
-        // 3. Queue Parent Deletion
         batch.delete(stdDoc.ref);
         opCount++;
-
-        if (opCount >= MAX_BATCH_SIZE) {
-            await batch.commit();
-            batch = writeBatch(this.fb.db);
-            opCount = 0;
-        }
+        if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
     }
 
-    // Commit any remaining operations
-    if (opCount > 0) {
-        await batch.commit();
-    }
+    if (opCount > 0) await batch.commit();
   }
 
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
@@ -391,20 +368,16 @@ export class StandardService {
       });
   }
 
-  // --- STEP 1: PARSE EXCEL DATA (NO SAVE) ---
+  // --- EXCEL PARSER (Keep existing logic) ---
   async parseExcelData(file: File): Promise<ImportPreviewItem[]> {
     const XLSX = await import('xlsx');
-
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         try {
           const data = new Uint8Array(e.target.result);
-          // CRITICAL: cellDates: false prevents auto-conversion to prevent Timezone issues
           const workbook = XLSX.read(data, { type: 'array', cellDates: false }); 
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          
-          // Using { raw: false } ensures we get "25/07/25" text instead of Excel Serial Number if formatted as text
           const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
@@ -415,7 +388,6 @@ export class StandardService {
              const row: Record<string, any> = {};
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
-             // 1. NAME PARSING: Split primary and chemical/other names
              const rawName = row['tên chuẩn'] || '';
              const nameParts = rawName.split(/[\n\r]+/);
              const name = nameParts[0]?.trim();
@@ -425,44 +397,31 @@ export class StandardService {
 
              const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
              
-             // 2. PACK SIZE COMBINATION (Columns C & D)
-             const rawPackText = (row['quy cách'] || '').toString().trim(); // Column D
-             const rawAmount = row['khối lượng chai']; // Column C (can be number or string)
+             const rawPackText = (row['quy cách'] || '').toString().trim(); 
+             const rawAmount = row['khối lượng chai'];
              
              let initial = 0;
              if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
-                 // Try parsing C as a number, handle comma decimal
                  const val = parseFloat(rawAmount.toString().replace(',', '.'));
                  if (!isNaN(val)) initial = val;
              } else {
-                 // Fallback: Try parsing from Pack Text
                  initial = Number(row['khối lượng chai'] || 0);
              }
 
-             // 3. UNIT DETECTION (Priority: mL > µg > kg > g > mg)
              let unit = 'mg';
              const lowerPack = rawPackText.toLowerCase();
-             
              if (lowerPack.includes('ml') || lowerPack.includes('milliliter') || lowerPack.includes('lít')) unit = 'mL';
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
              else if (lowerPack.includes('kg')) unit = 'kg';
              else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) unit = 'g';
-             else unit = 'mg'; // Default
+             else unit = 'mg';
 
-             // Construct final pack size string
              let packSize = rawPackText;
              const packHasNumber = /^[\d.,]+/.test(rawPackText);
-             // If Column D (Pack) doesn't start with number, prepend Column C (Amount)
-             if (!packHasNumber && initial > 0 && packSize) {
-                 packSize = `${initial} ${packSize}`;
-             }
-             // If Pack is empty, construct from Amount + Unit
-             if (!packSize) {
-                 packSize = `${initial} ${unit}`;
-             }
+             if (!packHasNumber && initial > 0 && packSize) { packSize = `${initial} ${packSize}`; }
+             if (!packSize) { packSize = `${initial} ${unit}`; }
 
              const internalId = (row['số nhận diện'] || '').toString().trim();
-             
              let current = initial;
              const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
              if (rawCurrentStr !== '') {
@@ -478,7 +437,6 @@ export class StandardService {
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
              
-             // Parse Main Dates
              const receivedDate = this.parseExcelDate(row['ngày nhận']);
              const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
 
@@ -495,23 +453,17 @@ export class StandardService {
                  cas_number: (row['cas number'] || '').toString().trim(),
                  storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
                  storage_status: 'Sẵn sàng', purity: '', 
-                 lastUpdated: null // Will set on save
+                 lastUpdated: null 
              };
              standard.search_key = this.generateSearchKey(standard);
 
-             // Log Parsing Logic (M-Q)
              const logs: any[] = [];
              const addedLogs = new Set<string>();
-             // Default Date Logic: Fallback to Received Date if missing in log
              const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
-
-             // Try to find columns "Lần 1", "Lần 2"... or just search keys
              const keys = Object.keys(row);
              
-             for (let i = 1; i <= 10; i++) { // Check up to 10 logs
-                 // Find key that contains "lần" and the number i
+             for (let i = 1; i <= 10; i++) { 
                  const logKey = keys.find(k => k.includes(`lần`) && k.includes(`${i}`));
-                 
                  if (logKey && row[logKey]) {
                      const logData = this.parseLogContent(row[logKey], logDefaultDate);
                      if (logData) {
@@ -526,24 +478,18 @@ export class StandardService {
 
              results.push({
                  raw: { 'Ngày nhận (Gốc)': row['ngày nhận'], 'Hạn dùng (Gốc)': row['hạn sử dụng'] },
-                 parsed: standard,
-                 logs: logs,
-                 isValid: true
+                 parsed: standard, logs: logs, isValid: true
              });
           }
           resolve(results);
-        } catch (err: any) {
-          reject(err);
-        }
+        } catch (err: any) { reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
   }
 
-  // --- STEP 2: SAVE IMPORTED DATA ---
   async saveImportedData(data: ImportPreviewItem[]) {
       if (!data || data.length === 0) return;
-      
       let batch = writeBatch(this.fb.db);
       let opCount = 0; 
       const MAX_BATCH_SIZE = 400;
@@ -562,13 +508,8 @@ export class StandardService {
               }
           }
 
-          if (opCount >= MAX_BATCH_SIZE) {
-              await batch.commit();
-              batch = writeBatch(this.fb.db);
-              opCount = 0;
-          }
+          if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
-
       if (opCount > 0) await batch.commit();
   }
 }
