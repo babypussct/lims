@@ -1,6 +1,6 @@
 
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { PrintService } from '../../core/services/print.service';
 import { PrintLayoutComponent } from '../../shared/components/print-layout/print-layout.component';
@@ -48,6 +48,7 @@ import { PrintLayoutComponent } from '../../shared/components/print-layout/print
 export class BatchPrintComponent {
   printService = inject(PrintService);
   router: Router = inject(Router);
+  location: Location = inject(Location);
 
   triggerPrint() {
     this.printService.openPrintWindow();
@@ -63,6 +64,7 @@ export class BatchPrintComponent {
   }
 
   goBack() {
-      this.router.navigate(['/printing']);
+      // Go back to previous page (Calculator, Requests, or Queue)
+      this.location.back();
   }
 }

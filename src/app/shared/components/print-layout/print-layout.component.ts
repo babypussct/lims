@@ -287,8 +287,30 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
         
         body, html { margin: 0; padding: 0; background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
-        /* Hide everything else */
-        app-root > *:not(app-print-layout) { display: none !important; }
+        /* 
+           CRITICAL FIX: 
+           Hide App Shell Elements explicitly instead of using "not(app-print-layout)".
+           This ensures that even if app-print-layout is nested inside main, 
+           the parent containers don't get hidden, but their other children do.
+        */
+        app-sidebar, app-login, nav, footer, .no-print, app-confirmation-modal { display: none !important; }
+        
+        /* Reset Main Container Layout (Angular App Shell) to allow full print width */
+        main { 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            width: 100% !important; 
+            height: auto !important; 
+            overflow: visible !important;
+            display: block !important;
+        }
+
+        /* Ensure the print component is visible */
+        app-print-layout { 
+            display: block !important; 
+            width: 100%;
+            visibility: visible;
+        }
         
         .print-root { background-color: white; padding: 0; min-height: auto; }
         .print-page { margin: 0; box-shadow: none; page-break-after: always; border: none; }
@@ -354,16 +376,9 @@ export class PrintLayoutComponent implements OnInit, AfterViewInit {
                   console.error("Failed to parse print job", e);
               }
           }
-
-          // 2. Load Config from LS or Default (Since we are offline/detached, we rely on passed data or defaults)
-          // Ideally, pass config in LS too. For now, hardcode or fetch if possible.
-          // Note: StateService might re-init in new window, fetching from Firebase if online.
-          // Let's rely on StateService's effect to update footerText if online.
-          // Effect in constructor handles updates.
       } else {
           // Preview Mode
           this.isLoading.set(false);
-          // Effect in constructor handles initial value if available.
       }
   }
 
@@ -373,8 +388,6 @@ export class PrintLayoutComponent implements OnInit, AfterViewInit {
           this.isLoading.set(false);
           setTimeout(() => {
               window.print();
-              // Optional: Close after print
-              // window.close(); 
           }, 800); // 800ms delay to ensure fonts/layout settle
       }
   }
