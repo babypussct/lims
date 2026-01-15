@@ -139,13 +139,17 @@ export class AppComponent {
   printService = inject(PrintService);
   router: Router = inject(Router);
   pageTitle = signal('Dashboard');
-  isPrintMode = signal(false);
+  
+  // FIX: Initialize immediately based on current window location
+  // This prevents the App Shell from loading if we are starting in a print window.
+  isPrintMode = signal(window.location.hash.includes('print-job'));
 
   constructor() {
+    // Listen for subsequent navigations
     this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => { 
         this.updatePageHeader();
-        // Check if current URL is print-job
-        this.isPrintMode.set(this.router.url.includes('print-job'));
+        const isInPrintJob = this.router.url.includes('print-job') || window.location.hash.includes('print-job');
+        this.isPrintMode.set(isInPrintJob);
     });
     this.updatePageHeader();
   }

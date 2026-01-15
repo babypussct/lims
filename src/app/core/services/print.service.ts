@@ -62,8 +62,7 @@ export class PrintService {
   }
 
   /**
-   * NEW METHOD: Opens the print route in a new tab/window.
-   * Uses LocalStorage to transfer data since Signals don't share across tabs.
+   * FIX: Robust URL construction for HashLocationStrategy
    */
   openPrintWindow() {
       const jobsData = this.jobs();
@@ -74,17 +73,20 @@ export class PrintService {
       }
 
       try {
-          // 1. Serialize data
+          // 1. Serialize data to LocalStorage
           const serializedData = JSON.stringify(jobsData);
           localStorage.setItem('lims_print_queue', serializedData);
 
-          // 2. Construct URL manually for Hash Strategy correctness
-          // window.location.href usually includes the hash if we are in the app.
-          // We want base url + #/print-job
-          const baseUrl = window.location.href.split('#')[0];
-          const targetUrl = `${baseUrl}#/print-job`;
+          // 2. Construct Absolute URL using Angular Router
+          // createUrlTree handles the configured strategy (Hash/Path)
+          const tree = this.router.createUrlTree(['/print-job']);
+          const serializedUrl = this.router.serializeUrl(tree); // Returns "#/print-job"
           
-          // Open in new window with specific specs to look like a popup dialog
+          // Combine Origin + Pathname + Hash (serializedUrl)
+          // This prevents "domain.com/print-job" errors
+          const targetUrl = window.location.origin + window.location.pathname + serializedUrl;
+          
+          // 3. Open Window
           const printWindow = window.open(targetUrl, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
 
           if (!printWindow) {
