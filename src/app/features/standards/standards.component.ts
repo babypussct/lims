@@ -71,6 +71,21 @@ import { AuthService } from '../../core/services/auth.service';
                            class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
                            placeholder="Tìm kiếm chuẩn, mã số, số lô...">
                  </div>
+                 
+                 <!-- SORT DROPDOWN -->
+                 <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 shadow-sm h-[46px]">
+                     <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
+                     <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
+                             class="bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer border-none py-2 pr-2">
+                         <option value="updated_desc">Mới cập nhật</option>
+                         <option value="name_asc">Tên (A-Z)</option>
+                         <option value="name_desc">Tên (Z-A)</option>
+                         <option value="received_desc">Ngày nhận (Mới nhất)</option>
+                         <option value="expiry_asc">Hạn dùng (Gần nhất)</option>
+                         <option value="expiry_desc">Hạn dùng (Xa nhất)</option>
+                     </select>
+                 </div>
+
                  <div class="flex bg-slate-200/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
                     <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
                         <i class="fa-solid fa-list"></i>
@@ -176,12 +191,13 @@ import { AuthService } from '../../core/services/auth.service';
                                                  [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2">
                                             </div>
                                         </div>
-                                        <!-- Storage Icons -->
-                                        @let sIcons = getStorageIcons(std.storage_condition);
-                                        <div class="flex flex-wrap gap-1">
-                                            @for (icon of sIcons; track $index) {
-                                                <div class="px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 border" [ngClass]="[icon.bg, icon.border, icon.color]">
-                                                    <i class="fa-solid" [ngClass]="icon.icon"></i>
+                                        <!-- Storage Icons with Details -->
+                                        @let sInfo = getStorageInfo(std.storage_condition);
+                                        <div class="flex flex-col gap-1 mt-1">
+                                            @for (info of sInfo; track $index) {
+                                                <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]">
+                                                    <i class="fa-solid" [ngClass]="info.icon"></i>
+                                                    <span class="font-bold">{{info.text}}</span>
                                                 </div>
                                             }
                                         </div>
@@ -458,7 +474,7 @@ import { AuthService } from '../../core/services/auth.service';
          </div>
       }
 
-      <!-- NEW: IMPORT PREVIEW MODAL -->
+      <!-- IMPORT PREVIEW MODAL -->
       @if (importPreviewData().length > 0) {
          <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
@@ -599,6 +615,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   viewMode = signal<'list' | 'grid'>('list');
   searchTerm = signal('');
+  sortOption = signal<string>('updated_desc'); // New Sort State
   searchSubject = new Subject<string>();
 
   items = signal<ReferenceStandard[]>([]);
@@ -679,13 +696,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.hasMore() && !isRefresh) return;
       if (isRefresh) this.isLoading.set(true);
       try {
-          const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm());
+          // Pass the sortOption to the service
+          const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm(), this.sortOption());
           if (isRefresh) this.items.set(page.items); else this.items.update(c => [...c, ...page.items]);
           this.lastDoc.set(page.lastDoc); this.hasMore.set(page.hasMore);
       } finally { this.isLoading.set(false); }
   }
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
+  onSortChange(val: string) { this.sortOption.set(val); this.refreshData(); }
 
   openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
   openEditModal(std: ReferenceStandard) { if (!this.auth.canEditStandards()) return; this.isEditing.set(true); this.activeModalTab.set('general'); this.form.patchValue(std as any); this.showModal.set(true); }
@@ -796,15 +815,39 @@ export class StandardsComponent implements OnInit, OnDestroy {
       return 'border-emerald-200 text-emerald-600 bg-emerald-50';
   }
 
-  getStorageIcons(condition: string | undefined): { icon: string, color: string, bg: string, border: string }[] {
+  // NEW: Detail Mapping for Storage Conditions
+  getStorageInfo(condition: string | undefined): { icon: string, color: string, bg: string, border: string, text: string }[] {
       if (!condition) return [];
-      const icons: { icon: string, color: string, bg: string, border: string }[] = [];
+      const items: { icon: string, color: string, bg: string, border: string, text: string }[] = [];
       const lower = condition.toLowerCase();
-      if (lower.includes('ft') || lower.includes('tủ đông') || lower.includes('-20')) { icons.push({ icon: 'fa-snowflake', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' }); }
-      if (lower.includes('ct') || lower.includes('tủ mát') || lower.includes('2-8')) { icons.push({ icon: 'fa-temperature-low', color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' }); }
-      if (lower.includes('rt') || lower.includes('tủ c') || lower.includes('thường')) { icons.push({ icon: 'fa-sun', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' }); }
-      if (lower.includes('d:') || lower.match(/\\bd\\b/) || lower.includes('tối') || lower.includes('dark')) { icons.push({ icon: 'fa-moon', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200' }); }
-      return icons;
+      
+      // Freezer (FT / -20)
+      if (lower.includes('ft') || lower.includes('tủ đông') || lower.includes('-20')) { 
+          items.push({ icon: 'fa-snowflake', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', text: 'Tủ đông (-20°C)' }); 
+      }
+      // Deep Freeze (DF / -80 / -70)
+      if (lower.includes('df') || lower.includes('-80') || lower.includes('-70')) { 
+          items.push({ icon: 'fa-icicles', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', text: 'Đông sâu (-70°C)' }); 
+      }
+      // Cool (CT / 2-8)
+      if (lower.includes('ct') || lower.includes('tủ mát') || lower.includes('2-8')) { 
+          items.push({ icon: 'fa-temperature-low', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'Tủ mát (2-8°C)' }); 
+      }
+      // Room Temp (RT)
+      if (lower.includes('rt') || lower.includes('tủ c') || lower.includes('thường')) { 
+          items.push({ icon: 'fa-sun', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', text: 'Nhiệt độ phòng' }); 
+      }
+      // Dark (D)
+      if (lower.includes('d:') || lower.match(/\bd\b/) || lower.includes('tối') || lower.includes('dark')) { 
+          items.push({ icon: 'fa-moon', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', text: 'Tránh ánh sáng' }); 
+      }
+      
+      // Fallback if no keywords matched but text exists
+      if (items.length === 0 && condition.trim().length > 0) {
+          items.push({ icon: 'fa-box', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', text: condition });
+      }
+
+      return items;
   }
 
   getExpiryClass(dateStr: string | undefined): string {
