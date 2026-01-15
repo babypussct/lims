@@ -45,11 +45,23 @@ export class PrintService {
 
     this.isProcessing.set(true);
 
+    // SAFETY WATCHDOG: Force unlock UI after 3 seconds max.
+    // This ensures that even if window.print() crashes the thread or events don't fire,
+    // the user can continue using the app.
+    const watchdog = setTimeout(() => {
+        if (this.isProcessing()) {
+            console.warn("Print Service: Watchdog triggered - Forcing UI unlock.");
+            this.isProcessing.set(false);
+            this.cleanup();
+        }
+    }, 3000);
+
     try {
       // 1. Locate or Create the Container
       const container = document.getElementById('print-container');
       if (!container) {
         console.error('Print container #print-container not found in index.html');
+        clearTimeout(watchdog);
         this.isProcessing.set(false);
         return;
       }
@@ -71,23 +83,31 @@ export class PrintService {
       this.appRef.attachView(this.printComponentRef.hostView);
       this.printComponentRef.changeDetectorRef.detectChanges();
 
-      // 5. Robust Print Trigger (Fire-and-Forget Logic)
+      // 5. Robust Print Trigger
       setTimeout(() => {
+          // Clear the safety watchdog, we are taking control.
+          clearTimeout(watchdog);
+
+          // CRITICAL FIX: Unlock the UI *immediately* before opening the dialog.
+          // This prevents the "Loading..." overlay from getting stuck if the browser
+          // doesn't resume JS execution immediately after the dialog closes.
+          this.isProcessing.set(false);
+
           // Execute Print
           window.print();
 
-          // SAFETY FALLBACK: Always unlock UI after a short delay.
+          // Cleanup after a delay.
           // On Desktop (Blocking): This runs after dialog closes.
-          // On Mobile (Non-blocking): This runs immediately, ensuring UI doesn't hang.
+          // On Mobile (Non-blocking): This runs 2s later.
           setTimeout(() => {
               this.cleanup();
-              this.isProcessing.set(false);
-          }, 1000); 
+          }, 2000); 
 
       }, 500);
 
     } catch (e) {
       console.error("Print Error:", e);
+      clearTimeout(watchdog);
       this.toast.show('Lỗi khởi tạo in ấn.', 'error');
       this.cleanup();
       this.isProcessing.set(false);
