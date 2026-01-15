@@ -46,8 +46,8 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
         <!-- Main Layout -->
         <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-stretch lg:h-full lg:overflow-hidden h-auto">
             
-            <!-- LEFT PANEL: INPUTS -->
-            <div class="w-full lg:w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto">
+            <!-- LEFT PANEL: INPUTS (Fixed CSS for content cut-off) -->
+            <div class="w-full lg:w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto min-h-[400px]">
                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
                   <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-blue-200 shadow-md">
                     <i class="fa-solid fa-sliders"></i>
@@ -55,7 +55,8 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                   <div><h3 class="font-bold text-slate-800 text-sm">Thông số Mẻ mẫu</h3></div>
                </div>
 
-               <div class="p-5 lg:overflow-y-auto lg:flex-1 lg:min-h-0 custom-scrollbar">
+               <!-- Make this section scrollable and flex-grow to avoid cut-off -->
+               <div class="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                    @if (form()) {
                        <form [formGroup]="form()" class="space-y-5">
                           <!-- Date Field -->
@@ -395,24 +396,31 @@ export class CalculatorComponent implements OnDestroy {
         this.currentFormSopId = s.id;
         this.formValueSub?.unsubscribe();
 
-        // 1. Initialize Form
+        // 1. Initialize Form with Defaults
         const controls: Record<string, any> = { 
             safetyMargin: [10],
             analysisDate: [this.getTodayDate()] 
         };
         s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
         const newForm = this.fb.group(controls);
+
+        // 2. CHECK CACHE: Restore if we have saved state for this SOP
+        const cached = this.state.cachedCalculatorState();
+        if (cached && cached.sopId === s.id) {
+            newForm.patchValue(cached.formValues);
+        }
+
         this.form.set(newForm);
 
-        // 2. Initial Calculation (Empty Inventory first to show something)
+        // 3. Initial Calculation
         this.localInventoryMap.set({}); 
         this.localRecipeMap.set({});
         this.runCalculation(s, newForm.value);
 
-        // 3. Trigger Async Fetch
+        // 4. Trigger Async Fetch
         this.fetchData(s);
 
-        // 4. Subscribe to Form Changes
+        // 5. Subscribe to Form Changes
         this.formValueSub = newForm.valueChanges.pipe(
             startWith(newForm.value),
             debounceTime(50) 
@@ -529,7 +537,8 @@ export class CalculatorComponent implements OnDestroy {
   selectSop(s: Sop) { this.state.selectedSop.set(s); }
   clearSelection() { 
       this.state.selectedSop.set(null); 
-      this.currentFormSopId = null; // Reset tracker
+      this.state.cachedCalculatorState.set(null); // Clear cache on manual exit
+      this.currentFormSopId = null; 
   }
 
   createNew() {
@@ -631,7 +640,11 @@ export class CalculatorComponent implements OnDestroy {
   }
 
   onPrintDraft(sop: Sop) {
-    const inputs = this.form().value;
+    const inputs = this.form().getRawValue();
+    
+    // Save state before navigating
+    this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: inputs });
+
     const job: PrintJob = {
       sop: sop, inputs: inputs, margin: this.safetyMargin(), items: this.calculatedItems(),
       date: new Date(), user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',

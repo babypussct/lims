@@ -55,6 +55,9 @@ export class StateService implements OnDestroy {
 
   selectedSop = signal<Sop | null>(null);
   editingSop = signal<Sop | null>(null);
+  
+  // CACHE: Preserve Calculator Inputs when navigating to Print Preview
+  cachedCalculatorState = signal<{ sopId: string, formValues: any } | null>(null);
 
   currentUser = this.auth.currentUser;
   isAdmin = computed(() => this.auth.currentUser()?.role === 'manager');
