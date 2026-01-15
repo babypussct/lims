@@ -4,7 +4,7 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
   updateDoc, setDoc, getDocs, deleteDoc, 
-  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint
+  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -29,7 +29,7 @@ export class StandardService {
   private fb = inject(FirebaseService);
   private toast = inject(ToastService);
 
-  // --- HELPER: SEARCH KEY GENERATOR ---
+  // --- HELPER: SEARCH KEY GENERATOR (Legacy - Kept for backward compatibility if needed) ---
   private generateSearchKey(std: ReferenceStandard): string {
     const parts = [
       std.name,
@@ -184,6 +184,24 @@ export class StandardService {
   }
 
   // --- READ Operations ---
+  
+  /**
+   * Real-time Listener for Client-Side Search
+   * Efficiently loads all standards for instant filtering.
+   */
+  listenToAllStandards(callback: (items: ReferenceStandard[]) => void): Unsubscribe {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      const q = query(colRef, orderBy('received_date', 'desc')); // Default Order
+      
+      return onSnapshot(q, (snapshot) => {
+          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+          callback(items);
+      }, (error) => {
+          console.error("Error listening to standards:", error);
+          this.toast.show('Lỗi kết nối dữ liệu chuẩn.', 'error');
+      });
+  }
+
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
       try {
           const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
@@ -193,6 +211,7 @@ export class StandardService {
       } catch (e) { return null; }
   }
 
+  // Legacy Pagination (Kept if needed, but UI now uses listenToAllStandards)
   async getStandardsPage(
       pageSize: number, 
       lastDoc: QueryDocumentSnapshot | null, 

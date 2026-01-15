@@ -1,10 +1,10 @@
 
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
-import { StandardService, StandardsPage, ImportPreviewItem } from './standard.service';
+import { StandardService, ImportPreviewItem } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
@@ -12,8 +12,8 @@ import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { AuthService } from '../../core/services/auth.service';
+import { Unsubscribe } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standards',
@@ -69,7 +69,7 @@ import { AuthService } from '../../core/services/auth.service';
                     <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm group-focus-within:text-indigo-500 transition-colors"></i>
                     <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                            class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
-                           placeholder="Tìm kiếm chuẩn, mã số, số lô...">
+                           placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
                  </div>
                  
                  <!-- SORT DROPDOWN -->
@@ -95,6 +95,15 @@ import { AuthService } from '../../core/services/auth.service';
                     </button>
                  </div>
              </div>
+             
+             <!-- Search Stats -->
+             <div class="flex justify-between items-center px-1">
+                 <span class="text-[10px] font-bold text-slate-400">
+                     Hiển thị: {{visibleItems().length}} / {{filteredItems().length}} kết quả 
+                     @if(searchTerm()) { <span class="text-indigo-500">(Lọc theo "{{searchTerm()}}")</span> }
+                 </span>
+                 @if(isLoading()) { <span class="text-[10px] text-blue-500 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
+             </div>
           </div>
 
           <!-- Content Body -->
@@ -116,7 +125,7 @@ import { AuthService } from '../../core/services/auth.service';
                            </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
-                           @if (isLoading()) {
+                           @if (isLoading() && allStandards().length === 0) {
                                 @for (i of [1,2,3,4,5]; track i) {
                                     <tr class="h-24">
                                         <td class="px-4"><app-skeleton width="16px" height="16px"></app-skeleton></td>
@@ -129,7 +138,7 @@ import { AuthService } from '../../core/services/auth.service';
                                     </tr>
                                 }
                            } @else {
-                               @for (std of items(); track std.id) {
+                               @for (std of visibleItems(); track std.id) {
                                   <tr class="hover:bg-indigo-50/30 transition group h-24" [class.bg-indigo-50]="selectedIds().has(std.id)">
                                      <td class="px-4 py-3 text-center align-top pt-4">
                                          <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
@@ -191,7 +200,7 @@ import { AuthService } from '../../core/services/auth.service';
                                      </td>
                                   </tr>
                                } 
-                               @if (items().length === 0) { <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr> }
+                               @if (visibleItems().length === 0) { <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr> }
                            }
                         </tbody>
                      </table>
@@ -200,19 +209,19 @@ import { AuthService } from '../../core/services/auth.service';
              @else {
                  <!-- VIEW MODE: GRID (DATA-RICH CARD) -->
                  <div class="p-4">
-                    @if (isLoading()) { 
+                    @if (isLoading() && allStandards().length === 0) { 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             @for(i of [1,2,3,4]; track i) { <app-skeleton height="280px"></app-skeleton> }
                         </div> 
                     } @else {
-                        @if (items().length === 0) {
+                        @if (visibleItems().length === 0) {
                             <div class="py-16 text-center text-slate-400 italic w-full">
                                 <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
                                 <p>Không tìm thấy dữ liệu chuẩn phù hợp.</p>
                             </div>
                         } @else {
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                @for (std of items(); track std.id) {
+                                @for (std of visibleItems(); track std.id) {
                                     <div class="bg-white rounded-2xl border transition-all duration-200 flex flex-col relative group h-full hover:-translate-y-1 hover:shadow-lg overflow-hidden"
                                          [class.border-slate-200]="!selectedIds().has(std.id)"
                                          [class.border-indigo-400]="selectedIds().has(std.id)"
@@ -595,16 +604,68 @@ export class StandardsComponent implements OnInit, OnDestroy {
   
   isLoading = signal(true);
   isUploading = signal(false);
-  isImporting = signal(false); // Loading state for import commit
+  isImporting = signal(false);
 
-  viewMode = signal<'list' | 'grid'>('grid'); // CHANGED DEFAULT
+  viewMode = signal<'list' | 'grid'>('grid');
   searchTerm = signal('');
-  sortOption = signal<string>('received_desc'); // CHANGED DEFAULT
+  sortOption = signal<string>('received_desc');
   searchSubject = new Subject<string>();
 
-  items = signal<ReferenceStandard[]>([]);
-  lastDoc = signal<QueryDocumentSnapshot | null>(null);
-  hasMore = signal(true);
+  // --- CHANGED: CLIENT-SIDE STATE ---
+  allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
+  displayLimit = signal<number>(50); // Virtual scroll limit
+  private snapshotUnsub?: Unsubscribe;
+
+  // Computed: Filter -> Sort -> Slice
+  filteredItems = computed(() => {
+      let data = this.allStandards();
+      const term = this.searchTerm().trim().toLowerCase();
+      
+      // 1. FILTER
+      if (term) {
+          const normalize = (s: string | undefined) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+          const normTerm = normalize(term);
+          
+          data = data.filter(item => {
+              // Check ALL searchable fields substring
+              const searchStr = `
+                  ${normalize(item.name)} 
+                  ${normalize(item.internal_id)} 
+                  ${normalize(item.lot_number)} 
+                  ${normalize(item.product_code)} 
+                  ${normalize(item.cas_number)} 
+                  ${normalize(item.chemical_name)}
+                  ${normalize(item.location)}
+                  ${normalize(item.manufacturer)}
+              `;
+              return searchStr.includes(normTerm);
+          });
+      }
+
+      // 2. SORT
+      const option = this.sortOption();
+      return data.sort((a, b) => {
+          switch (option) {
+              case 'name_asc': return (a.name || '').localeCompare(b.name || '');
+              case 'name_desc': return (b.name || '').localeCompare(a.name || '');
+              case 'received_desc': return (b.received_date || '').localeCompare(a.received_date || '');
+              case 'expiry_asc': return (a.expiry_date || '9999').localeCompare(b.expiry_date || '9999');
+              case 'expiry_desc': return (b.expiry_date || '').localeCompare(a.expiry_date || '');
+              case 'updated_desc': 
+                  const ta = (a.lastUpdated?.seconds || 0);
+                  const tb = (b.lastUpdated?.seconds || 0);
+                  return tb - ta;
+              default: return (b.received_date || '').localeCompare(a.received_date || '');
+          }
+      });
+  });
+
+  // Display subset for DOM performance
+  visibleItems = computed(() => {
+      return this.filteredItems().slice(0, this.displayLimit());
+  });
+
+  hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
   selectedIds = signal<Set<string>>(new Set());
   activeModalTab = signal<'general' | 'stock' | 'docs'>('general');
@@ -642,13 +703,26 @@ export class StandardsComponent implements OnInit, OnDestroy {
   formatNum = formatNum;
 
   constructor() {
-      this.searchSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe(term => {
-          this.searchTerm.set(term); this.refreshData();
+      this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(term => {
+          this.searchTerm.set(term); 
+          // Reset pagination on search
+          this.displayLimit.set(50);
       });
   }
 
-  ngOnInit() { this.refreshData(); }
-  ngOnDestroy() { this.searchSubject.complete(); }
+  ngOnInit() { 
+      this.isLoading.set(true);
+      // Setup Real-time Listener (Load All)
+      this.snapshotUnsub = this.stdService.listenToAllStandards((items) => {
+          this.allStandards.set(items);
+          this.isLoading.set(false);
+      });
+  }
+
+  ngOnDestroy() { 
+      this.searchSubject.complete(); 
+      if (this.snapshotUnsub) this.snapshotUnsub();
+  }
 
   onInternalIdChange(event: any) {
       const val = event.target.value.toUpperCase();
@@ -666,28 +740,24 @@ export class StandardsComponent implements OnInit, OnDestroy {
       });
   }
 
-  isAllSelected() { return this.items().length > 0 && this.items().every(i => this.selectedIds().has(i.id)); }
+  isAllSelected() { return this.visibleItems().length > 0 && this.visibleItems().every(i => this.selectedIds().has(i.id)); }
   toggleAll() {
       if (this.isAllSelected()) this.selectedIds.set(new Set());
-      else this.selectedIds.set(new Set(this.items().map(i => i.id)));
+      else this.selectedIds.set(new Set(this.visibleItems().map(i => i.id)));
   }
 
-  async refreshData() {
-      this.isLoading.set(true); this.items.set([]); this.lastDoc.set(null); this.hasMore.set(true); this.selectedIds.set(new Set()); await this.loadMore(true);
+  refreshData() {
+      // Just reset the view limit, data is live synced
+      this.displayLimit.set(50);
   }
 
-  async loadMore(isRefresh = false) {
-      if (!this.hasMore() && !isRefresh) return;
-      if (isRefresh) this.isLoading.set(true);
-      try {
-          const page = await this.stdService.getStandardsPage(20, this.lastDoc(), this.searchTerm(), this.sortOption());
-          if (isRefresh) this.items.set(page.items); else this.items.update(c => [...c, ...page.items]);
-          this.lastDoc.set(page.lastDoc); this.hasMore.set(page.hasMore);
-      } finally { this.isLoading.set(false); }
+  loadMore() {
+      // Increase visible limit
+      this.displayLimit.update(l => l + 50);
   }
 
   onSearchInput(val: string) { this.searchSubject.next(val); }
-  onSortChange(val: string) { this.sortOption.set(val); this.refreshData(); }
+  onSortChange(val: string) { this.sortOption.set(val); }
 
   openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
   
@@ -695,14 +765,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.auth.canEditStandards()) return; 
       this.isEditing.set(true); 
       this.activeModalTab.set('general'); 
-      
-      // FIX: Reset to defaults FIRST to clear old values (like CoA link)
-      this.form.reset({ 
-          initial_amount: 0, 
-          current_amount: 0, 
-          unit: 'mg' 
-      }); 
-      
+      this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
       this.form.patchValue(std as any); 
       this.showModal.set(true); 
   }
@@ -720,7 +783,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
       try {
           if (this.isEditing()) await this.stdService.updateStandard(std); else await this.stdService.addStandard(std);
-          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); this.closeModal(); this.refreshData();
+          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); this.closeModal(); 
       } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
@@ -732,9 +795,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
               this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); 
-              this.refreshData(); 
+              this.selectedIds.set(new Set());
           } catch(e: any) { 
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+          } finally {
               this.isLoading.set(false);
           }
       }
@@ -746,9 +810,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
           try { 
               await this.stdService.deleteAllStandards(); 
               this.toast.show('Đã xóa toàn bộ dữ liệu và logs.', 'success'); 
-              this.refreshData(); 
           } catch (e: any) { 
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+          } finally {
               this.isLoading.set(false);
           }
       }
@@ -782,7 +846,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           await this.stdService.saveImportedData(this.importPreviewData());
           this.toast.show('Import thành công!', 'success');
           this.importPreviewData.set([]);
-          this.refreshData();
       } catch (e: any) {
           this.toast.show('Lỗi lưu import: ' + e.message, 'error');
       } finally {
@@ -915,7 +978,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!std || amount <= 0) return;
       try {
           await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() });
-          this.toast.show('Đã cập nhật!'); this.selectedStd.set(null); this.refreshData(); 
+          this.toast.show('Đã cập nhật!'); this.selectedStd.set(null); 
       } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
   }
 
@@ -923,7 +986,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   async deleteLog(log: UsageLog) {
       if (!this.historyStd() || !log.id) return;
       if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
-          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); this.refreshData(); } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
       }
   }
 
