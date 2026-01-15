@@ -158,10 +158,23 @@ import { SopService } from '../sop/services/sop.service';
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                                 <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-print"></i></div>
-                                Cấu hình In ấn (Footer)
+                                Cấu hình In ấn
                             </h3>
                             <button (click)="savePrintConfig()" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-sm">Lưu</button>
                         </div>
+                        
+                        <!-- Toggle Signature -->
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div>
+                                <div class="text-xs font-bold text-slate-700">Hiển thị Khung Ký Tên</div>
+                                <div class="text-[10px] text-slate-400">Thêm mục "Xác nhận / Ký tên" vào cuối phiếu</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" [(ngModel)]="printConfig().showSignature" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                            </label>
+                        </div>
+
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Footer Text (Cam kết cuối phiếu)</label>
                             <textarea [(ngModel)]="printConfig().footerText" rows="3" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none transition" placeholder="Nhập nội dung..."></textarea>

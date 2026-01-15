@@ -1,77 +1,58 @@
 
-import { Component, inject, computed, OnInit, signal, ViewEncapsulation, AfterViewInit, effect } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChildren, QueryList, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { PrintService, PrintJob } from '../../../core/services/print.service';
+import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
-import { formatDate, formatNum, cleanName } from '../../utils/utils';
+import { formatDate, formatNum } from '../../utils/utils';
+
+declare var QRious: any;
 
 @Component({
   selector: 'app-print-layout',
   standalone: true,
   imports: [CommonModule],
-  encapsulation: ViewEncapsulation.None, // Allow global styles for body/html in print mode
   template: `
-    <!-- Container -->
     <div class="print-root">
-       <!-- Loading Indicator -->
-       @if (isLoading()) {
-         <div class="loading-overlay">
-            <div class="loader"></div>
-            <div style="margin-top: 10px;">Đang tải dữ liệu in...</div>
-         </div>
-       }
-
-       <!-- FALLBACK TOOLBAR (Screen Only) -->
-       @if(isStandalone() && !isLoading()) {
-           <div class="screen-toolbar no-print">
-               <div class="toolbar-content">
-                   <div class="toolbar-title">Cửa sổ In ấn</div>
-                   <div class="toolbar-actions">
-                       <button (click)="triggerSystemPrint()" class="btn-print">🖨️ In Ngay</button>
-                       <button (click)="closeWindow()" class="btn-close">Đóng</button>
-                   </div>
-               </div>
-           </div>
-           <!-- Spacer to prevent content hiding behind fixed toolbar -->
-           <div class="h-[60px] no-print"></div> 
-       }
-
-       @for (group of groupedJobs(); track $index) {
+       @for (group of groupedJobs; track $index) {
          <!-- A4 Page Container -->
          <div class="print-page">
             
             <!-- Stack 2 slips vertically. Each slip is strictly 50% of A4 height -->
-            @for (job of group; track job.sop.id; let i = $index) {
+            @for (job of group; track job.requestId || $index; let i = $index) {
                 <div class="print-slip" [class.separator]="i === 0">
                     
-                    <!-- 1. Header -->
+                    <!-- 1. Header with QR -->
                     <table class="header-table">
                         <tr>
                             <!-- Left: Title & Meta -->
                             <td class="header-left">
                                 <div class="meta-row">
                                     <span class="badge">{{job.sop.category}}</span>
-                                    
                                     @if(job.sop.ref) {
                                         <span class="ref-text">Ref: {{job.sop.ref}}</span>
                                         <span class="divider">|</span>
                                     }
-
                                     <span class="date-text">
-                                        Ngày phân tích: {{ getDisplayDate(job) }}
+                                        Ngày: {{ getDisplayDate(job) }}
                                     </span>
                                 </div>
                                 <h1 class="sop-title">
                                     {{job.sop.name}}
                                 </h1>
                             </td>
-                            <!-- Right: Performer -->
-                            <td class="header-right">
+                            
+                            <!-- Middle: Performer -->
+                            <td class="header-mid">
                                 <div class="performer-box">
                                     <div class="performer-label">Người thực hiện</div>
                                     <div class="performer-name">{{job.user}}</div>
                                 </div>
+                            </td>
+
+                            <!-- Right: QR Code -->
+                            <td class="header-right">
+                                <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop.id" class="qr-code"></canvas>
+                                <div class="qr-text">{{job.requestId || 'N/A'}}</div>
                             </td>
                         </tr>
                     </table>
@@ -89,7 +70,6 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                                 </div>
                              }
                         }
-                        <!-- Margin Info -->
                         <div class="input-item margin-info">
                             <span class="input-label">Hao hụt:</span>
                             <span class="input-value">+{{job.margin}}%</span>
@@ -150,24 +130,28 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
                             <tr>
                                 <td class="footer-left">
                                     <div class="disclaimer">
-                                        <b>Lưu ý:</b> {{ footerText() }}
+                                        <b>Cam kết:</b> {{ footerText }}
                                     </div>
+                                    <div class="timestamp">In lúc: {{ getCurrentTime() }}</div>
                                 </td>
-                                <td class="footer-right">
-                                    <div class="signature-box">
-                                        <div class="sig-title">Người pha chế</div>
-                                        <div class="sig-line"></div>
-                                        <div class="sig-note">(Ký & ghi rõ họ tên)</div>
-                                    </div>
-                                </td>
+                                
+                                <!-- Signature Block (Conditional) -->
+                                @if (showSignature) {
+                                    <td class="footer-right">
+                                        <div class="signature-box">
+                                            <div class="sig-title">Xác nhận / Ký tên</div>
+                                            <div class="sig-line"></div>
+                                        </div>
+                                    </td>
+                                }
                             </tr>
                         </table>
                     </div>
 
-                    <!-- Cut Icon -->
+                    <!-- Cut Icon (Only for the top slip on a page) -->
                     @if (i === 0) { 
                         <div class="cut-line">
-                            <span class="scissor">✂</span>
+                            <span class="scissor">✂</span> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                         </div> 
                     }
                 </div>
@@ -177,271 +161,167 @@ import { formatDate, formatNum, cleanName } from '../../utils/utils';
     </div>
   `,
   styles: [`
-    /* 
-      CRITICAL: These styles replace Tailwind for offline safety.
-      They are encapsulated strictly to the print layout logic.
-    */
-    
-    /* Reset & Base */
-    .print-root {
-        font-family: 'Open Sans', 'Roboto', sans-serif;
-        color: #000;
-        background-color: #f1f5f9; /* Gray-100 for screen preview */
-        min-height: 100vh;
-        padding: 20px 0;
-        box-sizing: border-box;
-    }
-
-    .loading-overlay {
-        position: fixed; inset: 0; background: white; 
-        display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        z-index: 9999; font-weight: bold; font-size: 14px; color: #555;
+    .print-root { 
+        font-family: 'Open Sans', sans-serif; 
+        color: #000; 
+        background-color: white; 
+        width: 100%; 
+        box-sizing: border-box; 
     }
     
-    /* Fallback Toolbar Styles */
-    .screen-toolbar {
-        position: fixed; top: 0; left: 0; right: 0; height: 50px;
-        background: #1e293b; color: white; z-index: 9000;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        display: flex; align-items: center; justify-content: center;
-    }
-    .toolbar-content { width: 210mm; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
-    .toolbar-title { font-weight: bold; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
-    .toolbar-actions { display: flex; gap: 10px; }
-    .btn-print { background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-    .btn-print:hover { background: #2563eb; }
-    .btn-close { background: #64748b; color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    .btn-close:hover { background: #475569; }
-
-    /* Page Definition */
+    /* A4 Page Setup */
     .print-page {
-        width: 210mm;
-        height: 296mm; /* A4 */
-        background: white;
-        margin: 0 auto 20px auto;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
+        width: 210mm; 
+        height: 296mm; 
+        margin: 0 auto; 
+        page-break-after: always;
+        display: flex; 
+        flex-direction: column; 
         overflow: hidden;
-        position: relative;
+        background: white;
     }
+    .print-page:last-child { page-break-after: auto; }
 
-    .print-slip {
-        height: 50%; /* Half page */
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        padding: 15px 25px;
-        box-sizing: border-box;
-        border-bottom: 1px solid transparent;
+    /* Each Slip takes exactly 50% height */
+    .print-slip { 
+        height: 50%; 
+        display: flex; 
+        flex-direction: column; 
+        padding: 12mm 15mm; /* Standard margins */
+        box-sizing: border-box; 
+        position: relative; 
     }
-
-    .print-slip.separator {
-        border-bottom: 1px dashed #000;
+    .print-slip.separator { 
+        border-bottom: 1px dashed #999; 
     }
 
     /* Header */
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 2px solid #000; }
-    .header-left { vertical-align: bottom; padding-bottom: 8px; text-align: left; }
-    .header-right { vertical-align: bottom; width: 140px; padding-bottom: 8px; }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #000; }
+    .header-left { vertical-align: top; padding-bottom: 5px; text-align: left; }
+    .header-mid { vertical-align: bottom; width: 120px; padding-bottom: 5px; padding-right: 15px; }
+    .header-right { vertical-align: middle; width: 60px; padding-bottom: 2px; text-align: center; }
+
+    .qr-code { width: 48px; height: 48px; }
+    .qr-text { font-size: 7px; font-family: monospace; margin-top: 1px; letter-spacing: -0.5px; }
 
     .meta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 10px; }
-    .badge { border: 1px solid #000; padding: 1px 4px; border-radius: 2px; font-weight: 700; text-transform: uppercase; }
-    .ref-text { font-weight: 700; color: #333; }
-    .divider { color: #ccc; }
-    .date-text { font-style: italic; font-weight: 500; }
-    
-    .sop-title { font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; line-height: 1.1; }
+    .badge { border: 1px solid #000; padding: 1px 4px; border-radius: 2px; font-weight: 800; text-transform: uppercase; }
+    .sop-title { font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; line-height: 1.1; letter-spacing: -0.5px; }
 
-    .performer-box { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; }
-    .performer-label { font-size: 9px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; color: #555; }
-    .performer-name { font-size: 13px; font-weight: 700; border-bottom: 1px dotted #000; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .performer-box { border: 1px solid #000; padding: 2px 4px; border-radius: 4px; background: #fff; }
+    .performer-label { font-size: 7px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 0.5px; }
+    .performer-name { font-size: 10px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Inputs Bar */
-    .inputs-bar {
-        display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
-        font-size: 10px; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px;
-        background-color: #f8fafc;
-        overflow: hidden;
-    }
-    .input-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .input-label { font-weight: 700; text-transform: uppercase; color: #555; font-size: 9px; }
-    .input-value { font-weight: 700; border-bottom: 1px solid #cbd5e1; padding: 0 2px; min-width: 15px; text-align: center; }
+    /* Inputs */
+    .inputs-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 10px; padding: 3px 0; border-bottom: 1px solid #ddd; }
+    .input-item { display: flex; align-items: center; gap: 4px; }
+    .input-label { font-weight: 700; color: #444; font-size: 9px; text-transform: uppercase; }
+    .input-value { font-weight: 700; font-family: monospace; font-size: 11px; }
     .margin-info { margin-left: auto; padding-left: 10px; border-left: 1px solid #ccc; }
 
-    /* Main Table */
-    .table-container { flex: 1; position: relative; }
-    .data-table { width: 100%; font-size: 11px; border-collapse: collapse; table-layout: fixed; }
-    .data-table th { border-bottom: 2px solid #000; text-align: left; padding: 4px 0; font-weight: 800; text-transform: uppercase; font-size: 9px; }
-    .data-table td { border-bottom: 1px solid #e2e8f0; vertical-align: top; padding: 6px 2px; }
+    /* Table */
+    .table-container { flex: 1; overflow: hidden; }
+    .data-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .data-table th { border-bottom: 1px solid #000; text-align: left; padding: 2px 0; font-weight: 800; font-size: 9px; text-transform: uppercase; }
+    .data-table td { border-bottom: 1px solid #eee; vertical-align: top; padding: 3px 2px; }
     
-    .col-name { width: 45%; }
+    .col-name { width: 50%; }
     .col-amount { width: 15%; text-align: right; }
     .col-unit { width: 10%; text-align: center; }
-    .col-note { width: 30%; padding-left: 10px !important; }
+    
+    .item-name { font-weight: 700; color: #000; }
+    .warning-badge { font-size: 8px; border: 1px solid #000; display: inline-block; padding: 0 2px; border-radius: 2px; margin-left: 4px; vertical-align: middle; }
+    .cell-amount { text-align: right; font-weight: 700; font-family: monospace; font-size: 12px; }
+    .cell-unit { text-align: center; font-size: 10px; font-weight: 600; }
+    .cell-note { font-style: italic; color: #444; font-size: 9px; padding-left: 5px; }
 
-    .item-name { font-weight: 700; display: block; text-transform: uppercase; word-break: break-word; }
-    .warning-badge { font-size: 9px; font-weight: 700; border: 1px solid #000; display: inline-block; padding: 0 3px; border-radius: 2px; margin-top: 2px; }
-    .cell-amount { text-align: right; font-weight: 700; font-size: 13px; }
-    .cell-unit { text-align: center; font-weight: 700; font-size: 10px; padding-top: 2px !important; }
-    .cell-note { font-style: italic; color: #444; padding-left: 10px !important; }
-
-    /* Composite Sub-table */
-    .composite-row td { padding: 4px 0 4px 15px !important; border-bottom: none !important; }
-    .sub-table-container { border-left: 3px solid #94a3b8; padding-left: 8px; margin: 2px 0; }
-    .sub-table { width: 100%; font-size: 10px; border-collapse: collapse; }
-    .sub-table td { padding: 2px 0; border: none; }
-    .sub-name { width: 45%; color: #333; }
-    .sub-amount { width: 15%; text-align: right; font-family: monospace; font-weight: 700; }
-    .sub-unit { width: 10%; text-align: center; font-size: 9px; }
-    .sub-note { width: 30%; padding-left: 10px; font-style: italic; color: #666; font-size: 9px; }
+    /* Sub Table */
+    .sub-table { width: 100%; font-size: 9px; margin-left: 10px; border-left: 2px solid #ccc; padding-left: 8px; margin-top: 2px; }
+    .sub-table td { border: none; padding: 1px 0; }
+    .sub-name { color: #333; }
+    .sub-amount { text-align: right; font-weight: 700; font-family: monospace; }
 
     /* Footer */
     .footer-section { margin-top: auto; padding-top: 8px; border-top: 2px solid #000; }
-    .footer-table { width: 100%; border-collapse: collapse; }
-    .footer-left { vertical-align: top; padding-right: 15px; padding-top: 4px; }
-    .footer-right { vertical-align: bottom; width: 140px; padding-top: 2px; }
-
-    .disclaimer { font-size: 10px; font-style: italic; color: #444; line-height: 1.2; }
+    .footer-table { width: 100%; }
+    .footer-left { vertical-align: top; padding-right: 15px; font-size: 9px; color: #444; }
+    .footer-right { vertical-align: bottom; width: 120px; text-align: center; }
     
-    .signature-box { display: flex; flex-direction: column; align-items: center; width: 100%; }
-    .sig-title { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 30px; text-align: center; }
-    .sig-line { height: 1px; width: 100%; background-color: #000; }
-    .sig-note { font-size: 9px; font-style: italic; color: #555; margin-top: 2px; text-align: center; }
+    .timestamp { font-size: 8px; font-style: italic; margin-top: 3px; color: #666; font-family: monospace; }
+    
+    .signature-box { border: 1px solid #ccc; height: 50px; position: relative; width: 100%; border-radius: 4px; }
+    .sig-title { font-size: 8px; background: white; position: absolute; top: -6px; left: 5px; padding: 0 4px; font-weight: 700; text-transform: uppercase; color: #555; }
 
-    /* Cut Line */
-    .cut-line { position: absolute; bottom: -8px; left: -5px; z-index: 10; background: white; padding: 0 2px; transform: rotate(90deg); font-size: 12px; }
-
-    /* PRINT MEDIA QUERY - THE MOST IMPORTANT PART */
-    @media print {
-        @page { size: A4 portrait; margin: 0; }
-        
-        body, html { margin: 0; padding: 0; background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        
-        /* 
-           CRITICAL FIX: 
-           Hide App Shell Elements explicitly instead of using "not(app-print-layout)".
-           This ensures that even if app-print-layout is nested inside main, 
-           the parent containers don't get hidden, but their other children do.
-        */
-        app-sidebar, app-login, nav, footer, .no-print, app-confirmation-modal { display: none !important; }
-        
-        /* Reset Main Container Layout (Angular App Shell) to allow full print width */
-        main { 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            width: 100% !important; 
-            height: auto !important; 
-            overflow: visible !important;
-            display: block !important;
-        }
-
-        /* Ensure the print component is visible */
-        app-print-layout { 
-            display: block !important; 
-            width: 100%;
-            visibility: visible;
-        }
-        
-        .print-root { background-color: white; padding: 0; min-height: auto; }
-        .print-page { margin: 0; box-shadow: none; page-break-after: always; border: none; }
-        .print-page:last-child { page-break-after: auto; }
-        
-        .inputs-bar { border: none; padding: 0; background-color: transparent; }
-        .input-value { border-bottom-color: #000; }
-        .warning-badge { border-color: #000; }
-        
-        /* Ensure pure black text */
-        * { color: #000 !important; }
-        .divider, .input-label, .performer-label { color: #000 !important; }
+    /* Cut Line Visual */
+    .cut-line { 
+        position: absolute; 
+        bottom: -6px; 
+        left: 0; 
+        width: 100%;
+        text-align: center;
+        font-size: 10px;
+        color: #999;
+        pointer-events: none;
     }
+    .scissor { font-size: 14px; margin-right: 5px; vertical-align: middle; }
   `]
 })
-export class PrintLayoutComponent implements OnInit, AfterViewInit {
-  printService = inject(PrintService);
-  state = inject(StateService); 
-  router = inject(Router);
-  
-  formatDate = formatDate;
+export class PrintLayoutComponent implements AfterViewInit {
+  state = inject(StateService);
   formatNum = formatNum;
-  cleanName = cleanName;
+  formatDate = formatDate;
 
-  isStandalone = signal(false);
-  localJobs = signal<PrintJob[]>([]);
-  isLoading = signal(true);
-  footerText = signal('Cam kết sử dụng đúng mục đích.');
+  @Input() jobs: PrintJob[] = [];
+  @Input() isDirectPrint = false;
 
-  groupedJobs = computed(() => {
-    // Prefer local jobs if standalone, otherwise Service jobs (for preview)
-    const jobs = this.isStandalone() ? this.localJobs() : this.printService.jobs();
-    const groups: PrintJob[][] = [];
-    const itemsPerPage = 2; 
-    
-    for (let i = 0; i < jobs.length; i += itemsPerPage) {
-      groups.push(jobs.slice(i, i + itemsPerPage));
-    }
-    return groups;
-  });
+  @ViewChildren('qrCanvas') qrCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
+
+  footerText = 'Cam kết sử dụng đúng mục đích.';
+  showSignature = true; // Default
 
   constructor() {
-    effect(() => {
-        const conf = this.state.printConfig();
-        if (conf && conf.footerText) this.footerText.set(conf.footerText);
-    });
+      const conf = this.state.printConfig();
+      if (conf) {
+          if (conf.footerText) this.footerText = conf.footerText;
+          // Respect user config, default true if undefined
+          this.showSignature = conf.showSignature !== false;
+      }
   }
 
-  ngOnInit() {
-      // Check if we are in the standalone print route
-      if (this.router.url.includes('print-job')) {
-          this.isStandalone.set(true);
-          
-          // 1. Load Data from LocalStorage
-          const storedData = localStorage.getItem('lims_print_queue');
-          if (storedData) {
-              try {
-                  const jobs = JSON.parse(storedData);
-                  this.localJobs.set(jobs);
-              } catch (e) {
-                  console.error("Failed to parse print job", e);
-              }
-          }
-      } else {
-          // Preview Mode
-          this.isLoading.set(false);
-      }
+  get groupedJobs(): PrintJob[][] {
+    const groups: PrintJob[][] = [];
+    const itemsPerPage = 2; // 2 slips per A4 page
+    for (let i = 0; i < this.jobs.length; i += itemsPerPage) {
+      groups.push(this.jobs.slice(i, i + itemsPerPage));
+    }
+    return groups;
   }
 
   ngAfterViewInit() {
-      if (this.isStandalone()) {
-          // Robust auto-print sequence
-          // 1. Wait for render cycle
-          setTimeout(() => {
-              this.isLoading.set(false);
-              // 2. Wait for paint
-              setTimeout(() => {
-                  this.triggerSystemPrint();
-              }, 800);
-          }, 200);
-      }
+    this.generateQRCodes();
   }
 
-  triggerSystemPrint() {
-      window.print();
-  }
+  generateQRCodes() {
+    if (typeof QRious === 'undefined') return;
 
-  closeWindow() {
-      // Clean up before closing
-      localStorage.removeItem('lims_print_queue');
-      window.close();
+    this.qrCanvases.forEach(canvasRef => {
+        const canvas = canvasRef.nativeElement;
+        const value = canvas.getAttribute('data-qr') || 'LIMS';
+        
+        new QRious({
+          element: canvas,
+          value: value,
+          size: 100,
+          level: 'L'
+        });
+    });
   }
 
   stdUnit(unit: string): string {
-      if (!unit) return '';
-      const u = unit.toLowerCase().trim();
+      const u = unit?.toLowerCase().trim() || '';
       if (u === 'gram' || u === 'grams') return 'g';
-      if (u === 'milliliter' || u === 'milliliters' || u === 'ml') return 'mL';
-      if (u === 'microliter' || u === 'ul' || u === 'µl') return 'µL';
-      if (u === 'pcs' || u === 'piece') return 'cái';
+      if (u === 'milliliter' || u === 'ml') return 'mL';
+      if (u === 'microliter' || u === 'ul') return 'µL';
       return unit;
   }
 
@@ -450,11 +330,15 @@ export class PrintLayoutComponent implements OnInit, AfterViewInit {
           const parts = job.analysisDate.split('-');
           if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
-      // Handle both Date object and string ISO
       const d = new Date(job.date);
       const day = d.getDate().toString().padStart(2, '0');
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
+  }
+
+  getCurrentTime(): string {
+      const now = new Date();
+      return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
   }
 }

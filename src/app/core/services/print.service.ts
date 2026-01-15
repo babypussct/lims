@@ -1,152 +1,115 @@
 
-import { Injectable, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Injectable, inject, ApplicationRef, EnvironmentInjector, createComponent, ComponentRef, signal } from '@angular/core';
 import { CalculatorService } from './calculator.service';
 import { BatchItem } from './batch.service';
 import { CalculatedItem } from '../models/sop.model';
 import { ToastService } from './toast.service';
+import { PrintLayoutComponent } from '../../shared/components/print-layout/print-layout.component';
 
 export interface PrintJob {
-  sop: any; // Using any to decouple strictly for storage
+  sop: any; 
   inputs: any;
   margin: number;
   items: CalculatedItem[];
-  date: Date | string; // Allow string for serialization
+  date: Date | string; 
   user?: string; 
   analysisDate?: string;
+  requestId?: string; 
 }
 
 @Injectable({ providedIn: 'root' })
 export class PrintService {
   private calc = inject(CalculatorService);
   private toast = inject(ToastService);
-  private router = inject(Router);
+  private appRef = inject(ApplicationRef);
+  private injector = inject(EnvironmentInjector);
   
-  // State for the Preview Screen
-  jobs = signal<PrintJob[]>([]);
-  isProcessing = signal(false);
+  // Loading state for UI feedback
+  isProcessing = signal<boolean>(false);
 
-  prepareSinglePrint(job: PrintJob) {
-    this.jobs.set([job]);
-  }
+  private printComponentRef: ComponentRef<PrintLayoutComponent> | null = null;
 
-  async prepareBatchPrint(requests: BatchItem[], currentUser?: string): Promise<boolean> {
-    if (requests.length === 0 || this.isProcessing()) return false;
+  // --- Dynamic Print (Direct Injection) ---
+  async printDocument(jobs: PrintJob[]) {
+    if (!jobs || jobs.length === 0) {
+      this.toast.show('Không có dữ liệu để in.', 'error');
+      return;
+    }
 
     this.isProcessing.set(true);
-    this.jobs.set([]);
-
-    // Small delay to allow UI to show spinner
-    await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
-      const newJobs: PrintJob[] = requests.map(req => ({
+      // 1. Locate or Create the Container
+      const container = document.getElementById('print-container');
+      if (!container) {
+        console.error('Print container #print-container not found in index.html');
+        this.isProcessing.set(false);
+        return;
+      }
+      
+      // Clear previous content
+      container.innerHTML = '';
+
+      // 2. Dynamically Create Component
+      this.printComponentRef = createComponent(PrintLayoutComponent, {
+        environmentInjector: this.injector,
+        hostElement: container
+      });
+
+      // 3. Pass Data
+      this.printComponentRef.instance.jobs = jobs;
+      this.printComponentRef.instance.isDirectPrint = true;
+
+      // 4. Trigger Change Detection
+      this.appRef.attachView(this.printComponentRef.hostView);
+      this.printComponentRef.changeDetectorRef.detectChanges();
+
+      // 5. Wait for Rendering (Images/QR) -> Then Print
+      setTimeout(() => {
+        window.print();
+        
+        // 6. Cleanup after a delay to ensure print dialog has captured the content
+        setTimeout(() => {
+           this.cleanup();
+           this.isProcessing.set(false);
+        }, 1000); 
+
+      }, 500);
+
+    } catch (e) {
+      console.error("Print Error:", e);
+      this.toast.show('Lỗi khởi tạo in ấn.', 'error');
+      this.cleanup();
+      this.isProcessing.set(false);
+    }
+  }
+
+  private cleanup() {
+    if (this.printComponentRef) {
+      this.appRef.detachView(this.printComponentRef.hostView);
+      this.printComponentRef.destroy();
+      this.printComponentRef = null;
+    }
+    const container = document.getElementById('print-container');
+    if (container) container.innerHTML = '';
+  }
+
+  // Helper for Batch Requests
+  async printBatch(requests: BatchItem[], currentUser?: string) {
+    try {
+      const jobs: PrintJob[] = requests.map(req => ({
         sop: req.sop,
         inputs: req.inputs,
         margin: req.margin,
         date: new Date(),
         user: currentUser || 'Unknown',
-        items: this.calc.calculateSopNeeds(req.sop, req.inputs, req.margin)
+        items: this.calc.calculateSopNeeds(req.sop, req.inputs, req.margin),
+        requestId: `REQ-${Date.now()}-${Math.floor(Math.random()*1000)}`
       }));
       
-      this.jobs.set(newJobs);
-      return true;
-
+      await this.printDocument(jobs);
     } catch (e) {
-      console.error("Error during print preparation:", e);
-      this.toast.show('Lỗi khi chuẩn bị bản in.', 'error');
-      return false;
-    } finally {
-       this.isProcessing.set(false);
-    }
-  }
-
-  /**
-   * FIX: Robust URL construction for HashLocationStrategy
-   */
-  openPrintWindow() {
-      const jobsData = this.jobs();
-      
-      if (!jobsData || jobsData.length === 0) {
-          this.toast.show('Không có dữ liệu để in.', 'error');
-          return;
-      }
-
-      try {
-          // 1. Serialize data to LocalStorage
-          const serializedData = JSON.stringify(jobsData);
-          localStorage.setItem('lims_print_queue', serializedData);
-
-          // 2. Construct Absolute URL using Angular Router
-          // createUrlTree handles the configured strategy (Hash/Path)
-          const tree = this.router.createUrlTree(['/print-job']);
-          const serializedUrl = this.router.serializeUrl(tree); // Returns "#/print-job"
-          
-          // Combine Origin + Pathname + Hash (serializedUrl)
-          // This prevents "domain.com/print-job" errors
-          const targetUrl = window.location.origin + window.location.pathname + serializedUrl;
-          
-          // 3. Open Window
-          const printWindow = window.open(targetUrl, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
-
-          if (!printWindow) {
-              this.toast.show('Trình duyệt đã chặn cửa sổ bật lên (Popup). Vui lòng cho phép để in.', 'error');
-          }
-      } catch (e) {
-          console.error("Print Error:", e);
-          this.toast.show('Lỗi khởi tạo in ấn.', 'error');
-      }
-  }
-
-  async exportToPdf() {
-    // Note: PDF generation usually happens in the Preview component context, 
-    // referencing the DOM elements there.
-    const pages = Array.from(document.querySelectorAll('app-batch-print .print-page'));
-
-    if (pages.length === 0) {
-      this.toast.show('Không tìm thấy trang in. Hãy chắc chắn bạn đang ở màn hình Xem trước.', 'info');
-      return;
-    }
-
-    this.isProcessing.set(true);
-    this.toast.show('Đang tải thư viện PDF...', 'info');
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
-      const doc = new jsPDF('p', 'mm', 'a4'); 
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-
-      const len = pages.length;
-      for (let i = 0; i < len; i++) {
-        const element = pages[i] as HTMLElement;
-
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        if (i > 0) doc.addPage();
-        doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      }
-      
-      const dateStr = new Date().toISOString().slice(0, 10);
-      doc.save(`LIMS_PhieuDuTru_Batch_${dateStr}.pdf`);
-      this.toast.show('Xuất PDF thành công!', 'success');
-
-    } catch(e: any) {
-      console.error(e);
-      this.toast.show('Lỗi khi xuất PDF: ' + e.message, 'error');
-    } finally {
-      this.isProcessing.set(false);
+      this.toast.show('Lỗi chuẩn bị dữ liệu in.', 'error');
     }
   }
 }

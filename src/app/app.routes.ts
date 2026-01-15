@@ -39,15 +39,7 @@ export const routes: Routes = [
     path: 'printing',
     loadComponent: () => import('./features/requests/print-queue.component').then(m => m.PrintQueueComponent)
   },
-  {
-    path: 'batch-print',
-    loadComponent: () => import('./features/requests/print-preview.component').then(m => m.BatchPrintComponent)
-  },
-  {
-    path: 'print-job',
-    loadComponent: () => import('./shared/components/print-layout/print-layout.component').then(m => m.PrintLayoutComponent),
-    title: 'Đang in phiếu...' 
-  },
+  // Batch Print Preview Route is removed. Direct printing only.
   {
     path: 'labels',
     loadComponent: () => import('./features/labels/label-print.component').then(m => m.LabelPrintComponent)

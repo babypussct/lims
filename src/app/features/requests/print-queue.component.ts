@@ -1,7 +1,7 @@
 
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+// Removed Router import
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
@@ -40,7 +40,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                     <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 shadow-sm">
                         <tr>
                             <th class="px-3 py-3 w-12 text-center">
-                               <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll()" class="w-4 h-4 accent-blue-600">
+                               <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll()" class="w-4 h-4 accent-blue-600 cursor-pointer">
                             </th>
                             <th class="px-4 py-3">Quy trình (SOP)</th>
                             <th class="px-4 py-3">Người duyệt</th>
@@ -67,9 +67,9 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                             }
                         } @else {
                             @for (log of filteredLogs(); track log.id) {
-                                <tr class="transition" [class.bg-blue-50]="selectedLogIds().has(log.id)">
+                                <tr class="transition hover:bg-slate-50" [class.bg-blue-50]="selectedLogIds().has(log.id)">
                                     <td class="px-3 py-2 text-center">
-                                    <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600">
+                                    <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600 cursor-pointer">
                                     </td>
                                     <td class="px-4 py-2">
                                         <div class="font-bold text-slate-700">{{log.printData?.sop?.name}}</div>
@@ -108,7 +108,6 @@ export class PrintQueueComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService); 
   printService = inject(PrintService);
-  router: Router = inject(Router);
   
   isLoading = signal(true);
   selectedLogIds = signal<Set<string>>(new Set());
@@ -153,17 +152,20 @@ export class PrintQueueComponent implements OnInit {
     }
   }
 
+  // --- NEW: DIRECT PRINT LOGIC ---
+
   async printSingle(log: Log) {
     if (!log.printData) return;
     
     const printJob: PrintJob = {
       ...log.printData,
-      date: new Date(),
-      user: log.user
+      date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
+      user: log.user,
+      requestId: log.id // Use Log ID for QR
     };
     
-    this.printService.prepareSinglePrint(printJob);
-    this.router.navigate(['/batch-print']);
+    // Call Direct Print
+    await this.printService.printDocument([printJob]);
   }
 
   async printSelected() {
@@ -173,12 +175,13 @@ export class PrintQueueComponent implements OnInit {
     const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
     const jobs: PrintJob[] = logsToPrint.map(log => ({
         ...log.printData!,
-        date: log.timestamp.toDate(), 
-        user: log.user
+        date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp), 
+        user: log.user,
+        requestId: log.id
     }));
     
-    this.printService.jobs.set(jobs);
-    this.router.navigate(['/batch-print']);
+    // Call Direct Print
+    await this.printService.printDocument(jobs);
   }
 
   async deleteSingle(log: Log) {

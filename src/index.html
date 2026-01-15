@@ -7,6 +7,7 @@
   <meta name="description" content="LIMS Cloud - Hệ thống quản lý phòng thí nghiệm Soft UI">
   <meta name="author" content="Otada Technology">
   <meta name="theme-color" content="#f8f9fa"> 
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   
   <title>LIMS Cloud Pro | Soft UI</title>
@@ -60,6 +61,9 @@
       } 
     }
   </script>
+  
+  <!-- 3. QR Library (Lightweight) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <!-- 3. Global CSS -->
   <style>
@@ -82,13 +86,29 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes bounceIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
-    /* Print Overrides */
+    /* Print Overrides - CRITICAL FOR DIRECT PRINT */
     @media print {
-      @page { size: A4 portrait; margin: 10mm; }
+      @page { size: A4 portrait; margin: 0; }
+      
+      /* Hide the main app entirely */
+      app-root { display: none !important; }
+      
+      /* Show the print container */
+      #print-container { 
+          display: block !important; 
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          background: white;
+          z-index: 99999;
+      }
+      
       body { background: white; color: black; }
-      .no-print, aside, nav, .shadow-soft-xl { display: none !important; }
-      main { margin: 0 !important; width: 100% !important; padding: 0 !important; }
     }
+    
+    /* Screen styles for print container (Hidden by default) */
+    #print-container { display: none; }
   </style>
 <script type="importmap">
 {
@@ -120,5 +140,7 @@
 </head>
 <body class="antialiased text-gray-600 bg-gray-50 h-full overflow-hidden">
   <app-root></app-root>
+  <!-- Dedicated Container for Direct Printing -->
+  <div id="print-container"></div>
 </body>
 </html>

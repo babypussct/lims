@@ -1,6 +1,7 @@
 
 import { Injectable } from '@angular/core';
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
@@ -66,7 +67,6 @@ export class FirebaseService {
 
   // --- System Health ---
   checkSystemHealth(): Observable<HealthCheckItem[]> {
-    // UPDATED: Full list of collections
     const collections = [
         'inventory', 
         'sops', 
@@ -129,7 +129,6 @@ export class FirebaseService {
 
   // --- Storage Estimation ---
   async getStorageEstimate(): Promise<{ totalDocs: number, estimatedSizeKB: number, details: any }> {
-    // UPDATED: Full list of collections
     const collections = [
         'inventory', 
         'sops', 
