@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,24 +24,42 @@ declare var QRious: any;
             </div>
         }
 
-        <!-- ERROR STATE -->
+        <!-- ERROR STATE: INVALID CERTIFICATE -->
         @else if (errorMsg()) {
-            <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md text-center border-t-4 border-red-500">
-                <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                    <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-center relative border border-red-100">
+                <div class="h-2 bg-red-600 w-full"></div>
+                <div class="p-10">
+                    <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 animate-bounce-in shadow-inner">
+                        <i class="fa-solid fa-shield-halved text-5xl"></i>
+                        <div class="absolute text-2xl font-black text-red-600 bg-white rounded-full w-8 h-8 flex items-center justify-center border-2 border-red-50 bottom-0 right-0">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+                    </div>
+                    
+                    <h2 class="text-2xl font-black text-red-600 mb-2 uppercase tracking-tight">Chứng nhận Vô hiệu</h2>
+                    <div class="bg-red-50 text-red-800 px-4 py-3 rounded-xl text-sm font-medium mb-6 border border-red-100">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                        Mã định danh <b>{{searchId()}}</b> không tồn tại trên hệ thống hoặc đã bị thu hồi.
+                    </div>
+                    
+                    <p class="text-slate-500 text-xs mb-8 leading-relaxed">
+                        Phiếu kết quả này không có giá trị tham chiếu. Có thể dữ liệu gốc đã bị xóa bởi quản trị viên hoặc đây là mã giả mạo. Vui lòng liên hệ phòng kiểm nghiệm để xác thực.
+                    </p>
+
+                    <button (click)="goHome()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition shadow-lg">
+                        <i class="fa-solid fa-house mr-2"></i> Về trang chủ
+                    </button>
                 </div>
-                <h2 class="text-xl font-black text-slate-800 mb-2">Không tìm thấy dữ liệu</h2>
-                <p class="text-slate-500 mb-6 text-sm">Mã ID <b>{{searchId()}}</b> không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
-                <button (click)="goHome()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
-                    <i class="fa-solid fa-arrow-left mr-2"></i> Quay về trang chủ
-                </button>
+                <div class="bg-slate-50 p-3 text-[10px] text-slate-400 font-mono border-t border-slate-100">
+                    Security Verification Protocol v1.0
+                </div>
             </div>
         }
 
         <!-- SUCCESS STATE: DIGITAL CERTIFICATE -->
         @else {
             @if (logData(); as log) {
-                <div class="bg-white w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden relative print:shadow-none print:w-full">
+                <div class="bg-white w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden relative print:shadow-none print:w-full print:max-w-none">
                     
                     <!-- Decorative Top Border -->
                     <div class="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
@@ -53,7 +70,7 @@ declare var QRious: any;
                             <i class="fa-solid fa-flask text-[300px]"></i>
                         </div>
 
-                        <!-- Header -->
+                        <!-- 1. Header -->
                         <div class="flex justify-between items-start mb-8 relative z-10">
                             <div>
                                 <div class="flex items-center gap-2 mb-1">
@@ -69,7 +86,7 @@ declare var QRious: any;
                             </div>
                         </div>
 
-                        <!-- Status Banner -->
+                        <!-- 2. Status Banner -->
                         <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-8 flex items-center gap-4">
                             <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
                                 <i class="fa-solid fa-check-double text-xl"></i>
@@ -81,7 +98,7 @@ declare var QRious: any;
                             </div>
                         </div>
 
-                        <!-- Details Grid -->
+                        <!-- 3. General Details Grid -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mb-8 relative z-10">
                             <div>
                                 <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Quy trình (SOP)</div>
@@ -90,9 +107,9 @@ declare var QRious: any;
                                 </div>
                             </div>
                             <div>
-                                <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Thời gian thực hiện</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày phân tích</div>
                                 <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1">
-                                    {{formatDate(log.timestamp)}}
+                                    {{ log.printData?.analysisDate ? formatDate(log.printData?.analysisDate) : formatDate(log.timestamp) }}
                                 </div>
                             </div>
                             <div>
@@ -109,7 +126,35 @@ declare var QRious: any;
                             </div>
                         </div>
 
-                        <!-- Usage Table -->
+                        <!-- 4. Operational Parameters (NEW) -->
+                        <div class="mb-8 relative z-10">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders"></i> Thông số Vận hành
+                            </h3>
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    @for (inp of log.printData?.sop?.inputs; track inp.var) {
+                                        @if (inp.var !== 'safetyMargin' && log.printData?.inputs?.[inp.var] !== undefined) {
+                                            <div>
+                                                <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{{inp.label}}</div>
+                                                <div class="text-sm font-bold text-slate-700">
+                                                    @if(inp.type === 'checkbox') {
+                                                        {{ log.printData?.inputs?.[inp.var] ? 'Có' : 'Không' }}
+                                                    } @else {
+                                                        {{ log.printData?.inputs?.[inp.var] }} <span class="text-xs font-normal text-slate-500">{{inp.unitLabel}}</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    @if (!log.printData?.sop?.inputs || log.printData?.sop?.inputs.length === 0) {
+                                        <div class="col-span-full text-xs text-slate-400 italic">Không có thông số đặc biệt.</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Usage Table -->
                         <div class="mb-8 relative z-10">
                             <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
                                 <i class="fa-solid fa-list-ul"></i> Chi tiết Hóa chất sử dụng
@@ -182,7 +227,6 @@ export class TraceabilityComponent implements OnInit {
   errorMsg = signal('');
   logData = signal<Log | null>(null);
   
-  formatDate = formatDate;
   formatNum = formatNum;
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
@@ -217,8 +261,6 @@ export class TraceabilityComponent implements OnInit {
                   this.errorMsg.set('Dữ liệu này không chứa thông tin chi tiết (Print Data).');
               }
           } else {
-              // 2. Fallback: Try finding in Requests collection (If scanned a Request ID)
-              // (Future improvement)
               this.errorMsg.set('Không tìm thấy bản ghi.');
           }
       } catch (e: any) {
@@ -254,5 +296,26 @@ export class TraceabilityComponent implements OnInit {
 
   goHome() {
       this.router.navigate(['/dashboard']);
+  }
+
+  // Improved date formatter that handles both Timestamp and Date string
+  formatDate(val: any): string {
+      if (!val) return '';
+      // Case 1: Firestore Timestamp
+      if (val.toDate && typeof val.toDate === 'function') {
+          const d = val.toDate();
+          return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } 
+      // Case 2: String YYYY-MM-DD
+      if (typeof val === 'string' && val.includes('-')) {
+          const parts = val.split('-');
+          if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      // Case 3: Date Object or Number
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+      return val;
   }
 }
