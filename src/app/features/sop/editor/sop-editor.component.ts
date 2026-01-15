@@ -199,15 +199,35 @@ const STANDARD_VARS = [
 
                                                  <!-- Dropdown Results -->
                                                  @if(activeSearch?.index === i && !activeSearch?.isIngredient && searchResults().length > 0) {
-                                                     <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 custom-scrollbar" (click)="$event.stopPropagation()">
+                                                     <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-64 overflow-y-auto z-50 custom-scrollbar" (click)="$event.stopPropagation()">
                                                          @for (item of searchResults(); track item.id) {
-                                                             <div (click)="selectItem(item, i, false)" class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center group/item">
-                                                                 <div class="overflow-hidden">
-                                                                     <div class="text-xs font-bold text-slate-700 group-hover/item:text-blue-700 truncate">{{item.name}}</div>
-                                                                     <div class="text-[10px] text-slate-400 font-mono">{{item.id}}</div>
+                                                             <div (click)="selectItem(item, i, false)" class="px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-start group/item transition-colors">
+                                                                 <div class="flex-1 min-w-0 pr-2">
+                                                                     <div class="text-xs font-bold text-slate-700 group-hover/item:text-blue-700 truncate leading-snug">{{item.name}}</div>
+                                                                     
+                                                                     <!-- CONTEXT BADGES -->
+                                                                     <div class="flex flex-wrap gap-1.5 mt-1">
+                                                                         <span class="text-[9px] text-slate-400 font-mono bg-slate-100 px-1 rounded border border-slate-200">ID: {{item.id}}</span>
+                                                                         @if(item.supplier || item.manufacturer) {
+                                                                             <span class="text-[9px] text-slate-500 flex items-center gap-1">
+                                                                                 <i class="fa-solid fa-industry text-[8px]"></i> {{item.supplier || item.manufacturer}}
+                                                                             </span>
+                                                                         }
+                                                                         @if(item.category) {
+                                                                              <span class="text-[9px] text-slate-400 uppercase font-bold">{{item.category}}</span>
+                                                                         }
+                                                                     </div>
                                                                  </div>
+                                                                 
                                                                  @if (conType === 'simple') {
-                                                                    <div class="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">{{item.unit}}</div>
+                                                                    <div class="text-right shrink-0">
+                                                                        <div class="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 mb-0.5">{{item.unit}}</div>
+                                                                        @if(item.stock !== undefined) {
+                                                                            <div class="text-[9px] font-mono font-bold" [class.text-red-500]="item.stock <= 0" [class.text-emerald-600]="item.stock > 0">
+                                                                                Ton: {{formatNum(item.stock)}}
+                                                                            </div>
+                                                                        }
+                                                                    </div>
                                                                  }
                                                              </div>
                                                          }
@@ -226,19 +246,44 @@ const STANDARD_VARS = [
                                       </div>
                                       
                                       <div class="p-4 grid gap-4 relative">
-                                         <!-- Formula & Unit -->
-                                         <div class="flex gap-3">
-                                            <div class="flex-1"><label class="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Công thức tổng</label><div class="relative"><input formControlName="formula" class="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg font-mono text-blue-700 focus:border-blue-500 outline-none"><span class="absolute right-3 top-2.5 text-slate-400 text-xs"><i class="fa-solid fa-calculator"></i></span></div></div>
-                                            <div class="w-24"><label class="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Đơn vị</label><select formControlName="unit" class="w-full py-2 pl-2 pr-6 text-sm border border-slate-300 rounded-lg outline-none bg-white appearance-none">@for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }</select></div>
+                                         <!-- Formula & Unit Row -->
+                                         <div class="flex gap-3 items-end">
+                                            <div class="flex-1">
+                                                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Công thức (Tính trên 1 mẫu)</label>
+                                                <div class="relative">
+                                                    <input formControlName="formula" class="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg font-mono text-blue-700 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition" placeholder="VD: 10 * n_sample">
+                                                    <span class="absolute right-3 top-2.5 text-slate-400 text-xs"><i class="fa-solid fa-calculator"></i></span>
+                                                </div>
+                                            </div>
+                                            <div class="w-24">
+                                                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Đơn vị</label>
+                                                <select formControlName="unit" class="w-full py-2 pl-2 pr-6 text-sm border border-slate-300 rounded-lg outline-none bg-white appearance-none cursor-pointer h-[38px]">
+                                                    @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
+                                                </select>
+                                            </div>
                                          </div>
                                          
-                                         <!-- Condition (Optional) -->
-                                         <div>
-                                             <label class="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Điều kiện (Optional)</label>
-                                             <input formControlName="condition" placeholder="VD: !use_b2 (chỉ hiện khi use_b2 = false)" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono text-orange-600 outline-none focus:border-orange-400">
+                                         <!-- Base Note & Condition Row (New Layout) -->
+                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                             <div class="relative">
+                                                 <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Ghi chú (Note)</label>
+                                                 <div class="relative">
+                                                     <i class="fa-regular fa-note-sticky absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                                     <input formControlName="base_note" placeholder="VD: Cân chính xác, pha trong tủ hút..." 
+                                                            class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition">
+                                                 </div>
+                                             </div>
+                                             <div class="relative">
+                                                 <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Điều kiện (Conditional)</label>
+                                                 <div class="relative">
+                                                     <i class="fa-solid fa-code-branch absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                                     <input formControlName="condition" placeholder="VD: !use_b2 (chỉ hiện khi biến use_b2 = false)" 
+                                                            class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg font-mono text-slate-600 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200 transition">
+                                                 </div>
+                                             </div>
                                          </div>
 
-                                         <!-- Ingredients -->
+                                         <!-- Ingredients (Composite Only) -->
                                          @if (conType === 'composite') {
                                             <div class="mt-2 bg-slate-50 rounded-lg border border-slate-200 p-3 relative z-10">
                                                <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
@@ -252,8 +297,19 @@ const STANDARD_VARS = [
                                                             <input formControlName="_displayName" (input)="onSearchInput($event, i, true, j)" (focus)="onSearchFocus(i, true, j)" autocomplete="off" placeholder="Chọn từ kho..." class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white shadow-sm font-bold text-slate-700">
                                                             <input formControlName="name" type="hidden">
                                                             @if(activeSearch?.index === i && activeSearch?.isIngredient && activeSearch?.subIndex === j && searchResults().length > 0) {
-                                                                <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-50 custom-scrollbar" (click)="$event.stopPropagation()">
-                                                                    @for (item of searchResults(); track item.id) { <div (click)="selectItem(item, i, true, j)" class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 flex justify-between items-center"><div class="truncate pr-2"><div class="text-xs font-bold text-slate-700 truncate">{{item.name}}</div></div><div class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">{{item.unit}}</div></div> }
+                                                                <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 custom-scrollbar" (click)="$event.stopPropagation()">
+                                                                    @for (item of searchResults(); track item.id) { 
+                                                                        <div (click)="selectItem(item, i, true, j)" class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 flex justify-between items-center group/item transition-colors">
+                                                                            <div class="flex-1 min-w-0 pr-2">
+                                                                                <div class="text-xs font-bold text-slate-700 truncate group-hover/item:text-blue-700">{{item.name}}</div>
+                                                                                <div class="flex gap-2 mt-0.5">
+                                                                                    <span class="text-[9px] text-slate-400 font-mono">ID: {{item.id}}</span>
+                                                                                    @if(item.supplier) { <span class="text-[9px] text-slate-500">{{item.supplier}}</span> }
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">{{item.unit}}</div>
+                                                                        </div> 
+                                                                    }
                                                                 </div>
                                                             }
                                                         </div>
@@ -377,6 +433,7 @@ export class SopEditorComponent implements OnDestroy {
                     });
             } else {
                 // Search Inventory (Simple items or Composite ingredients)
+                // Note: Returns InventoryItem[] which has stock, supplier, etc.
                 return this.invService.getInventoryPage(10, null, 'all', term).then(res => res.items);
             }
         })
