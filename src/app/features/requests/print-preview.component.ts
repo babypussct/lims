@@ -1,5 +1,5 @@
 
-import { Component, inject, ElementRef } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PrintService } from '../../core/services/print.service';
@@ -37,9 +37,9 @@ import { PrintLayoutComponent } from '../../shared/components/print-layout/print
 
       <!-- Preview Content -->
       <div class="flex-1 overflow-y-auto rounded-lg bg-slate-600 p-6 custom-scrollbar">
-        <div class="max-w-[210mm] mx-auto" #printContent>
-          <!-- The class 'preview-mode' forces the print layout to display on screen -->
-          <app-print-layout class="preview-mode"></app-print-layout>
+        <div class="max-w-[210mm] mx-auto">
+          <!-- Preview Mode: Uses Service data directly -->
+          <app-print-layout></app-print-layout>
         </div>
       </div>
     </div>
@@ -47,16 +47,10 @@ import { PrintLayoutComponent } from '../../shared/components/print-layout/print
 })
 export class BatchPrintComponent {
   printService = inject(PrintService);
-  elementRef = inject(ElementRef);
   router: Router = inject(Router);
 
   triggerPrint() {
-    // Capture the HTML content of the print layout
-    const container = this.elementRef.nativeElement.querySelector('app-print-layout');
-    if (container) {
-      // We grab innerHTML because app-print-layout is the container defined in service's popup style
-      this.printService.printPopup(container.innerHTML);
-    }
+    this.printService.openPrintWindow();
   }
 
   exportPdf() {

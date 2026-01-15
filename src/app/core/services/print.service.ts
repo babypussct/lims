@@ -1,13 +1,17 @@
 
 import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CalculatorService } from './calculator.service';
 import { BatchItem } from './batch.service';
 import { CalculatedItem } from '../models/sop.model';
 import { ToastService } from './toast.service';
 
-export interface PrintJob extends BatchItem {
+export interface PrintJob {
+  sop: any; // Using any to decouple strictly for storage
+  inputs: any;
+  margin: number;
   items: CalculatedItem[];
-  date: Date;
+  date: Date | string; // Allow string for serialization
   user?: string; 
   analysisDate?: string;
 }
@@ -16,7 +20,9 @@ export interface PrintJob extends BatchItem {
 export class PrintService {
   private calc = inject(CalculatorService);
   private toast = inject(ToastService);
+  private router = inject(Router);
   
+  // State for the Preview Screen
   jobs = signal<PrintJob[]>([]);
   isProcessing = signal(false);
 
@@ -30,11 +36,14 @@ export class PrintService {
     this.isProcessing.set(true);
     this.jobs.set([]);
 
+    // Small delay to allow UI to show spinner
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
       const newJobs: PrintJob[] = requests.map(req => ({
-        ...req,
+        sop: req.sop,
+        inputs: req.inputs,
+        margin: req.margin,
         date: new Date(),
         user: currentUser || 'Unknown',
         items: this.calc.calculateSopNeeds(req.sop, req.inputs, req.margin)
@@ -53,59 +62,41 @@ export class PrintService {
   }
 
   /**
-   * Opens a new popup window for printing.
+   * NEW METHOD: Opens the print route in a new tab/window.
+   * Uses LocalStorage to transfer data since Signals don't share across tabs.
    */
-  printPopup(htmlContent: string) {
-      if (!htmlContent) {
-          this.toast.show('Không có nội dung để in.', 'error');
-          return;
-      }
+  openPrintWindow() {
+      const jobsData = this.jobs();
       
-      const printWindow = window.open('', '_blank', 'width=1000,height=800');
-      if (!printWindow) {
-          this.toast.show('Trình duyệt đã chặn cửa sổ bật lên (Popup). Vui lòng cho phép để in.', 'error');
+      if (!jobsData || jobsData.length === 0) {
+          this.toast.show('Không có dữ liệu để in.', 'error');
           return;
       }
 
-      const doc = printWindow.document;
-      doc.open();
-      doc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>LIMS Print Job</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-          <style>
-            body { background-color: #f1f5f9; margin: 0; font-family: 'Roboto', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .print-wrapper { padding: 40px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-            .print-page { 
-                width: 210mm; height: 296mm; background: white; margin: 0; 
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative;
-            }
-            .whitespace-nowrap { white-space: nowrap !important; }
-            @media print {
-                body { background-color: white; margin: 0; }
-                .print-wrapper { padding: 0; display: block; }
-                .print-page { margin: 0; box-shadow: none; page-break-after: always; border: none; width: 210mm; height: 296mm; }
-                .print-page:last-child { page-break-after: auto; }
-                .no-print { display: none !important; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="print-wrapper">${htmlContent}</div>
-          <script>
-            window.onload = () => { setTimeout(() => { window.focus(); window.print(); }, 800); };
-          </script>
-        </body>
-        </html>
-      `);
-      doc.close();
+      try {
+          // 1. Serialize data
+          const serializedData = JSON.stringify(jobsData);
+          localStorage.setItem('lims_print_queue', serializedData);
+
+          // 2. Open the dedicated route
+          // We use hash routing in this app, so construct URL manually or via router
+          const url = this.router.serializeUrl(this.router.createUrlTree(['/print-job']));
+          
+          // Open in new window with specific specs to look like a popup dialog
+          const printWindow = window.open(url, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no');
+
+          if (!printWindow) {
+              this.toast.show('Trình duyệt đã chặn cửa sổ bật lên (Popup). Vui lòng cho phép để in.', 'error');
+          }
+      } catch (e) {
+          console.error("Print Error:", e);
+          this.toast.show('Lỗi khởi tạo in ấn.', 'error');
+      }
   }
 
   async exportToPdf() {
+    // Note: PDF generation usually happens in the Preview component context, 
+    // referencing the DOM elements there.
     const pages = Array.from(document.querySelectorAll('app-batch-print .print-page'));
 
     if (pages.length === 0) {
@@ -119,7 +110,6 @@ export class PrintService {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      // DYNAMIC IMPORTS: Updated to use package names instead of CDN URLs
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 

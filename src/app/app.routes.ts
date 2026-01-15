@@ -44,6 +44,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/requests/print-preview.component').then(m => m.BatchPrintComponent)
   },
   {
+    path: 'print-job',
+    loadComponent: () => import('./shared/components/print-layout/print-layout.component').then(m => m.PrintLayoutComponent),
+    title: 'Đang in phiếu...' 
+  },
+  {
     path: 'labels',
     loadComponent: () => import('./features/labels/label-print.component').then(m => m.LabelPrintComponent)
   },
