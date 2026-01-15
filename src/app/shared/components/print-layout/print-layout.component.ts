@@ -1,4 +1,3 @@
-
 import { Component, Input, AfterViewInit, ViewChildren, QueryList, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintJob } from '../../../core/services/print.service';
@@ -59,7 +58,7 @@ declare var QRious: any;
 
                     <!-- 2. Inputs Bar -->
                     <div class="inputs-bar">
-                        @for (inp of job.sop.inputs; track inp.var) {
+                        @for (inp of (job.sop.inputs || []); track inp.var) {
                              @if (inp.type !== 'checkbox' || job.inputs[inp.var]) {
                                 <div class="input-item">
                                     <span class="input-label">{{inp.label}}:</span>

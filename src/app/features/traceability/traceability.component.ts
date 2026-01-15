@@ -133,7 +133,7 @@ declare var QRious: any;
                             </h3>
                             <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
                                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    @for (inp of log.printData?.sop?.inputs; track inp.var) {
+                                    @for (inp of (log.printData?.sop?.inputs || []); track inp.var) {
                                         @if (inp.var !== 'safetyMargin' && log.printData?.inputs?.[inp.var] !== undefined) {
                                             <div>
                                                 <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{{inp.label}}</div>
@@ -169,7 +169,7 @@ declare var QRious: any;
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-200">
-                                        @for (item of log.printData?.items; track item.name) {
+                                        @for (item of (log.printData?.items || []); track item.name) {
                                             <tr>
                                                 <td class="px-4 py-2 font-medium text-slate-700">
                                                     {{item.displayName || item.name}}
