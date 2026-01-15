@@ -225,12 +225,21 @@ import { AuthService } from '../../core/services/auth.service';
                                         </div>
 
                                         <div class="p-4 flex flex-col h-full">
-                                            <!-- Top: Location & Checkbox -->
+                                            <!-- Top: ID, Location & Checkbox -->
                                             <div class="flex justify-between items-start mb-3">
-                                                <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 truncate max-w-[140px] flex items-center gap-1 shadow-sm">
-                                                    <i class="fa-solid fa-location-dot"></i> {{std.location || std.internal_id || 'NO-LOC'}}
-                                                </span>
-                                                <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+                                                <div class="flex flex-wrap gap-1.5 items-start pr-2">
+                                                    @if(std.internal_id) {
+                                                        <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 shadow-sm whitespace-nowrap">
+                                                            {{std.internal_id}}
+                                                        </span>
+                                                    }
+                                                    @if(std.location) {
+                                                        <span class="bg-white text-slate-600 px-2 py-1 rounded text-[10px] font-bold border border-slate-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
+                                                            <i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer shrink-0 mt-0.5">
                                             </div>
 
                                             <!-- Identity -->
