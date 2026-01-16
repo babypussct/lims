@@ -446,8 +446,7 @@ import { Unsubscribe } from 'firebase/firestore';
                                         <button type="button" (click)="uploadInput.click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap">
                                             <i class="fa-solid fa-cloud-arrow-up"></i> Upload
                                         </button>
-                                        <!-- ADDED: accept attrib for better UX -->
-                                        <input #uploadInput type="file" class="hidden" accept=".pdf,image/*" (change)="uploadCoaFile($event)">
+                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
                                     </div>
                                     <p class="text-[9px] text-slate-400 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
                                 </div>
