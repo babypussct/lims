@@ -26,9 +26,9 @@ declare var QRious: any;
                             <!-- Left: Title & Meta -->
                             <td class="header-left">
                                 <div class="meta-row">
-                                    <span class="badge">{{job.sop.category}}</span>
-                                    @if(job.sop.ref) {
-                                        <span class="ref-text">Ref: {{job.sop.ref}}</span>
+                                    <span class="badge">{{job.sop?.category}}</span>
+                                    @if(job.sop?.ref) {
+                                        <span class="ref-text">Ref: {{job.sop?.ref}}</span>
                                         <span class="divider">|</span>
                                     }
                                     <span class="date-text">
@@ -36,7 +36,7 @@ declare var QRious: any;
                                     </span>
                                 </div>
                                 <h1 class="sop-title">
-                                    {{job.sop.name}}
+                                    {{job.sop?.name}}
                                 </h1>
                             </td>
                             
@@ -50,7 +50,7 @@ declare var QRious: any;
 
                             <!-- Right: QR Code -->
                             <td class="header-right">
-                                <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop.id" class="qr-code"></canvas>
+                                <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id" class="qr-code"></canvas>
                                 <div class="qr-text">{{job.requestId || 'N/A'}}</div>
                             </td>
                         </tr>
@@ -58,7 +58,7 @@ declare var QRious: any;
 
                     <!-- 2. Inputs Bar -->
                     <div class="inputs-bar">
-                        @for (inp of (job.sop.inputs || []); track inp.var) {
+                        @for (inp of (job.sop?.inputs || []); track inp.var) {
                              @if (inp.type !== 'checkbox' || job.inputs[inp.var]) {
                                 <div class="input-item">
                                     <span class="input-label">{{inp.label}}:</span>
