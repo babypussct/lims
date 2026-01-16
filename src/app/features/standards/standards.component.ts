@@ -1,12 +1,11 @@
-
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
-import { StandardService, ImportPreviewItem } from './standard.service';
+import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -443,12 +442,14 @@ import { Unsubscribe } from 'firebase/firestore';
                                 <div class="pt-2 border-t border-slate-100">
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">COA File (Link/Upload)</label>
                                     <div class="flex gap-2">
-                                        <input formControlName="certificate_ref" class="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-500 text-blue-600 underline" placeholder="Paste URL here...">
+                                        <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-500 text-blue-600 underline" placeholder="Paste URL here...">
                                         <button type="button" (click)="uploadInput.click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap">
                                             <i class="fa-solid fa-cloud-arrow-up"></i> Upload
                                         </button>
-                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                        <!-- ADDED: accept attrib for better UX -->
+                                        <input #uploadInput type="file" class="hidden" accept=".pdf,image/*" (change)="uploadCoaFile($event)">
                                     </div>
+                                    <p class="text-[9px] text-slate-400 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
                                 </div>
                             </div>
                         }
@@ -696,7 +697,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
       id: [''], name: ['', Validators.required], chemical_name: [''],
       product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], pack_size: [''], lot_number: [''], 
       internal_id: [''], location: [''], storage_condition: [''],
-      initial_amount: [0, Validators.required], current_amount: [0, Validators.required], unit: ['mg', Validators.required], 
+      initial_amount: [0, [Validators.required, Validators.min(0)]],
+      current_amount: [0, [Validators.required, Validators.min(0)]],
+      unit: ['mg', Validators.required],
       expiry_date: [''], received_date: [''], date_opened: [''], contract_ref: [''], certificate_ref: ['']
   });
 
@@ -774,6 +777,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
   
   onNameChange(event: any) { 
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
+  }
+
+  sanitizeDriveLink(event: any) {
+      const val = event.target.value;
+      if (!val) return;
+
+      // Auto-fix Google Drive links (robust)
+      if (val.includes('drive.google.com') && val.includes('/view')) {
+          const newVal = val.replace('/view', '/preview');
+          // Use emitEvent: false to prevent circular triggers
+          this.form.patchValue({ certificate_ref: newVal }, { emitEvent: false });
+      }
   }
 
   async saveStandard() {
@@ -854,9 +869,19 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   async uploadCoaFile(event: any) {
-      const file = event.target.files[0]; if (!file) return; this.isUploading.set(true);
-      try { const url = await this.firebaseService.uploadFile('coa_files', file); this.form.patchValue({ certificate_ref: url }); this.toast.show('Upload COA thành công!'); } 
-      catch (e) { this.toast.show('Lỗi Upload', 'error'); } finally { this.isUploading.set(false); event.target.value = ''; }
+      const file = event.target.files[0];
+      if (!file) return;
+      this.isUploading.set(true);
+      try {
+          const url = await this.firebaseService.uploadFile('coa', file);
+          this.form.patchValue({ certificate_ref: url });
+          this.toast.show('Upload COA thành công!');
+      } catch (e: any) { 
+          this.toast.show('Upload lỗi: ' + (e.message || 'Unknown'), 'error'); 
+      } finally { 
+          this.isUploading.set(false);
+          event.target.value = ''; // CRITICAL: Reset input to allow re-upload
+      }
   }
 
   // --- Helpers ---

@@ -1,3 +1,4 @@
+import { QueryDocumentSnapshot } from 'firebase/firestore';
 
 export interface UsageLog {
   id?: string;
@@ -42,4 +43,17 @@ export interface ReferenceStandard {
   search_key?: string; // Chuỗi tìm kiếm tổng hợp (normalized)
 
   lastUpdated?: any;
+}
+
+export interface StandardsPage {
+  items: ReferenceStandard[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
+
+export interface ImportPreviewItem {
+    raw: any; // Dữ liệu thô từ Excel để debug
+    parsed: ReferenceStandard; // Dữ liệu đã xử lý
+    logs: any[]; // Logs đi kèm
+    isValid: boolean;
 }
