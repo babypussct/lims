@@ -39,8 +39,8 @@ export class StateService implements OnDestroy {
   sops = signal<Sop[]>([]); 
   requests = signal<Request[]>([]); 
   approvedRequests = signal<Request[]>([]);
-  logs = signal<Log[]>([]); // Unified logs (recent)
-  printableLogs = signal<Log[]>([]); // Subset
+  logs = signal<Log[]>([]); 
+  printableLogs = signal<Log[]>([]); 
   
   stats = signal<any>({ totalSopsRun: 0, totalItemsUsed: 0 });
   
@@ -48,13 +48,11 @@ export class StateService implements OnDestroy {
     footerText: 'Cam kết sử dụng đúng mục đích.', showSignature: false
   });
 
-  // System Version Config
   systemVersion = signal<string>('V1.0 FINAL');
 
   selectedSop = signal<Sop | null>(null);
   editingSop = signal<Sop | null>(null);
   
-  // CACHE: Preserve Calculator Inputs when navigating to Print Preview
   cachedCalculatorState = signal<{ sopId: string, formValues: any } | null>(null);
 
   currentUser = this.auth.currentUser;
@@ -63,8 +61,12 @@ export class StateService implements OnDestroy {
   isSystemHealthy = signal<boolean>(true);
   permissionError = signal<boolean>(false);
   
+  // UI STATE
   sidebarOpen = signal<boolean>(false);
   sidebarCollapsed = signal<boolean>(true);
+  
+  // --- FOCUS MODE (New Feature) ---
+  focusMode = signal<boolean>(false);
 
   constructor() {
     effect(() => {
@@ -81,6 +83,9 @@ export class StateService implements OnDestroy {
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
   closeSidebar() { this.sidebarOpen.set(false); }
   toggleSidebarCollapse() { this.sidebarCollapsed.update(v => !v); }
+  
+  // Toggle Focus Mode
+  toggleFocusMode() { this.focusMode.update(v => !v); }
 
   private cleanupListeners() {
     this.listeners.forEach(unsub => unsub());
@@ -102,26 +107,22 @@ export class StateService implements OnDestroy {
       if (error.code === 'permission-denied') this.permissionError.set(true);
     };
 
-    // 1. SOPs (Small collection, safe to stream)
     const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
       const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
       this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
     }, handleError('SOPs'));
     this.listeners.push(sopSub);
 
-    // 2. Pending Requests (Workflow critical)
     const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')), 
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
 
-    // 3. Approved Requests (Limit 100 for Dashboard/History)
     const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'), limit(100));
     const appSub = onSnapshot(approvedQuery, (s) => { 
         const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.approvedRequests.set(items); 
     }, handleError('Approved Requests'));
     this.listeners.push(appSub);
 
-    // 4. Logs (Limit 100) - Lightweight now
     const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(100));
     const logSub = onSnapshot(logQuery, (s) => {
         const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
@@ -130,15 +131,12 @@ export class StateService implements OnDestroy {
     }, handleError('Logs'));
     this.listeners.push(logSub);
 
-    // 5. Stats (Single doc)
     const statSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'), (d) => { if (d.exists()) this.stats.set(d.data()); }, handleError('Stats'));
     this.listeners.push(statSub);
 
-    // 6. Config - Print (Single doc)
     const configSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print'), (d) => { if(d.exists()) this.printConfig.set(d.data() as PrintConfig); }, handleError('Config-Print'));
     this.listeners.push(configSub);
 
-    // 7. Config - System (Version)
     const systemSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system'), (d) => { 
         if(d.exists()) {
             const data = d.data();
@@ -162,8 +160,6 @@ export class StateService implements OnDestroy {
   
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
 
-  // --- ACTIONS (Calculations, Requests, Approvals...) ---
-  
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
       const itemsToDeduct: Map<string, number> = new Map();
       calculatedItems.forEach(item => {
@@ -222,7 +218,6 @@ export class StateService implements OnDestroy {
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
   
-  // --- UPDATED: Split Print Data Logic ---
   async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<void> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return; }
     
@@ -260,7 +255,6 @@ export class StateService implements OnDestroy {
             analysisDate: formInputs.analysisDate || null
         });
 
-        // 1. Create Heavy Print Job Doc
         const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = { 
             sop, 
@@ -275,7 +269,6 @@ export class StateService implements OnDestroy {
             createdBy: this.getCurrentUserName()
         });
 
-        // 2. Create Lightweight Log linked to Print Job
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         transaction.set(logRef, {
           action: 'DIRECT_APPROVE', 
@@ -298,7 +291,6 @@ export class StateService implements OnDestroy {
     }
   }
 
-  // --- UPDATED: Split Print Data Logic ---
   async approveRequest(req: Request) {
     if (!this.auth.canApprove()) return;
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
@@ -341,7 +333,6 @@ export class StateService implements OnDestroy {
                 }
             });
 
-            // 1. Create Heavy Print Job
             const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
             const printData: PrintData = { 
                 sop, 
@@ -356,7 +347,6 @@ export class StateService implements OnDestroy {
                 createdBy: this.getCurrentUserName()
             });
 
-            // 2. Create Log Linked
             transaction.set(logRef, {
               action: 'APPROVE_REQUEST', 
               details: `Duyệt yêu cầu: ${req.sopName}`, 
@@ -413,29 +403,24 @@ export class StateService implements OnDestroy {
 
   async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
       const batch = writeBatch(this.fb.db);
-      
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
       batch.delete(logRef);
-
       if (printJobId) {
           const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
           batch.delete(jobRef);
       }
-
       await batch.commit();
       this.toast.show('Đã xóa phiếu in');
   }
   
   async deleteSelectedPrintLogs(logs: Log[]) { 
       const batch = writeBatch(this.fb.db);
-      
       logs.forEach(log => {
           batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id));
           if (log.printJobId) {
               batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
           }
       });
-      
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu`);
   }

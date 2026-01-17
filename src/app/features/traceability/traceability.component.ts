@@ -14,11 +14,11 @@ declare var QRious: any;
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-slate-100 p-4 md:p-8 flex items-center justify-center fade-in">
+    <div class="min-h-screen bg-slate-100 p-4 md:p-8 flex items-center justify-center fade-in print:p-0 print:bg-white">
         
         <!-- LOADING STATE -->
         @if(isLoading()) {
-            <div class="text-center">
+            <div class="text-center print:hidden">
                 <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
                 <p class="text-slate-500 font-bold animate-pulse">Đang truy xuất dữ liệu...</p>
             </div>
@@ -26,7 +26,7 @@ declare var QRious: any;
 
         <!-- ERROR STATE -->
         @else if (errorMsg()) {
-            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-center relative border border-red-100">
+            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-center relative border border-red-100 print:hidden">
                 <div class="h-2 bg-red-600 w-full"></div>
                 <div class="p-10">
                     <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 animate-bounce-in shadow-inner">
@@ -58,89 +58,90 @@ declare var QRious: any;
             @if (logData(); as log) {
                 <!-- SAFE GUARD: Ensure printData exists and alias it to 'pd' for strict checking -->
                 @if (log.printData; as pd) {
-                    <div class="bg-white w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden relative print:shadow-none print:w-full print:max-w-none">
+                    <div class="bg-white w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden relative print:shadow-none print:w-full print:max-w-none print:rounded-none">
                         
-                        <!-- Decorative Top Border -->
-                        <div class="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                        <!-- Decorative Top Border (Hidden on Print to save ink) -->
+                        <div class="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 print:hidden"></div>
+                        <div class="h-1 bg-black w-full hidden print:block"></div>
 
-                        <div class="p-8 md:p-10 relative">
-                            <!-- Watermark -->
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
+                        <div class="p-8 md:p-10 relative print:p-0">
+                            <!-- Watermark (Hidden on Print) -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] print:hidden">
                                 <i class="fa-solid fa-flask text-[300px]"></i>
                             </div>
 
                             <!-- 1. Header -->
-                            <div class="flex justify-between items-start mb-8 relative z-10">
+                            <div class="flex justify-between items-start mb-8 relative z-10 print:mb-4">
                                 <div>
-                                    <div class="flex items-center gap-2 mb-1">
+                                    <div class="flex items-center gap-2 mb-1 print:hidden">
                                         <i class="fa-solid fa-certificate text-yellow-500 text-xl"></i>
                                         <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Digital Certificate</span>
                                     </div>
-                                    <h1 class="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight">Chứng nhận Kiểm nghiệm</h1>
-                                    <p class="text-sm text-slate-500 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS)</p>
+                                    <h1 class="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight print:text-black">Chứng nhận Kiểm nghiệm</h1>
+                                    <p class="text-sm text-slate-500 font-medium mt-1 print:text-black">Hệ thống Quản lý Phòng thí nghiệm (LIMS)</p>
                                 </div>
                                 <div class="text-right">
                                     <canvas #qrCanvas class="w-20 h-20 md:w-24 md:h-24"></canvas>
-                                    <div class="text-[10px] font-mono text-slate-400 mt-1">{{log.id}}</div>
+                                    <div class="text-[10px] font-mono text-slate-400 mt-1 print:text-black">{{log.id}}</div>
                                 </div>
                             </div>
 
-                            <!-- 2. Status Banner -->
-                            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-8 flex items-center gap-4">
-                                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
+                            <!-- 2. Status Banner (Simplified for Print) -->
+                            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-8 flex items-center gap-4 print:bg-white print:border-black print:rounded-none print:p-2 print:mb-4">
+                                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 print:hidden">
                                     <i class="fa-solid fa-check-double text-xl"></i>
                                 </div>
                                 <div>
-                                    <div class="text-xs font-bold text-emerald-600 uppercase">Trạng thái</div>
-                                    <div class="text-lg font-bold text-emerald-800">ĐÃ ĐƯỢC PHÊ DUYỆT & GHI NHẬN</div>
-                                    <div class="text-xs text-emerald-600">Dữ liệu toàn vẹn trên hệ thống Cloud.</div>
+                                    <div class="text-xs font-bold text-emerald-600 uppercase print:text-black">Trạng thái</div>
+                                    <div class="text-lg font-bold text-emerald-800 print:text-black">ĐÃ ĐƯỢC PHÊ DUYỆT & GHI NHẬN</div>
+                                    <div class="text-xs text-emerald-600 print:hidden">Dữ liệu toàn vẹn trên hệ thống Cloud.</div>
                                 </div>
                             </div>
 
                             <!-- 3. General Details Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mb-8 relative z-10">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mb-8 relative z-10 print:gap-y-2 print:mb-4">
                                 <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Quy trình (SOP)</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1">
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Quy trình (SOP)</div>
+                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
                                         {{pd.sop?.name || 'N/A'}}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày phân tích</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1">
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Ngày phân tích</div>
+                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
                                         {{ pd.analysisDate ? formatDate(pd.analysisDate) : formatDate(log.timestamp) }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Người thực hiện / Duyệt</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 flex items-center gap-2">
-                                        <i class="fa-solid fa-user-check text-slate-400"></i> {{log.user}}
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Người thực hiện / Duyệt</div>
+                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 flex items-center gap-2 print:text-black print:border-black">
+                                        <i class="fa-solid fa-user-check text-slate-400 print:hidden"></i> {{log.user}}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Mã tham chiếu (Ref ID)</div>
-                                    <div class="text-base font-mono font-bold text-slate-600 border-b border-slate-100 pb-1">
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Mã tham chiếu (Ref ID)</div>
+                                    <div class="text-base font-mono font-bold text-slate-600 border-b border-slate-100 pb-1 print:text-black print:border-black">
                                         {{log.id}}
                                     </div>
                                 </div>
                             </div>
 
                             <!-- 4. Operational Parameters (Using 'pd' alias) -->
-                            <div class="mb-8 relative z-10">
-                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
-                                    <i class="fa-solid fa-sliders"></i> Thông số Vận hành
+                            <div class="mb-8 relative z-10 print:mb-4">
+                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
+                                    <i class="fa-solid fa-sliders print:hidden"></i> Thông số Vận hành
                                 </h3>
-                                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
-                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 print:bg-white print:border-black print:rounded-none print:p-2">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 print:gap-2">
                                         @for (inp of (pd.sop?.inputs || []); track inp.var) {
                                             @if (inp.var !== 'safetyMargin' && pd.inputs?.[inp.var] !== undefined) {
                                                 <div>
-                                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{{inp.label}}</div>
-                                                    <div class="text-sm font-bold text-slate-700">
+                                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5 print:text-black">{{inp.label}}</div>
+                                                    <div class="text-sm font-bold text-slate-700 print:text-black">
                                                         @if(inp.type === 'checkbox') {
                                                             {{ pd.inputs[inp.var] ? 'Có' : 'Không' }}
                                                         } @else {
-                                                            {{ pd.inputs[inp.var] }} <span class="text-xs font-normal text-slate-500">{{inp.unitLabel}}</span>
+                                                            {{ pd.inputs[inp.var] }} <span class="text-xs font-normal text-slate-500 print:text-black">{{inp.unitLabel}}</span>
                                                         }
                                                     </div>
                                                 </div>
@@ -154,35 +155,35 @@ declare var QRious: any;
                             </div>
 
                             <!-- 5. Usage Table (Using 'pd' alias) -->
-                            <div class="mb-8 relative z-10">
-                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
-                                    <i class="fa-solid fa-list-ul"></i> Chi tiết Hóa chất sử dụng
+                            <div class="mb-8 relative z-10 print:mb-4">
+                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
+                                    <i class="fa-solid fa-list-ul print:hidden"></i> Chi tiết Hóa chất sử dụng
                                 </h3>
-                                <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden print:bg-white print:border-black print:rounded-none">
                                     <table class="w-full text-sm text-left">
-                                        <thead class="bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">
+                                        <thead class="bg-slate-100 text-[10px] font-bold text-slate-500 uppercase print:bg-white print:text-black print:border-b print:border-black">
                                             <tr>
-                                                <th class="px-4 py-2">Tên Hóa chất</th>
-                                                <th class="px-4 py-2 text-right">Lượng dùng</th>
-                                                <th class="px-4 py-2 text-center">Đơn vị</th>
+                                                <th class="px-4 py-2 print:px-1">Tên Hóa chất</th>
+                                                <th class="px-4 py-2 text-right print:px-1">Lượng dùng</th>
+                                                <th class="px-4 py-2 text-center print:px-1">Đơn vị</th>
                                             </tr>
                                         </thead>
-                                        <tbody class="divide-y divide-slate-200">
+                                        <tbody class="divide-y divide-slate-200 print:divide-black">
                                             @for (item of (pd.items || []); track item.name) {
                                                 <tr>
-                                                    <td class="px-4 py-2 font-medium text-slate-700">
+                                                    <td class="px-4 py-2 font-medium text-slate-700 print:text-black print:px-1">
                                                         {{item.displayName || item.name}}
-                                                        @if(item.isComposite) { <span class="text-[10px] text-slate-400 ml-1">(Hỗn hợp)</span> }
+                                                        @if(item.isComposite) { <span class="text-[10px] text-slate-400 ml-1 print:text-black">(Hỗn hợp)</span> }
                                                     </td>
-                                                    <td class="px-4 py-2 text-right font-mono font-bold">{{formatNum(item.totalQty)}}</td>
-                                                    <td class="px-4 py-2 text-center text-xs text-slate-500">{{item.unit}}</td>
+                                                    <td class="px-4 py-2 text-right font-mono font-bold print:text-black print:px-1">{{formatNum(item.totalQty)}}</td>
+                                                    <td class="px-4 py-2 text-center text-xs text-slate-500 print:text-black print:px-1">{{item.unit}}</td>
                                                 </tr>
                                                 @if(item.isComposite) {
                                                     @for (sub of item.breakdown; track sub.name) {
-                                                        <tr class="bg-slate-50/50">
-                                                            <td class="px-4 py-1 pl-8 text-xs text-slate-500 italic">• {{sub.displayName || sub.name}}</td>
-                                                            <td class="px-4 py-1 text-right text-xs text-slate-500 font-mono">{{formatNum(sub.displayAmount)}}</td>
-                                                            <td class="px-4 py-1 text-center text-[10px] text-slate-400">{{sub.unit}}</td>
+                                                        <tr class="bg-slate-50/50 print:bg-white">
+                                                            <td class="px-4 py-1 pl-8 text-xs text-slate-500 italic print:text-black print:pl-4">• {{sub.displayName || sub.name}}</td>
+                                                            <td class="px-4 py-1 text-right text-xs text-slate-500 font-mono print:text-black">{{formatNum(sub.displayAmount)}}</td>
+                                                            <td class="px-4 py-1 text-center text-[10px] text-slate-400 print:text-black">{{sub.unit}}</td>
                                                         </tr>
                                                     }
                                                 }
@@ -193,9 +194,9 @@ declare var QRious: any;
                             </div>
 
                             <!-- Footer -->
-                            <div class="text-center border-t border-slate-100 pt-6">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Xác thực điện tử bởi Otada LIMS</p>
-                                <p class="text-[9px] text-slate-300">Chứng nhận này được tạo tự động và có giá trị truy xuất nguồn gốc.</p>
+                            <div class="text-center border-t border-slate-100 pt-6 print:border-black">
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1 print:text-black">Xác thực điện tử bởi Otada LIMS</p>
+                                <p class="text-[9px] text-slate-300 print:hidden">Chứng nhận này được tạo tự động và có giá trị truy xuất nguồn gốc.</p>
                             </div>
                         </div>
 

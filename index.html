@@ -49,12 +49,16 @@
             'navbar': '0 2px 12px 0 rgba(0,0,0,0.06)',
           },
           borderRadius: {
-            'xl': '1rem',   // 16px
-            '2xl': '1.25rem' // 20px
+            'xl': '0.75rem',   // 12px (Standard for High Density)
+            '2xl': '1rem'      // 16px (Reduced from 20px)
           },
           backgroundImage: {
             'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // The Signature Gradient
             'gradient-dark': 'linear-gradient(310deg, #141727, #3a416f)',
+          },
+          transitionProperty: {
+            'height': 'height',
+            'spacing': 'margin, padding',
           }
         } 
       } 
@@ -86,14 +90,43 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes bounceIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
-    /* Print Overrides - CRITICAL FOR DIRECT PRINT */
+    /* --- PRINT OPTIMIZATION (FLAT UI) --- */
     @media print {
       @page { size: A4 portrait; margin: 0; }
       
-      /* Hide the main app entirely */
-      app-root { display: none !important; }
+      body { 
+          background: white !important; 
+          color: black !important; 
+          -webkit-print-color-adjust: exact;
+      }
+
+      /* Hide App Shell elements in print mode */
+      app-sidebar, nav, .no-print, .shadow-soft-xl, .bg-gradient-soft, .fixed { 
+          display: none !important; 
+      }
+
+      /* Flatten UI for Print - Remove shadows and gradients */
+      .bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-tl {
+          background: none !important;
+          background-color: #fff !important;
+      }
       
-      /* Show the print container */
+      /* Force black text for contrast */
+      .text-transparent, .text-slate-500, .text-gray-500 {
+          color: black !important;
+          -webkit-text-fill-color: black !important;
+      }
+
+      .shadow-xl, .shadow-2xl, .shadow-lg, .shadow-md, .shadow-sm {
+          box-shadow: none !important;
+      }
+      
+      /* Enhance borders for old printers */
+      .border-slate-100, .border-slate-200 {
+          border-color: #000 !important;
+      }
+
+      /* Show the dedicated print container */
       #print-container { 
           display: block !important; 
           position: absolute;
@@ -104,7 +137,12 @@
           z-index: 99999;
       }
       
-      body { background: white; color: black; }
+      /* Specific override for Traceability Component direct print */
+      app-traceability {
+          display: block !important;
+          width: 100%;
+          background: white;
+      }
     }
     
     /* Screen styles for print container (Hidden by default) */

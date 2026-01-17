@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
@@ -24,11 +23,6 @@ import { PrintService } from './core/services/print.service';
     LoginComponent
   ],
   template: `
-    <!-- 
-      SPECIAL PRINT MODE CHECK 
-      If route contains 'print-job', we render ONLY the router-outlet.
-      This allows the print window to be lightweight and work offline/without auth sync.
-    -->
     @if (isPrintMode()) {
        <router-outlet></router-outlet>
     } 
@@ -85,40 +79,49 @@ import { PrintService } from './core/services/print.service';
         } 
         @else {
            <div class="min-h-screen h-[100dvh] bg-gray-50 flex overflow-hidden relative">
-                @if (state.sidebarOpen()) { <div class="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" (click)="state.closeSidebar()"></div> }
-                <app-sidebar></app-sidebar>
                 
-                <!-- Main Content: Margins match Sidebar 64 (256px) and 20 (80px) -->
-                <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out rounded-xl overflow-hidden"
-                      [class.md:ml-64]="!state.sidebarCollapsed()" 
-                      [class.md:ml-20]="state.sidebarCollapsed()">
+                <!-- Sidebar (Hidden in Focus Mode) -->
+                @if (!state.focusMode()) {
+                    @if (state.sidebarOpen()) { <div class="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" (click)="state.closeSidebar()"></div> }
+                    <app-sidebar></app-sidebar>
+                }
+                
+                <!-- Main Content -->
+                <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
+                      [class.md:ml-64]="!state.sidebarCollapsed() && !state.focusMode()" 
+                      [class.md:ml-20]="state.sidebarCollapsed() && !state.focusMode()"
+                      [class.p-4]="state.focusMode()">
                    
-                   <!-- Navbar -->
-                   <nav class="relative flex flex-col justify-center px-4 py-2 mx-4 md:mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
-                      @if (state.permissionError()) {
-                         <div class="w-full bg-red-50 border border-red-100 rounded-lg p-2 mb-2 flex items-center justify-between animate-bounce-in">
-                             <div class="flex items-center gap-2 text-xs text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
-                         </div>
-                      }
-                      <div class="flex items-center justify-between w-full">
-                         <div class="flex items-center gap-3">
-                            <div class="flex items-center md:hidden"><button (click)="state.toggleSidebar()" class="w-10 h-10 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition active:scale-95"><i class="fa-solid fa-bars text-lg"></i></button></div>
-                            <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-lg md:text-base">{{ pageTitle() }}</h6></div>
-                         </div>
-                         
-                         <div class="flex items-center gap-3 ml-auto">
-                             <div class="hidden sm:flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
-                             <button (click)="router.navigate(['/config'])" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg active:scale-95" [title]="auth.canManageSystem() ? 'Cấu hình Hệ thống' : 'Tài khoản cá nhân'"><i class="fa-solid" [class.fa-gears]="auth.canManageSystem()" [class.fa-user-gear]="!auth.canManageSystem()"></i></button>
-                             <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Đăng xuất"><i class="fa-solid fa-power-off text-lg"></i></button>
-                         </div>
-                      </div>
-                   </nav>
+                   <!-- Navbar (Hidden in Focus Mode) -->
+                   @if (!state.focusMode()) {
+                       <nav class="relative flex flex-col justify-center px-4 py-2 mx-4 md:mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
+                          @if (state.permissionError()) {
+                             <div class="w-full bg-red-50 border border-red-100 rounded-lg p-2 mb-2 flex items-center justify-between animate-bounce-in">
+                                 <div class="flex items-center gap-2 text-xs text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
+                             </div>
+                          }
+                          <div class="flex items-center justify-between w-full">
+                             <div class="flex items-center gap-3">
+                                <div class="flex items-center md:hidden"><button (click)="state.toggleSidebar()" class="w-10 h-10 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition active:scale-95"><i class="fa-solid fa-bars text-lg"></i></button></div>
+                                <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-lg md:text-base">{{ pageTitle() }}</h6></div>
+                             </div>
+                             
+                             <div class="flex items-center gap-3 ml-auto">
+                                 <div class="hidden sm:flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
+                                 <button (click)="router.navigate(['/config'])" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg active:scale-95" [title]="auth.canManageSystem() ? 'Cấu hình Hệ thống' : 'Tài khoản cá nhân'"><i class="fa-solid" [class.fa-gears]="auth.canManageSystem()" [class.fa-user-gear]="!auth.canManageSystem()"></i></button>
+                                 <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Đăng xuất"><i class="fa-solid fa-power-off text-lg"></i></button>
+                             </div>
+                          </div>
+                       </nav>
+                   }
 
-                   <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar flex flex-col">
+                   <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar flex flex-col" [class.p-0]="state.focusMode()">
                        <div class="flex-1"><router-outlet></router-outlet></div>
-                       <footer class="mt-6 pt-4 pb-2 text-center shrink-0 opacity-60 hover:opacity-100 transition-opacity">
-                           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-default select-none">© Otada. Sử dụng nội bộ phòng GC</p>
-                       </footer>
+                       @if (!state.focusMode()) {
+                           <footer class="mt-6 pt-4 pb-2 text-center shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+                               <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-default select-none">© Otada. Sử dụng nội bộ phòng GC</p>
+                           </footer>
+                       }
                    </div>
                 </main>
            </div>
@@ -140,16 +143,16 @@ export class AppComponent {
   router: Router = inject(Router);
   pageTitle = signal('Dashboard');
   
-  // FIX: Initialize immediately based on current window location
-  // This prevents the App Shell from loading if we are starting in a print window.
   isPrintMode = signal(window.location.hash.includes('print-job'));
 
   constructor() {
-    // Listen for subsequent navigations
     this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => { 
         this.updatePageHeader();
         const isInPrintJob = this.router.url.includes('print-job') || window.location.hash.includes('print-job');
         this.isPrintMode.set(isInPrintJob);
+        
+        // Auto-disable focus mode on navigation
+        this.state.focusMode.set(false);
     });
     this.updatePageHeader();
   }

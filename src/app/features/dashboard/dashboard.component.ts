@@ -28,68 +28,79 @@ interface PriorityStandard {
   template: `
     <div class="space-y-6 fade-in pb-10">
         
-        <!-- 0. WELCOME HEADER -->
-        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-            <!-- Decorative Background -->
-            <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-blue-50/50 to-transparent pointer-events-none"></div>
+        <!-- 0. WELCOME HEADER (Shortcuts Optimized) -->
+        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+            <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-blue-50/30 to-transparent pointer-events-none"></div>
             
             <div class="relative z-10 flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-200 shrink-0 transform group-hover:scale-105 transition-transform duration-500">
-                    <img [src]="getAvatarUrl(state.currentUser()?.displayName)" class="w-full h-full rounded-[14px] bg-white object-cover border-2 border-white">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-200 shrink-0 transform group-hover:scale-105 transition-transform duration-500">
+                    <img [src]="getAvatarUrl(state.currentUser()?.displayName)" class="w-full h-full rounded-[10px] bg-white object-cover border-2 border-white">
                 </div>
                 <div class="flex-1">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">{{getGreeting()}},</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">{{getGreeting()}},</p>
                     @if (state.currentUser()?.displayName) {
-                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">
+                        <h1 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">
                             {{state.currentUser()?.displayName}}
                         </h1>
                     } @else {
-                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">...</h1>
+                        <h1 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">...</h1>
                     }
-                    <div class="flex items-center gap-2 text-sm font-medium text-slate-500 mt-1">
-                        <i class="fa-solid fa-quote-left text-[10px] text-slate-300 -translate-y-1"></i>
-                        <span class="italic text-xs md:text-sm">{{ randomQuote() }}</span>
+                    
+                    <!-- SHORTCUTS -->
+                    <div class="flex gap-2 mt-2">
+                        @if(auth.canViewSop()) {
+                            <button (click)="navTo('calculator')" class="text-[10px] bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-blue-600 transition flex items-center gap-1 active:scale-95">
+                                <i class="fa-solid fa-play text-[8px]"></i> Chạy SOP
+                            </button>
+                        }
+                        @if(auth.canEditInventory()) {
+                            <button (click)="navTo('inventory')" class="text-[10px] bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-emerald-600 transition flex items-center gap-1 active:scale-95">
+                                <i class="fa-solid fa-plus text-[8px]"></i> Nhập Kho
+                            </button>
+                        }
+                        <button (click)="navTo('labels')" class="text-[10px] bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-purple-600 transition flex items-center gap-1 active:scale-95">
+                            <i class="fa-solid fa-print text-[8px]"></i> In Tem
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- ACTIONS -->
-            <div class="relative z-10 flex gap-3 items-center">
-                <!-- SCAN BUTTON -->
-                <button (click)="openScanModal()" class="flex flex-col items-center justify-center w-16 h-16 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:text-blue-600 transition active:scale-95 group/scan">
-                    <i class="fa-solid fa-qrcode text-2xl mb-1 text-slate-700 group-hover/scan:text-blue-600 transition-colors"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-wider">Scan</span>
+            <div class="relative z-10 flex gap-3 items-center self-end md:self-center">
+                <button (click)="openScanModal()" class="flex flex-col items-center justify-center w-14 h-14 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:text-blue-600 transition active:scale-95 group/scan">
+                    <i class="fa-solid fa-qrcode text-xl mb-1 text-slate-700 group-hover/scan:text-blue-600 transition-colors"></i>
+                    <span class="text-[8px] font-bold uppercase tracking-wider">Scan</span>
                 </button>
 
                 <div class="text-right hidden md:block border-l border-slate-200 pl-4 ml-1">
-                    <div class="text-xs font-bold text-slate-400 uppercase">Hôm nay</div>
-                    <div class="text-lg font-black text-slate-700">{{today | date:'dd/MM/yyyy'}}</div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</div>
+                    <div class="text-base font-black text-slate-700">{{today | date:'dd/MM/yyyy'}}</div>
                 </div>
             </div>
         </div>
 
         <!-- 1. Stats Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <!-- Pending Requests -->
             <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
-                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-clock text-6xl text-blue-600 transform rotate-12"></i>
+                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group h-28">
+                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-clock text-5xl text-blue-600 transform rotate-12"></i>
                 </div>
-                <div class="p-5 flex items-center justify-between relative z-10">
-                    <div class="w-full">
-                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Yêu cầu Chờ duyệt</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                <div class="flex items-center justify-between relative z-10">
+                    <div>
+                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Yêu cầu Chờ duyệt</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
                         @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{state.requests().length}}</h5>
+                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{state.requests().length}}</h5>
                            @if(state.requests().length > 0) {
-                               <span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md mt-2 inline-block">Cần xử lý</span>
+                               <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-blue-100">Cần xử lý</span>
                            } @else {
-                               <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md mt-2 inline-block">Đã hoàn thành</span>
+                               <span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-slate-100">Đã hoàn thành</span>
                            }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 ml-3">
                         <i class="fa-solid fa-clipboard-check text-lg"></i>
                     </div>
                 </div>
@@ -97,24 +108,24 @@ interface PriorityStandard {
 
             <!-- Low Stock Alert -->
             <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
-                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-triangle-exclamation text-6xl text-red-600 transform -rotate-12"></i>
+                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-red-300 transition-all group h-28">
+                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-triangle-exclamation text-5xl text-red-600 transform -rotate-12"></i>
                 </div>
-                <div class="p-5 flex items-center justify-between relative z-10">
-                    <div class="w-full">
-                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Cảnh báo Kho</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                <div class="flex items-center justify-between relative z-10">
+                    <div>
+                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cảnh báo Kho</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
                         @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{lowStockItems().length}}</h5>
+                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{lowStockItems().length}}</h5>
                            @if(lowStockItems().length > 0) {
-                                <span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-md mt-2 inline-block animate-pulse">Sắp hết hàng</span>
+                                <span class="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-red-100 animate-pulse">Sắp hết hàng</span>
                            } @else {
-                                <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Ổn định</span>
+                                <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-emerald-100">Ổn định</span>
                            }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-red-500 to-orange-400 flex items-center justify-center text-white shadow-lg shadow-red-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                    <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0 ml-3">
                         <i class="fa-solid fa-boxes-stacked text-lg"></i>
                     </div>
                 </div>
@@ -122,20 +133,20 @@ interface PriorityStandard {
 
             <!-- Total SOPs -->
             <div (click)="auth.canViewSop() ? navTo('calculator') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95">
-                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-flask text-6xl text-purple-600 transform rotate-6"></i>
+                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-purple-300 transition-all group h-28">
+                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fa-solid fa-flask text-5xl text-purple-600 transform rotate-6"></i>
                 </div>
-                <div class="p-5 flex items-center justify-between relative z-10">
-                    <div class="w-full">
-                        <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Quy trình (SOP)</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="28px" class="mt-1 block"></app-skeleton> } 
+                <div class="flex items-center justify-between relative z-10">
+                    <div>
+                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quy trình (SOP)</p>
+                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
                         @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-3xl mt-1 tracking-tight">{{state.sops().length}}</h5>
-                           <span class="text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-md mt-2 inline-block">Đang kích hoạt</span>
+                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{state.sops().length}}</h5>
+                           <span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-purple-100">Đang kích hoạt</span>
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tl from-purple-700 to-fuchsia-500 flex items-center justify-center text-white shadow-lg shadow-purple-200 shrink-0 ml-4 group-hover:scale-110 transition-transform">
+                    <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 ml-3">
                         <i class="fa-solid fa-list-check text-lg"></i>
                     </div>
                 </div>
@@ -143,42 +154,42 @@ interface PriorityStandard {
 
             <!-- Standards Priority -->
             <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-2xl shadow-soft-xl overflow-hidden transition-all duration-300 group border border-slate-100 h-32 justify-center cursor-pointer hover:-translate-y-1 active:scale-95"
+                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md transition-all group h-28"
                  [class.border-red-200]="priorityStandard()?.status === 'expired'"
                  [class.border-orange-200]="priorityStandard()?.status === 'warning'">
-                <div class="p-5 flex items-center justify-between">
+                <div class="flex items-center justify-between">
                     <div class="w-full min-w-0 pr-2">
                         @if (isLoading()) {
                            <app-skeleton width="50%" height="12px" class="mb-2 block"></app-skeleton>
                            <app-skeleton width="70%" height="24px" class="block"></app-skeleton>
                         } @else {
                            @if (priorityStandard(); as std) {
-                               <p class="mb-1 font-sans text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                               <p class="mb-0 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
                                   [class.text-red-500]="std.status === 'expired'"
                                   [class.text-orange-500]="std.status === 'warning'"
                                   [class.text-slate-400]="std.status === 'safe'">
                                    {{std.status === 'expired' ? 'Hết hạn SD:' : std.status === 'warning' ? 'Sắp hết hạn:' : 'Chuẩn Đối Chiếu'}}
                                </p>
-                               <div class="mt-0">
-                                   <div class="font-bold text-slate-800 text-sm truncate" [title]="std.name">{{std.name}}</div>
+                               <div class="mt-0.5">
+                                   <div class="font-bold text-slate-800 text-xs truncate" [title]="std.name">{{std.name}}</div>
                                    @if(std.status !== 'safe') {
-                                       <div class="text-xs font-black mt-1" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
+                                       <div class="text-[10px] font-black mt-0.5" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
                                             {{std.date | date:'dd/MM/yyyy'}} ({{std.daysLeft}} ngày)
                                        </div>
                                    } @else {
-                                       <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md mt-2 inline-block">Kho chuẩn an toàn</span>
+                                       <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-emerald-100">Kho chuẩn an toàn</span>
                                    }
                                </div>
                            } @else {
-                               <p class="mb-1 font-sans text-xs font-bold text-slate-400 uppercase tracking-wider">Chuẩn Đối Chiếu</p>
+                               <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chuẩn Đối Chiếu</p>
                                <h5 class="mb-0 font-bold text-slate-700 text-sm mt-1">Chưa có dữ liệu</h5>
                            }
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform"
-                         [ngClass]="priorityStandard()?.status === 'expired' ? 'bg-gradient-to-tl from-red-600 to-rose-400 shadow-red-200' : 
-                                    priorityStandard()?.status === 'warning' ? 'bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-orange-200' : 
-                                    'bg-gradient-to-tl from-emerald-500 to-teal-400 shadow-emerald-200'">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-md shrink-0"
+                         [ngClass]="priorityStandard()?.status === 'expired' ? 'bg-red-500' : 
+                                    priorityStandard()?.status === 'warning' ? 'bg-orange-500' : 
+                                    'bg-emerald-500'">
                         @if(priorityStandard()?.status === 'expired') { <i class="fa-solid fa-triangle-exclamation text-lg"></i> }
                         @else if(priorityStandard()?.status === 'warning') { <i class="fa-solid fa-clock text-lg"></i> }
                         @else { <i class="fa-solid fa-shield-halved text-lg"></i> }
@@ -191,13 +202,13 @@ interface PriorityStandard {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Column (2/3): PERFORMANCE CHART -->
             <div class="lg:col-span-2">
-                <div class="relative bg-white rounded-3xl p-6 shadow-soft-xl overflow-hidden group border border-slate-100 flex flex-col h-[540px]">
-                    <div class="relative z-10 flex justify-between items-start mb-6 shrink-0">
+                <div class="relative bg-white rounded-2xl p-5 shadow-sm overflow-hidden group border border-slate-100 flex flex-col h-[480px]">
+                    <div class="relative z-10 flex justify-between items-start mb-4 shrink-0">
                         <div>
-                            <h2 class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+                            <h2 class="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
                                 <i class="fa-solid fa-chart-line text-indigo-500"></i> Hiệu suất Phân tích
                             </h2>
-                            <p class="text-xs text-slate-400 font-medium">Số mẫu (Sample) & Số mẻ (Batch) trong 7 ngày qua</p>
+                            <p class="text-[10px] text-slate-400 font-medium">Số mẫu (Sample) & Số mẻ (Batch) trong 7 ngày qua</p>
                         </div>
                     </div>
                     <div class="flex-1 relative w-full min-h-0">
@@ -211,14 +222,14 @@ interface PriorityStandard {
             </div>
 
             <!-- Right Column (1/3): Activity Feed -->
-            <div class="bg-white rounded-3xl shadow-soft-xl overflow-hidden border border-slate-100 flex flex-col h-[540px]">
-                <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center shrink-0">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 flex flex-col h-[480px]">
+                <div class="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center shrink-0">
+                    <h3 class="font-bold text-slate-800 text-xs flex items-center gap-2">
                         <i class="fa-solid fa-bolt text-yellow-500"></i> Hoạt động gần đây
                     </h3>
                     <button (click)="navTo('stats')" class="text-[10px] font-bold text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">Xem tất cả</button>
                 </div>
-                <div class="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                     @if (isLoading()) {
                         @for(i of [1,2,3,4]; track i) {
                             <div class="flex gap-4">
@@ -231,11 +242,11 @@ interface PriorityStandard {
                         }
                     } @else {
                         @for (log of recentLogs(); track log.id; let last = $last) {
-                            <div class="relative flex gap-4 group">
-                                @if(!last) { <div class="absolute left-4 top-10 bottom-[-24px] w-[2px] bg-slate-100 group-hover:bg-slate-200 transition-colors"></div> }
+                            <div class="relative flex gap-3 group">
+                                @if(!last) { <div class="absolute left-3.5 top-8 bottom-[-16px] w-[1px] bg-slate-100 group-hover:bg-slate-200 transition-colors"></div> }
                                 <div class="relative z-10 shrink-0">
-                                    <img [src]="getAvatarUrl(log.user)" class="w-8 h-8 rounded-full bg-white border-2 border-white shadow-md object-cover" [title]="log.user">
-                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white shadow-sm"
+                                    <img [src]="getAvatarUrl(log.user)" class="w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm object-cover" [title]="log.user">
+                                    <div class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white flex items-center justify-center text-[6px] text-white shadow-sm"
                                          [class.bg-blue-500]="log.action.includes('APPROVE')"
                                          [class.bg-emerald-500]="log.action.includes('STOCK_IN')"
                                          [class.bg-orange-500]="log.action.includes('STOCK_OUT')"
@@ -246,14 +257,14 @@ interface PriorityStandard {
                                     </div>
                                 </div>
                                 <div class="flex-1 pb-1">
-                                    <div class="text-xs text-slate-800 font-bold leading-tight">
+                                    <div class="text-[11px] text-slate-800 font-bold leading-tight">
                                         <span class="text-blue-600">{{log.user}}</span>
                                         <span class="font-normal text-slate-600"> {{getLogActionText(log.action)}}</span>
                                     </div>
-                                    <div class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1.5">
+                                    <div class="text-[10px] text-slate-500 mt-0.5 line-clamp-2 bg-slate-50 p-1.5 rounded border border-slate-100 mt-1">
                                         {{log.details}}
                                     </div>
-                                    <div class="text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                                    <div class="text-[9px] font-bold text-slate-400 mt-0.5 flex items-center gap-1">
                                         <i class="fa-regular fa-clock"></i> {{getTimeDiff(log.timestamp)}}
                                     </div>
                                 </div>
@@ -270,8 +281,6 @@ interface PriorityStandard {
         @if (showScanModal()) {
             <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in" (click)="closeScanModal()">
                 <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col h-[500px] animate-bounce-in" (click)="$event.stopPropagation()">
-                    
-                    <!-- Mode Switcher Header -->
                     <div class="flex border-b border-slate-100">
                         <button (click)="scanMode.set('camera')" class="flex-1 py-3 text-xs font-bold uppercase transition" [class]="scanMode() === 'camera' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'">
                             <i class="fa-solid fa-camera mr-1"></i> Camera
@@ -281,18 +290,15 @@ interface PriorityStandard {
                         </button>
                     </div>
 
-                    <!-- CAMERA MODE -->
                     @if (scanMode() === 'camera') {
                         <div class="flex-1 bg-black relative">
                             <app-qr-scanner (scanSuccess)="onCameraScanSuccess($event)" (scanError)="onCameraError($event)"></app-qr-scanner>
-                            
                             <button (click)="closeScanModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center z-30">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         </div>
                     }
 
-                    <!-- MANUAL MODE -->
                     @if (scanMode() === 'manual') {
                         <div class="p-6 flex flex-col justify-center h-full">
                             <div class="text-center mb-6">
@@ -324,7 +330,6 @@ interface PriorityStandard {
   `
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // ... (Services remain same)
   state = inject(StateService);
   invService = inject(InventoryService); 
   stdService = inject(StandardService);
@@ -340,22 +345,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   recentLogs = computed(() => this.state.logs().slice(0, 8)); 
   today = new Date();
   
-  // ... (Quotes and Chart variables remain same)
-  quotes = [
-      "Chất lượng không phải là một hành động, nó là một thói quen. (Aristotle)",
-      "Sự cẩn thận là người bạn tốt nhất của nhà hóa học.",
-      "Một thí nghiệm thành công bắt đầu từ sự chuẩn bị kỹ lưỡng.",
-      "Khoa học là cách chúng ta hiểu thế giới.",
-      "An toàn phòng thí nghiệm là ưu tiên số một.",
-      "Ghi chép tỉ mỉ là chìa khóa của sự chính xác.",
-      "Sáng tạo bắt đầu từ sự tò mò.",
-      "Đừng sợ thất bại, đó là bước đệm của thành công."
-  ];
-  randomQuote = signal(this.quotes[0]);
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   chartInstance: any = null;
 
-  // Scan Modal State
   showScanModal = signal(false);
   scanMode = signal<'camera' | 'manual'>('camera');
   scanCode = '';
@@ -363,8 +355,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private scanTimeout: any;
 
   constructor() {
-      this.randomQuote.set(this.quotes[Math.floor(Math.random() * this.quotes.length)]);
-      
       effect(() => {
           const reqs = this.state.approvedRequests();
           if (reqs.length >= 0 && !this.isLoading()) {
@@ -374,7 +364,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-      // ... (Same initialization logic)
       this.isLoading.set(true);
       try {
           const [lowStock, nearestStd] = await Promise.all([
@@ -397,7 +386,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
-  // ... (Chart and Data processing logic - hidden for brevity as it is unchanged) ...
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
@@ -481,10 +469,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('DELETE')) return 'đã xóa'; return 'đã cập nhật';
   }
 
-  // --- Scan Modal Logic ---
   openScanModal() {
       this.showScanModal.set(true);
-      // Determine mode based on device? For now default to Camera
       this.scanMode.set('camera');
       this.scanCode = '';
   }
@@ -494,7 +480,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onCameraScanSuccess(result: string) {
-      // Auto-navigate logic
       this.scanCode = result;
       this.closeScanModal();
       this.toast.show('Đã quét mã: ' + result, 'success');
@@ -502,13 +487,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onCameraError(err: any) {
-      // Fallback to manual if camera fails
       this.toast.show('Lỗi Camera. Chuyển sang nhập tay.', 'info');
       this.scanMode.set('manual');
       setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
   }
 
-  // Manual Mode Handlers
   onScanInput(val: string) {
       this.scanCode = val;
       if (this.scanTimeout) clearTimeout(this.scanTimeout);

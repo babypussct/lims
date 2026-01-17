@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, computed, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -26,16 +25,16 @@ import { LabelPrintComponent } from '../labels/label-print.component';
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
       @if (activeTab() !== 'labels') {
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 shrink-0">
-              <div class="bg-white rounded-2xl shadow-soft-xl p-4 flex items-center gap-4 relative overflow-hidden group border border-gray-100 active:scale-95 transition-all duration-200">
-                  <div class="w-12 h-12 rounded-xl bg-gradient-soft flex items-center justify-center text-white shadow-soft-md group-hover:scale-110 transition-transform">
+              <div class="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 relative overflow-hidden group border border-slate-200 active:scale-95 transition-all duration-200 h-24">
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
                       <i class="fa-solid fa-boxes-stacked"></i>
                   </div>
                   <div>
-                      <p class="text-sm font-bold text-gray-400 mb-0">Tổng Hóa chất</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0">Tổng Hóa chất</p>
                       @if(totalCount() === null) {
                           <app-skeleton width="60px" height="24px"></app-skeleton>
                       } @else {
-                          <h5 class="font-bold text-gray-700 text-xl">{{totalCount()}}</h5>
+                          <h5 class="font-black text-slate-700 text-xl">{{totalCount()}}</h5>
                       }
                   </div>
               </div>
@@ -43,45 +42,40 @@ import { LabelPrintComponent } from '../labels/label-print.component';
       }
 
       <!-- Main Content Card -->
-      <div class="flex-1 bg-white rounded-2xl shadow-soft-xl flex flex-col overflow-hidden border border-gray-100">
+      <div class="flex-1 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden border border-slate-200">
         <!-- Header Actions -->
-        <div class="p-4 md:p-5 pb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 bg-white z-20">
+        <div class="p-3 md:p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 bg-white z-20">
             <div>
-                <h6 class="font-bold text-gray-800 mb-1 flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-slate-400"></i>
-                    Quản lý Kho
-                    <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200 hidden md:inline-block">Module</span>
-                </h6>
                 <div class="flex gap-2">
                     <button (click)="switchTab('list')" 
                        class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition active:scale-95"
-                       [class]="activeTab() === 'list' ? 'text-fuchsia-600 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-gray-400 hover:text-gray-600 bg-gray-50'">
+                       [class]="activeTab() === 'list' ? 'text-fuchsia-700 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-slate-500 hover:text-slate-700 bg-slate-50'">
                        Danh sách
                     </button>
                     <button (click)="switchTab('capacity')" 
                        class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition active:scale-95"
-                       [class]="activeTab() === 'capacity' ? 'text-fuchsia-600 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-gray-400 hover:text-gray-600 bg-gray-50'">
+                       [class]="activeTab() === 'capacity' ? 'text-fuchsia-700 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-slate-500 hover:text-slate-700 bg-slate-50'">
                        Phân tích Năng lực
                     </button>
                     <!-- NEW TAB: Labels -->
                     <button (click)="switchTab('labels')" 
                        class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1"
-                       [class]="activeTab() === 'labels' ? 'text-fuchsia-600 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-gray-400 hover:text-gray-600 bg-gray-50'">
+                       [class]="activeTab() === 'labels' ? 'text-fuchsia-700 bg-fuchsia-50 ring-1 ring-fuchsia-100' : 'text-slate-500 hover:text-slate-700 bg-slate-50'">
                        <i class="fa-solid fa-tag"></i> In Tem Nhãn
                     </button>
                 </div>
             </div>
             
             @if(activeTab() === 'list') {
-                <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                     <div class="relative flex-1 md:flex-none">
-                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                         <input [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
                                placeholder="Tìm kiếm..." 
-                               class="pl-8 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:border-fuchsia-500 outline-none transition w-full md:w-64 shadow-sm bg-gray-50 focus:bg-white">
+                               class="pl-8 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-fuchsia-500 outline-none transition w-full md:w-56 shadow-sm bg-slate-50 focus:bg-white font-bold text-slate-700">
                     </div>
                     <div class="flex gap-2">
-                        <select [ngModel]="filterType()" (ngModelChange)="onFilterChange($event)" class="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none text-gray-600 font-bold focus:border-fuchsia-500 shadow-sm bg-gray-50 focus:bg-white cursor-pointer transition">
+                        <select [ngModel]="filterType()" (ngModelChange)="onFilterChange($event)" class="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none text-slate-600 font-bold focus:border-fuchsia-500 shadow-sm bg-slate-50 focus:bg-white cursor-pointer transition">
                             <option value="all">Tất cả</option>
                             <option value="reagent">Hóa chất</option>
                             <option value="consumable">Vật tư</option>
@@ -89,8 +83,8 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                             <option value="low">Sắp hết</option>
                         </select>
                         @if (auth.canEditInventory()) {
-                            <button (click)="openModal()" class="bg-gradient-soft text-white w-10 md:w-auto md:px-4 py-2 rounded-xl text-xs font-bold uppercase shadow-soft-md hover:shadow-soft-xl transition transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center">
-                                <i class="fa-solid fa-plus md:mr-2"></i> <span class="hidden md:inline">Thêm</span>
+                            <button (click)="openModal()" class="bg-slate-800 text-white w-8 md:w-auto md:px-3 py-1.5 rounded-lg text-xs font-bold uppercase shadow-sm hover:bg-black transition flex items-center justify-center">
+                                <i class="fa-solid fa-plus md:mr-1"></i> <span class="hidden md:inline">Thêm</span>
                             </button>
                         }
                     </div>
@@ -98,26 +92,25 @@ import { LabelPrintComponent } from '../labels/label-print.component';
             }
         </div>
 
-        <!-- LIST TABLE (HYBRID RESPONSIVE) -->
+        <!-- LIST TABLE (HIGH DENSITY) -->
         @if (activeTab() === 'list') {
-            <div class="flex-1 overflow-y-auto px-0 py-0 custom-scrollbar relative bg-gray-50/50">
+            <div class="flex-1 overflow-y-auto px-0 py-0 custom-scrollbar relative bg-slate-50/30">
                 <table class="w-full text-left border-collapse align-middle relative">
-                    <!-- Header: Hidden on Mobile, Sticky on Desktop -->
-                    <thead class="hidden md:table-header-group text-gray-500 text-[11px] font-bold uppercase bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                    <!-- Header: Sticky -->
+                    <thead class="hidden md:table-header-group text-slate-500 text-[10px] font-bold uppercase bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            <th class="px-4 py-3 pl-6 w-[40%]">Hóa chất / Vật tư</th>
-                            <th class="px-4 py-3 border-l border-gray-200">Phân loại</th>
-                            <th class="px-4 py-3 text-center border-l border-gray-200 w-24">ĐVT</th>
-                            <th class="px-4 py-3 text-center border-l border-gray-200">Trạng thái</th>
-                            <th class="px-4 py-3 text-right border-l border-gray-200">Tồn kho</th>
+                            <th class="px-4 py-2 pl-6 w-[40%]">Hóa chất / Vật tư</th>
+                            <th class="px-4 py-2 border-l border-slate-100">Phân loại</th>
+                            <th class="px-4 py-2 text-center border-l border-slate-100 w-20">ĐVT</th>
+                            <th class="px-4 py-2 text-right border-l border-slate-100 w-32">Tồn kho (Gauge)</th>
                             @if (auth.canEditInventory()) {
-                                <th class="px-4 py-3 text-right border-l border-gray-200 w-32">Cập nhật nhanh</th>
+                                <th class="px-4 py-2 text-right border-l border-slate-100 w-28">Update</th>
                             }
-                            <th class="px-4 py-3 text-center w-16 border-l border-gray-200"></th>
+                            <th class="px-4 py-2 text-center w-12 border-l border-slate-100"></th>
                         </tr>
                     </thead>
                     
-                    <tbody class="text-sm text-gray-600 divide-y divide-gray-100 md:divide-none bg-transparent">
+                    <tbody class="text-sm text-slate-600 divide-y divide-slate-100 md:divide-none bg-transparent">
                         @if(isLoading()) {
                             @for(i of [1,2,3,4,5,6]; track i) {
                                 <tr class="bg-white md:bg-transparent block md:table-row mb-3 md:mb-0 p-4 md:p-0 rounded-xl md:rounded-none border md:border-0 shadow-sm md:shadow-none">
@@ -131,122 +124,93 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                             }
                         } @else {
                             @for (item of items(); track item.id) {
-                                <!-- 
-                                    HYBRID ROW: 
-                                    - Mobile: Block (Card style), Rounded, Shadow, Spaced
-                                    - Desktop: Table Row, Zebra Striping, Bordered Columns, Compact 
-                                -->
-                                <tr class="block md:table-row bg-white md:even:bg-gray-50/60 mb-3 md:mb-0 mx-3 md:mx-0 rounded-xl md:rounded-none border border-gray-100 md:border-0 md:border-b md:border-gray-100 shadow-sm md:shadow-none hover:bg-blue-50/50 transition group cursor-pointer" 
+                                <!-- DENSE ROW -->
+                                <tr class="block md:table-row bg-white md:even:bg-slate-50/50 mb-3 md:mb-0 mx-3 md:mx-0 rounded-xl md:rounded-none border border-slate-100 md:border-0 md:border-b md:border-slate-100 hover:bg-blue-50/50 transition group cursor-pointer" 
                                     (click)="openModal(item)">
                                     
                                     <!-- Name & Icon -->
-                                    <td class="block md:table-cell px-4 py-3 pl-4 md:pl-6 border-b md:border-b-0 border-gray-50">
+                                    <td class="block md:table-cell px-4 py-2 pl-4 md:pl-6 border-b md:border-b-0 border-slate-50">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0 transition-transform group-hover:scale-110"
+                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0 transition-transform group-hover:scale-105"
                                                  [class]="getIconGradient(item)">
-                                                <i class="fa-solid text-sm" [class]="getIcon(item.category)"></i>
+                                                <i class="fa-solid text-xs" [class]="getIcon(item.category)"></i>
                                             </div>
                                             <div class="flex flex-col min-w-0 flex-1">
                                                 <div class="flex justify-between md:block">
-                                                    <h6 class="mb-0 text-sm font-bold text-gray-700 leading-tight truncate pr-2 group-hover:text-blue-600 transition-colors">
+                                                    <h6 class="mb-0 text-xs font-bold text-slate-700 leading-tight truncate pr-2 group-hover:text-blue-600 transition-colors">
                                                         {{item.name || item.id}}
                                                     </h6>
-                                                    <!-- Mobile Only Stock Display (Top Right of Card) -->
-                                                    <div class="md:hidden font-mono font-bold text-gray-800 text-sm">
-                                                        {{formatNum(item.stock)}} <span class="text-xs text-gray-400 font-normal">{{item.unit}}</span>
+                                                    <!-- Mobile Only Stock -->
+                                                    <div class="md:hidden font-mono font-bold text-slate-800 text-xs">
+                                                        {{formatNum(item.stock)}} <span class="text-[10px] text-slate-400 font-normal">{{item.unit}}</span>
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-2 mt-0.5">
-                                                    <span class="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 rounded border border-gray-200">{{item.id}}</span>
-                                                    <!-- Mobile Status Dot -->
-                                                    @if (item.stock <= 0) { 
-                                                        <div class="md:hidden w-2 h-2 rounded-full bg-red-500 animate-pulse"></div> 
-                                                    } @else if (isLowStock(item)) { 
-                                                        <div class="md:hidden w-2 h-2 rounded-full bg-orange-500"></div> 
-                                                    }
+                                                    <span class="text-[9px] text-slate-400 font-mono bg-slate-100 px-1 rounded border border-slate-200">{{item.id}}</span>
+                                                    @if(item.stock <= 0) { <span class="md:hidden text-[9px] text-red-600 font-bold bg-red-50 px-1 rounded">Hết hàng</span> }
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     
                                     <!-- Category -->
-                                    <td class="block md:table-cell px-4 py-2 md:py-3 border-l-0 md:border-l border-gray-100">
-                                        <div class="flex justify-between md:block">
-                                            <span class="md:hidden text-xs font-bold text-gray-400 uppercase">Phân loại</span>
-                                            <span class="text-xs font-bold text-gray-500 uppercase">{{item.category}}</span>
-                                        </div>
+                                    <td class="hidden md:table-cell px-4 py-2 border-l border-slate-50">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase bg-white border border-slate-200 px-2 py-0.5 rounded">{{item.category}}</span>
                                     </td>
                                     
                                     <!-- Unit -->
-                                    <td class="block md:table-cell px-4 py-2 md:py-3 text-left md:text-center border-l-0 md:border-l border-gray-100">
-                                        <div class="flex justify-between md:justify-center">
-                                            <span class="md:hidden text-xs font-bold text-gray-400 uppercase">Đơn vị</span>
-                                            <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">{{item.unit}}</span>
-                                        </div>
+                                    <td class="hidden md:table-cell px-4 py-2 text-center border-l border-slate-50">
+                                        <span class="text-[10px] font-bold text-slate-500">{{item.unit}}</span>
                                     </td>
                                     
-                                    <!-- Status (High Density Dots) -->
-                                    <td class="block md:table-cell px-4 py-2 md:py-3 text-left md:text-center border-l-0 md:border-l border-gray-100">
-                                        <div class="flex justify-between md:justify-center items-center h-full">
-                                            <span class="md:hidden text-xs font-bold text-gray-400 uppercase">Trạng thái</span>
-                                            @if (item.stock <= 0) {
-                                                <div class="flex items-center gap-2 text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100 w-fit">
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></div><span class="text-[10px] font-bold uppercase">Hết hàng</span>
-                                                </div>
-                                            } @else if (isLowStock(item)) {
-                                                <div class="flex items-center gap-2 text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 w-fit">
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div><span class="text-[10px] font-bold uppercase">Sắp hết</span>
-                                                </div>
-                                            } @else {
-                                                <div class="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100 w-fit opacity-80">
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span class="text-[10px] font-bold uppercase">Sẵn sàng</span>
-                                                </div>
-                                            }
+                                    <!-- Stock & Gauge (Desktop) -->
+                                    <td class="hidden md:table-cell px-4 py-2 text-right border-l border-slate-50 bg-white md:bg-transparent min-w-[140px]">
+                                        <div class="flex flex-col items-end w-full">
+                                            <div class="flex items-center gap-2 w-full justify-end">
+                                                <span class="font-mono font-bold text-sm tracking-tight" [class.text-red-600]="item.stock <= 0" [class.text-slate-700]="item.stock > 0">{{formatNum(item.stock)}}</span>
+                                                @if(item.stock <= (item.threshold || 5) && item.stock > 0) { <i class="fa-solid fa-circle-exclamation text-[10px] text-orange-500" title="Sắp hết"></i> }
+                                            </div>
+                                            <!-- Stock Gauge -->
+                                            @let percent = getStockPercent(item);
+                                            <div class="w-full h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+                                                <div class="h-full rounded-full transition-all duration-500" 
+                                                     [style.width.%]="percent"
+                                                     [class.bg-emerald-500]="percent > 40"
+                                                     [class.bg-orange-500]="percent <= 40 && percent > 10"
+                                                     [class.bg-red-500]="percent <= 10"></div>
+                                            </div>
                                         </div>
-                                    </td>
-                                    
-                                    <!-- Stock (Desktop Only - Mobile handles in Name col) -->
-                                    <td class="hidden md:table-cell px-4 py-3 text-right border-l border-gray-100 bg-white md:bg-transparent">
-                                        <h6 class="font-bold text-gray-800 mb-0 font-mono text-sm tracking-tight" [class.text-red-500]="item.stock <= 0">
-                                            {{formatNum(item.stock)}}
-                                        </h6>
                                     </td>
                                     
                                     <!-- Quick Update -->
                                     @if (auth.canEditInventory()) {
-                                        <td class="block md:table-cell px-4 py-2 md:py-3 text-right border-l-0 md:border-l border-gray-100" (click)="$event.stopPropagation()">
-                                            <div class="flex items-center justify-between md:justify-end gap-2 h-full">
-                                                <span class="md:hidden text-xs font-bold text-gray-400 uppercase">Nhập/Xuất nhanh</span>
-                                                <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition duration-200">
-                                                    <input #quickInput type="number" 
-                                                           class="w-16 px-2 py-1 text-xs border border-gray-200 rounded-lg text-center focus:border-fuchsia-500 outline-none transition shadow-sm font-bold text-gray-700 bg-white font-mono" 
-                                                           placeholder="+/-"
-                                                           (keyup.enter)="quickUpdate(item, quickInput.value); quickInput.value=''">
-                                                    <button (click)="quickUpdate(item, quickInput.value); quickInput.value=''" 
-                                                            class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm active:scale-90">
-                                                        <i class="fa-solid fa-check text-[10px]"></i>
-                                                    </button>
-                                                </div>
+                                        <td class="hidden md:table-cell px-4 py-2 text-right border-l border-slate-50" (click)="$event.stopPropagation()">
+                                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
+                                                <input #quickInput type="number" 
+                                                       class="w-14 px-1 py-0.5 text-[10px] border border-slate-200 rounded text-center focus:border-fuchsia-500 outline-none transition font-bold text-slate-700 font-mono" 
+                                                       placeholder="+/-"
+                                                       (keyup.enter)="quickUpdate(item, quickInput.value); quickInput.value=''">
+                                                <button (click)="quickUpdate(item, quickInput.value); quickInput.value=''" 
+                                                        class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm active:scale-90">
+                                                    <i class="fa-solid fa-check text-[10px]"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     }
 
                                     <!-- Actions -->
-                                    <td class="hidden md:table-cell px-4 py-3 text-center border-l border-gray-100" (click)="$event.stopPropagation()">
+                                    <td class="hidden md:table-cell px-4 py-2 text-center border-l border-slate-50" (click)="$event.stopPropagation()">
                                         @if (auth.canEditInventory()) {
                                             <div class="opacity-0 group-hover:opacity-100 transition flex justify-center gap-1">
-                                                <button (click)="openModal(item)" class="w-7 h-7 rounded bg-white border border-gray-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 transition flex items-center justify-center shadow-sm">
-                                                    <i class="fa-solid fa-pen text-[10px]"></i>
-                                                </button>
-                                                <button (click)="deleteItem(item)" class="w-7 h-7 rounded bg-white border border-gray-200 text-red-500 hover:border-red-300 hover:text-red-700 transition flex items-center justify-center shadow-sm">
-                                                    <i class="fa-solid fa-trash text-[10px]"></i>
+                                                <button (click)="openModal(item)" class="text-blue-600 hover:text-blue-800 transition px-1" title="Sửa">
+                                                    <i class="fa-solid fa-pen text-xs"></i>
                                                 </button>
                                             </div>
                                         }
                                     </td>
                                 </tr>
                             } @empty {
-                                <tr class="block md:table-row"><td colspan="7" class="p-10 text-center text-gray-400 italic">Không tìm thấy dữ liệu.</td></tr>
+                                <tr class="block md:table-row"><td colspan="7" class="p-10 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr>
                             }
                         }
                     </tbody>
@@ -254,7 +218,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                 
                 @if (hasMore() && !isLoading()) {
                     <div class="text-center p-4">
-                        <button (click)="loadMore()" class="text-xs font-bold text-gray-500 hover:text-fuchsia-600 transition active:scale-95 bg-white border border-gray-200 px-4 py-2 rounded-full shadow-sm hover:shadow">
+                        <button (click)="loadMore()" class="text-xs font-bold text-slate-500 hover:text-fuchsia-600 transition active:scale-95 bg-white border border-slate-200 px-4 py-2 rounded-full shadow-sm hover:shadow">
                             Xem thêm...
                         </button>
                     </div>
@@ -262,75 +226,74 @@ import { LabelPrintComponent } from '../labels/label-print.component';
             </div>
         }
 
-        <!-- CAPACITY TAB -->
+        <!-- CAPACITY TAB (Unchanged logic, just denser style) -->
         @if (activeTab() === 'capacity') {
             <div class="flex flex-col md:flex-row h-full overflow-hidden">
-                <div class="w-full md:w-72 border-r border-gray-100 overflow-y-auto p-4 bg-gray-50/50 h-1/3 md:h-full shrink-0">
-                    <h6 class="text-xs font-bold text-gray-400 uppercase pl-2 mb-3 sticky top-0 bg-gray-50/50 backdrop-blur-sm py-1 z-10">Chọn Quy trình</h6>
+                <div class="w-full md:w-72 border-r border-slate-100 overflow-y-auto p-3 bg-slate-50/50 h-1/3 md:h-full shrink-0">
+                    <h6 class="text-[10px] font-bold text-slate-400 uppercase pl-1 mb-2 sticky top-0 bg-slate-50/50 backdrop-blur-sm py-1 z-10">Chọn Quy trình</h6>
                     @for (sop of state.sops(); track sop.id) {
                         <div (click)="selectedSopForCap.set(sop)" 
-                             class="p-3 rounded-xl mb-2 cursor-pointer transition flex items-center gap-3 hover:bg-white hover:shadow-soft-sm active:scale-95 border"
-                             [class]="selectedSopForCap()?.id === sop.id ? 'bg-white shadow-soft-md border-fuchsia-200 ring-1 ring-fuchsia-100' : 'border-transparent'">
+                             class="p-2.5 rounded-lg mb-1.5 cursor-pointer transition flex items-center gap-3 hover:bg-white hover:shadow-sm active:scale-95 border"
+                             [class]="selectedSopForCap()?.id === sop.id ? 'bg-white shadow-sm border-fuchsia-200 ring-1 ring-fuchsia-100' : 'border-transparent'">
                             <div>
-                                <div class="text-[10px] font-bold text-gray-400 uppercase">{{sop.category}}</div>
-                                <div class="text-sm font-bold text-gray-700 leading-tight line-clamp-1">{{sop.name}}</div>
+                                <div class="text-[9px] font-bold text-slate-400 uppercase">{{sop.category}}</div>
+                                <div class="text-xs font-bold text-slate-700 leading-tight line-clamp-1">{{sop.name}}</div>
                             </div>
                         </div>
                     }
                 </div>
-                <div class="flex-1 p-4 md:p-8 overflow-y-auto bg-white h-2/3 md:h-full relative">
+                <div class="flex-1 p-4 md:p-6 overflow-y-auto bg-white h-2/3 md:h-full relative">
                     @if(capacityLoading()) {
                         <div class="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col">
                             <i class="fa-solid fa-spinner fa-spin text-2xl text-fuchsia-500 mb-2"></i>
-                            <span class="text-sm font-bold text-gray-500">Đang tải dữ liệu kho...</span>
+                            <span class="text-xs font-bold text-slate-500">Đang tải dữ liệu kho...</span>
                         </div>
                     }
 
                     @if(selectedSopForCap(); as sop) {
-                        <div class="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
+                        <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
                             <div>
-                                <h4 class="font-bold text-gray-800 text-lg md:text-xl">{{sop.name}}</h4>
-                                <div class="flex gap-2 mt-2">
-                                    <button (click)="capacityMode.set('marginal')" class="px-3 py-1.5 text-xs font-bold rounded-lg border transition active:scale-95" [class]="capacityMode() === 'marginal' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' : 'border-gray-200 text-gray-500'">1 Mẫu</button>
-                                    <button (click)="capacityMode.set('standard')" class="px-3 py-1.5 text-xs font-bold rounded-lg border transition active:scale-95" [class]="capacityMode() === 'standard' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' : 'border-gray-200 text-gray-500'">Mẻ Chuẩn</button>
+                                <h4 class="font-bold text-slate-800 text-lg">{{sop.name}}</h4>
+                                <div class="flex gap-2 mt-1">
+                                    <button (click)="capacityMode.set('marginal')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'marginal' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' : 'border-slate-200 text-slate-500'">1 Mẫu</button>
+                                    <button (click)="capacityMode.set('standard')" class="px-2 py-1 text-[10px] font-bold rounded border transition active:scale-95" [class]="capacityMode() === 'standard' ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' : 'border-slate-200 text-slate-500'">Mẻ Chuẩn</button>
                                 </div>
                             </div>
-                            <div class="text-right bg-gray-50 p-3 md:p-4 rounded-xl border border-gray-100 w-full md:w-auto flex justify-between md:block items-center">
-                                <div class="text-xs font-bold text-gray-400 uppercase">Năng lực tối đa</div>
-                                <div class="text-2xl md:text-3xl font-bold text-fuchsia-600">{{(capacityResult()?.maxBatches || 0)}} <span class="text-sm text-gray-400 font-normal">mẻ</span></div>
+                            <div class="text-right bg-slate-50 p-2 rounded-lg border border-slate-100 w-full md:w-auto flex justify-between md:block items-center">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase">Năng lực tối đa</div>
+                                <div class="text-xl md:text-2xl font-black text-fuchsia-600">{{(capacityResult()?.maxBatches || 0)}} <span class="text-xs text-slate-400 font-normal">mẻ</span></div>
                             </div>
                         </div>
                         
                         @if (capacityResult()?.limitingFactor) {
-                           <div class="mb-6 bg-orange-50 border border-orange-100 rounded-lg p-4 flex items-start gap-3 animate-bounce-in">
-                              <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-1"></i>
+                           <div class="mb-4 bg-orange-50 border border-orange-100 rounded-lg p-3 flex items-start gap-2 animate-bounce-in">
+                              <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-0.5 text-xs"></i>
                               <div>
-                                 <div class="text-xs font-bold text-orange-800 uppercase">Yếu tố giới hạn (Bottleneck)</div>
-                                 <p class="text-sm text-orange-700 mt-1">
+                                 <div class="text-[10px] font-bold text-orange-800 uppercase">Yếu tố giới hạn (Bottleneck)</div>
+                                 <p class="text-xs text-orange-700 mt-0.5">
                                     Quy trình bị giới hạn bởi <b>{{resolveCapacityName(capacityResult()?.limitingFactor || '')}}</b>. 
-                                    Vui lòng bổ sung kho để chạy thêm mẫu.
                                  </p>
                               </div>
                            </div>
                         }
 
-                        <div class="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                           <table class="w-full text-sm text-left">
-                              <thead class="bg-gray-50 text-[10px] text-gray-500 uppercase font-bold">
+                        <div class="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                           <table class="w-full text-xs text-left">
+                              <thead class="bg-slate-50 text-[9px] text-slate-500 uppercase font-bold">
                                  <tr>
-                                    <th class="px-4 py-3 border-b border-gray-100">Hóa chất</th>
-                                    <th class="px-4 py-3 text-right border-b border-gray-100">Tồn kho</th>
-                                    <th class="px-4 py-3 text-right border-b border-gray-100">Cần / Mẻ</th>
-                                    <th class="px-4 py-3 text-center border-b border-gray-100">Đáp ứng (Mẻ)</th>
+                                    <th class="px-4 py-2 border-b border-slate-100">Hóa chất</th>
+                                    <th class="px-4 py-2 text-right border-b border-slate-100">Tồn kho</th>
+                                    <th class="px-4 py-2 text-right border-b border-slate-100">Cần / Mẻ</th>
+                                    <th class="px-4 py-2 text-center border-b border-slate-100">Đáp ứng (Mẻ)</th>
                                  </tr>
                               </thead>
-                              <tbody class="divide-y divide-gray-50">
+                              <tbody class="divide-y divide-slate-50">
                                  @for (row of capacityResult()?.details; track row.name) {
-                                    <tr class="hover:bg-gray-50 transition">
-                                       <td class="px-4 py-3 font-bold text-gray-700 border-r border-gray-50/50">{{resolveCapacityName(row.name)}}</td>
-                                       <td class="px-4 py-3 text-right text-gray-500 font-mono border-r border-gray-50/50">{{formatNum(row.stock)}}</td>
-                                       <td class="px-4 py-3 text-right text-gray-500 font-mono border-r border-gray-50/50">{{formatNum(row.need)}}</td>
-                                       <td class="px-4 py-3 text-center font-bold font-mono" 
+                                    <tr class="hover:bg-slate-50 transition">
+                                       <td class="px-4 py-2 font-bold text-slate-700 border-r border-slate-50/50">{{resolveCapacityName(row.name)}}</td>
+                                       <td class="px-4 py-2 text-right text-slate-500 font-mono border-r border-slate-50/50">{{formatNum(row.stock)}}</td>
+                                       <td class="px-4 py-2 text-right text-slate-500 font-mono border-r border-slate-50/50">{{formatNum(row.need)}}</td>
+                                       <td class="px-4 py-2 text-center font-bold font-mono" 
                                            [class.text-red-500]="row.batches === (capacityResult()?.maxBatches ?? 0)"
                                            [class.text-fuchsia-600]="row.batches > (capacityResult()?.maxBatches ?? 0)">
                                           {{formatNum(row.batches)}}
@@ -342,9 +305,9 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                         </div>
 
                     } @else {
-                        <div class="h-full flex items-center justify-center text-gray-300 flex-col">
+                        <div class="h-full flex items-center justify-center text-slate-300 flex-col">
                             <i class="fa-solid fa-chart-pie text-4xl mb-2"></i>
-                            <span class="text-sm font-bold">Chọn quy trình để phân tích</span>
+                            <span class="text-xs font-bold">Chọn quy trình để phân tích</span>
                         </div>
                     }
                 </div>
@@ -361,32 +324,32 @@ import { LabelPrintComponent } from '../labels/label-print.component';
       @defer (when showModal()) {
          @if (showModal()) {
             <div class="fixed inset-0 z-[99] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/30 backdrop-blur-sm fade-in" (click)="closeModal()">
-                <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-soft-xl w-full max-w-2xl overflow-hidden flex flex-col h-[85vh] md:h-auto md:max-h-[90vh] animate-slide-up" (click)="$event.stopPropagation()">
+                <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col h-[85vh] md:h-auto md:max-h-[90vh] animate-slide-up" (click)="$event.stopPropagation()">
                    
-                   <div class="p-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+                   <div class="p-4 border-b border-slate-100 flex justify-between items-center shrink-0">
                       <div>
-                          <h5 class="font-bold text-gray-800 text-lg">{{ isEditing() ? 'Cập nhật' : 'Thêm mới' }}</h5>
-                          <p class="text-xs text-gray-400">Thông tin chi tiết hóa chất</p>
+                          <h5 class="font-bold text-slate-800 text-base">{{ isEditing() ? 'Cập nhật' : 'Thêm mới' }}</h5>
+                          <p class="text-[10px] text-slate-400">Thông tin chi tiết hóa chất</p>
                       </div>
-                      <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition active:scale-90"><i class="fa-solid fa-times"></i></button>
+                      <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition active:scale-90"><i class="fa-solid fa-times"></i></button>
                    </div>
                    
-                   <div class="flex-1 overflow-y-auto p-5 md:p-6 bg-gray-50 custom-scrollbar">
-                       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-5">
+                   <div class="flex-1 overflow-y-auto p-5 md:p-6 bg-slate-50 custom-scrollbar">
+                       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                            <!-- Form Controls -->
                            <div>
-                               <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Tên Hóa chất</label>
-                               <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-fuchsia-500 outline-none transition shadow-soft-sm font-bold text-gray-700 bg-white" placeholder="Nhập tên hóa chất...">
+                               <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Tên Hóa chất</label>
+                               <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-fuchsia-500 outline-none transition shadow-sm font-bold text-slate-700 bg-white" placeholder="Nhập tên hóa chất...">
                            </div>
                            
                            <div class="grid grid-cols-2 gap-4">
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Mã ID</label>
-                                   <input formControlName="id" [readonly]="isEditing()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-xs font-mono text-gray-600 outline-none shadow-soft-sm bg-gray-100 focus:bg-white transition" placeholder="auto-gen">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Mã ID</label>
+                                   <input formControlName="id" [readonly]="isEditing()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-600 outline-none shadow-sm bg-slate-100 focus:bg-white transition" placeholder="auto-gen">
                                </div>
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Phân loại</label>
-                                   <select formControlName="category" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none shadow-soft-sm bg-white cursor-pointer">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Phân loại</label>
+                                   <select formControlName="category" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none shadow-sm bg-white cursor-pointer h-[34px]">
                                        <option value="reagent">Hóa chất</option>
                                        <option value="consumable">Vật tư</option>
                                        <option value="kit">Kit</option>
@@ -394,14 +357,14 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                </div>
                            </div>
 
-                           <div class="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                           <div class="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Tồn kho</label>
-                                   <input type="number" formControlName="stock" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-bold text-fuchsia-600 outline-none bg-gray-50 focus:bg-white transition text-center">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Tồn kho</label>
+                                   <input type="number" formControlName="stock" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-lg font-bold text-fuchsia-600 outline-none bg-slate-50 focus:bg-white transition text-center">
                                </div>
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Đơn vị</label>
-                                   <select formControlName="unit" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-gray-50 focus:bg-white transition h-[52px]">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Đơn vị</label>
+                                   <select formControlName="unit" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs outline-none bg-slate-50 focus:bg-white transition h-[46px]">
                                        @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.label}}</option> }
                                    </select>
                                </div>
@@ -409,26 +372,26 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                            
                            <div class="grid grid-cols-2 gap-4">
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Vị trí</label>
-                                   <input formControlName="location" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none shadow-soft-sm bg-white" placeholder="VD: Tủ A">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Vị trí</label>
+                                   <input formControlName="location" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none shadow-sm bg-white" placeholder="VD: Tủ A">
                                </div>
                                <div>
-                                   <label class="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">Ngưỡng báo động</label>
-                                   <input type="number" formControlName="threshold" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none shadow-soft-sm bg-white font-bold text-orange-500" placeholder="5">
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Ngưỡng báo động</label>
+                                   <input type="number" formControlName="threshold" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none shadow-sm bg-white font-bold text-orange-500" placeholder="5">
                                </div>
                            </div>
                            
-                           <div class="pt-2 border-t border-gray-200">
-                               <label class="text-xs font-bold text-slate-700 uppercase ml-1 block mb-1">Lý do thay đổi <span class="text-red-500">*</span></label>
-                               <input formControlName="reason" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none shadow-soft-sm bg-yellow-50 focus:bg-white transition placeholder-slate-400" placeholder="VD: Nhập kho, Kiểm kê, Vỡ hỏng..." required>
-                               <p class="text-[10px] text-slate-400 mt-1 italic">Yêu cầu bắt buộc để ghi nhật ký (Audit Trail).</p>
+                           <div class="pt-2 border-t border-slate-200">
+                               <label class="text-[10px] font-bold text-slate-700 uppercase ml-1 block mb-1">Lý do thay đổi <span class="text-red-500">*</span></label>
+                               <input formControlName="reason" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs outline-none shadow-sm bg-yellow-50 focus:bg-white transition placeholder-slate-400" placeholder="VD: Nhập kho, Kiểm kê, Vỡ hỏng..." required>
+                               <p class="text-[9px] text-slate-400 mt-1 italic">Yêu cầu bắt buộc để ghi nhật ký (Audit Trail).</p>
                            </div>
 
                            <div class="pt-4 flex gap-3">
                                @if(isEditing()) {
-                                   <button type="button" (click)="deleteItem($any(form.getRawValue()))" class="flex-1 bg-red-50 text-red-600 py-3.5 rounded-xl font-bold text-sm shadow-sm hover:bg-red-100 transition active:scale-95">Xóa</button>
+                                   <button type="button" (click)="deleteItem($any(form.getRawValue()))" class="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-red-100 transition active:scale-95">Xóa</button>
                                }
-                               <button type="submit" [disabled]="isLoading()" class="flex-[3] bg-gradient-soft text-white py-3.5 rounded-xl font-bold text-sm shadow-soft-md hover:shadow-soft-xl transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+                               <button type="submit" [disabled]="isLoading()" class="flex-[3] bg-slate-800 text-white py-3 rounded-xl font-bold text-xs shadow-md hover:shadow-lg hover:bg-black transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
                                    {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }}
                                </button>
                            </div>
@@ -542,6 +505,13 @@ export class InventoryComponent implements OnDestroy {
   }
   isLowStock(item: InventoryItem) { return item.stock <= (item.threshold || 5); }
   
+  // Stock Percentage for Gauge
+  getStockPercent(item: InventoryItem): number {
+      const safeLevel = (item.threshold || 5) * 3; // Assume 3x threshold is "Safe/Full"
+      const ratio = item.stock / safeLevel;
+      return Math.min(ratio * 100, 100);
+  }
+  
   // Resolve name specifically for capacity tab using local map
   resolveCapacityName(id: string): string {
     const item = this.capacityInventoryMap()[id];
@@ -612,7 +582,7 @@ export class InventoryComponent implements OnDestroy {
       this.isLoading.set(true);
       try { 
           const raw = this.form.getRawValue();
-          const reason = raw.reason || ''; // FIX TS2345
+          const reason = raw.reason || ''; 
           const { reason: _, ...itemData } = raw; 
 
           await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason); 
