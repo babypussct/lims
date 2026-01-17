@@ -1,4 +1,3 @@
-
 import { Injectable, signal, computed, inject, effect, OnDestroy, Injector } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
@@ -31,7 +30,6 @@ export class StateService implements OnDestroy {
   private listeners: Unsubscribe[] = [];
 
   // --- DATA SIGNALS ---
-  // Inventory: Removed global listener to support lazy loading.
   inventory = signal<InventoryItem[]>([]);
   inventoryMap = computed(() => {
       const map: Record<string, InventoryItem> = {};
@@ -77,7 +75,7 @@ export class StateService implements OnDestroy {
       } else {
         this.cleanupListeners();
       }
-    }, { allowSignalWrites: true }); // FIX: NG0600 - Allow writing to signals inside effect
+    }, { allowSignalWrites: true }); 
   }
 
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
@@ -123,7 +121,7 @@ export class StateService implements OnDestroy {
     }, handleError('Approved Requests'));
     this.listeners.push(appSub);
 
-    // 4. Logs (Limit 100)
+    // 4. Logs (Limit 100) - Lightweight now
     const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(100));
     const logSub = onSnapshot(logQuery, (s) => {
         const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
@@ -218,12 +216,13 @@ export class StateService implements OnDestroy {
         user: this.getCurrentUserName(), 
         inputs: formInputs, 
         margin: formInputs.safetyMargin || 0,
-        analysisDate: formInputs.analysisDate || null // Save analysis date
+        analysisDate: formInputs.analysisDate || null 
       });
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
   
+  // --- UPDATED: Split Print Data Logic ---
   async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<void> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return; }
     
@@ -258,10 +257,11 @@ export class StateService implements OnDestroy {
             user: this.getCurrentUserName(), 
             inputs: formInputs, 
             margin: formInputs.safetyMargin || 0,
-            analysisDate: formInputs.analysisDate || null // Save analysis date
+            analysisDate: formInputs.analysisDate || null
         });
 
-        // Pass analysisDate into printData so it shows on the log/print
+        // 1. Create Heavy Print Job Doc
+        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = { 
             sop, 
             inputs: formInputs, 
@@ -269,10 +269,26 @@ export class StateService implements OnDestroy {
             items: calculatedItems,
             analysisDate: formInputs.analysisDate
         };
+        transaction.set(printJobRef, { 
+            ...sanitizeForFirebase(printData), 
+            createdAt: serverTimestamp(),
+            createdBy: this.getCurrentUserName()
+        });
+
+        // 2. Create Lightweight Log linked to Print Job
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         transaction.set(logRef, {
-          action: 'DIRECT_APPROVE', details: `Duyệt trực tiếp SOP: ${sop.name}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(),
-          printable: true, printData: sanitizeForFirebase(printData)
+          action: 'DIRECT_APPROVE', 
+          details: `Duyệt trực tiếp SOP: ${sop.name}`, 
+          timestamp: serverTimestamp(), 
+          user: this.getCurrentUserName(),
+          printable: true, 
+          printJobId: printJobRef.id,
+          sopBasicInfo: { 
+              name: sop.name, 
+              category: sop.category,
+              ref: sop.ref 
+          }
         });
       });
       this.toast.show('Duyệt thành công!', 'success');
@@ -282,6 +298,7 @@ export class StateService implements OnDestroy {
     }
   }
 
+  // --- UPDATED: Split Print Data Logic ---
   async approveRequest(req: Request) {
     if (!this.auth.canApprove()) return;
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
@@ -324,7 +341,8 @@ export class StateService implements OnDestroy {
                 }
             });
 
-            // Ensure analysisDate from request is passed to printData
+            // 1. Create Heavy Print Job
+            const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
             const printData: PrintData = { 
                 sop, 
                 inputs: req.inputs, 
@@ -332,9 +350,25 @@ export class StateService implements OnDestroy {
                 items: calculatedItems,
                 analysisDate: req.analysisDate 
             };
+            transaction.set(printJobRef, { 
+                ...sanitizeForFirebase(printData),
+                createdAt: serverTimestamp(),
+                createdBy: this.getCurrentUserName()
+            });
+
+            // 2. Create Log Linked
             transaction.set(logRef, {
-              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(),
-              printable: true, printData: sanitizeForFirebase(printData)
+              action: 'APPROVE_REQUEST', 
+              details: `Duyệt yêu cầu: ${req.sopName}`, 
+              timestamp: serverTimestamp(), 
+              user: this.getCurrentUserName(),
+              printable: true,
+              printJobId: printJobRef.id,
+              sopBasicInfo: { 
+                  name: sop.name, 
+                  category: sop.category,
+                  ref: sop.ref 
+              }
             });
         } else {
             transaction.set(logRef, {
@@ -377,17 +411,33 @@ export class StateService implements OnDestroy {
     } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
   }
 
-  async deletePrintLog(logId: string, sopName: string) { 
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      await deleteDoc(ref);
+  async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
+      const batch = writeBatch(this.fb.db);
+      
+      const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+      batch.delete(logRef);
+
+      if (printJobId) {
+          const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
+          batch.delete(jobRef);
+      }
+
+      await batch.commit();
       this.toast.show('Đã xóa phiếu in');
   }
   
-  async deleteSelectedPrintLogs(logIds: string[]) { 
+  async deleteSelectedPrintLogs(logs: Log[]) { 
       const batch = writeBatch(this.fb.db);
-      logIds.forEach(id => batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', id)));
+      
+      logs.forEach(log => {
+          batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id));
+          if (log.printJobId) {
+              batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
+          }
+      });
+      
       await batch.commit();
-      this.toast.show(`Đã xóa ${logIds.length} phiếu`);
+      this.toast.show(`Đã xóa ${logs.length} phiếu`);
   }
   
   async clearAllLogs() { 
@@ -395,7 +445,12 @@ export class StateService implements OnDestroy {
       if (logs.length === 0) return;
       if (await this.confirmationService.confirm({ message: 'Xóa toàn bộ nhật ký hiển thị?', confirmText: 'Xóa', isDangerous: true })) {
           const batch = writeBatch(this.fb.db);
-          logs.forEach(l => batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', l.id)));
+          logs.forEach(l => {
+              batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', l.id));
+              if (l.printJobId) {
+                  batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', l.printJobId));
+              }
+          });
           await batch.commit();
           this.toast.show('Đã xóa logs');
       }

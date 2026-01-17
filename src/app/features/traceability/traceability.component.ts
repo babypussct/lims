@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc } from 'firebase/firestore';
-import { Log } from '../../core/models/log.model';
+import { Log, PrintData } from '../../core/models/log.model';
 import { PrintService } from '../../core/services/print.service';
 import { formatDate, formatNum } from '../../shared/utils/utils';
 
@@ -24,7 +24,7 @@ declare var QRious: any;
             </div>
         }
 
-        <!-- ERROR STATE: INVALID CERTIFICATE -->
+        <!-- ERROR STATE -->
         @else if (errorMsg()) {
             <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-center relative border border-red-100">
                 <div class="h-2 bg-red-600 w-full"></div>
@@ -39,24 +39,21 @@ declare var QRious: any;
                     <h2 class="text-2xl font-black text-red-600 mb-2 uppercase tracking-tight">Chứng nhận Vô hiệu</h2>
                     <div class="bg-red-50 text-red-800 px-4 py-3 rounded-xl text-sm font-medium mb-6 border border-red-100">
                         <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                        Mã định danh <b>{{searchId()}}</b> không tồn tại trên hệ thống hoặc đã bị thu hồi.
+                        Mã định danh <b>{{searchId()}}</b> không tồn tại hoặc dữ liệu bị lỗi.
                     </div>
                     
                     <p class="text-slate-500 text-xs mb-8 leading-relaxed">
-                        Phiếu kết quả này không có giá trị tham chiếu. Có thể dữ liệu gốc đã bị xóa bởi quản trị viên hoặc đây là mã giả mạo. Vui lòng liên hệ phòng kiểm nghiệm để xác thực.
+                        {{errorMsg()}}
                     </p>
 
                     <button (click)="goHome()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition shadow-lg">
                         <i class="fa-solid fa-house mr-2"></i> Về trang chủ
                     </button>
                 </div>
-                <div class="bg-slate-50 p-3 text-[10px] text-slate-400 font-mono border-t border-slate-100">
-                    Security Verification Protocol v1.0
-                </div>
             </div>
         }
 
-        <!-- SUCCESS STATE: DIGITAL CERTIFICATE -->
+        <!-- SUCCESS STATE -->
         @else {
             @if (logData(); as log) {
                 <!-- SAFE GUARD: Ensure printData exists and alias it to 'pd' for strict checking -->
@@ -219,8 +216,8 @@ declare var QRious: any;
   `
 })
 export class TraceabilityComponent implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private router: Router = inject(Router);
   private fb = inject(FirebaseService);
   private printService = inject(PrintService);
 
@@ -255,6 +252,25 @@ export class TraceabilityComponent implements OnInit {
 
           if (logSnap.exists()) {
               const data = { id: logSnap.id, ...logSnap.data() } as Log;
+              
+              // 1. New Data Structure: Fetch from 'print_jobs' if needed
+              if (!data.printData && data.printJobId) {
+                  try {
+                      const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${data.printJobId}`);
+                      const jobSnap = await getDoc(jobRef);
+                      if (jobSnap.exists()) {
+                          data.printData = jobSnap.data() as PrintData;
+                      } else {
+                          this.errorMsg.set('Dữ liệu chi tiết của phiếu này đã bị xóa.');
+                          return;
+                      }
+                  } catch (jobErr) {
+                      this.errorMsg.set('Lỗi tải chi tiết lệnh in.');
+                      return;
+                  }
+              }
+
+              // 2. Validate Data Presence
               if (data.printData) {
                   this.logData.set(data);
                   setTimeout(() => this.generateQr(id), 100);
@@ -262,7 +278,7 @@ export class TraceabilityComponent implements OnInit {
                   this.errorMsg.set('Dữ liệu này không chứa thông tin chi tiết (Print Data).');
               }
           } else {
-              this.errorMsg.set('Không tìm thấy bản ghi.');
+              this.errorMsg.set('Không tìm thấy bản ghi với ID này.');
           }
       } catch (e: any) {
           this.errorMsg.set('Lỗi kết nối: ' + e.message);

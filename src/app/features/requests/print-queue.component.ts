@@ -1,13 +1,14 @@
-
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-// Removed Router import
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
 import { Log } from '../../core/models/log.model';
 import { cleanName, formatNum, formatDate } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { FirebaseService } from '../../core/services/firebase.service';
+import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-print-queue',
@@ -27,9 +28,10 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                     <i class="fa-solid fa-trash-can"></i> Xóa đã chọn ({{selectedLogIds().size}})
                  </button>
                }
-               <button (click)="printSelected()" [disabled]="selectedLogIds().size === 0"
+               <button (click)="printSelected()" [disabled]="selectedLogIds().size === 0 || isPrinting()"
                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <i class="fa-solid fa-print"></i> In mục đã chọn ({{selectedLogIds().size}})
+                  @if(isPrinting()) { <i class="fa-solid fa-spinner fa-spin"></i> Loading... } 
+                  @else { <i class="fa-solid fa-print"></i> In mục đã chọn ({{selectedLogIds().size}}) }
                </button>
             </div>
         </div>
@@ -72,8 +74,12 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                     <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600 cursor-pointer">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <div class="font-bold text-slate-700">{{log.printData?.sop?.name}}</div>
-                                        <div class="text-xs text-slate-400">{{log.printData?.sop?.category}}</div>
+                                        <div class="font-bold text-slate-700">
+                                            {{ log.sopBasicInfo?.name || log.printData?.sop?.name || '---' }}
+                                        </div>
+                                        <div class="text-xs text-slate-400">
+                                            {{ log.sopBasicInfo?.category || log.printData?.sop?.category || '---' }}
+                                        </div>
                                     </td>
                                     <td class="px-4 py-2 text-slate-600 font-medium">{{log.user}}</td>
                                     <td class="px-4 py-2 text-slate-500 text-xs">{{formatDate(log.timestamp)}}</td>
@@ -108,8 +114,11 @@ export class PrintQueueComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService); 
   printService = inject(PrintService);
+  fb = inject(FirebaseService);
+  toast = inject(ToastService);
   
   isLoading = signal(true);
+  isPrinting = signal(false);
   selectedLogIds = signal<Set<string>>(new Set());
   formatDate = formatDate;
 
@@ -152,47 +161,104 @@ export class PrintQueueComponent implements OnInit {
     }
   }
 
-  // --- NEW: DIRECT PRINT LOGIC ---
+  // --- UPDATED: LAZY LOAD PRINT DATA ---
+
+  async fetchPrintData(logs: Log[]): Promise<PrintJob[]> {
+      const jobs: PrintJob[] = [];
+      const jobIdsToFetch: string[] = [];
+      const mapLogIdToJob: Record<string, string> = {}; // logId -> jobId
+
+      // 1. Separate logs with existing printData vs logs needing fetch
+      for (const log of logs) {
+          if (log.printData) {
+              jobs.push({
+                  ...log.printData,
+                  date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
+                  user: log.user,
+                  requestId: log.id 
+              });
+          } else if (log.printJobId) {
+              jobIdsToFetch.push(log.printJobId);
+              mapLogIdToJob[log.printJobId] = log.id; // Map Job back to Log ID for QR
+          }
+      }
+
+      // 2. Fetch missing jobs in batches (Firestore 'in' limit is 30)
+      if (jobIdsToFetch.length > 0) {
+          const chunkSize = 30;
+          for (let i = 0; i < jobIdsToFetch.length; i += chunkSize) {
+              const chunk = jobIdsToFetch.slice(i, i + chunkSize);
+              try {
+                  const q = query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs`), where(documentId(), 'in', chunk));
+                  const snap = await getDocs(q);
+                  
+                  snap.forEach(d => {
+                      const data = d.data() as any;
+                      const relatedLogId = mapLogIdToJob[d.id];
+                      // Find the original log to get timestamp and user correctly
+                      const originalLog = logs.find(l => l.id === relatedLogId); 
+                      
+                      if (originalLog) {
+                          jobs.push({
+                              ...data,
+                              // Ensure user/date come from LOG, not just job creation (though they should match)
+                              date: originalLog.timestamp.toDate ? originalLog.timestamp.toDate() : new Date(originalLog.timestamp),
+                              user: originalLog.user,
+                              requestId: relatedLogId
+                          });
+                      }
+                  });
+              } catch (e) {
+                  console.error("Error fetching print jobs:", e);
+                  this.toast.show('Lỗi tải dữ liệu in chi tiết.', 'error');
+              }
+          }
+      }
+      return jobs;
+  }
 
   async printSingle(log: Log) {
-    if (!log.printData) return;
-    
-    const printJob: PrintJob = {
-      ...log.printData,
-      date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp),
-      user: log.user,
-      requestId: log.id // Use Log ID for QR
-    };
-    
-    // Call Direct Print
-    await this.printService.printDocument([printJob]);
+    this.isPrinting.set(true);
+    try {
+        const jobs = await this.fetchPrintData([log]);
+        if (jobs.length > 0) {
+            await this.printService.printDocument(jobs);
+        } else {
+            this.toast.show('Không tìm thấy dữ liệu in cho phiếu này.', 'error');
+        }
+    } finally {
+        this.isPrinting.set(false);
+    }
   }
 
   async printSelected() {
     const ids = this.selectedLogIds();
     if (ids.size === 0) return;
 
-    const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
-    const jobs: PrintJob[] = logsToPrint.map(log => ({
-        ...log.printData!,
-        date: log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp), 
-        user: log.user,
-        requestId: log.id
-    }));
-    
-    // Call Direct Print
-    await this.printService.printDocument(jobs);
+    this.isPrinting.set(true);
+    try {
+        const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
+        const jobs = await this.fetchPrintData(logsToPrint);
+        
+        if (jobs.length > 0) {
+            await this.printService.printDocument(jobs);
+        }
+    } finally {
+        this.isPrinting.set(false);
+    }
   }
 
   async deleteSingle(log: Log) {
-    const sopName = log.printData?.sop.name || 'không rõ';
-    await this.state.deletePrintLog(log.id, sopName);
+    const sopName = log.sopBasicInfo?.name || log.printData?.sop.name || 'phiếu';
+    await this.state.deletePrintLog(log.id, sopName, log.printJobId);
   }
 
   async deleteSelected() {
-    const ids = Array.from(this.selectedLogIds());
-    if (ids.length > 0) {
-        await this.state.deleteSelectedPrintLogs(ids);
+    const ids = this.selectedLogIds();
+    const logsToDelete = this.filteredLogs().filter(log => ids.has(log.id));
+    
+    if (logsToDelete.length > 0) {
+        await this.state.deleteSelectedPrintLogs(logsToDelete);
         this.selectedLogIds.set(new Set());
     }
   }

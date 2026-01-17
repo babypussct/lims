@@ -1,4 +1,3 @@
-
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -10,6 +9,7 @@ import { HealthCheckItem } from '../../core/models/config.model';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { SopService } from '../sop/services/sop.service';
+import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } from 'firebase/firestore';
 
 @Component({
   selector: 'app-config',
@@ -212,17 +212,24 @@ import { SopService } from '../sop/services/sop.service';
                         </div>
                     </div>
 
-                    <!-- 6. DANGER ZONE -->
+                    <!-- 6. DANGER ZONE & MAINTENANCE -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 md:col-span-2">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                             <div class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            Vùng Quản trị (Danger Zone)
+                            Vùng Quản trị & Bảo trì (Danger Zone)
                         </h3>
                         
                         <div class="flex flex-col md:flex-row gap-4">
-                            <!-- Removed Normalize Button as requested -->
+                            <!-- New Migration Tool -->
+                            <button (click)="migrateLegacyLogs()" class="flex-1 p-4 border border-orange-100 bg-orange-50 rounded-xl hover:bg-orange-100 transition flex items-center justify-center gap-3 text-orange-700 font-bold text-sm">
+                                 <i class="fa-solid fa-file-export text-lg"></i>
+                                 <div>
+                                     <div>Migrate Data (v1 -> v2)</div>
+                                     <div class="text-[10px] font-normal opacity-80">Tách PrintData sang collection riêng</div>
+                                 </div>
+                            </button>
 
-                            <button (click)="loadSampleData()" class="flex-1 p-4 border border-red-100 bg-red-50/30 rounded-xl hover:bg-red-50 transition flex items-center justify-center gap-3 text-red-700 font-bold text-sm">
+                            <button (click)="loadSampleData()" class="flex-1 p-4 border border-blue-100 bg-blue-50/30 rounded-xl hover:bg-blue-50 transition flex items-center justify-center gap-3 text-blue-700 font-bold text-sm">
                                  <i class="fa-solid fa-flask-vial text-lg"></i>
                                  Nạp Dữ liệu Mẫu (NAFI6)
                             </button>
@@ -479,6 +486,11 @@ service cloud.firestore {
            allow read, write: if request.auth != null;
         }
 
+        // Print Jobs: Heavy data (Created via Transaction)
+        match /print_jobs/{jobId} {
+           allow read, write: if request.auth != null;
+        }
+
         // Fallback for other collections (inventory, sops, etc)
         match /{document=**} { 
           allow read, write: if request.auth != null; 
@@ -554,7 +566,61 @@ service cloud.firestore {
       }
   }
 
-  // NOTE: normalizeData() removed as requested.
+  async migrateLegacyLogs() {
+      if (!await this.confirmationService.confirm({ message: 'Chạy chuyển đổi dữ liệu cũ (Tách PrintData)?\nQuá trình này có thể mất thời gian.', confirmText: 'Chạy Migration' })) return;
+
+      this.toast.show('Đang xử lý migration...', 'info');
+      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`);
+      const snapshot = await getDocs(logsRef);
+      
+      let batch = writeBatch(this.fb.db);
+      let count = 0;
+      let migrated = 0;
+      const BATCH_SIZE = 400;
+
+      for (const docSnap of snapshot.docs) {
+          const log = docSnap.data() as any;
+          
+          // Only migrate if it has legacy printData AND hasn't been migrated yet
+          if (log.printData && !log.printJobId) {
+              // 1. Create Print Job
+              const jobRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs`));
+              const printJobData = {
+                  ...log.printData,
+                  createdAt: log.timestamp || serverTimestamp(),
+                  createdBy: log.user || 'System Migration',
+                  migratedFromLogId: docSnap.id
+              };
+              
+              batch.set(jobRef, printJobData);
+
+              // 2. Update Log
+              const sopBasic = {
+                  name: log.printData.sop?.name || 'Unknown',
+                  category: log.printData.sop?.category || '',
+                  ref: log.printData.sop?.ref || ''
+              };
+
+              batch.update(docSnap.ref, {
+                  printJobId: jobRef.id,
+                  sopBasicInfo: sopBasic,
+                  printData: deleteField() // Remove heavy data
+              });
+
+              migrated++;
+              count++;
+          }
+
+          if (count >= BATCH_SIZE) {
+              await batch.commit();
+              batch = writeBatch(this.fb.db);
+              count = 0;
+          }
+      }
+
+      if (count > 0) await batch.commit();
+      this.toast.show(`Hoàn tất! Đã chuyển đổi ${migrated} bản ghi.`, 'success');
+  }
 
   async resetDefaults() {
       if(await this.confirmationService.confirm({ message: 'XÓA SẠCH toàn bộ dữ liệu? Không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {

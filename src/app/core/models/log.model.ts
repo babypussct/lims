@@ -1,4 +1,3 @@
-
 import { Sop, CalculatedItem } from './sop.model';
 
 export interface PrintData {
@@ -27,7 +26,17 @@ export interface Log {
   reason?: string;   // Mandatory for manual adjustments
   diff?: LogDiff[];  // JSON Diff for auditing
 
-  // Optional fields for printable logs
+  // Print Logic
   printable?: boolean;
-  printData?: PrintData;
+  
+  // Legacy Data (Will be migrated)
+  printData?: PrintData; 
+
+  // New Architecture (Split Data)
+  printJobId?: string; // Reference to 'print_jobs' collection
+  sopBasicInfo?: {     // Lightweight info for list display
+      name: string;
+      category: string;
+      ref?: string;
+  };
 }
