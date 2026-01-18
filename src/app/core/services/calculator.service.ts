@@ -161,9 +161,10 @@ export class CalculatorService {
         } else {
           // Compatible units (e.g. L -> ml, kg -> g)
           stockNeed = converted;
-          // Note: We don't warn if units are compatible, we just convert.
         }
       } else {
+        // [FIX BUG 2]: FALLBACK to original unit if item not in inventory
+        stockUnit = item.unit; 
         stockNeed = totalQty;
       }
 
@@ -216,8 +217,12 @@ export class CalculatorService {
         const ingStockItem = inventoryMap[ing.name];
         const ingDisplayName = ingStockItem ? ingStockItem.name : (ing.displayName || ing.name);
         
-        // Note: For recipes, 'ing.amount' is usually amount per 1 BaseUnit of Recipe.
-        // So total needed = totalQtyOfRecipe * ing.amount
+        // [FIX BUG 2 - Logic]: Formula for ingredient need
+        // totalQty is amount of Mixture needed (e.g. 100ml Buffer)
+        // ing.amount is amount of Ing per 1 Unit of Mixture (e.g. 0.1g Salt per 1ml Buffer)
+        // OR ing.amount is amount of Ing per Base Unit of Recipe.
+        // Assuming ing.amount is "Amount per 1 unit of parent".
+        
         const amountPerBatch = totalQty * ing.amount;
 
         if (ingStockItem) {
@@ -232,6 +237,8 @@ export class CalculatorService {
             ingTotalNeed = converted;
           }
         } else {
+          // [FIX BUG 2 - Unit]: Fallback unit for ingredient
+          ingStockUnit = ing.unit;
           ingTotalNeed = amountPerBatch;
           ingIsMissing = true;
         }
@@ -254,11 +261,9 @@ export class CalculatorService {
   calculateCapacity(
       sop: Sop, 
       mode: 'marginal' | 'standard' = 'marginal',
-      inventoryMap: Record<string, InventoryItem> = {}
+      inventoryMap: Record<string, InventoryItem> = {},
+      recipeMap: Record<string, Recipe> = {} // [FIX BUG 1]: Add recipeMap param
   ): CapacityResult {
-    
-    // Simplification: Capacity currently doesn't fetch recipes recursively.
-    // It relies on standardizing inputs first.
     
     const capacityInputs: Record<string, any> = {};
     sop.inputs.forEach(inp => { capacityInputs[inp.var] = inp.default; });
@@ -270,7 +275,8 @@ export class CalculatorService {
         });
     }
 
-    const needs = this.calculateSopNeeds(sop, capacityInputs, 0, inventoryMap);
+    // [FIX BUG 1]: Pass recipeMap to calculation
+    const needs = this.calculateSopNeeds(sop, capacityInputs, 0, inventoryMap, recipeMap);
     
     const aggregatedNeeds = new Map<string, number>();
 

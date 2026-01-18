@@ -6,7 +6,9 @@ import { StateService } from '../../core/services/state.service';
 import { InventoryService } from './inventory.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Sop } from '../../core/models/sop.model';
+import { Recipe } from '../../core/models/recipe.model'; // Import Recipe
 import { CalculatorService } from '../../core/services/calculator.service';
+import { RecipeService } from '../recipes/recipe.service'; // Import Service
 import { cleanName, formatNum, UNIT_OPTIONS, generateSlug, formatSmartUnit, parseQuantityInput } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -252,7 +254,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                     @if(capacityLoading()) {
                         <div class="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col">
                             <i class="fa-solid fa-spinner fa-spin text-2xl text-fuchsia-500 mb-2"></i>
-                            <span class="text-xs font-bold text-slate-500">Đang tải dữ liệu kho...</span>
+                            <span class="text-xs font-bold text-slate-500">Đang tải dữ liệu kho & công thức...</span>
                         </div>
                     }
 
@@ -421,6 +423,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
 export class InventoryComponent implements OnDestroy {
   state = inject(StateService);
   inventoryService = inject(InventoryService);
+  recipeService = inject(RecipeService); // Inject RecipeService
   auth = inject(AuthService); 
   toast = inject(ToastService);
   calcService = inject(CalculatorService);
@@ -434,8 +437,8 @@ export class InventoryComponent implements OnDestroy {
   items = signal<InventoryItem[]>([]);
   lastDoc = signal<QueryDocumentSnapshot | null>(null);
   hasMore = signal(true);
-  isInitialLoading = signal(true); // Renamed from isLoading to distinguish from processing
-  isProcessing = signal(false); // New: For Hardened UX Pattern
+  isInitialLoading = signal(true); 
+  isProcessing = signal(false); 
   
   // Decoupled from State
   totalCount = signal<number | null>(null);
@@ -449,14 +452,20 @@ export class InventoryComponent implements OnDestroy {
 
   // Capacity - Local Inventory Snapshot
   capacityInventoryMap = signal<Record<string, InventoryItem>>({}); 
+  capacityRecipeMap = signal<Record<string, Recipe>>({}); // New Signal for Recipes
   capacityLoading = signal(false);
   selectedSopForCap = signal<Sop | null>(null);
   capacityMode = signal<'marginal' | 'standard'>('marginal');
   
   capacityResult = computed(() => { 
       const s = this.selectedSopForCap(); 
-      // Use the locally fetched map
-      return s ? this.calcService.calculateCapacity(s, this.capacityMode(), this.capacityInventoryMap()) : null; 
+      // Use the locally fetched maps
+      return s ? this.calcService.calculateCapacity(
+          s, 
+          this.capacityMode(), 
+          this.capacityInventoryMap(), 
+          this.capacityRecipeMap() // Pass Recipe Map
+      ) : null; 
   });
 
   // Modal
@@ -491,13 +500,23 @@ export class InventoryComponent implements OnDestroy {
   async switchTab(tab: 'list' | 'capacity' | 'labels') {
       this.activeTab.set(tab);
       if (tab === 'capacity' && Object.keys(this.capacityInventoryMap()).length === 0) {
-          // Lazy load full inventory for capacity calculation
+          // Lazy load full inventory AND recipes for capacity calculation
           this.capacityLoading.set(true);
           try {
-              const allItems = await this.inventoryService.getAllInventory();
-              const map: Record<string, InventoryItem> = {};
-              allItems.forEach(i => map[i.id] = i);
-              this.capacityInventoryMap.set(map);
+              // Fetch Both
+              const [allItems, allRecipes] = await Promise.all([
+                  this.inventoryService.getAllInventory(),
+                  this.recipeService.getAllRecipes()
+              ]);
+
+              const invMap: Record<string, InventoryItem> = {};
+              allItems.forEach(i => invMap[i.id] = i);
+              this.capacityInventoryMap.set(invMap);
+
+              const recMap: Record<string, Recipe> = {};
+              allRecipes.forEach(r => recMap[r.id] = r);
+              this.capacityRecipeMap.set(recMap);
+
           } catch(e) {
               console.error("Error loading full inventory for capacity", e);
           } finally {
@@ -508,7 +527,7 @@ export class InventoryComponent implements OnDestroy {
 
   // Helpers
   formatNum = formatNum;
-  formatSmartUnit = formatSmartUnit; // Updated for Smart Display
+  formatSmartUnit = formatSmartUnit; 
   getIcon(cat: string | undefined): string { return cat === 'reagent' ? 'fa-flask' : cat === 'consumable' ? 'fa-vial' : cat === 'kit' ? 'fa-box-open' : 'fa-cube'; }
   getIconGradient(item: InventoryItem): string {
       if (item.stock <= 0) return 'bg-gradient-to-tl from-red-600 to-rose-400';
@@ -592,47 +611,37 @@ export class InventoryComponent implements OnDestroy {
   
   // --- HARDENED UX: Save Item ---
   async save() {
-      if (this.isProcessing()) return; // 1. Guard
-      
+      if (this.isProcessing()) return; 
       if (this.form.invalid) {
           this.toast.show('Vui lòng nhập đầy đủ thông tin và Lý do thay đổi!', 'error');
           return;
       }
-
-      this.isProcessing.set(true); // 2. Lock
-      
+      this.isProcessing.set(true); 
       try { 
-          // 3. Execute
           const raw = this.form.getRawValue();
           const reason = raw.reason || ''; 
           const { reason: _, ...itemData } = raw; 
-
-          // Service will normalize units to base (ml/g) automatically
           await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason); 
           this.toast.show(this.isEditing() ? 'Đã cập nhật' : 'Đã thêm mới', 'success');
-          
-          this.showModal.set(false); // Force close regardless of guard
+          this.showModal.set(false); 
           this.refreshData(); 
-          if(!this.isEditing()) this.loadTotalCount(); // Refresh count on add
+          if(!this.isEditing()) this.loadTotalCount(); 
       } catch (e: any) {
-          // 4. Error Handle
           if (e.code === 'resource-exhausted') {
              this.toast.show('Lỗi: Hết dung lượng lưu trữ (Quota).', 'error');
           } else {
              this.toast.show('Lỗi lưu kho: ' + (e.message || 'Unknown'), 'error');
           }
       } finally { 
-          // 5. Unlock
           this.isProcessing.set(false); 
       }
   }
   
   // --- HARDENED UX: Delete Item ---
   async deleteItem(item: InventoryItem) {
-      if (this.isProcessing()) return; // Guard
-
+      if (this.isProcessing()) return; 
       if(await this.confirmationService.confirm({ message: 'Xóa mục này? Hành động này cần được ghi nhận.', confirmText: 'Xác nhận Xóa', isDangerous: true })) {
-          this.isProcessing.set(true); // Lock
+          this.isProcessing.set(true); 
           try {
               await this.inventoryService.deleteItem(item.id, 'Xóa thủ công');
               this.toast.show('Đã xóa thành công', 'success');
@@ -642,26 +651,21 @@ export class InventoryComponent implements OnDestroy {
           } catch (e: any) {
               this.toast.show('Lỗi xóa: ' + e.message, 'error');
           } finally {
-              this.isProcessing.set(false); // Unlock
+              this.isProcessing.set(false); 
           }
       }
   }
   
   // --- HARDENED UX: Quick Update ---
   async quickUpdate(item: InventoryItem, valStr: string) {
-    if (this.isProcessing()) return; // Guard
-
-    // 1. SMART PARSE: Check for unit suffix first
+    if (this.isProcessing()) return; 
     const val = parseQuantityInput(valStr, item.unit); 
-
     if (val === null) {
         this.toast.show(`Lỗi: Đơn vị không khớp hoặc định dạng sai. Yêu cầu nhập theo (${item.unit}) hoặc quy đổi tương đương.`, 'error');
         return;
     }
-    
     if (val === 0) return;
-
-    this.isProcessing.set(true); // Lock Global Table Interaction
+    this.isProcessing.set(true); 
     try {
       const reason = val > 0 ? 'Nhập nhanh' : 'Xuất nhanh';
       await this.inventoryService.updateStock(item.id, item.stock, val, reason);
@@ -671,9 +675,7 @@ export class InventoryComponent implements OnDestroy {
     } catch (e: any) {
       this.toast.show('Lỗi cập nhật kho: ' + e.message, 'error');
     } finally {
-      this.isProcessing.set(false); // Unlock
+      this.isProcessing.set(false); 
     }
   }
-  
-  async zeroOutSelected() { /* ... */ }
 }
