@@ -11,7 +11,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component'; // Import Scanner
+import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component'; 
 import Chart from 'chart.js/auto'; 
 
 interface PriorityStandard {
@@ -26,258 +26,219 @@ interface PriorityStandard {
   standalone: true,
   imports: [CommonModule, SkeletonComponent, FormsModule, QrScannerComponent], 
   template: `
-    <div class="space-y-6 fade-in pb-10">
+    <div class="pb-10 fade-in font-sans">
         
-        <!-- 0. WELCOME HEADER (Shortcuts Optimized) -->
-        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
-            <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-blue-50/30 to-transparent pointer-events-none"></div>
+        <!-- SECTION 1: KPI CARDS (Soft UI Style) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             
-            <div class="relative z-10 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-200 shrink-0 transform group-hover:scale-105 transition-transform duration-500">
-                    <img [src]="getAvatarUrl(state.currentUser()?.displayName)" class="w-full h-full rounded-[10px] bg-white object-cover border-2 border-white">
+            <!-- Card 1: Pending Requests -->
+            <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()"
+                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group">
+                <div class="flex justify-between items-start z-10">
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
+                        <h4 class="text-2xl font-black text-gray-800">
+                            @if(isLoading()) { ... } @else { {{state.requests().length}} }
+                        </h4>
+                    </div>
+                    <!-- Gradient Purple-Pink -->
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-clipboard-list text-lg"></i>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">{{getGreeting()}},</p>
-                    @if (state.currentUser()?.displayName) {
-                        <h1 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">
-                            {{state.currentUser()?.displayName}}
-                        </h1>
+                <div class="z-10">
+                    <span class="text-xs font-bold" 
+                          [class.text-emerald-500]="state.requests().length === 0" 
+                          [class.text-fuchsia-500]="state.requests().length > 0">
+                        {{state.requests().length > 0 ? '+ Cần xử lý ngay' : 'Đã hoàn thành'}}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card 2: Low Stock -->
+            <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()"
+                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group">
+                <div class="flex justify-between items-start z-10">
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
+                        <h4 class="text-2xl font-black text-gray-800">
+                            @if(isLoading()) { ... } @else { {{lowStockItems().length}} }
+                        </h4>
+                    </div>
+                    <!-- Gradient Red-Rose -->
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-box-open text-lg"></i>
+                    </div>
+                </div>
+                <div class="z-10">
+                    @if(lowStockItems().length > 0) {
+                        <span class="text-xs font-bold text-red-500">Mục dưới định mức</span>
                     } @else {
-                        <h1 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">...</h1>
+                        <span class="text-xs font-bold text-emerald-500">Kho ổn định</span>
                     }
-                    
-                    <!-- SHORTCUTS -->
-                    <div class="flex gap-2 mt-2">
-                        @if(auth.canViewSop()) {
-                            <button (click)="navTo('calculator')" class="text-[10px] bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-blue-600 transition flex items-center gap-1 active:scale-95">
-                                <i class="fa-solid fa-play text-[8px]"></i> Chạy SOP
-                            </button>
-                        }
-                        @if(auth.canEditInventory()) {
-                            <button (click)="navTo('inventory')" class="text-[10px] bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-emerald-600 transition flex items-center gap-1 active:scale-95">
-                                <i class="fa-solid fa-plus text-[8px]"></i> Nhập Kho
-                            </button>
-                        }
-                        <button (click)="navTo('labels')" class="text-[10px] bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-200 px-2 py-1 rounded-md font-bold text-slate-600 hover:text-purple-600 transition flex items-center gap-1 active:scale-95">
-                            <i class="fa-solid fa-print text-[8px]"></i> In Tem
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            <!-- ACTIONS -->
-            <div class="relative z-10 flex gap-3 items-center self-end md:self-center">
-                <button (click)="openScanModal()" class="flex flex-col items-center justify-center w-14 h-14 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:text-blue-600 transition active:scale-95 group/scan">
-                    <i class="fa-solid fa-qrcode text-xl mb-1 text-slate-700 group-hover/scan:text-blue-600 transition-colors"></i>
-                    <span class="text-[8px] font-bold uppercase tracking-wider">Scan</span>
-                </button>
-
-                <div class="text-right hidden md:block border-l border-slate-200 pl-4 ml-1">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</div>
-                    <div class="text-base font-black text-slate-700">{{today | date:'dd/MM/yyyy'}}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 1. Stats Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <!-- Pending Requests -->
-            <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group h-28">
-                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-clock text-5xl text-blue-600 transform rotate-12"></i>
-                </div>
-                <div class="flex items-center justify-between relative z-10">
+            <!-- Card 3: Today's Activity -->
+            <div (click)="auth.canViewReports() ? navTo('stats') : denyAccess()"
+                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group">
+                <div class="flex justify-between items-start z-10">
                     <div>
-                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Yêu cầu Chờ duyệt</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
-                        @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{state.requests().length}}</h5>
-                           @if(state.requests().length > 0) {
-                               <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-blue-100">Cần xử lý</span>
-                           } @else {
-                               <span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-slate-100">Đã hoàn thành</span>
-                           }
-                        }
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
+                        <h4 class="text-2xl font-black text-gray-800">
+                            @if(isLoading()) { ... } @else { {{todayActivityCount()}} }
+                        </h4>
                     </div>
-                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 ml-3">
-                        <i class="fa-solid fa-clipboard-check text-lg"></i>
+                    <!-- Gradient Blue-Cyan -->
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-bolt text-lg"></i>
                     </div>
+                </div>
+                <div class="z-10">
+                    <span class="text-xs font-bold text-gray-400">Ghi nhận log hệ thống</span>
                 </div>
             </div>
 
-            <!-- Low Stock Alert -->
-            <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-red-300 transition-all group h-28">
-                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-triangle-exclamation text-5xl text-red-600 transform -rotate-12"></i>
-                </div>
-                <div class="flex items-center justify-between relative z-10">
-                    <div>
-                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cảnh báo Kho</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
-                        @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{lowStockItems().length}}</h5>
-                           @if(lowStockItems().length > 0) {
-                                <span class="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-red-100 animate-pulse">Sắp hết hàng</span>
-                           } @else {
-                                <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-emerald-100">Ổn định</span>
-                           }
-                        }
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0 ml-3">
-                        <i class="fa-solid fa-boxes-stacked text-lg"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total SOPs -->
-            <div (click)="auth.canViewSop() ? navTo('calculator') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md hover:border-purple-300 transition-all group h-28">
-                <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fa-solid fa-flask text-5xl text-purple-600 transform rotate-6"></i>
-                </div>
-                <div class="flex items-center justify-between relative z-10">
-                    <div>
-                        <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quy trình (SOP)</p>
-                        @if (isLoading()) { <app-skeleton width="60%" height="24px" class="mt-1 block"></app-skeleton> } 
-                        @else {
-                           <h5 class="mb-0 font-black text-slate-700 text-2xl mt-0.5 tracking-tight">{{state.sops().length}}</h5>
-                           <span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-purple-100">Đang kích hoạt</span>
-                        }
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 ml-3">
-                        <i class="fa-solid fa-list-check text-lg"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Standards Priority -->
-            <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()" 
-                 class="relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 p-4 justify-center cursor-pointer hover:shadow-md transition-all group h-28"
-                 [class.border-red-200]="priorityStandard()?.status === 'expired'"
-                 [class.border-orange-200]="priorityStandard()?.status === 'warning'">
-                <div class="flex items-center justify-between">
-                    <div class="w-full min-w-0 pr-2">
-                        @if (isLoading()) {
-                           <app-skeleton width="50%" height="12px" class="mb-2 block"></app-skeleton>
-                           <app-skeleton width="70%" height="24px" class="block"></app-skeleton>
+            <!-- Card 4: Standards Priority -->
+            <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()"
+                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group">
+                <div class="flex justify-between items-start z-10">
+                    <div class="min-w-0 pr-2">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
+                        @if(priorityStandard(); as std) {
+                            <h4 class="text-sm font-bold text-gray-800 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
                         } @else {
-                           @if (priorityStandard(); as std) {
-                               <p class="mb-0 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
-                                  [class.text-red-500]="std.status === 'expired'"
-                                  [class.text-orange-500]="std.status === 'warning'"
-                                  [class.text-slate-400]="std.status === 'safe'">
-                                   {{std.status === 'expired' ? 'Hết hạn SD:' : std.status === 'warning' ? 'Sắp hết hạn:' : 'Chuẩn Đối Chiếu'}}
-                               </p>
-                               <div class="mt-0.5">
-                                   <div class="font-bold text-slate-800 text-xs truncate" [title]="std.name">{{std.name}}</div>
-                                   @if(std.status !== 'safe') {
-                                       <div class="text-[10px] font-black mt-0.5" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
-                                            {{std.date | date:'dd/MM/yyyy'}} ({{std.daysLeft}} ngày)
-                                       </div>
-                                   } @else {
-                                       <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-emerald-100">Kho chuẩn an toàn</span>
-                                   }
-                               </div>
-                           } @else {
-                               <p class="mb-0 font-sans text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chuẩn Đối Chiếu</p>
-                               <h5 class="mb-0 font-bold text-slate-700 text-sm mt-1">Chưa có dữ liệu</h5>
-                           }
+                            <h4 class="text-lg font-black text-gray-800">An toàn</h4>
                         }
                     </div>
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-md shrink-0"
-                         [ngClass]="priorityStandard()?.status === 'expired' ? 'bg-red-500' : 
-                                    priorityStandard()?.status === 'warning' ? 'bg-orange-500' : 
-                                    'bg-emerald-500'">
-                        @if(priorityStandard()?.status === 'expired') { <i class="fa-solid fa-triangle-exclamation text-lg"></i> }
-                        @else if(priorityStandard()?.status === 'warning') { <i class="fa-solid fa-clock text-lg"></i> }
-                        @else { <i class="fa-solid fa-shield-halved text-lg"></i> }
+                    <!-- Gradient Orange-Yellow -->
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-clock text-lg"></i>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- 2. Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column (2/3): PERFORMANCE CHART -->
-            <div class="lg:col-span-2">
-                <div class="relative bg-white rounded-2xl p-5 shadow-sm overflow-hidden group border border-slate-100 flex flex-col h-[480px]">
-                    <div class="relative z-10 flex justify-between items-start mb-4 shrink-0">
-                        <div>
-                            <h2 class="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
-                                <i class="fa-solid fa-chart-line text-indigo-500"></i> Hiệu suất Phân tích
-                            </h2>
-                            <p class="text-[10px] text-slate-400 font-medium">Số mẫu (Sample) & Số mẻ (Batch) trong 7 ngày qua</p>
-                        </div>
-                    </div>
-                    <div class="flex-1 relative w-full min-h-0">
-                        @if(isLoading()) {
-                            <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
-                        } @else {
-                            <canvas #activityChart class="w-full h-full"></canvas>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column (1/3): Activity Feed -->
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 flex flex-col h-[480px]">
-                <div class="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center shrink-0">
-                    <h3 class="font-bold text-slate-800 text-xs flex items-center gap-2">
-                        <i class="fa-solid fa-bolt text-yellow-500"></i> Hoạt động gần đây
-                    </h3>
-                    <button (click)="navTo('stats')" class="text-[10px] font-bold text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">Xem tất cả</button>
-                </div>
-                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                    @if (isLoading()) {
-                        @for(i of [1,2,3,4]; track i) {
-                            <div class="flex gap-4">
-                                <app-skeleton width="32px" height="32px" shape="circle"></app-skeleton>
-                                <div class="flex-1 space-y-2">
-                                    <app-skeleton width="90%" height="14px"></app-skeleton>
-                                    <app-skeleton width="40%" height="10px"></app-skeleton>
-                                </div>
-                            </div>
-                        }
+                <div class="z-10">
+                    @if(priorityStandard(); as std) {
+                        <span class="text-xs font-bold" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
+                            {{std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày'}}
+                        </span>
                     } @else {
-                        @for (log of recentLogs(); track log.id; let last = $last) {
-                            <div class="relative flex gap-3 group">
-                                @if(!last) { <div class="absolute left-3.5 top-8 bottom-[-16px] w-[1px] bg-slate-100 group-hover:bg-slate-200 transition-colors"></div> }
-                                <div class="relative z-10 shrink-0">
-                                    <img [src]="getAvatarUrl(log.user)" class="w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm object-cover" [title]="log.user">
-                                    <div class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white flex items-center justify-center text-[6px] text-white shadow-sm"
-                                         [class.bg-blue-500]="log.action.includes('APPROVE')"
-                                         [class.bg-emerald-500]="log.action.includes('STOCK_IN')"
-                                         [class.bg-orange-500]="log.action.includes('STOCK_OUT')"
-                                         [class.bg-slate-400]="!log.action.includes('APPROVE') && !log.action.includes('STOCK')">
-                                        @if(log.action.includes('APPROVE')) { <i class="fa-solid fa-check"></i> }
-                                        @else if(log.action.includes('STOCK')) { <i class="fa-solid fa-box"></i> }
-                                        @else { <i class="fa-solid fa-info"></i> }
-                                    </div>
+                        <span class="text-xs font-bold text-emerald-500">Tất cả còn hạn dùng</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ANALYTICS & FEED -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Left: Chart (2/3) -->
+            <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px]">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h6 class="font-bold text-gray-700 capitalize text-lg">Hiệu suất Phân tích</h6>
+                        <p class="text-sm text-gray-500 flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up text-emerald-500 text-xs"></i>
+                            <span class="font-bold text-gray-600">7 ngày gần nhất</span>
+                        </p>
+                    </div>
+                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                </div>
+                
+                <div class="flex-1 relative w-full min-h-0 bg-gradient-to-b from-transparent to-gray-50/50 rounded-xl">
+                    @if(isLoading()) {
+                        <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
+                    } @else {
+                        <canvas #activityChart class="w-full h-full"></canvas>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Activity Feed (1/3) -->
+            <div class="bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px]">
+                <h6 class="font-bold text-gray-700 capitalize text-lg mb-4">Hoạt động gần đây</h6>
+                
+                <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
+                    <div class="relative border-l border-gray-200 ml-3 space-y-6 pb-2">
+                        @for (log of recentLogs(); track log.id) {
+                            <div class="relative pl-6">
+                                <!-- Dot on Timeline -->
+                                <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm"
+                                     [class.bg-fuchsia-500]="log.action.includes('APPROVE')"
+                                     [class.bg-blue-500]="log.action.includes('STOCK')"
+                                     [class.bg-gray-400]="!log.action.includes('APPROVE') && !log.action.includes('STOCK')">
                                 </div>
-                                <div class="flex-1 pb-1">
-                                    <div class="text-[11px] text-slate-800 font-bold leading-tight">
-                                        <span class="text-blue-600">{{log.user}}</span>
-                                        <span class="font-normal text-slate-600"> {{getLogActionText(log.action)}}</span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-500 mt-0.5 line-clamp-2 bg-slate-50 p-1.5 rounded border border-slate-100 mt-1">
-                                        {{log.details}}
-                                    </div>
-                                    <div class="text-[9px] font-bold text-slate-400 mt-0.5 flex items-center gap-1">
-                                        <i class="fa-regular fa-clock"></i> {{getTimeDiff(log.timestamp)}}
+                                
+                                <div class="flex flex-col">
+                                    <div class="text-xs font-bold text-gray-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
+                                    
+                                    <!-- Avatar & Content Row -->
+                                    <div class="flex items-start gap-3">
+                                        <img [src]="getAvatarUrl(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 shadow-sm object-cover bg-white shrink-0" alt="Avatar">
+                                        
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-bold text-gray-700 leading-tight">
+                                                <span class="text-gray-900">{{log.user}}</span> 
+                                                <span class="font-normal text-xs text-gray-500 ml-1 block sm:inline">{{getLogActionText(log.action)}}</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1 line-clamp-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                {{log.details}}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         } @empty {
-                            <div class="text-center text-slate-400 text-xs italic py-10">Chưa có hoạt động nào.</div>
+                            <div class="text-center text-gray-400 text-sm py-10">Chưa có dữ liệu.</div>
                         }
-                    }
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- SCAN QR MODAL (Refined for Camera) -->
+        <!-- SECTION 3: QUICK ACTIONS (Cards) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <button (click)="openScanModal()" 
+                    class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-gray-200 text-left">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center mb-3 group-hover:bg-gray-800 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-qrcode text-lg"></i>
+                </div>
+                <h6 class="font-bold text-gray-700 text-sm">Quét mã QR</h6>
+                <p class="text-[10px] text-gray-400">Tra cứu nhanh</p>
+            </button>
+
+            <button (click)="auth.canViewSop() ? navTo('calculator') : denyAccess()" 
+                    class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-gray-200 text-left">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center mb-3 group-hover:bg-fuchsia-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-play text-lg pl-1"></i>
+                </div>
+                <h6 class="font-bold text-gray-700 text-sm">Chạy Quy trình</h6>
+                <p class="text-[10px] text-gray-400">Tính toán & In phiếu</p>
+            </button>
+
+            <button (click)="auth.canEditInventory() ? navTo('inventory') : denyAccess()" 
+                    class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-gray-200 text-left">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                </div>
+                <h6 class="font-bold text-gray-700 text-sm">Nhập Kho</h6>
+                <p class="text-[10px] text-gray-400">Cập nhật hóa chất</p>
+            </button>
+
+            <button (click)="navTo('labels')" 
+                    class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-gray-200 text-left">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-print text-lg"></i>
+                </div>
+                <h6 class="font-bold text-gray-700 text-sm">In Tem Nhãn</h6>
+                <p class="text-[10px] text-gray-400">Brother / A4 / A5</p>
+            </button>
+
+        </div>
+
+        <!-- SCAN QR MODAL -->
         @if (showScanModal()) {
             <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in" (click)="closeScanModal()">
                 <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col h-[500px] animate-bounce-in" (click)="$event.stopPropagation()">
@@ -342,7 +303,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   lowStockItems = signal<InventoryItem[]>([]); 
   priorityStandard = signal<PriorityStandard | null>(null);
-  recentLogs = computed(() => this.state.logs().slice(0, 8)); 
+  
+  // LIVE DATA COMPUTED
+  recentLogs = computed(() => this.state.logs().slice(0, 6)); 
+  todayActivityCount = computed(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      return this.state.logs().filter(l => {
+          const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
+          return d.toISOString().split('T')[0] === todayStr;
+      }).length;
+  });
+
   today = new Date();
   
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
@@ -355,6 +326,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private scanTimeout: any;
 
   constructor() {
+      // Auto-draw chart when data arrives
       effect(() => {
           const reqs = this.state.approvedRequests();
           if (reqs.length >= 0 && !this.isLoading()) {
@@ -395,6 +367,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
+      // Create Gradient for Chart Fill
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); // Fuchsia
+      gradient.addColorStop(1, 'rgba(203, 12, 159, 0)');
+
       const days = 7;
       const labels = [];
       const sampleData = new Array(days).fill(0);
@@ -429,15 +406,82 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
       this.chartInstance = new Chart(ctx, {
-          type: 'bar',
+          type: 'line',
           data: {
               labels: labels,
               datasets: [
-                  { label: 'Số mẫu (Samples)', data: sampleData, backgroundColor: 'rgba(79, 70, 229, 0.8)', borderRadius: 4, order: 2, yAxisID: 'y' },
-                  { label: 'Số mẻ (Runs)', data: runData, type: 'line', borderColor: '#f97316', backgroundColor: '#f97316', borderWidth: 2, pointRadius: 4, tension: 0.3, order: 1, yAxisID: 'y1' }
+                  { 
+                      label: 'Số mẫu (Samples)', 
+                      data: sampleData, 
+                      backgroundColor: gradient, 
+                      borderColor: '#cb0c9f', 
+                      borderWidth: 3, 
+                      pointRadius: 4, 
+                      pointBackgroundColor: '#cb0c9f',
+                      pointBorderColor: '#fff',
+                      pointHoverRadius: 6,
+                      fill: true,
+                      tension: 0.4,
+                      yAxisID: 'y'
+                  },
+                  { 
+                      label: 'Số mẻ (Batches)', 
+                      data: runData, 
+                      type: 'bar',
+                      backgroundColor: '#3a416f', 
+                      borderRadius: 4, 
+                      barThickness: 10,
+                      order: 1, 
+                      yAxisID: 'y1' 
+                  }
               ]
           },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } }, scales: { x: { grid: { display: false } }, y: { type: 'linear', display: true, position: 'left', beginAtZero: true }, y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false } } } }
+          options: { 
+              responsive: true, 
+              maintainAspectRatio: false, 
+              plugins: { 
+                  legend: { display: false },
+                  tooltip: {
+                      backgroundColor: '#fff',
+                      titleColor: '#1e293b',
+                      bodyColor: '#1e293b',
+                      borderColor: '#e2e8f0',
+                      borderWidth: 1,
+                      padding: 10,
+                      displayColors: true,
+                      usePointStyle: true,
+                  }
+              }, 
+              interaction: {
+                  mode: 'index',
+                  intersect: false,
+              },
+              scales: { 
+                  x: { 
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' }
+                  }, 
+                  y: { 
+                      type: 'linear', 
+                      display: true, 
+                      position: 'left', 
+                      beginAtZero: true,
+                      grid: { tickBorderDash: [5, 5], color: '#f1f5f9' },
+                      border: { display: false },
+                      ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 }
+                  }, 
+                  y1: { 
+                      type: 'linear', 
+                      display: true, 
+                      position: 'right', 
+                      beginAtZero: true, 
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: { display: false } // Hide right axis numbers for cleaner look
+                  } 
+              } 
+          }
       });
   }
 
@@ -454,7 +498,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   navTo(path: string) { this.router.navigate(['/' + path]); }
   denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
-  getGreeting(): string { const h = new Date().getHours(); return h < 12 ? 'Chào buổi sáng' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'; }
   getTimeDiff(timestamp: any): string {
       if (!timestamp) return '';
       const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp);
@@ -463,6 +506,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const diffHours = Math.floor(diffMins / 60); if (diffHours < 24) return `${diffHours} giờ trước`;
       return `${Math.floor(diffHours / 24)} ngày trước`;
   }
+  
   getLogActionText(action: string): string {
       if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; if (action.includes('STOCK_IN')) return 'đã nhập kho';
       if (action.includes('STOCK_OUT')) return 'đã xuất kho'; if (action.includes('CREATE')) return 'đã tạo mới';

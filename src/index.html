@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- 2. Tailwind CSS -->
+  <!-- 2. Tailwind CSS & Soft UI Config -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { 
@@ -41,20 +41,26 @@
             // Soft UI Brand Colors
             fuchsia: { 500: '#cb0c9f', 600: '#830051' }, // Purple
             pink: { 500: '#d63384' },
+            blue: { 500: '#3b82f6', 600: '#2563eb' }
           },
           boxShadow: {
-            'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow
-            'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', // Input/Button
+            'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow (Key to Soft UI)
+            'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', 
             'soft-sm': '0 2px 4px 0 rgba(0,0,0,0.02)',
             'navbar': '0 2px 12px 0 rgba(0,0,0,0.06)',
+            'icon': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
           },
           borderRadius: {
             'xl': '1rem',   // 16px
-            '2xl': '1.25rem' // 20px
+            '2xl': '1.25rem', // 20px
+            '3xl': '1.5rem'
           },
           backgroundImage: {
-            'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // The Signature Gradient
-            'gradient-dark': 'linear-gradient(310deg, #141727, #3a416f)',
+            'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // Signature Purple-Pink
+            'gradient-info': 'linear-gradient(310deg, #2152ff, #21d4fd)', // Blue-Cyan
+            'gradient-success': 'linear-gradient(310deg, #17ad37, #98ec2d)', // Green-Lime
+            'gradient-warning': 'linear-gradient(310deg, #f53939, #fbcf33)', // Red-Yellow
+            'curved-pattern': "url('https://demos.creative-tim.com/soft-ui-dashboard/assets/img/curved-images/curved0.jpg')", // Placeholder for curved header
           }
         } 
       } 
