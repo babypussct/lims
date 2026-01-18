@@ -150,12 +150,18 @@ export class CalculatorService {
       if (stockItem) {
         displayName = stockItem.name;
         stockUnit = stockItem.unit;
+        
+        // --- SMART UNIT CONVERSION ---
         const converted = getStandardizedAmount(totalQty, item.unit, stockUnit);
+        
         if (converted === null) {
+          // Incompatible units (e.g. L -> g)
           displayWarning = `(Khác ĐV: ${item.unit} != ${stockUnit})`;
           stockNeed = totalQty;
         } else {
+          // Compatible units (e.g. L -> ml, kg -> g)
           stockNeed = converted;
+          // Note: We don't warn if units are compatible, we just convert.
         }
       } else {
         stockNeed = totalQty;
@@ -183,7 +189,7 @@ export class CalculatorService {
           const recipe = recipeMap[item.recipeId];
           rawIngredients = recipe.ingredients;
           
-          // Fix logic: Avoid duplication like "Name (Name)"
+          // Logic: If recipe is used, breakdown is calculated per Base Unit of recipe
           if (item._displayName && item._displayName.trim() !== recipe.name.trim()) {
               displayName = `${recipe.name} (${item._displayName})`;
           } else {
@@ -209,11 +215,16 @@ export class CalculatorService {
 
         const ingStockItem = inventoryMap[ing.name];
         const ingDisplayName = ingStockItem ? ingStockItem.name : (ing.displayName || ing.name);
+        
+        // Note: For recipes, 'ing.amount' is usually amount per 1 BaseUnit of Recipe.
+        // So total needed = totalQtyOfRecipe * ing.amount
         const amountPerBatch = totalQty * ing.amount;
 
         if (ingStockItem) {
           ingStockUnit = ingStockItem.unit;
+          // Smart Convert for Ingredients too
           const converted = getStandardizedAmount(amountPerBatch, ing.unit, ingStockUnit);
+          
           if (converted === null) {
             ingWarning = `(Khác ĐV: ${ing.unit} != ${ingStockUnit})`;
             ingTotalNeed = amountPerBatch;
@@ -247,9 +258,7 @@ export class CalculatorService {
   ): CapacityResult {
     
     // Simplification: Capacity currently doesn't fetch recipes recursively.
-    // It assumes everything needed is in the inventory map or broken down.
-    // If strict capacity for shared recipes is needed, we need to pass recipeMap here too.
-    // For now, we leave it as legacy-safe (it will just return 0 capacity for recipe items if not found).
+    // It relies on standardizing inputs first.
     
     const capacityInputs: Record<string, any> = {};
     sop.inputs.forEach(inp => { capacityInputs[inp.var] = inp.default; });
@@ -269,6 +278,7 @@ export class CalculatorService {
       const itemsToCheck = item.isComposite ? item.breakdown : [item];
       itemsToCheck.forEach((ing: any) => {
           const id = ing.name;
+          // Use 'totalNeed' (Stock Unit Value) for capacity calculation against Inventory Stock
           const amount = ing.totalNeed ?? ing.stockNeed;
           
           if (id && amount > 0) {

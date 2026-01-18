@@ -1,15 +1,15 @@
 
 export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: number }> = {
-  // Mass
+  // Mass (Base: g)
   'g': { type: 'mass', val: 1 }, 'gram': { type: 'mass', val: 1 },
   'mg': { type: 'mass', val: 0.001 }, 'milligram': { type: 'mass', val: 0.001 },
   'kg': { type: 'mass', val: 1000 }, 'kilogram': { type: 'mass', val: 1000 },
   'µg': { type: 'mass', val: 0.000001 }, 'ug': { type: 'mass', val: 0.000001 }, 'mcg': { type: 'mass', val: 0.000001 },
-  // Volume
+  // Volume (Base: ml)
   'ml': { type: 'vol', val: 1 }, 'milliliter': { type: 'vol', val: 1 },
   'l': { type: 'vol', val: 1000 }, 'liter': { type: 'vol', val: 1000 },
   'µl': { type: 'vol', val: 0.001 }, 'ul': { type: 'vol', val: 0.001 }, 'microliter': { type: 'vol', val: 0.001 },
-  // Quantity
+  // Quantity (Base: pcs)
   'ống': { type: 'qty', val: 1 }, 'tube': { type: 'qty', val: 1 },
   'cái': { type: 'qty', val: 1 }, 'piece': { type: 'qty', val: 1 }, 'pcs': { type: 'qty', val: 1 },
   'bộ': { type: 'qty', val: 1 }, 'set': { type: 'qty', val: 1 },
@@ -18,12 +18,12 @@ export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: numb
 };
 
 export const UNIT_OPTIONS = [
-  { value: 'ml', label: 'ml (Milliliter) - Chuẩn' },
-  { value: 'g', label: 'g (Gram) - Chuẩn' },
+  { value: 'ml', label: 'ml (Milliliter)' },
+  { value: 'l', label: 'l (Lít)' },
   { value: 'µl', label: 'µl (Microliter)' },
-  { value: 'l', label: 'l (Liter)' },
-  { value: 'mg', label: 'mg (Milligram)' },
+  { value: 'g', label: 'g (Gram)' },
   { value: 'kg', label: 'kg (Kilogram)' },
+  { value: 'mg', label: 'mg (Milligram)' },
   { value: 'pcs', label: 'pcs (Cái)' },
   { value: 'tube', label: 'tube (Ống)' },
   { value: 'box', label: 'box (Hộp)' },
@@ -49,13 +49,100 @@ export function getStandardizedAmount(amount: number, fromUnit: string, toUnit: 
   return (amount * u1.val) / u2.val;
 }
 
+/**
+ * Parses a string input like "0.5kg" or "500" into the base unit value.
+ * @param inputStr The raw string from user input (e.g., "-0.5kg")
+ * @param baseUnit The target base unit stored in DB (e.g., "g")
+ * @returns The numeric value in base unit, or null if invalid.
+ */
+export function parseQuantityInput(inputStr: string, baseUnit: string): number | null {
+    if (!inputStr) return null;
+    const cleanStr = inputStr.trim().toLowerCase().replace(',', '.');
+    
+    // Regex to extract number and optional unit suffix
+    // Matches: "100", "-100", "0.5", "0.5kg", "-500 ml"
+    const match = cleanStr.match(/^([+-]?\d*(?:\.\d+)?)\s*([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF%]*)$/);
+    
+    if (!match) return null;
+
+    const val = parseFloat(match[1]);
+    const unitSuffix = match[2].trim();
+
+    if (isNaN(val)) return null;
+
+    // If no unit suffix is provided, assume it's already in Base Unit
+    if (!unitSuffix) return val;
+
+    // If unit suffix exists, try to convert to Base Unit
+    const converted = getStandardizedAmount(val, unitSuffix, baseUnit);
+    
+    // If conversion fails (incompatible unit), return null to signal error
+    return converted;
+}
+
+/**
+ * Enforces Base Unit Policy:
+ * - Volume -> ml
+ * - Mass -> g
+ * Converts stock and threshold.
+ */
+export function normalizeInventoryItem(item: any): any {
+    const unitKey = Object.keys(UNIT_DATA).find(k => k.toLowerCase() === (item.unit || '').toLowerCase().trim());
+    if (!unitKey) return item; // Unknown unit, keep as is
+
+    const type = UNIT_DATA[unitKey].type;
+    let targetUnit = item.unit;
+
+    if (type === 'mass') targetUnit = 'g';
+    else if (type === 'vol') targetUnit = 'ml';
+    else return item; // Qty types keep as is
+
+    if (targetUnit !== item.unit) {
+        // Convert Stock
+        const newStock = getStandardizedAmount(item.stock || 0, item.unit, targetUnit);
+        // Convert Threshold
+        const newThreshold = getStandardizedAmount(item.threshold || 0, item.unit, targetUnit);
+        
+        return {
+            ...item,
+            unit: targetUnit,
+            stock: newStock !== null ? newStock : item.stock,
+            threshold: newThreshold !== null ? newThreshold : item.threshold
+        };
+    }
+    return item;
+}
+
+/**
+ * Smart display for UI.
+ * e.g. 2500 ml -> "2.5 L"
+ * e.g. 0.005 g -> "5 mg"
+ */
+export function formatSmartUnit(amount: number, unit: string): string {
+    if (amount === 0) return `0 <span class="text-[10px] text-slate-400">${unit}</span>`;
+    
+    // Volume Logic
+    if (unit === 'ml') {
+        if (amount >= 1000) return `${formatNum(amount / 1000)} <span class="text-[10px] text-slate-400">L</span>`;
+        if (amount < 1 && amount > 0) return `${formatNum(amount * 1000)} <span class="text-[10px] text-slate-400">µl</span>`;
+    }
+    
+    // Mass Logic
+    if (unit === 'g') {
+        if (amount >= 1000) return `${formatNum(amount / 1000)} <span class="text-[10px] text-slate-400">kg</span>`;
+        if (amount < 1 && amount > 0) return `${formatNum(amount * 1000)} <span class="text-[10px] text-slate-400">mg</span>`;
+    }
+
+    return `${formatNum(amount)} <span class="text-[10px] text-slate-400">${unit}</span>`;
+}
+
 export function cleanName(str: string): string {
   return str ? str.replace(/_per_/g, '/') : '';
 }
 
 export function formatNum(n: any): string {
   const val = parseFloat(n);
-  return isNaN(val) ? "0" : val.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return isNaN(val) ? "0" : val.toLocaleString('en-US', { maximumFractionDigits: 3 });
 }
 
 export function formatDate(timestamp: any): string {
@@ -101,9 +188,6 @@ export function getAvatarUrl(name: string | undefined | null): string {
   return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
 }
 
-/**
- * Compares two strings using natural sort order (e.g. "Item 2" < "Item 10").
- */
 export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }

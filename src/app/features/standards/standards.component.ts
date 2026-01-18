@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -33,8 +34,8 @@ import { Unsubscribe } from 'firebase/firestore';
         
         <div class="flex gap-2 items-center">
            @if(selectedIds().size > 0 && auth.canEditStandards()) {
-                <button (click)="deleteSelected()" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition font-bold text-xs flex items-center gap-2 animate-bounce-in">
-                    <i class="fa-solid fa-trash"></i> Xóa {{selectedIds().size}} mục
+                <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition font-bold text-xs flex items-center gap-2 animate-bounce-in disabled:opacity-50">
+                    @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-trash"></i> } Xóa {{selectedIds().size}} mục
                 </button>
                 <div class="h-6 w-px bg-slate-200 mx-1"></div>
            }
@@ -50,8 +51,8 @@ import { Unsubscribe } from 'firebase/firestore';
            }
            
            @if(state.isAdmin()) {
-             <button (click)="deleteAll()" [disabled]="isLoading()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
-                @if(isLoading()) { <i class="fa-solid fa-spinner fa-spin"></i> }
+             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
+                @if(isLoading() || isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
                 @else { <i class="fa-solid fa-bomb"></i> }
              </button>
            }
@@ -443,8 +444,8 @@ import { Unsubscribe } from 'firebase/firestore';
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">COA File (Link/Upload)</label>
                                     <div class="flex gap-2">
                                         <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-500 text-blue-600 underline" placeholder="Paste URL here...">
-                                        <button type="button" (click)="uploadInput.click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap">
-                                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
+                                            @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
                                         </button>
                                         <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
                                     </div>
@@ -459,8 +460,9 @@ import { Unsubscribe } from 'firebase/firestore';
                 <!-- Footer Actions -->
                 <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
                     <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="saveStandard()" [disabled]="form.invalid" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                        {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }}
+                    <button (click)="saveStandard()" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
+                        @else { {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
                     </button>
                 </div>
             </div>
@@ -553,7 +555,12 @@ import { Unsubscribe } from 'firebase/firestore';
                     </div>
                     @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
                 </div>
-                <div class="flex justify-end gap-3 mt-8"><button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button><button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">Xác nhận</button></div>
+                <div class="flex justify-end gap-3 mt-8">
+                    <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xác nhận }
+                    </button>
+                </div>
             </div>
          </div>
       }
@@ -568,7 +575,7 @@ import { Unsubscribe } from 'firebase/firestore';
                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
                   <table class="w-full text-sm text-left"><thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase sticky top-0 border-b border-slate-100 shadow-sm"><tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()){<th class="px-6 py-4 text-center w-24">Tác vụ</th>}</tr></thead><tbody class="divide-y divide-slate-50">
                         @if (loadingHistory()) { <tr><td colspan="4" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr> } @else {
-                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 transition group"> <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 text-xs">{{ log.user }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" class="text-red-500 hover:text-red-700 p-2"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Chưa có dữ liệu.</td></tr> }
+                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 transition group"> <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 text-xs">{{ log.user }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" [disabled]="isProcessing()" class="text-red-500 hover:text-red-700 p-2 disabled:opacity-50"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Chưa có dữ liệu.</td></tr> }
                         }
                   </tbody></table>
                </div>
@@ -605,6 +612,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isUploading = signal(false);
   isImporting = signal(false);
+  isProcessing = signal(false); // Hardened UX State
 
   viewMode = signal<'list' | 'grid'>('grid');
   searchTerm = signal('');
@@ -772,7 +780,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showModal.set(true); 
   }
   
-  closeModal() { this.showModal.set(false); }
+  closeModal() { 
+      if (!this.isProcessing()) {
+          this.showModal.set(false); 
+      }
+  }
   
   onNameChange(event: any) { 
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
@@ -790,22 +802,35 @@ export class StandardsComponent implements OnInit, OnDestroy {
       }
   }
 
+  // --- HARDENED: Save ---
   async saveStandard() {
+      if (this.isProcessing()) return;
       if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
-      const val = this.form.value;
-      if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
-      const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
+      
+      this.isProcessing.set(true);
       try {
+          const val = this.form.value;
+          if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
+          const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
+      
           if (this.isEditing()) await this.stdService.updateStandard(std); else await this.stdService.addStandard(std);
-          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); this.closeModal(); 
-      } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); 
+          this.showModal.set(false); // Force close
+      } catch (e: any) { 
+          this.toast.show('Lỗi: ' + e.message, 'error'); 
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
+  // --- HARDENED: Bulk Delete ---
   async deleteSelected() {
+      if (this.isProcessing()) return;
       const ids = Array.from(this.selectedIds());
       if (ids.length === 0) return;
+      
       if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa vĩnh viễn ${ids.length} chuẩn đã chọn và TẤT CẢ lịch sử của chúng?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
-          this.isLoading.set(true);
+          this.isProcessing.set(true);
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
               this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); 
@@ -813,14 +838,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
           } catch(e: any) { 
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
           } finally {
-              this.isLoading.set(false);
+              this.isProcessing.set(false);
           }
       }
   }
 
   async deleteAll() {
+      if (this.isProcessing()) return;
       if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hệ thống sẽ xóa sạch cả lịch sử dụng của từng chuẩn.\nHành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
           this.isLoading.set(true);
+          this.isProcessing.set(true);
           try { 
               await this.stdService.deleteAllStandards(); 
               this.toast.show('Đã xóa toàn bộ dữ liệu và logs.', 'success'); 
@@ -828,6 +855,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
           } finally {
               this.isLoading.set(false);
+              this.isProcessing.set(false);
           }
       }
   }
@@ -853,8 +881,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.importPreviewData.set([]);
   }
 
+  // --- HARDENED: Confirm Import ---
   async confirmImport() {
-      if (this.importPreviewData().length === 0) return;
+      if (this.importPreviewData().length === 0 || this.isImporting()) return;
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
@@ -868,6 +897,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   async uploadCoaFile(event: any) {
+      if (this.isUploading()) return;
       const file = event.target.files[0];
       if (!file) return;
       this.isUploading.set(true);
@@ -997,20 +1027,43 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
+  
+  // --- HARDENED: Confirm Weigh ---
   async confirmWeigh() {
+      if (this.isProcessing()) return;
       const std = this.selectedStd(); const amount = this.weighAmount();
       if (!std || amount <= 0) return;
+      
+      this.isProcessing.set(true);
       try {
           await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() });
-          this.toast.show('Đã cập nhật!'); this.selectedStd.set(null); 
-      } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+          this.toast.show('Đã cập nhật!'); 
+          this.selectedStd.set(null); 
+      } catch (e: any) { 
+          this.toast.show('Lỗi: ' + e.message, 'error'); 
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   async viewHistory(std: ReferenceStandard) { this.historyStd.set(std); this.loadingHistory.set(true); try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } finally { this.loadingHistory.set(false); } }
+  
+  // --- HARDENED: Delete Log ---
   async deleteLog(log: UsageLog) {
+      if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
+      
       if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
-          try { await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); this.toast.show('Đã xóa', 'success'); await this.viewHistory(this.historyStd()!); } catch (e: any) { this.toast.show('Lỗi: ' + e.message, 'error'); }
+          this.isProcessing.set(true);
+          try { 
+              await this.stdService.deleteUsageLog(this.historyStd()!.id, log.id); 
+              this.toast.show('Đã xóa', 'success'); 
+              await this.viewHistory(this.historyStd()!); 
+          } catch (e: any) { 
+              this.toast.show('Lỗi: ' + e.message, 'error'); 
+          } finally {
+              this.isProcessing.set(false);
+          }
       }
   }
 

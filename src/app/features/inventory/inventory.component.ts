@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -6,7 +7,7 @@ import { InventoryService } from './inventory.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Sop } from '../../core/models/sop.model';
 import { CalculatorService } from '../../core/services/calculator.service';
-import { cleanName, formatNum, UNIT_OPTIONS, generateSlug } from '../../shared/utils/utils';
+import { cleanName, formatNum, UNIT_OPTIONS, generateSlug, formatSmartUnit, parseQuantityInput } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -101,17 +102,17 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                         <tr>
                             <th class="px-4 py-2 pl-6 w-[40%]">Hóa chất / Vật tư</th>
                             <th class="px-4 py-2 border-l border-slate-100">Phân loại</th>
-                            <th class="px-4 py-2 text-center border-l border-slate-100 w-20">ĐVT</th>
+                            <th class="px-4 py-2 text-center border-l border-slate-100 w-20">ĐVT (Gốc)</th>
                             <th class="px-4 py-2 text-right border-l border-slate-100 w-32">Tồn kho (Gauge)</th>
                             @if (auth.canEditInventory()) {
-                                <th class="px-4 py-2 text-right border-l border-slate-100 w-28">Update</th>
+                                <th class="px-4 py-2 text-right border-l border-slate-100 w-32">Nhập nhanh</th>
                             }
                             <th class="px-4 py-2 text-center w-12 border-l border-slate-100"></th>
                         </tr>
                     </thead>
                     
                     <tbody class="text-sm text-slate-600 divide-y divide-slate-100 md:divide-none bg-transparent">
-                        @if(isLoading()) {
+                        @if(isInitialLoading()) {
                             @for(i of [1,2,3,4,5,6]; track i) {
                                 <tr class="bg-white md:bg-transparent block md:table-row mb-3 md:mb-0 p-4 md:p-0 rounded-xl md:rounded-none border md:border-0 shadow-sm md:shadow-none">
                                     <td class="px-4 py-2 block md:table-cell"><app-skeleton width="100%" height="20px"></app-skeleton></td>
@@ -141,9 +142,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                                         {{item.name || item.id}}
                                                     </h6>
                                                     <!-- Mobile Only Stock -->
-                                                    <div class="md:hidden font-mono font-bold text-slate-800 text-xs">
-                                                        {{formatNum(item.stock)}} <span class="text-[10px] text-slate-400 font-normal">{{item.unit}}</span>
-                                                    </div>
+                                                    <div class="md:hidden font-mono font-bold text-slate-800 text-xs" [innerHTML]="formatSmartUnit(item.stock, item.unit)"></div>
                                                 </div>
                                                 <div class="flex items-center gap-2 mt-0.5">
                                                     <span class="text-[9px] text-slate-400 font-mono bg-slate-100 px-1 rounded border border-slate-200">{{item.id}}</span>
@@ -167,7 +166,11 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                     <td class="hidden md:table-cell px-4 py-2 text-right border-l border-slate-50 bg-white md:bg-transparent min-w-[140px]">
                                         <div class="flex flex-col items-end w-full">
                                             <div class="flex items-center gap-2 w-full justify-end">
-                                                <span class="font-mono font-bold text-sm tracking-tight" [class.text-red-600]="item.stock <= 0" [class.text-slate-700]="item.stock > 0">{{formatNum(item.stock)}}</span>
+                                                <span class="font-mono font-bold text-sm tracking-tight" 
+                                                      [class.text-red-600]="item.stock <= 0" 
+                                                      [class.text-slate-700]="item.stock > 0"
+                                                      [innerHTML]="formatSmartUnit(item.stock, item.unit)">
+                                                </span>
                                                 @if(item.stock <= (item.threshold || 5) && item.stock > 0) { <i class="fa-solid fa-circle-exclamation text-[10px] text-orange-500" title="Sắp hết"></i> }
                                             </div>
                                             <!-- Stock Gauge -->
@@ -186,13 +189,16 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                     @if (auth.canEditInventory()) {
                                         <td class="hidden md:table-cell px-4 py-2 text-right border-l border-slate-50" (click)="$event.stopPropagation()">
                                             <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
-                                                <input #quickInput type="number" 
-                                                       class="w-14 px-1 py-0.5 text-[10px] border border-slate-200 rounded text-center focus:border-fuchsia-500 outline-none transition font-bold text-slate-700 font-mono" 
-                                                       placeholder="+/-"
+                                                <input #quickInput type="text" 
+                                                       [disabled]="isProcessing()"
+                                                       class="w-20 px-1 py-0.5 text-[10px] border border-slate-200 rounded text-center focus:border-fuchsia-500 outline-none transition font-bold text-slate-700 font-mono disabled:opacity-50 disabled:bg-slate-100" 
+                                                       [placeholder]="'+/- (' + item.unit + ')'"
                                                        (keyup.enter)="quickUpdate(item, quickInput.value); quickInput.value=''">
                                                 <button (click)="quickUpdate(item, quickInput.value); quickInput.value=''" 
-                                                        class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm active:scale-90">
-                                                    <i class="fa-solid fa-check text-[10px]"></i>
+                                                        [disabled]="isProcessing()"
+                                                        class="w-6 h-6 flex items-center justify-center rounded bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin text-[8px]"></i> }
+                                                    @else { <i class="fa-solid fa-check text-[10px]"></i> }
                                                 </button>
                                             </div>
                                         </td>
@@ -216,7 +222,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                     </tbody>
                 </table>
                 
-                @if (hasMore() && !isLoading()) {
+                @if (hasMore() && !isInitialLoading()) {
                     <div class="text-center p-4">
                         <button (click)="loadMore()" class="text-xs font-bold text-slate-500 hover:text-fuchsia-600 transition active:scale-95 bg-white border border-slate-200 px-4 py-2 rounded-full shadow-sm hover:shadow">
                             Xem thêm...
@@ -363,10 +369,11 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                    <input type="number" formControlName="stock" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-lg font-bold text-fuchsia-600 outline-none bg-slate-50 focus:bg-white transition text-center">
                                </div>
                                <div>
-                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Đơn vị</label>
+                                   <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Đơn vị (Gốc)</label>
                                    <select formControlName="unit" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs outline-none bg-slate-50 focus:bg-white transition h-[46px]">
                                        @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.label}}</option> }
                                    </select>
+                                   <p class="text-[9px] text-slate-400 mt-1 italic text-center">Hệ thống sẽ tự quy đổi về <b>ml</b> hoặc <b>g</b> khi lưu.</p>
                                </div>
                            </div>
                            
@@ -389,10 +396,13 @@ import { LabelPrintComponent } from '../labels/label-print.component';
 
                            <div class="pt-4 flex gap-3">
                                @if(isEditing()) {
-                                   <button type="button" (click)="deleteItem($any(form.getRawValue()))" class="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-red-100 transition active:scale-95">Xóa</button>
+                                   <button type="button" (click)="deleteItem($any(form.getRawValue()))" [disabled]="isProcessing()" class="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-red-100 transition active:scale-95 disabled:opacity-50">
+                                       @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xóa }
+                                   </button>
                                }
-                               <button type="submit" [disabled]="isLoading()" class="flex-[3] bg-slate-800 text-white py-3 rounded-xl font-bold text-xs shadow-md hover:shadow-lg hover:bg-black transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
-                                   {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }}
+                               <button type="submit" [disabled]="isProcessing()" class="flex-[3] bg-slate-800 text-white py-3 rounded-xl font-bold text-xs shadow-md hover:shadow-lg hover:bg-black transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+                                   @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
+                                   @else { {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
                                </button>
                            </div>
                        </form>
@@ -424,7 +434,8 @@ export class InventoryComponent implements OnDestroy {
   items = signal<InventoryItem[]>([]);
   lastDoc = signal<QueryDocumentSnapshot | null>(null);
   hasMore = signal(true);
-  isLoading = signal(true);
+  isInitialLoading = signal(true); // Renamed from isLoading to distinguish from processing
+  isProcessing = signal(false); // New: For Hardened UX Pattern
   
   // Decoupled from State
   totalCount = signal<number | null>(null);
@@ -497,6 +508,7 @@ export class InventoryComponent implements OnDestroy {
 
   // Helpers
   formatNum = formatNum;
+  formatSmartUnit = formatSmartUnit; // Updated for Smart Display
   getIcon(cat: string | undefined): string { return cat === 'reagent' ? 'fa-flask' : cat === 'consumable' ? 'fa-vial' : cat === 'kit' ? 'fa-box-open' : 'fa-cube'; }
   getIconGradient(item: InventoryItem): string {
       if (item.stock <= 0) return 'bg-gradient-to-tl from-red-600 to-rose-400';
@@ -525,7 +537,7 @@ export class InventoryComponent implements OnDestroy {
   }
 
   async refreshData() {
-      this.isLoading.set(true);
+      this.isInitialLoading.set(true);
       this.items.set([]);
       this.lastDoc.set(null);
       this.hasMore.set(true);
@@ -535,7 +547,7 @@ export class InventoryComponent implements OnDestroy {
 
   async loadMore(isRefresh = false) {
       if (!this.hasMore() && !isRefresh) return;
-      this.isLoading.set(true);
+      this.isInitialLoading.set(true);
       try {
           const page = await this.inventoryService.getInventoryPage(20, this.lastDoc(), this.filterType(), this.searchTerm());
           
@@ -544,7 +556,7 @@ export class InventoryComponent implements OnDestroy {
           this.lastDoc.set(page.lastDoc);
           this.hasMore.set(page.hasMore);
       } finally { 
-          this.isLoading.set(false); 
+          this.isInitialLoading.set(false); 
       }
   }
 
@@ -571,48 +583,85 @@ export class InventoryComponent implements OnDestroy {
         this.form.controls.id.enable(); 
     }
   }
-  closeModal() { this.showModal.set(false); }
+  closeModal() { 
+      if (!this.isProcessing()) {
+          this.showModal.set(false); 
+      }
+  }
   onNameChange(e: any) { if(!this.isEditing()) this.form.patchValue({ id: generateSlug(e.target.value) }); }
   
+  // --- HARDENED UX: Save Item ---
   async save() {
+      if (this.isProcessing()) return; // 1. Guard
+      
       if (this.form.invalid) {
           this.toast.show('Vui lòng nhập đầy đủ thông tin và Lý do thay đổi!', 'error');
           return;
       }
-      this.isLoading.set(true);
+
+      this.isProcessing.set(true); // 2. Lock
+      
       try { 
+          // 3. Execute
           const raw = this.form.getRawValue();
           const reason = raw.reason || ''; 
           const { reason: _, ...itemData } = raw; 
 
+          // Service will normalize units to base (ml/g) automatically
           await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason); 
-          this.closeModal(); 
+          this.toast.show(this.isEditing() ? 'Đã cập nhật' : 'Đã thêm mới', 'success');
+          
+          this.showModal.set(false); // Force close regardless of guard
           this.refreshData(); 
           if(!this.isEditing()) this.loadTotalCount(); // Refresh count on add
       } catch (e: any) {
+          // 4. Error Handle
           if (e.code === 'resource-exhausted') {
              this.toast.show('Lỗi: Hết dung lượng lưu trữ (Quota).', 'error');
           } else {
              this.toast.show('Lỗi lưu kho: ' + (e.message || 'Unknown'), 'error');
           }
       } finally { 
-          this.isLoading.set(false); 
+          // 5. Unlock
+          this.isProcessing.set(false); 
       }
   }
   
+  // --- HARDENED UX: Delete Item ---
   async deleteItem(item: InventoryItem) {
-      this.closeModal(); 
+      if (this.isProcessing()) return; // Guard
+
       if(await this.confirmationService.confirm({ message: 'Xóa mục này? Hành động này cần được ghi nhận.', confirmText: 'Xác nhận Xóa', isDangerous: true })) {
-          await this.inventoryService.deleteItem(item.id, 'Xóa thủ công');
-          this.refreshData();
-          this.loadTotalCount();
+          this.isProcessing.set(true); // Lock
+          try {
+              await this.inventoryService.deleteItem(item.id, 'Xóa thủ công');
+              this.toast.show('Đã xóa thành công', 'success');
+              this.showModal.set(false);
+              this.refreshData();
+              this.loadTotalCount();
+          } catch (e: any) {
+              this.toast.show('Lỗi xóa: ' + e.message, 'error');
+          } finally {
+              this.isProcessing.set(false); // Unlock
+          }
       }
   }
   
+  // --- HARDENED UX: Quick Update ---
   async quickUpdate(item: InventoryItem, valStr: string) {
-    const val = parseFloat(valStr);
-    if (isNaN(val) || val === 0) return;
+    if (this.isProcessing()) return; // Guard
 
+    // 1. SMART PARSE: Check for unit suffix first
+    const val = parseQuantityInput(valStr, item.unit); 
+
+    if (val === null) {
+        this.toast.show(`Lỗi: Đơn vị không khớp hoặc định dạng sai. Yêu cầu nhập theo (${item.unit}) hoặc quy đổi tương đương.`, 'error');
+        return;
+    }
+    
+    if (val === 0) return;
+
+    this.isProcessing.set(true); // Lock Global Table Interaction
     try {
       const reason = val > 0 ? 'Nhập nhanh' : 'Xuất nhanh';
       await this.inventoryService.updateStock(item.id, item.stock, val, reason);
@@ -620,7 +669,9 @@ export class InventoryComponent implements OnDestroy {
       this.toast.show(msg, 'success');
       this.refreshData();
     } catch (e: any) {
-      this.toast.show('Lỗi cập nhật kho', 'error');
+      this.toast.show('Lỗi cập nhật kho: ' + e.message, 'error');
+    } finally {
+      this.isProcessing.set(false); // Unlock
     }
   }
   

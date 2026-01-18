@@ -101,12 +101,19 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                </div>
 
                <div class="p-5 border-t border-slate-100 bg-slate-50 space-y-3 shrink-0">
-                  <button (click)="onPrintDraft(currentSop)" class="w-full bg-slate-200 border border-slate-300 text-slate-700 font-bold py-3.5 rounded-xl shadow-sm transition hover:bg-slate-300 flex items-center justify-center gap-2">
-                      <i class="fa-solid fa-print"></i> In Bản Nháp (Direct)
+                  <button (click)="onPrintDraft(currentSop)" [disabled]="isProcessing()" class="w-full bg-slate-200 border border-slate-300 text-slate-700 font-bold py-3.5 rounded-xl shadow-sm transition hover:bg-slate-300 flex items-center justify-center gap-2 disabled:opacity-50">
+                      @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-print"></i> } In Bản Nháp
                   </button>
-                  <button (click)="sendRequest(currentSop)" class="w-full bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-300 font-bold py-3.5 rounded-xl shadow-sm transition">Gửi Yêu Cầu Duyệt</button>
+                  
+                  <button (click)="sendRequest(currentSop)" [disabled]="isProcessing()" class="w-full bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-300 font-bold py-3.5 rounded-xl shadow-sm transition disabled:opacity-50">
+                      Gửi Yêu Cầu Duyệt
+                  </button>
+                  
                   @if(auth.canApprove()) {
-                     <button (click)="approveAndCreatePrintJob(currentSop)" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700">Duyệt & In Phiếu Ngay</button>
+                     <button (click)="approveAndCreatePrintJob(currentSop)" [disabled]="isProcessing()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition hover:from-emerald-600 hover:to-teal-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... }
+                        @else { Duyệt & In Phiếu Ngay }
+                     </button>
                   }
                </div>
             </div>
@@ -202,7 +209,6 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
       @else {
         <!-- LIBRARY VIEW (Search & List) -->
         <div class="flex flex-col h-full animate-fade-in relative">
-            <!-- (Library Template Code Unchanged for Brevity - keeping existing logic) -->
             <!-- TABS SWITCHER -->
             <div class="flex justify-between items-end border-b border-slate-200 mb-6 shrink-0 pt-4 px-1">
                 <div class="flex gap-6">
@@ -325,56 +331,6 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
   `
 })
 export class CalculatorComponent implements OnDestroy {
-  // ... (Previous imports and props remain the same)
-  
-  // Update onPrintDraft to use direct print
-  onPrintDraft(sop: Sop) {
-    const inputs = this.form().getRawValue();
-    
-    // Save state before processing (optional, good for UX)
-    this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: inputs });
-
-    const job: PrintJob = {
-      sop: sop, 
-      inputs: inputs, 
-      margin: this.safetyMargin(), 
-      items: this.calculatedItems(),
-      date: new Date(), 
-      user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',
-      analysisDate: inputs.analysisDate,
-      requestId: `DRAFT-${Date.now()}` // Draft ID
-    };
-    
-    // DIRECT CALL - NO ROUTING
-    this.printService.printDocument([job]);
-  }
-
-  // Update approveAndCreatePrintJob
-  async approveAndCreatePrintJob(sop: Sop) {
-    if (!this.auth.canApprove()) return;
-    
-    // 1. Approve & Deduct Stock
-    // We need to modify state service slightly or just trust the feedback loop.
-    // For now, let's assume successful approval means we print.
-    await this.state.directApproveAndPrint(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
-    
-    // 2. Prepare Print Job
-    const job: PrintJob = {
-      sop: sop,
-      inputs: this.form().value,
-      margin: this.safetyMargin(),
-      items: this.calculatedItems(),
-      date: new Date(),
-      user: this.state.currentUser()?.displayName,
-      analysisDate: this.form().value.analysisDate,
-      requestId: `REQ-${Date.now()}` // Real Request ID would be better if returned from approval
-    };
-
-    // 3. Direct Print
-    this.printService.printDocument([job]);
-  }
-
-  // ... (Rest of the component logic remains unchanged)
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
   
   private fb: FormBuilder = inject(FormBuilder);
@@ -396,35 +352,25 @@ export class CalculatorComponent implements OnDestroy {
   searchTerm = signal('');
   activeMenuSopId = signal<string | null>(null);
   
-  // Track current SOP ID to prevent form resetting loop
-  private currentFormSopId: string | null = null;
+  // Hardened UX
+  isProcessing = signal(false);
   
+  private currentFormSopId: string | null = null;
   localInventoryMap = signal<Record<string, InventoryItem>>({});
   localRecipeMap = signal<Record<string, Recipe>>({});
   isLoadingInventory = signal(false);
 
-  // Filtered & Sorted SOPs (Flat List)
   filteredSops = computed(() => {
       const term = this.searchTerm().toLowerCase();
-      // Filter out archived sops (soft deleted)
       const allSops = this.state.sops().filter(s => !s.isArchived);
-      
       const filtered = allSops.filter(s => s.name.toLowerCase().includes(term) || s.category.toLowerCase().includes(term));
-      
-      // Sort by Category (Natural Sort) then Name (Natural Sort)
       return filtered.sort((a, b) => {
-          const catA = (a.category || '').toLowerCase();
-          const catB = (b.category || '').toLowerCase();
-          
-          // Use naturalCompare for Categories to handle H-9.2 vs H-9.10 vs H-9.21 correctly
-          const catCompare = naturalCompare(catA, catB);
+          const catCompare = naturalCompare((a.category || '').toLowerCase(), (b.category || '').toLowerCase());
           if (catCompare !== 0) return catCompare;
-          
           return naturalCompare(a.name, b.name);
       });
   });
 
-  // Init form
   form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
   private formValueSub?: Subscription;
 
@@ -434,259 +380,211 @@ export class CalculatorComponent implements OnDestroy {
   formatDate = formatDate;
 
   constructor() {
-    // EFFECT 1: Manage Form Initialization
     effect(() => {
       const s = this.activeSop();
-      
       if (s) {
         if (s.id === this.currentFormSopId) return;
         this.currentFormSopId = s.id;
         this.formValueSub?.unsubscribe();
 
-        // 1. Initialize Form with Defaults
-        const controls: Record<string, any> = { 
-            safetyMargin: [10],
-            analysisDate: [this.getTodayDate()] 
-        };
+        const controls: Record<string, any> = { safetyMargin: [10], analysisDate: [this.getTodayDate()] };
         s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
         const newForm = this.fb.group(controls);
 
-        // 2. CHECK CACHE: Restore if we have saved state for this SOP
         const cached = this.state.cachedCalculatorState();
-        if (cached && cached.sopId === s.id) {
-            newForm.patchValue(cached.formValues);
-        }
+        if (cached && cached.sopId === s.id) { newForm.patchValue(cached.formValues); }
 
         this.form.set(newForm);
-
-        // 3. Initial Calculation
-        this.localInventoryMap.set({}); 
-        this.localRecipeMap.set({});
+        this.localInventoryMap.set({}); this.localRecipeMap.set({});
         this.runCalculation(s, newForm.value);
-
-        // 4. Trigger Async Fetch
         this.fetchData(s);
 
-        // 5. Subscribe to Form Changes
-        this.formValueSub = newForm.valueChanges.pipe(
-            startWith(newForm.value),
-            debounceTime(50) 
-        ).subscribe(vals => {
+        this.formValueSub = newForm.valueChanges.pipe(startWith(newForm.value), debounceTime(50)).subscribe(vals => {
              this.runCalculation(s, vals);
              const margin = Number(vals['safetyMargin']);
              this.safetyMargin.set(isNaN(margin) ? 0 : margin);
         });
-
       } else {
-         this.currentFormSopId = null;
-         this.calculatedItems.set([]);
-         this.localInventoryMap.set({});
+         this.currentFormSopId = null; this.calculatedItems.set([]); this.localInventoryMap.set({});
       }
     }, { allowSignalWrites: true });
 
-    // EFFECT 2: Re-calculate when Inventory/Recipes Arrive
     effect(() => {
-        const invMap = this.localInventoryMap();
-        const recMap = this.localRecipeMap();
-        const s = untracked(this.activeSop);
-        const currentForm = untracked(this.form);
-
-        if (s && currentForm && (Object.keys(invMap).length > 0 || Object.keys(recMap).length > 0)) {
-            this.runCalculation(s, currentForm.value);
-        }
+        const invMap = this.localInventoryMap(); const recMap = this.localRecipeMap(); const s = untracked(this.activeSop); const currentForm = untracked(this.form);
+        if (s && currentForm && (Object.keys(invMap).length > 0 || Object.keys(recMap).length > 0)) { this.runCalculation(s, currentForm.value); }
     });
   }
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
+  getTodayDate(): string { return new Date().toISOString().split('T')[0]; }
 
-  getTodayDate(): string {
-      return new Date().toISOString().split('T')[0];
-  }
-
-  // Decoupled Fetch with Shared Recipe Support
   async fetchData(sop: Sop) {
       this.isLoadingInventory.set(true);
-      const neededInvIds = new Set<string>();
-      const neededRecipeIds = new Set<string>();
-
-      // 1. Scan for Recipe IDs
+      const neededInvIds = new Set<string>(); const neededRecipeIds = new Set<string>();
       sop.consumables.forEach(c => {
-          if (c.type === 'shared_recipe' && c.recipeId) {
-              neededRecipeIds.add(c.recipeId);
-          } else if (c.type === 'simple' && c.name) {
-              neededInvIds.add(c.name);
-          } else if (c.type === 'composite' && c.ingredients) {
-              c.ingredients.forEach(i => neededInvIds.add(i.name));
-          }
+          if (c.type === 'shared_recipe' && c.recipeId) neededRecipeIds.add(c.recipeId);
+          else if (c.type === 'simple' && c.name) neededInvIds.add(c.name);
+          else if (c.type === 'composite' && c.ingredients) c.ingredients.forEach(i => neededInvIds.add(i.name));
       });
 
       try {
-          // 2. Fetch Recipes
           const recipes = await this.recipeService.getRecipesByIds(Array.from(neededRecipeIds));
           const recMap: Record<string, Recipe> = {};
-          
-          recipes.forEach(r => {
-              recMap[r.id] = r;
-              // Add recipe ingredients to inventory need list
-              r.ingredients.forEach(i => neededInvIds.add(i.name));
-          });
+          recipes.forEach(r => { recMap[r.id] = r; r.ingredients.forEach(i => neededInvIds.add(i.name)); });
           this.localRecipeMap.set(recMap);
 
-          // 3. Fetch Inventory
           const items = await this.invService.getItemsByIds(Array.from(neededInvIds));
           const invMap: Record<string, InventoryItem> = {};
           items.forEach(i => invMap[i.id] = i);
-          
           this.localInventoryMap.set(invMap); 
-
-      } catch(e) {
-          console.warn("Fetch warning:", e);
-      } finally {
-          this.isLoadingInventory.set(false);
-      }
+      } catch(e) { console.warn("Fetch warning:", e); } finally { this.isLoadingInventory.set(false); }
   }
 
-  resolveName(item: CalculatedItem | CalculatedIngredient): string {
-    return item.displayName || item.name;
-  }
+  resolveName(item: CalculatedItem | CalculatedIngredient): string { return item.displayName || item.name; }
 
   runCalculation(sop: Sop, values: any) {
      try {
          const safeValues = (values || {}) as Record<string, any>;
          const margin = Number(safeValues['safetyMargin'] || 0);
-         // Pass both maps
-         const results = this.calcService.calculateSopNeeds(
-             sop, safeValues, isNaN(margin) ? 0 : margin, 
-             this.localInventoryMap(), 
-             this.localRecipeMap()
-         );
+         const results = this.calcService.calculateSopNeeds(sop, safeValues, isNaN(margin) ? 0 : margin, this.localInventoryMap(), this.localRecipeMap());
          this.calculatedItems.set(results);
-     } catch(e) {
-         console.error("Calculation Error", e);
-     }
+     } catch(e) { console.error("Calculation Error", e); }
   }
 
-  // --- Menu Interactions ---
-  toggleMenu(id: string, event: Event) {
-      event.stopPropagation();
-      if (this.activeMenuSopId() === id) {
-          this.activeMenuSopId.set(null);
-      } else {
-          this.activeMenuSopId.set(id);
-      }
-  }
-
-  closeMenu() {
-      this.activeMenuSopId.set(null);
-  }
-
-  // --- Actions ---
+  toggleMenu(id: string, event: Event) { event.stopPropagation(); if (this.activeMenuSopId() === id) this.activeMenuSopId.set(null); else this.activeMenuSopId.set(id); }
+  closeMenu() { this.activeMenuSopId.set(null); }
   selectSop(s: Sop) { this.state.selectedSop.set(s); }
-  clearSelection() { 
-      this.state.selectedSop.set(null); 
-      this.state.cachedCalculatorState.set(null); // Clear cache on manual exit
-      this.currentFormSopId = null; 
-  }
+  clearSelection() { this.state.selectedSop.set(null); this.state.cachedCalculatorState.set(null); this.currentFormSopId = null; }
+  createNew() { this.state.editingSop.set(null); this.router.navigate(['/editor']); }
+  editDirect(sop: Sop, event: Event) { event.stopPropagation(); this.closeMenu(); this.state.editingSop.set(sop); this.router.navigate(['/editor']); }
 
-  createNew() {
-      this.state.editingSop.set(null);
-      this.router.navigate(['/editor']);
-  }
-
-  editDirect(sop: Sop, event: Event) {
-      event.stopPropagation();
-      this.closeMenu();
-      this.state.editingSop.set(sop);
-      this.router.navigate(['/editor']);
-  }
-
-  // Soft Delete Implementation
+  // --- HARDENED: Archive SOP ---
   async softDeleteSop(sop: Sop, event: Event) {
       event.stopPropagation();
       this.closeMenu();
+      if (this.isProcessing()) return;
+
       if (await this.confirmation.confirm({ 
           message: `Lưu trữ quy trình "${sop.name}"?\nNó sẽ bị ẩn khỏi danh sách chính.`, 
-          confirmText: 'Lưu trữ (Xóa)', 
-          isDangerous: true 
+          confirmText: 'Lưu trữ (Xóa)', isDangerous: true 
       })) {
+          this.isProcessing.set(true);
           try {
               await this.sopService.archiveSop(sop.id);
               this.toast.show('Đã lưu trữ SOP.');
           } catch (e: any) {
               this.toast.show('Lỗi: ' + e.message, 'error');
-          }
-      }
-  }
-
-  exportSop(sop: Sop, event: Event) {
-      event.stopPropagation();
-      this.closeMenu();
-      try {
-          const json = JSON.stringify(sop, null, 2);
-          const blob = new Blob([json], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `SOP_${generateSlug(sop.name)}_${sop.version}.json`;
-          a.click();
-          URL.revokeObjectURL(url);
-          this.toast.show('Đã tải xuống SOP.');
-      } catch (e) {
-          this.toast.show('Lỗi export JSON', 'error');
-      }
-  }
-
-  async importSop(event: any) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = async (e: any) => {
-          try {
-              const data = JSON.parse(e.target.result);
-              if (!data.name || !data.consumables) throw new Error("File JSON không hợp lệ (thiếu name/consumables)");
-              
-              data.id = generateSlug(data.name + '_' + Date.now());
-              data.version = 1;
-              data.lastModified = null;
-              data.archivedAt = null;
-              data.isArchived = false;
-
-              if(await this.confirmation.confirm(`Import SOP: "${data.name}"?`)) {
-                  await this.sopService.saveSop(data);
-                  this.toast.show('Import thành công!', 'success');
-              }
-          } catch(err: any) {
-              this.toast.show('Lỗi Import: ' + err.message, 'error');
           } finally {
-              event.target.value = '';
+              this.isProcessing.set(false);
           }
-      };
-      reader.readAsText(file);
+      }
   }
 
+  // --- HARDENED: Duplicate SOP ---
   async duplicateSop(sop: Sop, event: Event) {
       event.stopPropagation();
       this.closeMenu();
+      if (this.isProcessing()) return;
+
       if(await this.confirmation.confirm(`Nhân bản SOP: "${sop.name}"?`)) {
+          this.isProcessing.set(true);
           try {
               const newSop: Sop = JSON.parse(JSON.stringify(sop));
               newSop.id = generateSlug(sop.name + '_copy_' + Date.now());
               newSop.name = `${sop.name} (Copy)`;
-              newSop.version = 1;
-              newSop.lastModified = null;
-              newSop.archivedAt = null;
-              newSop.isArchived = false;
-              
+              newSop.version = 1; newSop.lastModified = null; newSop.archivedAt = null; newSop.isArchived = false;
               await this.sopService.saveSop(newSop);
               this.toast.show('Đã nhân bản SOP!', 'success');
           } catch(e: any) {
               this.toast.show('Lỗi: ' + e.message, 'error');
+          } finally {
+              this.isProcessing.set(false);
           }
       }
   }
 
-  sendRequest(sop: Sop) {
-    this.state.submitRequest(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
+  // --- HARDENED: Print Draft ---
+  onPrintDraft(sop: Sop) {
+    if (this.isProcessing()) return;
+    this.isProcessing.set(true); // Short lock just to prevent rapid fire
+    
+    try {
+        const inputs = this.form().getRawValue();
+        this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: inputs });
+
+        const job: PrintJob = {
+          sop: sop, inputs: inputs, margin: this.safetyMargin(), items: this.calculatedItems(),
+          date: new Date(), user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',
+          analysisDate: inputs.analysisDate, requestId: `DRAFT-${Date.now()}`
+        };
+        
+        this.printService.printDocument([job]);
+    } finally {
+        // Since printService handles its own async logic for DOM creation, 
+        // we can unlock the button quickly or let printService manage the global lock if needed.
+        // For draft, unlocking quickly is fine.
+        this.isProcessing.set(false);
+    }
+  }
+
+  // --- HARDENED: Approve & Print ---
+  async approveAndCreatePrintJob(sop: Sop) {
+    if (!this.auth.canApprove()) return;
+    if (this.isProcessing()) return;
+
+    this.isProcessing.set(true); // LOCK UI
+    try {
+        await this.state.directApproveAndPrint(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
+        
+        const job: PrintJob = {
+          sop: sop, inputs: this.form().value, margin: this.safetyMargin(), items: this.calculatedItems(),
+          date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: this.form().value.analysisDate,
+          requestId: `REQ-${Date.now()}`
+        };
+
+        this.printService.printDocument([job]);
+    } catch (e: any) {
+        // Error toast is handled in state service, but we ensure unlock here
+    } finally {
+        this.isProcessing.set(false); // UNLOCK UI
+    }
+  }
+
+  async sendRequest(sop: Sop) {
+    if (this.isProcessing()) return;
+    this.isProcessing.set(true);
+    try {
+        await this.state.submitRequest(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
+    } finally {
+        this.isProcessing.set(false);
+    }
+  }
+
+  exportSop(sop: Sop, event: Event) {
+      event.stopPropagation(); this.closeMenu();
+      try {
+          const json = JSON.stringify(sop, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `SOP_${generateSlug(sop.name)}_${sop.version}.json`; a.click(); URL.revokeObjectURL(url);
+          this.toast.show('Đã tải xuống SOP.');
+      } catch (e) { this.toast.show('Lỗi export JSON', 'error'); }
+  }
+
+  async importSop(event: any) {
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+          try {
+              const data = JSON.parse(e.target.result);
+              if (!data.name || !data.consumables) throw new Error("File JSON không hợp lệ");
+              data.id = generateSlug(data.name + '_' + Date.now()); data.version = 1; data.lastModified = null; data.archivedAt = null; data.isArchived = false;
+              if(await this.confirmation.confirm(`Import SOP: "${data.name}"?`)) {
+                  await this.sopService.saveSop(data);
+                  this.toast.show('Import thành công!', 'success');
+              }
+          } catch(err: any) { this.toast.show('Lỗi Import: ' + err.message, 'error'); } finally { event.target.value = ''; }
+      };
+      reader.readAsText(file);
   }
 }
