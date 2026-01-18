@@ -1,3 +1,4 @@
+
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
@@ -24,7 +25,16 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "jspdf",
+              "html2canvas",
+              "chart.js",
+              "canvg",
+              "raf",
+              "rgbcolor",
+              "dompurify"
+            ]
           },
           "configurations": {
             "production": {

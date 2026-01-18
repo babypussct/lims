@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -103,7 +104,7 @@ declare var QRious: any;
                                 <div>
                                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Quy trình (SOP)</div>
                                     <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
-                                        {{pd.sop?.name || 'N/A'}}
+                                        {{pd.sop.name || 'N/A'}}
                                     </div>
                                 </div>
                                 <div>
@@ -133,7 +134,7 @@ declare var QRious: any;
                                 </h3>
                                 <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 print:bg-white print:border-black print:rounded-none print:p-2">
                                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 print:gap-2">
-                                        @for (inp of (pd.sop?.inputs || []); track inp.var) {
+                                        @for (inp of (pd.sop.inputs || []); track inp.var) {
                                             @if (inp.var !== 'safetyMargin' && pd.inputs?.[inp.var] !== undefined) {
                                                 <div>
                                                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5 print:text-black">{{inp.label}}</div>
@@ -147,7 +148,7 @@ declare var QRious: any;
                                                 </div>
                                             }
                                         }
-                                        @if (!pd.sop?.inputs || pd.sop.inputs.length === 0) {
+                                        @if (!pd.sop.inputs || pd.sop.inputs.length === 0) {
                                             <div class="col-span-full text-xs text-slate-400 italic">Không có thông số đặc biệt.</div>
                                         }
                                     </div>
