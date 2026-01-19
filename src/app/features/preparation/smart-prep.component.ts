@@ -13,11 +13,11 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
 type CalcMode = 'molar' | 'dilution' | 'spiking' | 'serial' | 'mix';
 type SystemMode = 'sandbox' | 'real';
 
-// Unit Constants for Dropdowns
+// Unit Constants
 const CONC_UNITS = [
     { val: 'M', factor: 1, label: 'M (Molar)' },
     { val: 'mM', factor: 0.001, label: 'mM' },
-    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' }, // Simplified assumption for UI
+    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' },
     { val: '%', factor: 10, label: '%' },
     { val: 'mg/ml', factor: 1, label: 'mg/mL' }
 ];
@@ -37,8 +37,8 @@ const MASS_UNITS = [
 
 interface SerialPoint {
     conc: number;
-    vStock: number; // in µL for precision
-    vSolvent: number; // in user selected unit
+    vStock: number; // calculated
+    vSolvent: number; // calculated
 }
 
 interface MixRow {
@@ -46,7 +46,7 @@ interface MixRow {
     name: string;
     stockConc: number;
     targetConc: number;
-    unit: string;
+    unit: string; // Target unit
     invItem: InventoryItem | null;
 }
 
@@ -57,7 +57,7 @@ interface MixRow {
   template: `
     <div class="h-full flex flex-col fade-in pb-10 font-sans text-slate-800">
         
-        <!-- HEADER & TOOLBAR -->
+        <!-- HEADER -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
             <div>
                 <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800">
@@ -66,7 +66,7 @@ interface MixRow {
                     </div>
                     Trạm Pha Chế
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tính toán nhanh & Tương tác kho hóa chất</p>
+                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Công cụ tính toán & Tương tác kho hóa chất</p>
             </div>
 
             <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -88,10 +88,10 @@ interface MixRow {
 
         <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
-            <!-- LEFT PANEL: CONFIGURATION -->
+            <!-- LEFT PANEL: CONFIG -->
             <div class="w-full xl:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden">
                 
-                <!-- Navigation Tabs -->
+                <!-- Mode Tabs -->
                 <div class="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
                     @for (m of modes; track m.id) {
                         <button (click)="setCalcMode(m.id)" 
@@ -104,9 +104,9 @@ interface MixRow {
 
                 <div class="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
                     
-                    <!-- REAL MODE: CHEMICAL SELECTOR (Single Item Modes) -->
+                    <!-- CHEMICAL SELECTOR (Real Mode & Not Mix) -->
                     @if (systemMode() === 'real' && calcMode() !== 'mix') {
-                        <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 animate-slide-up">
+                        <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 animate-slide-up relative">
                             <label class="text-[10px] font-bold text-purple-800 uppercase flex items-center gap-2">
                                 <i class="fa-solid fa-search"></i> Chọn Hóa chất (Trừ kho)
                             </label>
@@ -122,6 +122,7 @@ interface MixRow {
                                         <div class="absolute right-3 top-3 text-purple-500"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                                     }
 
+                                    <!-- Dropdown -->
                                     @if (searchResults().length > 0) {
                                         <div class="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 max-h-60 overflow-y-auto z-50 custom-scrollbar">
                                             @for (item of searchResults(); track item.id) {
@@ -225,7 +226,6 @@ interface MixRow {
                                     <label class="label">Nồng độ Đích (Target)</label>
                                     <div class="flex gap-2">
                                         <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
-                                        <!-- Same unit as stock for simplicty in this UI, assume conversion handled by user or added later -->
                                         <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
                                     </div>
                                 </div>
@@ -275,7 +275,7 @@ interface MixRow {
                         </div>
                     }
 
-                    <!-- 4. SERIAL DILUTION -->
+                    <!-- 4. SERIAL DILUTION (Updated UI) -->
                     @if (calcMode() === 'serial') {
                         <div class="card-input border-fuchsia-100">
                             <div class="p-4 space-y-4">
@@ -298,17 +298,22 @@ interface MixRow {
                                     </div>
                                 </div>
                                 
-                                <!-- Dynamic Point List -->
+                                <!-- Dynamic List for Points -->
                                 <div class="space-y-2 pt-2 border-t border-slate-100">
                                     <div class="flex justify-between items-center">
                                         <label class="label mb-0">Các điểm chuẩn</label>
                                         <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-700 px-2 py-1 rounded hover:bg-fuchsia-100 transition">+ Thêm điểm</button>
                                     </div>
                                     <div class="space-y-2">
-                                        @for (pt of serialPoints; track $index) {
+                                        <!-- FIX: Iterate over signal value and use update helper -->
+                                        @for (pt of serialPoints(); track $index) {
                                             <div class="flex gap-2 items-center animate-slide-up">
                                                 <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">{{$index + 1}}</div>
-                                                <input type="number" [(ngModel)]="serialPoints[$index]" class="input-field py-1.5 text-sm" placeholder="Conc">
+                                                <input type="number" 
+                                                       [ngModel]="pt" 
+                                                       (ngModelChange)="updateSerialPoint($index, $event)"
+                                                       class="input-field py-1.5 text-sm" 
+                                                       placeholder="Conc">
                                                 <div class="text-xs font-bold text-slate-400 w-8">{{concUnit()}}</div>
                                                 <button (click)="removeSerialPoint($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fa-solid fa-times"></i></button>
                                             </div>
@@ -319,7 +324,7 @@ interface MixRow {
                         </div>
                     }
 
-                    <!-- 5. MIXER (Table Mode) -->
+                    <!-- 5. MIXER (Table UI) -->
                     @if (calcMode() === 'mix') {
                         <div class="card-input border-indigo-100">
                             <div class="p-4 space-y-4">
@@ -333,6 +338,7 @@ interface MixRow {
                                     </div>
                                 </div>
                                 
+                                <!-- Mix Table -->
                                 <div class="pt-2">
                                     <div class="flex justify-between items-center mb-2">
                                         <label class="label mb-0">Thành phần</label>
@@ -344,13 +350,13 @@ interface MixRow {
                                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 relative group transition hover:border-indigo-300 hover:shadow-sm">
                                                 <button (click)="removeMixRow(i)" class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-white transition"><i class="fa-solid fa-times"></i></button>
                                                 
-                                                <!-- Row Header: Search/Name -->
+                                                <!-- Row Header: Name Search -->
                                                 <div class="mb-2 pr-6 relative">
                                                     @if(systemMode() === 'real' && !row.invItem) {
                                                         <input placeholder="Tìm chất trong kho..." 
                                                                (input)="onSearchMix(i, $event)"
                                                                class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0">
-                                                        
+                                                        <!-- Dropdown -->
                                                         @if(activeMixSearchIndex() === i && searchResults().length > 0) {
                                                             <div class="absolute top-full left-0 w-full z-20 bg-white shadow-xl rounded-lg max-h-40 overflow-y-auto mt-1 border border-slate-100">
                                                                 @for(res of searchResults(); track res.id) {
@@ -367,7 +373,11 @@ interface MixRow {
                                                             <button (click)="clearMixItem(i)" class="text-[10px] text-slate-400 hover:text-red-500"><i class="fa-solid fa-rotate-left"></i></button>
                                                         </div>
                                                     } @else {
-                                                        <input [(ngModel)]="row.name" class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0" placeholder="Tên chất {{i+1}}">
+                                                        <!-- FIX: Use safe update method for name -->
+                                                        <input [ngModel]="row.name" 
+                                                               (ngModelChange)="updateMixItem(i, 'name', $event)" 
+                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0" 
+                                                               placeholder="Tên chất {{i+1}}">
                                                     }
                                                 </div>
 
@@ -375,16 +385,29 @@ interface MixRow {
                                                 <div class="grid grid-cols-2 gap-2">
                                                     <div>
                                                         <label class="text-[8px] font-bold text-slate-400 uppercase">Stock Conc</label>
-                                                        <input type="number" [(ngModel)]="row.stockConc" class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" placeholder="C_stock">
+                                                        <!-- FIX: Safe update for stockConc -->
+                                                        <input type="number" 
+                                                               [ngModel]="row.stockConc" 
+                                                               (ngModelChange)="updateMixItem(i, 'stockConc', $event)"
+                                                               class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                               placeholder="C_stock">
                                                     </div>
                                                     <div class="flex gap-1">
                                                         <div class="flex-1">
                                                             <label class="text-[8px] font-bold text-slate-400 uppercase">Target</label>
-                                                            <input type="number" [(ngModel)]="row.targetConc" class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" placeholder="C_target">
+                                                            <!-- FIX: Safe update for targetConc -->
+                                                            <input type="number" 
+                                                                   [ngModel]="row.targetConc" 
+                                                                   (ngModelChange)="updateMixItem(i, 'targetConc', $event)"
+                                                                   class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                                   placeholder="C_target">
                                                         </div>
                                                         <div class="w-16">
                                                             <label class="text-[8px] font-bold text-slate-400 uppercase">Unit</label>
-                                                            <select [(ngModel)]="row.unit" class="w-full border border-slate-200 rounded px-1 py-1 text-[10px] font-bold bg-white h-[26px]">
+                                                            <!-- FIX: Safe update for unit -->
+                                                            <select [ngModel]="row.unit" 
+                                                                    (ngModelChange)="updateMixItem(i, 'unit', $event)"
+                                                                    class="w-full border border-slate-200 rounded px-1 py-1 text-[10px] font-bold bg-white h-[26px]">
                                                                 @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                                             </select>
                                                         </div>
@@ -404,7 +427,7 @@ interface MixRow {
             <div class="flex-1 flex flex-col gap-6">
                 
                 <div class="bg-white rounded-3xl shadow-soft-xl border border-slate-100 overflow-hidden relative flex-1 flex flex-col">
-                    <!-- Top Color Bar -->
+                    <!-- Color Bar -->
                     <div class="absolute top-0 left-0 w-full h-1.5 transition-colors duration-500" 
                          [class.bg-blue-500]="calcMode() === 'molar'"
                          [class.bg-orange-500]="calcMode() === 'dilution'"
@@ -486,7 +509,7 @@ interface MixRow {
                             </div>
                         }
 
-                        <!-- STOCK STATUS (REAL MODE) -->
+                        <!-- REAL MODE STOCK STATUS -->
                         @if (systemMode() === 'real' && (selectedItem() || calcMode() === 'serial' || calcMode() === 'mix')) {
                             <div class="w-full max-w-sm mx-auto mt-auto pt-6">
                                 <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm relative overflow-hidden">
@@ -658,6 +681,23 @@ export class SmartPrepComponent {
   // Serial
   addSerialPoint() { this.serialPoints.update(p => [...p, 0]); }
   removeSerialPoint(i: number) { this.serialPoints.update(p => p.filter((_, idx) => idx !== i)); }
+
+  // --- HELPER FOR IMMUTABLE UPDATES ---
+  updateSerialPoint(index: number, value: number) {
+    this.serialPoints.update(points => {
+        const newArr = [...points];
+        newArr[index] = value;
+        return newArr;
+    });
+  }
+
+  updateMixItem(index: number, field: keyof MixRow, value: any) {
+    this.mixItems.update(rows => {
+        const newArr = [...rows];
+        newArr[index] = { ...newArr[index], [field]: value };
+        return newArr;
+    });
+  }
 
   // --- UNIT CONVERSION LOGIC ---
   private getFactor(unit: string, type: 'conc' | 'vol' | 'mass'): number {
