@@ -16,6 +16,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/sop/calculator/calculator.component').then(m => m.CalculatorComponent)
   },
   {
+    path: 'prep',
+    loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent)
+  },
+  {
     path: 'inventory',
     loadComponent: () => import('./features/inventory/inventory.component').then(m => m.InventoryComponent)
   },
@@ -51,7 +55,6 @@ export const routes: Routes = [
     path: 'config',
     loadComponent: () => import('./features/config/config.component').then(m => m.ConfigComponent)
   },
-  // --- NEW: Traceability Route ---
   {
     path: 'traceability',
     loadComponent: () => import('./features/traceability/traceability.component').then(m => m.TraceabilityComponent)

@@ -396,7 +396,10 @@ export class CalculatorComponent implements OnDestroy {
 
         this.form.set(newForm);
         this.localInventoryMap.set({}); this.localRecipeMap.set({});
+        
+        // Initial run with empty map (shows warnings)
         this.runCalculation(s, newForm.value);
+        // Start async fetch
         this.fetchData(s);
 
         this.formValueSub = newForm.valueChanges.pipe(startWith(newForm.value), debounceTime(50)).subscribe(vals => {
@@ -408,11 +411,6 @@ export class CalculatorComponent implements OnDestroy {
          this.currentFormSopId = null; this.calculatedItems.set([]); this.localInventoryMap.set({});
       }
     }, { allowSignalWrites: true });
-
-    effect(() => {
-        const invMap = this.localInventoryMap(); const recMap = this.localRecipeMap(); const s = untracked(this.activeSop); const currentForm = untracked(this.form);
-        if (s && currentForm && (Object.keys(invMap).length > 0 || Object.keys(recMap).length > 0)) { this.runCalculation(s, currentForm.value); }
-    });
   }
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
@@ -431,12 +429,21 @@ export class CalculatorComponent implements OnDestroy {
           const recipes = await this.recipeService.getRecipesByIds(Array.from(neededRecipeIds));
           const recMap: Record<string, Recipe> = {};
           recipes.forEach(r => { recMap[r.id] = r; r.ingredients.forEach(i => neededInvIds.add(i.name)); });
-          this.localRecipeMap.set(recMap);
-
+          
           const items = await this.invService.getItemsByIds(Array.from(neededInvIds));
           const invMap: Record<string, InventoryItem> = {};
           items.forEach(i => invMap[i.id] = i);
+          
+          // Safety Check: Ensure we are still viewing the same SOP
+          if (this.activeSop()?.id !== sop.id) return;
+
+          this.localRecipeMap.set(recMap);
           this.localInventoryMap.set(invMap); 
+          
+          // [CRITICAL FIX]: Force re-calculation immediately after data load
+          // This ensures the UI updates from "Missing" to "Available" without user interaction
+          this.runCalculation(sop, this.form().value);
+
       } catch(e) { console.warn("Fetch warning:", e); } finally { this.isLoadingInventory.set(false); }
   }
 

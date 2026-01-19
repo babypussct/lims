@@ -80,6 +80,23 @@ import { getAvatarUrl } from '../../shared/utils/utils';
              </div>
          }
 
+         <!-- Smart Prep Station (NEW) -->
+         @if(auth.canViewInventory()) {
+             <div (click)="navigateTo('prep')" 
+                  class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent"
+                  [class]="isActive('/prep') ? 'bg-slate-50 border-slate-100 shadow-sm' : 'hover:bg-gray-50'"
+                  [title]="state.sidebarCollapsed() ? 'Trạm Pha Chế' : ''">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0"
+                     [class.mx-auto]="state.sidebarCollapsed()"
+                     [class]="isActive('/prep') ? 'bg-white text-fuchsia-600 shadow-sm' : 'bg-gray-50 text-gray-500 group-hover:bg-white group-hover:text-fuchsia-600'">
+                   <i class="fa-solid fa-flask-vial text-xs"></i>
+                </div>
+                @if (!state.sidebarCollapsed()) {
+                    <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/prep') ? 'text-slate-800' : 'text-slate-500'">Trạm Pha Chế</span>
+                }
+             </div>
+         }
+
          <!-- Inventory -->
          @if(auth.canViewInventory()) {
              <div (click)="navigateTo('inventory')" 
