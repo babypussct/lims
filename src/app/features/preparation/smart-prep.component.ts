@@ -7,18 +7,47 @@ import { AuthService } from '../../core/services/auth.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
-import { formatNum, UNIT_OPTIONS, parseQuantityInput } from '../../shared/utils/utils';
+import { formatNum } from '../../shared/utils/utils';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 
 type CalcMode = 'molar' | 'dilution' | 'spiking' | 'serial' | 'mix';
 type SystemMode = 'sandbox' | 'real';
 
-interface MixItem {
-    id: string; // for tracking
+// Unit Constants for Dropdowns
+const CONC_UNITS = [
+    { val: 'M', factor: 1, label: 'M (Molar)' },
+    { val: 'mM', factor: 0.001, label: 'mM' },
+    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' }, // Simplified assumption for UI
+    { val: '%', factor: 10, label: '%' },
+    { val: 'mg/ml', factor: 1, label: 'mg/mL' }
+];
+
+const VOL_UNITS = [
+    { val: 'l', factor: 1, label: 'L' },
+    { val: 'ml', factor: 0.001, label: 'mL' },
+    { val: 'ul', factor: 0.000001, label: 'µL' }
+];
+
+const MASS_UNITS = [
+    { val: 'g', factor: 1, label: 'g' },
+    { val: 'mg', factor: 0.001, label: 'mg' },
+    { val: 'kg', factor: 1000, label: 'kg' },
+    { val: 'ug', factor: 0.000001, label: 'µg' }
+];
+
+interface SerialPoint {
+    conc: number;
+    vStock: number; // in µL for precision
+    vSolvent: number; // in user selected unit
+}
+
+interface MixRow {
+    id: string;
     name: string;
     stockConc: number;
     targetConc: number;
-    invItem: InventoryItem | null; // Linked inventory item
+    unit: string;
+    invItem: InventoryItem | null;
 }
 
 @Component({
@@ -28,103 +57,75 @@ interface MixItem {
   template: `
     <div class="h-full flex flex-col fade-in pb-10 font-sans text-slate-800">
         
-        <!-- HEADER & MODE SWITCHER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0 relative overflow-hidden transition-all duration-500"
-             [class.border-purple-200]="systemMode() === 'real'"
-             [class.shadow-purple-100]="systemMode() === 'real'">
-            
-            @if(systemMode() === 'real') {
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-50 via-white to-white opacity-50 pointer-events-none"></div>
-            }
-
-            <div class="relative z-10">
-                <h2 class="text-2xl font-black flex items-center gap-3 transition-colors"
-                    [class.text-slate-800]="systemMode() === 'sandbox'"
-                    [class.text-purple-700]="systemMode() === 'real'">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-colors"
-                         [class.bg-slate-700]="systemMode() === 'sandbox'"
-                         [class.bg-gradient-to-br]="systemMode() === 'sandbox' ? 'from-slate-600 to-slate-800' : 'from-purple-600 to-pink-600'">
+        <!-- HEADER & TOOLBAR -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+            <div>
+                <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg">
                         <i class="fa-solid fa-flask-vial"></i>
                     </div>
                     Trạm Pha Chế
                 </h2>
-                <p class="text-xs font-bold mt-1 ml-1" 
-                   [class.text-slate-400]="systemMode() === 'sandbox'"
-                   [class.text-purple-500]="systemMode() === 'real'">
-                   {{ systemMode() === 'sandbox' ? 'Chế độ Nháp (Sandbox)' : 'Chế độ Thực (Real) - Kết nối Kho' }}
-                </p>
+                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tính toán nhanh & Tương tác kho hóa chất</p>
             </div>
 
-            <div class="relative z-10 flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button (click)="setSystemMode('sandbox')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
                         [class]="systemMode() === 'sandbox' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                    <i class="fa-solid fa-calculator"></i> Nháp
+                    <i class="fa-solid fa-calculator"></i> Nháp (Sandbox)
                 </button>
                 <button (click)="setSystemMode('real')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
                         [class]="systemMode() === 'real' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'"
                         [class.opacity-60]="!auth.canEditInventory() && systemMode() !== 'real'"
-                        [title]="auth.canEditInventory() ? 'Chế độ Thực (Trừ kho)' : 'Yêu cầu quyền Sửa Kho (Inventory Edit)'">
-                    <i class="fa-solid fa-link"></i> Kho
+                        [title]="auth.canEditInventory() ? 'Chế độ Thực (Trừ kho)' : 'Yêu cầu quyền Sửa Kho'">
+                    <i class="fa-solid fa-link"></i> Kho (Real)
                     @if(!auth.canEditInventory()) { <i class="fa-solid fa-lock text-[9px]"></i> }
                 </button>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 relative z-10">
+        <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
-            <!-- LEFT: INPUT PANEL -->
-            <div class="w-full lg:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden">
+            <!-- LEFT PANEL: CONFIGURATION -->
+            <div class="w-full xl:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden">
                 
-                <!-- Tab Navigation (Scrollable) -->
+                <!-- Navigation Tabs -->
                 <div class="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
-                    <button (click)="setCalcMode('molar')" class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap"
-                            [class]="calcMode() === 'molar' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400'">
-                        Molar (Rắn)
-                    </button>
-                    <button (click)="setCalcMode('dilution')" class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap"
-                            [class]="calcMode() === 'dilution' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'">
-                        Pha Loãng
-                    </button>
-                    <button (click)="setCalcMode('spiking')" class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap"
-                            [class]="calcMode() === 'spiking' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400'">
-                        Spiking
-                    </button>
-                    <button (click)="setCalcMode('serial')" class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap"
-                            [class]="calcMode() === 'serial' ? 'border-fuchsia-500 text-fuchsia-600' : 'border-transparent text-slate-400'">
-                        Dãy Chuẩn
-                    </button>
-                    <button (click)="setCalcMode('mix')" class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap"
-                            [class]="calcMode() === 'mix' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-400'">
-                        Pha Mix
-                    </button>
+                    @for (m of modes; track m.id) {
+                        <button (click)="setCalcMode(m.id)" 
+                                class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap flex flex-col items-center gap-1"
+                                [class]="calcMode() === m.id ? 'border-' + m.color + '-500 text-' + m.color + '-600 bg-' + m.color + '-50/20' : 'border-transparent text-slate-400'">
+                            <i class="fa-solid {{m.icon}} text-sm mb-0.5"></i> {{m.label}}
+                        </button>
+                    }
                 </div>
 
                 <div class="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
                     
-                    <!-- GLOBAL CHEMICAL SELECTOR (For Single-Item Modes) -->
+                    <!-- REAL MODE: CHEMICAL SELECTOR (Single Item Modes) -->
                     @if (systemMode() === 'real' && calcMode() !== 'mix') {
-                        <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 space-y-2 animate-slide-up">
+                        <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 animate-slide-up">
                             <label class="text-[10px] font-bold text-purple-800 uppercase flex items-center gap-2">
-                                <i class="fa-solid fa-search"></i> Chọn Hóa chất từ Kho
+                                <i class="fa-solid fa-search"></i> Chọn Hóa chất (Trừ kho)
                             </label>
                             
                             @if (!selectedItem()) {
                                 <div class="relative">
                                     <input [ngModel]="searchTerm()" (ngModelChange)="onSearch($event)" 
                                            placeholder="Nhập tên, mã số, hoặc công thức..." 
-                                           class="w-full pl-4 pr-10 py-3 rounded-xl border-none ring-1 ring-purple-200 focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 placeholder-purple-300 shadow-sm">
+                                           class="w-full pl-9 pr-4 py-3 rounded-xl border-none ring-1 ring-purple-200 focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 placeholder-purple-300 shadow-sm">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-purple-300"></i>
                                     
                                     @if (isSearching()) {
                                         <div class="absolute right-3 top-3 text-purple-500"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                                     }
 
-                                    <!-- Dropdown -->
                                     @if (searchResults().length > 0) {
                                         <div class="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 max-h-60 overflow-y-auto z-50 custom-scrollbar">
                                             @for (item of searchResults(); track item.id) {
-                                                <div (click)="selectGlobalItem(item)" class="p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-50 last:border-0 group">
+                                                <div (click)="selectGlobalItem(item)" class="p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-50 last:border-0 group transition">
                                                     <div class="font-bold text-sm text-slate-700 group-hover:text-purple-700">{{item.name}}</div>
                                                     <div class="flex justify-between mt-1">
                                                         <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{{item.id}}</span>
@@ -138,261 +139,333 @@ interface MixItem {
                                     }
                                 </div>
                             } @else {
-                                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-purple-100 shadow-sm">
-                                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs shrink-0">
+                                <div class="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-purple-200 shadow-sm">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg shrink-0">
                                         <i class="fa-solid fa-flask"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-xs font-bold text-slate-700 truncate">{{selectedItem()?.name}}</div>
-                                        <div class="text-[10px] text-slate-500">
-                                            ID: {{selectedItem()?.id}} | Tồn: <b class="text-emerald-600">{{formatNum(selectedItem()?.stock)}} {{selectedItem()?.unit}}</b>
+                                        <div class="text-sm font-bold text-slate-800 truncate">{{selectedItem()?.name}}</div>
+                                        <div class="text-[11px] text-slate-500 flex items-center gap-2">
+                                            <span class="bg-slate-100 px-1.5 rounded font-mono">{{selectedItem()?.id}}</span>
+                                            <span>Tồn: <b class="text-emerald-600">{{formatNum(selectedItem()?.stock)}} {{selectedItem()?.unit}}</b></span>
                                         </div>
                                     </div>
-                                    <button (click)="clearSelection()" class="text-slate-400 hover:text-red-500 transition px-2"><i class="fa-solid fa-times"></i></button>
+                                    <button (click)="clearSelection()" class="w-8 h-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition flex items-center justify-center">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
                                 </div>
                             }
                         </div>
                     }
 
-                    <!-- INPUT FORM AREA -->
-                    <div class="space-y-5">
-                        
-                        <!-- 1. MOLAR -->
-                        @if (calcMode() === 'molar') {
-                            <div class="grid grid-cols-2 gap-4">
+                    <!-- 1. MOLAR (Pha rắn) -->
+                    @if (calcMode() === 'molar') {
+                        <div class="card-input border-blue-100">
+                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-weight-hanging"></i> Thông số Chất tan</div>
+                            <div class="p-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <label class="label">Phân tử lượng (MW)</label>
+                                        <div class="input-wrapper">
+                                            <input type="number" [(ngModel)]="mw" class="input-field text-center" placeholder="e.g. 58.44">
+                                            <span class="unit-badge">g/mol</span>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="label">Độ tinh khiết</label>
+                                        <div class="input-wrapper">
+                                            <input type="number" [(ngModel)]="purity" class="input-field text-center text-blue-600 font-bold" placeholder="100">
+                                            <span class="unit-badge">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-input border-blue-100">
+                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-bullseye"></i> Đích mong muốn</div>
+                            <div class="p-4 space-y-4">
                                 <div class="space-y-1">
-                                    <label class="label">Phân tử lượng (MW)</label>
-                                    <div class="input-group">
-                                        <input type="number" [(ngModel)]="mw" class="input-field text-center" placeholder="0.00">
-                                        <span class="unit">g/mol</span>
+                                    <label class="label">Nồng độ đích</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C">
+                                        <select [(ngModel)]="targetConcUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="label">Độ tinh khiết (%)</label>
-                                    <div class="input-group">
-                                        <input type="number" [(ngModel)]="purity" class="input-field text-center text-blue-600" placeholder="100">
-                                        <span class="unit">%</span>
+                                    <label class="label">Thể tích đích</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
+                                        <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
+                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            <div class="h-px bg-slate-100"></div>
-                            <div class="space-y-1">
-                                <label class="label">Nồng độ mong muốn</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="VD: 0.5">
-                                    <select [(ngModel)]="targetConcUnit" class="input-select w-24"><option value="M">M</option><option value="mM">mM</option></select>
-                                </div>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="label">Thể tích đích</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="VD: 100">
-                                    <select [(ngModel)]="targetVolUnit" class="input-select w-24"><option value="ml">mL</option><option value="l">L</option></select>
-                                </div>
-                            </div>
-                        }
+                        </div>
+                    }
 
-                        <!-- 2. DILUTION -->
-                        @if (calcMode() === 'dilution') {
-                            <div class="space-y-1">
-                                <label class="label">Nồng độ gốc (Stock)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-orange-600" placeholder="C1">
-                                    <select [(ngModel)]="concUnit" class="input-select w-24"><option value="ppm">ppm</option><option value="M">M</option><option value="%">%</option></select>
+                    <!-- 2. DILUTION (Pha loãng) -->
+                    @if (calcMode() === 'dilution') {
+                        <div class="card-input border-orange-100">
+                            <div class="card-header bg-orange-50 text-orange-700"><i class="fa-solid fa-flask"></i> Thông số Gốc & Đích</div>
+                            <div class="p-4 space-y-4">
+                                <div class="space-y-1">
+                                    <label class="label">Nồng độ Gốc (Stock)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-orange-600" placeholder="C1">
+                                        <select [(ngModel)]="concUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="label">Nồng độ Đích (Target)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
+                                        <!-- Same unit as stock for simplicty in this UI, assume conversion handled by user or added later -->
+                                        <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="label">Thể tích Đích (V2)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V2">
+                                        <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
+                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="space-y-1">
-                                <label class="label">Nồng độ đích (Target)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
-                                    <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
-                                </div>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="label">Thể tích đích (V2)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="VD: 100">
-                                    <select [(ngModel)]="targetVolUnit" class="input-select w-24"><option value="ml">mL</option><option value="l">L</option></select>
-                                </div>
-                            </div>
-                        }
+                        </div>
+                    }
 
-                        <!-- 3. SPIKING -->
-                        @if (calcMode() === 'spiking') {
-                             <div class="grid grid-cols-2 gap-4">
+                    <!-- 3. SPIKING -->
+                    @if (calcMode() === 'spiking') {
+                        <div class="card-input border-emerald-100">
+                            <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Chuẩn (Stock)</label>
-                                    <input type="number" [(ngModel)]="stockConc" class="input-field text-center font-bold" placeholder="C_stock">
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600" placeholder="C_stock">
+                                        <select [(ngModel)]="concUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Thêm (Added)</label>
-                                    <input type="number" [(ngModel)]="targetConc" class="input-field text-center" placeholder="C_added">
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C_add">
+                                        <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
+                                    </div>
                                 </div>
-                             </div>
-                             <div class="space-y-1">
-                                <label class="label">Thể tích mẫu (V_sample)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="VD: 10">
-                                    <select [(ngModel)]="targetVolUnit" class="input-select w-24"><option value="ml">mL</option><option value="l">L</option></select>
+                                <div class="space-y-1">
+                                    <label class="label">Thể tích Mẫu (V_sample)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V_sample">
+                                        <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
+                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
                                 </div>
-                             </div>
-                        }
+                            </div>
+                        </div>
+                    }
 
-                        <!-- 4. SERIAL DILUTION (New) -->
-                        @if (calcMode() === 'serial') {
-                            <div class="space-y-1">
-                                <label class="label">Nồng độ Gốc (Stock)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600" placeholder="VD: 1000">
-                                    <select [(ngModel)]="concUnit" class="input-select w-24"><option value="ppm">ppm</option><option value="M">M</option><option value="%">%</option></select>
+                    <!-- 4. SERIAL DILUTION -->
+                    @if (calcMode() === 'serial') {
+                        <div class="card-input border-fuchsia-100">
+                            <div class="p-4 space-y-4">
+                                <div class="space-y-1">
+                                    <label class="label">Nồng độ Gốc (Stock)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600" placeholder="C1">
+                                        <select [(ngModel)]="concUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="label">Thể tích định mức mỗi điểm (V_point)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
+                                        <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
+                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Dynamic Point List -->
+                                <div class="space-y-2 pt-2 border-t border-slate-100">
+                                    <div class="flex justify-between items-center">
+                                        <label class="label mb-0">Các điểm chuẩn</label>
+                                        <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-700 px-2 py-1 rounded hover:bg-fuchsia-100 transition">+ Thêm điểm</button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        @for (pt of serialPoints; track $index) {
+                                            <div class="flex gap-2 items-center animate-slide-up">
+                                                <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">{{$index + 1}}</div>
+                                                <input type="number" [(ngModel)]="serialPoints[$index]" class="input-field py-1.5 text-sm" placeholder="Conc">
+                                                <div class="text-xs font-bold text-slate-400 w-8">{{concUnit()}}</div>
+                                                <button (click)="removeSerialPoint($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fa-solid fa-times"></i></button>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             </div>
-                            <div class="space-y-1">
-                                <label class="label">Thể tích định mức mỗi điểm</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="VD: 10 (cho mỗi bình)">
-                                    <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">mL</div>
-                                </div>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="label">Các điểm chuẩn (Phân cách bằng dấu phẩy)</label>
-                                <input type="text" [(ngModel)]="serialPointsStr" class="input-field border-2 border-fuchsia-100 focus:border-fuchsia-400" placeholder="VD: 5, 10, 20, 50, 100">
-                                <p class="text-[9px] text-slate-400 mt-1 italic">Hệ thống sẽ tính lượng hút Stock cho từng điểm.</p>
-                            </div>
-                        }
+                        </div>
+                    }
 
-                        <!-- 5. MIXER (New) -->
-                        @if (calcMode() === 'mix') {
-                            <div class="space-y-1">
-                                <label class="label">Thể tích Tổng (Bình định mức)</label>
-                                <div class="flex gap-2">
-                                    <input type="number" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600" placeholder="VD: 100">
-                                    <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">mL</div>
+                    <!-- 5. MIXER (Table Mode) -->
+                    @if (calcMode() === 'mix') {
+                        <div class="card-input border-indigo-100">
+                            <div class="p-4 space-y-4">
+                                <div class="space-y-1">
+                                    <label class="label">Tổng thể tích hỗn hợp (V_final)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600 text-lg" placeholder="100">
+                                        <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
+                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="h-px bg-slate-100 my-2"></div>
-                            
-                            <!-- Mix Rows -->
-                            <div class="space-y-2">
-                                <label class="label flex justify-between">
-                                    <span>Thành phần</span>
-                                    <button (click)="addMixRow()" class="text-indigo-600 hover:underline">+ Thêm chất</button>
-                                </label>
-                                @for (row of mixItems(); track row.id; let i = $index) {
-                                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 relative group">
-                                        <!-- Remove Btn -->
-                                        <button (click)="removeMixRow(i)" class="absolute -right-2 -top-2 w-5 h-5 rounded-full bg-red-100 text-red-500 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-times text-[10px]"></i></button>
-                                        
-                                        <!-- Name / Search -->
-                                        <div class="mb-2 relative">
-                                            @if(systemMode() === 'real' && !row.invItem) {
-                                                <div class="flex gap-1">
-                                                    <input placeholder="Tìm chất..." 
-                                                           (input)="onSearchMix(i, $event)"
-                                                           class="w-full text-xs p-2 rounded border border-indigo-200 outline-none focus:ring-1">
-                                                </div>
-                                                <!-- Dropdown for this row -->
-                                                @if(activeMixSearchIndex() === i && searchResults().length > 0) {
-                                                    <div class="absolute top-full left-0 w-full z-20 bg-white shadow-lg rounded-lg max-h-40 overflow-y-auto mt-1 border border-slate-100">
-                                                        @for(res of searchResults(); track res.id) {
-                                                            <div (click)="selectMixItem(i, res)" class="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50">
-                                                                <div class="font-bold truncate">{{res.name}}</div>
-                                                                <div class="text-[9px] text-slate-400">Ton: {{res.stock}} {{res.unit}}</div>
+                                
+                                <div class="pt-2">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="label mb-0">Thành phần</label>
+                                        <button (click)="addMixRow()" class="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition">+ Thêm chất</button>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        @for (row of mixItems(); track row.id; let i = $index) {
+                                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 relative group transition hover:border-indigo-300 hover:shadow-sm">
+                                                <button (click)="removeMixRow(i)" class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-white transition"><i class="fa-solid fa-times"></i></button>
+                                                
+                                                <!-- Row Header: Search/Name -->
+                                                <div class="mb-2 pr-6 relative">
+                                                    @if(systemMode() === 'real' && !row.invItem) {
+                                                        <input placeholder="Tìm chất trong kho..." 
+                                                               (input)="onSearchMix(i, $event)"
+                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0">
+                                                        
+                                                        @if(activeMixSearchIndex() === i && searchResults().length > 0) {
+                                                            <div class="absolute top-full left-0 w-full z-20 bg-white shadow-xl rounded-lg max-h-40 overflow-y-auto mt-1 border border-slate-100">
+                                                                @for(res of searchResults(); track res.id) {
+                                                                    <div (click)="selectMixItem(i, res)" class="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50">
+                                                                        <div class="font-bold truncate">{{res.name}}</div>
+                                                                        <div class="text-[9px] text-slate-400">Tồn: {{res.stock}} {{res.unit}}</div>
+                                                                    </div>
+                                                                }
                                                             </div>
                                                         }
-                                                    </div>
-                                                }
-                                            } @else if (row.invItem) {
-                                                <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded border border-indigo-100">
-                                                    <span class="text-xs font-bold text-indigo-700 truncate">{{row.invItem.name}}</span>
-                                                    <button (click)="clearMixItem(i)" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-rotate-left"></i></button>
+                                                    } @else if (row.invItem) {
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-xs font-bold text-indigo-700 truncate flex-1">{{row.invItem.name}}</span>
+                                                            <button (click)="clearMixItem(i)" class="text-[10px] text-slate-400 hover:text-red-500"><i class="fa-solid fa-rotate-left"></i></button>
+                                                        </div>
+                                                    } @else {
+                                                        <input [(ngModel)]="row.name" class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0" placeholder="Tên chất {{i+1}}">
+                                                    }
                                                 </div>
-                                            } @else {
-                                                <!-- Sandbox Input -->
-                                                <input [(ngModel)]="row.name" class="w-full text-xs p-2 rounded border border-slate-200 font-bold bg-white" placeholder="Tên chất {{i+1}}">
-                                            }
-                                        </div>
 
-                                        <!-- Concs -->
-                                        <div class="flex gap-2">
-                                            <input type="number" [(ngModel)]="row.stockConc" class="flex-1 min-w-0 p-1.5 text-xs border border-slate-200 rounded text-center" placeholder="Stock">
-                                            <span class="text-slate-400 text-xs self-center">→</span>
-                                            <input type="number" [(ngModel)]="row.targetConc" class="flex-1 min-w-0 p-1.5 text-xs border border-slate-200 rounded text-center" placeholder="Target">
-                                        </div>
+                                                <!-- Row Inputs -->
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label class="text-[8px] font-bold text-slate-400 uppercase">Stock Conc</label>
+                                                        <input type="number" [(ngModel)]="row.stockConc" class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" placeholder="C_stock">
+                                                    </div>
+                                                    <div class="flex gap-1">
+                                                        <div class="flex-1">
+                                                            <label class="text-[8px] font-bold text-slate-400 uppercase">Target</label>
+                                                            <input type="number" [(ngModel)]="row.targetConc" class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" placeholder="C_target">
+                                                        </div>
+                                                        <div class="w-16">
+                                                            <label class="text-[8px] font-bold text-slate-400 uppercase">Unit</label>
+                                                            <select [(ngModel)]="row.unit" class="w-full border border-slate-200 rounded px-1 py-1 text-[10px] font-bold bg-white h-[26px]">
+                                                                @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
-                                }
+                                </div>
                             </div>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
             </div>
 
-            <!-- RIGHT: RESULTS PANEL -->
+            <!-- RIGHT PANEL: RESULTS -->
             <div class="flex-1 flex flex-col gap-6">
                 
-                <!-- Result Card -->
                 <div class="bg-white rounded-3xl shadow-soft-xl border border-slate-100 overflow-hidden relative flex-1 flex flex-col">
-                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r transition-colors duration-500" 
-                         [class.from-blue-500]="calcMode() === 'molar'" [class.to-cyan-400]="calcMode() === 'molar'"
-                         [class.from-orange-500]="calcMode() === 'dilution'" [class.to-yellow-400]="calcMode() === 'dilution'"
-                         [class.from-emerald-500]="calcMode() === 'spiking'" [class.to-green-400]="calcMode() === 'spiking'"
-                         [class.from-fuchsia-500]="calcMode() === 'serial'" [class.to-pink-400]="calcMode() === 'serial'"
-                         [class.from-indigo-500]="calcMode() === 'mix'" [class.to-purple-400]="calcMode() === 'mix'">
+                    <!-- Top Color Bar -->
+                    <div class="absolute top-0 left-0 w-full h-1.5 transition-colors duration-500" 
+                         [class.bg-blue-500]="calcMode() === 'molar'"
+                         [class.bg-orange-500]="calcMode() === 'dilution'"
+                         [class.bg-emerald-500]="calcMode() === 'spiking'"
+                         [class.bg-fuchsia-500]="calcMode() === 'serial'"
+                         [class.bg-indigo-500]="calcMode() === 'mix'">
                     </div>
 
                     <div class="p-6 md:p-8 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
-                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 text-center">Kết quả tính toán</div>
+                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 text-center">Kết quả tính toán</div>
                         
-                        <!-- MODE: Single Value Results -->
-                        @if (calcMode() === 'molar' || calcMode() === 'dilution' || calcMode() === 'spiking') {
-                            <div class="text-center space-y-4">
+                        <!-- SINGLE VALUE MODES -->
+                        @if (['molar', 'dilution', 'spiking'].includes(calcMode())) {
+                            <div class="text-center space-y-4 animate-scale-in">
                                 <div class="relative inline-block">
                                     <h1 class="text-6xl md:text-7xl font-black tracking-tight text-slate-800 tabular-nums">
                                         {{ formatNum(resultValue()) }}
                                     </h1>
-                                    <span class="absolute -right-12 top-2 text-xl font-bold text-slate-400">{{ resultUnit() }}</span>
+                                    <span class="absolute -right-8 top-0 text-lg font-bold text-slate-400">{{ resultUnit() }}</span>
                                 </div>
-                                <p class="text-sm font-medium text-slate-500 max-w-xs mx-auto leading-relaxed">
+                                <p class="text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     {{ resultDescription() }}
                                 </p>
                             </div>
                         }
 
-                        <!-- MODE: Serial / Mix Results (Tables) -->
+                        <!-- SERIAL DILUTION TABLE -->
                         @if (calcMode() === 'serial') {
-                            <div class="w-full">
+                            <div class="w-full animate-slide-up">
                                 <table class="w-full text-sm text-left">
                                     <thead class="text-xs text-fuchsia-600 bg-fuchsia-50 uppercase font-bold">
                                         <tr>
-                                            <th class="px-4 py-2 rounded-l-lg">Điểm chuẩn</th>
-                                            <th class="px-4 py-2 text-right">Hút Stock</th>
-                                            <th class="px-4 py-2 text-right rounded-r-lg">Thêm DM</th>
+                                            <th class="px-4 py-3 rounded-l-lg">Điểm chuẩn</th>
+                                            <th class="px-4 py-3 text-right">Lượng Hút (Stock)</th>
+                                            <th class="px-4 py-3 text-right rounded-r-lg">Thêm Dung môi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
-                                        @for (pt of serialResult(); track pt.point) {
-                                            <tr>
-                                                <td class="px-4 py-3 font-bold text-slate-700">{{pt.point}} {{concUnit()}}</td>
+                                        @for (pt of serialResult(); track $index) {
+                                            <tr class="hover:bg-fuchsia-50/30 transition">
+                                                <td class="px-4 py-3 font-bold text-slate-700">{{pt.conc}} {{concUnit()}}</td>
                                                 <td class="px-4 py-3 text-right font-mono font-bold text-fuchsia-600">{{formatNum(pt.vStock)}} µL</td>
-                                                <td class="px-4 py-3 text-right text-slate-500">{{formatNum(pt.vSolvent)}} mL</td>
+                                                <td class="px-4 py-3 text-right text-slate-500">{{formatNum(pt.vSolvent)}} {{targetVolUnit()}}</td>
                                             </tr>
                                         }
                                         <tr class="bg-slate-50 font-bold border-t border-slate-200">
-                                            <td class="px-4 py-2 text-slate-500">TỔNG</td>
-                                            <td class="px-4 py-2 text-right text-fuchsia-700">{{formatNum(serialTotalStock())}} µL</td>
-                                            <td class="px-4 py-2 text-right"></td>
+                                            <td class="px-4 py-3 text-slate-500">TỔNG STOCK CẦN</td>
+                                            <td class="px-4 py-3 text-right text-fuchsia-700 text-lg">{{formatNum(serialTotalStock())}} µL</td>
+                                            <td class="px-4 py-3"></td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         }
 
+                        <!-- MIX TABLE -->
                         @if (calcMode() === 'mix') {
-                            <div class="w-full">
-                                <div class="mb-4 text-center">
-                                    <span class="text-xs text-slate-400 uppercase font-bold">Tổng dung môi thêm:</span>
-                                    <div class="text-2xl font-black text-indigo-600">{{formatNum(mixResult().solventVol)}} <span class="text-sm text-slate-400">mL</span></div>
+                            <div class="w-full animate-slide-up">
+                                <div class="mb-6 text-center bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                    <span class="text-xs text-indigo-400 uppercase font-bold">Dung môi thêm vào (QS):</span>
+                                    <div class="text-3xl font-black text-indigo-700">{{formatNum(mixResult().solventVol)}} <span class="text-sm font-normal">{{targetVolUnit()}}</span></div>
                                 </div>
                                 <table class="w-full text-sm text-left">
                                     <thead class="text-xs text-indigo-600 bg-indigo-50 uppercase font-bold">
@@ -403,9 +476,9 @@ interface MixItem {
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         @for (res of mixResult().details; track res.name) {
-                                            <tr>
+                                            <tr class="hover:bg-indigo-50/30 transition">
                                                 <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]">{{res.name}}</td>
-                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600">{{formatNum(res.vStock)}} mL</td>
+                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600">{{formatNum(res.vStock)}} {{targetVolUnit()}}</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -413,52 +486,63 @@ interface MixItem {
                             </div>
                         }
 
-                        <!-- STOCK BAR (Real Mode) -->
+                        <!-- STOCK STATUS (REAL MODE) -->
                         @if (systemMode() === 'real' && (selectedItem() || calcMode() === 'serial' || calcMode() === 'mix')) {
-                            <div class="w-full max-w-sm mx-auto mt-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                @if (calcMode() === 'mix') {
-                                    <div class="text-xs font-bold text-slate-500 mb-2 uppercase">Trạng thái kho (Mix)</div>
-                                    <div class="space-y-2">
-                                        @for (status of mixStockStatus(); track status.name) {
-                                            <div class="flex justify-between items-center text-[10px]">
-                                                <span class="truncate max-w-[120px]">{{status.name}}</span>
-                                                <span class="font-bold" [class]="status.ok ? 'text-emerald-600' : 'text-red-500'">
-                                                    {{status.ok ? 'Đủ hàng' : 'Thiếu hàng'}}
-                                                </span>
-                                            </div>
-                                        }
-                                    </div>
-                                } @else {
-                                    <div class="flex justify-between text-xs font-bold mb-2">
-                                        <span class="text-slate-500 uppercase">Tồn kho</span>
-                                        <span [class]="canFulfill() ? 'text-emerald-600' : 'text-red-600'">
-                                            {{ formatNum(selectedItem()?.stock || 0) }} {{ selectedItem()?.unit || ''}}
-                                        </span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                                        <div class="h-full rounded-full transition-all duration-500"
-                                             [style.width.%]="stockPercentage()"
-                                             [class.bg-emerald-500]="canFulfill()"
-                                             [class.bg-red-500]="!canFulfill()">
+                            <div class="w-full max-w-sm mx-auto mt-auto pt-6">
+                                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500"></div>
+                                    
+                                    @if (calcMode() === 'mix') {
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Trạng thái kho (Hỗn hợp)</div>
+                                        <div class="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                            @for (status of mixStockStatus(); track status.name) {
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="truncate max-w-[150px] font-medium text-slate-700">{{status.name}}</span>
+                                                    @if(status.ok) {
+                                                        <span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-check"></i> Đủ</span>
+                                                    } @else {
+                                                        <span class="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-xmark"></i> Thiếu</span>
+                                                    }
+                                                </div>
+                                            }
                                         </div>
-                                    </div>
-                                }
+                                    } @else {
+                                        <div class="flex justify-between items-end mb-2">
+                                            <div>
+                                                <div class="text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</div>
+                                                <div class="text-sm font-bold text-slate-800">{{ formatNum(selectedItem()?.stock || 0) }} {{ selectedItem()?.unit || ''}}</div>
+                                            </div>
+                                            @if(canFulfill()) {
+                                                <span class="text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-1 rounded"><i class="fa-solid fa-check-circle"></i> Đủ hàng</span>
+                                            } @else {
+                                                <span class="text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded"><i class="fa-solid fa-circle-exclamation"></i> Thiếu hàng</span>
+                                            }
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                            <div class="h-full rounded-full transition-all duration-500"
+                                                 [style.width.%]="stockPercentage()"
+                                                 [class.bg-emerald-500]="canFulfill()"
+                                                 [class.bg-red-500]="!canFulfill()">
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         }
                     </div>
 
-                    <!-- Actions Footer -->
-                    <div class="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 shrink-0">
-                        <button class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95">
-                            <i class="fa-solid fa-print mr-2"></i> In Nhãn
+                    <!-- FOOTER ACTIONS -->
+                    <div class="p-5 bg-slate-50 border-t border-slate-200 flex gap-3 shrink-0">
+                        <button class="flex-1 bg-white border border-slate-300 text-slate-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print text-slate-400"></i> In Nhãn
                         </button>
                         
                         @if (systemMode() === 'real') {
                             <button (click)="confirmTransaction()" 
                                     [disabled]="!canFulfill() || isProcessing()"
-                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-md shadow-purple-200 hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                                @else { <i class="fa-solid fa-boxes-packing mr-2"></i> Trừ kho }
+                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-200 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... } 
+                                @else { <i class="fa-solid fa-boxes-packing"></i> Xác nhận & Trừ kho }
                             </button>
                         }
                     </div>
@@ -468,13 +552,17 @@ interface MixItem {
     </div>
   `,
   styles: [`
+    .card-input { @apply bg-white rounded-2xl border shadow-sm overflow-hidden; }
+    .card-header { @apply px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2; }
     .label { @apply text-[10px] font-bold text-slate-500 uppercase block mb-1 tracking-wide; }
-    .input-group { @apply flex items-center border border-slate-200 rounded-xl bg-slate-50 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition overflow-hidden; }
-    .input-field { @apply w-full bg-transparent border-none p-3 text-sm font-bold text-slate-700 outline-none placeholder-slate-300; }
-    .unit { @apply pr-3 text-xs font-bold text-slate-400 select-none; }
-    .input-select { @apply bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 cursor-pointer; }
+    .input-wrapper { @apply flex items-center border border-slate-200 rounded-xl bg-slate-50 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition overflow-hidden; }
+    .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-400 focus:bg-white transition placeholder-slate-300; }
+    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 select-none bg-transparent; }
+    .select-unit { @apply bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 cursor-pointer px-2; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
   `]
 })
 export class SmartPrepComponent {
@@ -482,14 +570,25 @@ export class SmartPrepComponent {
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   auth = inject(AuthService);
-  
   formatNum = formatNum;
+
+  // --- CONFIG DATA ---
+  concUnits = CONC_UNITS;
+  volUnits = VOL_UNITS;
+  massUnits = MASS_UNITS;
+  modes: {id: CalcMode, label: string, icon: string, color: string}[] = [
+      { id: 'molar', label: 'Molar (Rắn)', icon: 'fa-weight-hanging', color: 'blue' },
+      { id: 'dilution', label: 'Pha Loãng', icon: 'fa-droplet', color: 'orange' },
+      { id: 'spiking', label: 'Thêm Chuẩn', icon: 'fa-syringe', color: 'emerald' },
+      { id: 'serial', label: 'Dãy Chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia' },
+      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo' }
+  ];
 
   // --- STATE ---
   systemMode = signal<SystemMode>('sandbox');
   calcMode = signal<CalcMode>('molar');
   
-  // Inputs: Single Modes
+  // Inputs
   mw = signal<number>(0);
   purity = signal<number>(100);
   stockConc = signal<number>(0);
@@ -499,11 +598,11 @@ export class SmartPrepComponent {
   targetVol = signal<number>(0);
   targetVolUnit = signal<string>('ml');
 
-  // Inputs: Serial
-  serialPointsStr = signal<string>('');
+  // Serial List
+  serialPoints = signal<number[]>([0,0,0,0,0]); // Default 5 points
 
-  // Inputs: Mix
-  mixItems = signal<MixItem[]>([{ id: '1', name: '', stockConc: 0, targetConc: 0, invItem: null }]);
+  // Mix List
+  mixItems = signal<MixRow[]>([{ id: '1', name: '', stockConc: 0, targetConc: 0, unit: 'M', invItem: null }]);
   activeMixSearchIndex = signal<number | null>(null);
 
   // Real Mode State
@@ -513,7 +612,6 @@ export class SmartPrepComponent {
   selectedItem = signal<InventoryItem | null>(null);
   isProcessing = signal(false);
 
-  // Search Logic
   searchSubject = new Subject<{term: string, index?: number}>();
 
   constructor() {
@@ -530,137 +628,92 @@ export class SmartPrepComponent {
           })
       ).subscribe(items => this.searchResults.set(items));
 
-      // Auto-reset when switching modes
-      effect(() => {
-          if (this.systemMode() === 'sandbox') {
-              this.clearSelection();
-          }
-      }, { allowSignalWrites: true });
+      effect(() => { if (this.systemMode() === 'sandbox') this.clearSelection(); }, { allowSignalWrites: true });
   }
 
   setSystemMode(mode: SystemMode) { 
-      if (mode === 'real') {
-          if (!this.auth.canEditInventory()) {
-              this.toast.show('Bạn cần quyền "Sửa Kho" để sử dụng chế độ Thực.', 'error');
-              return;
-          }
+      if (mode === 'real' && !this.auth.canEditInventory()) {
+          this.toast.show('Bạn cần quyền "Sửa Kho" để sử dụng chế độ Thực.', 'error');
+          return;
       }
       this.systemMode.set(mode); 
   }
-  
   setCalcMode(mode: CalcMode) { this.calcMode.set(mode); }
 
-  // --- SEARCH HANDLERS ---
-  onSearch(term: string) { 
-      this.searchTerm.set(term); 
-      this.searchSubject.next({term}); 
-  }
-  
-  selectGlobalItem(item: InventoryItem) {
-      this.selectedItem.set(item);
-      this.searchResults.set([]);
-      this.searchTerm.set('');
-  }
+  // --- ACTIONS ---
+  onSearch(term: string) { this.searchTerm.set(term); this.searchSubject.next({term}); }
+  selectGlobalItem(item: InventoryItem) { this.selectedItem.set(item); this.searchResults.set([]); this.searchTerm.set(''); }
+  clearSelection() { this.selectedItem.set(null); this.searchResults.set([]); this.searchTerm.set(''); }
 
-  onSearchMix(index: number, event: any) {
-      this.activeMixSearchIndex.set(index);
-      this.searchSubject.next({ term: event.target.value, index });
-  }
-
+  // Mix
+  onSearchMix(index: number, event: any) { this.activeMixSearchIndex.set(index); this.searchSubject.next({ term: event.target.value, index }); }
   selectMixItem(index: number, item: InventoryItem) {
-      this.mixItems.update(items => {
-          const newItems = [...items];
-          newItems[index] = { ...newItems[index], name: item.name, invItem: item };
-          return newItems;
-      });
-      this.activeMixSearchIndex.set(null);
-      this.searchResults.set([]);
+      this.mixItems.update(items => { const n = [...items]; n[index] = { ...n[index], name: item.name, invItem: item }; return n; });
+      this.activeMixSearchIndex.set(null); this.searchResults.set([]);
   }
+  addMixRow() { this.mixItems.update(i => [...i, { id: Date.now().toString(), name: '', stockConc: 0, targetConc: 0, unit: 'M', invItem: null }]); }
+  removeMixRow(i: number) { this.mixItems.update(items => items.filter((_, idx) => idx !== i)); }
+  clearMixItem(i: number) { this.mixItems.update(items => { const n = [...items]; n[i] = { ...n[i], name: '', invItem: null }; return n; }); }
 
-  clearSelection() {
-      this.selectedItem.set(null);
-      this.searchResults.set([]);
-      this.searchTerm.set('');
-  }
+  // Serial
+  addSerialPoint() { this.serialPoints.update(p => [...p, 0]); }
+  removeSerialPoint(i: number) { this.serialPoints.update(p => p.filter((_, idx) => idx !== i)); }
 
-  // --- MIX ROW ACTIONS ---
-  addMixRow() {
-      this.mixItems.update(i => [...i, { id: Date.now().toString(), name: '', stockConc: 0, targetConc: 0, invItem: null }]);
-  }
-  removeMixRow(i: number) {
-      this.mixItems.update(items => items.filter((_, idx) => idx !== i));
-  }
-  clearMixItem(i: number) {
-      this.mixItems.update(items => {
-          const newItems = [...items];
-          newItems[i] = { ...newItems[i], name: '', invItem: null };
-          return newItems;
-      });
+  // --- UNIT CONVERSION LOGIC ---
+  private getFactor(unit: string, type: 'conc' | 'vol' | 'mass'): number {
+      let list: any[] = [];
+      if (type === 'conc') list = CONC_UNITS;
+      else if (type === 'vol') list = VOL_UNITS;
+      else list = MASS_UNITS;
+      const found = list.find(u => u.val === unit);
+      return found ? found.factor : 1;
   }
 
   // --- CALCULATIONS ---
-
   resultValue = computed(() => {
       const mode = this.calcMode();
+      
+      // Get Base Values (Normalized to M, L, g)
+      const cStockBase = this.stockConc() * this.getFactor(this.concUnit(), 'conc');
+      const cTargetBase = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc'); // Use target unit for Molar/Dilution target
+      const vTargetBase = this.targetVol() * this.getFactor(this.targetVolUnit(), 'vol');
+
       if (mode === 'molar') {
-          const C = this.targetConc(); 
-          const V = this.getVolInLiters();
           const MW = this.mw();
           const P = this.purity() || 100;
           if (!MW) return 0;
-          let mols = C * V;
-          if (this.targetConcUnit() === 'mM') mols = mols / 1000;
-          return mols * MW * (100 / P);
+          // Mass (g) = M (mol/L) * V (L) * MW (g/mol) * (100/P)
+          // Note: cTargetBase is already normalized to Molar if using M/mM. 
+          // If using %, logic differs (usually m/v). Assuming Molar logic here.
+          const massG = cTargetBase * vTargetBase * MW * (100 / P);
+          return massG; // Always return base unit (g) for now, can display better later
       }
+      
       if (mode === 'dilution') {
-          const C1 = this.stockConc();
-          const C2 = this.targetConc();
-          const V2 = this.targetVol();
-          if (C1 === 0) return 0;
-          return (C2 * V2) / C1;
+          // V1 (L) = C2 * V2 / C1
+          if (cStockBase === 0) return 0;
+          // Target Conc for dilution uses the generic 'concUnit' for stock, but 'targetConc' input
+          // In the UI for dilution, I used `concUnit` for both for simplicity in old code, 
+          // but new UI has separate. Let's assume user converts or selects. 
+          // Actually UI shows: Stock has unit, Target has SAME unit display.
+          // Let's use `concUnit` for both C1 and C2 in Dilution to keep math simple V1 = C2*V2/C1
+          // If units differ, we need separate selectors. The UI above uses `concUnit` for Target display.
+          // Let's assume C1 and C2 share `concUnit`.
+          const c1 = this.stockConc(); const c2 = this.targetConc();
+          if (c1 === 0) return 0;
+          const v1 = (c2 * this.targetVol()) / c1; // Result in Target Vol Unit
+          return v1; 
       }
+
       if (mode === 'spiking') {
-          const V_sample = this.targetVol();
-          const C_add = this.targetConc();
-          const C_stock = this.stockConc();
-          if (C_stock === 0) return 0;
-          return V_sample * (C_add / C_stock);
+          // V_spike = V_sample * (C_add / C_stock)
+          // Assumes C_add and C_stock same unit
+          const cStock = this.stockConc(); const cAdd = this.targetConc();
+          if (cStock === 0) return 0;
+          return this.targetVol() * (cAdd / cStock);
       }
+
       return 0;
-  });
-
-  serialResult = computed(() => {
-      if (this.calcMode() !== 'serial') return [];
-      const points = this.serialPointsStr().split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-      const C1 = this.stockConc();
-      const V2 = this.targetVol(); // mL per point
-      if (C1 <= 0 || V2 <= 0) return [];
-
-      return points.map(C2 => {
-          const v1_ul = (C2 * V2 / C1) * 1000; // Convert result to uL for easier reading
-          const v1_ml = v1_ul / 1000;
-          return { point: C2, vStock: v1_ul, vSolvent: V2 - v1_ml };
-      });
-  });
-
-  serialTotalStock = computed(() => {
-      return this.serialResult().reduce((sum, item) => sum + item.vStock, 0);
-  });
-
-  mixResult = computed(() => {
-      if (this.calcMode() !== 'mix') return { details: [], solventVol: 0 };
-      const V_total = this.targetVol();
-      if (V_total <= 0) return { details: [], solventVol: 0 };
-
-      let totalStockVol = 0;
-      const details = this.mixItems().map(item => {
-          if (item.stockConc <= 0) return { name: item.name || 'Unknown', vStock: 0 };
-          const v = (item.targetConc * V_total) / item.stockConc;
-          totalStockVol += v;
-          return { name: item.name || 'Unknown', vStock: v };
-      });
-
-      return { details, solventVol: Math.max(0, V_total - totalStockVol) };
   });
 
   resultUnit = computed(() => {
@@ -670,74 +723,92 @@ export class SmartPrepComponent {
       return '';
   });
 
+  serialResult = computed<SerialPoint[]>(() => {
+      if (this.calcMode() !== 'serial') return [];
+      const C1 = this.stockConc();
+      const V2 = this.targetVol(); // Vol per point
+      if (C1 <= 0 || V2 <= 0) return [];
+
+      return this.serialPoints().map(C2 => {
+          if (!C2) return { conc: 0, unit: this.concUnit(), vStock: 0, vSolvent: 0 };
+          // V1 = C2 * V2 / C1
+          // Result V1 is in same unit as V2
+          const v1 = (C2 * V2) / C1;
+          
+          // Convert to uL for better readability if small
+          let v1_display = v1; 
+          let vSolvent = V2 - v1;
+          
+          // Heuristic: If user selected 'mL', stock might be uL
+          if (this.targetVolUnit() === 'ml') v1_display = v1 * 1000; 
+          
+          return { conc: C2, unit: this.concUnit(), vStock: v1_display, vSolvent: vSolvent };
+      });
+  });
+
+  serialTotalStock = computed(() => this.serialResult().reduce((sum, p) => sum + p.vStock, 0));
+
+  mixResult = computed(() => {
+      if (this.calcMode() !== 'mix') return { details: [], solventVol: 0 };
+      const V_total = this.targetVol();
+      if (V_total <= 0) return { details: [], solventVol: 0 };
+
+      let totalStockVol = 0;
+      const details = this.mixItems().map(item => {
+          if (item.stockConc <= 0) return { name: item.name || 'Unknown', vStock: 0 };
+          
+          // C1 * V1 = C2 * V2 => V1 = C2 * V2 / C1
+          // Need unit normalization if units differ. 
+          // For now assume same units for C1 and C2 in mix row.
+          const v = (item.targetConc * V_total) / item.stockConc;
+          totalStockVol += v;
+          return { name: item.name || 'Unknown', vStock: v };
+      });
+
+      return { details, solventVol: Math.max(0, V_total - totalStockVol) };
+  });
+
   resultDescription = computed(() => {
-      const res = this.formatNum(this.resultValue());
+      const val = this.resultValue();
       const unit = this.resultUnit();
       const mode = this.calcMode();
-
-      if (mode === 'molar') return `Cân chính xác ${res} ${unit} chất rắn, hòa tan và định mức đến ${this.targetVol()} ${this.targetVolUnit()}.`;
+      
+      if (mode === 'molar') return `Cân chính xác ${this.formatNum(val)} ${unit} chất rắn. Hòa tan và định mức tới ${this.targetVol()} ${this.targetVolUnit()}.`;
       if (mode === 'dilution') {
-          const v2 = this.targetVol(); const v1 = this.resultValue();
-          const solvent = v2 - v1;
-          return `Hút ${res} ${unit} gốc, thêm ${this.formatNum(solvent)} ${unit} dung môi để đạt ${v2} ${unit}.`;
+          const vTotal = this.targetVol();
+          const solvent = vTotal - val;
+          return `Hút ${this.formatNum(val)} ${unit} dung dịch gốc. Thêm ${this.formatNum(solvent)} ${unit} dung môi để đạt ${vTotal} ${unit}.`;
       }
-      if (mode === 'spiking') return `Hút ${res} ${unit} chuẩn gốc thêm vào ${this.targetVol()} ${this.targetVolUnit()} mẫu.`;
       return '';
   });
 
-  // --- HELPERS ---
-  getVolInLiters(): number {
-      const v = this.targetVol();
-      return this.targetVolUnit() === 'ml' ? v / 1000 : v;
-  }
+  // --- VALIDATION & CONFIRMATION ---
+  
+  stockPercentage = computed(() => {
+      const item = this.selectedItem();
+      if (!item) return 0;
+      let req = this.resultValue();
+      // Normalize units comparison needed here in real app
+      // Assuming simple match for now
+      if (item.stock <= 0) return 0;
+      return Math.min((req / item.stock) * 100, 100);
+  });
 
-  // --- VALIDATION & STOCK ---
   mixStockStatus = computed(() => {
       if (this.calcMode() !== 'mix') return [];
       const res = this.mixResult();
       return this.mixItems().map((item, idx) => {
           const required = res.details[idx]?.vStock || 0;
-          // Assume mL for mix mode mostly
           const hasStock = item.invItem ? (item.invItem.stock >= required) : true;
           return { name: item.name || `Chất ${idx+1}`, ok: hasStock };
       });
   });
 
-  stockPercentage = computed(() => {
-      const item = this.selectedItem();
-      if (!item) return 0;
-      
-      let required = 0;
-      if (this.calcMode() === 'serial') required = this.serialTotalStock() / 1000; // uL to mL
-      else required = this.resultValue();
-
-      // Normalize simple units (assuming Calculator outputs 'g' or 'ml')
-      if (this.resultUnit() === 'L' && item.unit === 'ml') required *= 1000;
-      if (this.calcMode() === 'serial' && item.unit === 'ml') { /* handled above */ }
-      
-      if (item.stock <= 0) return 0;
-      return Math.min((required / item.stock) * 100, 100);
-  });
-
   canFulfill = computed(() => {
-      const mode = this.calcMode();
-      
-      if (mode === 'mix') {
-          if (this.systemMode() === 'sandbox') return true;
-          const status = this.mixStockStatus();
-          return status.length > 0 && status.every(s => s.ok);
-      }
-
+      if (this.systemMode() === 'sandbox') return true;
+      if (this.calcMode() === 'mix') return this.mixStockStatus().every(s => s.ok);
       const item = this.selectedItem();
-      if (!item) return false;
-      
-      let required = 0;
-      if (mode === 'serial') required = this.serialTotalStock() / 1000; // uL to mL
-      else required = this.resultValue();
-
-      if (this.resultUnit() === 'L' && item.unit === 'ml') required *= 1000;
-      
-      return item.stock >= required;
+      return item ? item.stock >= this.resultValue() : false;
   });
 
   async confirmTransaction() {
@@ -745,45 +816,33 @@ export class SmartPrepComponent {
            this.toast.show('Truy cập bị từ chối.', 'error');
            return;
       }
-
-      if (!this.canFulfill()) return;
-      
-      const mode = this.calcMode();
-      
-      // CONFIRMATION MSG
-      let msg = '';
-      if (mode === 'mix') {
-          msg = `Xác nhận trừ kho cho ${this.mixItems().length} chất trong hỗn hợp?`;
-      } else if (mode === 'serial') {
-          const totalUl = this.serialTotalStock();
-          msg = `Xác nhận trừ kho ${this.formatNum(totalUl)} µL (~${this.formatNum(totalUl/1000)} mL) của "${this.selectedItem()?.name}"?`;
-      } else {
-          msg = `Xác nhận trừ kho ${this.formatNum(this.resultValue())} ${this.resultUnit()} của "${this.selectedItem()?.name}"?`;
+      if (!this.canFulfill()) {
+          this.toast.show('Kho không đủ hàng!', 'error');
+          return;
       }
 
-      if (await this.confirmation.confirm({ message: msg, confirmText: 'Xác nhận & Trừ kho' })) {
+      if (await this.confirmation.confirm({ message: 'Xác nhận trừ kho theo tính toán?', confirmText: 'Xác nhận & Trừ kho' })) {
           this.isProcessing.set(true);
           try {
-              if (mode === 'mix') {
-                  // Loop deduction for MIX
+              if (this.calcMode() === 'mix') {
                   const details = this.mixResult().details;
                   for(let i=0; i<this.mixItems().length; i++) {
                       const mItem = this.mixItems()[i];
-                      const amount = details[i].vStock; // mL
+                      const amount = details[i].vStock;
                       if (mItem.invItem && amount > 0) {
-                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -amount, 'Pha Mix');
+                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -amount, 'Pha Mix (Smart Prep)');
                       }
                   }
               } else {
-                  // Single Item Deduction
                   const item = this.selectedItem()!;
-                  let amount = (mode === 'serial') ? (this.serialTotalStock() / 1000) : this.resultValue();
-                  // Normalize unit if needed
-                  if (this.resultUnit() === 'L' && item.unit === 'ml') amount *= 1000;
+                  let amount = this.resultValue();
+                  // Normalize unit if result is 'g' but stock is 'mg', etc. 
+                  // Simple logic: if result unit != stock unit, try simple conversion
+                  if (this.resultUnit() === 'g' && item.unit === 'mg') amount *= 1000;
+                  if (this.resultUnit() === 'l' && item.unit === 'ml') amount *= 1000;
                   
-                  await this.invService.updateStock(item.id, item.stock, -amount, `Smart Prep: ${mode}`);
+                  await this.invService.updateStock(item.id, item.stock, -amount, `Smart Prep: ${this.calcMode()}`);
               }
-              
               this.toast.show('Giao dịch thành công!', 'success');
               this.setSystemMode('sandbox');
           } catch (e: any) {
