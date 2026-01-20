@@ -10,7 +10,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { formatNum } from '../../shared/utils/utils';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 
-type CalcMode = 'molar' | 'dilution' | 'spiking' | 'serial' | 'mix';
+type CalcMode = 'molar' | 'dilution' | 'spiking' | 'serial' | 'mix' | 'sample_prep';
 type SystemMode = 'sandbox' | 'real';
 
 // Unit Constants
@@ -104,8 +104,8 @@ interface MixRow {
 
                 <div class="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
                     
-                    <!-- CHEMICAL SELECTOR (Real Mode & Not Mix) -->
-                    @if (systemMode() === 'real' && calcMode() !== 'mix') {
+                    <!-- CHEMICAL SELECTOR (Real Mode & Not Mix & Not Sample Prep) -->
+                    @if (systemMode() === 'real' && calcMode() !== 'mix' && calcMode() !== 'sample_prep') {
                         <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 animate-slide-up relative">
                             <label class="text-[10px] font-bold text-purple-800 uppercase flex items-center gap-2">
                                 <i class="fa-solid fa-search"></i> Chọn Hóa chất (Trừ kho)
@@ -420,6 +420,104 @@ interface MixRow {
                             </div>
                         </div>
                     }
+
+                    <!-- 6. SAMPLE PREP (Dilution Factor) -->
+                    @if (calcMode() === 'sample_prep') {
+                        <div class="space-y-3">
+                            <!-- Step 1 -->
+                            <div class="card-input border-teal-100 animate-slide-up">
+                                <div class="px-4 py-2 bg-teal-50 text-teal-700 text-xs font-bold uppercase flex justify-between items-center">
+                                    <span><i class="fa-solid fa-scale-balanced"></i> Bước 1: Mẫu & Chiết</span>
+                                    <span class="text-[9px] bg-white px-2 rounded-full border border-teal-100">Start</span>
+                                </div>
+                                <div class="p-3 grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Khối lượng mẫu (m)</label>
+                                        <div class="relative">
+                                            <input type="number" [(ngModel)]="sampleMass" class="input-field pr-6" placeholder="10">
+                                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">g</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Dung môi chiết (V1)</label>
+                                        <div class="relative">
+                                            <input type="number" [(ngModel)]="extractVol" class="input-field pr-8 text-teal-600 font-bold" placeholder="10">
+                                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Arrow -->
+                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+
+                            <!-- Step 2 -->
+                            <div class="card-input border-cyan-100 animate-slide-up">
+                                <div class="px-4 py-2 bg-cyan-50 text-cyan-700 text-xs font-bold uppercase">
+                                    <i class="fa-solid fa-filter"></i> Bước 2: Làm sạch (Cleanup)
+                                </div>
+                                <div class="p-3">
+                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút dịch làm sạch (V2)</label>
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative flex-1">
+                                            <input type="number" [(ngModel)]="cleanupAliquot" class="input-field pr-8" placeholder="6">
+                                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
+                                        </div>
+                                        @if(cleanupAliquot() > extractVol()) {
+                                            <span class="text-red-500 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V1</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+
+                            <!-- Step 3 -->
+                            <div class="card-input border-sky-100 animate-slide-up">
+                                <div class="px-4 py-2 bg-sky-50 text-sky-700 text-xs font-bold uppercase">
+                                    <i class="fa-solid fa-vial"></i> Bước 3: Phân đoạn (Aliquot)
+                                </div>
+                                <div class="p-3">
+                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút đi cô đặc (V3)</label>
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative flex-1">
+                                            <input type="number" [(ngModel)]="concAliquot" class="input-field pr-8 text-sky-600 font-bold" placeholder="5">
+                                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
+                                        </div>
+                                        @if(concAliquot() > cleanupAliquot()) {
+                                            <span class="text-red-500 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V2</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+
+                            <!-- Step 4 -->
+                            <div class="card-input border-indigo-100 animate-slide-up">
+                                <div class="px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase flex justify-between items-center">
+                                    <span><i class="fa-solid fa-flask"></i> Bước 4: Định mức cuối</span>
+                                    <span class="text-[9px] bg-white px-2 rounded-full border border-indigo-100">End</span>
+                                </div>
+                                <div class="p-3 grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Thể tích cuối (V4)</label>
+                                        <div class="relative">
+                                            <input type="number" [(ngModel)]="finalVol" class="input-field pr-8 text-indigo-600 font-black text-lg" placeholder="1">
+                                            <span class="absolute right-3 top-3 text-xs font-bold text-slate-400">mL</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hiệu suất (Recovery)</label>
+                                        <div class="relative">
+                                            <input type="number" [(ngModel)]="recovery" class="input-field pr-8" placeholder="100">
+                                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -433,12 +531,68 @@ interface MixRow {
                          [class.bg-orange-500]="calcMode() === 'dilution'"
                          [class.bg-emerald-500]="calcMode() === 'spiking'"
                          [class.bg-fuchsia-500]="calcMode() === 'serial'"
-                         [class.bg-indigo-500]="calcMode() === 'mix'">
+                         [class.bg-indigo-500]="calcMode() === 'mix'"
+                         [class.bg-teal-500]="calcMode() === 'sample_prep'">
                     </div>
 
                     <div class="p-6 md:p-8 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
                         <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 text-center">Kết quả tính toán</div>
                         
+                        <!-- SAMPLE PREP RESULTS -->
+                        @if (calcMode() === 'sample_prep') {
+                            <div class="flex flex-col items-center justify-center h-full animate-scale-in">
+                                
+                                <!-- Dilution Factor Display -->
+                                <div class="text-center mb-8">
+                                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Hệ số pha loãng (f)</div>
+                                    <div class="relative inline-block">
+                                        <h1 class="text-6xl md:text-8xl font-black tracking-tight text-teal-600 tabular-nums">
+                                            {{ formatNum(samplePrepFactor()) }}
+                                        </h1>
+                                        @if(samplePrepFactor() < 1) {
+                                            <span class="absolute -right-16 top-2 bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-1 rounded border border-teal-200">Cô đặc {{formatNum(1/samplePrepFactor())}}x</span>
+                                        } @else if(samplePrepFactor() > 1) {
+                                            <span class="absolute -right-16 top-2 bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded border border-orange-200">Loãng {{formatNum(samplePrepFactor())}}x</span>
+                                        }
+                                    </div>
+                                    <p class="text-[10px] font-mono text-slate-400 mt-2 bg-slate-50 px-3 py-1 rounded-full inline-block border border-slate-200">
+                                        f = (V1 × V4) / (m × V3)
+                                    </p>
+                                </div>
+
+                                <!-- Reverse Calculator -->
+                                <div class="w-full max-w-sm bg-slate-50 rounded-2xl p-5 border border-slate-200 shadow-sm">
+                                    <div class="flex items-center gap-2 mb-4 justify-center">
+                                        <i class="fa-solid fa-calculator text-teal-500"></i>
+                                        <span class="text-xs font-bold text-slate-600 uppercase">Tính Nồng độ Mẫu</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-1">
+                                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Kết quả chạy máy</label>
+                                            <input type="number" [(ngModel)]="instConc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-700 outline-none focus:border-teal-500 transition" placeholder="C_inst">
+                                        </div>
+                                        <div class="text-slate-300 text-lg pt-4"><i class="fa-solid fa-arrow-right"></i></div>
+                                        <div class="flex-1">
+                                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Kết quả thực</label>
+                                            <div class="w-full bg-white border border-teal-200 rounded-xl px-3 py-2 text-center font-black text-teal-700 text-lg shadow-sm">
+                                                {{ formatNum(sampleResult()) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    @if(recovery() !== 100) {
+                                        <div class="mt-3 text-center">
+                                            <span class="text-[9px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                                                Đã bù hiệu suất {{recovery()}}%
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+
+                            </div>
+                        }
+
                         <!-- SINGLE VALUE MODES -->
                         @if (['molar', 'dilution', 'spiking'].includes(calcMode())) {
                             <div class="text-center space-y-4 animate-scale-in">
@@ -604,7 +758,8 @@ export class SmartPrepComponent {
       { id: 'dilution', label: 'Pha Loãng', icon: 'fa-droplet', color: 'orange' },
       { id: 'spiking', label: 'Thêm Chuẩn', icon: 'fa-syringe', color: 'emerald' },
       { id: 'serial', label: 'Dãy Chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia' },
-      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo' }
+      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo' },
+      { id: 'sample_prep', label: 'Xử lý Mẫu', icon: 'fa-vials', color: 'teal' }
   ];
 
   // --- STATE ---
@@ -620,6 +775,15 @@ export class SmartPrepComponent {
   targetConcUnit = signal<string>('M');
   targetVol = signal<number>(0);
   targetVolUnit = signal<string>('ml');
+
+  // Sample Prep Inputs (New)
+  sampleMass = signal<number>(10);
+  extractVol = signal<number>(10);
+  cleanupAliquot = signal<number>(6); // V2
+  concAliquot = signal<number>(5);    // V3
+  finalVol = signal<number>(1);       // V4
+  recovery = signal<number>(100);     // %
+  instConc = signal<number>(0);       // Input for reverse calc
 
   // Serial List
   serialPoints = signal<number[]>([0,0,0,0,0]); // Default 5 points
@@ -761,6 +925,30 @@ export class SmartPrepComponent {
       if (mode === 'molar') return 'g';
       if (mode === 'dilution' || mode === 'spiking') return this.targetVolUnit(); 
       return '';
+  });
+
+  // --- SAMPLE PREP CALCULATIONS ---
+  samplePrepFactor = computed(() => {
+      const m = this.sampleMass();
+      const V1 = this.extractVol();
+      const V3 = this.concAliquot(); // Volume taken to concentrate
+      const V4 = this.finalVol();
+      
+      if (m <= 0 || V3 <= 0) return 0;
+      
+      // Factor f = (V1 * V4) / (m * V3)
+      // Logic verified: C_sample = C_inst * f
+      return (V1 * V4) / (m * V3);
+  });
+
+  sampleResult = computed(() => {
+      const inst = this.instConc();
+      const f = this.samplePrepFactor();
+      const R = this.recovery() || 100;
+      
+      // C_sample = C_inst * f * (100 / Recovery)
+      if (R <= 0) return 0;
+      return inst * f * (100 / R);
   });
 
   serialResult = computed<SerialPoint[]>(() => {
