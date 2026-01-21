@@ -1,5 +1,7 @@
+
 import { Injectable } from '@angular/core';
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
@@ -12,16 +14,7 @@ import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
 import { UserProfile } from './auth.service';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDZmI3PE-j1ZhkqUd3mQaYmX1pJpWqtwck",
-  authDomain: "lims-cloud-by-otada.firebaseapp.com",
-  projectId: "lims-cloud-by-otada",
-  storageBucket: "lims-cloud-by-otada.firebasestorage.app",
-  messagingSenderId: "498845778988",
-  appId: "1:498845778988:web:e20c971a3af3a1ca5bfd89",
-  measurementId: "G-M02RLXX5GD"
-};
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
@@ -33,7 +26,7 @@ export class FirebaseService {
   private readonly APP_ID_KEY = 'lims_app_id';
 
   constructor() {
-    this.app = initializeApp(firebaseConfig);
+    this.app = initializeApp(environment.firebase);
     
     this.db = initializeFirestore(this.app, {
       localCache: persistentLocalCache({
@@ -86,7 +79,7 @@ export class FirebaseService {
           collection: colName,
           path: path,
           status: 'Online' as const,
-          actionUrl: `https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/data/${path}`
+          actionUrl: `https://console.firebase.google.com/project/${environment.firebase.projectId}/firestore/data/${path}`
         })),
         catchError(err => of({
           collection: colName,

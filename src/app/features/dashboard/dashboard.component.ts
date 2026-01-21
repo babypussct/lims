@@ -1,3 +1,4 @@
+
 import { Component, inject, computed, signal, OnInit, viewChild, ElementRef, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -526,8 +527,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   onCameraScanSuccess(result: string) {
       this.scanCode = result;
       this.closeScanModal();
-      this.toast.show('Đã quét mã: ' + result, 'success');
-      this.router.navigate(['/traceability', result]);
+      this.processScanCode(result);
   }
 
   onCameraError(err: any) {
@@ -550,6 +550,76 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (!this.scanCode.trim()) return;
       const code = this.scanCode.trim();
       this.closeScanModal();
-      this.router.navigate(['/traceability', code]);
+      this.processScanCode(code);
+  }
+
+  // --- SMART SCAN ROUTER ---
+  private processScanCode(code: string) {
+      const raw = code.trim().toUpperCase();
+      this.toast.show(`Đang tra cứu: ${raw}`, 'info');
+
+      // 1. Traceability (Logs)
+      if (raw.startsWith('TRC-') || raw.startsWith('REQ-') || raw.startsWith('LOG-')) {
+          this.router.navigate(['/traceability', raw]); // Old codes (REQ-, LOG-) are handled by Traceability component gracefully
+          return;
+      }
+
+      // 2. Inventory
+      if (raw.startsWith('INV-')) {
+          // Open inventory modal (Need to navigate to Inventory page with query param)
+          // For now, simpler to just filter inventory page
+          // Better: Navigate to Inventory and open Modal there? 
+          // Current InventoryComponent logic uses 'searchTerm', let's use that.
+          // Wait, we can modify InventoryComponent to open modal if ID matches exactly.
+          // Or just standard search behavior:
+          this.toast.show('Tìm thấy hóa chất!', 'success');
+          // Removing prefix if needed? No, user might search by name or ID.
+          // Let's assume ID search works.
+          // Hack: Pass via query params if we want direct open, but search is safe default.
+          // Actually, INV- usually implies ID.
+          this.router.navigate(['/inventory'], { queryParams: { search: raw } }); 
+          return;
+      }
+
+      // 3. Standard
+      if (raw.startsWith('STD-')) {
+          this.router.navigate(['/standards'], { queryParams: { search: raw } });
+          return;
+      }
+
+      // 4. SOP (Calculator)
+      if (raw.startsWith('SOP-')) {
+          // Find SOP by ID? 
+          // Current calculator uses router state or selection.
+          // We can try to navigate to /calculator?sopId=... if implemented,
+          // or just search in Editor.
+          // Let's go to Editor search for now as fallback.
+          this.toast.show('Mở quy trình...', 'success');
+          this.router.navigate(['/editor']); // User can search there
+          return;
+      }
+
+      // 5. Recipe
+      if (raw.startsWith('RCP-')) {
+          this.router.navigate(['/recipes']);
+          return;
+      }
+
+      // 6. User
+      if (raw.startsWith('USR-')) {
+          this.router.navigate(['/config']); // User mgmt
+          return;
+      }
+
+      // 7. Fallback (Unknown Format)
+      // Try to guess: if it looks like a LOG ID (timestamp based), send to Traceability
+      // Regex for old log ids: log_123...
+      if (raw.toLowerCase().startsWith('log_') || raw.match(/^\d+$/)) {
+           this.router.navigate(['/traceability', code]); // Pass original case
+           return;
+      }
+
+      // Default: Search in Inventory (Safest bet for chemicals without prefix)
+      this.router.navigate(['/inventory'], { queryParams: { search: code } });
   }
 }

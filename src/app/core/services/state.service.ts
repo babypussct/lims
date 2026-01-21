@@ -236,7 +236,10 @@ export class StateService implements OnDestroy {
     // Pre-generate IDs to ensure we can return them
     const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
     const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
-    const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+    
+    // CHANGED: Use TRC- prefix for Logs (Traceability)
+    const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+    const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -336,7 +339,10 @@ export class StateService implements OnDestroy {
         transaction.update(reqRef, { status: 'approved', approvedAt: serverTimestamp() });
         
         const sop = this.sops().find(s => s.id === req.sopId);
-        const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+        
+        // CHANGED: Use TRC- prefix
+        const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
         
         if (sop && req.inputs) {
             const calcService = this.injector.get(CalculatorService);
