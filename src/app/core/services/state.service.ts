@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, inject, effect, OnDestroy, Injector } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
@@ -203,7 +204,8 @@ export class StateService implements OnDestroy {
   async submitRequest(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     try {
       const requestItems = this.mapToRequestItems(calculatedItems, invMap);
-      await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), {
+      
+      const reqData: any = {
         sopId: sop.id, 
         sopName: sop.name, 
         items: requestItems, 
@@ -213,7 +215,13 @@ export class StateService implements OnDestroy {
         inputs: formInputs, 
         margin: formInputs.safetyMargin || 0,
         analysisDate: formInputs.analysisDate || null 
-      });
+      };
+
+      // Optional Fields
+      if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
+      if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
+
+      await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), reqData);
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
@@ -242,7 +250,7 @@ export class StateService implements OnDestroy {
         }
 
         const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
-        transaction.set(reqRef, {
+        const reqData: any = {
             sopId: sop.id, 
             sopName: sop.name, 
             items: requestItems, 
@@ -253,7 +261,12 @@ export class StateService implements OnDestroy {
             inputs: formInputs, 
             margin: formInputs.safetyMargin || 0,
             analysisDate: formInputs.analysisDate || null
-        });
+        };
+        
+        if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
+        if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
+
+        transaction.set(reqRef, reqData);
 
         const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = { 
@@ -333,10 +346,15 @@ export class StateService implements OnDestroy {
                 }
             });
 
+            // If request had new metadata, include it in print data
+            const extendedInputs = { ...req.inputs };
+            if(req.sampleList) extendedInputs.sampleList = req.sampleList;
+            if(req.targetIds) extendedInputs.targetIds = req.targetIds;
+
             const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
             const printData: PrintData = { 
                 sop, 
-                inputs: req.inputs, 
+                inputs: extendedInputs, 
                 margin: req.margin || 0, 
                 items: calculatedItems,
                 analysisDate: req.analysisDate 

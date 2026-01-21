@@ -1,6 +1,8 @@
+
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService, PERMISSIONS, UserProfile } from '../../core/services/auth.service';
@@ -42,6 +44,29 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
             @if (activeTab() === 'general') {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     
+                    <!-- NEW: MASTER DATA MANAGEMENT -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center"><i class="fa-solid fa-layer-group"></i></div>
+                                Master Data
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-500">Quản lý các danh mục dữ liệu gốc dùng chung.</p>
+                        
+                        <div class="grid gap-3">
+                            <button (click)="router.navigate(['/master-targets'])" class="w-full py-3 px-4 border border-teal-200 bg-teal-50 text-teal-800 rounded-xl font-bold text-sm hover:bg-teal-100 transition flex items-center justify-between group">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-book-medical"></i> Thư viện Chỉ tiêu Gốc (Master Library)</span>
+                                <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
+                            </button>
+
+                            <button (click)="router.navigate(['/target-groups'])" class="w-full py-3 px-4 border border-slate-200 bg-slate-50 text-slate-700 rounded-xl font-bold text-sm hover:bg-white hover:shadow-sm transition flex items-center justify-between group">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Quản lý Bộ Chỉ tiêu (Groups)</span>
+                                <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 1. SYSTEM SETTINGS (App ID & Version) -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                         <div class="flex justify-between items-center">
@@ -220,23 +245,27 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                         </h3>
                         
                         <div class="flex flex-col md:flex-row gap-4">
-                            <!-- New Migration Tool -->
+                            <!-- Logs Migration -->
                             <button (click)="migrateLegacyLogs()" class="flex-1 p-4 border border-orange-100 bg-orange-50 rounded-xl hover:bg-orange-100 transition flex items-center justify-center gap-3 text-orange-700 font-bold text-sm">
                                  <i class="fa-solid fa-file-export text-lg"></i>
                                  <div>
-                                     <div>Migrate Data (v1 -> v2)</div>
-                                     <div class="text-[10px] font-normal opacity-80">Tách PrintData sang collection riêng</div>
+                                     <div>Migrate Logs (v1 -> v2)</div>
+                                     <div class="text-[10px] font-normal opacity-80">Tách PrintData</div>
                                  </div>
                             </button>
 
-                            <button (click)="loadSampleData()" class="flex-1 p-4 border border-blue-100 bg-blue-50/30 rounded-xl hover:bg-blue-50 transition flex items-center justify-center gap-3 text-blue-700 font-bold text-sm">
-                                 <i class="fa-solid fa-flask-vial text-lg"></i>
-                                 Nạp Dữ liệu Mẫu (NAFI6)
+                            <!-- SOP Targets Migration -->
+                            <button (click)="migrateSopTargets()" class="flex-1 p-4 border border-teal-100 bg-teal-50 rounded-xl hover:bg-teal-100 transition flex items-center justify-center gap-3 text-teal-700 font-bold text-sm">
+                                 <i class="fa-solid fa-bullseye text-lg"></i>
+                                 <div>
+                                     <div>Migrate SOP Targets</div>
+                                     <div class="text-[10px] font-normal opacity-80">Fix lỗi undefined targets</div>
+                                 </div>
                             </button>
 
                             <button (click)="resetDefaults()" class="flex-1 p-4 border border-red-200 bg-red-100 rounded-xl hover:bg-red-200 transition flex items-center justify-center gap-3 text-red-800 font-bold text-sm">
                                  <i class="fa-solid fa-eraser text-lg"></i>
-                                 Xóa Sạch (Wipe All Data)
+                                 Xóa Sạch (Wipe All)
                             </button>
                         </div>
                     </div>
@@ -433,6 +462,7 @@ export class ConfigComponent implements OnInit {
   toast = inject(ToastService);
   sopService = inject(SopService);
   confirmationService = inject(ConfirmationService);
+  router = inject(Router);
   
   appIdControl = new FormControl('');
   versionControl = new FormControl(''); // New control for Version
@@ -620,6 +650,39 @@ service cloud.firestore {
 
       if (count > 0) await batch.commit();
       this.toast.show(`Hoàn tất! Đã chuyển đổi ${migrated} bản ghi.`, 'success');
+  }
+
+  // --- NEW MIGRATION FOR SOP TARGETS ---
+  async migrateSopTargets() {
+      if (!await this.confirmationService.confirm({ message: 'Cập nhật cấu trúc SOP cũ (Thêm trường Targets)?', confirmText: 'Cập nhật' })) return;
+      
+      this.toast.show('Đang cập nhật SOPs...', 'info');
+      const sopsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/sops`);
+      const snapshot = await getDocs(sopsRef);
+      
+      let batch = writeBatch(this.fb.db);
+      let count = 0;
+      let updated = 0;
+      const BATCH_SIZE = 400;
+
+      for (const docSnap of snapshot.docs) {
+          const sop = docSnap.data() as any;
+          
+          if (!sop.targets) {
+              batch.update(docSnap.ref, { targets: [] });
+              updated++;
+              count++;
+          }
+
+          if (count >= BATCH_SIZE) {
+              await batch.commit();
+              batch = writeBatch(this.fb.db);
+              count = 0;
+          }
+      }
+
+      if (count > 0) await batch.commit();
+      this.toast.show(`Đã cập nhật ${updated} quy trình.`, 'success');
   }
 
   async resetDefaults() {

@@ -20,5 +20,9 @@ export interface Request {
   user?: string;
   inputs?: any;
   margin?: number;
-  analysisDate?: string; 
+  analysisDate?: string;
+  
+  // New Feature: Sample & Target Tracking
+  sampleList?: string[]; // List of Sample IDs
+  targetIds?: string[];  // List of Selected Target IDs
 }

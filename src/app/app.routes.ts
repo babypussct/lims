@@ -32,6 +32,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/recipes/recipe-manager.component').then(m => m.RecipeManagerComponent)
   },
   {
+    path: 'target-groups',
+    loadComponent: () => import('./features/targets/target-group-manager.component').then(m => m.TargetGroupManagerComponent)
+  },
+  {
+    path: 'master-targets', // NEW ROUTE
+    loadComponent: () => import('./features/targets/master-target-manager.component').then(m => m.MasterTargetManagerComponent)
+  },
+  {
     path: 'requests',
     loadComponent: () => import('./features/requests/request-list.component').then(m => m.RequestListComponent)
   },

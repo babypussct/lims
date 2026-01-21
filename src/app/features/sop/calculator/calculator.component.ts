@@ -46,8 +46,8 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
         <!-- Main Layout -->
         <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-stretch lg:h-full lg:overflow-hidden h-auto">
             
-            <!-- LEFT PANEL: INPUTS (Fixed CSS for content cut-off) -->
-            <div class="w-full lg:w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto min-h-[400px]">
+            <!-- LEFT PANEL: INPUTS -->
+            <div class="w-full lg:w-[400px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto min-h-[400px]">
                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
                   <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-blue-200 shadow-md">
                     <i class="fa-solid fa-sliders"></i>
@@ -55,46 +55,115 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                   <div><h3 class="font-bold text-slate-800 text-sm">Thông số Mẻ mẫu</h3></div>
                </div>
 
-               <!-- Make this section scrollable and flex-grow to avoid cut-off -->
-               <div class="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+               <!-- Scrollable Inputs -->
+               <div class="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6">
                    @if (form()) {
-                       <form [formGroup]="form()" class="space-y-5">
-                          <!-- Date Field -->
-                          <div class="group">
-                             <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Ngày phân tích</label>
-                             <div class="relative">
-                                <input type="date" formControlName="analysisDate"
-                                       class="w-full pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm">
-                             </div>
+                       <form [formGroup]="form()" class="space-y-6">
+                          
+                          <!-- 1. SAMPLE MANAGEMENT (New Feature) -->
+                          <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                              <label class="text-[11px] font-bold text-blue-800 uppercase tracking-wide mb-2 block flex justify-between">
+                                  <span>Danh sách Mã Mẫu</span>
+                                  <span class="bg-blue-100 text-blue-700 px-2 rounded-md">{{sampleCount()}} mẫu</span>
+                              </label>
+                              <textarea [ngModel]="sampleListText()" (ngModelChange)="onSampleListChange($event)" [ngModelOptions]="{standalone: true}"
+                                        class="w-full p-3 text-xs font-mono border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200 outline-none bg-white min-h-[80px] resize-y placeholder-blue-300/50"
+                                        placeholder="Dán mã mẫu vào đây (mỗi mã 1 dòng)..."></textarea>
+                              <p class="text-[9px] text-blue-400 mt-1 italic text-right">* Tự động cập nhật số lượng mẫu bên dưới.</p>
                           </div>
 
-                          <div class="h-px bg-slate-100 my-2"></div>
+                          <!-- 2. TARGET SELECTION (OPTIMIZED ACCORDION) -->
+                          @if (currentSop.targets && currentSop.targets.length > 0) {
+                              <div class="border border-emerald-100 rounded-xl overflow-hidden bg-white shadow-sm transition-all duration-300">
+                                  <!-- Accordion Header -->
+                                  <button type="button" (click)="targetsOpen.set(!targetsOpen())" 
+                                          class="w-full flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100/80 transition text-emerald-800 group">
+                                      <div class="flex items-center gap-2">
+                                          <div class="w-6 h-6 rounded bg-emerald-200 text-emerald-700 flex items-center justify-center text-xs">
+                                              <i class="fa-solid fa-bullseye"></i>
+                                          </div>
+                                          <span class="text-xs font-bold uppercase tracking-wide">Chỉ tiêu ({{selectedTargets().size}}/{{currentSop.targets.length}})</span>
+                                      </div>
+                                      <i class="fa-solid fa-chevron-down text-emerald-600 transition-transform duration-300" [class.rotate-180]="targetsOpen()"></i>
+                                  </button>
 
-                          @for (inp of currentSop.inputs; track inp.var) {
-                            <div class="group">
-                               <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">{{inp.label}}</label>
-                               @if (inp.type === 'checkbox') {
-                                  <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer bg-white hover:border-blue-300 transition">
-                                    <span class="text-sm font-bold text-slate-700">Kích hoạt</span>
-                                    <input type="checkbox" [formControlName]="inp.var" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
-                                  </label>
-                               } @else {
-                                  <div class="relative">
-                                    <input type="number" [formControlName]="inp.var" [step]="inp.step || 1"
-                                           class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm">
-                                    @if(inp.unitLabel) { <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{inp.unitLabel}}</span> }
-                                  </div>
-                               }
-                            </div>
+                                  <!-- Expandable Content -->
+                                  @if (targetsOpen()) {
+                                      <div class="p-3 bg-white animate-slide-down">
+                                          <!-- Search & Select All -->
+                                          <div class="flex gap-2 mb-3">
+                                              <div class="relative flex-1">
+                                                  <i class="fa-solid fa-search absolute left-2 top-2 text-slate-400 text-xs"></i>
+                                                  <input [ngModel]="targetSearchTerm()" (ngModelChange)="targetSearchTerm.set($event)" [ngModelOptions]="{standalone: true}"
+                                                         class="w-full pl-7 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-emerald-500" 
+                                                         placeholder="Tìm chỉ tiêu...">
+                                              </div>
+                                              <button type="button" (click)="toggleAllTargets(currentSop.targets)" 
+                                                      class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold border border-slate-200 transition">
+                                                  {{ isAllSelected(currentSop.targets) ? 'Bỏ chọn' : 'Chọn hết' }}
+                                              </button>
+                                          </div>
+
+                                          <!-- List -->
+                                          <div class="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                              @for (target of filteredTargets(); track target.id) {
+                                                  <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition group"
+                                                         [class]="selectedTargets().has(target.id) ? 'bg-emerald-50 border border-emerald-100' : 'bg-white border border-transparent hover:bg-slate-50'">
+                                                      <input type="checkbox" [checked]="selectedTargets().has(target.id)" (change)="toggleTarget(target.id)" 
+                                                             class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
+                                                      <span class="text-xs font-bold text-slate-700 group-hover:text-emerald-700 truncate flex-1">{{target.name}}</span>
+                                                      @if(target.lod) { <span class="text-[9px] text-slate-400 shrink-0 bg-white px-1.5 rounded border border-slate-100">{{target.lod}}</span> }
+                                                  </label>
+                                              } @empty {
+                                                  <div class="text-center py-2 text-slate-400 text-xs italic">Không tìm thấy.</div>
+                                              }
+                                          </div>
+                                      </div>
+                                  }
+                              </div>
                           }
-                          
-                          <div class="pt-6 mt-2 border-t border-slate-100">
-                             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 block ml-1">Hệ số hao hụt (An toàn)</label>
-                             <div class="relative group">
-                                <input type="number" formControlName="safetyMargin" min="0" step="1"
-                                       class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-orange-600 focus:bg-white focus:border-orange-500 outline-none transition shadow-sm">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                             </div>
+
+                          <div class="h-px bg-slate-100"></div>
+
+                          <!-- 3. STANDARD INPUTS -->
+                          <div class="space-y-4">
+                              <!-- Date Field -->
+                              <div class="group">
+                                 <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Ngày phân tích</label>
+                                 <div class="relative">
+                                    <input type="date" formControlName="analysisDate"
+                                           class="w-full pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm">
+                                 </div>
+                              </div>
+
+                              @for (inp of currentSop.inputs; track inp.var) {
+                                <div class="group">
+                                   <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">{{inp.label}}</label>
+                                   @if (inp.type === 'checkbox') {
+                                      <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer bg-white hover:border-blue-300 transition">
+                                        <span class="text-sm font-bold text-slate-700">Kích hoạt</span>
+                                        <input type="checkbox" [formControlName]="inp.var" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
+                                      </label>
+                                   } @else {
+                                      <div class="relative">
+                                        <input type="number" [formControlName]="inp.var" [step]="inp.step || 1"
+                                               class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm"
+                                               [class.bg-blue-50]="inp.var === 'n_sample' && sampleListText().length > 0"
+                                               [readonly]="inp.var === 'n_sample' && sampleListText().length > 0">
+                                        @if(inp.unitLabel) { <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{inp.unitLabel}}</span> }
+                                      </div>
+                                   }
+                                </div>
+                              }
+                              
+                              <div class="pt-4 mt-2 border-t border-slate-100">
+                                 <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 block ml-1">Hệ số hao hụt (An toàn)</label>
+                                 <div class="relative group">
+                                    <input type="number" formControlName="safetyMargin" min="0" step="1"
+                                           class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-orange-600 focus:bg-white focus:border-orange-500 outline-none transition shadow-sm">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                 </div>
+                              </div>
                           </div>
                        </form>
                    }
@@ -328,7 +397,11 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
         </div>
       }
     </div>
-  `
+  `,
+  styles: [`
+    @keyframes slide-down { from { max-height: 0; opacity: 0; } to { max-height: 200px; opacity: 1; } }
+    .animate-slide-down { animation: slide-down 0.2s ease-out forwards; }
+  `]
 })
 export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
@@ -360,6 +433,15 @@ export class CalculatorComponent implements OnDestroy {
   localRecipeMap = signal<Record<string, Recipe>>({});
   isLoadingInventory = signal(false);
 
+  // --- NEW FEATURES STATE ---
+  sampleListText = signal('');
+  sampleCount = signal(0);
+  selectedTargets = signal<Set<string>>(new Set());
+  
+  // UI States for Target Accordion
+  targetsOpen = signal(false);
+  targetSearchTerm = signal('');
+
   filteredSops = computed(() => {
       const term = this.searchTerm().toLowerCase();
       const allSops = this.state.sops().filter(s => !s.isArchived);
@@ -369,6 +451,14 @@ export class CalculatorComponent implements OnDestroy {
           if (catCompare !== 0) return catCompare;
           return naturalCompare(a.name, b.name);
       });
+  });
+
+  filteredTargets = computed(() => {
+      const sop = this.activeSop();
+      if (!sop || !sop.targets) return [];
+      const term = this.targetSearchTerm().toLowerCase();
+      if (!term) return sop.targets;
+      return sop.targets.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
   });
 
   form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
@@ -397,9 +487,15 @@ export class CalculatorComponent implements OnDestroy {
         this.form.set(newForm);
         this.localInventoryMap.set({}); this.localRecipeMap.set({});
         
-        // Initial run with empty map (shows warnings)
+        // Reset local features state
+        this.sampleListText.set('');
+        this.sampleCount.set(0);
+        this.selectedTargets.set(new Set());
+        this.targetsOpen.set(false); // Collapsed by default
+        this.targetSearchTerm.set('');
+
+        // Initial run
         this.runCalculation(s, newForm.value);
-        // Start async fetch
         this.fetchData(s);
 
         this.formValueSub = newForm.valueChanges.pipe(startWith(newForm.value), debounceTime(50)).subscribe(vals => {
@@ -415,6 +511,52 @@ export class CalculatorComponent implements OnDestroy {
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
   getTodayDate(): string { return new Date().toISOString().split('T')[0]; }
+
+  // --- NEW: Sample Logic ---
+  onSampleListChange(val: string) {
+      this.sampleListText.set(val);
+      const lines = val.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      this.sampleCount.set(lines.length);
+      
+      // Auto-update n_sample if available in form
+      if (this.form().contains('n_sample') && lines.length > 0) {
+          this.form().patchValue({ n_sample: lines.length });
+      }
+  }
+
+  toggleTarget(id: string) {
+      this.selectedTargets.update(s => {
+          const n = new Set(s);
+          if (n.has(id)) n.delete(id); else n.add(id);
+          return n;
+      });
+  }
+
+  // Optimize: Select All
+  isAllSelected(allTargets: any[]): boolean {
+      if (!allTargets || allTargets.length === 0) return false;
+      return this.selectedTargets().size === allTargets.length;
+  }
+
+  toggleAllTargets(allTargets: any[]) {
+      if (this.isAllSelected(allTargets)) {
+          this.selectedTargets.set(new Set());
+      } else {
+          this.selectedTargets.set(new Set(allTargets.map(t => t.id)));
+      }
+  }
+
+  getPayloadData() {
+      const rawSamples = this.sampleListText();
+      const sampleList = rawSamples.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      return {
+          ...this.form().value,
+          sampleList: sampleList,
+          targetIds: Array.from(this.selectedTargets())
+      };
+  }
+
+  // --- Existing Methods ---
 
   async fetchData(sop: Sop) {
       this.isLoadingInventory.set(true);
@@ -434,14 +576,10 @@ export class CalculatorComponent implements OnDestroy {
           const invMap: Record<string, InventoryItem> = {};
           items.forEach(i => invMap[i.id] = i);
           
-          // Safety Check: Ensure we are still viewing the same SOP
           if (this.activeSop()?.id !== sop.id) return;
 
           this.localRecipeMap.set(recMap);
           this.localInventoryMap.set(invMap); 
-          
-          // [CRITICAL FIX]: Force re-calculation immediately after data load
-          // This ensures the UI updates from "Missing" to "Available" without user interaction
           this.runCalculation(sop, this.form().value);
 
       } catch(e) { console.warn("Fetch warning:", e); } finally { this.isLoadingInventory.set(false); }
@@ -465,7 +603,6 @@ export class CalculatorComponent implements OnDestroy {
   createNew() { this.state.editingSop.set(null); this.router.navigate(['/editor']); }
   editDirect(sop: Sop, event: Event) { event.stopPropagation(); this.closeMenu(); this.state.editingSop.set(sop); this.router.navigate(['/editor']); }
 
-  // --- HARDENED: Archive SOP ---
   async softDeleteSop(sop: Sop, event: Event) {
       event.stopPropagation();
       this.closeMenu();
@@ -487,7 +624,6 @@ export class CalculatorComponent implements OnDestroy {
       }
   }
 
-  // --- HARDENED: Duplicate SOP ---
   async duplicateSop(sop: Sop, event: Event) {
       event.stopPropagation();
       this.closeMenu();
@@ -510,50 +646,44 @@ export class CalculatorComponent implements OnDestroy {
       }
   }
 
-  // --- HARDENED: Print Draft ---
   onPrintDraft(sop: Sop) {
     if (this.isProcessing()) return;
-    this.isProcessing.set(true); // Short lock just to prevent rapid fire
+    this.isProcessing.set(true); 
     
     try {
-        const inputs = this.form().getRawValue();
-        this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: inputs });
+        const payload = this.getPayloadData();
+        this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: this.form().value });
 
         const job: PrintJob = {
-          sop: sop, inputs: inputs, margin: this.safetyMargin(), items: this.calculatedItems(),
+          sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
           date: new Date(), user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',
-          analysisDate: inputs.analysisDate, requestId: `DRAFT-${Date.now()}`
+          analysisDate: payload.analysisDate, requestId: `DRAFT-${Date.now()}`
         };
         
         this.printService.printDocument([job]);
     } finally {
-        // Since printService handles its own async logic for DOM creation, 
-        // we can unlock the button quickly or let printService manage the global lock if needed.
-        // For draft, unlocking quickly is fine.
         this.isProcessing.set(false);
     }
   }
 
-  // --- HARDENED: Approve & Print ---
   async approveAndCreatePrintJob(sop: Sop) {
     if (!this.auth.canApprove()) return;
     if (this.isProcessing()) return;
 
-    this.isProcessing.set(true); // LOCK UI
+    this.isProcessing.set(true);
     try {
-        await this.state.directApproveAndPrint(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
+        const payload = this.getPayloadData();
+        await this.state.directApproveAndPrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
         
         const job: PrintJob = {
-          sop: sop, inputs: this.form().value, margin: this.safetyMargin(), items: this.calculatedItems(),
-          date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: this.form().value.analysisDate,
+          sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
+          date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: payload.analysisDate,
           requestId: `REQ-${Date.now()}`
         };
 
         this.printService.printDocument([job]);
-    } catch (e: any) {
-        // Error toast is handled in state service, but we ensure unlock here
-    } finally {
-        this.isProcessing.set(false); // UNLOCK UI
+    } catch (e: any) { } finally {
+        this.isProcessing.set(false);
     }
   }
 
@@ -561,7 +691,8 @@ export class CalculatorComponent implements OnDestroy {
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
     try {
-        await this.state.submitRequest(sop, this.calculatedItems(), this.form().value, this.localInventoryMap());
+        const payload = this.getPayloadData();
+        await this.state.submitRequest(sop, this.calculatedItems(), payload, this.localInventoryMap());
     } finally {
         this.isProcessing.set(false);
     }

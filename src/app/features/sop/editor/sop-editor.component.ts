@@ -10,7 +10,8 @@ import { CalculatorService } from '../../../core/services/calculator.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { InventoryService } from '../../inventory/inventory.service';
 import { RecipeService } from '../../recipes/recipe.service'; 
-import { Sop, CalculatedItem } from '../../../core/models/sop.model';
+import { TargetService } from '../../targets/target.service';
+import { Sop, CalculatedItem, SopTarget, TargetGroup } from '../../../core/models/sop.model';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
 import { UNIT_OPTIONS, formatNum, formatDate, generateSlug } from '../../../shared/utils/utils';
@@ -67,10 +68,13 @@ const STANDARD_VARS = [
             <!-- LEFT COLUMN: Editor -->
             <div class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden border-r border-slate-200">
                 <!-- Tabs -->
-                <div class="flex bg-white border-b border-slate-200 px-4 gap-6 shrink-0">
-                   <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="currentTab() === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Thông tin</button>
-                   <button (click)="currentTab.set('logic')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="currentTab() === 'logic' ? 'border-purple-600 text-purple-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Logic</button>
-                   <button (click)="currentTab.set('consumables')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="currentTab() === 'consumables' ? 'border-orange-600 text-orange-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Vật tư (Consumables)</button>
+                <div class="flex bg-white border-b border-slate-200 px-4 gap-6 shrink-0 overflow-x-auto no-scrollbar">
+                   <button (click)="currentTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Thông tin</button>
+                   <button (click)="currentTab.set('logic')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'logic' ? 'border-purple-600 text-purple-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Logic</button>
+                   <button (click)="currentTab.set('consumables')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'consumables' ? 'border-orange-600 text-orange-700' : 'border-transparent text-slate-500 hover:text-slate-700'">Vật tư (Consumables)</button>
+                   <button (click)="currentTab.set('targets')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap" [class]="currentTab() === 'targets' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                       <i class="fa-solid fa-bullseye"></i> Chỉ tiêu (Targets)
+                   </button>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
@@ -327,6 +331,72 @@ const STANDARD_VARS = [
                              </div>
                           </div>
                       }
+
+                      <!-- TAB 4: TARGETS (ANALYTES) -->
+                      @if (currentTab() === 'targets') {
+                          <div class="fade-in pb-32">
+                              <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                                  <div class="flex justify-between items-center mb-4">
+                                      <h3 class="font-bold text-slate-800 text-sm uppercase flex items-center gap-2">
+                                          <i class="fa-solid fa-bullseye text-emerald-500"></i> Danh sách Chỉ tiêu (Targets)
+                                      </h3>
+                                      <div class="flex gap-2">
+                                          <button type="button" (click)="openGroupImport()" class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+                                              <i class="fa-solid fa-layer-group"></i> Nhập từ Bộ
+                                          </button>
+                                          <button type="button" (click)="addTarget()" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Chỉ tiêu</button>
+                                      </div>
+                                  </div>
+                                  <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <i class="fa-solid fa-circle-info mr-1"></i> Định nghĩa các chất phân tích cần trả kết quả trong SOP này (Ví dụ: Chloramphenicol, Sulfamethoxazole...).
+                                  </p>
+
+                                  <div formArrayName="targets" class="space-y-3">
+                                      @for (t of targets.controls; track t; let i = $index) {
+                                          <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                              <div class="w-8 h-8 rounded bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold mt-1">{{i+1}}</div>
+                                              
+                                              <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
+                                                  <!-- Name & ID -->
+                                                  <div class="md:col-span-4">
+                                                      <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Tên Chỉ tiêu <span class="text-red-500">*</span></label>
+                                                      <input formControlName="name" (input)="onTargetNameChange(i, $event)" placeholder="VD: Chloramphenicol" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+                                                  </div>
+                                                  <div class="md:col-span-3">
+                                                      <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã ID (Auto)</label>
+                                                      <input formControlName="id" placeholder="chloramphenicol" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-mono text-slate-500 outline-none bg-slate-100">
+                                                  </div>
+                                                  
+                                                  <!-- Unit, LOD, LOQ -->
+                                                  <div class="md:col-span-2">
+                                                      <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị</label>
+                                                      <input formControlName="unit" placeholder="ppb" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500">
+                                                  </div>
+                                                  <div class="md:col-span-3 grid grid-cols-2 gap-2">
+                                                      <div>
+                                                          <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOD</label>
+                                                          <input formControlName="lod" placeholder="0.1" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500">
+                                                      </div>
+                                                      <div>
+                                                          <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOQ</label>
+                                                          <input formControlName="loq" placeholder="0.3" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500">
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                              
+                                              <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 transition rounded-full hover:bg-white"><i class="fa-solid fa-trash"></i></button>
+                                          </div>
+                                      }
+                                      @if(targets.length === 0) {
+                                          <div class="text-center py-8 text-slate-400 italic bg-white border border-dashed border-slate-200 rounded-xl">
+                                              Chưa có chỉ tiêu nào được cấu hình.
+                                          </div>
+                                      }
+                                  </div>
+                              </div>
+                          </div>
+                      }
+
                    </form>
                 </div>
             </div>
@@ -355,6 +425,36 @@ const STANDARD_VARS = [
                 </div>
             </div>
         </div>
+
+        <!-- Import Group Modal -->
+        @if(showGroupModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
+                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                        <h3 class="font-black text-slate-800 text-lg">Chọn Bộ Chỉ tiêu</h3>
+                        <button (click)="showGroupModal.set(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-lg"></i></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                        @if(availableGroups().length === 0) {
+                            <div class="p-8 text-center text-slate-400 italic text-sm">
+                                Chưa có bộ chỉ tiêu nào.<br>
+                                <a routerLink="/target-groups" class="text-teal-600 hover:underline font-bold mt-1 inline-block">Tạo mới tại đây</a>
+                            </div>
+                        } @else {
+                            @for(g of availableGroups(); track g.id) {
+                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 hover:bg-teal-50 cursor-pointer transition group">
+                                    <div class="font-bold text-slate-700 text-sm group-hover:text-teal-700">{{g.name}}</div>
+                                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                                        <span>{{g.targets.length}} chỉ tiêu</span>
+                                        @if(g.description) { <span class="italic max-w-[200px] truncate">{{g.description}}</span> }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
     </div>
   `
 })
@@ -363,7 +463,8 @@ export class SopEditorComponent implements OnDestroy {
   state = inject(StateService);
   sopService = inject(SopService);
   invService = inject(InventoryService);
-  recipeService = inject(RecipeService); 
+  recipeService = inject(RecipeService);
+  targetService = inject(TargetService); 
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   calcService = inject(CalculatorService);
@@ -378,7 +479,7 @@ export class SopEditorComponent implements OnDestroy {
   // State Signals
   currentId = signal<string | null>(null);
   currentVersion = signal<number>(1);
-  currentTab = signal<'general' | 'logic' | 'consumables'>('general');
+  currentTab = signal<'general' | 'logic' | 'consumables' | 'targets'>('general');
   isLoading = signal(false);
   previewResults = signal<CalculatedItem[]>([]);
   
@@ -387,12 +488,19 @@ export class SopEditorComponent implements OnDestroy {
   searchResults = signal<any[]>([]); // Can be InventoryItem or Recipe
   activeSearch: { index: number, isIngredient: boolean, subIndex?: number } | null = null;
 
+  // Import Group Modal
+  showGroupModal = signal(false);
+  availableGroups = signal<TargetGroup[]>([]);
+
   readonly CORE_INPUTS = [{ var: 'n_sample', label: 'Số lượng mẫu', type: 'number', default: 1, step: 1, unitLabel: 'mẫu' }, { var: 'n_qc', label: 'Số lượng QC', type: 'number', default: 8, step: 1, unitLabel: 'mẫu' }, { var: 'w_sample', label: 'Khối lượng mẫu', type: 'number', default: 10, step: 0.1, unitLabel: 'g' }];
 
   form = this.fb.group({
     id: [''], category: ['', Validators.required], name: ['', Validators.required], ref: [''],
     version: [1, [Validators.required, Validators.min(1)]],
-    inputs: this.fb.array([]), variablesList: this.fb.array([]), consumables: this.fb.array([])
+    inputs: this.fb.array([]), 
+    variablesList: this.fb.array([]), 
+    consumables: this.fb.array([]),
+    targets: this.fb.array([]) // New Targets Array
   });
 
   constructor() {
@@ -411,7 +519,7 @@ export class SopEditorComponent implements OnDestroy {
       }
       const sub = this.form.valueChanges.pipe(debounceTime(300)).subscribe(val => { this.runPreview(val); });
       onCleanup(() => sub.unsubscribe());
-    }, { allowSignalWrites: true }); // FIX NG0600: Allow writes to signals within effect
+    }, { allowSignalWrites: true });
 
     // Unified Search Listener
     this.searchSubject.pipe(
@@ -424,7 +532,6 @@ export class SopEditorComponent implements OnDestroy {
             
             // Determine search source based on type
             if (!this.activeSearch.isIngredient && conType === 'shared_recipe') {
-                // Search Recipes with error handling
                 return this.recipeService.getAllRecipes()
                     .then(all => all.filter(r => r.name.toLowerCase().includes(term.toLowerCase())))
                     .catch(e => {
@@ -432,8 +539,6 @@ export class SopEditorComponent implements OnDestroy {
                         return [];
                     });
             } else {
-                // Search Inventory (Simple items or Composite ingredients)
-                // Note: Returns InventoryItem[] which has stock, supplier, etc.
                 return this.invService.getInventoryPage(10, null, 'all', term).then(res => res.items);
             }
         })
@@ -478,15 +583,13 @@ export class SopEditorComponent implements OnDestroy {
           const type = control.get('type')?.value;
           
           if (type === 'shared_recipe') {
-              // It's a Recipe
               control.patchValue({ 
-                  name: item.id, // Use recipe ID as consumable name/ID for tracking
+                  name: item.id, 
                   recipeId: item.id, 
                   unit: item.baseUnit, 
                   _displayName: item.name 
               });
           } else {
-              // It's Inventory Item
               control.patchValue({ name: item.id, unit: item.unit, _displayName: item.name });
           }
       }
@@ -499,12 +602,14 @@ export class SopEditorComponent implements OnDestroy {
   get inputs() { return this.form.get('inputs') as FormArray; }
   get variablesList() { return this.form.get('variablesList') as FormArray; }
   get consumables() { return this.form.get('consumables') as FormArray; }
+  get targets() { return this.form.get('targets') as FormArray; }
+  
   getIngredients(conIndex: number): FormArray { return this.consumables.at(conIndex).get('ingredients') as FormArray; }
 
   createNew() {
     this.currentId.set(null); this.currentVersion.set(1); this.currentTab.set('general');
     this.form.reset({ id: '', category: '', name: '', ref: '', version: 1 });
-    this.inputs.clear(); this.variablesList.clear(); this.consumables.clear();
+    this.inputs.clear(); this.variablesList.clear(); this.consumables.clear(); this.targets.clear();
     this.CORE_INPUTS.forEach(ci => { this.addInputRaw(ci.var, ci.label, ci.default, ci.type as any, ci.step, ci.unitLabel); });
     this.previewResults.set([]);
   }
@@ -534,6 +639,12 @@ export class SopEditorComponent implements OnDestroy {
       if (c.ingredients) c.ingredients.forEach(ing => (g.get('ingredients') as FormArray).push(this.fb.group({ name: [ing.name, Validators.required], _displayName: [ing._displayName || ing.name, Validators.required], amount: [ing.amount, Validators.required], unit: [ing.unit, Validators.required] })));
       this.consumables.push(g);
     });
+
+    this.targets.clear();
+    if (sop.targets) {
+        sop.targets.forEach(t => this.addTargetRaw(t));
+    }
+
     this.runPreview(this.form.value);
   }
 
@@ -552,8 +663,6 @@ export class SopEditorComponent implements OnDestroy {
                 ...c, name: c.name || '', recipeId: c.recipeId, ingredients: c.ingredients || [] 
             }))
         };
-        // Note: Preview won't expand Shared Recipes because we can't do async fetch here easily without lagging the UI. 
-        // Just calculating basic math for preview.
         const results = this.calcService.calculateSopNeeds(tempSop, mockInputs, 0); 
         this.previewResults.set(results); 
     } catch (e) { }
@@ -566,12 +675,36 @@ export class SopEditorComponent implements OnDestroy {
     
     if (this.form.invalid) { this.form.markAllAsTouched(); this.toast.show('Kiểm tra các trường bắt buộc!', 'error'); this.isLoading.set(false); return; }
     
+    // 1. AUTO-FIX IDs FOR TARGETS BEFORE VALIDATION
+    const rawTargets = formVal.targets as any[];
+    rawTargets.forEach((t, index) => {
+        // If ID is empty but Name exists, generate ID
+        if (!t.id && t.name) {
+            const newId = generateSlug(t.name);
+            this.targets.at(index).patchValue({ id: newId });
+            t.id = newId; // Update local ref for next check
+        }
+    });
+
+    // 2. FILTER & VALIDATE DUPLICATES
+    // Filter out rows that have NO ID (likely empty rows user forgot to delete)
+    const validTargetIds = rawTargets.map(t => t.id).filter(id => id && id.trim() !== '');
+    const uniqueTargetIds = new Set(validTargetIds);
+    
+    if (validTargetIds.length !== uniqueTargetIds.size) {
+        this.toast.show('Lỗi: Có mã ID chỉ tiêu bị trùng lặp (hoặc tên giống nhau).', 'error');
+        this.currentTab.set('targets');
+        this.isLoading.set(false);
+        return;
+    }
+
     const invalidConsumable = (formVal.consumables as any[]).find((c: any) => !c.name || c.name.trim() === '');
     if (invalidConsumable) { this.toast.show('Một số hóa chất chưa chọn ID hợp lệ!', 'error'); this.currentTab.set('consumables'); this.isLoading.set(false); return; }
 
     const variables: Record<string, string> = {};
     (formVal.variablesList as any[]).forEach(v => { if (v.key && v.formula) variables[v.key] = v.formula; });
     
+    // 3. CONSTRUCT FINAL OBJECT
     const sop: Sop = {
       id: formVal.id!, category: formVal.category!, name: formVal.name!, ref: formVal.ref || '',
       inputs: (formVal.inputs as any[]).map(i => ({...i})), variables: variables,
@@ -583,6 +716,10 @@ export class SopEditorComponent implements OnDestroy {
               ingredients: (c.ingredients || []).map((ing: any) => ({ name: ing.name, amount: ing.amount, unit: ing.unit, _displayName: ing._displayName }))
           };
       }),
+      // Map valid targets only
+      targets: (formVal.targets as any[])
+          .filter(t => t.id && t.name)
+          .map(t => ({ id: t.id, name: t.name, unit: t.unit, lod: t.lod, loq: t.loq })),
       version: formVal.version || this.currentVersion() 
     };
     
@@ -599,4 +736,72 @@ export class SopEditorComponent implements OnDestroy {
 
   addConsumable() { this.consumables.push(this.fb.group({ name: [''], _displayName: [''], recipeId: [''], base_note: [''], formula: [''], unit: ['ml'], type: ['simple'], condition: [''], ingredients: this.fb.array([]) })); }
   addIngredient(conIndex: number) { this.getIngredients(conIndex).push(this.fb.group({ name: ['', Validators.required], _displayName: ['', Validators.required], amount: [0, Validators.required], unit: ['ml', Validators.required] })); }
+
+  // Target Methods
+  addTarget() {
+      this.addTargetRaw({ id: '', name: '', unit: 'ppb' });
+  }
+
+  private addTargetRaw(t: Partial<SopTarget>) {
+      this.targets.push(this.fb.group({
+          id: [t.id || '', Validators.required],
+          name: [t.name || '', Validators.required],
+          unit: [t.unit || ''],
+          lod: [t.lod || ''],
+          loq: [t.loq || '']
+      }));
+  }
+
+  onTargetNameChange(index: number, event: any) {
+      const val = event.target.value;
+      const idControl = this.targets.at(index).get('id');
+      
+      // Fix: Use pristine check. 
+      // If the user hasn't manually touched the ID field (pristine=true), auto-generate it.
+      // Also update if ID is empty (just in case it was touched but cleared).
+      if (idControl && (idControl.pristine || !idControl.value)) {
+          idControl.setValue(generateSlug(val));
+      }
+  }
+
+  // --- NEW: IMPORT FROM GROUP ---
+  async openGroupImport() {
+      this.isLoading.set(true);
+      try {
+          const groups = await this.targetService.getAllGroups();
+          this.availableGroups.set(groups);
+          this.showGroupModal.set(true);
+      } catch (e) {
+          this.toast.show('Lỗi tải danh sách bộ chỉ tiêu.', 'error');
+      } finally {
+          this.isLoading.set(false);
+      }
+  }
+
+  importGroup(g: TargetGroup) {
+      if (!g.targets || g.targets.length === 0) {
+          this.toast.show('Bộ chỉ tiêu này trống.', 'info');
+          return;
+      }
+
+      const existingIds = new Set(
+          (this.targets.value as SopTarget[]).map(t => t.id)
+      );
+
+      let addedCount = 0;
+      g.targets.forEach(t => {
+          if (!existingIds.has(t.id)) {
+              this.addTargetRaw(t);
+              existingIds.add(t.id); // Prevent dupes if group has dupes itself
+              addedCount++;
+          }
+      });
+
+      if (addedCount > 0) {
+          this.toast.show(`Đã thêm ${addedCount} chỉ tiêu từ bộ "${g.name}".`, 'success');
+      } else {
+          this.toast.show('Tất cả chỉ tiêu trong bộ này đã có sẵn.', 'info');
+      }
+      this.showGroupModal.set(false);
+  }
 }

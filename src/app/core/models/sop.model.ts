@@ -8,6 +8,34 @@ export interface SopInput {
   unitLabel?: string;
 }
 
+export interface SopTarget {
+  id: string;
+  name: string;
+  unit?: string;
+  lod?: string; // Limit of Detection (e.g. "0.1 ppb")
+  loq?: string; // Limit of Quantitation (e.g. "0.3 ppb")
+  isMasterLinked?: boolean; // Flag to lock ID if imported from Master Library
+}
+
+export interface TargetGroup {
+  id: string;
+  name: string;
+  description?: string;
+  targets: SopTarget[];
+  lastUpdated?: any;
+}
+
+// NEW: Master Data for Analytes
+export interface MasterAnalyte {
+  id: string; // Unique slug (e.g., 'chloramphenicol')
+  name: string; // Standard Name (e.g., 'Chloramphenicol')
+  cas_number?: string; // CAS Registry Number
+  chemical_formula?: string; // e.g., 'C11H12Cl2N2O5'
+  default_unit?: string; // e.g., 'ppb' or 'µg/kg'
+  description?: string;
+  lastUpdated?: any;
+}
+
 export interface Ingredient {
   /**
    * The ID of the chemical from the inventory. Must match an `InventoryItem.id`.
@@ -56,6 +84,9 @@ export interface Sop {
   variables: { [key: string]: string }; 
   consumables: Consumable[];
   
+  // New Feature: Targets (Analytes)
+  targets?: SopTarget[];
+
   // Version Control Fields
   version?: number;
   lastModified?: any;
