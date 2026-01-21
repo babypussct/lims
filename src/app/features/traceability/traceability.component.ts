@@ -106,6 +106,17 @@ declare var QRious: any;
                                     <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
                                         {{pd.sop.name || 'N/A'}}
                                     </div>
+                                    <!-- Targets List -->
+                                    @let targetNames = getTargetNames(pd);
+                                    @if(targetNames.length > 0) {
+                                        <div class="mt-2 flex flex-wrap gap-1">
+                                            @for(name of targetNames; track $index) {
+                                                <span class="inline-block px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 print:border-black print:bg-white print:text-black">
+                                                    {{name}}
+                                                </span>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                                 <div>
                                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Ngày phân tích</div>
@@ -154,6 +165,22 @@ declare var QRious: any;
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- NEW: Sample List Grid -->
+                            @if (pd.inputs?.sampleList && pd.inputs.sampleList.length > 0) {
+                                <div class="mb-8 relative z-10 print:mb-4">
+                                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
+                                        <i class="fa-solid fa-vial print:hidden"></i> Danh sách Mẫu ({{pd.inputs.sampleList.length}})
+                                    </h3>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                        @for (sample of pd.inputs.sampleList; track $index) {
+                                            <div class="text-xs font-mono font-bold text-slate-700 bg-white border border-slate-200 px-2 py-1.5 rounded text-center truncate print:border-black print:text-black">
+                                                {{sample}}
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
 
                             <!-- 5. Usage Table (Using 'pd' alias) -->
                             <div class="mb-8 relative z-10 print:mb-4">
@@ -332,5 +359,16 @@ export class TraceabilityComponent implements OnInit {
           return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
       }
       return val;
+  }
+
+  getTargetNames(pd: PrintData): string[] {
+      const selectedIds = pd.inputs['targetIds'] || [];
+      if (!Array.isArray(selectedIds) || selectedIds.length === 0) return [];
+      
+      const allTargets = pd.sop?.targets || [];
+      return selectedIds.map(id => {
+          const t = allTargets.find((t: any) => t.id === id);
+          return t ? t.name : id;
+      });
   }
 }

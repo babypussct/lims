@@ -226,11 +226,17 @@ export class StateService implements OnDestroy {
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
   
-  async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<void> {
-    if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return; }
+  // FIX: Return the Generated IDs so UI can Print Correct QR
+  async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{logId: string, printJobId: string} | null> {
+    if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
     
     const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
     const requestItems = this.mapToRequestItems(calculatedItems, invMap);
+
+    // Pre-generate IDs to ensure we can return them
+    const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
+    const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+    const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -249,7 +255,6 @@ export class StateService implements OnDestroy {
           transaction.update(invRefs[i], { stock: increment(-itemsToDeduct[i].amount) });
         }
 
-        const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
         const reqData: any = {
             sopId: sop.id, 
             sopName: sop.name, 
@@ -268,7 +273,6 @@ export class StateService implements OnDestroy {
 
         transaction.set(reqRef, reqData);
 
-        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = { 
             sop, 
             inputs: formInputs, 
@@ -282,7 +286,6 @@ export class StateService implements OnDestroy {
             createdBy: this.getCurrentUserName()
         });
 
-        const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
         transaction.set(logRef, {
           action: 'DIRECT_APPROVE', 
           details: `Duyệt trực tiếp SOP: ${sop.name}`, 
@@ -298,9 +301,14 @@ export class StateService implements OnDestroy {
         });
       });
       this.toast.show('Duyệt thành công!', 'success');
+      
+      // RETURN THE IDs
+      return { logId: logRef.id, printJobId: printJobRef.id };
+
     } catch (e: any) {
       if (e.code === 'resource-exhausted') this.toast.show('Lỗi: Hết hạn mức Quota.', 'error');
       else this.toast.show(e.message, 'error');
+      return null;
     }
   }
 

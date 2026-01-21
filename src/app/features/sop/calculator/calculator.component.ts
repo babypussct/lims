@@ -673,15 +673,20 @@ export class CalculatorComponent implements OnDestroy {
     this.isProcessing.set(true);
     try {
         const payload = this.getPayloadData();
-        await this.state.directApproveAndPrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
         
-        const job: PrintJob = {
-          sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
-          date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: payload.analysisDate,
-          requestId: `REQ-${Date.now()}`
-        };
+        // 1. Send to Server and WAIT for the real ID
+        const result = await this.state.directApproveAndPrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
+        
+        if (result) {
+            // 2. Use REAL Log ID for QR
+            const job: PrintJob = {
+              sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
+              date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: payload.analysisDate,
+              requestId: result.logId 
+            };
 
-        this.printService.printDocument([job]);
+            this.printService.printDocument([job]);
+        }
     } catch (e: any) { } finally {
         this.isProcessing.set(false);
     }
