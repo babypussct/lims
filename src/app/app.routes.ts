@@ -16,6 +16,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/sop/calculator/calculator.component').then(m => m.CalculatorComponent)
   },
   {
+    path: 'smart-batch', // New Route
+    loadComponent: () => import('./features/batch/smart-batch.component').then(m => m.SmartBatchComponent)
+  },
+  {
     path: 'prep',
     loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent)
   },
@@ -36,7 +40,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/targets/target-group-manager.component').then(m => m.TargetGroupManagerComponent)
   },
   {
-    path: 'master-targets', // NEW ROUTE
+    path: 'master-targets', 
     loadComponent: () => import('./features/targets/master-target-manager.component').then(m => m.MasterTargetManagerComponent)
   },
   {

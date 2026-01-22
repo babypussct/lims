@@ -236,7 +236,7 @@ export class TargetGroupManagerComponent implements OnInit {
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   router: Router = inject(Router);
-  fb = inject(FormBuilder);
+  fb: FormBuilder = inject(FormBuilder); // Explicitly type FormBuilder
 
   groups = signal<TargetGroup[]>([]);
   selectedGroup = signal<TargetGroup | null>(null);

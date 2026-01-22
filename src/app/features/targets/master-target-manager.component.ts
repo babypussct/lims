@@ -226,7 +226,7 @@ export class MasterTargetManagerComponent implements OnInit {
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   router: Router = inject(Router);
-  fb = inject(FormBuilder);
+  fb: FormBuilder = inject(FormBuilder); // Explicitly type FormBuilder
 
   items = signal<MasterAnalyte[]>([]);
   isLoading = signal(false);

@@ -63,6 +63,23 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             }
          </div>
 
+         <!-- Smart Batch (NEW) -->
+         @if(auth.canViewSop()) {
+             <div (click)="navigateTo('smart-batch')" 
+                  class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent"
+                  [class]="isActive('/smart-batch') ? 'bg-teal-50 border-teal-100 shadow-sm' : 'hover:bg-gray-50'"
+                  [title]="state.sidebarCollapsed() ? 'Chạy Mẻ (Smart)' : ''">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0"
+                     [class.mx-auto]="state.sidebarCollapsed()"
+                     [class]="isActive('/smart-batch') ? 'bg-white text-teal-600 shadow-sm' : 'bg-gray-50 text-gray-500 group-hover:bg-white group-hover:text-teal-600'">
+                   <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                </div>
+                @if (!state.sidebarCollapsed()) {
+                    <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/smart-batch') ? 'text-teal-800' : 'text-slate-500'">Chạy Mẻ (Smart)</span>
+                }
+             </div>
+         }
+
          <!-- SOP (Vận hành) -->
          @if(auth.canViewSop()) {
              <div (click)="navigateTo('calculator')" 

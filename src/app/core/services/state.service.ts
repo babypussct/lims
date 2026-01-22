@@ -34,6 +34,7 @@ export class StateService implements OnDestroy {
   inventory = signal<InventoryItem[]>([]);
   inventoryMap = computed(() => {
       const map: Record<string, InventoryItem> = {};
+      this.inventory().forEach(i => map[i.id] = i);
       return map;
   });
 
@@ -92,6 +93,7 @@ export class StateService implements OnDestroy {
     this.listeners.forEach(unsub => unsub());
     this.listeners = [];
     this.sops.set([]);
+    this.inventory.set([]);
     this.requests.set([]); this.approvedRequests.set([]); 
     this.logs.set([]);
     this.printableLogs.set([]);
@@ -108,12 +110,21 @@ export class StateService implements OnDestroy {
       if (error.code === 'permission-denied') this.permissionError.set(true);
     };
 
+    // 1. Inventory Listener
+    const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
+      const items: InventoryItem[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as InventoryItem));
+      this.inventory.set(items);
+    }, handleError('Inventory'));
+    this.listeners.push(invSub);
+
+    // 2. SOPs Listener
     const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
       const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
       this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
     }, handleError('SOPs'));
     this.listeners.push(sopSub);
 
+    // 3. Requests Listeners
     const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')), 
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
@@ -124,6 +135,7 @@ export class StateService implements OnDestroy {
     }, handleError('Approved Requests'));
     this.listeners.push(appSub);
 
+    // 4. Logs Listener
     const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(100));
     const logSub = onSnapshot(logQuery, (s) => {
         const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
@@ -132,6 +144,7 @@ export class StateService implements OnDestroy {
     }, handleError('Logs'));
     this.listeners.push(logSub);
 
+    // 5. Config & Stats
     const statSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'), (d) => { if (d.exists()) this.stats.set(d.data()); }, handleError('Stats'));
     this.listeners.push(statSub);
 
