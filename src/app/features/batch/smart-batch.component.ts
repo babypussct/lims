@@ -684,34 +684,35 @@ export class SmartBatchComponent {
       const inventory = this.state.inventoryMap();
       Object.values(inventory).forEach((i: InventoryItem) => ledger[i.id] = i.stock);
 
+      const processDeduction = (id: string, qty: number, displayName: string, unit: string) => {
+          if (qty > 0) {
+              const current = ledger[id] || 0;
+              const remaining = current - qty;
+              ledger[id] = remaining; // Deduct from virtual stock
+
+              // Initialize summary entry if needed
+              if (!summary.has(id)) {
+                  summary.set(id, {
+                      name: displayName,
+                      unit: unit,
+                      missing: 0,
+                      currentStock: current, // Snapshot start stock
+                      totalNeed: 0
+                  });
+              }
+              
+              summary.get(id)!.totalNeed += qty;
+          }
+      };
+
       for (const batch of this.batches()) {
           for (const item of batch.resourceImpact) {
-              // Flatten composite items
-              const flatItems = item.isComposite ? item.breakdown : [item];
-              
-              for (const sub of flatItems) {
-                  const id = sub.name;
-                  // Use totalNeed if available (for composite breakdown), otherwise stockNeed
-                  const qty = (sub as any).totalNeed ?? sub.stockNeed;
-                  
-                  if (qty > 0) {
-                      const current = ledger[id] || 0;
-                      const remaining = current - qty;
-                      ledger[id] = remaining; // Deduct from virtual stock
-
-                      // Initialize summary entry if needed
-                      if (!summary.has(id)) {
-                          summary.set(id, {
-                              name: sub.displayName || sub.name,
-                              unit: sub.stockUnit || sub.unit,
-                              missing: 0,
-                              currentStock: current, // Snapshot start stock
-                              totalNeed: 0
-                          });
-                      }
-                      
-                      summary.get(id)!.totalNeed += qty;
+              if (item.isComposite) {
+                  for (const sub of item.breakdown) {
+                      processDeduction(sub.name, sub.totalNeed, sub.displayName || sub.name, sub.stockUnit);
                   }
+              } else {
+                  processDeduction(item.name, item.stockNeed, item.displayName || item.name, item.stockUnit);
               }
           }
       }
