@@ -6,7 +6,7 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CalculatorService } from '../../core/services/calculator.service';
 import { RecipeService } from '../recipes/recipe.service';
-import { TargetService } from '../targets/target.service'; // Added
+import { TargetService } from '../targets/target.service'; 
 import { Sop, SopTarget, CalculatedItem, TargetGroup } from '../../core/models/sop.model';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -591,29 +591,56 @@ interface ProposedBatch {
                     </div>
 
                     <!-- Footer Configuration -->
-                    <div class="p-4 bg-white border-t border-slate-200 shrink-0 flex flex-col md:flex-row gap-4 items-center">
-                        <div class="flex-1 w-full">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Quy trình cho Mẻ Mới</label>
-                            <select [ngModel]="splitState().targetSopId" (ngModelChange)="updateSplitTarget($event)" 
-                                    class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 shadow-sm cursor-pointer transition">
-                                <option [value]="null" disabled>-- Chọn SOP phù hợp --</option>
-                                @for(sop of splitState().candidateSops; track sop.id) {
-                                    <option [value]="sop.id">{{sop.name}} ({{sop.category}})</option>
+                    <div class="p-4 bg-white border-t border-slate-200 shrink-0 flex flex-col gap-4">
+                        <div class="flex flex-col md:flex-row gap-4 items-start">
+                            <div class="flex-1 w-full">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Quy trình cho Mẻ Mới</label>
+                                <div class="flex gap-2">
+                                    <select [ngModel]="splitState().targetSopId" (ngModelChange)="updateSplitTarget($event)" 
+                                            class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 shadow-sm cursor-pointer transition">
+                                        <option [value]="null" disabled>-- Chọn SOP phù hợp --</option>
+                                        @for(sop of candidateSops(); track sop.id) {
+                                            <option [value]="sop.id">{{sop.name}} ({{sop.category}})</option>
+                                        }
+                                    </select>
+                                    
+                                    <!-- Toggle Show All -->
+                                    <div class="flex items-center gap-2 bg-slate-50 px-3 rounded-xl border border-slate-100">
+                                        <input type="checkbox" [checked]="splitState().showAllSops" (change)="toggleShowAllSops()" 
+                                               id="showAllToggle" class="w-4 h-4 accent-blue-600 cursor-pointer rounded">
+                                        <label for="showAllToggle" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Hiển thị tất cả</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full md:w-auto flex justify-end items-end h-full pt-6">
+                                @if(splitState().selectedSamples.size > 0 && splitState().targetSopId) {
+                                    <button (click)="executeSplit()" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center gap-2">
+                                        <i class="fa-solid fa-check"></i> Xác nhận Tách Mẻ
+                                    </button>
+                                } @else {
+                                    <button disabled class="px-8 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed">
+                                        Chọn mẫu & SOP để tiếp tục
+                                    </button>
                                 }
-                            </select>
+                            </div>
                         </div>
-                        
-                        <div class="w-full md:w-auto flex justify-end">
-                            @if(splitState().selectedSamples.size > 0 && splitState().targetSopId) {
-                                <button (click)="executeSplit()" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center gap-2">
-                                    <i class="fa-solid fa-check"></i> Xác nhận Tách Mẻ
-                                </button>
-                            } @else {
-                                <button disabled class="px-8 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed">
-                                    Chọn mẫu & SOP để tiếp tục
-                                </button>
-                            }
-                        </div>
+
+                        <!-- WARNING ZONE: Missing Targets -->
+                        @if (missingTargetsInSplit().length > 0) {
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex gap-3 animate-slide-up">
+                                <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5"></i>
+                                <div class="flex-1">
+                                    <h4 class="text-xs font-bold text-yellow-800 mb-1">Cảnh báo: Quy trình mới thiếu chỉ tiêu</h4>
+                                    <p class="text-[11px] text-yellow-700 mb-2">Các chỉ tiêu sau không có trong SOP mới và sẽ bị loại bỏ khỏi mẻ này:</p>
+                                    <div class="flex flex-wrap gap-1">
+                                        @for(t of missingTargetsInSplit(); track t.id) {
+                                            <span class="bg-white px-2 py-0.5 rounded text-[10px] font-bold text-yellow-700 border border-yellow-200 line-through decoration-red-500">{{t.name}}</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -626,7 +653,7 @@ export class SmartBatchComponent {
   auth = inject(AuthService);
   calculator = inject(CalculatorService);
   recipeService = inject(RecipeService);
-  targetService = inject(TargetService); // NEW
+  targetService = inject(TargetService); // Added
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   printService = inject(PrintService);
@@ -658,15 +685,15 @@ export class SmartBatchComponent {
       sourceSopName: string;
       availableSamples: string[];
       selectedSamples: Set<string>;
-      candidateSops: Sop[];
       targetSopId: string | null;
+      showAllSops: boolean;
   }>({
       sourceBatchIndex: -1,
       sourceSopName: '',
       availableSamples: [],
       selectedSamples: new Set<string>(),
-      candidateSops: [],
-      targetSopId: null
+      targetSopId: null,
+      showAllSops: false
   });
 
   // Group Selection State
@@ -1205,39 +1232,63 @@ export class SmartBatchComponent {
 
   openSplitModal(batchIndex: number) {
       const batch = this.batches()[batchIndex];
-      const allSops = this.state.sops().filter(s => !s.isArchived);
-      
-      // Find candidate SOPs that cover ALL targets of this batch
-      const requiredTargetIds = new Set(batch.targets.map(t => t.id));
-      const candidates = allSops.filter(s => {
-          if (s.id === batch.sop.id) return false; // Exclude self
-          if (!s.targets) return false;
-          // Loose checking here: allow user to select any SOP, but we can prioritize/highlight matches.
-          // For now, let's allow all SOPs (except self) to give user freedom to "change process completely"
-          // BUT default select logic or sorting could favor matches.
-          return true;
-      });
-
-      // Sort candidates: Best match first
-      candidates.sort((a,b) => {
-          const aMatch = (a.targets || []).filter(t => requiredTargetIds.has(t.id)).length;
-          const bMatch = (b.targets || []).filter(t => requiredTargetIds.has(t.id)).length;
-          return bMatch - aMatch;
-      });
-
+      // Reset state for new modal opening
       this.splitState.set({
           sourceBatchIndex: batchIndex,
           sourceSopName: batch.sop.name,
           availableSamples: Array.from(batch.samples).sort(),
           selectedSamples: new Set<string>(), // Explicit typing fix
-          candidateSops: candidates,
-          targetSopId: null
+          targetSopId: null,
+          showAllSops: false // Default to Strict Mode
       });
       
       this.showSplitModal.set(true);
   }
 
+  // --- COMPUTED: DYNAMIC SOP LIST & WARNINGS ---
+
+  candidateSops = computed(() => {
+      const s = this.splitState();
+      if (s.sourceBatchIndex < 0) return [];
+      
+      const sourceBatch = this.batches()[s.sourceBatchIndex];
+      const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id);
+      
+      // If Show All is checked, return everything
+      if (s.showAllSops) return allSops;
+
+      // Strict Mode: Return only SOPs that cover ALL current targets
+      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
+      return allSops.filter(sop => {
+          if (!sop.targets) return false;
+          // Check if sop covers ALL source targets
+          const sopTargetIds = new Set(sop.targets.map(t => t.id));
+          for (const id of sourceTargetIds) {
+              if (!sopTargetIds.has(id)) return false;
+          }
+          return true;
+      });
+  });
+
+  missingTargetsInSplit = computed(() => {
+      const s = this.splitState();
+      if (s.sourceBatchIndex < 0 || !s.targetSopId) return [];
+      
+      const sourceBatch = this.batches()[s.sourceBatchIndex];
+      const targetSop = this.state.sops().find(sop => sop.id === s.targetSopId);
+      
+      if (!targetSop || !targetSop.targets) return []; 
+      
+      const targetSopTargetIds = new Set(targetSop.targets.map(t => t.id));
+      // Find targets in source batch that are NOT in target SOP
+      return sourceBatch.targets.filter(t => !targetSopTargetIds.has(t.id));
+  });
+
   // --- IMPROVED TRANSFER LIST LOGIC ---
+
+  toggleShowAllSops() {
+      this.splitState.update(s => ({ ...s, showAllSops: !s.showAllSops }));
+  }
 
   moveSample(sample: string) {
       this.splitState.update(s => {
@@ -1286,30 +1337,62 @@ export class SmartBatchComponent {
       this.splitState.update(s => ({ ...s, targetSopId: sopId }));
   }
 
-  executeSplit() {
+  async executeSplit() {
       const state = this.splitState();
       const sourceBatch = this.batches()[state.sourceBatchIndex];
       const samplesToMove = state.selectedSamples;
-      const targetSop = state.candidateSops.find(s => s.id === state.targetSopId);
+      const targetSop = this.state.sops().find(s => s.id === state.targetSopId);
 
       if (!targetSop || samplesToMove.size === 0) return;
 
-      // 1. Create New Batch
+      // --- Safety Check: Missing Targets ---
+      const missing = this.missingTargetsInSplit();
+      if (missing.length > 0) {
+          const confirmed = await this.confirmation.confirm({
+              message: `CẢNH BÁO: Quy trình mới không hỗ trợ ${missing.length} chỉ tiêu đang chọn (VD: ${missing[0].name}).\nCác chỉ tiêu này sẽ bị loại bỏ khỏi mẻ mới. Bạn có chắc chắn?`,
+              confirmText: 'Chấp nhận & Tiếp tục',
+              isDangerous: true
+          });
+          if (!confirmed) return;
+      }
+
+      // 1. Create New Batch Inputs (Smart Copy)
       const newSamples = new Set<string>(samplesToMove);
       const newInputs: Record<string, any> = {};
+      
+      // Default to SOP defaults
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
+      
+      // Smart Copy: If variable name matches source, copy value
+      if (sourceBatch.inputValues) {
+          Object.keys(newInputs).forEach(key => {
+              if (sourceBatch.inputValues[key] !== undefined) {
+                  newInputs[key] = sourceBatch.inputValues[key];
+              }
+          });
+      }
+      
+      // Force recalculate sample count
       newInputs['n_sample'] = newSamples.size;
-      if (newInputs['n_qc'] === undefined) newInputs['n_qc'] = 1;
+      
+      // Inherit QC count if variable exists
+      if (newInputs['n_qc'] !== undefined && sourceBatch.inputValues['n_qc'] !== undefined) {
+           newInputs['n_qc'] = sourceBatch.inputValues['n_qc'];
+      }
 
-      // --- LOGIC CHANGE: PRESERVE TARGETS ---
-      // Find intersection between Source Batch Targets and Target SOP Targets
-      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
-      const keptTargets = (targetSop.targets || []).filter(t => sourceTargetIds.has(t.id));
-      // Fallback: If no intersection, use all targets of new SOP (or none? Better to default all)
-      const finalNewTargets = keptTargets.length > 0 ? keptTargets : (targetSop.targets || []);
+      // --- Logic: Intersect Targets ---
+      const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id));
+      // Only keep targets that exist in BOTH source batch AND new SOP
+      const finalNewTargets = sourceBatch.targets.filter(t => targetSopTargetIds.has(t.id));
 
       // Calculate for new batch
-      const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, 10, this.inventoryCache, this.recipeCache);
+      const newNeeds = this.calculator.calculateSopNeeds(
+          targetSop, 
+          newInputs, 
+          sourceBatch.safetyMargin, // Copy safety margin
+          this.inventoryCache, 
+          this.recipeCache
+      );
       
       const newBatch: ProposedBatch = {
           id: `batch_${Date.now()}_split`,
@@ -1318,7 +1401,7 @@ export class SmartBatchComponent {
           samples: newSamples,
           sampleCount: newSamples.size,
           inputValues: newInputs,
-          safetyMargin: 10,
+          safetyMargin: sourceBatch.safetyMargin, // Preserve Margin
           resourceImpact: newNeeds,
           status: 'ready' // Will be revalidated
       };
