@@ -6,7 +6,8 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CalculatorService } from '../../core/services/calculator.service';
 import { RecipeService } from '../recipes/recipe.service';
-import { Sop, SopTarget, CalculatedItem } from '../../core/models/sop.model';
+import { TargetService } from '../targets/target.service'; // Added
+import { Sop, SopTarget, CalculatedItem, TargetGroup } from '../../core/models/sop.model';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
@@ -135,6 +136,9 @@ interface ProposedBatch {
                                                            class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500 transition"
                                                            placeholder="Tìm chỉ tiêu...">
                                                 </div>
+                                                <button (click)="openGroupModal(i)" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition flex items-center gap-1 text-[10px] font-bold" title="Chọn từ Bộ chỉ tiêu">
+                                                    <i class="fa-solid fa-layer-group"></i> Groups
+                                                </button>
                                                 <button (click)="selectAllTargets(i)" class="px-2 py-1.5 bg-teal-50 text-teal-700 rounded-lg border border-teal-100 hover:bg-teal-100 transition" title="Chọn tất cả (đang hiển thị)">
                                                     <i class="fa-solid fa-check-double text-xs"></i>
                                                 </button>
@@ -456,6 +460,36 @@ interface ProposedBatch {
             }
         </div>
 
+        <!-- GROUP SELECTION MODAL -->
+        @if (showGroupModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
+                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                        <h3 class="font-black text-slate-800 text-lg">Chọn Bộ Chỉ tiêu (Groups)</h3>
+                        <button (click)="showGroupModal.set(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-lg"></i></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                        @if (availableGroups().length === 0) {
+                            <div class="p-8 text-center text-slate-400 italic text-sm">
+                                <i class="fa-solid fa-spinner fa-spin mb-2 text-xl"></i><br>
+                                Đang tải hoặc chưa có bộ chỉ tiêu nào.
+                            </div>
+                        } @else {
+                            @for(g of availableGroups(); track g.id) {
+                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 hover:bg-indigo-50 cursor-pointer transition group">
+                                    <div class="font-bold text-slate-700 text-sm group-hover:text-indigo-700">{{g.name}}</div>
+                                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                                        <span>{{g.targets.length}} chỉ tiêu</span>
+                                        @if(g.description) { <span class="italic max-w-[200px] truncate">{{g.description}}</span> }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
         <!-- NEW SPLIT MODAL (TRANSFER LIST STYLE) -->
         @if (showSplitModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
@@ -592,6 +626,7 @@ export class SmartBatchComponent {
   auth = inject(AuthService);
   calculator = inject(CalculatorService);
   recipeService = inject(RecipeService);
+  targetService = inject(TargetService); // NEW
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   printService = inject(PrintService);
@@ -633,6 +668,11 @@ export class SmartBatchComponent {
       candidateSops: [],
       targetSopId: null
   });
+
+  // Group Selection State
+  showGroupModal = signal(false);
+  availableGroups = signal<TargetGroup[]>([]);
+  currentBlockIndexForGroupImport = signal<number>(-1);
 
   // --- COMPUTED ---
   
@@ -785,6 +825,52 @@ export class SmartBatchComponent {
           next[index] = { ...block, selectedTargets: newSet };
           return next;
       });
+  }
+
+  // --- NEW: GROUP IMPORT LOGIC ---
+  async openGroupModal(blockIndex: number) {
+      this.currentBlockIndexForGroupImport.set(blockIndex);
+      this.showGroupModal.set(true);
+      if (this.availableGroups().length === 0) {
+          try {
+              const groups = await this.targetService.getAllGroups();
+              this.availableGroups.set(groups);
+          } catch(e) {
+              this.toast.show('Lỗi tải danh sách bộ chỉ tiêu.', 'error');
+          }
+      }
+  }
+
+  importGroup(g: TargetGroup) {
+      const index = this.currentBlockIndexForGroupImport();
+      if (index < 0 || !g.targets) return;
+
+      const groupTargetIds = g.targets.map(t => t.id);
+      
+      // Update block targets
+      this.blocks.update(current => {
+          const next = [...current];
+          const block = next[index];
+          
+          // Get available targets in system to ensure we don't add invalid IDs
+          const availableSet = new Set(this.allAvailableTargets().map(t => t.uniqueKey));
+          
+          const newSet = new Set<string>(block.selectedTargets);
+          let addedCount = 0;
+          
+          groupTargetIds.forEach(id => {
+              if (availableSet.has(id)) {
+                  newSet.add(id);
+                  addedCount++;
+              }
+          });
+          
+          next[index] = { ...block, selectedTargets: newSet };
+          return next;
+      });
+
+      this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu từ bộ "${g.name}".`, 'success');
+      this.showGroupModal.set(false);
   }
 
   // --- NEW: BULK ACTIONS ---
@@ -944,13 +1030,15 @@ export class SmartBatchComponent {
 
       // 5. Find Alternatives for visual cues
       proposed.forEach(batch => {
+          // Alternative logic: Find SOPs that cover ALL targets of this batch (strict) or ANY (loose).
+          // Strict is safer for batch switching.
           const batchTargetIds = new Set(batch.targets.map(t => t.id));
           batch.alternativeSops = allSops.filter(s => {
               if (s.id === batch.sop.id) return false; // Not self
               if (!s.targets) return false;
               
               const sTargetIds = new Set(s.targets.map(t => t.id));
-              // Candidate must cover ALL batch targets
+              // Candidate must cover ALL batch targets to be a valid *direct* replacement
               for (let id of batchTargetIds) {
                   if (!sTargetIds.has(id)) return false;
               }
@@ -1124,12 +1212,17 @@ export class SmartBatchComponent {
       const candidates = allSops.filter(s => {
           if (s.id === batch.sop.id) return false; // Exclude self
           if (!s.targets) return false;
-          // Check if s.targets contains all requiredTargetIds
-          const sTargetIds = new Set(s.targets.map(t => t.id));
-          for (let id of requiredTargetIds) {
-              if (!sTargetIds.has(id)) return false;
-          }
+          // Loose checking here: allow user to select any SOP, but we can prioritize/highlight matches.
+          // For now, let's allow all SOPs (except self) to give user freedom to "change process completely"
+          // BUT default select logic or sorting could favor matches.
           return true;
+      });
+
+      // Sort candidates: Best match first
+      candidates.sort((a,b) => {
+          const aMatch = (a.targets || []).filter(t => requiredTargetIds.has(t.id)).length;
+          const bMatch = (b.targets || []).filter(t => requiredTargetIds.has(t.id)).length;
+          return bMatch - aMatch;
       });
 
       this.splitState.set({
@@ -1208,13 +1301,20 @@ export class SmartBatchComponent {
       newInputs['n_sample'] = newSamples.size;
       if (newInputs['n_qc'] === undefined) newInputs['n_qc'] = 1;
 
+      // --- LOGIC CHANGE: PRESERVE TARGETS ---
+      // Find intersection between Source Batch Targets and Target SOP Targets
+      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
+      const keptTargets = (targetSop.targets || []).filter(t => sourceTargetIds.has(t.id));
+      // Fallback: If no intersection, use all targets of new SOP (or none? Better to default all)
+      const finalNewTargets = keptTargets.length > 0 ? keptTargets : (targetSop.targets || []);
+
       // Calculate for new batch
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, 10, this.inventoryCache, this.recipeCache);
       
       const newBatch: ProposedBatch = {
           id: `batch_${Date.now()}_split`,
           sop: targetSop,
-          targets: sourceBatch.targets, // Carries over same targets requirement
+          targets: finalNewTargets, 
           samples: newSamples,
           sampleCount: newSamples.size,
           inputValues: newInputs,

@@ -38,16 +38,18 @@ declare var QRious: any;
                             <h1 class="sop-title">
                                 {{job.sop?.name}}
                             </h1>
-                            <!-- Chỉ tiêu -->
+                            <!-- Chỉ tiêu (Full Wrap) -->
                             @if (getTargetNames(job).length > 0) {
                                 <div class="targets-row">
                                     <span class="target-label">Chỉ tiêu:</span>
-                                    <span class="target-val">{{ getTargetNames(job).join(', ') }}</span>
+                                    @for(t of getTargetNames(job); track $index) {
+                                        <span class="target-badge">{{t}}</span>
+                                    }
                                 </div>
                             }
                         </div>
 
-                        <!-- Right: ID & QR -->
+                        <!-- Right: ID & QR (Increased Size) -->
                         <div class="header-qr-group">
                             <div class="id-box">
                                 <div class="id-label">Mã truy xuất (ID)</div>
@@ -190,25 +192,27 @@ declare var QRious: any;
     .print-slip.separator { border-bottom: 1px dashed #999; }
 
     /* --- NEW HEADER --- */
-    .header-container { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px; }
+    .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px; }
     
-    .header-info { flex: 1; padding-right: 10px; }
-    .meta-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; font-size: 9px; }
+    .header-info { flex: 1; padding-right: 15px; }
+    .meta-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 9px; }
     .badge { border: 1px solid #000; padding: 0px 3px; border-radius: 2px; font-weight: 800; text-transform: uppercase; font-size: 8px; }
     .divider { color: #999; }
     
-    .sop-title { font-size: 14px; font-weight: 900; text-transform: uppercase; margin: 2px 0; line-height: 1.1; letter-spacing: -0.3px; }
+    .sop-title { font-size: 15px; font-weight: 900; text-transform: uppercase; margin: 4px 0; line-height: 1.1; letter-spacing: -0.3px; }
     
-    .targets-row { font-size: 9px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100mm; }
-    .target-label { font-weight: 700; color: #444; }
-    .target-val { font-weight: 600; }
+    /* TARGETS - UPDATED: FULL WRAP */
+    .targets-row { font-size: 9px; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .target-label { font-weight: 700; color: #444; margin-right: 2px; }
+    .target-badge { border: 1px solid #ccc; padding: 0 4px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
 
-    /* QR Group */
-    .header-qr-group { display: flex; align-items: center; gap: 8px; }
+    /* QR Group - UPDATED: BIGGER SIZE */
+    .header-qr-group { display: flex; align-items: center; gap: 10px; }
     .id-box { text-align: right; }
     .id-label { font-size: 7px; text-transform: uppercase; color: #666; font-weight: 700; }
     .id-value { font-size: 11px; font-family: monospace; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-    .qr-code { width: 42px; height: 42px; border: 1px solid #eee; }
+    /* Resize QR to ~80px for better scanability */
+    .qr-code { width: 80px; height: 80px; border: 1px solid #eee; display: block; }
 
     /* Inputs Bar */
     .meta-container { margin-bottom: 6px; font-size: 9px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
@@ -299,7 +303,8 @@ export class PrintLayoutComponent implements AfterViewInit {
     this.qrCanvases.forEach(canvasRef => {
         const canvas = canvasRef.nativeElement;
         const value = canvas.getAttribute('data-qr') || 'LIMS';
-        new QRious({ element: canvas, value: value, size: 100, level: 'L' });
+        // UPDATED: Increase size for better resolution
+        new QRious({ element: canvas, value: value, size: 250, level: 'L' });
     });
   }
 
@@ -358,8 +363,6 @@ export class PrintLayoutComponent implements AfterViewInit {
     const result: string[] = [];
     
     // Helper to extract parts: Prefix, Number, Suffix
-    // Examples: "U0120" -> P="U", N=1, S="20"
-    // "Sample-1-A" -> P="Sample-", N=1, S="-A"
     const parse = (s: string) => {
         const match = s.match(/^([^\d]*)(\d+)(.*)$/);
         return match ? { p: match[1] || '', n: parseInt(match[2], 10), s: match[3] || '', full: s } : null;
@@ -378,9 +381,7 @@ export class PrintLayoutComponent implements AfterViewInit {
         
         // Check continuity conditions
         if (prevObj && currObj) {
-            // Must match Prefix and Suffix
             if (prevObj.p === currObj.p && prevObj.s === currObj.s) {
-                // Number must be consecutive
                 if (currObj.n === prevObj.n + 1) {
                     continuous = true;
                 }
@@ -388,7 +389,6 @@ export class PrintLayoutComponent implements AfterViewInit {
         }
 
         if (continuous) {
-            // Extend current range
             prev = curr;
             prevObj = currObj;
         } else {
@@ -396,14 +396,11 @@ export class PrintLayoutComponent implements AfterViewInit {
             if (start === prev) {
                 result.push(start);
             } else if (prevObj && startObj && prevObj.n - startObj.n === 1) {
-                // If only 2 items (e.g. 1, 2), list them: "1, 2" instead of "1->2"
                 result.push(`${start}, ${prev}`);
             } else {
-                // Range notation
                 result.push(`${start} ➝ ${prev}`);
             }
 
-            // Start new range
             start = curr;
             prev = curr;
             startObj = currObj;
