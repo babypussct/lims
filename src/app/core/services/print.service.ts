@@ -1,3 +1,4 @@
+
 import { Injectable, inject, ApplicationRef, EnvironmentInjector, createComponent, ComponentRef, signal } from '@angular/core';
 import { CalculatorService } from './calculator.service';
 import { BatchItem } from './batch.service';
@@ -53,20 +54,23 @@ export class PrintService {
         return;
     }
 
+    // CRITICAL FIX: Always cleanup previous artifacts BEFORE starting a new one.
+    // This prevents the "zombie component" issue where the second print fails to attach.
+    this.cleanup();
+
     this.isProcessing.set(true);
 
     // 2. Dynamic Pagination (Chunking)
-    // Splits long jobs into multiple slips to ensure content fits on A5
     const processedJobs = this.splitLongJobs(validJobs);
 
-    // SAFETY WATCHDOG: Force unlock UI after 3 seconds max.
+    // SAFETY WATCHDOG: Force unlock UI after 5 seconds max if something hangs.
     const watchdog = setTimeout(() => {
         if (this.isProcessing()) {
             console.warn("Print Service: Watchdog triggered - Forcing UI unlock.");
             this.isProcessing.set(false);
             this.cleanup();
         }
-    }, 3000);
+    }, 5000);
 
     try {
       // 3. Locate or Create the Container
@@ -78,7 +82,7 @@ export class PrintService {
         return;
       }
       
-      // Clear previous content
+      // Double check clear
       container.innerHTML = '';
 
       // 4. Dynamically Create Component
@@ -100,18 +104,28 @@ export class PrintService {
           // Clear the safety watchdog, we are taking control.
           clearTimeout(watchdog);
 
-          // CRITICAL FIX: Unlock the UI *immediately* before opening the dialog.
+          // Unlock the UI *immediately* before opening the dialog so users don't feel stuck.
           this.isProcessing.set(false);
+
+          // Setup Cleanup Listener (Modern Browsers)
+          // This ensures we clean up AFTER the user clicks Print or Cancel
+          const cleanupListener = () => {
+              this.cleanup();
+              window.removeEventListener('afterprint', cleanupListener);
+          };
+          window.addEventListener('afterprint', cleanupListener);
 
           // Execute Print
           window.print();
 
-          // Cleanup after a delay.
+          // Fallback Cleanup: For browsers that might not fire 'afterprint' reliably or if scripts are blocked
+          // We clear the DOM after a delay anyway to be safe for the NEXT print.
           setTimeout(() => {
               this.cleanup();
+              window.removeEventListener('afterprint', cleanupListener);
           }, 2000); 
 
-      }, 500);
+      }, 500); // 500ms delay to ensure DOM paint
 
     } catch (e) {
       console.error("Print Error:", e);
@@ -160,13 +174,19 @@ export class PrintService {
   }
 
   private cleanup() {
-    if (this.printComponentRef) {
-      this.appRef.detachView(this.printComponentRef.hostView);
-      this.printComponentRef.destroy();
-      this.printComponentRef = null;
+    try {
+        if (this.printComponentRef) {
+          this.appRef.detachView(this.printComponentRef.hostView);
+          this.printComponentRef.destroy();
+          this.printComponentRef = null;
+        }
+        const container = document.getElementById('print-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+    } catch (e) {
+        console.warn("Print cleanup warning:", e);
     }
-    const container = document.getElementById('print-container');
-    if (container) container.innerHTML = '';
   }
 
   // Helper for Batch Requests
