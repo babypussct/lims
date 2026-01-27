@@ -109,19 +109,30 @@ const STANDARD_VARS = [
                                   
                                   <div formArrayName="inputs" class="space-y-3">
                                       @for (inp of inputs.controls; track inp; let i = $index) {
-                                          <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                                              <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                  <div><label class="text-[9px] font-bold text-slate-400 uppercase">Biến (Var)</label><input formControlName="var" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-mono font-bold text-blue-600 outline-none"></div>
-                                                  <div><label class="text-[9px] font-bold text-slate-400 uppercase">Nhãn (Label)</label><input formControlName="label" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-700 outline-none"></div>
-                                                  <div><label class="text-[9px] font-bold text-slate-400 uppercase">Kiểu</label>
-                                                      <select formControlName="type" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none bg-white">
-                                                          <option value="number">Số (Number)</option>
-                                                          <option value="checkbox">Checkbox</option>
-                                                      </select>
+                                          <div [formGroupName]="i" class="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                              <div class="flex gap-2 items-start">
+                                                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 flex-1">
+                                                      <div><label class="text-[9px] font-bold text-slate-400 uppercase">Biến (Var)</label><input formControlName="var" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-mono font-bold text-blue-600 outline-none"></div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 uppercase">Nhãn (Label)</label><input formControlName="label" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-700 outline-none"></div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 uppercase">Kiểu</label>
+                                                          <select formControlName="type" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs outline-none bg-white">
+                                                              <option value="number">Số (Number)</option>
+                                                              <option value="checkbox">Checkbox</option>
+                                                              <option value="select">Danh sách (Select)</option>
+                                                          </select>
+                                                      </div>
+                                                      <div><label class="text-[9px] font-bold text-slate-400 uppercase">Mặc định</label><input formControlName="default" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold outline-none"></div>
                                                   </div>
-                                                  <div><label class="text-[9px] font-bold text-slate-400 uppercase">Mặc định</label><input formControlName="default" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-bold outline-none"></div>
+                                                  <button type="button" (click)="inputs.removeAt(i)" class="mt-4 text-slate-300 hover:text-red-500 transition px-2"><i class="fa-solid fa-trash"></i></button>
                                               </div>
-                                              <button type="button" (click)="inputs.removeAt(i)" class="mt-4 text-slate-300 hover:text-red-500 transition px-2"><i class="fa-solid fa-trash"></i></button>
+                                              
+                                              <!-- Options for Select -->
+                                              @if (inp.get('type')?.value === 'select') {
+                                                  <div class="pl-2 border-l-2 border-orange-200 ml-1">
+                                                      <label class="text-[9px] font-bold text-orange-600 uppercase">Tùy chọn (Format: "Value:Label, Value:Label")</label>
+                                                      <input formControlName="optionsStr" class="w-full border border-orange-200 rounded px-2 py-1.5 text-xs bg-orange-50 focus:bg-white transition outline-none placeholder-orange-300" placeholder="0:Thủy sản, 1:Sữa, 2:Phomat">
+                                                  </div>
+                                              }
                                           </div>
                                       }
                                   </div>
@@ -622,7 +633,10 @@ export class SopEditorComponent implements OnDestroy {
     
     this.inputs.clear(); 
     const loadedVars = new Set<string>();
-    sop.inputs.forEach(i => { this.addInputRaw(i.var, i.label, i.default, i.type, i.step, i.unitLabel); loadedVars.add(i.var); });
+    sop.inputs.forEach(i => { 
+        this.addInputRaw(i.var, i.label, i.default, i.type, i.step, i.unitLabel, i.options); 
+        loadedVars.add(i.var); 
+    });
     this.CORE_INPUTS.forEach(ci => { if (!loadedVars.has(ci.var)) { this.addInputRaw(ci.var, ci.label, ci.default, ci.type as any, ci.step, ci.unitLabel); } });
 
     this.variablesList.clear();
@@ -707,7 +721,16 @@ export class SopEditorComponent implements OnDestroy {
     // 3. CONSTRUCT FINAL OBJECT
     const sop: Sop = {
       id: formVal.id!, category: formVal.category!, name: formVal.name!, ref: formVal.ref || '',
-      inputs: (formVal.inputs as any[]).map(i => ({...i})), variables: variables,
+      inputs: (formVal.inputs as any[]).map(i => {
+          const res = {...i};
+          // Parse optionsStr if present
+          if (res.type === 'select' && res.optionsStr) {
+              res.options = this.parseOptions(res.optionsStr);
+              delete res.optionsStr;
+          }
+          return res;
+      }), 
+      variables: variables,
       consumables: (formVal.consumables as any[]).map((c: any) => {
           return { 
               name: c.name, recipeId: c.recipeId, _displayName: c._displayName, 
@@ -730,8 +753,36 @@ export class SopEditorComponent implements OnDestroy {
   
   // Helper methods
   addInput() { this.addInputRaw('', '', 0, 'number', 1, ''); }
-  private addInputRaw(v: string, l: string, d: any, t: 'number'|'checkbox', s: any, u: string | undefined) { this.inputs.push(this.fb.group({ var: [v, Validators.required], label: [l, Validators.required], default: [d], type: [t], step: [s], unitLabel: [u] })); }
   
+  private addInputRaw(v: string, l: string, d: any, t: 'number'|'checkbox'|'select', s: any, u: string | undefined, options?: any[]) { 
+      const optsStr = options ? options.map(o => `${o.value}:${o.label}`).join(', ') : '';
+      this.inputs.push(this.fb.group({ 
+          var: [v, Validators.required], 
+          label: [l, Validators.required], 
+          default: [d], 
+          type: [t], 
+          step: [s], 
+          unitLabel: [u],
+          optionsStr: [optsStr] // Add intermediate control string
+      })); 
+  }
+  
+  // HELPER: Parse "0:Fish, 1:Milk" -> [{value: 0, label: Fish}, ...]
+  private parseOptions(str: string): {label: string, value: string|number}[] {
+      if (!str) return [];
+      return str.split(',').map(part => {
+          const [val, lbl] = part.split(':');
+          if (!val || !lbl) return null;
+          const cleanVal = val.trim();
+          // Check if number
+          const numVal = Number(cleanVal);
+          return {
+              value: isNaN(numVal) ? cleanVal : numVal,
+              label: lbl.trim()
+          };
+      }).filter(x => x !== null) as any;
+  }
+
   addVariable() { this.variablesList.push(this.fb.group({ key: ['', Validators.required], formula: ['', Validators.required] })); }
 
   addConsumable() { this.consumables.push(this.fb.group({ name: [''], _displayName: [''], recipeId: [''], base_note: [''], formula: [''], unit: ['ml'], type: ['simple'], condition: [''], ingredients: this.fb.array([]) })); }

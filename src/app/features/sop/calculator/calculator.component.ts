@@ -139,19 +139,35 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                               @for (inp of currentSop.inputs; track inp.var) {
                                 <div class="group">
                                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">{{inp.label}}</label>
-                                   @if (inp.type === 'checkbox') {
-                                      <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer bg-white hover:border-blue-300 transition">
-                                        <span class="text-sm font-bold text-slate-700">Kích hoạt</span>
-                                        <input type="checkbox" [formControlName]="inp.var" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
-                                      </label>
-                                   } @else {
-                                      <div class="relative">
-                                        <input type="number" [formControlName]="inp.var" [step]="inp.step || 1"
-                                               class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm"
-                                               [class.bg-blue-50]="inp.var === 'n_sample' && sampleListText().length > 0"
-                                               [readonly]="inp.var === 'n_sample' && sampleListText().length > 0">
-                                        @if(inp.unitLabel) { <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{inp.unitLabel}}</span> }
-                                      </div>
+                                   
+                                   @switch (inp.type) {
+                                       @case ('checkbox') {
+                                          <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer bg-white hover:border-blue-300 transition">
+                                            <span class="text-sm font-bold text-slate-700">Kích hoạt</span>
+                                            <input type="checkbox" [formControlName]="inp.var" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
+                                          </label>
+                                       }
+                                       @case ('select') {
+                                          <div class="relative">
+                                              <select [formControlName]="inp.var" class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-500 transition shadow-sm appearance-none cursor-pointer">
+                                                  @for (opt of inp.options; track opt.value) {
+                                                      <option [value]="opt.value">{{opt.label}}</option>
+                                                  }
+                                              </select>
+                                              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                  <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                                              </div>
+                                          </div>
+                                       }
+                                       @default {
+                                          <div class="relative">
+                                            <input type="number" [formControlName]="inp.var" [step]="inp.step || 1"
+                                                   class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition shadow-sm"
+                                                   [class.bg-blue-50]="inp.var === 'n_sample' && sampleListText().length > 0"
+                                                   [readonly]="inp.var === 'n_sample' && sampleListText().length > 0">
+                                            @if(inp.unitLabel) { <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{inp.unitLabel}}</span> }
+                                          </div>
+                                       }
                                    }
                                 </div>
                               }
@@ -397,11 +413,7 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
         </div>
       }
     </div>
-  `,
-  styles: [`
-    @keyframes slide-down { from { max-height: 0; opacity: 0; } to { max-height: 200px; opacity: 1; } }
-    .animate-slide-down { animation: slide-down 0.2s ease-out forwards; }
-  `]
+  `
 })
 export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 

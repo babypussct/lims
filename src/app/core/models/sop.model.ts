@@ -2,10 +2,12 @@
 export interface SopInput {
   var: string;
   label: string;
-  type: 'number' | 'checkbox';
-  default: number | boolean;
+  type: 'number' | 'checkbox' | 'select';
+  default: number | boolean | string;
   step?: number;
   unitLabel?: string;
+  // Options for 'select' type. Structure: { label: 'Option A', value: 1 }
+  options?: { label: string; value: string | number }[];
 }
 
 export interface SopTarget {

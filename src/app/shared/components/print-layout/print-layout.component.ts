@@ -67,8 +67,13 @@ declare var QRious: any;
                                     <div class="input-item">
                                         <span class="input-label">{{inp.label}}:</span>
                                         <span class="input-value">
-                                            {{job.inputs[inp.var]}}
-                                            @if(inp.type === 'checkbox') { <span>(Yes)</span> }
+                                            @if (inp.type === 'select' && inp.options) {
+                                                {{ getSelectLabel(inp, job.inputs[inp.var]) }}
+                                            } @else if (inp.type === 'checkbox') {
+                                                <span>(Yes)</span>
+                                            } @else {
+                                                {{ job.inputs[inp.var] }}
+                                            }
                                         </span>
                                     </div>
                                  }
@@ -347,6 +352,14 @@ export class PrintLayoutComponent implements AfterViewInit {
   getFooterText(): string {
       const conf = this.state.printConfig();
       return conf?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.';
+  }
+
+  // Helper to get label from select options
+  getSelectLabel(inp: any, value: any): string {
+      if (!inp.options) return value;
+      // Loose comparison to handle string/number mismatch from form inputs
+      const found = inp.options.find((o: any) => o.value == value);
+      return found ? found.label : value;
   }
 
   /**
