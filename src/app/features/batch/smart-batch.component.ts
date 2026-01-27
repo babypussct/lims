@@ -1245,6 +1245,25 @@ export class SmartBatchComponent {
       this.showSplitModal.set(true);
   }
 
+  // --- REQ HELPER: Trace Back Requirements ---
+  // Retrieves the union of targets required by a specific set of sample names
+  private getRequiredTargetsForSamples(sampleNames: Set<string>): Set<string> {
+      const reqs = new Set<string>();
+      const blocks = this.blocks();
+      
+      for (const block of blocks) {
+          const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
+          // Check if any sample in this block matches the requested set
+          // (Assuming simple case: sample ID is unique or implies same requirements if duplicated)
+          const relevantSamples = blockSamples.filter(s => sampleNames.has(s));
+          
+          if (relevantSamples.length > 0) {
+              block.selectedTargets.forEach(t => reqs.add(t));
+          }
+      }
+      return reqs;
+  }
+
   // --- COMPUTED: DYNAMIC SOP LIST & WARNINGS ---
 
   candidateSops = computed(() => {
@@ -1257,13 +1276,26 @@ export class SmartBatchComponent {
       // If Show All is checked, return everything
       if (s.showAllSops) return allSops;
 
-      // Strict Mode: Return only SOPs that cover ALL current targets
-      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
+      // Strict Mode: Return only SOPs that cover ALL targets required by the SELECTED samples
+      const samplesToMove = s.selectedSamples;
+      
+      // If no samples selected yet, fallback to "Show All" or source batch logic?
+      // Let's mimic "Show All" behavior if selection is empty, or just show compatible with SOURCE batch.
+      // Better UX: Show SOPs compatible with Source Batch until user selects samples.
+      let requiredTargetIds: Set<string>;
+      
+      if (samplesToMove.size === 0) {
+          requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id));
+      } else {
+          requiredTargetIds = this.getRequiredTargetsForSamples(samplesToMove);
+      }
+
       return allSops.filter(sop => {
-          if (!sop.targets) return false;
-          // Check if sop covers ALL source targets
+          if (!sop.targets) return false; // Skip if no targets defined (unless we want to allow generic SOPs)
+          
+          // Check if sop covers ALL required targets
           const sopTargetIds = new Set(sop.targets.map(t => t.id));
-          for (const id of sourceTargetIds) {
+          for (const id of requiredTargetIds) {
               if (!sopTargetIds.has(id)) return false;
           }
           return true;
@@ -1274,14 +1306,27 @@ export class SmartBatchComponent {
       const s = this.splitState();
       if (s.sourceBatchIndex < 0 || !s.targetSopId) return [];
       
-      const sourceBatch = this.batches()[s.sourceBatchIndex];
+      // If no samples selected, nothing is missing technically
+      if (s.selectedSamples.size === 0) return [];
+
       const targetSop = this.state.sops().find(sop => sop.id === s.targetSopId);
-      
       if (!targetSop || !targetSop.targets) return []; 
       
+      const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples);
       const targetSopTargetIds = new Set(targetSop.targets.map(t => t.id));
-      // Find targets in source batch that are NOT in target SOP
-      return sourceBatch.targets.filter(t => !targetSopTargetIds.has(t.id));
+      
+      // Find targets required by samples that are NOT in target SOP
+      // We need to return SopTarget objects for display, so look them up from source batch or global
+      const missingIds = Array.from(requiredTargetIds).filter(id => !targetSopTargetIds.has(id));
+      
+      // Helper to hydrate ID to Name
+      const sourceBatch = this.batches()[s.sourceBatchIndex];
+      const hydrated = missingIds.map(id => {
+          const t = sourceBatch.targets.find(t => t.id === id);
+          return t || { id, name: id }; // Fallback
+      });
+      
+      return hydrated;
   });
 
   // --- IMPROVED TRANSFER LIST LOGIC ---
@@ -1381,9 +1426,10 @@ export class SmartBatchComponent {
       }
 
       // --- Logic: Intersect Targets ---
+      // NEW BATCH: Intersection of (Original Needs of Selected Samples) AND (New SOP Targets)
+      const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
       const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id));
-      // Only keep targets that exist in BOTH source batch AND new SOP
-      const finalNewTargets = sourceBatch.targets.filter(t => targetSopTargetIds.has(t.id));
+      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
 
       // Calculate for new batch
       const newNeeds = this.calculator.calculateSopNeeds(
@@ -1416,8 +1462,17 @@ export class SmartBatchComponent {
               // If all moved, remove source batch
               next.splice(state.sourceBatchIndex, 1);
           } else {
+              // SOURCE BATCH: Intersection of (Original Needs of REMAINING Samples) AND (Source SOP Targets)
+              const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
+              const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id));
+
               // Update source batch
-              const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size };
+              const updatedSource = { 
+                  ...sourceBatch, 
+                  samples: remainingSamples, 
+                  sampleCount: remainingSamples.size,
+                  targets: finalSourceTargets // <--- VITAL FIX: Remove surplus targets
+              };
               updatedSource.inputValues['n_sample'] = remainingSamples.size;
               // Recalculate source
               updatedSource.resourceImpact = this.calculator.calculateSopNeeds(
