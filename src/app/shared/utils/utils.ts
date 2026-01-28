@@ -152,8 +152,10 @@ export function naturalCompare(a: string, b: string): number {
 }
 
 /**
- * Smartly compresses a list of samples into a readable string.
- * e.g., ["A01", "A02", "A03", "B01"] -> "A01 ➔ A03, B01"
+ * Smartly compresses a list of samples into a readable string using Common Affix Algorithm.
+ * Handles: U0127 -> U0227 (Fixed suffix '27')
+ * Handles: Sample 1 -> Sample 2 (Fixed prefix)
+ * Handles: U9927 -> U10027 (Varying digit length)
  */
 export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
     if (!samplesInput) return '';
@@ -169,45 +171,72 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
 
     if (samples.length === 0) return '';
 
-    // Sort naturally
+    // Sort naturally (Crucial for correct range detection: U9927 comes before U10027)
     samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    const ranges: string[] = [];
-    const parse = (s: string) => {
-        const match = s.match(/^([^\d]*)(\d+)(.*)$/);
-        if (!match) return null;
-        return { p: match[1], n: parseInt(match[2], 10), s: match[3] };
+    // Helper to check if two strings are sequential
+    const isSequential = (prev: string, curr: string): boolean => {
+        if (!prev || !curr) return false;
+        
+        // 1. Find Common Prefix
+        let pLen = 0;
+        const minLen = Math.min(prev.length, curr.length);
+        while (pLen < minLen && prev[pLen] === curr[pLen]) {
+            pLen++;
+        }
+
+        // 2. Find Common Suffix
+        let sLen = 0;
+        while (sLen < minLen - pLen && 
+               prev[prev.length - 1 - sLen] === curr[curr.length - 1 - sLen]) {
+            sLen++;
+        }
+
+        // 3. Extract Middle Part (The changing part)
+        const prevMid = prev.substring(pLen, prev.length - sLen);
+        const currMid = curr.substring(pLen, curr.length - sLen);
+
+        // 4. Validate Middle is Numeric
+        // If middle is empty or contains non-digits, they are not a numeric sequence
+        if (!prevMid || !currMid || !/^\d+$/.test(prevMid) || !/^\d+$/.test(currMid)) {
+            return false;
+        }
+
+        // 5. Check if numeric difference is exactly 1
+        const prevNum = parseInt(prevMid, 10);
+        const currNum = parseInt(currMid, 10);
+
+        return currNum === prevNum + 1;
     };
 
+    const ranges: string[] = [];
     let start = samples[0];
     let prev = samples[0];
-    let startObj = parse(start);
-    let prevObj = startObj;
 
     for (let i = 1; i < samples.length; i++) {
         const curr = samples[i];
-        const currObj = parse(curr);
         
-        let isCont = false;
-        if (prevObj && currObj) {
-            if (prevObj.p === currObj.p && prevObj.s === currObj.s && currObj.n === prevObj.n + 1) {
-                isCont = true;
-            }
-        }
-
-        if (isCont) {
+        if (isSequential(prev, curr)) {
             prev = curr;
-            prevObj = currObj;
         } else {
+            // Push the previous range
             if (start === prev) ranges.push(start);
-            else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
-            else ranges.push(`${start} ➔ ${prev}`);
+            else if (isSequential(start, prev)) {
+                // If it's just a pair (Start, Prev) and they are sequential, compress
+                ranges.push(`${start} ➔ ${prev}`);
+            } else {
+                // Fallback for weird cases (rarely hits if sorting is good)
+                ranges.push(`${start}, ${prev}`);
+            }
             
-            start = curr; prev = curr; startObj = currObj; prevObj = currObj;
+            // Reset range
+            start = curr;
+            prev = curr;
         }
     }
+
+    // Push final range
     if (start === prev) ranges.push(start);
-    else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
     else ranges.push(`${start} ➔ ${prev}`);
     
     return ranges.join(', ');
