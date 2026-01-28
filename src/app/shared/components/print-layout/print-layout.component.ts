@@ -3,7 +3,7 @@ import { Component, Input, AfterViewInit, OnChanges, SimpleChanges, ViewChildren
 import { CommonModule } from '@angular/common';
 import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
-import { formatDate, formatNum } from '../../utils/utils';
+import { formatDate, formatNum, formatSampleList } from '../../utils/utils';
 
 declare var QRious: any;
 
@@ -97,7 +97,7 @@ declare var QRious: any;
                                 Danh sách mẫu ({{job.inputs['sampleList'].length}})
                             </div>
                             <div class="samples-text">
-                                {{ formatSamples(job.inputs['sampleList']) }}
+                                {{ formatSampleList(job.inputs['sampleList']) }}
                             </div>
                         </div>
                     }
@@ -285,6 +285,7 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   state = inject(StateService);
   formatNum = formatNum;
   formatDate = formatDate;
+  formatSampleList = formatSampleList;
 
   @Input() jobs: PrintJob[] = [];
   @Input() isDirectPrint = false;
@@ -385,46 +386,5 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
       if (!inp.options) return value;
       const found = inp.options.find((o: any) => o.value == value);
       return found ? found.label : value;
-  }
-
-  formatSamples(rawSamples: string[]): string {
-    if (!rawSamples || rawSamples.length === 0) return '';
-    const sorted = [...rawSamples].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-    if (sorted.length === 0) return '';
-
-    const result: string[] = [];
-    const parse = (s: string) => {
-        const match = s.match(/^([^\d]*)(\d+)(.*)$/);
-        return match ? { p: match[1] || '', n: parseInt(match[2], 10), s: match[3] || '', full: s } : null;
-    };
-
-    let start = sorted[0];
-    let prev = sorted[0];
-    let startObj = parse(start);
-    let prevObj = startObj;
-
-    for (let i = 1; i < sorted.length; i++) {
-        const curr = sorted[i];
-        const currObj = parse(curr);
-        let continuous = false;
-        if (prevObj && currObj) {
-            if (prevObj.p === currObj.p && prevObj.s === currObj.s) {
-                if (currObj.n === prevObj.n + 1) { continuous = true; }
-            }
-        }
-        if (continuous) {
-            prev = curr; prevObj = currObj;
-        } else {
-            if (start === prev) result.push(start);
-            else if (prevObj && startObj && prevObj.n - startObj.n === 1) result.push(`${start}, ${prev}`);
-            else result.push(`${start} ➝ ${prev}`);
-            start = curr; prev = curr; startObj = currObj; prevObj = currObj;
-        }
-    }
-    if (start === prev) result.push(start);
-    else if (prevObj && startObj && prevObj.n - startObj.n === 1) result.push(`${start}, ${prev}`);
-    else result.push(`${start} ➝ ${prev}`);
-
-    return result.join(', ');
   }
 }

@@ -11,7 +11,7 @@ import { Sop, SopTarget, CalculatedItem, TargetGroup } from '../../core/models/s
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
-import { formatNum, generateSlug } from '../../shared/utils/utils';
+import { formatNum, generateSlug, formatSampleList } from '../../shared/utils/utils';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
 
@@ -256,7 +256,7 @@ interface ProposedBatch {
                                         </div>
                                         <div class="mt-1.5 text-xs font-mono font-bold text-slate-600 bg-slate-100/70 p-1.5 rounded-lg border border-slate-200 w-fit max-w-full flex items-start gap-2">
                                             <i class="fa-solid fa-vial text-slate-400 mt-0.5 shrink-0"></i>
-                                            <span class="break-words leading-tight">{{ formatSampleRanges(batch.samples) }}</span>
+                                            <span class="break-words leading-tight">{{ formatSampleList(batch.samples) }}</span>
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end gap-1">
@@ -487,6 +487,7 @@ export class SmartBatchComponent {
   confirmation = inject(ConfirmationService);
   printService = inject(PrintService);
   formatNum = formatNum;
+  formatSampleList = formatSampleList;
 
   step = signal<number>(1);
   blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false } ]);
@@ -547,53 +548,6 @@ export class SmartBatchComponent {
           return next;
       });
       this.validateGlobalStock();
-  }
-
-  // --- MISSING METHOD RESTORED ---
-  formatSampleRanges(samplesSet: Set<string>): string {
-      const samples = Array.from(samplesSet).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-      if (samples.length === 0) return '';
-      
-      const ranges: string[] = [];
-      let start = samples[0];
-      let prev = samples[0];
-      
-      const parse = (s: string) => {
-          const match = s.match(/^([^\d]*)(\d+)(.*)$/);
-          if (!match) return null;
-          return { p: match[1], n: parseInt(match[2]), s: match[3] };
-      };
-
-      let startObj = parse(start);
-      let prevObj = startObj;
-
-      for (let i = 1; i < samples.length; i++) {
-          const curr = samples[i];
-          const currObj = parse(curr);
-          
-          let isCont = false;
-          if (prevObj && currObj) {
-              if (prevObj.p === currObj.p && prevObj.s === currObj.s && currObj.n === prevObj.n + 1) {
-                  isCont = true;
-              }
-          }
-
-          if (isCont) {
-              prev = curr;
-              prevObj = currObj;
-          } else {
-              if (start === prev) ranges.push(start);
-              else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
-              else ranges.push(`${start} ➔ ${prev}`);
-              
-              start = curr; prev = curr; startObj = currObj; prevObj = currObj;
-          }
-      }
-      if (start === prev) ranges.push(start);
-      else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
-      else ranges.push(`${start} ➔ ${prev}`);
-      
-      return ranges.join(', ');
   }
 
   recalculateBatch(index: number) { this.batches.update(current => { const next = [...current]; const batch = { ...next[index] }; batch.inputValues['n_sample'] = batch.samples.size; const needs = this.calculator.calculateSopNeeds( batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache ); batch.resourceImpact = needs; batch.sampleCount = batch.samples.size; next[index] = batch; return next; }); this.validateGlobalStock(); }

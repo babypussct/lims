@@ -3,7 +3,7 @@ import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from 
 import { CommonModule } from '@angular/common';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { formatDate, formatNum } from '../../shared/utils/utils';
+import { formatDate, formatNum, formatSampleList } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -109,12 +109,22 @@ declare var QRious: any;
                                         <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
                                         <div class="flex flex-wrap gap-2">
                                             @for(key of objectKeys(logData()?.printData?.inputs); track key) {
-                                                <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
-                                                    {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
-                                                </span>
+                                                @if(key !== 'sampleList') {
+                                                    <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
+                                                        {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
+                                                    </span>
+                                                }
                                             }
                                         </div>
                                     </div>
+                                }
+
+                                <!-- Sample List -->
+                                @if(logData()?.printData?.inputs?.sampleList?.length > 0) {
+                                   <div>
+                                       <span class="text-xs text-slate-500 block">Danh sách mẫu</span>
+                                       <span class="font-bold text-slate-800 break-words font-mono text-sm leading-snug">{{ formatSampleList(logData()?.printData?.inputs?.sampleList) }}</span>
+                                   </div>
                                 }
 
                                 @if(logData()?.printData?.analysisDate) {
@@ -167,6 +177,7 @@ export class TraceabilityComponent implements OnInit {
   toast = inject(ToastService);
   formatDate = formatDate;
   formatNum = formatNum;
+  formatSampleList = formatSampleList;
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);

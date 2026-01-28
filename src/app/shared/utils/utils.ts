@@ -49,60 +49,29 @@ export function getStandardizedAmount(amount: number, fromUnit: string, toUnit: 
   return (amount * u1.val) / u2.val;
 }
 
-/**
- * Parses a string input like "0.5kg" or "500" into the base unit value.
- * @param inputStr The raw string from user input (e.g., "-0.5kg")
- * @param baseUnit The target base unit stored in DB (e.g., "g")
- * @returns The numeric value in base unit, or null if invalid.
- */
 export function parseQuantityInput(inputStr: string, baseUnit: string): number | null {
     if (!inputStr) return null;
     const cleanStr = inputStr.trim().toLowerCase().replace(',', '.');
-    
-    // Regex to extract number and optional unit suffix
-    // Matches: "100", "-100", "0.5", "0.5kg", "-500 ml"
     const match = cleanStr.match(/^([+-]?\d*(?:\.\d+)?)\s*([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF%]*)$/);
-    
     if (!match) return null;
-
     const val = parseFloat(match[1]);
     const unitSuffix = match[2].trim();
-
     if (isNaN(val)) return null;
-
-    // If no unit suffix is provided, assume it's already in Base Unit
     if (!unitSuffix) return val;
-
-    // If unit suffix exists, try to convert to Base Unit
-    const converted = getStandardizedAmount(val, unitSuffix, baseUnit);
-    
-    // If conversion fails (incompatible unit), return null to signal error
-    return converted;
+    return getStandardizedAmount(val, unitSuffix, baseUnit);
 }
 
-/**
- * Enforces Base Unit Policy:
- * - Volume -> ml
- * - Mass -> g
- * Converts stock and threshold.
- */
 export function normalizeInventoryItem(item: any): any {
     const unitKey = Object.keys(UNIT_DATA).find(k => k.toLowerCase() === (item.unit || '').toLowerCase().trim());
-    if (!unitKey) return item; // Unknown unit, keep as is
-
+    if (!unitKey) return item; 
     const type = UNIT_DATA[unitKey].type;
     let targetUnit = item.unit;
-
     if (type === 'mass') targetUnit = 'g';
     else if (type === 'vol') targetUnit = 'ml';
-    else return item; // Qty types keep as is
-
+    else return item; 
     if (targetUnit !== item.unit) {
-        // Convert Stock
         const newStock = getStandardizedAmount(item.stock || 0, item.unit, targetUnit);
-        // Convert Threshold
         const newThreshold = getStandardizedAmount(item.threshold || 0, item.unit, targetUnit);
-        
         return {
             ...item,
             unit: targetUnit,
@@ -113,26 +82,16 @@ export function normalizeInventoryItem(item: any): any {
     return item;
 }
 
-/**
- * Smart display for UI.
- * e.g. 2500 ml -> "2.5 L"
- * e.g. 0.005 g -> "5 mg"
- */
 export function formatSmartUnit(amount: number, unit: string): string {
     if (amount === 0) return `0 <span class="text-[10px] text-slate-400">${unit}</span>`;
-    
-    // Volume Logic
     if (unit === 'ml') {
         if (amount >= 1000) return `${formatNum(amount / 1000)} <span class="text-[10px] text-slate-400">L</span>`;
         if (amount < 1 && amount > 0) return `${formatNum(amount * 1000)} <span class="text-[10px] text-slate-400">µl</span>`;
     }
-    
-    // Mass Logic
     if (unit === 'g') {
         if (amount >= 1000) return `${formatNum(amount / 1000)} <span class="text-[10px] text-slate-400">kg</span>`;
         if (amount < 1 && amount > 0) return `${formatNum(amount * 1000)} <span class="text-[10px] text-slate-400">mg</span>`;
     }
-
     return `${formatNum(amount)} <span class="text-[10px] text-slate-400">${unit}</span>`;
 }
 
@@ -190,4 +149,66 @@ export function getAvatarUrl(name: string | undefined | null): string {
 
 export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+/**
+ * Smartly compresses a list of samples into a readable string.
+ * e.g., ["A01", "A02", "A03", "B01"] -> "A01 ➔ A03, B01"
+ */
+export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
+    if (!samplesInput) return '';
+    
+    let samples: string[] = [];
+    if (samplesInput instanceof Set) {
+        samples = Array.from(samplesInput);
+    } else if (Array.isArray(samplesInput)) {
+        samples = [...samplesInput];
+    } else {
+        return '';
+    }
+
+    if (samples.length === 0) return '';
+
+    // Sort naturally
+    samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+    const ranges: string[] = [];
+    const parse = (s: string) => {
+        const match = s.match(/^([^\d]*)(\d+)(.*)$/);
+        if (!match) return null;
+        return { p: match[1], n: parseInt(match[2], 10), s: match[3] };
+    };
+
+    let start = samples[0];
+    let prev = samples[0];
+    let startObj = parse(start);
+    let prevObj = startObj;
+
+    for (let i = 1; i < samples.length; i++) {
+        const curr = samples[i];
+        const currObj = parse(curr);
+        
+        let isCont = false;
+        if (prevObj && currObj) {
+            if (prevObj.p === currObj.p && prevObj.s === currObj.s && currObj.n === prevObj.n + 1) {
+                isCont = true;
+            }
+        }
+
+        if (isCont) {
+            prev = curr;
+            prevObj = currObj;
+        } else {
+            if (start === prev) ranges.push(start);
+            else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
+            else ranges.push(`${start} ➔ ${prev}`);
+            
+            start = curr; prev = curr; startObj = currObj; prevObj = currObj;
+        }
+    }
+    if (start === prev) ranges.push(start);
+    else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
+    else ranges.push(`${start} ➔ ${prev}`);
+    
+    return ranges.join(', ');
 }

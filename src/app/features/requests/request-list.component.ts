@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
-import { cleanName, formatNum, formatDate } from '../../shared/utils/utils';
+import { cleanName, formatNum, formatDate, formatSampleList } from '../../shared/utils/utils';
 import { Request, RequestItem } from '../../core/models/request.model';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { PrintQueueComponent } from './print-queue.component';
@@ -112,6 +112,14 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                                             <span class="font-bold text-slate-600">{{req.user || 'Unknown'}}</span>
                                         </div>
 
+                                        <!-- Sample List Summary -->
+                                        @if(req.sampleList && req.sampleList.length > 0) {
+                                            <div class="mb-3 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-start gap-2">
+                                                <i class="fa-solid fa-vial text-slate-400 mt-0.5"></i>
+                                                <span class="break-words font-mono font-medium">{{ formatSampleList(req.sampleList) }}</span>
+                                            </div>
+                                        }
+
                                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                              <table class="w-full text-sm">
                                                 <thead>
@@ -187,7 +195,7 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
 export class RequestListComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService);
-  cleanName = cleanName; formatNum = formatNum; formatDate = formatDate;
+  cleanName = cleanName; formatNum = formatNum; formatDate = formatDate; formatSampleList = formatSampleList;
   
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
   processingId = signal<string | null>(null);
