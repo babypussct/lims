@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
@@ -5,6 +6,7 @@ import { filter } from 'rxjs/operators';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
+import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component'; // Import
 import { LoginComponent } from './features/auth/login.component';
 
 import { StateService } from './core/services/state.service';
@@ -20,6 +22,7 @@ import { PrintService } from './core/services/print.service';
     RouterOutlet,
     SidebarComponent,
     ConfirmationModalComponent,
+    PrintPreviewModalComponent, // Register
     LoginComponent
   ],
   template: `
@@ -59,8 +62,11 @@ import { PrintService } from './core/services/print.service';
         }
       </div>
 
+      <!-- Loaders & Modals -->
       @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
+      
       <app-confirmation-modal></app-confirmation-modal>
+      <app-print-preview-modal></app-print-preview-modal> <!-- Add Preview Modal -->
 
       @if (state.currentUser(); as user) {
         @if (user.role === 'pending') {
@@ -129,11 +135,7 @@ import { PrintService } from './core/services/print.service';
       } 
       @else { <app-login class="no-print"></app-login> }
     }
-  `,
-  styles: [`
-    @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-  `]
+  `
 })
 export class AppComponent {
   state = inject(StateService);
