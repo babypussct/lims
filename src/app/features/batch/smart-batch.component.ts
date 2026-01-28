@@ -472,8 +472,8 @@ interface ProposedBatch {
                         </div>
                     </div>
                 </div>
-            }
-        </div>
+            </div>
+        }
     </div>
   `
 })
