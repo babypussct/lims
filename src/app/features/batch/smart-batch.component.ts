@@ -607,7 +607,79 @@ export class SmartBatchComponent {
   // FIX: Explicitly type parameters to avoid TS7006
   quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val: any, i: number) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected as string[]) }; }); }
   updateSplitTarget(sopId: string) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
-  async executeSplit() { const state = this.splitState(); const sourceBatch = this.batches()[state.sourceBatchIndex]; const samplesToMove = state.selectedSamples; const targetSop = this.state.sops().find(s => s.id === state.targetSopId); if (!targetSop || samplesToMove.size === 0) return; const missing = this.missingTargetsInSplit(); if (missing.length > 0) { const confirmed = await this.confirmation.confirm({ message: `CẢNH BÁO: Quy trình mới không hỗ trợ ${missing.length} chỉ tiêu đang chọn (VD: ${missing[0].name}).\nCác chỉ tiêu này sẽ bị loại bỏ khỏi mẻ mới. Bạn có chắc chắn?`, confirmText: 'Chấp nhận & Tiếp tục', isDangerous: true }); if (!confirmed) return; } const newSamples = new Set<string>(samplesToMove); const newInputs: Record<string, any> = {}; targetSop.inputs.forEach(i => newInputs[i.var] = i.default); if (sourceBatch.inputValues) { Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) { newInputs[key] = sourceBatch.inputValues[key]; } }); } newInputs['n_sample'] = newSamples.size; if (newInputs['n_qc'] !== undefined && sourceBatch.inputValues['n_qc'] !== undefined) { newInputs['n_qc'] = sourceBatch.inputValues['n_qc']; } const reqsForNew = this.getRequiredTargetsForSamples(newSamples); const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id)); const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id)); const newNeeds = this.calculator.calculateSopNeeds( targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache ); const newBatch: ProposedBatch = { id: `batch_${Date.now()}_split`, sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size, inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready' }; const remainingSamples = new Set<string>(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s))); this.batches.update(current => { const next = [...current]; if (remainingSamples.size === 0) { next.splice(state.sourceBatchIndex, 1); } else { const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples); const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id)); const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size, targets: finalSourceTargets }; updatedSource.inputValues['n_sample'] = remainingSamples.size; updatedSource.resourceImpact = this.calculator.calculateSopNeeds( updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache ); next[state.sourceBatchIndex] = updatedSource; } next.push(newBatch); return next; }); this.validateGlobalStock(); this.showSplitModal.set(false); this.toast.show('Đã chia tách và tạo mẻ mới.', 'success'); }
+  
+  async executeSplit() { 
+      const state = this.splitState(); 
+      const sourceBatch = this.batches()[state.sourceBatchIndex]; 
+      const samplesToMove = state.selectedSamples; 
+      const targetSop = this.state.sops().find(s => s.id === state.targetSopId); 
+      
+      if (!targetSop || samplesToMove.size === 0) return; 
+      
+      const missing = this.missingTargetsInSplit(); 
+      if (missing.length > 0) { 
+          const confirmed = await this.confirmation.confirm({ 
+              message: `CẢNH BÁO: Quy trình mới không hỗ trợ ${missing.length} chỉ tiêu đang chọn (VD: ${missing[0].name}).\nCác chỉ tiêu này sẽ bị loại bỏ khỏi mẻ mới. Bạn có chắc chắn?`, 
+              confirmText: 'Chấp nhận & Tiếp tục', isDangerous: true 
+          }); 
+          if (!confirmed) return; 
+      } 
+      
+      // 1. Prepare New Batch (Mẻ Mới)
+      const newSamples = new Set<string>(samplesToMove); 
+      const newInputs: Record<string, any> = {}; 
+      targetSop.inputs.forEach(i => newInputs[i.var] = i.default); 
+      if (sourceBatch.inputValues) { 
+          Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) { newInputs[key] = sourceBatch.inputValues[key]; } }); 
+      } 
+      newInputs['n_sample'] = newSamples.size; 
+      if (newInputs['n_qc'] !== undefined && sourceBatch.inputValues['n_qc'] !== undefined) { newInputs['n_qc'] = sourceBatch.inputValues['n_qc']; } 
+      
+      const reqsForNew = this.getRequiredTargetsForSamples(newSamples); 
+      const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id)); 
+      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id)); // Only include needed targets present in SOP
+      
+      const newNeeds = this.calculator.calculateSopNeeds( targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache ); 
+      
+      const newBatch: ProposedBatch = { 
+          id: `batch_${Date.now()}_split`, sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size, 
+          inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready' 
+      }; 
+      
+      // 2. Update Source Batch (Mẻ Gốc)
+      const remainingSamples = new Set<string>(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s))); 
+      
+      this.batches.update(current => { 
+          const next = [...current]; 
+          if (remainingSamples.size === 0) { 
+              next.splice(state.sourceBatchIndex, 1); 
+          } else { 
+              // IMPORTANT LOGIC FIX: Re-evaluate targets for source batch based on remaining samples
+              const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples); 
+              // Filter source batch targets to only keep ones required by remaining samples
+              const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id)); 
+              
+              const updatedSource = { 
+                  ...sourceBatch, 
+                  samples: remainingSamples, 
+                  sampleCount: remainingSamples.size, 
+                  targets: finalSourceTargets 
+              }; 
+              updatedSource.inputValues['n_sample'] = remainingSamples.size; 
+              updatedSource.resourceImpact = this.calculator.calculateSopNeeds( 
+                  updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache 
+              ); 
+              next[state.sourceBatchIndex] = updatedSource; 
+          } 
+          next.push(newBatch); 
+          return next; 
+      }); 
+      
+      this.validateGlobalStock(); 
+      this.showSplitModal.set(false); 
+      this.toast.show('Đã chia tách và tạo mẻ mới.', 'success'); 
+  }
+
   reset() { this.step.set(1); this.batches.set([]); this.unmappedTargets.set([]); }
 
   async executeAll() {

@@ -1,7 +1,6 @@
 
 import { Injectable } from '@angular/core';
-import { initializeApp } from 'firebase/app';
-import type { FirebaseApp } from 'firebase/app';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
@@ -12,7 +11,6 @@ import {
 } from 'firebase/storage';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { HealthCheckItem } from '../models/config.model';
 // Circular dependency warning: AuthService imports FirebaseService. 
 // We import UserProfile type only here or move type to model. 
 // For now, importing type is safe.
