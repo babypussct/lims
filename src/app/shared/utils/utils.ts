@@ -156,6 +156,7 @@ export function naturalCompare(a: string, b: string): number {
  * Handles: U0127 -> U0227 (Fixed suffix '27')
  * Handles: Sample 1 -> Sample 2 (Fixed prefix)
  * Handles: U9927 -> U10027 (Varying digit length)
+ * Rule: Only compresses if 3 or more sequential items. 2 items are listed with comma.
  */
 export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
     if (!samplesInput) return '';
@@ -212,32 +213,41 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
     const ranges: string[] = [];
     let start = samples[0];
     let prev = samples[0];
+    let count = 1; // Track number of items in current sequence
 
     for (let i = 1; i < samples.length; i++) {
         const curr = samples[i];
         
         if (isSequential(prev, curr)) {
             prev = curr;
+            count++;
         } else {
             // Push the previous range
-            if (start === prev) ranges.push(start);
-            else if (isSequential(start, prev)) {
-                // If it's just a pair (Start, Prev) and they are sequential, compress
-                ranges.push(`${start} ➔ ${prev}`);
-            } else {
-                // Fallback for weird cases (rarely hits if sorting is good)
+            if (count === 1) {
+                ranges.push(start);
+            } else if (count === 2) {
+                // If only 2 items, separate by comma (e.g., "A1, A2")
                 ranges.push(`${start}, ${prev}`);
+            } else {
+                // If 3 or more items, use arrow (e.g., "A1 ➔ A3")
+                ranges.push(`${start} ➔ ${prev}`);
             }
             
             // Reset range
             start = curr;
             prev = curr;
+            count = 1;
         }
     }
 
     // Push final range
-    if (start === prev) ranges.push(start);
-    else ranges.push(`${start} ➔ ${prev}`);
+    if (count === 1) {
+        ranges.push(start);
+    } else if (count === 2) {
+        ranges.push(`${start}, ${prev}`);
+    } else {
+        ranges.push(`${start} ➔ ${prev}`);
+    }
     
     return ranges.join(', ');
 }
