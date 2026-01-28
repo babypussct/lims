@@ -1,10 +1,13 @@
 
-import { Injectable, inject, ApplicationRef, EnvironmentInjector, createComponent, ComponentRef, signal } from '@angular/core';
+import { Injectable, inject, ApplicationRef, EnvironmentInjector, createComponent, ComponentRef, signal, EmbeddedViewRef } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { CalculatorService } from './calculator.service';
 import { BatchItem } from './batch.service';
 import { CalculatedItem } from '../models/sop.model';
 import { ToastService } from './toast.service';
 import { PrintLayoutComponent } from '../../shared/components/print-layout/print-layout.component';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export interface PrintJob {
   sop: any; 
@@ -17,194 +20,249 @@ export interface PrintJob {
   requestId?: string; 
 }
 
+export interface PrintOptions {
+    showHeader: boolean;
+    showFooter: boolean;
+    showSignature: boolean;
+    showCutLine: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PrintService {
   private calc = inject(CalculatorService);
   private toast = inject(ToastService);
   private appRef = inject(ApplicationRef);
   private injector = inject(EnvironmentInjector);
+  private document = inject(DOCUMENT) as Document;
   
-  // Loading state for UI feedback
+  // Loading state
   isProcessing = signal<boolean>(false);
 
+  // PREVIEW STATE
+  isPreviewOpen = signal<boolean>(false);
+  previewJobs = signal<PrintJob[]>([]);
+  
+  // Default Options
+  defaultOptions: PrintOptions = {
+      showHeader: true,
+      showFooter: true,
+      showSignature: true,
+      showCutLine: true
+  };
+
   // CONSTANTS
-  private readonly MAX_ROWS_PER_SLIP = 10; // Max rows per A5 slip to prevent overflow
-  private readonly DESKTOP_MIN_WIDTH = 1024; // Min width to allow printing
+  private readonly MAX_ROWS_PER_SLIP = 10;
+  private readonly DESKTOP_MIN_WIDTH = 1024;
 
-  private printComponentRef: ComponentRef<PrintLayoutComponent> | null = null;
+  // --- 1. ENTRY POINT: OPEN PREVIEW ---
+  openPreview(jobs: PrintJob[]) {
+      if (!jobs || jobs.length === 0) {
+          this.toast.show('Không có dữ liệu để in.', 'error');
+          return;
+      }
+      // Chunk jobs immediately for preview accuracy
+      const processed = this.splitLongJobs(jobs);
+      this.previewJobs.set(processed);
+      this.isPreviewOpen.set(true);
+  }
 
-  // --- Dynamic Print (Direct Injection) ---
-  async printDocument(jobs: PrintJob[]) {
-    // 1. Mobile Guard (Security & UX)
+  closePreview() {
+      this.isPreviewOpen.set(false);
+      this.previewJobs.set([]);
+  }
+
+  // --- 2. EXECUTE PRINT (Sandboxed Iframe) ---
+  async printDocument(jobs: PrintJob[], options: PrintOptions = this.defaultOptions) {
     if (window.innerWidth < this.DESKTOP_MIN_WIDTH) {
         this.toast.show('Vui lòng sử dụng MÁY TÍNH để in phiếu (Khổ A4).', 'error');
         return;
     }
 
-    // Null safety check for jobs
-    if (!jobs || jobs.length === 0) {
-      this.toast.show('Không có dữ liệu để in.', 'error');
-      return;
-    }
-
-    // Sanitize jobs (Prevent NULL Access Error)
-    const validJobs = jobs.filter(j => j && j.sop && j.items);
-    if (validJobs.length === 0) {
-        this.toast.show('Dữ liệu in bị lỗi hoặc thiếu thông tin.', 'error');
-        return;
-    }
-
-    // CRITICAL FIX: Always cleanup previous artifacts BEFORE starting a new one.
-    // This prevents the "zombie component" issue where the second print fails to attach.
-    this.cleanup();
-
     this.isProcessing.set(true);
 
-    // 2. Dynamic Pagination (Chunking)
-    const processedJobs = this.splitLongJobs(validJobs);
-
-    // SAFETY WATCHDOG: Force unlock UI after 5 seconds max if something hangs.
-    const watchdog = setTimeout(() => {
-        if (this.isProcessing()) {
-            console.warn("Print Service: Watchdog triggered - Forcing UI unlock.");
-            this.isProcessing.set(false);
-            this.cleanup();
-        }
-    }, 5000);
-
     try {
-      // 3. Locate or Create the Container
-      const container = document.getElementById('print-container');
-      if (!container) {
-        console.error('Print container #print-container not found in index.html');
-        clearTimeout(watchdog);
-        this.isProcessing.set(false);
-        return;
-      }
-      
-      // Double check clear
-      container.innerHTML = '';
+        // 1. Create Sandbox Iframe
+        const iframe = this.document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        iframe.style.visibility = 'hidden';
+        
+        this.document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        const win = iframe.contentWindow;
 
-      // 4. Dynamically Create Component
-      this.printComponentRef = createComponent(PrintLayoutComponent, {
-        environmentInjector: this.injector,
-        hostElement: container
-      });
+        if (!doc || !win) {
+            throw new Error('Cannot access iframe document');
+        }
 
-      // 5. Pass Data
-      this.printComponentRef.instance.jobs = processedJobs;
-      this.printComponentRef.instance.isDirectPrint = true;
+        // 2. Inject Styles
+        doc.open();
+        doc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>LIMS Print Job</title>
+                <meta charset="UTF-8">
+                <script src="https://cdn.tailwindcss.com"></script>
+                <script>
+                    tailwind.config = { theme: { extend: { colors: { gray: { 50: '#f8f9fa' } } } } }
+                </script>
+                <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+                <style>
+                    body { background: white; margin: 0; padding: 0; font-family: 'Open Sans', sans-serif; }
+                    @media print {
+                        @page { size: A4 portrait; margin: 0; }
+                        body { -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="app-print-root"></div>
+            </body>
+            </html>
+        `);
+        doc.close();
 
-      // 6. Trigger Change Detection
-      this.appRef.attachView(this.printComponentRef.hostView);
-      this.printComponentRef.changeDetectorRef.detectChanges();
+        // 3. Angular Component Injection
+        const componentRef = createComponent(PrintLayoutComponent, {
+            environmentInjector: this.injector,
+            hostElement: doc.getElementById('app-print-root')!
+        });
 
-      // 7. Robust Print Trigger
-      setTimeout(() => {
-          // Clear the safety watchdog, we are taking control.
-          clearTimeout(watchdog);
+        // Pass Data & Options (Cast to specific component type)
+        const instance = componentRef.instance as PrintLayoutComponent;
+        instance.jobs = jobs; 
+        instance.isDirectPrint = true;
+        instance.options = options;
 
-          // Unlock the UI *immediately* before opening the dialog so users don't feel stuck.
-          this.isProcessing.set(false);
+        this.appRef.attachView(componentRef.hostView);
+        componentRef.changeDetectorRef.detectChanges();
 
-          // Setup Cleanup Listener (Modern Browsers)
-          // This ensures we clean up AFTER the user clicks Print or Cancel
-          const cleanupListener = () => {
-              this.cleanup();
-              window.removeEventListener('afterprint', cleanupListener);
-          };
-          window.addEventListener('afterprint', cleanupListener);
+        // 4. Wait & Print
+        setTimeout(() => {
+            this.isProcessing.set(false);
+            try {
+                win.focus();
+                win.print();
+            } catch (e) {
+                console.warn('Print blocked:', e);
+            }
 
-          // Execute Print
-          window.print();
+            // Cleanup
+            setTimeout(() => {
+                this.appRef.detachView(componentRef.hostView);
+                componentRef.destroy();
+                if (this.document.body.contains(iframe)) {
+                    this.document.body.removeChild(iframe);
+                }
+            }, 2000);
 
-          // Fallback Cleanup: For browsers that might not fire 'afterprint' reliably or if scripts are blocked
-          // We clear the DOM after a delay anyway to be safe for the NEXT print.
-          setTimeout(() => {
-              this.cleanup();
-              window.removeEventListener('afterprint', cleanupListener);
-          }, 2000); 
-
-      }, 500); // 500ms delay to ensure DOM paint
+        }, 1000); 
 
     } catch (e) {
-      console.error("Print Error:", e);
-      clearTimeout(watchdog);
-      this.toast.show('Lỗi khởi tạo in ấn.', 'error');
-      this.cleanup();
-      this.isProcessing.set(false);
+        console.error("Iframe Print Error:", e);
+        this.toast.show('Lỗi khởi tạo in ấn.', 'error');
+        this.isProcessing.set(false);
     }
+  }
+
+  // --- 3. EXECUTE PDF DOWNLOAD ---
+  async downloadPdf(jobs: PrintJob[], options: PrintOptions = this.defaultOptions) {
+      if (!jobs || jobs.length === 0) return;
+      this.isProcessing.set(true);
+      
+      const container = this.document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.top = '-10000px';
+      container.style.left = '-10000px';
+      container.style.width = '210mm'; // A4 Width
+      container.style.background = '#ffffff';
+      container.style.zIndex = '-100';
+      this.document.body.appendChild(container);
+
+      try {
+          const componentRef = createComponent(PrintLayoutComponent, {
+              environmentInjector: this.injector,
+              hostElement: container
+          });
+          
+          // Cast instance
+          const instance = componentRef.instance as PrintLayoutComponent;
+          instance.jobs = jobs;
+          instance.isDirectPrint = true;
+          instance.options = options;
+
+          this.appRef.attachView(componentRef.hostView);
+          componentRef.changeDetectorRef.detectChanges();
+
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          const pages = container.querySelectorAll('.print-page');
+          if (pages.length === 0) throw new Error('No pages rendered');
+
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = 210;
+          const pdfHeight = 297;
+
+          for (let i = 0; i < pages.length; i++) {
+              const pageEl = pages[i] as HTMLElement;
+              const canvas = await html2canvas(pageEl, {
+                  scale: 2,
+                  useCORS: true,
+                  logging: false,
+                  backgroundColor: '#ffffff'
+              });
+              const imgData = canvas.toDataURL('image/jpeg', 0.95);
+              if (i > 0) pdf.addPage();
+              pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+          }
+
+          const fileName = `LIMS_Phieu_${new Date().toISOString().slice(0,10)}.pdf`;
+          pdf.save(fileName);
+          this.toast.show('Đã tải PDF thành công!', 'success');
+
+          this.appRef.detachView(componentRef.hostView);
+          componentRef.destroy();
+
+      } catch (e: any) {
+          console.error("PDF Generation Error:", e);
+          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
+      } finally {
+          if (this.document.body.contains(container)) {
+              this.document.body.removeChild(container);
+          }
+          this.isProcessing.set(false);
+      }
   }
 
   private splitLongJobs(originalJobs: PrintJob[]): PrintJob[] {
       const result: PrintJob[] = [];
-
       for (const job of originalJobs) {
-          // If items fit within one slip, keep as is
           if (job.items.length <= this.MAX_ROWS_PER_SLIP) {
               result.push(job);
               continue;
           }
-
-          // If items exceed limit, chunk them
           const chunks = [];
           for (let i = 0; i < job.items.length; i += this.MAX_ROWS_PER_SLIP) {
               chunks.push(job.items.slice(i, i + this.MAX_ROWS_PER_SLIP));
           }
-
           chunks.forEach((chunkItems, index) => {
-              const isFirst = index === 0;
-              const pageNum = index + 1;
-              const totalPages = chunks.length;
-
-              // Create a shallow copy for the new job part
               const newJob: PrintJob = {
                   ...job,
                   items: chunkItems,
-                  // Append pagination info to SOP Name for clear identification on paper
                   sop: {
                       ...job.sop,
-                      name: isFirst ? job.sop.name : `${job.sop.name} (Tiếp theo - ${pageNum}/${totalPages})`
+                      name: index === 0 ? job.sop.name : `${job.sop.name} (Tiếp theo - ${index + 1}/${chunks.length})`
                   }
               };
               result.push(newJob);
           });
       }
       return result;
-  }
-
-  private cleanup() {
-    try {
-        if (this.printComponentRef) {
-          this.appRef.detachView(this.printComponentRef.hostView);
-          this.printComponentRef.destroy();
-          this.printComponentRef = null;
-        }
-        const container = document.getElementById('print-container');
-        if (container) {
-            container.innerHTML = '';
-        }
-    } catch (e) {
-        console.warn("Print cleanup warning:", e);
-    }
-  }
-
-  // Helper for Batch Requests
-  async printBatch(requests: BatchItem[], currentUser?: string) {
-    try {
-      const jobs: PrintJob[] = requests.map(req => ({
-        sop: req.sop,
-        inputs: req.inputs,
-        margin: req.margin,
-        date: new Date(),
-        user: currentUser || 'Unknown',
-        items: this.calc.calculateSopNeeds(req.sop, req.inputs, req.margin),
-        requestId: `REQ-${Date.now()}-${Math.floor(Math.random()*1000)}`
-      }));
-      
-      await this.printDocument(jobs);
-    } catch (e) {
-      this.toast.show('Lỗi chuẩn bị dữ liệu in.', 'error');
-    }
   }
 }

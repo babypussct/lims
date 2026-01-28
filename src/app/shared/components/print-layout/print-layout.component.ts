@@ -1,5 +1,5 @@
 
-import { Component, Input, AfterViewInit, ViewChildren, QueryList, ElementRef, inject } from '@angular/core';
+import { Component, Input, AfterViewInit, OnChanges, SimpleChanges, ViewChildren, QueryList, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
@@ -19,45 +19,49 @@ declare var QRious: any;
             
             <!-- Stack 2 slips vertically. -->
             @for (job of group; track job.requestId || $index; let i = $index) {
-                <div class="print-slip" [class.separator]="i === 0">
+                <!-- FIX: Removed [class.separator] to prevent double line with cut-line -->
+                <div class="print-slip">
                     
                     <!-- 1. HEADER (Horizontal) -->
-                    <div class="header-container">
-                        <!-- Left: Info -->
-                        <div class="header-info">
-                            <div class="meta-row">
-                                <span class="badge">{{job.sop?.category}}</span>
-                                @if(job.sop?.ref) {
-                                    <span class="ref-text">Ref: {{job.sop?.ref}}</span>
-                                    <span class="divider">|</span>
-                                }
-                                <span class="date-text">
-                                    Ngày: {{ getDisplayDate(job) }}
-                                </span>
-                            </div>
-                            <h1 class="sop-title">
-                                {{job.sop?.name}}
-                            </h1>
-                            <!-- Chỉ tiêu (Full Wrap) -->
-                            @if (getTargetNames(job).length > 0) {
-                                <div class="targets-row">
-                                    <span class="target-label">Chỉ tiêu:</span>
-                                    @for(t of getTargetNames(job); track $index) {
-                                        <span class="target-badge">{{t}}</span>
+                    @if (options.showHeader) {
+                        <div class="header-container">
+                            <!-- Left: Info -->
+                            <div class="header-info">
+                                <div class="meta-row">
+                                    <span class="badge">{{job.sop?.category}}</span>
+                                    @if(job.sop?.ref) {
+                                        <span class="ref-text">Ref: {{job.sop?.ref}}</span>
+                                        <span class="divider">|</span>
                                     }
+                                    <span class="date-text">
+                                        Ngày: {{ getDisplayDate(job) }}
+                                    </span>
                                 </div>
-                            }
-                        </div>
-
-                        <!-- Right: ID & QR (Increased Size) -->
-                        <div class="header-qr-group">
-                            <div class="id-box">
-                                <div class="id-label">Mã truy xuất (ID)</div>
-                                <div class="id-value">{{job.requestId || 'N/A'}}</div>
+                                <h1 class="sop-title">
+                                    {{job.sop?.name}}
+                                </h1>
+                                <!-- Chỉ tiêu (Full Wrap) -->
+                                @if (getTargetNames(job).length > 0) {
+                                    <div class="targets-row">
+                                        <span class="target-label">Chỉ tiêu:</span>
+                                        @for(t of getTargetNames(job); track $index) {
+                                            <span class="target-badge">{{t}}</span>
+                                        }
+                                    </div>
+                                }
                             </div>
-                            <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id" class="qr-code"></canvas>
+
+                            <!-- Right: ID & QR (Increased Size) -->
+                            <div class="header-qr-group">
+                                <div class="id-box">
+                                    <div class="id-label">Mã truy xuất (ID)</div>
+                                    <div class="id-value">{{job.requestId || 'N/A'}}</div>
+                                </div>
+                                <!-- QR Canvas -->
+                                <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id" class="qr-code"></canvas>
+                            </div>
                         </div>
-                    </div>
+                    }
 
                     <!-- 2. Inputs & Meta -->
                     <div class="meta-container">
@@ -80,7 +84,8 @@ declare var QRious: any;
                             }
                             <div class="input-item margin-info">
                                 <span class="input-label">Hao hụt:</span>
-                                <span class="input-value">+{{job.margin}}%</span>
+                                <!-- FIX: Format margin safely with fallback to inputs -->
+                                <span class="input-value">+{{formatNum(job.margin || job.inputs['safetyMargin'] || 0)}}%</span>
                             </div>
                         </div>
                     </div>
@@ -146,35 +151,37 @@ declare var QRious: any;
                     </div>
 
                     <!-- 5. Footer -->
-                    <div class="footer-section">
-                        <div class="footer-row">
-                            <!-- Left -->
-                            <div class="footer-left">
-                                <div class="footer-text">
-                                    {{ getFooterText() }}
-                                </div>
-                                <div class="timestamp">
-                                    In lúc: {{ getCurrentTime() }} | Máy: {{ job.user }}
-                                </div>
-                            </div>
-
-                            <!-- Right -->
-                            <div class="footer-right">
-                                @if (state.printConfig().showSignature) {
-                                    <div class="digital-approval">
-                                        <div class="approval-icon">✔</div>
-                                        <div class="approval-info">
-                                            <div class="approval-label">XÁC NHẬN ĐIỆN TỬ</div>
-                                            <div class="approval-user">{{ job.user }}</div>
-                                        </div>
+                    @if (options.showFooter) {
+                        <div class="footer-section">
+                            <div class="footer-row">
+                                <!-- Left -->
+                                <div class="footer-left">
+                                    <div class="footer-text">
+                                        {{ getFooterText() }}
                                     </div>
-                                }
+                                    <div class="timestamp">
+                                        In lúc: {{ getCurrentTime() }} | Máy: {{ job.user }}
+                                    </div>
+                                </div>
+
+                                <!-- Right -->
+                                <div class="footer-right">
+                                    @if (options.showSignature) {
+                                        <div class="digital-approval">
+                                            <div class="approval-icon">✔</div>
+                                            <div class="approval-info">
+                                                <div class="approval-label">XÁC NHẬN ĐIỆN TỬ</div>
+                                                <div class="approval-user">{{ job.user }}</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    }
 
-                    <!-- Cut Icon -->
-                    @if (i === 0) { 
+                    <!-- Cut Icon (Only between slips) -->
+                    @if (options.showCutLine && i === 0) { 
                         <div class="cut-line">
                             <span class="scissor">✂</span> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                         </div> 
@@ -194,8 +201,7 @@ declare var QRious: any;
 
     /* Each Slip (A5 approx) */
     .print-slip { height: 50%; display: flex; flex-direction: column; padding: 8mm 12mm; box-sizing: border-box; position: relative; }
-    .print-slip.separator { border-bottom: 1px dashed #999; }
-
+    
     /* --- NEW HEADER --- */
     .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px; }
     
@@ -206,17 +212,16 @@ declare var QRious: any;
     
     .sop-title { font-size: 15px; font-weight: 900; text-transform: uppercase; margin: 4px 0; line-height: 1.1; letter-spacing: -0.3px; }
     
-    /* TARGETS - UPDATED: FULL WRAP */
+    /* TARGETS */
     .targets-row { font-size: 9px; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
     .target-label { font-weight: 700; color: #444; margin-right: 2px; }
     .target-badge { border: 1px solid #ccc; padding: 0 4px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
 
-    /* QR Group - UPDATED: BIGGER SIZE */
+    /* QR Group */
     .header-qr-group { display: flex; align-items: center; gap: 10px; }
     .id-box { text-align: right; }
     .id-label { font-size: 7px; text-transform: uppercase; color: #666; font-weight: 700; }
     .id-value { font-size: 11px; font-family: monospace; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-    /* Resize QR to ~80px for better scanability */
     .qr-code { width: 80px; height: 80px; border: 1px solid #eee; display: block; }
 
     /* Inputs Bar */
@@ -276,13 +281,15 @@ declare var QRious: any;
     .scissor { font-size: 14px; margin-right: 5px; vertical-align: middle; }
   `]
 })
-export class PrintLayoutComponent implements AfterViewInit {
+export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   state = inject(StateService);
   formatNum = formatNum;
   formatDate = formatDate;
 
   @Input() jobs: PrintJob[] = [];
   @Input() isDirectPrint = false;
+  // Default options if not provided
+  @Input() options: any = { showHeader: true, showFooter: true, showSignature: true, showCutLine: true };
 
   @ViewChildren('qrCanvas') qrCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
@@ -303,13 +310,33 @@ export class PrintLayoutComponent implements AfterViewInit {
     }, 100);
   }
 
+  // FIX: Redraw QR when options change (e.g. Header toggle re-renders DOM)
+  ngOnChanges(changes: SimpleChanges) {
+      if (changes['options'] || changes['jobs']) {
+          setTimeout(() => {
+              this.generateQRCodes();
+          }, 100);
+      }
+  }
+
   generateQRCodes() {
     if (typeof QRious === 'undefined') return;
+    if (!this.qrCanvases || this.qrCanvases.length === 0) return;
+    
+    // Construct Base URL dynamically
+    const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+
     this.qrCanvases.forEach(canvasRef => {
         const canvas = canvasRef.nativeElement;
-        const value = canvas.getAttribute('data-qr') || 'LIMS';
-        // UPDATED: Increase size for better resolution
-        new QRious({ element: canvas, value: value, size: 250, level: 'L' });
+        // Optional: Check if already drawn to avoid flicker, but redraw is safer for dynamic changes
+        // if (canvas.getAttribute('data-drawn') === 'true') return;
+
+        const id = canvas.getAttribute('data-qr') || 'LIMS';
+        const fullUrl = baseUrl + id;
+        
+        // Increase size for better resolution
+        new QRious({ element: canvas, value: fullUrl, size: 250, level: 'L' });
+        canvas.setAttribute('data-drawn', 'true');
     });
   }
 
@@ -354,28 +381,18 @@ export class PrintLayoutComponent implements AfterViewInit {
       return conf?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.';
   }
 
-  // Helper to get label from select options
   getSelectLabel(inp: any, value: any): string {
       if (!inp.options) return value;
-      // Loose comparison to handle string/number mismatch from form inputs
       const found = inp.options.find((o: any) => o.value == value);
       return found ? found.label : value;
   }
 
-  /**
-   * SMART RANGE FORMATTING LOGIC
-   */
   formatSamples(rawSamples: string[]): string {
     if (!rawSamples || rawSamples.length === 0) return '';
-    
-    // 1. Sort Alphanumerically (Natural Sort)
     const sorted = [...rawSamples].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-    
     if (sorted.length === 0) return '';
 
     const result: string[] = [];
-    
-    // Helper to extract parts: Prefix, Number, Suffix
     const parse = (s: string) => {
         const match = s.match(/^([^\d]*)(\d+)(.*)$/);
         return match ? { p: match[1] || '', n: parseInt(match[2], 10), s: match[3] || '', full: s } : null;
@@ -389,46 +406,24 @@ export class PrintLayoutComponent implements AfterViewInit {
     for (let i = 1; i < sorted.length; i++) {
         const curr = sorted[i];
         const currObj = parse(curr);
-
         let continuous = false;
-        
-        // Check continuity conditions
         if (prevObj && currObj) {
             if (prevObj.p === currObj.p && prevObj.s === currObj.s) {
-                if (currObj.n === prevObj.n + 1) {
-                    continuous = true;
-                }
+                if (currObj.n === prevObj.n + 1) { continuous = true; }
             }
         }
-
         if (continuous) {
-            prev = curr;
-            prevObj = currObj;
+            prev = curr; prevObj = currObj;
         } else {
-            // Commit current range
-            if (start === prev) {
-                result.push(start);
-            } else if (prevObj && startObj && prevObj.n - startObj.n === 1) {
-                result.push(`${start}, ${prev}`);
-            } else {
-                result.push(`${start} ➝ ${prev}`);
-            }
-
-            start = curr;
-            prev = curr;
-            startObj = currObj;
-            prevObj = currObj;
+            if (start === prev) result.push(start);
+            else if (prevObj && startObj && prevObj.n - startObj.n === 1) result.push(`${start}, ${prev}`);
+            else result.push(`${start} ➝ ${prev}`);
+            start = curr; prev = curr; startObj = currObj; prevObj = currObj;
         }
     }
-
-    // Commit final range
-    if (start === prev) {
-        result.push(start);
-    } else if (prevObj && startObj && prevObj.n - startObj.n === 1) {
-        result.push(`${start}, ${prev}`);
-    } else {
-        result.push(`${start} ➝ ${prev}`);
-    }
+    if (start === prev) result.push(start);
+    else if (prevObj && startObj && prevObj.n - startObj.n === 1) result.push(`${start}, ${prev}`);
+    else result.push(`${start} ➝ ${prev}`);
 
     return result.join(', ');
   }

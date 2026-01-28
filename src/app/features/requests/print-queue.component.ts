@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
@@ -25,13 +26,14 @@ import { ToastService } from '../../core/services/toast.service';
                @if(state.isAdmin()) {
                  <button (click)="deleteSelected()" [disabled]="selectedLogIds().size === 0"
                     class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn ({{selectedLogIds().size}})
+                    <i class="fa-solid fa-trash-can"></i> <span class="hidden md:inline">Xóa</span>
                  </button>
                }
+               
                <button (click)="printSelected()" [disabled]="selectedLogIds().size === 0 || isPrinting()"
                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  @if(isPrinting()) { <i class="fa-solid fa-spinner fa-spin"></i> Loading... } 
-                  @else { <i class="fa-solid fa-print"></i> In mục đã chọn ({{selectedLogIds().size}}) }
+                  @if(isPrinting()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
+                  @else { <i class="fa-solid fa-print"></i> } Xem & In
                </button>
             </div>
         </div>
@@ -161,14 +163,11 @@ export class PrintQueueComponent implements OnInit {
     }
   }
 
-  // --- UPDATED: LAZY LOAD PRINT DATA ---
-
   async fetchPrintData(logs: Log[]): Promise<PrintJob[]> {
       const jobs: PrintJob[] = [];
       const jobIdsToFetch: string[] = [];
-      const mapLogIdToJob: Record<string, string> = {}; // logId -> jobId
+      const mapLogIdToJob: Record<string, string> = {}; 
 
-      // 1. Separate logs with existing printData vs logs needing fetch
       for (const log of logs) {
           if (log.printData) {
               jobs.push({
@@ -179,11 +178,10 @@ export class PrintQueueComponent implements OnInit {
               });
           } else if (log.printJobId) {
               jobIdsToFetch.push(log.printJobId);
-              mapLogIdToJob[log.printJobId] = log.id; // Map Job back to Log ID for QR
+              mapLogIdToJob[log.printJobId] = log.id; 
           }
       }
 
-      // 2. Fetch missing jobs in batches (Firestore 'in' limit is 30)
       if (jobIdsToFetch.length > 0) {
           const chunkSize = 30;
           for (let i = 0; i < jobIdsToFetch.length; i += chunkSize) {
@@ -195,13 +193,11 @@ export class PrintQueueComponent implements OnInit {
                   snap.forEach(d => {
                       const data = d.data() as any;
                       const relatedLogId = mapLogIdToJob[d.id];
-                      // Find the original log to get timestamp and user correctly
                       const originalLog = logs.find(l => l.id === relatedLogId); 
                       
                       if (originalLog) {
                           jobs.push({
                               ...data,
-                              // Ensure user/date come from LOG, not just job creation (though they should match)
                               date: originalLog.timestamp.toDate ? originalLog.timestamp.toDate() : new Date(originalLog.timestamp),
                               user: originalLog.user,
                               requestId: relatedLogId
@@ -222,7 +218,7 @@ export class PrintQueueComponent implements OnInit {
     try {
         const jobs = await this.fetchPrintData([log]);
         if (jobs.length > 0) {
-            await this.printService.printDocument(jobs);
+            this.printService.openPreview(jobs); // UPDATED: Open Preview
         } else {
             this.toast.show('Không tìm thấy dữ liệu in cho phiếu này.', 'error');
         }
@@ -241,7 +237,7 @@ export class PrintQueueComponent implements OnInit {
         const jobs = await this.fetchPrintData(logsToPrint);
         
         if (jobs.length > 0) {
-            await this.printService.printDocument(jobs);
+            this.printService.openPreview(jobs); // UPDATED: Open Preview
         }
     } finally {
         this.isPrinting.set(false);

@@ -1,12 +1,11 @@
 
-import { Component, inject, signal, OnInit, ElementRef, viewChild } from '@angular/core';
+import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { doc, getDoc } from 'firebase/firestore';
-import { Log, PrintData } from '../../core/models/log.model';
-import { PrintService } from '../../core/services/print.service';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { formatDate, formatNum } from '../../shared/utils/utils';
+import { Log } from '../../core/models/log.model';
+import { ToastService } from '../../core/services/toast.service';
 
 declare var QRious: any;
 
@@ -15,360 +14,250 @@ declare var QRious: any;
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-slate-100 p-4 md:p-8 flex items-center justify-center fade-in print:p-0 print:bg-white">
-        
-        <!-- LOADING STATE -->
-        @if(isLoading()) {
-            <div class="text-center print:hidden">
-                <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p class="text-slate-500 font-bold animate-pulse">Đang truy xuất dữ liệu...</p>
+    <div class="max-w-4xl mx-auto pb-20 fade-in px-4 md:px-0">
+        <!-- HEADER -->
+        <div class="flex items-center gap-4 mb-8 pt-6">
+            <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-300">
+                <i class="fa-solid fa-qrcode text-xl"></i>
             </div>
-        }
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Truy xuất Nguồn gốc</h1>
+                <p class="text-sm text-slate-500 font-medium">Chi tiết nhật ký hoạt động và thông tin minh bạch.</p>
+            </div>
+        </div>
 
-        <!-- ERROR STATE -->
-        @else if (errorMsg()) {
-            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-center relative border border-red-100 print:hidden">
-                <div class="h-2 bg-red-600 w-full"></div>
-                <div class="p-10">
-                    <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 animate-bounce-in shadow-inner">
-                        <i class="fa-solid fa-shield-halved text-5xl"></i>
-                        <div class="absolute text-2xl font-black text-red-600 bg-white rounded-full w-8 h-8 flex items-center justify-center border-2 border-red-50 bottom-0 right-0">
-                            <i class="fa-solid fa-xmark"></i>
+        @if(isLoading()) {
+            <div class="py-20 text-center">
+                <div class="inline-block w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-400 font-bold text-sm">Đang truy xuất dữ liệu blockchain...</p>
+            </div>
+        } @else if(errorMsg()) {
+            <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <i class="fa-solid fa-circle-exclamation text-red-500 text-xl"></i>
+                    <h3 class="text-lg font-bold text-red-800">Không tìm thấy dữ liệu</h3>
+                </div>
+                <p class="text-red-600 text-sm">{{errorMsg()}}</p>
+            </div>
+        } @else if(logData()) {
+            <!-- DATA CARD -->
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 relative">
+                <!-- Status Stripe -->
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+
+                <div class="p-8">
+                    <!-- Top Row: ID & QR -->
+                    <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 pb-8">
+                        <div>
+                            <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                                Transaction ID
+                            </span>
+                            <div class="font-mono text-xl md:text-3xl font-black text-slate-800 break-all">
+                                {{logData()?.id}}
+                            </div>
+                            <div class="mt-2 text-sm text-slate-500 font-medium flex items-center gap-2">
+                                <i class="fa-solid fa-clock"></i> {{formatDate(logData()?.timestamp)}}
+                            </div>
+                        </div>
+                        <div class="shrink-0 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                            <canvas #qrCanvas class="w-32 h-32"></canvas>
                         </div>
                     </div>
-                    
-                    <h2 class="text-2xl font-black text-red-600 mb-2 uppercase tracking-tight">Chứng nhận Vô hiệu</h2>
-                    <div class="bg-red-50 text-red-800 px-4 py-3 rounded-xl text-sm font-medium mb-6 border border-red-100">
-                        <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                        Mã định danh <b>{{searchId()}}</b> không tồn tại hoặc dữ liệu bị lỗi.
-                    </div>
-                    
-                    <p class="text-slate-500 text-xs mb-8 leading-relaxed">
-                        {{errorMsg()}}
-                    </p>
 
-                    <button (click)="goHome()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition shadow-lg">
-                        <i class="fa-solid fa-house mr-2"></i> Về trang chủ
-                    </button>
-                </div>
-            </div>
-        }
-
-        <!-- SUCCESS STATE -->
-        @else {
-            @if (logData(); as log) {
-                <!-- SAFE GUARD: Ensure printData exists and alias it to 'pd' for strict checking -->
-                @if (log.printData; as pd) {
-                    <div class="bg-white w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden relative print:shadow-none print:w-full print:max-w-none print:rounded-none">
-                        
-                        <!-- Decorative Top Border (Hidden on Print to save ink) -->
-                        <div class="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 print:hidden"></div>
-                        <div class="h-1 bg-black w-full hidden print:block"></div>
-
-                        <div class="p-8 md:p-10 relative print:p-0">
-                            <!-- Watermark (Hidden on Print) -->
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] print:hidden">
-                                <i class="fa-solid fa-flask text-[300px]"></i>
-                            </div>
-
-                            <!-- 1. Header -->
-                            <div class="flex justify-between items-start mb-8 relative z-10 print:mb-4">
-                                <div>
-                                    <div class="flex items-center gap-2 mb-1 print:hidden">
-                                        <i class="fa-solid fa-certificate text-yellow-500 text-xl"></i>
-                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Digital Certificate</span>
+                    <!-- Main Info Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Left: Actor & Action -->
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Người thực hiện</h4>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-lg border border-slate-200">
+                                        {{logData()?.user?.charAt(0)}}
                                     </div>
-                                    <h1 class="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight print:text-black">Chứng nhận Kiểm nghiệm</h1>
-                                    <p class="text-sm text-slate-500 font-medium mt-1 print:text-black">Hệ thống Quản lý Phòng thí nghiệm (LIMS)</p>
-                                </div>
-                                <div class="text-right">
-                                    <canvas #qrCanvas class="w-20 h-20 md:w-24 md:h-24"></canvas>
-                                    <div class="text-[10px] font-mono text-slate-400 mt-1 print:text-black">{{log.id}}</div>
-                                </div>
-                            </div>
-
-                            <!-- 2. Status Banner (Simplified for Print) -->
-                            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-8 flex items-center gap-4 print:bg-white print:border-black print:rounded-none print:p-2 print:mb-4">
-                                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 print:hidden">
-                                    <i class="fa-solid fa-check-double text-xl"></i>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-bold text-emerald-600 uppercase print:text-black">Trạng thái</div>
-                                    <div class="text-lg font-bold text-emerald-800 print:text-black">ĐÃ ĐƯỢC PHÊ DUYỆT & GHI NHẬN</div>
-                                    <div class="text-xs text-emerald-600 print:hidden">Dữ liệu toàn vẹn trên hệ thống Cloud.</div>
-                                </div>
-                            </div>
-
-                            <!-- 3. General Details Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mb-8 relative z-10 print:gap-y-2 print:mb-4">
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Quy trình (SOP)</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
-                                        {{pd.sop.name || 'N/A'}}
+                                    <div>
+                                        <div class="font-bold text-slate-800">{{logData()?.user}}</div>
+                                        <div class="text-xs text-slate-400">Authorized Staff</div>
                                     </div>
-                                    <!-- Targets List -->
-                                    @let targetNames = getTargetNames(pd);
-                                    @if(targetNames.length > 0) {
-                                        <div class="mt-2 flex flex-wrap gap-1">
-                                            @for(name of targetNames; track $index) {
-                                                <span class="inline-block px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 print:border-black print:bg-white print:text-black">
-                                                    {{name}}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Hành động</h4>
+                                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                                    <div class="font-bold text-blue-800 text-lg mb-1">{{logData()?.action}}</div>
+                                    <p class="text-sm text-blue-600">{{logData()?.details}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Context Details -->
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Chi tiết ngữ cảnh</h4>
+                            
+                            <div class="space-y-4">
+                                @if(logData()?.sopBasicInfo?.name || logData()?.printData?.sop?.name) {
+                                    <div>
+                                        <span class="text-xs text-slate-500 block">Quy trình (SOP)</span>
+                                        <span class="font-bold text-slate-800">
+                                            {{ logData()?.sopBasicInfo?.name || logData()?.printData?.sop?.name }}
+                                        </span>
+                                    </div>
+                                }
+
+                                @if(logData()?.printData?.inputs) {
+                                    <div>
+                                        <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
+                                        <div class="flex flex-wrap gap-2">
+                                            @for(key of objectKeys(logData()?.printData?.inputs); track key) {
+                                                <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
+                                                    {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
                                                 </span>
                                             }
                                         </div>
-                                    }
-                                </div>
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Ngày phân tích</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 print:text-black print:border-black">
-                                        {{ pd.analysisDate ? formatDate(pd.analysisDate) : formatDate(log.timestamp) }}
                                     </div>
-                                </div>
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Người thực hiện / Duyệt</div>
-                                    <div class="text-base font-bold text-slate-800 border-b border-slate-100 pb-1 flex items-center gap-2 print:text-black print:border-black">
-                                        <i class="fa-solid fa-user-check text-slate-400 print:hidden"></i> {{log.user}}
+                                }
+
+                                @if(logData()?.printData?.analysisDate) {
+                                    <div>
+                                        <span class="text-xs text-slate-500 block">Ngày phân tích</span>
+                                        <span class="font-bold text-slate-800">{{ logData()?.printData?.analysisDate | date:'dd/MM/yyyy' }}</span>
                                     </div>
-                                </div>
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 print:text-black">Mã tham chiếu (Ref ID)</div>
-                                    <div class="text-base font-mono font-bold text-slate-600 border-b border-slate-100 pb-1 print:text-black print:border-black">
-                                        {{log.id}}
-                                    </div>
-                                </div>
+                                }
                             </div>
-
-                            <!-- 4. Operational Parameters (Using 'pd' alias) -->
-                            <div class="mb-8 relative z-10 print:mb-4">
-                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
-                                    <i class="fa-solid fa-sliders print:hidden"></i> Thông số Vận hành
-                                </h3>
-                                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 print:bg-white print:border-black print:rounded-none print:p-2">
-                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 print:gap-2">
-                                        @for (inp of (pd.sop.inputs || []); track inp.var) {
-                                            @if (inp.var !== 'safetyMargin' && pd.inputs?.[inp.var] !== undefined) {
-                                                <div>
-                                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5 print:text-black">{{inp.label}}</div>
-                                                    <div class="text-sm font-bold text-slate-700 print:text-black">
-                                                        @if(inp.type === 'checkbox') {
-                                                            {{ pd.inputs[inp.var] ? 'Có' : 'Không' }}
-                                                        } @else {
-                                                            {{ pd.inputs[inp.var] }} <span class="text-xs font-normal text-slate-500 print:text-black">{{inp.unitLabel}}</span>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
-                                        }
-                                        @if (!pd.sop.inputs || pd.sop.inputs.length === 0) {
-                                            <div class="col-span-full text-xs text-slate-400 italic">Không có thông số đặc biệt.</div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- NEW: Sample List Grid -->
-                            @if (pd.inputs?.sampleList && pd.inputs.sampleList.length > 0) {
-                                <div class="mb-8 relative z-10 print:mb-4">
-                                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
-                                        <i class="fa-solid fa-vial print:hidden"></i> Danh sách Mẫu ({{pd.inputs.sampleList.length}})
-                                    </h3>
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                        @for (sample of pd.inputs.sampleList; track $index) {
-                                            <div class="text-xs font-mono font-bold text-slate-700 bg-white border border-slate-200 px-2 py-1.5 rounded text-center truncate print:border-black print:text-black">
-                                                {{sample}}
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            }
-
-                            <!-- 5. Usage Table (Using 'pd' alias) -->
-                            <div class="mb-8 relative z-10 print:mb-4">
-                                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 print:text-black">
-                                    <i class="fa-solid fa-list-ul print:hidden"></i> Chi tiết Hóa chất sử dụng
-                                </h3>
-                                <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden print:bg-white print:border-black print:rounded-none">
-                                    <table class="w-full text-sm text-left">
-                                        <thead class="bg-slate-100 text-[10px] font-bold text-slate-500 uppercase print:bg-white print:text-black print:border-b print:border-black">
-                                            <tr>
-                                                <th class="px-4 py-2 print:px-1">Tên Hóa chất</th>
-                                                <th class="px-4 py-2 text-right print:px-1">Lượng dùng</th>
-                                                <th class="px-4 py-2 text-center print:px-1">Đơn vị</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-200 print:divide-black">
-                                            @for (item of (pd.items || []); track item.name) {
-                                                <tr>
-                                                    <td class="px-4 py-2 font-medium text-slate-700 print:text-black print:px-1">
-                                                        {{item.displayName || item.name}}
-                                                        @if(item.isComposite) { <span class="text-[10px] text-slate-400 ml-1 print:text-black">(Hỗn hợp)</span> }
-                                                    </td>
-                                                    <td class="px-4 py-2 text-right font-mono font-bold print:text-black print:px-1">{{formatNum(item.totalQty)}}</td>
-                                                    <td class="px-4 py-2 text-center text-xs text-slate-500 print:text-black print:px-1">{{item.unit}}</td>
-                                                </tr>
-                                                @if(item.isComposite) {
-                                                    @for (sub of item.breakdown; track sub.name) {
-                                                        <tr class="bg-slate-50/50 print:bg-white">
-                                                            <td class="px-4 py-1 pl-8 text-xs text-slate-500 italic print:text-black print:pl-4">• {{sub.displayName || sub.name}}</td>
-                                                            <td class="px-4 py-1 text-right text-xs text-slate-500 font-mono print:text-black">{{formatNum(sub.displayAmount)}}</td>
-                                                            <td class="px-4 py-1 text-center text-[10px] text-slate-400 print:text-black">{{sub.unit}}</td>
-                                                        </tr>
-                                                    }
-                                                }
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Footer -->
-                            <div class="text-center border-t border-slate-100 pt-6 print:border-black">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1 print:text-black">Xác thực điện tử bởi Otada LIMS</p>
-                                <p class="text-[9px] text-slate-300 print:hidden">Chứng nhận này được tạo tự động và có giá trị truy xuất nguồn gốc.</p>
-                            </div>
-                        </div>
-
-                        <!-- Action Bar -->
-                        <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center print:hidden">
-                            <button (click)="goHome()" class="text-slate-500 hover:text-slate-800 font-bold text-xs flex items-center gap-2 transition">
-                                <i class="fa-solid fa-arrow-left"></i> Quay lại
-                            </button>
-                            <button (click)="reprint()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-xs shadow-md shadow-blue-200 transition flex items-center gap-2 transform active:scale-95">
-                                <i class="fa-solid fa-print"></i> In Bản sao
-                            </button>
                         </div>
                     </div>
-                }
-            }
+
+                    <!-- Items List (If Batch Approval) -->
+                    @if(logData()?.printData?.items) {
+                        <div class="mt-8 pt-8 border-t border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Danh sách hóa chất sử dụng</h4>
+                            <div class="overflow-hidden rounded-xl border border-slate-200">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                                        <tr>
+                                            <th class="px-4 py-3">Tên hóa chất</th>
+                                            <th class="px-4 py-3 text-right">Lượng dùng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @for(item of logData()?.printData?.items; track item.name) {
+                                            <tr class="bg-white">
+                                                <td class="px-4 py-3 font-medium text-slate-700">{{item.displayName || item.name}}</td>
+                                                <td class="px-4 py-3 text-right font-mono font-bold text-slate-600">
+                                                    {{formatNum(item.stockNeed)}} {{item.stockUnit}}
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         }
     </div>
   `
 })
 export class TraceabilityComponent implements OnInit {
-  private route: ActivatedRoute = inject(ActivatedRoute);
-  private router: Router = inject(Router);
-  private fb = inject(FirebaseService);
-  private printService = inject(PrintService);
+  // Input Binding from Router (Angular 16+)
+  @Input() id?: string;
 
-  searchId = signal('');
-  isLoading = signal(true);
-  errorMsg = signal('');
-  logData = signal<Log | null>(null);
-  
+  fb = inject(FirebaseService);
+  toast = inject(ToastService);
+  formatDate = formatDate;
   formatNum = formatNum;
+  objectKeys = Object.keys;
+
+  logData = signal<Log | null>(null);
+  isLoading = signal(false);
+  errorMsg = signal('');
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-        const id = params['id'];
-        if (id) {
-            this.searchId.set(id);
-            this.fetchLog(id);
-        } else {
-            this.isLoading.set(false);
-            this.errorMsg.set('Vui lòng cung cấp mã ID.');
-        }
-    });
+      if (this.id) {
+          this.loadData(this.id);
+      } else {
+          this.errorMsg.set('Không có mã ID được cung cấp.');
+      }
   }
 
-  async fetchLog(id: string) {
+  async loadData(id: string) {
       this.isLoading.set(true);
       this.errorMsg.set('');
+      
       try {
+          // 1. Try Direct Log Lookup
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
-          const logSnap = await getDoc(logRef);
+          let snap = await getDoc(logRef);
 
-          if (logSnap.exists()) {
-              const data = { id: logSnap.id, ...logSnap.data() } as Log;
-              
-              // 1. New Data Structure: Fetch from 'print_jobs' if needed
-              if (!data.printData && data.printJobId) {
-                  try {
-                      const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${data.printJobId}`);
-                      const jobSnap = await getDoc(jobRef);
-                      if (jobSnap.exists()) {
-                          data.printData = jobSnap.data() as PrintData;
-                      } else {
-                          this.errorMsg.set('Dữ liệu chi tiết của phiếu này đã bị xóa.');
-                          return;
-                      }
-                  } catch (jobErr) {
-                      this.errorMsg.set('Lỗi tải chi tiết lệnh in.');
-                      return;
-                  }
-              }
-
-              // 2. Validate Data Presence
-              if (data.printData) {
-                  this.logData.set(data);
-                  setTimeout(() => this.generateQr(id), 100);
-              } else {
-                  this.errorMsg.set('Dữ liệu này không chứa thông tin chi tiết (Print Data).');
-              }
-          } else {
-              this.errorMsg.set('Không tìm thấy bản ghi với ID này.');
+          if (snap.exists()) {
+              this.handleLogData({ id: snap.id, ...snap.data() } as Log);
+              return;
           }
+
+          // 2. Try Lookup by Print Job ID (Legacy or linked)
+          const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
+          let jobSnap = await getDoc(jobRef);
+          
+          if (jobSnap.exists()) {
+              // Found a print job, reconstruct a "Log-like" view or find the parent log
+              // Or just show the print job data as a log
+              const jobData = jobSnap.data() as any;
+              const mockLog: Log = {
+                  id: id,
+                  action: 'PRINT_JOB_RECORD',
+                  details: 'Hồ sơ in ấn lưu trữ',
+                  timestamp: jobData.createdAt || new Date(),
+                  user: jobData.createdBy || 'System',
+                  printable: true,
+                  printData: jobData // Embed full data
+              };
+              this.handleLogData(mockLog);
+              return;
+          }
+
+          // 3. Not Found
+          this.errorMsg.set(`Không tìm thấy dữ liệu cho mã: ${id}`);
+
       } catch (e: any) {
+          console.error(e);
           this.errorMsg.set('Lỗi kết nối: ' + e.message);
       } finally {
           this.isLoading.set(false);
       }
   }
 
+  handleLogData(log: Log) {
+      // Hydrate if printJobId exists but printData is missing (New Arch)
+      if (log.printJobId && !log.printData) {
+          const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
+          getDoc(jobRef).then(s => {
+              if (s.exists()) {
+                  log.printData = s.data() as any;
+                  this.logData.set(log);
+                  setTimeout(() => this.generateQr(log.id), 100);
+              }
+          });
+      } else {
+          this.logData.set(log);
+          setTimeout(() => this.generateQr(log.id), 100);
+      }
+  }
+
   generateQr(text: string) {
       if (typeof QRious === 'undefined' || !this.qrCanvas()) return;
+      
+      // Use same URL structure as print layout
+      const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+      const fullUrl = baseUrl + text;
+
       new QRious({
           element: this.qrCanvas()!.nativeElement,
-          value: text,
-          size: 100,
-          level: 'L'
-      });
-  }
-
-  reprint() {
-      const data = this.logData();
-      if (!data || !data.printData) return;
-      
-      const printJob = {
-          ...data.printData,
-          date: data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
-          user: data.user,
-          requestId: data.id 
-      };
-      
-      this.printService.printDocument([printJob]);
-  }
-
-  goHome() {
-      this.router.navigate(['/dashboard']);
-  }
-
-  formatDate(val: any): string {
-      if (!val) return '';
-      if (val.toDate && typeof val.toDate === 'function') {
-          const d = val.toDate();
-          return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      } 
-      if (typeof val === 'string' && val.includes('-')) {
-          const parts = val.split('-');
-          if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      }
-      return val;
-  }
-
-  getTargetNames(pd: PrintData): string[] {
-      const selectedIds = pd.inputs['targetIds'] || [];
-      if (!Array.isArray(selectedIds) || selectedIds.length === 0) return [];
-      
-      const allTargets = pd.sop?.targets || [];
-      return selectedIds.map(id => {
-          const t = allTargets.find((t: any) => t.id === id);
-          return t ? t.name : id;
+          value: fullUrl,
+          size: 150,
+          level: 'M'
       });
   }
 }

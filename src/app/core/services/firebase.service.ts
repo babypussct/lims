@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import type { FirebaseApp } from 'firebase/app';
@@ -13,7 +12,10 @@ import {
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
-import { UserProfile } from './auth.service';
+// Circular dependency warning: AuthService imports FirebaseService. 
+// We import UserProfile type only here or move type to model. 
+// For now, importing type is safe.
+import type { UserProfile } from './auth.service'; 
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -232,13 +234,19 @@ export class FirebaseService {
 
   // --- Sample Data Loader (GC-NAFIQPM 6) ---
   async loadSampleData() {
-    // (Logic kept same as before, simplified for brevity in this update block)
-    // 1. Inventory (Standardized ID & Name)
     const inventory = [
       { id: "acetonitrile", name: "Acetonitrile (HPLC)", stock: 20000, unit: "ml", category: "reagent", threshold: 1000 },
-      // ... (rest of sample data)
+      { id: "methanol", name: "Methanol (HPLC)", stock: 15000, unit: "ml", category: "reagent", threshold: 1000 },
+      { id: "formic_acid", name: "Formic Acid 98%", stock: 500, unit: "ml", category: "reagent", threshold: 50 }
     ];
-    // 2. SOPs ...
-    // Note: In real app, keep the full data here.
+    
+    let batch = writeBatch(this.db);
+    
+    for(const item of inventory) {
+        const ref = doc(this.db, `artifacts/${this.APP_ID}/inventory`, item.id);
+        batch.set(ref, { ...item, lastUpdated: new Date() });
+    }
+    
+    await batch.commit();
   }
 }
