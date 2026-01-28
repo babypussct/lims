@@ -472,8 +472,8 @@ interface ProposedBatch {
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
   `
 })
@@ -549,6 +549,53 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
   }
 
+  // --- MISSING METHOD RESTORED ---
+  formatSampleRanges(samplesSet: Set<string>): string {
+      const samples = Array.from(samplesSet).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+      if (samples.length === 0) return '';
+      
+      const ranges: string[] = [];
+      let start = samples[0];
+      let prev = samples[0];
+      
+      const parse = (s: string) => {
+          const match = s.match(/^([^\d]*)(\d+)(.*)$/);
+          if (!match) return null;
+          return { p: match[1], n: parseInt(match[2]), s: match[3] };
+      };
+
+      let startObj = parse(start);
+      let prevObj = startObj;
+
+      for (let i = 1; i < samples.length; i++) {
+          const curr = samples[i];
+          const currObj = parse(curr);
+          
+          let isCont = false;
+          if (prevObj && currObj) {
+              if (prevObj.p === currObj.p && prevObj.s === currObj.s && currObj.n === prevObj.n + 1) {
+                  isCont = true;
+              }
+          }
+
+          if (isCont) {
+              prev = curr;
+              prevObj = currObj;
+          } else {
+              if (start === prev) ranges.push(start);
+              else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
+              else ranges.push(`${start} ➔ ${prev}`);
+              
+              start = curr; prev = curr; startObj = currObj; prevObj = currObj;
+          }
+      }
+      if (start === prev) ranges.push(start);
+      else if (prevObj && startObj && prevObj.n - startObj.n === 1) ranges.push(`${start}, ${prev}`);
+      else ranges.push(`${start} ➔ ${prev}`);
+      
+      return ranges.join(', ');
+  }
+
   recalculateBatch(index: number) { this.batches.update(current => { const next = [...current]; const batch = { ...next[index] }; batch.inputValues['n_sample'] = batch.samples.size; const needs = this.calculator.calculateSopNeeds( batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache ); batch.resourceImpact = needs; batch.sampleCount = batch.samples.size; next[index] = batch; return next; }); this.validateGlobalStock(); }
   private validateGlobalStock() { const ledger: Record<string, number> = {}; Object.entries(this.inventoryCache).forEach(([k, v]) => ledger[k] = v.stock); this.batches.update(current => { return current.map(batch => { const needs = batch.resourceImpact; let isMissing = false; needs.forEach(item => { if (item.isComposite) { item.breakdown.forEach(sub => { const available = ledger[sub.name] || 0; if (available < sub.totalNeed) isMissing = true; if (ledger[sub.name] !== undefined) { ledger[sub.name] -= sub.totalNeed; } }); } else { const available = ledger[item.name] || 0; if (available < item.stockNeed) isMissing = true; if (ledger[item.name] !== undefined) { ledger[item.name] -= item.stockNeed; } } }); return { ...batch, status: isMissing ? 'missing_stock' : 'ready' }; }); }); }
   openSplitModal(batchIndex: number) { const batch = this.batches()[batchIndex]; this.splitState.set({ sourceBatchIndex: batchIndex, sourceSopName: batch.sop.name, availableSamples: Array.from(batch.samples).sort(), selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false }); this.showSplitModal.set(true); }
@@ -557,7 +604,8 @@ export class SmartBatchComponent {
   moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>(s.availableSamples as string[]) })); }
   moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>() })); }
   quickSplitHalf() { this.splitState.update(s => { const half = Math.ceil(s.availableSamples.length / 2); const bottomHalf = s.availableSamples.slice(half); return { ...s, selectedSamples: new Set<string>(bottomHalf as string[]) }; }); }
-  quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val, i) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected as string[]) }; }); }
+  // FIX: Explicitly type parameters to avoid TS7006
+  quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val: any, i: number) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected as string[]) }; }); }
   updateSplitTarget(sopId: string) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
   async executeSplit() { const state = this.splitState(); const sourceBatch = this.batches()[state.sourceBatchIndex]; const samplesToMove = state.selectedSamples; const targetSop = this.state.sops().find(s => s.id === state.targetSopId); if (!targetSop || samplesToMove.size === 0) return; const missing = this.missingTargetsInSplit(); if (missing.length > 0) { const confirmed = await this.confirmation.confirm({ message: `CẢNH BÁO: Quy trình mới không hỗ trợ ${missing.length} chỉ tiêu đang chọn (VD: ${missing[0].name}).\nCác chỉ tiêu này sẽ bị loại bỏ khỏi mẻ mới. Bạn có chắc chắn?`, confirmText: 'Chấp nhận & Tiếp tục', isDangerous: true }); if (!confirmed) return; } const newSamples = new Set<string>(samplesToMove); const newInputs: Record<string, any> = {}; targetSop.inputs.forEach(i => newInputs[i.var] = i.default); if (sourceBatch.inputValues) { Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) { newInputs[key] = sourceBatch.inputValues[key]; } }); } newInputs['n_sample'] = newSamples.size; if (newInputs['n_qc'] !== undefined && sourceBatch.inputValues['n_qc'] !== undefined) { newInputs['n_qc'] = sourceBatch.inputValues['n_qc']; } const reqsForNew = this.getRequiredTargetsForSamples(newSamples); const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id)); const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id)); const newNeeds = this.calculator.calculateSopNeeds( targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache ); const newBatch: ProposedBatch = { id: `batch_${Date.now()}_split`, sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size, inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready' }; const remainingSamples = new Set<string>(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s))); this.batches.update(current => { const next = [...current]; if (remainingSamples.size === 0) { next.splice(state.sourceBatchIndex, 1); } else { const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples); const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id)); const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size, targets: finalSourceTargets }; updatedSource.inputValues['n_sample'] = remainingSamples.size; updatedSource.resourceImpact = this.calculator.calculateSopNeeds( updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache ); next[state.sourceBatchIndex] = updatedSource; } next.push(newBatch); return next; }); this.validateGlobalStock(); this.showSplitModal.set(false); this.toast.show('Đã chia tách và tạo mẻ mới.', 'success'); }
   reset() { this.step.set(1); this.batches.set([]); this.unmappedTargets.set([]); }
@@ -584,10 +632,9 @@ export class SmartBatchComponent {
 
           try {
               for (const batch of this.batches()) {
-                  // FIX: Explicitly include safetyMargin in the inputs payload so StateService can save it
                   const finalInputs = { 
                       ...batch.inputValues,
-                      safetyMargin: Number(batch.safetyMargin), // Critical fix for 0% margin bug
+                      safetyMargin: Number(batch.safetyMargin), 
                       sampleList: Array.from(batch.samples),
                       targetIds: batch.targets.map(t => t.id)
                   };
@@ -608,7 +655,6 @@ export class SmartBatchComponent {
               }
 
               if (jobs.length > 0) {
-                  // UPDATED: Use Preview instead of direct printDocument
                   this.printService.openPreview(jobs);
                   this.toast.show('Hoàn tất toàn bộ quy trình! Đang mở xem trước.', 'success');
                   this.reset();
