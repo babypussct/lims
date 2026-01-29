@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- 2. Tailwind CSS & Soft UI Config -->
+  <!-- 2. Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { 
@@ -41,26 +41,20 @@
             // Soft UI Brand Colors
             fuchsia: { 500: '#cb0c9f', 600: '#830051' }, // Purple
             pink: { 500: '#d63384' },
-            blue: { 500: '#3b82f6', 600: '#2563eb' }
           },
           boxShadow: {
-            'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow (Key to Soft UI)
-            'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', 
+            'soft-xl': '0 20px 27px 0 rgba(0,0,0,0.05)', // Card Shadow
+            'soft-md': '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)', // Input/Button
             'soft-sm': '0 2px 4px 0 rgba(0,0,0,0.02)',
             'navbar': '0 2px 12px 0 rgba(0,0,0,0.06)',
-            'icon': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
           },
           borderRadius: {
             'xl': '1rem',   // 16px
-            '2xl': '1.25rem', // 20px
-            '3xl': '1.5rem'
+            '2xl': '1.25rem' // 20px
           },
           backgroundImage: {
-            'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // Signature Purple-Pink
-            'gradient-info': 'linear-gradient(310deg, #2152ff, #21d4fd)', // Blue-Cyan
-            'gradient-success': 'linear-gradient(310deg, #17ad37, #98ec2d)', // Green-Lime
-            'gradient-warning': 'linear-gradient(310deg, #f53939, #fbcf33)', // Red-Yellow
-            'curved-pattern': "url('https://demos.creative-tim.com/soft-ui-dashboard/assets/img/curved-images/curved0.jpg')", // Placeholder for curved header
+            'gradient-soft': 'linear-gradient(310deg, #7928ca, #ff0080)', // The Signature Gradient
+            'gradient-dark': 'linear-gradient(310deg, #141727, #3a416f)',
           }
         } 
       } 
@@ -134,6 +128,8 @@
     "@angular/forms": "https://esm.sh/@angular/forms@^21.0.8?external=rxjs",
     "chart.js/auto": "https://esm.sh/chart.js@^4.5.1/auto?external=rxjs",
     "html2canvas": "https://esm.sh/html2canvas@^1.4.1?external=rxjs",
+    "pdfmake/build/pdfmake": "https://esm.sh/pdfmake@0.2.10/build/pdfmake?external=rxjs",
+    "pdfmake/build/vfs_fonts": "https://esm.sh/pdfmake@0.2.10/build/vfs_fonts?external=rxjs",
     "@angular/router": "https://esm.sh/@angular/router@^21.0.8?external=rxjs",
     "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.0.8?external=rxjs",
     "@angular/common": "https://esm.sh/@angular/common@^21.0.8?external=rxjs",
