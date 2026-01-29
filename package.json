@@ -26,16 +26,14 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "xlsx": "^0.18.5",
-    "@angular/build": "^18.0.0",
-    "@angular/cli": "^18.0.0",
-    "@angular/compiler-cli": "^18.0.0",
-    "tailwindcss": "latest"
+    "pdfmake": "^0.2.10"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.0.0",
     "@angular/cli": "^18.0.0",
     "@angular/compiler-cli": "^18.0.0",
     "@types/node": "^18.0.0",
+    "@types/pdfmake": "^0.2.9",
     "typescript": "~5.4.2"
   }
 }

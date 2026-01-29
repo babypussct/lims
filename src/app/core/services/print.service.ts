@@ -1,4 +1,3 @@
-
 import { Injectable, inject, signal } from '@angular/core';
 import { CalculatorService } from './calculator.service';
 import { CalculatedItem } from '../models/sop.model';
@@ -6,12 +5,12 @@ import { ToastService } from './toast.service';
 import { StateService } from './state.service';
 import { formatNum, formatSampleList } from '../../shared/utils/utils';
 
-// Import pdfmake from ESM via importmap
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+// Import pdfmake from node_modules
+import * as pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
 
 // Register fonts
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
 
 export interface PrintJob {
   sop: any; 
