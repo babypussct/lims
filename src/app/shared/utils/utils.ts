@@ -152,12 +152,8 @@ export function naturalCompare(a: string, b: string): number {
 }
 
 /**
- * Smartly compresses a list of samples into a readable string using Common Affix Algorithm.
- * Handles: U0127 -> U0227 (Fixed suffix '27')
- * Handles: Sample 1 -> Sample 2 (Fixed prefix)
- * Handles: U9927 -> U10027 (Varying digit length)
- * Rule: Only compresses if 3 or more sequential items. 2 items are listed with comma.
- * UPDATE: Uses '→' instead of '➔' for PDF compatibility.
+ * Smartly compresses a list of samples.
+ * Uses '->' (ASCII) instead of unicode arrow to ensure PDF compatibility.
  */
 export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
     if (!samplesInput) return '';
@@ -173,82 +169,47 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
 
     if (samples.length === 0) return '';
 
-    // Sort naturally (Crucial for correct range detection: U9927 comes before U10027)
     samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    // Helper to check if two strings are sequential
     const isSequential = (prev: string, curr: string): boolean => {
         if (!prev || !curr) return false;
-        
-        // 1. Find Common Prefix
         let pLen = 0;
         const minLen = Math.min(prev.length, curr.length);
-        while (pLen < minLen && prev[pLen] === curr[pLen]) {
-            pLen++;
-        }
-
-        // 2. Find Common Suffix
+        while (pLen < minLen && prev[pLen] === curr[pLen]) { pLen++; }
         let sLen = 0;
-        while (sLen < minLen - pLen && 
-               prev[prev.length - 1 - sLen] === curr[curr.length - 1 - sLen]) {
-            sLen++;
-        }
-
-        // 3. Extract Middle Part (The changing part)
+        while (sLen < minLen - pLen && prev[prev.length - 1 - sLen] === curr[curr.length - 1 - sLen]) { sLen++; }
         const prevMid = prev.substring(pLen, prev.length - sLen);
         const currMid = curr.substring(pLen, curr.length - sLen);
-
-        // 4. Validate Middle is Numeric
-        // If middle is empty or contains non-digits, they are not a numeric sequence
-        if (!prevMid || !currMid || !/^\d+$/.test(prevMid) || !/^\d+$/.test(currMid)) {
-            return false;
-        }
-
-        // 5. Check if numeric difference is exactly 1
+        if (!prevMid || !currMid || !/^\d+$/.test(prevMid) || !/^\d+$/.test(currMid)) { return false; }
         const prevNum = parseInt(prevMid, 10);
         const currNum = parseInt(currMid, 10);
-
         return currNum === prevNum + 1;
     };
 
     const ranges: string[] = [];
     let start = samples[0];
     let prev = samples[0];
-    let count = 1; // Track number of items in current sequence
+    let count = 1;
 
     for (let i = 1; i < samples.length; i++) {
         const curr = samples[i];
-        
         if (isSequential(prev, curr)) {
             prev = curr;
             count++;
         } else {
-            // Push the previous range
-            if (count === 1) {
-                ranges.push(start);
-            } else if (count === 2) {
-                // If only 2 items, separate by comma (e.g., "A1, A2")
-                ranges.push(`${start}, ${prev}`);
-            } else {
-                // If 3 or more items, use standard arrow (e.g., "A1 → A3")
-                ranges.push(`${start} → ${prev}`);
-            }
+            if (count === 1) { ranges.push(start); } 
+            else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
+            else { ranges.push(`${start} -> ${prev}`); } // FIXED: Safe arrow
             
-            // Reset range
             start = curr;
             prev = curr;
             count = 1;
         }
     }
 
-    // Push final range
-    if (count === 1) {
-        ranges.push(start);
-    } else if (count === 2) {
-        ranges.push(`${start}, ${prev}`);
-    } else {
-        ranges.push(`${start} → ${prev}`);
-    }
+    if (count === 1) { ranges.push(start); } 
+    else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
+    else { ranges.push(`${start} -> ${prev}`); } // FIXED: Safe arrow
     
     return ranges.join(', ');
 }

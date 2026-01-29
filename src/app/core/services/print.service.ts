@@ -116,11 +116,11 @@ export class PrintService {
                           {
                               width: '*',
                               stack: [
-                                  // Category Badge & Ref
+                                  // Category Badge & Ref (Simulate badge with background)
                                   {
                                       text: [
-                                          { text: (job.sop?.category || 'SOP').toUpperCase(), bold: true, fontSize: 8, background: '#e0e7ff', color: '#3730a3' }, // Indigo-100/700
-                                          { text: '  ' }, // Spacer
+                                          { text: ' ' + (job.sop?.category || 'SOP').toUpperCase() + ' ', bold: true, fontSize: 8, background: '#e0e7ff', color: '#3730a3' }, // Indigo-100/700
+                                          { text: ' ' }, // Spacer
                                           { text: 'Ref: ' + (job.sop?.ref || 'N/A'), fontSize: 8, color: '#6b7280' },
                                           { text: ' | ' },
                                           { text: 'Ngày: ' + displayDate, fontSize: 8, color: '#6b7280' }
@@ -151,8 +151,8 @@ export class PrintService {
                       margin: [0, 0, 0, 10]
                   });
                   
-                  // Divider
-                  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#111827' }] });
+                  // Divider (Black line like Preview)
+                  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#000000' }] });
               }
 
               // 2.2 INPUTS (Horizontal Layout)
@@ -251,7 +251,7 @@ export class PrintService {
               // 2.4 FOOTER
               if (options.showFooter) {
                   const now = new Date();
-                  const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+                  const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
                   
                   const footerCols: any[] = [
                       {
@@ -264,6 +264,7 @@ export class PrintService {
                   ];
 
                   if (options.showSignature) {
+                      // Digital Signature Box (Simulated with Table)
                       footerCols.push({
                           width: 'auto',
                           table: {
@@ -279,6 +280,8 @@ export class PrintService {
                           layout: {
                               hLineWidth: () => 0.5,
                               vLineWidth: () => 0.5,
+                              hLineColor: () => '#000000',
+                              vLineColor: () => '#000000',
                               paddingLeft: () => 8,
                               paddingRight: () => 8,
                               paddingTop: () => 2,
