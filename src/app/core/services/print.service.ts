@@ -7,16 +7,13 @@ import { StateService } from './state.service';
 import { formatNum, formatSampleList } from '../../shared/utils/utils';
 
 // FIX: Use default imports to allow property assignment
-// This works because esModuleInterop is true in tsconfig.json
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 
 // Register fonts
-// We need to cast to 'any' because the types might not perfectly match the internal structure of the build artifacts
 if ((pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
     (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
 } else {
-    // Fallback for some versions/environments
     (pdfMake as any).vfs = (pdfFonts as any).vfs || {};
     console.warn('PDF Fonts loaded with fallback method.');
 }
@@ -116,24 +113,24 @@ export class PrintService {
                           {
                               width: '*',
                               stack: [
-                                  // Category Badge & Ref (Simulate badge with background)
+                                  // Category Badge & Ref (Simulate badge with spaces and background)
                                   {
                                       text: [
-                                          { text: ' ' + (job.sop?.category || 'SOP').toUpperCase() + ' ', bold: true, fontSize: 8, background: '#e0e7ff', color: '#3730a3' }, // Indigo-100/700
+                                          { text: ' ' + (job.sop?.category || 'SOP').toUpperCase() + ' ', bold: true, fontSize: 8, background: '#eeeeee', color: '#000000' }, 
                                           { text: ' ' }, // Spacer
-                                          { text: 'Ref: ' + (job.sop?.ref || 'N/A'), fontSize: 8, color: '#6b7280' },
+                                          { text: 'Ref: ' + (job.sop?.ref || 'N/A'), fontSize: 8, color: '#555555' },
                                           { text: ' | ' },
-                                          { text: 'Ngày: ' + displayDate, fontSize: 8, color: '#6b7280' }
+                                          { text: 'Ngày: ' + displayDate, fontSize: 8, color: '#555555' }
                                       ],
                                       margin: [0, 0, 0, 4]
                                   },
                                   // Title
-                                  { text: (job.sop?.name || 'PHIẾU PHA CHẾ').toUpperCase(), fontSize: 13, bold: true, margin: [0, 0, 0, 4], color: '#111827' },
+                                  { text: (job.sop?.name || 'PHIẾU PHA CHẾ').toUpperCase(), fontSize: 14, bold: true, margin: [0, 0, 0, 4], color: '#000000' },
                                   // Targets
                                   targetNames.length > 0 ? {
                                       text: [
-                                          { text: 'Chỉ tiêu: ', fontSize: 8, bold: true, color: '#374151' },
-                                          { text: targetNames.join(', '), fontSize: 8, color: '#4b5563' }
+                                          { text: 'Chỉ tiêu: ', fontSize: 8, bold: true, color: '#333333' },
+                                          { text: targetNames.join(', '), fontSize: 8, color: '#555555' }
                                       ]
                                   } : {}
                               ]
@@ -142,16 +139,16 @@ export class PrintService {
                           {
                               width: 'auto',
                               stack: [
-                                  { qr: job.requestId || 'LIMS', fit: 65, alignment: 'right' },
-                                  { text: job.requestId || '', fontSize: 7, font: 'Roboto', alignment: 'right', margin: [0, 2, 0, 0], bold: true, color: '#374151' }
+                                  { qr: job.requestId || 'LIMS', fit: 75, alignment: 'right' },
+                                  { text: job.requestId || '', fontSize: 8, font: 'Roboto', alignment: 'right', margin: [0, 2, 0, 0], bold: true, color: '#333333' }
                               ]
                           }
                       ],
                       columnGap: 10,
-                      margin: [0, 0, 0, 10]
+                      margin: [0, 0, 0, 8]
                   });
                   
-                  // Divider (Black line like Preview)
+                  // Divider (Thick black line)
                   content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#000000' }] });
               }
 
@@ -166,29 +163,29 @@ export class PrintService {
                               if (found) val = found.label;
                           }
                           if (inp.type === 'checkbox') val = '(Yes)';
-                          inputTexts.push({ text: [{text: inp.label + ': ', color:'#6b7280'}, {text: val + '', color: '#111827'}], fontSize: 9, bold: true, margin: [0, 2, 10, 2] });
+                          inputTexts.push({ text: [{text: inp.label + ': ', color:'#555555'}, {text: val + '', color: '#000000'}], fontSize: 9, bold: true, margin: [0, 2, 10, 2] });
                       }
                   });
               }
               // Margin info
               const marginVal = job.margin || job.inputs['safetyMargin'] || 0;
-              inputTexts.push({ text: `Hao hụt: +${formatNum(marginVal)}%`, fontSize: 9, bold: true, color: '#d97706', margin: [0, 2, 0, 2] });
+              inputTexts.push({ text: `Hao hụt: +${formatNum(marginVal)}%`, fontSize: 9, bold: true, color: '#000000', margin: [0, 2, 0, 2] });
 
               content.push({
                   columns: inputTexts,
                   columnGap: 10,
-                  margin: [0, 8, 0, 8]
+                  margin: [0, 6, 0, 6]
               });
 
               // Sample List (Styled Box)
               if (job.inputs['sampleList'] && job.inputs['sampleList'].length > 0) {
                   content.push({
                       stack: [
-                          { text: `Danh sách mẫu (${job.inputs['sampleList'].length})`, bold: true, fontSize: 8, color: '#6b7280', margin: [0,0,0,2] },
-                          { text: formatSampleList(job.inputs['sampleList']), fontSize: 9, font: 'Roboto', bold: true, color: '#111827' }
+                          { text: `Danh sách mẫu (${job.inputs['sampleList'].length})`, bold: true, fontSize: 8, color: '#666666', margin: [0,0,0,2] },
+                          { text: formatSampleList(job.inputs['sampleList']), fontSize: 9, font: 'Roboto', bold: true, color: '#000000' }
                       ],
                       margin: [0, 0, 0, 10],
-                      fillColor: '#f9fafb', // Gray-50
+                      fillColor: '#f9f9f9',
                       padding: 5
                   });
               }
@@ -215,16 +212,16 @@ export class PrintService {
                   tableBody.push([
                       { text: item.displayName || item.name, style: 'tableCell', bold: true, border: [false, false, false, true] },
                       { text: formatNum(item.totalQty), style: 'tableCell', alignment: 'right', bold: true, font: 'Roboto', border: [false, false, false, true] }, // Roboto for monospace-ish numbers
-                      { text: u(item.unit), style: 'tableCell', alignment: 'center', fontSize: 8, color: '#4b5563', border: [false, false, false, true] },
-                      { text: item.base_note || '', style: 'tableCell', alignment: 'right', italics: true, color: '#6b7280', border: [false, false, false, true] }
+                      { text: u(item.unit), style: 'tableCell', alignment: 'center', fontSize: 8, color: '#555555', border: [false, false, false, true] },
+                      { text: item.base_note || '', style: 'tableCell', alignment: 'right', italics: true, color: '#666666', border: [false, false, false, true] }
                   ]);
 
                   if (item.isComposite) {
                       item.breakdown.forEach(sub => {
                           tableBody.push([
-                              { text: `• ${sub.displayName || sub.name}`, style: 'subTableCell', margin: [10, 0, 0, 0], color: '#4b5563', border: [false, false, false, true] },
-                              { text: formatNum(sub.displayAmount), style: 'subTableCell', alignment: 'right', color: '#4b5563', font: 'Roboto', border: [false, false, false, true] },
-                              { text: u(sub.unit), style: 'subTableCell', alignment: 'center', color: '#6b7280', border: [false, false, false, true] },
+                              { text: `• ${sub.displayName || sub.name}`, style: 'subTableCell', margin: [10, 0, 0, 0], color: '#555555', border: [false, false, false, true] },
+                              { text: formatNum(sub.displayAmount), style: 'subTableCell', alignment: 'right', color: '#555555', font: 'Roboto', border: [false, false, false, true] },
+                              { text: u(sub.unit), style: 'subTableCell', alignment: 'center', color: '#777777', border: [false, false, false, true] },
                               { text: '', style: 'subTableCell', border: [false, false, false, true] }
                           ]);
                       });
@@ -240,10 +237,10 @@ export class PrintService {
                   layout: {
                       hLineWidth: (i:number, node:any) => 0.5,
                       vLineWidth: () => 0, // No vertical lines
-                      hLineColor: () => '#e5e7eb', // Slate-200
+                      hLineColor: () => '#cccccc', 
                       paddingTop: () => 5,
                       paddingBottom: () => 5,
-                      fillColor: (rowIndex: number) => (rowIndex === 0) ? '#f8fafc' : null // Slate-50 Header
+                      fillColor: (rowIndex: number) => (rowIndex === 0) ? null : null // Removed header fill to match minimal look, or set '#f9f9f9'
                   },
                   margin: [0, 5, 0, 10]
               });
@@ -257,21 +254,21 @@ export class PrintService {
                       {
                           width: '*',
                           stack: [
-                              { text: footerText, italics: true, fontSize: 8, color: '#6b7280' },
-                              { text: `In lúc: ${timeStr} | Máy: ${job.user || 'Unknown'}`, fontSize: 7, color: '#9ca3af', margin: [0, 2, 0, 0] }
+                              { text: footerText, italics: true, fontSize: 8, color: '#555555' },
+                              { text: `In lúc: ${timeStr} | Máy: ${job.user || 'Unknown'}`, fontSize: 7, color: '#999999', margin: [0, 2, 0, 0] }
                           ]
                       }
                   ];
 
                   if (options.showSignature) {
-                      // Digital Signature Box (Simulated with Table)
+                      // Digital Signature Box (Simulated with Table to get borders)
                       footerCols.push({
                           width: 'auto',
                           table: {
                               body: [[
                                   {
                                       stack: [
-                                          { text: '✔ XÁC NHẬN ĐIỆN TỬ', fontSize: 7, bold: true, alignment: 'center', color: '#4b5563' },
+                                          { text: '✔ XÁC NHẬN ĐIỆN TỬ', fontSize: 7, bold: true, alignment: 'center', color: '#333333' },
                                           { text: (job.user || '').toUpperCase(), fontSize: 8, bold: true, alignment: 'center', margin: [0,2,0,0] }
                                       ]
                                   }
@@ -302,9 +299,10 @@ export class PrintService {
               // 2.5 CUT LINE
               if (jobIdx === 0 && pair.length > 1 && options.showCutLine) {
                   content.push({
-                      canvas: [{ type: 'line', x1: 0, y1: 20, x2: 515, y2: 20, dash: { length: 4, space: 4 }, lineColor: '#9ca3af' }],
+                      canvas: [{ type: 'line', x1: 0, y1: 20, x2: 515, y2: 20, dash: { length: 4, space: 4 }, lineColor: '#999999' }],
                       margin: [0, 20, 0, 20]
                   });
+                  // Add Scissors icon approx text if needed, but simple line is standard
               }
           });
 
@@ -320,11 +318,12 @@ export class PrintService {
           content: content,
           defaultStyle: {
               font: 'Roboto',
-              fontSize: 10
+              fontSize: 10,
+              color: '#000000'
           },
           styles: {
-              tableHeader: { fontSize: 8, bold: true, color: '#1f2937' },
-              tableCell: { fontSize: 9, color: '#111827' },
+              tableHeader: { fontSize: 8, bold: true, color: '#333333' },
+              tableCell: { fontSize: 9, color: '#000000' },
               subTableCell: { fontSize: 8 }
           }
       };
