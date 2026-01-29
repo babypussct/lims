@@ -1,3 +1,4 @@
+
 import { Injectable, inject, signal } from '@angular/core';
 import { CalculatorService } from './calculator.service';
 import { CalculatedItem } from '../models/sop.model';
@@ -5,12 +6,20 @@ import { ToastService } from './toast.service';
 import { StateService } from './state.service';
 import { formatNum, formatSampleList } from '../../shared/utils/utils';
 
-// Import pdfmake from node_modules
-import * as pdfMake from "pdfmake/build/pdfmake";
-import * as pdfFonts from "pdfmake/build/vfs_fonts";
+// FIX: Use default imports to allow property assignment
+// This works because esModuleInterop is true in tsconfig.json
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
 
 // Register fonts
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+// We need to cast to 'any' because the types might not perfectly match the internal structure of the build artifacts
+if ((pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+} else {
+    // Fallback for some versions/environments
+    (pdfMake as any).vfs = (pdfFonts as any).vfs || {};
+    console.warn('PDF Fonts loaded with fallback method.');
+}
 
 export interface PrintJob {
   sop: any; 
