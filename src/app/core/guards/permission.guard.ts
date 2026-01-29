@@ -6,7 +6,7 @@ import { ToastService } from '../services/toast.service';
 
 export const permissionGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
-  const router = inject(Router);
+  const router = inject(Router) as Router;
   const toast = inject(ToastService);
 
   const requiredPermission = route.data['permission'] as string;
