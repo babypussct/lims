@@ -157,6 +157,7 @@ export function naturalCompare(a: string, b: string): number {
  * Handles: Sample 1 -> Sample 2 (Fixed prefix)
  * Handles: U9927 -> U10027 (Varying digit length)
  * Rule: Only compresses if 3 or more sequential items. 2 items are listed with comma.
+ * UPDATE: Uses '→' instead of '➔' for PDF compatibility.
  */
 export function formatSampleList(samplesInput: string[] | Set<string> | undefined | null): string {
     if (!samplesInput) return '';
@@ -229,8 +230,8 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
                 // If only 2 items, separate by comma (e.g., "A1, A2")
                 ranges.push(`${start}, ${prev}`);
             } else {
-                // If 3 or more items, use arrow (e.g., "A1 ➔ A3")
-                ranges.push(`${start} ➔ ${prev}`);
+                // If 3 or more items, use standard arrow (e.g., "A1 → A3")
+                ranges.push(`${start} → ${prev}`);
             }
             
             // Reset range
@@ -246,7 +247,7 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
     } else if (count === 2) {
         ranges.push(`${start}, ${prev}`);
     } else {
-        ranges.push(`${start} ➔ ${prev}`);
+        ranges.push(`${start} → ${prev}`);
     }
     
     return ranges.join(', ');

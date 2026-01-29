@@ -89,15 +89,15 @@ export class PrintService {
       pairs.forEach((pair, pageIdx) => {
           pair.forEach((job, jobIdx) => {
               
-              // 2.1 HEADER (Category | Date | Title | QR)
+              // 2.1 HEADER (Re-designed using Columns for Flexbox-like look)
               if (options.showHeader) {
-                  // Targets Badge Logic
+                  // Targets
                   const selectedIds = job.inputs['targetIds'] || [];
                   const allTargets = job.sop?.targets || [];
                   const targetNames = selectedIds.map((id: string) => {
                       const t = allTargets.find((x:any) => x.id === id);
                       return t ? t.name : id;
-                  }).join(', ');
+                  });
 
                   // Display Date
                   let displayDate = '';
@@ -109,53 +109,64 @@ export class PrintService {
                       displayDate = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
                   }
 
-                  const headerTable = {
-                      table: {
-                          widths: ['*', 'auto'],
-                          body: [
-                              [
+                  // HEADER COLUMNS
+                  content.push({
+                      columns: [
+                          // LEFT: Info
+                          {
+                              width: '*',
+                              stack: [
+                                  // Category Badge & Ref
                                   {
-                                      stack: [
-                                          {
-                                              text: [
-                                                  { text: (job.sop?.category || 'SOP').toUpperCase(), bold: true, fontSize: 8, background: '#f0f0f0' },
-                                                  { text: ' | Ref: ' + (job.sop?.ref || 'N/A') + ' | Ngày: ' + displayDate, fontSize: 8, color: '#555555' }
-                                              ],
-                                              margin: [0, 0, 0, 2]
-                                          },
-                                          { text: (job.sop?.name || 'PHIẾU PHA CHẾ').toUpperCase(), fontSize: 13, bold: true, margin: [0, 0, 0, 2] },
-                                          targetNames ? { text: 'Chỉ tiêu: ' + targetNames, fontSize: 8, italics: true, color: '#444444' } : {}
-                                      ]
+                                      text: [
+                                          { text: (job.sop?.category || 'SOP').toUpperCase(), bold: true, fontSize: 8, background: '#e0e7ff', color: '#3730a3' }, // Indigo-100/700
+                                          { text: '  ' }, // Spacer
+                                          { text: 'Ref: ' + (job.sop?.ref || 'N/A'), fontSize: 8, color: '#6b7280' },
+                                          { text: ' | ' },
+                                          { text: 'Ngày: ' + displayDate, fontSize: 8, color: '#6b7280' }
+                                      ],
+                                      margin: [0, 0, 0, 4]
                                   },
-                                  {
-                                      stack: [
-                                          { qr: job.requestId || 'LIMS', fit: 60, alignment: 'right' },
-                                          { text: job.requestId || '', fontSize: 7, font: 'Roboto', alignment: 'right', margin: [0, 2, 0, 0] }
+                                  // Title
+                                  { text: (job.sop?.name || 'PHIẾU PHA CHẾ').toUpperCase(), fontSize: 13, bold: true, margin: [0, 0, 0, 4], color: '#111827' },
+                                  // Targets
+                                  targetNames.length > 0 ? {
+                                      text: [
+                                          { text: 'Chỉ tiêu: ', fontSize: 8, bold: true, color: '#374151' },
+                                          { text: targetNames.join(', '), fontSize: 8, color: '#4b5563' }
                                       ]
-                                  }
+                                  } : {}
                               ]
-                          ]
-                      },
-                      layout: 'noBorders',
-                      margin: [0, 0, 0, 5]
-                  };
-                  content.push(headerTable);
-                  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5 }] });
+                          },
+                          // RIGHT: QR & ID
+                          {
+                              width: 'auto',
+                              stack: [
+                                  { qr: job.requestId || 'LIMS', fit: 65, alignment: 'right' },
+                                  { text: job.requestId || '', fontSize: 7, font: 'Roboto', alignment: 'right', margin: [0, 2, 0, 0], bold: true, color: '#374151' }
+                              ]
+                          }
+                      ],
+                      columnGap: 10,
+                      margin: [0, 0, 0, 10]
+                  });
+                  
+                  // Divider
+                  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#111827' }] });
               }
 
-              // 2.2 INPUTS
+              // 2.2 INPUTS (Horizontal Layout)
               const inputTexts = [];
               if (job.sop?.inputs) {
                   job.sop.inputs.forEach((inp: any) => {
                       if (inp.type !== 'checkbox' || job.inputs[inp.var]) {
                           let val = job.inputs[inp.var];
-                          // Label Mapping for Select
                           if (inp.type === 'select' && inp.options) {
                               const found = inp.options.find((o:any) => o.value == val);
                               if (found) val = found.label;
                           }
                           if (inp.type === 'checkbox') val = '(Yes)';
-                          inputTexts.push({ text: `${inp.label}: ${val}`, fontSize: 9, bold: true, margin: [0, 2, 10, 2] });
+                          inputTexts.push({ text: [{text: inp.label + ': ', color:'#6b7280'}, {text: val + '', color: '#111827'}], fontSize: 9, bold: true, margin: [0, 2, 10, 2] });
                       }
                   });
               }
@@ -166,35 +177,34 @@ export class PrintService {
               content.push({
                   columns: inputTexts,
                   columnGap: 10,
-                  margin: [0, 5, 0, 5]
+                  margin: [0, 8, 0, 8]
               });
 
-              // Sample List
+              // Sample List (Styled Box)
               if (job.inputs['sampleList'] && job.inputs['sampleList'].length > 0) {
                   content.push({
-                      text: [
-                          { text: `Danh sách mẫu (${job.inputs['sampleList'].length}): `, bold: true, fontSize: 8 },
-                          { text: formatSampleList(job.inputs['sampleList']), fontSize: 8, font: 'Roboto' } // Font Roboto for mono-like look
+                      stack: [
+                          { text: `Danh sách mẫu (${job.inputs['sampleList'].length})`, bold: true, fontSize: 8, color: '#6b7280', margin: [0,0,0,2] },
+                          { text: formatSampleList(job.inputs['sampleList']), fontSize: 9, font: 'Roboto', bold: true, color: '#111827' }
                       ],
-                      margin: [0, 0, 0, 5],
-                      background: '#f9fafb',
-                      padding: 2
+                      margin: [0, 0, 0, 10],
+                      fillColor: '#f9fafb', // Gray-50
+                      padding: 5
                   });
               }
 
-              // 2.3 DATA TABLE
+              // 2.3 DATA TABLE (Clean UI - No Vertical Borders)
               const tableBody = [];
               // Header
               tableBody.push([
-                  { text: 'Hóa chất / Vật tư', style: 'tableHeader' },
-                  { text: 'Lượng', style: 'tableHeader', alignment: 'right' },
-                  { text: 'ĐV', style: 'tableHeader', alignment: 'center' },
-                  { text: 'Ghi chú', style: 'tableHeader', alignment: 'right' }
+                  { text: 'Hóa chất / Vật tư', style: 'tableHeader', border: [false, false, false, true] },
+                  { text: 'Lượng', style: 'tableHeader', alignment: 'right', border: [false, false, false, true] },
+                  { text: 'ĐV', style: 'tableHeader', alignment: 'center', border: [false, false, false, true] },
+                  { text: 'Ghi chú', style: 'tableHeader', alignment: 'right', border: [false, false, false, true] }
               ]);
 
               // Rows
               job.items.forEach(item => {
-                  // Std Unit Helper
                   const u = (unit: string) => {
                       const l = unit.toLowerCase();
                       if (l === 'ml' || l === 'milliliter') return 'mL';
@@ -203,19 +213,19 @@ export class PrintService {
                   };
 
                   tableBody.push([
-                      { text: item.displayName || item.name, style: 'tableCell', bold: true },
-                      { text: formatNum(item.totalQty), style: 'tableCell', alignment: 'right', bold: true },
-                      { text: u(item.unit), style: 'tableCell', alignment: 'center', fontSize: 8 },
-                      { text: item.base_note || '', style: 'tableCell', alignment: 'right', italics: true }
+                      { text: item.displayName || item.name, style: 'tableCell', bold: true, border: [false, false, false, true] },
+                      { text: formatNum(item.totalQty), style: 'tableCell', alignment: 'right', bold: true, font: 'Roboto', border: [false, false, false, true] }, // Roboto for monospace-ish numbers
+                      { text: u(item.unit), style: 'tableCell', alignment: 'center', fontSize: 8, color: '#4b5563', border: [false, false, false, true] },
+                      { text: item.base_note || '', style: 'tableCell', alignment: 'right', italics: true, color: '#6b7280', border: [false, false, false, true] }
                   ]);
 
                   if (item.isComposite) {
                       item.breakdown.forEach(sub => {
                           tableBody.push([
-                              { text: `• ${sub.displayName || sub.name}`, style: 'subTableCell', margin: [10, 0, 0, 0], color: '#555555' },
-                              { text: formatNum(sub.displayAmount), style: 'subTableCell', alignment: 'right', color: '#555555' },
-                              { text: u(sub.unit), style: 'subTableCell', alignment: 'center', color: '#555555' },
-                              { text: '', style: 'subTableCell' }
+                              { text: `• ${sub.displayName || sub.name}`, style: 'subTableCell', margin: [10, 0, 0, 0], color: '#4b5563', border: [false, false, false, true] },
+                              { text: formatNum(sub.displayAmount), style: 'subTableCell', alignment: 'right', color: '#4b5563', font: 'Roboto', border: [false, false, false, true] },
+                              { text: u(sub.unit), style: 'subTableCell', alignment: 'center', color: '#6b7280', border: [false, false, false, true] },
+                              { text: '', style: 'subTableCell', border: [false, false, false, true] }
                           ]);
                       });
                   }
@@ -224,15 +234,16 @@ export class PrintService {
               content.push({
                   table: {
                       headerRows: 1,
-                      widths: ['*', 'auto', 30, 'auto'], // Dynamic widths
+                      widths: ['*', 50, 30, 'auto'], // Adjusted widths
                       body: tableBody
                   },
                   layout: {
-                      hLineWidth: (i:number, node:any) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
-                      vLineWidth: () => 0,
-                      hLineColor: () => '#e5e7eb',
-                      paddingTop: () => 4,
-                      paddingBottom: () => 4
+                      hLineWidth: (i:number, node:any) => 0.5,
+                      vLineWidth: () => 0, // No vertical lines
+                      hLineColor: () => '#e5e7eb', // Slate-200
+                      paddingTop: () => 5,
+                      paddingBottom: () => 5,
+                      fillColor: (rowIndex: number) => (rowIndex === 0) ? '#f8fafc' : null // Slate-50 Header
                   },
                   margin: [0, 5, 0, 10]
               });
@@ -244,42 +255,57 @@ export class PrintService {
                   
                   const footerCols: any[] = [
                       {
+                          width: '*',
                           stack: [
-                              { text: footerText, italics: true, fontSize: 8, color: '#555555' },
-                              { text: `In lúc: ${timeStr} | Máy: ${job.user || 'Unknown'}`, fontSize: 7, color: '#888888', margin: [0, 2, 0, 0] }
+                              { text: footerText, italics: true, fontSize: 8, color: '#6b7280' },
+                              { text: `In lúc: ${timeStr} | Máy: ${job.user || 'Unknown'}`, fontSize: 7, color: '#9ca3af', margin: [0, 2, 0, 0] }
                           ]
                       }
                   ];
 
                   if (options.showSignature) {
                       footerCols.push({
-                          stack: [
-                              { text: 'XÁC NHẬN ĐIỆN TỬ', fontSize: 7, bold: true, alignment: 'right', color: '#666666' },
-                              { text: (job.user || '').toUpperCase(), fontSize: 8, bold: true, alignment: 'right' }
-                          ],
-                          alignment: 'right'
+                          width: 'auto',
+                          table: {
+                              body: [[
+                                  {
+                                      stack: [
+                                          { text: '✔ XÁC NHẬN ĐIỆN TỬ', fontSize: 7, bold: true, alignment: 'center', color: '#4b5563' },
+                                          { text: (job.user || '').toUpperCase(), fontSize: 8, bold: true, alignment: 'center', margin: [0,2,0,0] }
+                                      ]
+                                  }
+                              ]]
+                          },
+                          layout: {
+                              hLineWidth: () => 0.5,
+                              vLineWidth: () => 0.5,
+                              paddingLeft: () => 8,
+                              paddingRight: () => 8,
+                              paddingTop: () => 2,
+                              paddingBottom: () => 2
+                          }
                       });
                   }
 
                   content.push({
-                      canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5 }]
+                      canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#000000' }]
                   });
                   content.push({
                       columns: footerCols,
-                      margin: [0, 5, 0, 0]
+                      margin: [0, 8, 0, 0]
                   });
               }
 
-              // 2.5 CUT LINE (If first of pair and not last page overall context, but here pairs logic handles page breaks)
+              // 2.5 CUT LINE
               if (jobIdx === 0 && pair.length > 1 && options.showCutLine) {
                   content.push({
-                      canvas: [{ type: 'line', x1: 0, y1: 20, x2: 515, y2: 20, dash: { length: 5, space: 5 }, lineColor: '#9ca3af' }],
+                      canvas: [{ type: 'line', x1: 0, y1: 20, x2: 515, y2: 20, dash: { length: 4, space: 4 }, lineColor: '#9ca3af' }],
                       margin: [0, 20, 0, 20]
                   });
               }
           });
 
-          // Page Break after each pair (except last)
+          // Page Break
           if (pageIdx < pairs.length - 1) {
               content.push({ text: '', pageBreak: 'after' });
           }
@@ -287,15 +313,15 @@ export class PrintService {
 
       return {
           pageSize: 'A4',
-          pageMargins: [30, 30, 30, 30], // 30 units ~ 10mm
+          pageMargins: [30, 30, 30, 30],
           content: content,
           defaultStyle: {
-              font: 'Roboto', // Default font
+              font: 'Roboto',
               fontSize: 10
           },
           styles: {
-              tableHeader: { fontSize: 8, bold: true, color: 'black', fillColor: '#f3f4f6' },
-              tableCell: { fontSize: 9 },
+              tableHeader: { fontSize: 8, bold: true, color: '#1f2937' },
+              tableCell: { fontSize: 9, color: '#111827' },
               subTableCell: { fontSize: 8 }
           }
       };
