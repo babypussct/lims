@@ -19,58 +19,57 @@ declare var QRious: any;
             
             <!-- Stack 2 slips vertically. -->
             @for (job of group; track job.requestId || $index; let i = $index) {
-                <!-- FIX: Removed [class.separator] to prevent double line with cut-line -->
                 <div class="print-slip">
                     
-                    <!-- 1. HEADER (Horizontal) -->
+                    <!-- 1. HEADER -->
                     @if (options.showHeader) {
-                        <div class="header-container">
-                            <!-- Left: Info -->
-                            <div class="header-info">
-                                <div class="meta-row">
-                                    <span class="badge">{{job.sop?.category}}</span>
+                        <div class="header-section">
+                            <!-- Left: Main Info -->
+                            <div class="header-left">
+                                <div class="header-top-row">
+                                    <span class="badge-cat">{{job.sop?.category}}</span>
                                     @if(job.sop?.ref) {
-                                        <span class="ref-text">Ref: {{job.sop?.ref}}</span>
-                                        <span class="divider">|</span>
+                                        <span class="ref-id">Ref: {{job.sop?.ref}}</span>
+                                        <span class="sep">|</span>
                                     }
-                                    <span class="date-text">
-                                        Ngày: {{ getDisplayDate(job) }}
-                                    </span>
+                                    <span class="date-val">Ngày: {{ getDisplayDate(job) }}</span>
                                 </div>
-                                <h1 class="sop-title">
-                                    {{job.sop?.name}}
-                                </h1>
-                                <!-- Chỉ tiêu (Full Wrap) -->
+                                
+                                <h1 class="sop-name">{{job.sop?.name}}</h1>
+                                
                                 @if (getTargetNames(job).length > 0) {
-                                    <div class="targets-row">
+                                    <div class="targets-list">
                                         <span class="target-label">Chỉ tiêu:</span>
                                         @for(t of getTargetNames(job); track $index) {
-                                            <span class="target-badge">{{t}}</span>
+                                            <span class="target-tag">{{t}}</span>
                                         }
                                     </div>
                                 }
                             </div>
 
-                            <!-- Right: ID & QR (Increased Size) -->
-                            <div class="header-qr-group">
-                                <div class="id-box">
-                                    <div class="id-label">Mã truy xuất (ID)</div>
-                                    <div class="id-value">{{job.requestId || 'N/A'}}</div>
+                            <!-- Right: QR & ID (Aligned Correctly) -->
+                            <div class="header-right">
+                                <div class="id-container">
+                                    <div class="id-label">MÃ TRUY XUẤT (ID)</div>
+                                    <div class="id-text">{{job.requestId || '---'}}</div>
                                 </div>
-                                <!-- QR Canvas -->
-                                <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id" class="qr-code"></canvas>
+                                <div class="qr-wrapper">
+                                    <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id"></canvas>
+                                </div>
                             </div>
                         </div>
+                        
+                        <div class="header-divider"></div>
                     }
 
-                    <!-- 2. Inputs & Meta -->
-                    <div class="meta-container">
-                        <div class="inputs-bar">
+                    <!-- 2. PARAMETERS -->
+                    <div class="params-section">
+                        <div class="params-grid">
                             @for (inp of (job.sop?.inputs || []); track inp.var) {
                                  @if (inp.type !== 'checkbox' || job.inputs[inp.var]) {
-                                    <div class="input-item">
-                                        <span class="input-label">{{inp.label}}:</span>
-                                        <span class="input-value">
+                                    <div class="param-item">
+                                        <span class="p-label">{{inp.label}}:</span>
+                                        <span class="p-value">
                                             @if (inp.type === 'select' && inp.options) {
                                                 {{ getSelectLabel(inp, job.inputs[inp.var]) }}
                                             } @else if (inp.type === 'checkbox') {
@@ -82,108 +81,88 @@ declare var QRious: any;
                                     </div>
                                  }
                             }
-                            <div class="input-item margin-info">
-                                <span class="input-label">Hao hụt:</span>
-                                <!-- FIX: Format margin safely with fallback to inputs -->
-                                <span class="input-value">+{{formatNum(job.margin || job.inputs['safetyMargin'] || 0)}}%</span>
+                            <!-- Margin -->
+                            <div class="param-item margin-item">
+                                <span class="p-label">Hao hụt:</span>
+                                <span class="p-value margin-val">+{{formatNum(job.margin || job.inputs['safetyMargin'] || 0)}}%</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. Samples List (SMART FLOW TEXT) -->
+                    <!-- 3. SAMPLES LIST -->
                     @if (job.inputs['sampleList'] && job.inputs['sampleList'].length > 0) {
-                        <div class="samples-section">
-                            <div class="section-title">
-                                Danh sách mẫu ({{job.inputs['sampleList'].length}})
-                            </div>
-                            <div class="samples-text">
-                                {{ formatSampleList(job.inputs['sampleList']) }}
-                            </div>
+                        <div class="samples-box">
+                            <div class="box-label">Danh sách mẫu ({{job.inputs['sampleList'].length}})</div>
+                            <div class="box-content">{{ formatSampleList(job.inputs['sampleList']) }}</div>
                         </div>
                     }
 
-                    <!-- 4. Main Data Table -->
-                    <div class="table-container">
-                        <table class="data-table">
+                    <!-- 4. DATA TABLE -->
+                    <div class="data-section">
+                        <table class="main-table">
                             <thead>
                                 <tr>
-                                    <th class="col-name">Hóa chất / Vật tư</th>
-                                    <th class="col-amount">Lượng</th>
-                                    <th class="col-unit">ĐV</th>
-                                    <th class="col-note">Ghi chú</th>
+                                    <th class="th-name">Hóa chất / Vật tư</th>
+                                    <th class="th-amount">Lượng</th>
+                                    <th class="th-unit">ĐV</th>
+                                    <th class="th-note">Ghi chú</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @for (item of job.items; track item.name) {
-                                    <tr class="item-row">
-                                        <td class="cell-name">
-                                            <span class="item-name">{{ item.displayName || item.name }}</span>
-                                            @if(item.displayWarning) { 
-                                                <span class="warning-badge">{{item.displayWarning}}</span> 
-                                            }
+                                    <tr>
+                                        <td class="td-name">
+                                            <div class="item-title">{{ item.displayName || item.name }}</div>
+                                            @if(item.displayWarning) { <div class="item-warn">{{item.displayWarning}}</div> }
                                         </td>
-                                        <td class="cell-amount">{{formatNum(item.totalQty)}}</td>
-                                        <td class="cell-unit">{{stdUnit(item.unit)}}</td>
-                                        <td class="cell-note">{{item.base_note}}</td>
+                                        <td class="td-amount">{{formatNum(item.totalQty)}}</td>
+                                        <td class="td-unit">{{stdUnit(item.unit)}}</td>
+                                        <td class="td-note">{{item.base_note}}</td>
                                     </tr>
 
                                     @if(item.isComposite) {
-                                        <tr class="composite-row">
-                                            <td colspan="4">
-                                                <div class="sub-table-container">
-                                                    <table class="sub-table">
-                                                        @for (sub of item.breakdown; track sub.name) {
-                                                            <tr>
-                                                                <td class="sub-name">• {{ sub.displayName || sub.name }}</td>
-                                                                <td class="sub-amount">{{formatNum(sub.displayAmount)}}</td>
-                                                                <td class="sub-unit">{{stdUnit(sub.unit)}}</td>
-                                                                <td class="sub-note"></td>
-                                                            </tr>
-                                                        }
-                                                    </table>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        @for (sub of item.breakdown; track sub.name) {
+                                            <tr class="sub-row">
+                                                <td class="td-name sub-name">• {{ sub.displayName || sub.name }}</td>
+                                                <td class="td-amount sub-amount">{{formatNum(sub.displayAmount)}}</td>
+                                                <td class="td-unit sub-unit">{{stdUnit(sub.unit)}}</td>
+                                                <td class="td-note"></td>
+                                            </tr>
+                                        }
                                     }
                                 }
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- 5. Footer -->
+                    <!-- 5. FOOTER -->
                     @if (options.showFooter) {
                         <div class="footer-section">
-                            <div class="footer-row">
-                                <!-- Left -->
-                                <div class="footer-left">
-                                    <div class="footer-text">
-                                        {{ getFooterText() }}
-                                    </div>
-                                    <div class="timestamp">
-                                        In lúc: {{ getCurrentTime() }} | Máy: {{ job.user }}
-                                    </div>
+                            <div class="footer-divider"></div>
+                            <div class="footer-content">
+                                <div class="footer-info">
+                                    <div class="disclaimer">{{ getFooterText() }}</div>
+                                    <div class="meta-print">In lúc: {{ getCurrentTime() }} | Máy: {{ job.user }}</div>
                                 </div>
-
-                                <!-- Right -->
-                                <div class="footer-right">
-                                    @if (options.showSignature) {
-                                        <div class="digital-approval">
-                                            <div class="approval-icon">✔</div>
-                                            <div class="approval-info">
-                                                <div class="approval-label">XÁC NHẬN ĐIỆN TỬ</div>
-                                                <div class="approval-user">{{ job.user }}</div>
-                                            </div>
+                                
+                                @if (options.showSignature) {
+                                    <div class="signature-box">
+                                        <div class="sig-icon">✔</div>
+                                        <div class="sig-text">
+                                            <div class="sig-label">XÁC NHẬN ĐIỆN TỬ</div>
+                                            <div class="sig-name">{{ job.user }}</div>
                                         </div>
-                                    }
-                                </div>
+                                    </div>
+                                }
                             </div>
                         </div>
                     }
 
-                    <!-- Cut Icon (Only between slips) -->
+                    <!-- CUT LINE -->
                     @if (options.showCutLine && i === 0) { 
                         <div class="cut-line">
-                            <span class="scissor">✂</span> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                            <span class="cut-icon">✂</span>
+                            <div class="dashed-line"></div>
                         </div> 
                     }
                 </div>
@@ -193,92 +172,116 @@ declare var QRious: any;
     </div>
   `,
   styles: [`
-    .print-root { font-family: 'Open Sans', sans-serif; color: #000; background-color: white; width: 100%; box-sizing: border-box; }
+    /* GLOBAL RESET FOR PRINT */
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     
-    /* A4 Page Setup */
-    .print-page { width: 210mm; height: 296mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; overflow: hidden; background: white; }
+    .print-root {
+        width: 210mm; /* A4 Width */
+        background: white;
+        margin: 0 auto;
+        color: #000;
+        font-family: 'Open Sans', sans-serif;
+    }
+
+    .print-page {
+        width: 210mm;
+        height: 296mm; /* A4 Height */
+        background: white;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        page-break-after: always;
+        position: relative;
+    }
     .print-page:last-child { page-break-after: auto; }
 
-    /* Each Slip (A5 approx) */
-    .print-slip { height: 50%; display: flex; flex-direction: column; padding: 8mm 12mm; box-sizing: border-box; position: relative; }
-    
-    /* --- NEW HEADER --- */
-    .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px; }
-    
-    .header-info { flex: 1; padding-right: 15px; }
-    .meta-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 9px; }
-    .badge { border: 1px solid #000; padding: 0px 3px; border-radius: 2px; font-weight: 800; text-transform: uppercase; font-size: 8px; }
-    .divider { color: #999; }
-    
-    .sop-title { font-size: 15px; font-weight: 900; text-transform: uppercase; margin: 4px 0; line-height: 1.1; letter-spacing: -0.3px; }
-    
-    /* TARGETS */
-    .targets-row { font-size: 9px; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .target-label { font-weight: 700; color: #444; margin-right: 2px; }
-    .target-badge { border: 1px solid #ccc; padding: 0 4px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+    .print-slip {
+        flex: 1; /* 50% height */
+        padding: 10mm 15mm; /* Safe margins */
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        max-height: 148mm;
+    }
 
-    /* QR Group */
-    .header-qr-group { display: flex; align-items: center; gap: 10px; }
-    .id-box { text-align: right; }
-    .id-label { font-size: 7px; text-transform: uppercase; color: #666; font-weight: 700; }
-    .id-value { font-size: 11px; font-family: monospace; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-    .qr-code { width: 80px; height: 80px; border: 1px solid #eee; display: block; }
-
-    /* Inputs Bar */
-    .meta-container { margin-bottom: 6px; font-size: 9px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
-    .inputs-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .input-item { display: flex; align-items: center; gap: 3px; }
-    .input-label { font-weight: 700; color: #555; font-size: 8px; text-transform: uppercase; }
-    .input-value { font-weight: 700; font-family: monospace; font-size: 9px; }
-    .margin-info { margin-left: auto; padding-left: 8px; border-left: 1px solid #ccc; }
-
-    /* Samples Text Flow */
-    .samples-section { margin-bottom: 6px; border: 1px solid #eee; padding: 3px 5px; border-radius: 4px; background-color: #fafafa; }
-    .section-title { font-size: 8px; font-weight: 800; text-transform: uppercase; margin-bottom: 1px; color: #666; }
-    .samples-text { font-size: 9px; font-family: 'Courier New', Courier, monospace; font-weight: 600; color: #000; line-height: 1.3; text-align: justify; word-break: break-word; }
-
-    /* Table */
-    .table-container { flex: 1; overflow: hidden; min-height: 50px; }
-    .data-table { width: 100%; font-size: 9px; border-collapse: collapse; }
-    .data-table th { border-bottom: 1px solid #000; text-align: left; padding: 2px 0; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #333; }
-    .data-table td { border-bottom: 1px solid #eee; vertical-align: top; padding: 2px 0; }
+    /* --- HEADER --- */
+    .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
     
-    .col-name { width: 55%; }
-    .col-amount { width: 15%; text-align: right; }
-    .col-unit { width: 10%; text-align: center; }
-    .col-note { width: 20%; text-align: right; }
+    .header-left { flex: 1; padding-right: 10px; }
+    .header-top-row { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #555; margin-bottom: 2px; }
+    .badge-cat { background: #eef2ff; color: #3730a3; padding: 1px 4px; border-radius: 3px; font-weight: 800; text-transform: uppercase; font-size: 8px; border: 1px solid #c7d2fe; }
+    .ref-id { font-weight: 600; color: #444; }
+    .sep { color: #ccc; }
     
-    .item-name { font-weight: 700; color: #000; }
-    .warning-badge { font-size: 7px; border: 1px solid #000; display: inline-block; padding: 0 2px; border-radius: 2px; margin-left: 3px; vertical-align: middle; font-weight: bold; }
-    .cell-amount { text-align: right; font-weight: 700; font-family: monospace; font-size: 10px; }
-    .cell-unit { text-align: center; font-size: 8px; font-weight: 600; color: #555; }
-    .cell-note { font-style: italic; color: #666; font-size: 8px; text-align: right; }
-
-    /* Sub Table */
-    .sub-table { width: 100%; font-size: 8px; margin-left: 8px; border-left: 1px solid #ccc; padding-left: 6px; margin-top: 1px; }
-    .sub-table td { border: none; padding: 0; color: #555; }
-    .sub-name { }
-    .sub-amount { text-align: right; font-weight: 600; font-family: monospace; }
-
-    /* Footer */
-    .footer-section { margin-top: auto; padding-top: 4px; border-top: 1px solid #000; }
-    .footer-row { display: flex; justify-content: space-between; align-items: flex-end; }
+    .sop-name { font-size: 16px; font-weight: 800; text-transform: uppercase; margin: 4px 0 6px 0; color: #111; line-height: 1.1; letter-spacing: -0.3px; }
     
-    .footer-left { width: 70%; }
-    .footer-text { font-size: 8px; font-style: italic; color: #444; margin-bottom: 2px; line-height: 1.2; }
-    .timestamp { font-size: 7px; color: #888; font-family: monospace; }
+    .targets-list { font-size: 9px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .target-label { font-weight: 700; color: #555; margin-right: 2px; }
+    .target-tag { border: 1px solid #ddd; padding: 0 4px; border-radius: 3px; font-weight: 600; color: #333; background: #f9f9f9; }
 
-    .footer-right { width: 30%; display: flex; justify-content: flex-end; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .id-container { text-align: right; }
+    .id-label { font-size: 7px; font-weight: 800; color: #888; letter-spacing: 0.5px; margin-bottom: 1px; }
+    .id-text { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 700; color: #000; letter-spacing: -0.5px; line-height: 1; }
     
-    /* Digital Badge */
-    .digital-approval { border: 1px solid #000; border-radius: 4px; padding: 2px 6px; display: flex; align-items: center; gap: 4px; background: #fdfdfd; }
-    .approval-icon { font-size: 12px; font-weight: bold; }
-    .approval-info { display: flex; flex-direction: column; }
-    .approval-label { font-size: 6px; font-weight: 800; text-transform: uppercase; color: #666; line-height: 1; }
-    .approval-user { font-size: 8px; font-weight: 700; text-transform: uppercase; line-height: 1; margin-top: 1px; }
+    .qr-wrapper canvas { width: 70px; height: 70px; display: block; }
 
-    .cut-line { position: absolute; bottom: -6px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #999; pointer-events: none; }
-    .scissor { font-size: 14px; margin-right: 5px; vertical-align: middle; }
+    .header-divider { height: 2px; background: #000; margin-bottom: 8px; width: 100%; }
+
+    /* --- PARAMETERS --- */
+    .params-section { margin-bottom: 8px; }
+    .params-grid { display: flex; flex-wrap: wrap; gap: 10px 15px; font-size: 9px; line-height: 1.3; }
+    .param-item { display: flex; align-items: center; gap: 4px; }
+    .p-label { color: #666; font-weight: 600; text-transform: uppercase; font-size: 8px; }
+    .p-value { color: #000; font-weight: 700; font-family: 'Roboto Mono', monospace; }
+    .margin-item { margin-left: auto; }
+    .margin-val { color: #d97706; }
+
+    /* --- SAMPLES --- */
+    .samples-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 6px; margin-bottom: 8px; }
+    .box-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+    .box-content { font-family: 'Roboto Mono', monospace; font-size: 9px; font-weight: 600; color: #334155; line-height: 1.3; text-align: justify; }
+
+    /* --- TABLE --- */
+    .data-section { flex: 1; min-height: 50px; }
+    .main-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    
+    .main-table th { text-align: left; border-bottom: 1px solid #999; padding: 3px 0; font-weight: 800; color: #333; text-transform: uppercase; font-size: 8px; }
+    .th-amount { text-align: right; }
+    .th-unit { text-align: center; }
+    .th-note { text-align: right; }
+
+    .main-table td { border-bottom: 1px solid #f1f5f9; padding: 4px 0; vertical-align: top; color: #1e293b; }
+    .td-name { width: 55%; padding-right: 5px; }
+    .item-title { font-weight: 700; font-size: 10px; color: #000; }
+    .item-warn { font-size: 7px; color: #dc2626; font-weight: 600; margin-top: 1px; }
+    
+    .td-amount { width: 15%; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 10px; color: #000; }
+    .td-unit { width: 10%; text-align: center; font-weight: 600; font-size: 8px; color: #666; }
+    .td-note { width: 20%; text-align: right; font-style: italic; color: #64748b; font-size: 8px; }
+
+    .sub-row td { color: #475569; padding-top: 2px; padding-bottom: 2px; border-bottom: none; }
+    .sub-name { padding-left: 8px; font-size: 9px; font-weight: 500; }
+    .sub-amount { font-size: 9px; font-weight: 500; color: #475569; }
+
+    /* --- FOOTER --- */
+    .footer-section { margin-top: auto; padding-top: 6px; }
+    .footer-divider { height: 1px; background: #000; margin-bottom: 4px; width: 100%; opacity: 0.2; }
+    .footer-content { display: flex; justify-content: space-between; align-items: flex-end; }
+    
+    .footer-info { flex: 1; }
+    .disclaimer { font-size: 8px; color: #666; font-style: italic; margin-bottom: 2px; }
+    .meta-print { font-size: 7px; color: #999; font-family: 'Roboto Mono', monospace; }
+
+    .signature-box { border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 8px; display: flex; align-items: center; gap: 6px; background: #fff; }
+    .sig-icon { font-size: 12px; color: #059669; }
+    .sig-label { font-size: 6px; font-weight: 800; color: #64748b; line-height: 1; }
+    .sig-name { font-size: 9px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin-top: 1px; line-height: 1; }
+
+    /* --- CUT LINE --- */
+    .cut-line { position: absolute; bottom: -6px; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; height: 12px; }
+    .cut-icon { font-size: 12px; color: #94a3b8; background: white; padding: 0 5px; position: relative; z-index: 1; }
+    .dashed-line { position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #cbd5e1; }
   `]
 })
 export class PrintLayoutComponent implements AfterViewInit, OnChanges {
@@ -288,56 +291,29 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   formatSampleList = formatSampleList;
 
   @Input() jobs: PrintJob[] = [];
-  @Input() isDirectPrint = false;
-  // Default options if not provided
   @Input() options: any = { showHeader: true, showFooter: true, showSignature: true, showCutLine: true };
 
   @ViewChildren('qrCanvas') qrCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
-  constructor() {}
-
   get groupedJobs(): PrintJob[][] {
     const groups: PrintJob[][] = [];
-    const itemsPerPage = 2; // 2 Slips per A4
+    const itemsPerPage = 2; 
     for (let i = 0; i < this.jobs.length; i += itemsPerPage) {
       groups.push(this.jobs.slice(i, i + itemsPerPage));
     }
     return groups;
   }
 
-  ngAfterViewInit() {
-    setTimeout(() => {
-        this.generateQRCodes();
-    }, 100);
-  }
-
-  // FIX: Redraw QR when options change (e.g. Header toggle re-renders DOM)
-  ngOnChanges(changes: SimpleChanges) {
-      if (changes['options'] || changes['jobs']) {
-          setTimeout(() => {
-              this.generateQRCodes();
-          }, 100);
-      }
-  }
+  ngAfterViewInit() { setTimeout(() => this.generateQRCodes(), 100); }
+  ngOnChanges(changes: SimpleChanges) { if (changes['options'] || changes['jobs']) setTimeout(() => this.generateQRCodes(), 100); }
 
   generateQRCodes() {
     if (typeof QRious === 'undefined') return;
-    if (!this.qrCanvases || this.qrCanvases.length === 0) return;
-    
-    // Construct Base URL dynamically
     const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
-
-    this.qrCanvases.forEach(canvasRef => {
+    this.qrCanvases?.forEach(canvasRef => {
         const canvas = canvasRef.nativeElement;
-        // Optional: Check if already drawn to avoid flicker, but redraw is safer for dynamic changes
-        // if (canvas.getAttribute('data-drawn') === 'true') return;
-
         const id = canvas.getAttribute('data-qr') || 'LIMS';
-        const fullUrl = baseUrl + id;
-        
-        // Increase size for better resolution
-        new QRious({ element: canvas, value: fullUrl, size: 250, level: 'L' });
-        canvas.setAttribute('data-drawn', 'true');
+        new QRious({ element: canvas, value: baseUrl + id, size: 200, level: 'L' });
     });
   }
 
@@ -355,10 +331,7 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
           if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
       const d = new Date(job.date);
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
   }
 
   getCurrentTime(): string {
@@ -368,23 +341,13 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
 
   getTargetNames(job: PrintJob): string[] {
       const selectedIds = job.inputs['targetIds'] || [];
-      if (!Array.isArray(selectedIds) || selectedIds.length === 0) return [];
-      
       const allTargets = job.sop?.targets || [];
       return selectedIds.map(id => {
-          const t = allTargets.find((t: any) => t.id === id);
+          const t = allTargets.find((x: any) => x.id === id);
           return t ? t.name : id;
       });
   }
 
-  getFooterText(): string {
-      const conf = this.state.printConfig();
-      return conf?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.';
-  }
-
-  getSelectLabel(inp: any, value: any): string {
-      if (!inp.options) return value;
-      const found = inp.options.find((o: any) => o.value == value);
-      return found ? found.label : value;
-  }
+  getFooterText(): string { return this.state.printConfig()?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.'; }
+  getSelectLabel(inp: any, value: any): string { return inp.options?.find((o: any) => o.value == value)?.label || value; }
 }

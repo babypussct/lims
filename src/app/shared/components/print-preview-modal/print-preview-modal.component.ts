@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
 import { PrintLayoutComponent } from '../print-layout/print-layout.component';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-print-preview-modal',
@@ -11,11 +12,11 @@ import { PrintLayoutComponent } from '../print-layout/print-layout.component';
   imports: [CommonModule, FormsModule, PrintLayoutComponent],
   template: `
     @if (printService.isPreviewOpen()) {
-        <div class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 fade-in" (click)="close()">
-            <div class="bg-white w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-bounce-in relative" (click)="$event.stopPropagation()">
+        <div class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 fade-in print-modal-overlay" (click)="close()">
+            <div class="bg-white w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-bounce-in relative print-modal-content" (click)="$event.stopPropagation()">
                 
-                <!-- HEADER -->
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10">
+                <!-- HEADER (Hidden when printing) -->
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 print-hidden-ui">
                     <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                         <i class="fa-solid fa-print text-indigo-600"></i> Xem trước khi in (A4 Preview)
                     </h3>
@@ -32,8 +33,8 @@ import { PrintLayoutComponent } from '../print-layout/print-layout.component';
                 <!-- BODY (Split Layout) -->
                 <div class="flex-1 flex overflow-hidden">
                     
-                    <!-- LEFT: Config Panel -->
-                    <div class="w-72 bg-slate-50 border-r border-slate-200 p-5 flex flex-col gap-6 overflow-y-auto shrink-0">
+                    <!-- LEFT: Config Panel (Hidden when printing) -->
+                    <div class="w-72 bg-slate-50 border-r border-slate-200 p-5 flex flex-col gap-6 overflow-y-auto shrink-0 print-hidden-ui">
                         
                         <!-- Toggle Options -->
                         <div class="space-y-3">
@@ -61,27 +62,27 @@ import { PrintLayoutComponent } from '../print-layout/print-layout.component';
                         </div>
 
                         <div class="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-3">
-                            <button (click)="doPrint()" [disabled]="printService.isProcessing()"
-                                    class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                @if(printService.isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
-                                @else { <i class="fa-solid fa-print text-lg"></i> }
-                                <span>IN NGAY</span>
+                            <button (click)="doPrint()" 
+                                    class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print text-lg"></i>
+                                <span>IN NGAY (Direct)</span>
                             </button>
                             
-                            <button (click)="doPdf()" [disabled]="printService.isProcessing()"
+                            <button (click)="doPdf()" [disabled]="isGeneratingPdf()"
                                     class="w-full py-3 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
-                                @if(printService.isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
+                                @if(isGeneratingPdf()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                                 @else { <i class="fa-solid fa-file-pdf"></i> }
-                                <span>Tải PDF</span>
+                                <span>Tải PDF (High-Res)</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- RIGHT: Preview Canvas -->
-                    <div class="flex-1 bg-slate-200 overflow-auto flex justify-center p-8 relative custom-scrollbar">
-                        <div class="origin-top transition-transform duration-200 ease-out shadow-2xl bg-white"
+                    <!-- 'id="print-area"' is used for PDF generation -->
+                    <div class="flex-1 bg-slate-200 overflow-auto flex justify-center p-8 relative custom-scrollbar print-scale-reset">
+                        <div id="print-area" class="origin-top transition-transform duration-200 ease-out shadow-2xl bg-white print-scale-reset"
                              [style.transform]="'scale(' + (zoomLevel()/100) + ')'">
-                             <!-- Using PrintLayout inside the modal -->
+                             <!-- This Component is what gets printed -->
                              <app-print-layout [jobs]="printService.previewJobs()" [options]="options"></app-print-layout>
                         </div>
                     </div>
@@ -93,8 +94,10 @@ import { PrintLayoutComponent } from '../print-layout/print-layout.component';
 })
 export class PrintPreviewModalComponent {
   printService = inject(PrintService);
+  toast = inject(ToastService);
   
   zoomLevel = signal(75); // %
+  isGeneratingPdf = signal(false);
   
   // Local options state
   options: PrintOptions = { ...this.printService.defaultOptions };
@@ -109,23 +112,75 @@ export class PrintPreviewModalComponent {
       });
   }
 
-  close() {
-      this.printService.closePreview();
-  }
+  close() { this.printService.closePreview(); }
+  zoomIn() { this.zoomLevel.update(v => Math.min(v + 10, 150)); }
+  zoomOut() { this.zoomLevel.update(v => Math.max(v - 10, 25)); }
 
-  zoomIn() {
-      this.zoomLevel.update(v => Math.min(v + 10, 150));
-  }
-
-  zoomOut() {
-      this.zoomLevel.update(v => Math.max(v - 10, 25));
-  }
-
+  // --- 1. DIRECT BROWSER PRINT (WYSIWYG) ---
   doPrint() {
-      this.printService.printDocument(this.printService.previewJobs(), this.options);
+      // Logic handled by CSS @media print in index.html
+      // It simply hides everything EXCEPT app-print-preview-modal content
+      window.print();
   }
 
-  doPdf() {
-      this.printService.downloadPdf(this.printService.previewJobs(), this.options);
+  // --- 2. HIGH-RES PDF EXPORT (Image-based) ---
+  async doPdf() {
+      this.isGeneratingPdf.set(true);
+      this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
+      
+      // Wait for UI to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      try {
+          const { jsPDF } = await import('jspdf');
+          const html2canvas = (await import('html2canvas')).default;
+
+          const element = document.getElementById('print-area');
+          if (!element) throw new Error('Print area not found');
+
+          // Capture at 2x scale for clarity
+          const canvas = await html2canvas(element, {
+              scale: 2, 
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff'
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          
+          // A4 dimensions in mm
+          const pdfWidth = 210;
+          const pdfHeight = 297;
+          
+          const doc = new jsPDF('p', 'mm', 'a4');
+
+          // Calculate height proportional to A4 width
+          const imgProps = (doc as any).getImageProperties(imgData);
+          const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+          // Handle multi-page (simple height check)
+          let heightLeft = pdfImgHeight;
+          let position = 0;
+
+          doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
+          heightLeft -= pdfHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - pdfImgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
+            heightLeft -= pdfHeight;
+          }
+
+          const fileName = `LIMS_Phieu_${new Date().toISOString().slice(0,10)}.pdf`;
+          doc.save(fileName);
+          this.toast.show('Tải PDF thành công!', 'success');
+
+      } catch (e: any) {
+          console.error(e);
+          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
+      } finally {
+          this.isGeneratingPdf.set(false);
+      }
   }
 }
