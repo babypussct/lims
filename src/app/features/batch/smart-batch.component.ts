@@ -511,7 +511,35 @@ export class SmartBatchComponent {
   totalUniqueTargets = computed(() => { const allTargets = new Set<string>(); this.blocks().forEach(b => { b.selectedTargets.forEach(t => allTargets.add(t)); }); return allTargets.size; });
   hasCriticalMissing = computed(() => this.batches().some(b => b.status === 'missing_stock'));
   missingStockSummary = computed(() => { const summary = new Map<string, any>(); const ledger: Record<string, number> = {}; Object.values(this.state.inventoryMap()).forEach((i: InventoryItem) => ledger[i.id] = i.stock); for (const batch of this.batches()) { for (const item of batch.resourceImpact) { if (item.isComposite) { for (const sub of item.breakdown) { const current = ledger[sub.name] || 0; const remaining = current - sub.totalNeed; ledger[sub.name] = remaining; if (!summary.has(sub.name)) { summary.set(sub.name, { name: sub.displayName || sub.name, unit: sub.stockUnit, missing: 0, currentStock: current }); } } } else { const current = ledger[item.name] || 0; const remaining = current - item.stockNeed; ledger[item.name] = remaining; if (!summary.has(item.name)) { summary.set(item.name, { name: item.displayName || item.name, unit: item.stockUnit, missing: 0, currentStock: current }); } } } } const result: any[] = []; summary.forEach((val, key) => { const finalBalance = ledger[key]; if (finalBalance < 0) { val.missing = Math.abs(finalBalance); result.push(val); } }); return result.sort((a,b) => b.missing - a.missing); });
-  candidateSops = computed(() => { const s = this.splitState(); if (s.sourceBatchIndex < 0) return []; const sourceBatch = this.batches()[s.sourceBatchIndex]; const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id); if (s.showAllSops) return allSops; const samplesToMove = s.selectedSamples; let requiredTargetIds: Set<string>; if (samplesToMove.size === 0) { requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id)); } else { requiredTargetIds = this.getRequiredTargetsForSamples(samplesToMove); } return allSops.filter(sop => { if (!sop.targets) return false; const sopTargetIds = new Set(sop.targets.map(t => t.id)); for (const id of requiredTargetIds) { if (!sopTargetIds.has(id)) return false; } return true; }); });
+  
+  // FIX TS7006: Explicitly typing iterator variables 'id' in for loops
+  candidateSops = computed(() => { 
+      const s = this.splitState(); 
+      if (s.sourceBatchIndex < 0) return []; 
+      const sourceBatch = this.batches()[s.sourceBatchIndex]; 
+      const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id); 
+      if (s.showAllSops) return allSops; 
+      
+      const samplesToMove = s.selectedSamples; 
+      let requiredTargetIds: Set<string>; 
+      
+      if (samplesToMove.size === 0) { 
+          requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id)); 
+      } else { 
+          requiredTargetIds = this.getRequiredTargetsForSamples(samplesToMove); 
+      } 
+      
+      return allSops.filter(sop => { 
+          if (!sop.targets) return false; 
+          const sopTargetIds = new Set(sop.targets.map(t => t.id)); 
+          // FIX: Explicitly iterate over Array from Set
+          for (const id of Array.from(requiredTargetIds)) { 
+              if (!sopTargetIds.has(id)) return false; 
+          } 
+          return true; 
+      }); 
+  });
+  
   missingTargetsInSplit = computed(() => { const s = this.splitState(); if (s.sourceBatchIndex < 0 || !s.targetSopId) return []; if (s.selectedSamples.size === 0) return []; const targetSop = this.state.sops().find(sop => sop.id === s.targetSopId); if (!targetSop || !targetSop.targets) return []; const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples); const targetSopTargetIds = new Set(targetSop.targets.map(t => t.id)); const missingIds = Array.from(requiredTargetIds).filter(id => !targetSopTargetIds.has(id)); const sourceBatch = this.batches()[s.sourceBatchIndex]; const hydrated = missingIds.map(id => { const t = sourceBatch.targets.find(t => t.id === id); return t || { id, name: id }; }); return hydrated; });
 
   // --- ACTIONS ---
@@ -532,7 +560,86 @@ export class SmartBatchComponent {
   matchesSearch(batch: ProposedBatch): boolean { const term = this.sampleSearchTerm().trim().toLowerCase(); if (!term) return false; for (const s of batch.samples) { if (s.toLowerCase().includes(term)) return true; } return false; }
   private getRequiredTargetsForSamples(sampleNames: Set<string>): Set<string> { const reqs = new Set<string>(); const blocks = this.blocks(); for (const block of blocks) { const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s); const relevantSamples = blockSamples.filter(s => sampleNames.has(s)); if (relevantSamples.length > 0) { block.selectedTargets.forEach(t => reqs.add(t)); } } return reqs; }
   
-  async analyzePlan() { const allSelectedTargetIds = new Set<string>(); this.blocks().forEach(b => { b.selectedTargets.forEach(t => allSelectedTargetIds.add(t)); }); const allSops = this.state.sops().filter(s => !s.isArchived && s.targets && s.targets.length > 0); this.inventoryCache = this.state.inventoryMap(); const recipes = await this.recipeService.getAllRecipes(); this.recipeCache = {}; recipes.forEach(r => this.recipeCache[r.id] = r); const targetSopMap = new Map<string, Sop>(); let pendingTargets = new Set<string>(allSelectedTargetIds); while (pendingTargets.size > 0) { let bestSop: Sop | null = null; let bestCovered: string[] = []; for (const sop of allSops) { const covered = sop.targets!.map(t => t.id).filter(id => pendingTargets.has(id)); if (covered.length > bestCovered.length) { bestCovered = covered; bestSop = sop; } } if (bestSop && bestCovered.length > 0) { bestCovered.forEach(tId => { targetSopMap.set(tId, bestSop!); pendingTargets.delete(tId); }); } else { break; } } this.unmappedTargets.set(Array.from(pendingTargets)); const sopSampleMap = new Map<string, Set<string>>(); const sopTargetsMap = new Map<string, Set<string>>(); this.blocks().forEach(block => { const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s); if (samples.length === 0) return; block.selectedTargets.forEach(tId => { const assignedSop = targetSopMap.get(tId); if (assignedSop) { if (!sopSampleMap.has(assignedSop.id)) { sopSampleMap.set(assignedSop.id, new Set<string>()); sopTargetsMap.set(assignedSop.id, new Set<string>()); } samples.forEach(s => { sopSampleMap.get(assignedSop.id)!.add(s); }); sopTargetsMap.get(assignedSop.id)!.add(tId); } }); }); const proposed: ProposedBatch[] = []; for (const [sopId, sampleSet] of sopSampleMap.entries()) { const sop = allSops.find(s => s.id === sopId); if (!sop) continue; const relevantTargetIds = sopTargetsMap.get(sopId)!; const relevantTargets = sop.targets!.filter(t => relevantTargetIds.has(t.id)); const inputValues: Record<string, any> = {}; sop.inputs.forEach(i => inputValues[i.var] = i.default); inputValues['n_sample'] = sampleSet.size; if(inputValues['n_qc'] === undefined) inputValues['n_qc'] = 1; const needs = this.calculator.calculateSopNeeds(sop, inputValues, 10, this.inventoryCache, this.recipeCache); proposed.push({ id: `batch_${Date.now()}_${Math.random()}`, sop: sop, targets: relevantTargets, samples: sampleSet, sampleCount: sampleSet.size, inputValues: inputValues, safetyMargin: 10, resourceImpact: needs, status: 'ready' }); } proposed.forEach(batch => { const batchTargetIds = new Set(batch.targets.map(t => t.id)); batch.alternativeSops = allSops.filter(s => { if (s.id === batch.sop.id) return false; if (!s.targets) return false; const sTargetIds = new Set(s.targets.map(t => t.id)); for (let id of batchTargetIds) { if (!sTargetIds.has(id)) return false; } return true; }); }); this.batches.set(proposed); this.validateGlobalStock(); this.step.set(2); }
+  async analyzePlan() { 
+      const allSelectedTargetIds = new Set<string>(); 
+      this.blocks().forEach(b => { b.selectedTargets.forEach(t => allSelectedTargetIds.add(t)); }); 
+      const allSops = this.state.sops().filter(s => !s.isArchived && s.targets && s.targets.length > 0); 
+      this.inventoryCache = this.state.inventoryMap(); 
+      const recipes = await this.recipeService.getAllRecipes(); 
+      this.recipeCache = {}; 
+      recipes.forEach(r => this.recipeCache[r.id] = r); 
+      
+      const targetSopMap = new Map<string, Sop>(); 
+      let pendingTargets = new Set<string>(allSelectedTargetIds); 
+      
+      while (pendingTargets.size > 0) { 
+          let bestSop: Sop | null = null; 
+          let bestCovered: string[] = []; 
+          for (const sop of allSops) { 
+              const covered = sop.targets!.map(t => t.id).filter(id => pendingTargets.has(id)); 
+              if (covered.length > bestCovered.length) { bestCovered = covered; bestSop = sop; } 
+          } 
+          if (bestSop && bestCovered.length > 0) { 
+              bestCovered.forEach(tId => { targetSopMap.set(tId, bestSop!); pendingTargets.delete(tId); }); 
+          } else { break; } 
+      } 
+      this.unmappedTargets.set(Array.from(pendingTargets)); 
+      
+      const sopSampleMap = new Map<string, Set<string>>(); 
+      const sopTargetsMap = new Map<string, Set<string>>(); 
+      
+      this.blocks().forEach(block => { 
+          const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s); 
+          if (samples.length === 0) return; 
+          block.selectedTargets.forEach(tId => { 
+              const assignedSop = targetSopMap.get(tId); 
+              if (assignedSop) { 
+                  if (!sopSampleMap.has(assignedSop.id)) { 
+                      sopSampleMap.set(assignedSop.id, new Set<string>()); 
+                      sopTargetsMap.set(assignedSop.id, new Set<string>()); 
+                  } 
+                  samples.forEach(s => { sopSampleMap.get(assignedSop.id)!.add(s); }); 
+                  sopTargetsMap.get(assignedSop.id)!.add(tId); 
+              } 
+          }); 
+      }); 
+      
+      const proposed: ProposedBatch[] = []; 
+      for (const [sopId, sampleSet] of sopSampleMap.entries()) { 
+          const sop = allSops.find(s => s.id === sopId); 
+          if (!sop) continue; 
+          const relevantTargetIds = sopTargetsMap.get(sopId)!; 
+          const relevantTargets = sop.targets!.filter(t => relevantTargetIds.has(t.id)); 
+          const inputValues: Record<string, any> = {}; 
+          sop.inputs.forEach(i => inputValues[i.var] = i.default); 
+          inputValues['n_sample'] = sampleSet.size; 
+          if(inputValues['n_qc'] === undefined) inputValues['n_qc'] = 1; 
+          
+          const needs = this.calculator.calculateSopNeeds(sop, inputValues, 10, this.inventoryCache, this.recipeCache); 
+          proposed.push({ 
+              id: `batch_${Date.now()}_${Math.random()}`, sop: sop, targets: relevantTargets, samples: sampleSet, sampleCount: sampleSet.size, 
+              inputValues: inputValues, safetyMargin: 10, resourceImpact: needs, status: 'ready' 
+          }); 
+      } 
+      
+      proposed.forEach(batch => { 
+          const batchTargetIds = new Set(batch.targets.map(t => t.id)); 
+          batch.alternativeSops = allSops.filter(s => { 
+              if (s.id === batch.sop.id) return false; 
+              if (!s.targets) return false; 
+              const sTargetIds = new Set(s.targets.map(t => t.id)); 
+              // FIX TS7006: Explicitly iterate over Array from Set
+              for (const id of Array.from(batchTargetIds)) { 
+                  if (!sTargetIds.has(id)) return false; 
+              } 
+              return true; 
+          }); 
+      }); 
+      
+      this.batches.set(proposed); 
+      this.validateGlobalStock(); 
+      this.step.set(2); 
+  }
 
   // FIX: New Method to update margin and trigger recalculation cleanly
   updateBatchMargin(index: number, val: number) {
