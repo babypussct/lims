@@ -142,7 +142,7 @@ export class PrintPreviewModalComponent {
 
       // 3. Normalize Width/Styles for Print/PDF
       clone.style.width = '210mm'; 
-      clone.style.margin = '0 auto';
+      clone.style.margin = '0'; // CHANGED: Reset margin to 0 for print
       clone.style.transform = 'none'; // Ensure no scaling
       clone.style.boxShadow = 'none';
 

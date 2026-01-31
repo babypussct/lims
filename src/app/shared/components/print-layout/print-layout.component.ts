@@ -178,7 +178,7 @@ declare var QRious: any;
     .print-root {
         width: 210mm; /* A4 Width */
         background: white;
-        margin: 0 auto;
+        margin: 0; /* Align top-left for print. Preview modal handles centering. */
         color: #000;
         font-family: 'Open Sans', sans-serif;
     }
