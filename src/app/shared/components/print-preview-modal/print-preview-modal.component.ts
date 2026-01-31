@@ -116,11 +116,63 @@ export class PrintPreviewModalComponent {
   zoomIn() { this.zoomLevel.update(v => Math.min(v + 10, 150)); }
   zoomOut() { this.zoomLevel.update(v => Math.max(v - 10, 25)); }
 
+  /**
+   * Helper: Clones the app-print-layout content into a target container.
+   * Crucially, it redraws Canvases (QR Codes) because cloneNode() does not copy canvas content.
+   */
+  private cloneContentToContainer(targetContainer: HTMLElement): void {
+      const source = document.querySelector('app-print-layout');
+      if (!source) throw new Error('Preview element not found');
+
+      // 1. Clone DOM
+      const clone = source.cloneNode(true) as HTMLElement;
+      
+      // 2. Fix Canvas Elements (QR Codes)
+      const sourceCanvases = source.querySelectorAll('canvas');
+      const cloneCanvases = clone.querySelectorAll('canvas');
+      
+      sourceCanvases.forEach((sourceCanvas, index) => {
+          if (cloneCanvases[index]) {
+              const destCanvas = cloneCanvases[index];
+              const ctx = destCanvas.getContext('2d');
+              // Copy the image data
+              if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
+          }
+      });
+
+      // 3. Normalize Width/Styles for Print/PDF
+      clone.style.width = '210mm'; 
+      clone.style.margin = '0 auto';
+      clone.style.transform = 'none'; // Ensure no scaling
+      clone.style.boxShadow = 'none';
+
+      targetContainer.innerHTML = '';
+      targetContainer.appendChild(clone);
+  }
+
   // --- 1. DIRECT BROWSER PRINT (WYSIWYG) ---
   doPrint() {
-      // Logic handled by CSS @media print in index.html
-      // It simply hides everything EXCEPT app-print-preview-modal content
-      window.print();
+      const printContainer = document.getElementById('print-container');
+      if (!printContainer) {
+          this.toast.show('Lỗi: Không tìm thấy container in.', 'error');
+          return;
+      }
+
+      try {
+          // Clone content to the print container
+          this.cloneContentToContainer(printContainer);
+          
+          // Execute Print
+          setTimeout(() => {
+              window.print();
+              // Optional: Cleanup after print
+              // setTimeout(() => printContainer.innerHTML = '', 2000); 
+          }, 50);
+
+      } catch (e) {
+          console.error(e);
+          this.toast.show('Lỗi chuẩn bị in.', 'error');
+      }
   }
 
   // --- 2. HIGH-RES PDF EXPORT (Image-based) ---
@@ -128,43 +180,57 @@ export class PrintPreviewModalComponent {
       this.isGeneratingPdf.set(true);
       this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
       
-      // Wait for UI to update
-      await new Promise(resolve => setTimeout(resolve, 100));
+      let tempContainer: HTMLElement | null = null;
 
       try {
+          // 1. Setup a hidden container for PDF generation
+          // We can't use the on-screen preview because it might be zoomed/scrolled.
+          tempContainer = document.createElement('div');
+          tempContainer.style.position = 'fixed';
+          tempContainer.style.top = '0';
+          tempContainer.style.left = '0';
+          // tempContainer.style.visibility = 'hidden'; // html2canvas sometimes needs visibility. Use z-index instead.
+          tempContainer.style.zIndex = '-10000';
+          tempContainer.style.width = '210mm'; // Force A4 width
+          tempContainer.style.background = 'white';
+          document.body.appendChild(tempContainer);
+
+          // 2. Clone content
+          this.cloneContentToContainer(tempContainer);
+          const elementToCapture = tempContainer.firstChild as HTMLElement;
+
+          // 3. Wait for DOM update
+          await new Promise(r => setTimeout(r, 150));
+
           const { jsPDF } = await import('jspdf');
           const html2canvas = (await import('html2canvas')).default;
 
-          const element = document.getElementById('print-area');
-          if (!element) throw new Error('Print area not found');
-
-          // Capture at 2x scale for clarity
-          const canvas = await html2canvas(element, {
+          // 4. Capture at 2x Scale for Sharpness
+          const canvas = await html2canvas(elementToCapture, {
               scale: 2, 
               useCORS: true,
               logging: false,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              windowWidth: 1200 // Ensure layout doesn't break
           });
 
+          // 5. Generate PDF
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          
-          // A4 dimensions in mm
           const pdfWidth = 210;
           const pdfHeight = 297;
           
           const doc = new jsPDF('p', 'mm', 'a4');
-
-          // Calculate height proportional to A4 width
           const imgProps = (doc as any).getImageProperties(imgData);
           const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-          // Handle multi-page (simple height check)
           let heightLeft = pdfImgHeight;
           let position = 0;
 
+          // Page 1
           doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
           heightLeft -= pdfHeight;
 
+          // Subsequent Pages
           while (heightLeft > 0) {
             position = heightLeft - pdfImgHeight;
             doc.addPage();
@@ -180,6 +246,9 @@ export class PrintPreviewModalComponent {
           console.error(e);
           this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
       } finally {
+          if (tempContainer && document.body.contains(tempContainer)) {
+              document.body.removeChild(tempContainer);
+          }
           this.isGeneratingPdf.set(false);
       }
   }

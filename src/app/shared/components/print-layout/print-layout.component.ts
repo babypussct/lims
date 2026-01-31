@@ -342,7 +342,7 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   getTargetNames(job: PrintJob): string[] {
       const selectedIds = job.inputs['targetIds'] || [];
       const allTargets = job.sop?.targets || [];
-      return selectedIds.map((id: string) => {
+      return selectedIds.map((id: any) => {
           const t = allTargets.find((x: any) => x.id === id);
           return t ? t.name : id;
       });
