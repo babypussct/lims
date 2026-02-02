@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
   {
+    path: 'mobile-login',
+    loadComponent: () => import('./features/auth/mobile-qr-login.component').then(m => m.MobileQrLoginComponent),
+    // No specific permission needed, just logged in
+  },
+  {
     path: 'calculator',
     loadComponent: () => import('./features/sop/calculator/calculator.component').then(m => m.CalculatorComponent),
     canActivate: [permissionGuard],

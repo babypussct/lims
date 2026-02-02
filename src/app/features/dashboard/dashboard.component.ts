@@ -38,9 +38,16 @@ interface PriorityStandard {
                 <p class="text-sm text-slate-500 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
             </div>
             
-            <button (click)="openScanModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-300 hover:bg-black transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95 w-fit">
-                <i class="fa-solid fa-qrcode"></i> Quét Mã QR
-            </button>
+            <div class="flex gap-2">
+                <!-- NEW: Mobile Login Shortcut -->
+                <button (click)="router.navigate(['/mobile-login'])" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                    <i class="fa-solid fa-desktop"></i> Login PC
+                </button>
+
+                <button (click)="openScanModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-300 hover:bg-black transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                    <i class="fa-solid fa-qrcode"></i> Quét Mã
+                </button>
+            </div>
         </div>
 
         <!-- SECTION 1: KPI CARDS (Soft UI Style) -->
@@ -640,6 +647,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       raw = raw.toUpperCase();
       this.toast.show(`Đang tra cứu: ${raw}`, 'info');
+
+      // Check for Login Session Handshake
+      if (raw.startsWith('SESS_')) {
+          this.router.navigate(['/mobile-login']);
+          // We can pre-fill but it's cleaner to let the mobile component rescan for confirmation UI
+          return;
+      }
 
       // 1. Traceability (Logs)
       if (raw.startsWith('TRC-') || raw.startsWith('REQ-') || raw.startsWith('LOG-')) {
