@@ -159,6 +159,15 @@ declare var QRious: any;
                                     <span class="text-xs text-blue-600 font-bold">Nhấn để tải lại</span>
                                 </div>
                             }
+                            <!-- Error Overlay (New) -->
+                            @if (errorMsg() && mode() === 'qr') {
+                                <div class="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-2xl animate-fade-in p-4 text-center">
+                                    <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-2xl mb-2"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                    <span class="font-bold text-red-700 text-sm">Lỗi kết nối</span>
+                                    <span class="text-[10px] text-red-500 mt-1 mb-2">{{ errorMsg() }}</span>
+                                    <button (click)="generateSession()" class="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition">Thử lại</button>
+                                </div>
+                            }
                         </div>
 
                         <div class="mt-8 flex flex-col gap-2">
@@ -228,6 +237,7 @@ export class LoginComponent implements OnDestroy {
 
   async generateSession() {
       this.cleanupSession();
+      this.errorMsg.set('');
       
       // 1. Generate ID and Secret Key
       this.currentSessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
@@ -246,15 +256,31 @@ export class LoginComponent implements OnDestroy {
           });
       }
 
-      // 3. Create Session in Firestore
-      await this.auth.createAuthSession(this.currentSessionId);
+      // 3. Create Session in Firestore (Handshake)
+      // IMPORTANT: If Firestore Rules are strict, this step will FAIL for unauthenticated users (PC).
+      // We must catch this error.
+      try {
+          await this.auth.createAuthSession(this.currentSessionId);
+      } catch (e: any) {
+          console.error("QR Session Init Error:", e);
+          if (e.code === 'permission-denied') {
+              this.errorMsg.set('Lỗi quyền truy cập! Vui lòng cập nhật Firestore Rules (xem Config).');
+          } else {
+              this.errorMsg.set('Không thể tạo phiên kết nối. Vui lòng thử lại.');
+          }
+          return;
+      }
 
       // 4. Listen for Approval
-      this.sessionSub = this.auth.listenToAuthSession(this.currentSessionId, (session) => {
-          if (session.status === 'approved' && session.encryptedCreds) {
-              this.handleApproval(session.encryptedCreds);
-          }
-      });
+      try {
+          this.sessionSub = this.auth.listenToAuthSession(this.currentSessionId, (session) => {
+              if (session.status === 'approved' && session.encryptedCreds) {
+                  this.handleApproval(session.encryptedCreds);
+              }
+          });
+      } catch (e) {
+          console.error("Listener Error:", e);
+      }
 
       // 5. Expiry Timer (2 mins)
       this.expiryTimer = setTimeout(() => {
@@ -267,7 +293,8 @@ export class LoginComponent implements OnDestroy {
       if (this.sessionSub) { this.sessionSub(); this.sessionSub = undefined; }
       if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
       if (this.currentSessionId && clearId) {
-          this.auth.deleteAuthSession(this.currentSessionId); // Cleanup DB
+          // Attempt cleanup, but ignore errors if permission/network fails
+          this.auth.deleteAuthSession(this.currentSessionId).catch(() => {});
           this.currentSessionId = null;
       }
   }

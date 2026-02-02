@@ -229,11 +229,14 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                         <!-- Rules -->
                         <div class="relative">
                             <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules (Update Required!)</span>
                                 <button (click)="copyRules()" class="text-[10px] text-blue-600 font-bold hover:underline">Copy</button>
                             </div>
                             <textarea readonly class="w-full h-32 bg-slate-800 text-green-400 font-mono text-[10px] p-2 rounded-lg focus:outline-none resize-none leading-relaxed" spellcheck="false">{{firestoreRules()}}</textarea>
-                            <p class="text-[9px] text-slate-400 mt-1 italic"><i class="fa-solid fa-circle-info"></i> Hãy copy và dán vào tab "Rules" trên Firebase Console nếu gặp lỗi "Missing Permissions".</p>
+                            <p class="text-[9px] text-slate-400 mt-1 italic">
+                                <i class="fa-solid fa-circle-exclamation text-orange-500"></i>
+                                Để tính năng đăng nhập QR hoạt động, bạn <b>PHẢI</b> cập nhật Rules trên Firebase Console.
+                            </p>
                         </div>
                     </div>
 
@@ -505,6 +508,12 @@ service cloud.firestore {
     }
 
     match /artifacts/${appId} {
+        
+        // PUBLIC ACCESS for QR Login Handshake (Temporary Sessions)
+        match /auth_sessions/{sessionId} {
+           allow read, write: if true;
+        }
+
         // Users: Self-read/write, Manager-write
         match /users/{userId} { 
           allow read: if request.auth != null; 
