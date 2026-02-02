@@ -1,5 +1,5 @@
 
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -30,38 +30,57 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
         } @else {
             <!-- CONFIRM FORM -->
             <div class="flex-1 bg-slate-50 flex flex-col items-center justify-center p-6 animate-slide-up">
-                <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-lg shadow-blue-200">
+                
+                <!-- Success Icon -->
+                <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-lg shadow-green-200 animate-bounce-in">
                     <i class="fa-solid fa-desktop"></i>
                 </div>
                 
                 <h2 class="text-xl font-black text-slate-800 text-center mb-2">Đăng nhập Máy tính?</h2>
-                <p class="text-sm text-slate-500 text-center mb-8 px-4">Bạn đang cấp quyền truy cập cho phiên làm việc mới trên máy tính.</p>
+                <p class="text-sm text-slate-500 text-center mb-8 px-4">Xác nhận cấp quyền truy cập cho thiết bị mới.</p>
 
-                <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Xác nhận Mật khẩu của bạn</label>
-                    <div class="relative">
-                        <input type="password" [(ngModel)]="confirmPassword" placeholder="Nhập mật khẩu..." 
-                               class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition">
-                        <i class="fa-solid fa-lock absolute right-4 top-3.5 text-slate-400"></i>
+                <!-- User Info Card -->
+                <div class="w-full max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                        {{ auth.currentUser()?.displayName?.charAt(0) }}
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2 italic">
-                        <i class="fa-solid fa-shield-halved mr-1"></i> Mật khẩu sẽ được mã hóa và gửi trực tiếp đến máy tính qua kênh an toàn.
-                    </p>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-bold text-slate-800 truncate">{{ auth.currentUser()?.displayName }}</div>
+                        <div class="text-xs text-slate-400 truncate">{{ auth.currentUser()?.email }}</div>
+                    </div>
+                    <div class="text-green-500 text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
 
-                <div class="w-full max-w-sm flex gap-3 mt-6">
-                    <button (click)="cancel()" class="flex-1 py-3.5 rounded-xl border border-slate-200 font-bold text-slate-600 bg-white hover:bg-slate-50 transition">Hủy</button>
-                    <button (click)="approve()" [disabled]="!confirmPassword || isProcessing()" 
-                            class="flex-[2] py-3.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                <!-- Input is hidden if credentials found -->
+                @if (!hasCachedCreds()) {
+                    <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                        <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Nhập mật khẩu để xác nhận</label>
+                        <div class="relative">
+                            <input type="password" [(ngModel)]="confirmPassword" placeholder="Mật khẩu..." 
+                                   class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition">
+                            <i class="fa-solid fa-lock absolute right-4 top-3.5 text-slate-400"></i>
+                        </div>
+                    </div>
+                }
+
+                <div class="w-full max-w-sm flex gap-3 mt-auto mb-6">
+                    <button (click)="cancel()" class="flex-1 py-4 rounded-xl border border-slate-200 font-bold text-slate-600 bg-white hover:bg-slate-50 transition">Hủy</button>
+                    
+                    <button (click)="approve()" [disabled]="(!confirmPassword && !hasCachedCreds()) || isProcessing()" 
+                            class="flex-[2] py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-base">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                        @else { <i class="fa-solid fa-paper-plane"></i> }
-                        Xác nhận
+                        @else { <i class="fa-solid fa-fingerprint"></i> }
+                        Đồng ý & Đăng nhập
                     </button>
                 </div>
             </div>
         }
     </div>
-  `
+  `,
+  styles: [`
+    @keyframes bounceIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+    .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  `]
 })
 export class MobileQrLoginComponent {
   auth = inject(AuthService);
@@ -71,6 +90,16 @@ export class MobileQrLoginComponent {
   scanData = signal<{sessionId: string, key: string} | null>(null);
   confirmPassword = '';
   isProcessing = signal(false);
+  hasCachedCreds = signal(false);
+
+  constructor() {
+      // Check for cached credentials immediately
+      const creds = this.auth.getLocalCredentials();
+      if (creds && creds.pass) {
+          this.hasCachedCreds.set(true);
+          this.confirmPassword = creds.pass; // Pre-fill internally
+      }
+  }
 
   onScan(raw: string) {
       if (this.scanData()) return;
@@ -91,7 +120,8 @@ export class MobileQrLoginComponent {
 
   cancel() {
       this.scanData.set(null);
-      this.confirmPassword = '';
+      // Reset password if it wasn't cached
+      if (!this.hasCachedCreds()) this.confirmPassword = '';
       this.router.navigate(['/dashboard']);
   }
 
@@ -106,6 +136,7 @@ export class MobileQrLoginComponent {
       this.isProcessing.set(true);
       try {
           // Encrypt Password using the Key from QR (XOR for client-side demo)
+          // Note: The key comes from the Desktop's QR code.
           const encrypted = this.xorEncrypt(this.confirmPassword, data.key);
           
           await this.auth.approveAuthSession(
@@ -116,6 +147,8 @@ export class MobileQrLoginComponent {
           );
           
           this.toast.show('Đã gửi xác nhận đăng nhập!', 'success');
+          // If using cached creds, maybe update them? No need if login worked.
+          
           setTimeout(() => this.router.navigate(['/dashboard']), 1000);
       } catch (e) {
           this.toast.show('Lỗi kết nối. Thử lại.', 'error');

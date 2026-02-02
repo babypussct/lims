@@ -42,6 +42,7 @@ export interface UserProfile {
 export class AuthService {
   private fb = inject(FirebaseService);
   private auth: Auth;
+  private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
 
   currentUser = signal<UserProfile | null>(null);
 
@@ -57,16 +58,49 @@ export class AuthService {
     });
   }
 
+  // --- LOCAL CREDENTIAL CACHING (For Seamless QR Login) ---
+  saveLocalCredentials(email: string, pass: string) {
+      // Simple obfuscation for local storage (Not military grade, but prevents casual reading)
+      // In a real app, use the device's secure storage (Keychain/Keystore) via Ionic/Capacitor
+      try {
+          const payload = btoa(encodeURIComponent(`${email}|${pass}`));
+          localStorage.setItem(this.CRED_KEY, payload);
+      } catch (e) { console.error("Could not save local creds"); }
+  }
+
+  getLocalCredentials(): {email: string, pass: string} | null {
+      const raw = localStorage.getItem(this.CRED_KEY);
+      if(!raw) return null;
+      try {
+          const decoded = decodeURIComponent(atob(raw));
+          const parts = decoded.split('|');
+          if (parts.length === 2) {
+              return { email: parts[0], pass: parts[1] };
+          }
+      } catch { return null; }
+      return null;
+  }
+
+  clearLocalCredentials() {
+      localStorage.removeItem(this.CRED_KEY);
+  }
+
+  // --- AUTH METHODS ---
+
   async login(email: string, pass: string) {
     await signInWithEmailAndPassword(this.auth, email, pass);
+    // Save for QR functionality
+    this.saveLocalCredentials(email, pass);
   }
 
   async loginWithGoogle() {
     const provider = new GoogleAuthProvider();
     await signInWithPopup(this.auth, provider);
+    // Cannot save password for Google Auth, QR login will require password entry or fail
   }
 
   async logout() {
+    this.clearLocalCredentials(); // Security cleanup
     await signOut(this.auth);
   }
 
@@ -97,7 +131,6 @@ export class AuthService {
 
   // --- QR LOGIN HANDSHAKE METHODS ---
 
-  // 1. Desktop: Create a session waiting for mobile
   async createAuthSession(sessionId: string) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
       await setDoc(ref, {
@@ -106,7 +139,6 @@ export class AuthService {
       });
   }
 
-  // 2. Desktop: Listen for mobile approval
   listenToAuthSession(sessionId: string, onUpdate: (session: AuthSession) => void) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
       return onSnapshot(ref, (snap) => {
@@ -116,7 +148,6 @@ export class AuthService {
       });
   }
 
-  // 3. Desktop: Cleanup
   async deleteAuthSession(sessionId: string) {
       try {
           const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
@@ -124,11 +155,8 @@ export class AuthService {
       } catch(e) { console.warn("Cleanup error", e); }
   }
 
-  // 4. Mobile: Approve and send credentials (Encrypted)
   async approveAuthSession(sessionId: string, email: string, encryptedPass: string, deviceName: string) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-      // Write the credentials securely (Client-side encryption logic applies here)
-      // We store: email|encrypted_password
       const payload = `${email}|${encryptedPass}`;
       await setDoc(ref, {
           status: 'approved',
