@@ -5,9 +5,10 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
+import { BottomNavComponent } from './core/layout/bottom-nav.component'; // New Import
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
 import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component';
-import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; // Import
+import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; 
 import { LoginComponent } from './features/auth/login.component';
 
 import { StateService } from './core/services/state.service';
@@ -22,9 +23,10 @@ import { PrintService } from './core/services/print.service';
     CommonModule,
     RouterOutlet,
     SidebarComponent,
+    BottomNavComponent, // Include in imports
     ConfirmationModalComponent,
     PrintPreviewModalComponent,
-    GlobalScannerComponent, // Add to imports
+    GlobalScannerComponent, 
     LoginComponent
   ],
   template: `
@@ -33,11 +35,11 @@ import { PrintService } from './core/services/print.service';
     } 
     @else {
       <!-- Notifications -->
-      <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
+      <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
         @for (t of toast.toasts(); track t.id) {
           <div class="pointer-events-auto flex items-center gap-4 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up min-w-[300px]"
                [class.bg-white]="true" 
-               [class.bg-opacity-90]="true"
+               [class.bg-opacity-95]="true"
                [class.border-l-4]="true"
                [class.border-l-emerald-500]="t.type === 'success'" 
                [class.text-emerald-800]="t.type === 'success'"
@@ -69,7 +71,7 @@ import { PrintService } from './core/services/print.service';
       
       <app-confirmation-modal></app-confirmation-modal>
       <app-print-preview-modal></app-print-preview-modal>
-      <app-global-scanner></app-global-scanner> <!-- GLOBAL SCANNER -->
+      <app-global-scanner></app-global-scanner> 
 
       @if (state.currentUser(); as user) {
         @if (user.role === 'pending') {
@@ -89,21 +91,22 @@ import { PrintService } from './core/services/print.service';
         @else {
            <div class="min-h-screen h-[100dvh] bg-gray-50 flex overflow-hidden relative">
                 
-                <!-- Sidebar (Hidden in Focus Mode) -->
+                <!-- Desktop Sidebar (Hidden on Mobile) -->
                 @if (!state.focusMode()) {
-                    @if (state.sidebarOpen()) { <div class="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" (click)="state.closeSidebar()"></div> }
-                    <app-sidebar></app-sidebar>
+                    <div class="hidden md:block">
+                        <app-sidebar></app-sidebar>
+                    </div>
                 }
                 
                 <!-- Main Content -->
                 <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
                       [class.md:ml-64]="!state.sidebarCollapsed() && !state.focusMode()" 
                       [class.md:ml-20]="state.sidebarCollapsed() && !state.focusMode()"
-                      [class.p-4]="state.focusMode()">
+                      [class.p-0]="state.focusMode()">
                    
-                   <!-- Navbar (Hidden in Focus Mode) -->
+                   <!-- Desktop Navbar (Hidden on Focus Mode & Mobile) -->
                    @if (!state.focusMode()) {
-                       <nav class="relative flex flex-col justify-center px-4 py-2 mx-4 md:mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
+                       <nav class="hidden md:flex relative flex-col justify-center px-4 py-2 mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
                           @if (state.permissionError()) {
                              <div class="w-full bg-red-50 border border-red-100 rounded-lg p-2 mb-2 flex items-center justify-between animate-bounce-in">
                                  <div class="flex items-center gap-2 text-xs text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
@@ -111,12 +114,11 @@ import { PrintService } from './core/services/print.service';
                           }
                           <div class="flex items-center justify-between w-full">
                              <div class="flex items-center gap-3">
-                                <div class="flex items-center md:hidden"><button (click)="state.toggleSidebar()" class="w-10 h-10 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition active:scale-95"><i class="fa-solid fa-bars text-lg"></i></button></div>
-                                <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-lg md:text-base">{{ pageTitle() }}</h6></div>
+                                <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-base">{{ pageTitle() }}</h6></div>
                              </div>
                              
                              <div class="flex items-center gap-3 ml-auto">
-                                 <div class="hidden sm:flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
+                                 <div class="flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
                                  <button (click)="router.navigate(['/config'])" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg active:scale-95" [title]="auth.canManageSystem() ? 'Cấu hình Hệ thống' : 'Tài khoản cá nhân'"><i class="fa-solid" [class.fa-gears]="auth.canManageSystem()" [class.fa-user-gear]="!auth.canManageSystem()"></i></button>
                                  <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Đăng xuất"><i class="fa-solid fa-power-off text-lg"></i></button>
                              </div>
@@ -124,15 +126,23 @@ import { PrintService } from './core/services/print.service';
                        </nav>
                    }
 
-                   <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar flex flex-col" [class.p-0]="state.focusMode()">
-                       <div class="flex-1"><router-outlet></router-outlet></div>
+                   <!-- Content Viewport -->
+                   <!-- Added pb-20 on mobile to clear bottom nav -->
+                   <div class="flex-1 overflow-y-auto p-0 md:p-6 custom-scrollbar flex flex-col pb-20 md:pb-6" [class.p-0]="state.focusMode()">
+                       <div class="flex-1 h-full"><router-outlet></router-outlet></div>
+                       
                        @if (!state.focusMode()) {
-                           <footer class="mt-6 pt-4 pb-2 text-center shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+                           <footer class="hidden md:block mt-6 pt-4 pb-2 text-center shrink-0 opacity-60 hover:opacity-100 transition-opacity">
                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-default select-none">© Otada. Sử dụng nội bộ phòng GC</p>
                            </footer>
                        }
                    </div>
                 </main>
+
+                <!-- Mobile Bottom Nav -->
+                @if (!state.focusMode()) {
+                    <app-bottom-nav></app-bottom-nav>
+                }
            </div>
         }
       } 

@@ -39,6 +39,15 @@ interface ProposedBatch {
     alternativeSops?: Sop[]; 
 }
 
+interface SplitState {
+    sourceBatchIndex: number;
+    sourceSopName: string;
+    availableSamples: string[];
+    selectedSamples: Set<string>;
+    targetSopId: string | null;
+    showAllSops: boolean;
+}
+
 @Component({
   selector: 'app-smart-batch',
   standalone: true,
@@ -507,7 +516,7 @@ export class SmartBatchComponent {
   private recipeCache: Record<string, Recipe> = {};
   sampleSearchTerm = signal('');
   showSplitModal = signal(false);
-  splitState = signal<any>({ sourceBatchIndex: -1, sourceSopName: '', availableSamples: [], selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false });
+  splitState = signal<SplitState>({ sourceBatchIndex: -1, sourceSopName: '', availableSamples: [], selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false });
   showGroupModal = signal(false);
   availableGroups = signal<TargetGroup[]>([]);
   currentBlockIndexForGroupImport = signal<number>(-1);
@@ -542,108 +551,6 @@ export class SmartBatchComponent {
               if (!sopTargetIds.has(id)) return false; 
           } 
           return true; 
-      }); 
-  });
-  
-  missingTargetsInSplit = computed(() => { const s = this.splitState(); if (s.sourceBatchIndex < 0 || !s.targetSopId) return []; if (s.selectedSamples.size === 0) return []; const targetSop = this.state.sops().find(sop => sop.id === s.targetSopId); if (!targetSop || !targetSop.targets) return []; const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples); const targetSopTargetIds = new Set(targetSop.targets.map(t => t.id)); const missingIds = Array.from(requiredTargetIds).filter(id => !targetSopTargetIds.has(id)); const sourceBatch = this.batches()[s.sourceBatchIndex]; const hydrated = missingIds.map(id => { const t = sourceBatch.targets.find(t => t.id === id); return t || { id, name: id }; }); return hydrated; });
-
-  // --- ACTIONS ---
-  addBlock() { const id = Date.now(); this.blocks.update(current => [ ...current, { id, name: `Nhóm Mẫu #${current.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false } ]); }
-  removeBlock(index: number) { if (this.blocks().length <= 1) { this.toast.show('Cần ít nhất một nhóm mẫu.', 'info'); return; } this.blocks.update(current => current.filter((_, i) => i !== index)); }
-  duplicateBlock(index: number) { const source = this.blocks()[index]; const newBlock: JobBlock = { ...source, id: Date.now(), name: `${source.name} (Copy)`, selectedTargets: new Set(source.selectedTargets), isCollapsed: false }; this.blocks.update(current => [...current, newBlock]); }
-  updateBlockSamples(index: number, val: string) { this.blocks.update(current => { const next = [...current]; next[index] = { ...next[index], rawSamples: val }; return next; }); }
-  updateBlockSearch(index: number, val: string) { this.blocks.update(current => { const next = [...current]; next[index] = { ...next[index], targetSearch: val }; return next; }); }
-  toggleBlockTarget(index: number, key: string) { this.blocks.update(current => { const next = [...current]; const block = next[index]; const newSet = new Set<string>(block.selectedTargets); if (newSet.has(key)) newSet.delete(key); else newSet.add(key); next[index] = { ...block, selectedTargets: newSet }; return next; }); }
-  async openGroupModal(blockIndex: number) { this.currentBlockIndexForGroupImport.set(blockIndex); this.showGroupModal.set(true); if (this.availableGroups().length === 0) { try { const groups = await this.targetService.getAllGroups(); this.availableGroups.set(groups); } catch(e) { this.toast.show('Lỗi tải danh sách bộ chỉ tiêu.', 'error'); } } }
-  importGroup(g: TargetGroup) { const index = this.currentBlockIndexForGroupImport(); if (index < 0 || !g.targets) return; const groupTargetIds = g.targets.map(t => t.id); this.blocks.update(current => { const next = [...current]; const block = next[index]; const availableSet = new Set(this.allAvailableTargets().map(t => t.uniqueKey)); const newSet = new Set<string>(block.selectedTargets); groupTargetIds.forEach(id => { if (availableSet.has(id)) { newSet.add(id); } }); next[index] = { ...block, selectedTargets: newSet }; return next; }); this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu từ bộ "${g.name}".`, 'success'); this.showGroupModal.set(false); }
-  selectAllTargets(index: number) { this.blocks.update(current => { const next = [...current]; const block = next[index]; const visible = this.getFilteredTargets(block); const newSet = new Set<string>(block.selectedTargets); visible.forEach(t => newSet.add(t.uniqueKey)); next[index] = { ...block, selectedTargets: newSet }; return next; }); }
-  deselectAllTargets(index: number) { this.blocks.update(current => { const next = [...current]; const block = next[index]; const visible = this.getFilteredTargets(block); const newSet = new Set<string>(block.selectedTargets); visible.forEach(t => newSet.delete(t.uniqueKey)); next[index] = { ...block, selectedTargets: newSet }; return next; }); }
-  toggleBlockCollapse(index: number) { this.blocks.update(current => { const next = [...current]; next[index] = { ...next[index], isCollapsed: !next[index].isCollapsed }; return next; }); }
-  updateBlockName(index: number, name: string) { this.blocks.update(current => { const next = [...current]; next[index] = { ...next[index], name }; return next; }); }
-  countSamples(raw: string): number { return raw.split('\n').map(s => s.trim()).filter(s => s).length; }
-  getFilteredTargets(block: JobBlock) { const term = block.targetSearch.toLowerCase(); if (!term) return this.allAvailableTargets(); return this.allAvailableTargets().filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term)); }
-  matchesSearch(batch: ProposedBatch): boolean { const term = this.sampleSearchTerm().trim().toLowerCase(); if (!term) return false; for (const s of batch.samples) { if (s.toLowerCase().includes(term)) return true; } return false; }
-  private getRequiredTargetsForSamples(sampleNames: Set<string>): Set<string> { const reqs = new Set<string>(); const blocks = this.blocks(); for (const block of blocks) { const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s); const relevantSamples = blockSamples.filter(s => sampleNames.has(s)); if (relevantSamples.length > 0) { block.selectedTargets.forEach(t => reqs.add(t)); } } return reqs; }
-  
-  async analyzePlan() { 
-      const allSelectedTargetIds = new Set<string>(); 
-      this.blocks().forEach(b => { b.selectedTargets.forEach(t => allSelectedTargetIds.add(t)); }); 
-      const allSops = this.state.sops().filter(s => !s.isArchived && s.targets && s.targets.length > 0); 
-      this.inventoryCache = this.state.inventoryMap(); 
-      const recipes = await this.recipeService.getAllRecipes(); 
-      this.recipeCache = {}; 
-      recipes.forEach(r => this.recipeCache[r.id] = r); 
-      
-      const targetSopMap = new Map<string, Sop>(); 
-      let pendingTargets = new Set<string>(allSelectedTargetIds); 
-      
-      while (pendingTargets.size > 0) { 
-          let bestSop: Sop | null = null; 
-          let bestCovered: string[] = []; 
-          for (const sop of allSops) { 
-              const covered = sop.targets!.map(t => t.id).filter(id => pendingTargets.has(id)); 
-              if (covered.length > bestCovered.length) { bestCovered = covered; bestSop = sop; } 
-          } 
-          if (bestSop && bestCovered.length > 0) { 
-              bestCovered.forEach(tId => { targetSopMap.set(tId, bestSop!); pendingTargets.delete(tId); }); 
-          } else { break; } 
-      } 
-      this.unmappedTargets.set(Array.from(pendingTargets)); 
-      
-      const sopSampleMap = new Map<string, Set<string>>(); 
-      const sopTargetsMap = new Map<string, Set<string>>(); 
-      
-      this.blocks().forEach(block => { 
-          const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s); 
-          if (samples.length === 0) return; 
-          block.selectedTargets.forEach(tId => { 
-              const assignedSop = targetSopMap.get(tId); 
-              if (assignedSop) { 
-                  if (!sopSampleMap.has(assignedSop.id)) { 
-                      sopSampleMap.set(assignedSop.id, new Set<string>()); 
-                      sopTargetsMap.set(assignedSop.id, new Set<string>()); 
-                  } 
-                  samples.forEach(s => { sopSampleMap.get(assignedSop.id)!.add(s); }); 
-                  sopTargetsMap.get(assignedSop.id)!.add(tId); 
-              } 
-          }); 
-      }); 
-      
-      const proposed: ProposedBatch[] = []; 
-      for (const [sopId, sampleSet] of sopSampleMap.entries()) { 
-          const sop = allSops.find(s => s.id === sopId); 
-          if (!sop) continue; 
-          const relevantTargetIds = sopTargetsMap.get(sopId)!; 
-          const relevantTargets = sop.targets!.filter(t => relevantTargetIds.has(t.id)); 
-          const inputValues: Record<string, any> = {}; 
-          sop.inputs.forEach(i => inputValues[i.var] = i.default); 
-          inputValues['n_sample'] = sampleSet.size; 
-          if(inputValues['n_qc'] === undefined) inputValues['n_qc'] = 1; 
-          
-          // UPDATED: Use Auto margin (-1) by default
-          const defaultMargin = -1; 
-          
-          const needs = this.calculator.calculateSopNeeds(
-              sop, inputValues, defaultMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-          ); 
-          
-          proposed.push({ 
-              id: `batch_${Date.now()}_${Math.random()}`, sop: sop, targets: relevantTargets, samples: sampleSet, sampleCount: sampleSet.size, 
-              inputValues: inputValues, safetyMargin: defaultMargin, resourceImpact: needs, status: 'ready' 
-          }); 
-      } 
-      
-      proposed.forEach(batch => { 
-          const batchTargetIds = new Set(batch.targets.map(t => t.id)); 
-          batch.alternativeSops = allSops.filter(s => { 
-              if (s.id === batch.sop.id) return false; 
-              if (!s.targets) return false; 
-              const sTargetIds = new Set(s.targets.map(t => t.id)); 
-              for (const id of Array.from(batchTargetIds)) { 
-                  if (!sTargetIds.has(id)) return false; 
-              } 
-              return true; 
-          }); 
       }); 
       
       this.batches.set(proposed); 
@@ -704,14 +611,25 @@ export class SmartBatchComponent {
   }
 
   private validateGlobalStock() { const ledger: Record<string, number> = {}; Object.entries(this.inventoryCache).forEach(([k, v]) => ledger[k] = v.stock); this.batches.update(current => { return current.map(batch => { const needs = batch.resourceImpact; let isMissing = false; needs.forEach(item => { if (item.isComposite) { item.breakdown.forEach(sub => { const available = ledger[sub.name] || 0; if (available < sub.totalNeed) isMissing = true; if (ledger[sub.name] !== undefined) { ledger[sub.name] -= sub.totalNeed; } }); } else { const available = ledger[item.name] || 0; if (available < item.stockNeed) isMissing = true; if (ledger[item.name] !== undefined) { ledger[item.name] -= item.stockNeed; } } }); return { ...batch, status: isMissing ? 'missing_stock' : 'ready' }; }); }); }
-  openSplitModal(batchIndex: number) { const batch = this.batches()[batchIndex]; this.splitState.set({ sourceBatchIndex: batchIndex, sourceSopName: batch.sop.name, availableSamples: Array.from(batch.samples).sort(), selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false }); this.showSplitModal.set(true); }
+  openSplitModal(batchIndex: number) { 
+      const batch = this.batches()[batchIndex]; 
+      this.splitState.set({ 
+          sourceBatchIndex: batchIndex, 
+          sourceSopName: batch.sop.name, 
+          availableSamples: Array.from(batch.samples).sort(), 
+          selectedSamples: new Set<string>(), 
+          targetSopId: null, 
+          showAllSops: false 
+      }); 
+      this.showSplitModal.set(true); 
+  }
   toggleShowAllSops() { this.splitState.update(s => ({ ...s, showAllSops: !s.showAllSops })); }
   moveSample(sample: string) { this.splitState.update(s => { const newSet = new Set<string>(s.selectedSamples); if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample); return { ...s, selectedSamples: newSet }; }); }
-  moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>(s.availableSamples as string[]) })); }
+  moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>(s.availableSamples) })); }
   moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>() })); }
-  quickSplitHalf() { this.splitState.update(s => { const half = Math.ceil(s.availableSamples.length / 2); const bottomHalf = s.availableSamples.slice(half); return { ...s, selectedSamples: new Set<string>(bottomHalf as string[]) }; }); }
-  quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val: any, i: number) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected as string[]) }; }); }
-  updateSplitTarget(sopId: string) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
+  quickSplitHalf() { this.splitState.update(s => { const half = Math.ceil(s.availableSamples.length / 2); const bottomHalf = s.availableSamples.slice(half); return { ...s, selectedSamples: new Set<string>(bottomHalf) }; }); }
+  quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val, i) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected) }; }); }
+  updateSplitTarget(sopId: string | null) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
   
   async executeSplit() { 
       const state = this.splitState(); 
