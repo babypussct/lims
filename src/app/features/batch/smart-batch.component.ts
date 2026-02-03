@@ -869,9 +869,9 @@ export class SmartBatchComponent {
       this.showSplitModal.set(true);
   }
   toggleShowAllSops() { this.splitState.update(s => ({ ...s, showAllSops: !s.showAllSops })); }
-  moveSample(sample: string) { this.splitState.update(s => { const newSet = new Set<string>(s.selectedSamples); if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample); return { ...s, selectedSamples: newSet }; }); }
-  moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>(s.availableSamples) })); }
-  moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>() })); }
+  moveSample(sample: string) { this.splitState.update(s => { const newSet = new Set(s.selectedSamples); if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample); return { ...s, selectedSamples: newSet }; }); }
+  moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set(s.availableSamples) })); }
+  moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set() })); }
   updateSplitTarget(sopId: string | null) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
 
   missingTargetsInSplit(): {id: string, name: string}[] {
@@ -909,7 +909,7 @@ export class SmartBatchComponent {
       }
 
       // 1. Create New Batch
-      const newSamples = new Set<string>(samplesToMove);
+      const newSamples = new Set(samplesToMove);
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
       // Copy compatible inputs
@@ -929,7 +929,7 @@ export class SmartBatchComponent {
       };
 
       // 2. Update Source
-      const remainingSamples = new Set<string>(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s)));
+      const remainingSamples = new Set(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s)));
       this.batches.update(current => {
           const next = [...current];
           if (remainingSamples.size === 0) {
