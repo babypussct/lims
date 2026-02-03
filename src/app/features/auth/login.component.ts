@@ -138,14 +138,21 @@ declare var QRious: any;
 
                         <div class="space-y-5">
                             <div class="group">
-                                <label class="block text-xs font-bold text-slate-600 uppercase mb-2 ml-1">Email</label>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-2 ml-1">Tên đăng nhập / Email</label>
                                 <div class="relative">
-                                    <i class="fa-regular fa-envelope absolute left-4 top-3.5 text-slate-400 group-focus-within:text-teal-600 transition-colors"></i>
-                                    <input type="email" [(ngModel)]="email" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition shadow-sm placeholder:font-normal" 
+                                    <i class="fa-regular fa-user absolute left-4 top-3.5 text-slate-400 group-focus-within:text-teal-600 transition-colors z-10"></i>
+                                    <input type="text" [(ngModel)]="email" (keyup.enter)="login()"
+                                           class="w-full pl-11 pr-24 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition shadow-sm placeholder:font-normal" 
                                            [class.border-red-500]="errorMsg()"
-                                           placeholder="staff@otada.vn"
+                                           placeholder="username"
                                            [disabled]="isLoading()">
+                                    
+                                    <!-- Smart Domain Suffix (Option A) -->
+                                    @if (!email.includes('@')) {
+                                        <span class="absolute right-4 top-3.5 text-slate-400 font-bold text-sm pointer-events-none select-none tracking-tight animate-fade-in">
+                                            @lims.com
+                                        </span>
+                                    }
                                 </div>
                             </div>
 
@@ -416,8 +423,15 @@ export class LoginComponent implements OnDestroy {
   async login() {
     if (!this.email || !this.password) { this.errorMsg.set('Vui lòng nhập đầy đủ thông tin.'); return; }
     this.isLoading.set(true); this.isGoogleLoading.set(false); this.errorMsg.set('');
+    
+    // SMART DOMAIN APPEND LOGIC
+    let finalEmail = this.email.trim();
+    if (!finalEmail.includes('@')) {
+        finalEmail += '@lims.com';
+    }
+
     try { 
-        await this.auth.login(this.email, this.password); 
+        await this.auth.login(finalEmail, this.password); 
     } catch (e: any) { 
         this.handleError(e, false); 
     } finally { 
