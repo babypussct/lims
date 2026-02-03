@@ -81,7 +81,7 @@ declare var QRious: any;
                                     </div>
                                  }
                             }
-                            <!-- Margin -->
+                            <!-- Margin Display Logic -->
                             <div class="param-item margin-item">
                                 <span class="p-label">Hao hụt:</span>
                                 <span class="p-value margin-val" [class.text-blue-600]="isAutoMargin(job)">{{getMarginDisplay(job)}}</span>
