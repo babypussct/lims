@@ -216,7 +216,8 @@ interface KanbanColumn {
                                 <div class="flex flex-col">
                                     <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
                                     <div class="flex items-start gap-3">
-                                        <img [src]="getAvatarUrl(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 shadow-sm object-cover bg-white shrink-0" alt="Avatar">
+                                        <!-- UPDATED AVATAR CALL -->
+                                        <img [src]="getAvatarUrl(log.user, state.avatarStyle())" class="w-8 h-8 rounded-lg border border-gray-100 shadow-sm object-cover bg-white shrink-0" alt="Avatar">
                                         <div class="flex-1 min-w-0">
                                             <div class="text-xs font-bold text-gray-700 leading-tight">
                                                 <span class="text-gray-900">{{log.user}}</span> 
@@ -284,8 +285,9 @@ interface KanbanColumn {
                         <!-- Footer Info -->
                         <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
                             <div class="flex -space-x-2 overflow-hidden">
+                                <!-- UPDATED AVATAR CALL -->
                                 @for(user of col.users; track user) {
-                                    <img [src]="getAvatarUrl(user)" class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200" [title]="user">
+                                    <img [src]="getAvatarUrl(user, state.avatarStyle())" class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200" [title]="user">
                                 }
                             </div>
                             
@@ -336,7 +338,8 @@ interface KanbanColumn {
                             <div class="p-4 border-b border-slate-50 hover:bg-slate-50 transition group">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
-                                        <img [src]="getAvatarUrl(batch.user)" class="w-6 h-6 rounded-full border border-slate-200">
+                                        <!-- UPDATED AVATAR CALL -->
+                                        <img [src]="getAvatarUrl(batch.user, state.avatarStyle())" class="w-6 h-6 rounded-full border border-slate-200">
                                         <span class="text-xs font-bold text-slate-700">{{batch.user}}</span>
                                     </div>
                                     <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>

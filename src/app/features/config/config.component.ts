@@ -103,12 +103,29 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                     <!-- RIGHT COLUMN -->
                     <div class="space-y-6">
                         
-                        <!-- 3. SYSTEM & VERSION -->
+                        <!-- 3. SYSTEM & AVATAR -->
                         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                                 <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
-                                Phiên bản & Bảo trì
+                                Giao diện & Phiên bản
                             </h3>
+                            
+                            <!-- Avatar Style Selector -->
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-700">Phong cách Avatar</div>
+                                    <div class="text-[10px] text-slate-400">Thay đổi icon mặc định cho user</div>
+                                </div>
+                                <select [ngModel]="state.avatarStyle()" (ngModelChange)="saveAvatarStyle($event)" 
+                                        class="text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-blue-500 cursor-pointer">
+                                    <option value="initials">Chữ cái (Letters)</option>
+                                    <option value="identicon">Hình học (Identicon)</option>
+                                    <option value="bottts">Robot (Bottts)</option>
+                                    <option value="shapes">Nghệ thuật (Shapes)</option>
+                                    <option value="avataaars">Hoạt hình (Avatars)</option>
+                                </select>
+                            </div>
+
                             <div class="flex gap-2 items-end">
                                 <div class="flex-1">
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">System Version</label>
@@ -315,7 +332,7 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                                     <tr class="hover:bg-slate-50 transition">
                                         <td class="px-6 py-4 align-top">
                                             <div class="flex items-center gap-3">
-                                                <img [src]="getAvatarUrl(u.displayName)" class="w-8 h-8 rounded-full bg-slate-200 border border-slate-300" alt="Avatar">
+                                                <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-8 h-8 rounded-full bg-slate-200 border border-slate-300" alt="Avatar">
                                                 <div>
                                                     <div class="font-bold text-slate-700">{{u.displayName}}</div>
                                                     <div class="text-xs text-slate-400 font-mono mt-0.5">{{u.email}}</div>
@@ -393,8 +410,7 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                         <!-- Avatar & Basic Info -->
                         <div class="relative -mt-12 mb-6 flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
                             <div class="w-28 h-28 rounded-2xl bg-white p-1 shadow-lg shrink-0">
-                                <!-- ROBOT AVATAR IMPLEMENTATION -->
-                                <img [src]="getAvatarUrl(auth.currentUser()?.displayName)" 
+                                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, state.avatarStyle(), auth.currentUser()?.photoURL)" 
                                      alt="Profile Avatar"
                                      class="w-full h-full rounded-xl bg-slate-100 object-cover border border-slate-200">
                             </div>
@@ -512,40 +528,17 @@ export class ConfigComponent implements OnInit {
     return `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Check if user is manager based on their user profile doc
+    // Check if user is manager
     function isManager() { 
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
     }
-
     match /artifacts/${appId} {
-        
-        // PUBLIC ACCESS for QR Login Handshake (Temporary Sessions)
-        match /auth_sessions/{sessionId} {
-           allow read, write: if true;
-        }
-
-        // Users: Self-read/write, Manager-write
-        match /users/{userId} { 
-          allow read: if request.auth != null; 
-          allow write: if isManager() || request.auth.uid == userId; 
-        }
-        
-        // Recipes: Authenticated users can read/write (Shared Library)
-        match /recipes/{recipeId} {
-           allow read, write: if request.auth != null;
-        }
-
-        // Print Jobs: Heavy data (Created via Transaction)
-        match /print_jobs/{jobId} {
-           allow read, write: if request.auth != null;
-        }
-
-        // Fallback for other collections (inventory, sops, etc)
-        match /{document=**} { 
-          allow read, write: if request.auth != null; 
-        }
+        match /auth_sessions/{sessionId} { allow read, write: if true; }
+        match /users/{userId} { allow read: if request.auth != null; allow write: if isManager() || request.auth.uid == userId; }
+        match /recipes/{recipeId} { allow read, write: if request.auth != null; }
+        match /print_jobs/{jobId} { allow read, write: if request.auth != null; }
+        match /{document=**} { allow read, write: if request.auth != null; }
     }
   }
 }`;
@@ -555,16 +548,12 @@ service cloud.firestore {
       if (this.state.isAdmin()) {
           this.versionControl.setValue(this.state.systemVersion()); 
           this.loadUsers();
-          
-          // Hydrate safety config from state signal
           const sVal = this.state.safetyConfig();
           this.safetyConfigLocal = { 
               defaultMargin: sVal.defaultMargin, 
               rules: { ...sVal.rules } 
           };
-          this.safetyRulesLocal.set(
-              Object.entries(sVal.rules).map(([category, margin]) => ({ category, margin }))
-          );
+          this.safetyRulesLocal.set(Object.entries(sVal.rules).map(([category, margin]) => ({ category, margin })));
       }
   }
 
@@ -576,13 +565,10 @@ service cloud.firestore {
       }
   }
 
-  checkHealth() {
-      // Kept method but removed UI to simplify as requested, logic remains if needed later
-      this.loadingHealth.set(true);
-      this.fb.checkSystemHealth().subscribe({
-          next: (res) => { this.healthItems.set(res); this.loadingHealth.set(false); },
-          error: () => this.loadingHealth.set(false)
-      });
+  // --- NEW: Save Avatar Style ---
+  async saveAvatarStyle(style: string) {
+      await this.state.saveAvatarStyle(style);
+      this.toast.show('Đã cập nhật giao diện Avatar!');
   }
 
   async loadUsage() {
@@ -669,27 +655,12 @@ service cloud.firestore {
   }
 
   // --- SAFETY CONFIG METHODS ---
-  addSafetyRule() {
-      this.safetyRulesLocal.update(r => [...r, { category: '', margin: 10 }]);
-  }
-
-  removeSafetyRule(index: number) {
-      this.safetyRulesLocal.update(r => r.filter((_, i) => i !== index));
-  }
-
+  addSafetyRule() { this.safetyRulesLocal.update(r => [...r, { category: '', margin: 10 }]); }
+  removeSafetyRule(index: number) { this.safetyRulesLocal.update(r => r.filter((_, i) => i !== index)); }
   saveSafety() {
       const rulesObj: Record<string, number> = {};
-      this.safetyRulesLocal().forEach(item => {
-          if (item.category && item.category.trim()) {
-              rulesObj[item.category.trim()] = item.margin;
-          }
-      });
-      
-      const config = {
-          defaultMargin: this.safetyConfigLocal.defaultMargin,
-          rules: rulesObj
-      };
-      
+      this.safetyRulesLocal().forEach(item => { if (item.category && item.category.trim()) rulesObj[item.category.trim()] = item.margin; });
+      const config = { defaultMargin: this.safetyConfigLocal.defaultMargin, rules: rulesObj };
       this.state.saveSafetyConfig(config);
       this.toast.show('Đã lưu cấu hình định mức.');
   }

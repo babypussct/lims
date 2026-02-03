@@ -142,9 +142,21 @@ export function sanitizeForFirebase<T>(obj: T): T {
   return obj;
 }
 
-export function getAvatarUrl(name: string | undefined | null): string {
+/**
+ * Generates an avatar URL.
+ * Priority 1: Real photo URL (from Google Auth).
+ * Priority 2: Generated avatar (DiceBear) based on style.
+ */
+export function getAvatarUrl(name: string | undefined | null, style: string = 'initials', photoUrl?: string | null): string {
+  // 1. If real photo exists, use it
+  if (photoUrl && photoUrl.trim() !== '') {
+      return photoUrl;
+  }
+  
+  // 2. Fallback to DiceBear
+  // Recommended styles: 'initials' (Pro), 'identicon' (Tech), 'bottts' (Fun), 'shapes' (Art)
   const seed = encodeURIComponent(name || 'User');
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+  return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
 }
 
 export function naturalCompare(a: string, b: string): number {
@@ -199,7 +211,7 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
         } else {
             if (count === 1) { ranges.push(start); } 
             else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
-            else { ranges.push(`${start} -> ${prev}`); } // FIXED: Safe arrow
+            else { ranges.push(`${start} -> ${prev}`); } 
             
             start = curr;
             prev = curr;
@@ -209,7 +221,7 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
 
     if (count === 1) { ranges.push(start); } 
     else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
-    else { ranges.push(`${start} -> ${prev}`); } // FIXED: Safe arrow
+    else { ranges.push(`${start} -> ${prev}`); } 
     
     return ranges.join(', ');
 }

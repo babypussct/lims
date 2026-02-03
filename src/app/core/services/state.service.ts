@@ -56,6 +56,9 @@ export class StateService implements OnDestroy {
       rules: {}
   });
 
+  // NEW: Avatar Style Preference (Default: Initials for professional look)
+  avatarStyle = signal<string>('initials');
+
   systemVersion = signal<string>('V1.0 FINAL');
 
   selectedSop = signal<Sop | null>(null);
@@ -166,6 +169,7 @@ export class StateService implements OnDestroy {
         if(d.exists()) {
             const data = d.data();
             if (data['version']) this.systemVersion.set(data['version']);
+            if (data['avatarStyle']) this.avatarStyle.set(data['avatarStyle']); // Load Avatar Style
         }
     }, handleError('Config-System'));
     this.listeners.push(systemSub);
@@ -187,9 +191,17 @@ export class StateService implements OnDestroy {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { version }, {merge: true});
   }
+
+  async saveAvatarStyle(style: string) {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+      await setDoc(ref, { avatarStyle: style }, {merge: true});
+  }
   
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
 
+  // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndPrint, approveRequest, revokeApproval, etc.)
+  // Omitted for brevity as no logic changed there
+  
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
       const itemsToDeduct: Map<string, number> = new Map();
       calculatedItems.forEach(item => {
@@ -246,7 +258,6 @@ export class StateService implements OnDestroy {
         analysisDate: formInputs.analysisDate || null 
       };
 
-      // Optional Fields
       if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
       if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
 
@@ -261,11 +272,9 @@ export class StateService implements OnDestroy {
     const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
     const requestItems = this.mapToRequestItems(calculatedItems, invMap);
 
-    // Pre-generate IDs to ensure we can return them
     const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
     const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
     
-    // CHANGED: Use TRC- prefix for Logs (Traceability)
     const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
     const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
@@ -332,8 +341,6 @@ export class StateService implements OnDestroy {
         });
       });
       this.toast.show('Duyệt thành công!', 'success');
-      
-      // RETURN THE IDs
       return { logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
@@ -368,21 +375,19 @@ export class StateService implements OnDestroy {
         
         const sop = this.sops().find(s => s.id === req.sopId);
         
-        // CHANGED: Use TRC- prefix
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
         const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
         
         if (sop && req.inputs) {
             const calcService = this.injector.get(CalculatorService);
             
-            // IMPORTANT: PASS SAFETY CONFIG HERE TO HANDLE "AUTO" MARGIN (-1)
             const calculatedItems = calcService.calculateSopNeeds(
                 sop, 
                 req.inputs, 
                 req.margin || 0,
                 this.inventoryMap(), 
-                {}, // RecipeMap not available here, but simpler items should work
-                this.safetyConfig() // Safety config for Auto mode
+                {}, 
+                this.safetyConfig() 
             ); 
             
             calculatedItems.forEach(ci => {
@@ -397,7 +402,6 @@ export class StateService implements OnDestroy {
                 }
             });
 
-            // If request had new metadata, include it in print data
             const extendedInputs = { ...req.inputs };
             if(req.sampleList) extendedInputs.sampleList = req.sampleList;
             if(req.targetIds) extendedInputs.targetIds = req.targetIds;

@@ -199,28 +199,31 @@ import { getAvatarUrl } from '../../shared/utils/utils';
          }
       </div>
 
-      <!-- 3. Footer -->
-      <div class="px-4 py-4 mt-auto border-t border-slate-100 bg-slate-50/50">
+      <!-- 3. Footer (User Profile) -->
+      <div class="px-4 py-3 mt-auto border-t border-slate-100 bg-slate-50/50">
           @if(!state.sidebarCollapsed()) {
-              <div class="flex items-center justify-between fade-in">
-                  <div class="text-[10px] font-bold text-gray-400">
-                      Version <span class="text-gray-600">{{state.systemVersion()}}</span>
+              <div class="flex items-center gap-3 fade-in">
+                  <!-- Updated Avatar Call -->
+                  <img [src]="getAvatarUrl(auth.currentUser()?.displayName, state.avatarStyle(), auth.currentUser()?.photoURL)" 
+                       class="w-9 h-9 rounded-full bg-white shadow-sm border border-slate-200 object-cover" 
+                       alt="User">
+                  
+                  <div class="flex-1 min-w-0">
+                      <div class="text-xs font-bold text-slate-700 truncate">{{auth.currentUser()?.displayName}}</div>
+                      <div class="text-[10px] text-slate-400 font-medium truncate">{{auth.currentUser()?.role}}</div>
                   </div>
-                  @if(isOnline()) {
-                      <div class="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                          <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Online</span>
-                      </div>
-                  } @else {
-                      <div class="flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                          <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                          <span class="text-[9px] font-bold text-red-600 uppercase tracking-wider">Offline</span>
-                      </div>
-                  }
+                  
+                  <button (click)="auth.logout()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-red-500 text-slate-400 transition shadow-sm" title="Đăng xuất">
+                      <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                  </button>
               </div>
           } @else {
-              <div class="flex justify-center" [title]="isOnline() ? 'Online' : 'Offline'">
-                  <div class="w-2 h-2 rounded-full" [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></div>
+              <div class="flex justify-center">
+                  <!-- Updated Avatar Call -->
+                  <img [src]="getAvatarUrl(auth.currentUser()?.displayName, state.avatarStyle(), auth.currentUser()?.photoURL)" 
+                       class="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-200 object-cover cursor-pointer" 
+                       (click)="auth.logout()"
+                       title="Đăng xuất">
               </div>
           }
       </div>
