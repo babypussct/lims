@@ -78,12 +78,15 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                class="pl-8 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-fuchsia-500 outline-none transition w-full md:w-56 shadow-sm bg-slate-50 focus:bg-white font-bold text-slate-700">
                     </div>
                     <div class="flex gap-2">
+                        <!-- Updated Filter Dropdown with New Categories -->
                         <select [ngModel]="filterType()" (ngModelChange)="onFilterChange($event)" class="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none text-slate-600 font-bold focus:border-fuchsia-500 shadow-sm bg-slate-50 focus:bg-white cursor-pointer transition">
                             <option value="all">Tất cả</option>
-                            <option value="reagent">Hóa chất</option>
-                            <option value="consumable">Vật tư</option>
-                            <option value="kit">Kit</option>
-                            <option value="low">Sắp hết</option>
+                            <option value="reagent">Hóa chất (General)</option>
+                            <option value="solvent">Dung môi (Solvent)</option>
+                            <option value="standard">Chất chuẩn (Standard)</option>
+                            <option value="consumable">Vật tư (Consumable)</option>
+                            <option value="kit">Kit xét nghiệm</option>
+                            <option value="low">Sắp hết (Low Stock)</option>
                         </select>
                         @if (auth.canEditInventory()) {
                             <button (click)="openModal()" class="bg-slate-800 text-white w-8 md:w-auto md:px-3 py-1.5 rounded-lg text-xs font-bold uppercase shadow-sm hover:bg-black transition flex items-center justify-center">
@@ -357,10 +360,13 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                </div>
                                <div>
                                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 block mb-1">Phân loại</label>
+                                   <!-- Updated Category Dropdown in Modal -->
                                    <select formControlName="category" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none shadow-sm bg-white cursor-pointer h-[34px]">
-                                       <option value="reagent">Hóa chất</option>
-                                       <option value="consumable">Vật tư</option>
-                                       <option value="kit">Kit</option>
+                                       <option value="reagent">Hóa chất (General)</option>
+                                       <option value="solvent">Dung môi (Solvent)</option>
+                                       <option value="standard">Chất chuẩn (Standard)</option>
+                                       <option value="consumable">Vật tư (Consumable)</option>
+                                       <option value="kit">Kit xét nghiệm</option>
                                    </select>
                                </div>
                            </div>
@@ -528,12 +534,30 @@ export class InventoryComponent implements OnDestroy {
   // Helpers
   formatNum = formatNum;
   formatSmartUnit = formatSmartUnit; 
-  getIcon(cat: string | undefined): string { return cat === 'reagent' ? 'fa-flask' : cat === 'consumable' ? 'fa-vial' : cat === 'kit' ? 'fa-box-open' : 'fa-cube'; }
+  
+  // Updated Icon Logic
+  getIcon(cat: string | undefined): string { 
+      if (!cat) return 'fa-flask';
+      const c = cat.toLowerCase();
+      if (c === 'solvent') return 'fa-droplet';
+      if (c === 'standard') return 'fa-award'; // or fa-star
+      if (c === 'reagent') return 'fa-flask';
+      if (c === 'consumable') return 'fa-vial';
+      if (c === 'kit') return 'fa-box-open';
+      return 'fa-cube'; 
+  }
+
   getIconGradient(item: InventoryItem): string {
       if (item.stock <= 0) return 'bg-gradient-to-tl from-red-600 to-rose-400';
       if (this.isLowStock(item)) return 'bg-gradient-to-tl from-orange-500 to-yellow-400';
+      
+      const c = (item.category || '').toLowerCase();
+      if (c === 'solvent') return 'bg-gradient-to-tl from-cyan-600 to-blue-400';
+      if (c === 'standard') return 'bg-gradient-to-tl from-amber-500 to-yellow-300';
+      
       return 'bg-gradient-to-tl from-purple-700 to-pink-500';
   }
+
   isLowStock(item: InventoryItem) { return item.stock <= (item.threshold || 5); }
   
   // Stock Percentage for Gauge

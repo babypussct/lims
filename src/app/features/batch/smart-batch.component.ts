@@ -302,11 +302,18 @@ interface ProposedBatch {
                                 }
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hao hụt (%)</label>
-                                    <!-- FIX: Use dedicated update method to ensure signal reactivity and recalculation -->
-                                    <input type="number" 
-                                           [ngModel]="batch.safetyMargin" 
-                                           (ngModelChange)="updateBatchMargin(batchIdx, $event)"
-                                           class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-orange-600 text-center outline-none focus:border-orange-500 transition">
+                                    
+                                    @if(batch.safetyMargin === -1) {
+                                        <div (click)="setBatchMarginManual(batchIdx)" 
+                                             class="w-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 transition shadow-sm h-[26px]">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
+                                        </div>
+                                    } @else {
+                                        <input type="number" 
+                                               [ngModel]="batch.safetyMargin" 
+                                               (ngModelChange)="updateBatchMargin(batchIdx, $event)"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-orange-500 transition h-[26px]">
+                                    }
                                 </div>
                             </div>
 
@@ -505,14 +512,13 @@ export class SmartBatchComponent {
   availableGroups = signal<TargetGroup[]>([]);
   currentBlockIndexForGroupImport = signal<number>(-1);
 
-  // --- COMPUTED (Same as before) ---
+  // --- COMPUTED ---
   allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.id && t.name) { targets.set(t.id, { id: t.id, name: t.name, uniqueKey: t.id }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
   totalUniqueSamples = computed(() => { const allSamples = new Set<string>(); this.blocks().forEach(b => { const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s); samples.forEach(s => allSamples.add(s)); }); return allSamples.size; });
   totalUniqueTargets = computed(() => { const allTargets = new Set<string>(); this.blocks().forEach(b => { b.selectedTargets.forEach(t => allTargets.add(t)); }); return allTargets.size; });
   hasCriticalMissing = computed(() => this.batches().some(b => b.status === 'missing_stock'));
   missingStockSummary = computed(() => { const summary = new Map<string, any>(); const ledger: Record<string, number> = {}; Object.values(this.state.inventoryMap()).forEach((i: InventoryItem) => ledger[i.id] = i.stock); for (const batch of this.batches()) { for (const item of batch.resourceImpact) { if (item.isComposite) { for (const sub of item.breakdown) { const current = ledger[sub.name] || 0; const remaining = current - sub.totalNeed; ledger[sub.name] = remaining; if (!summary.has(sub.name)) { summary.set(sub.name, { name: sub.displayName || sub.name, unit: sub.stockUnit, missing: 0, currentStock: current }); } } } else { const current = ledger[item.name] || 0; const remaining = current - item.stockNeed; ledger[item.name] = remaining; if (!summary.has(item.name)) { summary.set(item.name, { name: item.displayName || item.name, unit: item.stockUnit, missing: 0, currentStock: current }); } } } } const result: any[] = []; summary.forEach((val, key) => { const finalBalance = ledger[key]; if (finalBalance < 0) { val.missing = Math.abs(finalBalance); result.push(val); } }); return result.sort((a,b) => b.missing - a.missing); });
   
-  // FIX TS7006: Explicitly typing iterator variables 'id' in for loops
   candidateSops = computed(() => { 
       const s = this.splitState(); 
       if (s.sourceBatchIndex < 0) return []; 
@@ -532,7 +538,6 @@ export class SmartBatchComponent {
       return allSops.filter(sop => { 
           if (!sop.targets) return false; 
           const sopTargetIds = new Set(sop.targets.map(t => t.id)); 
-          // FIX: Explicitly iterate over Array from Set
           for (const id of Array.from(requiredTargetIds)) { 
               if (!sopTargetIds.has(id)) return false; 
           } 
@@ -615,10 +620,16 @@ export class SmartBatchComponent {
           inputValues['n_sample'] = sampleSet.size; 
           if(inputValues['n_qc'] === undefined) inputValues['n_qc'] = 1; 
           
-          const needs = this.calculator.calculateSopNeeds(sop, inputValues, 10, this.inventoryCache, this.recipeCache); 
+          // UPDATED: Use Auto margin (-1) by default
+          const defaultMargin = -1; 
+          
+          const needs = this.calculator.calculateSopNeeds(
+              sop, inputValues, defaultMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+          ); 
+          
           proposed.push({ 
               id: `batch_${Date.now()}_${Math.random()}`, sop: sop, targets: relevantTargets, samples: sampleSet, sampleCount: sampleSet.size, 
-              inputValues: inputValues, safetyMargin: 10, resourceImpact: needs, status: 'ready' 
+              inputValues: inputValues, safetyMargin: defaultMargin, resourceImpact: needs, status: 'ready' 
           }); 
       } 
       
@@ -628,7 +639,6 @@ export class SmartBatchComponent {
               if (s.id === batch.sop.id) return false; 
               if (!s.targets) return false; 
               const sTargetIds = new Set(s.targets.map(t => t.id)); 
-              // FIX TS7006: Explicitly iterate over Array from Set
               for (const id of Array.from(batchTargetIds)) { 
                   if (!sTargetIds.has(id)) return false; 
               } 
@@ -641,14 +651,27 @@ export class SmartBatchComponent {
       this.step.set(2); 
   }
 
-  // FIX: New Method to update margin and trigger recalculation cleanly
+  // Set batch margin to Manual mode (start with 10% if previously auto)
+  setBatchMarginManual(index: number) {
+      this.updateBatchMargin(index, 10);
+  }
+
   updateBatchMargin(index: number, val: number) {
       this.batches.update(current => {
           const next = [...current];
-          const batch = { ...next[index], safetyMargin: val };
+          // Ensure valid number, allow -1 for Auto if somehow set
+          let finalVal = Number(val);
+          if (isNaN(finalVal)) finalVal = 0;
+          
+          const batch = { ...next[index], safetyMargin: finalVal };
           
           const needs = this.calculator.calculateSopNeeds(
-              batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache
+              batch.sop, 
+              batch.inputValues, 
+              batch.safetyMargin, 
+              this.inventoryCache, 
+              this.recipeCache,
+              this.state.safetyConfig() // IMPORTANT: Pass config
           );
           batch.resourceImpact = needs;
           next[index] = batch;
@@ -657,7 +680,29 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
   }
 
-  recalculateBatch(index: number) { this.batches.update(current => { const next = [...current]; const batch = { ...next[index] }; batch.inputValues['n_sample'] = batch.samples.size; const needs = this.calculator.calculateSopNeeds( batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache ); batch.resourceImpact = needs; batch.sampleCount = batch.samples.size; next[index] = batch; return next; }); this.validateGlobalStock(); }
+  recalculateBatch(index: number) { 
+      this.batches.update(current => { 
+          const next = [...current]; 
+          const batch = { ...next[index] }; 
+          batch.inputValues['n_sample'] = batch.samples.size; 
+          
+          const needs = this.calculator.calculateSopNeeds( 
+              batch.sop, 
+              batch.inputValues, 
+              batch.safetyMargin, 
+              this.inventoryCache, 
+              this.recipeCache,
+              this.state.safetyConfig() // IMPORTANT: Pass config
+          ); 
+          
+          batch.resourceImpact = needs; 
+          batch.sampleCount = batch.samples.size; 
+          next[index] = batch; 
+          return next; 
+      }); 
+      this.validateGlobalStock(); 
+  }
+
   private validateGlobalStock() { const ledger: Record<string, number> = {}; Object.entries(this.inventoryCache).forEach(([k, v]) => ledger[k] = v.stock); this.batches.update(current => { return current.map(batch => { const needs = batch.resourceImpact; let isMissing = false; needs.forEach(item => { if (item.isComposite) { item.breakdown.forEach(sub => { const available = ledger[sub.name] || 0; if (available < sub.totalNeed) isMissing = true; if (ledger[sub.name] !== undefined) { ledger[sub.name] -= sub.totalNeed; } }); } else { const available = ledger[item.name] || 0; if (available < item.stockNeed) isMissing = true; if (ledger[item.name] !== undefined) { ledger[item.name] -= item.stockNeed; } } }); return { ...batch, status: isMissing ? 'missing_stock' : 'ready' }; }); }); }
   openSplitModal(batchIndex: number) { const batch = this.batches()[batchIndex]; this.splitState.set({ sourceBatchIndex: batchIndex, sourceSopName: batch.sop.name, availableSamples: Array.from(batch.samples).sort(), selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false }); this.showSplitModal.set(true); }
   toggleShowAllSops() { this.splitState.update(s => ({ ...s, showAllSops: !s.showAllSops })); }
@@ -665,7 +710,6 @@ export class SmartBatchComponent {
   moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>(s.availableSamples as string[]) })); }
   moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set<string>() })); }
   quickSplitHalf() { this.splitState.update(s => { const half = Math.ceil(s.availableSamples.length / 2); const bottomHalf = s.availableSamples.slice(half); return { ...s, selectedSamples: new Set<string>(bottomHalf as string[]) }; }); }
-  // FIX: Explicitly type parameters to avoid TS7006
   quickSplitInterleave() { this.splitState.update(s => { const selected = s.availableSamples.filter((_val: any, i: number) => i % 2 !== 0); return { ...s, selectedSamples: new Set<string>(selected as string[]) }; }); }
   updateSplitTarget(sopId: string) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
   
@@ -697,10 +741,11 @@ export class SmartBatchComponent {
       if (newInputs['n_qc'] !== undefined && sourceBatch.inputValues['n_qc'] !== undefined) { newInputs['n_qc'] = sourceBatch.inputValues['n_qc']; } 
       
       const reqsForNew = this.getRequiredTargetsForSamples(newSamples); 
-      const targetSopTargetIds = new Set((targetSop.targets || []).map(t => t.id)); 
-      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id)); // Only include needed targets present in SOP
+      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id)); 
       
-      const newNeeds = this.calculator.calculateSopNeeds( targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache ); 
+      const newNeeds = this.calculator.calculateSopNeeds( 
+          targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig() 
+      ); 
       
       const newBatch: ProposedBatch = { 
           id: `batch_${Date.now()}_split`, sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size, 
@@ -715,9 +760,7 @@ export class SmartBatchComponent {
           if (remainingSamples.size === 0) { 
               next.splice(state.sourceBatchIndex, 1); 
           } else { 
-              // IMPORTANT LOGIC FIX: Re-evaluate targets for source batch based on remaining samples
               const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples); 
-              // Filter source batch targets to only keep ones required by remaining samples
               const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id)); 
               
               const updatedSource = { 
@@ -728,7 +771,7 @@ export class SmartBatchComponent {
               }; 
               updatedSource.inputValues['n_sample'] = remainingSamples.size; 
               updatedSource.resourceImpact = this.calculator.calculateSopNeeds( 
-                  updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache 
+                  updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig() 
               ); 
               next[state.sourceBatchIndex] = updatedSource; 
           } 
@@ -772,6 +815,12 @@ export class SmartBatchComponent {
                       targetIds: batch.targets.map(t => t.id)
                   };
 
+                  // IMPORTANT: Pass inventoryMap but note that 'calculateSopNeeds' inside directApproveAndPrint
+                  // will use the provided margin. If margin is -1, it needs safetyConfig logic which directApprove 
+                  // doesn't do explicitly BUT it saves the calculated items we pass in.
+                  // We pass 'batch.resourceImpact' which IS ALREADY calculated correctly with auto-margin above.
+                  // So we are safe.
+                  
                   const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact!, finalInputs, inventoryMap);
                   
                   if (res) {

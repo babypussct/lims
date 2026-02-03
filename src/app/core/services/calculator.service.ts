@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Sop, CalculatedItem, CapacityResult, CapacityDetail } from '../models/sop.model';
 import { InventoryItem } from '../models/inventory.model';
 import { Recipe } from '../models/recipe.model';
+import { SafetyConfig } from '../models/config.model';
 import { getStandardizedAmount } from '../../shared/utils/utils';
 
 // Helper object exposed to the Formula Evaluator as 'Chem'
@@ -38,14 +39,16 @@ export class CalculatorService {
 
   /**
    * Calculates needs for an SOP.
-   * Updated to support `shared_recipe` by accepting a `recipeMap`.
+   * Updated to support `shared_recipe` and Dynamic Safety Margin.
+   * @param safetyMargin - If -1 (or < 0), use dynamic calculation from `safetyConfig`. Else use strictly as %.
    */
   calculateSopNeeds(
       sop: Sop, 
       inputValues: Record<string, any>, 
       safetyMargin: number = 0,
       inventoryMap: Record<string, InventoryItem> = {},
-      recipeMap: Record<string, Recipe> = {} 
+      recipeMap: Record<string, Recipe> = {},
+      safetyConfig?: SafetyConfig
   ): CalculatedItem[] {
     
     // 1. Prepare Context from Inputs
@@ -111,8 +114,6 @@ export class CalculatorService {
       }
     }
 
-    const factor = 1 + (safetyMargin / 100);
-
     // 3. Calculate Consumables
     return sop.consumables.map(item => {
       // Condition Check
@@ -135,16 +136,38 @@ export class CalculatorService {
         validationError = "Lỗi công thức";
       }
 
-      const totalQty = baseQty * factor;
-      
-      // Inventory Lookup
+      // Inventory Lookup & Dynamic Margin
       let stockUnit = item.unit;
       let stockNeed = 0;
       let displayWarning: string | undefined = undefined;
       let isMissing = false;
       let displayName = item._displayName || item.name;
 
-      const stockItem = inventoryMap[item.name]; // Try direct lookup (simple)
+      const stockItem = inventoryMap[item.name]; 
+
+      // --- DYNAMIC MARGIN LOGIC ---
+      let appliedMargin = 0;
+      if (safetyMargin < 0) {
+          // AUTO MODE
+          if (safetyConfig) {
+              // Try to find category rule
+              if (stockItem && stockItem.category && safetyConfig.rules[stockItem.category] !== undefined) {
+                  appliedMargin = safetyConfig.rules[stockItem.category];
+                  displayWarning = displayWarning ? `${displayWarning} ` : '';
+                  // Uncomment to show margin source: displayWarning += `(Margin: ${stockItem.category} ${appliedMargin}%)`;
+              } else {
+                  appliedMargin = safetyConfig.defaultMargin || 0;
+              }
+          } else {
+              appliedMargin = 10; // Default fallback if config missing
+          }
+      } else {
+          // MANUAL MODE (Override)
+          appliedMargin = safetyMargin;
+      }
+
+      const factor = 1 + (appliedMargin / 100);
+      const totalQty = baseQty * factor;
 
       // Handle Display Name & Unit conversion for direct items
       if (stockItem) {
@@ -155,26 +178,22 @@ export class CalculatorService {
         const converted = getStandardizedAmount(totalQty, item.unit, stockUnit);
         
         if (converted === null) {
-          // Incompatible units (e.g. L -> g)
           displayWarning = `(Khác ĐV: ${item.unit} != ${stockUnit})`;
           stockNeed = totalQty;
         } else {
-          // Compatible units (e.g. L -> ml, kg -> g)
           stockNeed = converted;
         }
       } else {
-        // [FIX BUG 2]: FALLBACK to original unit if item not in inventory
         stockUnit = item.unit; 
         stockNeed = totalQty;
       }
 
-      // Determine Type (Legacy Support + Shared Recipe)
+      // Determine Type
       const isComposite = item.type === 'composite' || (item.ingredients && item.ingredients.length > 0);
       const isSharedRecipe = item.type === 'shared_recipe';
 
       // --- SIMPLE ITEM ---
       if (!isComposite && !isSharedRecipe) {
-        // Only mark missing if it's a simple item and NOT found
         if (!stockItem) isMissing = true;
         
         return { 
@@ -190,7 +209,6 @@ export class CalculatorService {
           const recipe = recipeMap[item.recipeId];
           rawIngredients = recipe.ingredients;
           
-          // Logic: If recipe is used, breakdown is calculated per Base Unit of recipe
           if (item._displayName && item._displayName.trim() !== recipe.name.trim()) {
               displayName = `${recipe.name} (${item._displayName})`;
           } else {
@@ -217,17 +235,41 @@ export class CalculatorService {
         const ingStockItem = inventoryMap[ing.name];
         const ingDisplayName = ingStockItem ? ingStockItem.name : (ing.displayName || ing.name);
         
-        // [FIX BUG 2 - Logic]: Formula for ingredient need
-        // totalQty is amount of Mixture needed (e.g. 100ml Buffer)
-        // ing.amount is amount of Ing per 1 Unit of Mixture (e.g. 0.1g Salt per 1ml Buffer)
-        // OR ing.amount is amount of Ing per Base Unit of Recipe.
-        // Assuming ing.amount is "Amount per 1 unit of parent".
+        // --- DYNAMIC MARGIN FOR INGREDIENTS ---
+        let ingMargin = 0;
+        if (safetyMargin < 0) {
+            // Auto Mode
+            if (safetyConfig && ingStockItem && ingStockItem.category && safetyConfig.rules[ingStockItem.category] !== undefined) {
+                ingMargin = safetyConfig.rules[ingStockItem.category];
+            } else if (safetyConfig) {
+                ingMargin = safetyConfig.defaultMargin || 0;
+            } else {
+                ingMargin = 10;
+            }
+        } else {
+            // Manual Mode
+            ingMargin = safetyMargin;
+        }
         
-        const amountPerBatch = totalQty * ing.amount;
+        // Recalculate amountPerBatch with ingredient specific margin
+        // Note: The parent 'totalQty' already has a margin applied (e.g. Volume of Mix). 
+        // We usually don't double apply margin (Margin on Mix Volume AND Margin on Ingredient).
+        // Standard practice: Margin applies to the FINAL quantity needed.
+        // For composite, we need X amount of Mix. The ingredients make up that X amount. 
+        // If we made X amount exactly, we might lose some. 
+        // So 'totalQty' of parent is (Base * Factor). Ingredients are proportional to that.
+        // So ingredients effectively inherit the Parent's margin.
+        
+        // HOWEVER: If "Dynamic Margin" means "Solvent needs +15% but Salt needs +2%", then applying margin at Parent level is wrong if Parent is just a logical grouping.
+        // But here 'Parent' is usually a physical solution (Buffer A). You prepare Buffer A with margin.
+        // So the margin of the SOLUTION determines the margin of ingredients.
+        
+        const amountPerBatch = totalQty * ing.amount; 
+        // amountPerBatch is now: (Base * ParentMargin) * ratio. 
+        // This is correct for "Making a Solution". The solution type determines the loss.
 
         if (ingStockItem) {
           ingStockUnit = ingStockItem.unit;
-          // Smart Convert for Ingredients too
           const converted = getStandardizedAmount(amountPerBatch, ing.unit, ingStockUnit);
           
           if (converted === null) {
@@ -237,7 +279,6 @@ export class CalculatorService {
             ingTotalNeed = converted;
           }
         } else {
-          // [FIX BUG 2 - Unit]: Fallback unit for ingredient
           ingStockUnit = ing.unit;
           ingTotalNeed = amountPerBatch;
           ingIsMissing = true;
@@ -252,7 +293,7 @@ export class CalculatorService {
 
       return {
         ...item, displayName, totalQty, stockNeed, stockUnit, isComposite: true, breakdown,
-        displayWarning, validationError, isMissing: false // The mix itself isn't missing
+        displayWarning, validationError, isMissing: false 
       } as CalculatedItem;
 
     }).filter(i => i !== null) as CalculatedItem[];
@@ -262,7 +303,7 @@ export class CalculatorService {
       sop: Sop, 
       mode: 'marginal' | 'standard' = 'marginal',
       inventoryMap: Record<string, InventoryItem> = {},
-      recipeMap: Record<string, Recipe> = {} // [FIX BUG 1]: Add recipeMap param
+      recipeMap: Record<string, Recipe> = {} 
   ): CapacityResult {
     
     const capacityInputs: Record<string, any> = {};
@@ -275,7 +316,7 @@ export class CalculatorService {
         });
     }
 
-    // [FIX BUG 1]: Pass recipeMap to calculation
+    // Capacity calculation usually ignores margin or uses 0 to find theoretical max
     const needs = this.calculateSopNeeds(sop, capacityInputs, 0, inventoryMap, recipeMap);
     
     const aggregatedNeeds = new Map<string, number>();
@@ -284,7 +325,6 @@ export class CalculatorService {
       const itemsToCheck = item.isComposite ? item.breakdown : [item];
       itemsToCheck.forEach((ing: any) => {
           const id = ing.name;
-          // Use 'totalNeed' (Stock Unit Value) for capacity calculation against Inventory Stock
           const amount = ing.totalNeed ?? ing.stockNeed;
           
           if (id && amount > 0) {
@@ -302,7 +342,6 @@ export class CalculatorService {
         const stockItem = inventoryMap[id];
         
         if (!stockItem) {
-            // For capacity, missing items are critical limiters (0 batches)
             details.push({ name: id, stock: 0, need: totalNeed, batches: 0 });
             if (maxBatches > 0) { maxBatches = 0; limitingFactor = id + ' (Không có trong kho)'; }
         } else {

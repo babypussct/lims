@@ -59,8 +59,7 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                <div class="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6">
                    @if (form()) {
                        <form [formGroup]="form()" class="space-y-6">
-                          <!-- ... Inputs logic kept same ... -->
-                          <!-- 1. SAMPLE MANAGEMENT (New Feature) -->
+                          <!-- 1. SAMPLE MANAGEMENT -->
                           <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                               <label class="text-[11px] font-bold text-blue-800 uppercase tracking-wide mb-2 block flex justify-between">
                                   <span>Danh sách Mã Mẫu</span>
@@ -163,12 +162,39 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                               }
                               
                               <div class="pt-4 mt-2 border-t border-slate-100">
-                                 <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 block ml-1">Hệ số hao hụt (An toàn)</label>
-                                 <div class="relative group">
-                                    <input type="number" formControlName="safetyMargin" min="0" step="1"
-                                           class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-orange-600 focus:bg-white focus:border-orange-500 outline-none transition shadow-sm">
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                 <div class="flex justify-between items-center mb-2 ml-1">
+                                     <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Hệ số hao hụt</label>
+                                     <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                                         <button type="button" (click)="setMarginMode('auto')" 
+                                                 class="px-2 py-1 text-[10px] font-bold rounded-md transition"
+                                                 [class]="marginMode() === 'auto' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'">
+                                             Auto
+                                         </button>
+                                         <button type="button" (click)="setMarginMode('manual')" 
+                                                 class="px-2 py-1 text-[10px] font-bold rounded-md transition"
+                                                 [class]="marginMode() === 'manual' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'">
+                                             Tùy chỉnh
+                                         </button>
+                                     </div>
                                  </div>
+                                 
+                                 @if(marginMode() === 'auto') {
+                                     <div class="w-full py-3 px-4 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3 text-orange-800 animate-fade-in cursor-default" title="Sử dụng cấu hình định mức cho từng loại hóa chất">
+                                         <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                             <i class="fa-solid fa-wand-magic-sparkles text-orange-500"></i>
+                                         </div>
+                                         <div>
+                                             <div class="text-xs font-bold">Chế độ Tự động</div>
+                                             <div class="text-[10px] opacity-80">Áp dụng theo từng loại hóa chất</div>
+                                         </div>
+                                     </div>
+                                 } @else {
+                                    <div class="relative group animate-fade-in">
+                                       <input type="number" formControlName="safetyMargin" min="0" step="1"
+                                              class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-700 focus:bg-white focus:border-orange-500 outline-none transition shadow-sm">
+                                       <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                    </div>
+                                 }
                               </div>
                           </div>
                        </form>
@@ -397,6 +423,9 @@ export class CalculatorComponent implements OnDestroy {
   selectedTargets = signal<Set<string>>(new Set());
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
+  
+  // SAFETY MARGIN MODE: 'auto' means use Config (-1), 'manual' uses explicit number
+  marginMode = signal<'auto' | 'manual'>('auto');
 
   filteredSops = computed(() => {
       const term = this.searchTerm().toLowerCase();
@@ -443,6 +472,10 @@ export class CalculatorComponent implements OnDestroy {
         this.selectedTargets.set(new Set());
         this.targetsOpen.set(false);
         this.targetSearchTerm.set('');
+        
+        // Reset to Auto mode by default for new SOPs
+        this.marginMode.set('auto');
+        
         this.runCalculation(s, newForm.value);
         this.fetchData(s);
         this.formValueSub = newForm.valueChanges.pipe(startWith(newForm.value), debounceTime(50)).subscribe(vals => {
@@ -458,6 +491,17 @@ export class CalculatorComponent implements OnDestroy {
   
   ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
   getTodayDate(): string { return new Date().toISOString().split('T')[0]; }
+
+  setMarginMode(mode: 'auto' | 'manual') {
+      this.marginMode.set(mode);
+      if (mode === 'manual') {
+          // If switching to manual, default to 10 if not set
+          const current = this.form().get('safetyMargin')?.value;
+          if (!current) this.form().patchValue({ safetyMargin: 10 });
+      }
+      // Re-trigger calc
+      this.runCalculation(this.activeSop()!, this.form().value);
+  }
 
   onSampleListChange(val: string) {
       this.sampleListText.set(val);
@@ -485,7 +529,12 @@ export class CalculatorComponent implements OnDestroy {
   getPayloadData() {
       const rawSamples = this.sampleListText();
       const sampleList = rawSamples.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      return { ...this.form().value, sampleList: sampleList, targetIds: Array.from(this.selectedTargets()) };
+      const values = this.form().value;
+      
+      // Override margin if Auto
+      const finalMargin = this.marginMode() === 'auto' ? -1 : (values.safetyMargin || 0);
+      
+      return { ...values, safetyMargin: finalMargin, sampleList: sampleList, targetIds: Array.from(this.selectedTargets()) };
   }
 
   async fetchData(sop: Sop) {
@@ -515,8 +564,24 @@ export class CalculatorComponent implements OnDestroy {
   runCalculation(sop: Sop, values: any) {
      try {
          const safeValues = (values || {}) as Record<string, any>;
-         const margin = Number(safeValues['safetyMargin'] || 0);
-         const results = this.calcService.calculateSopNeeds(sop, safeValues, isNaN(margin) ? 0 : margin, this.localInventoryMap(), this.localRecipeMap());
+         
+         // DETERMINE MARGIN
+         let margin = 0;
+         if (this.marginMode() === 'auto') {
+             margin = -1; // Flag for Auto
+         } else {
+             margin = Number(safeValues['safetyMargin'] || 0);
+             if (isNaN(margin)) margin = 0;
+         }
+
+         const results = this.calcService.calculateSopNeeds(
+             sop, 
+             safeValues, 
+             margin, 
+             this.localInventoryMap(), 
+             this.localRecipeMap(),
+             this.state.safetyConfig() // Pass config
+         );
          this.calculatedItems.set(results);
      } catch(e) { console.error("Calculation Error", e); }
   }
@@ -546,7 +611,7 @@ export class CalculatorComponent implements OnDestroy {
         this.state.cachedCalculatorState.set({ sopId: sop.id, formValues: this.form().value });
 
         const job: PrintJob = {
-          sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
+          sop: sop, inputs: payload, margin: payload.safetyMargin, items: this.calculatedItems(),
           date: new Date(), user: (this.state.currentUser()?.displayName || 'Guest') + ' (Bản nháp)',
           analysisDate: payload.analysisDate, requestId: `DRAFT-${Date.now()}`
         };
@@ -568,7 +633,7 @@ export class CalculatorComponent implements OnDestroy {
         const result = await this.state.directApproveAndPrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
         if (result) {
             const job: PrintJob = {
-              sop: sop, inputs: payload, margin: this.safetyMargin(), items: this.calculatedItems(),
+              sop: sop, inputs: payload, margin: payload.safetyMargin, items: this.calculatedItems(),
               date: new Date(), user: this.state.currentUser()?.displayName, analysisDate: payload.analysisDate,
               requestId: result.logId 
             };

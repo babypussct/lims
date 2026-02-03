@@ -17,7 +17,7 @@ import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
 import { Sop, CalculatedItem } from '../models/sop.model';
 import { Request, RequestItem } from '../models/request.model';
 import { Log, PrintData } from '../models/log.model';
-import { PrintConfig } from '../models/config.model';
+import { PrintConfig, SafetyConfig } from '../models/config.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
@@ -48,6 +48,12 @@ export class StateService implements OnDestroy {
   
   printConfig = signal<PrintConfig>({
     footerText: 'Cam kết sử dụng đúng mục đích.', showSignature: false
+  });
+
+  // NEW: Safety Configuration
+  safetyConfig = signal<SafetyConfig>({
+      defaultMargin: 10,
+      rules: {}
   });
 
   systemVersion = signal<string>('V1.0 FINAL');
@@ -144,12 +150,17 @@ export class StateService implements OnDestroy {
     }, handleError('Logs'));
     this.listeners.push(logSub);
 
-    // 5. Config & Stats
+    // 5. Configs
     const statSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'), (d) => { if (d.exists()) this.stats.set(d.data()); }, handleError('Stats'));
     this.listeners.push(statSub);
 
-    const configSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print'), (d) => { if(d.exists()) this.printConfig.set(d.data() as PrintConfig); }, handleError('Config-Print'));
-    this.listeners.push(configSub);
+    const printConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print'), (d) => { if(d.exists()) this.printConfig.set(d.data() as PrintConfig); }, handleError('Config-Print'));
+    this.listeners.push(printConfigSub);
+
+    const safetyConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety'), (d) => { 
+        if(d.exists()) this.safetyConfig.set(d.data() as SafetyConfig); 
+    }, handleError('Config-Safety'));
+    this.listeners.push(safetyConfigSub);
 
     const systemSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system'), (d) => { 
         if(d.exists()) {
@@ -164,6 +175,11 @@ export class StateService implements OnDestroy {
   
   async savePrintConfig(config: PrintConfig) { 
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
+      await setDoc(ref, config, {merge: true});
+  }
+
+  async saveSafetyConfig(config: SafetyConfig) {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
       await setDoc(ref, config, {merge: true});
   }
 
@@ -239,7 +255,6 @@ export class StateService implements OnDestroy {
     } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
   }
   
-  // FIX: Return the Generated IDs so UI can Print Correct QR
   async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{logId: string, printJobId: string} | null> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
     
@@ -359,7 +374,16 @@ export class StateService implements OnDestroy {
         
         if (sop && req.inputs) {
             const calcService = this.injector.get(CalculatorService);
-            const calculatedItems = calcService.calculateSopNeeds(sop, req.inputs, req.margin || 0); 
+            
+            // IMPORTANT: PASS SAFETY CONFIG HERE TO HANDLE "AUTO" MARGIN (-1)
+            const calculatedItems = calcService.calculateSopNeeds(
+                sop, 
+                req.inputs, 
+                req.margin || 0,
+                this.inventoryMap(), 
+                {}, // RecipeMap not available here, but simpler items should work
+                this.safetyConfig() // Safety config for Auto mode
+            ); 
             
             calculatedItems.forEach(ci => {
                 const ri = req.items.find(r => r.name === ci.name);

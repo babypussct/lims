@@ -109,7 +109,7 @@ declare var QRious: any;
                                         <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
                                         <div class="flex flex-wrap gap-2">
                                             @for(key of objectKeys(logData()?.printData?.inputs); track key) {
-                                                @if(key !== 'sampleList') {
+                                                @if(key !== 'sampleList' && key !== 'targetIds') {
                                                     <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
                                                         {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
                                                     </span>
@@ -199,7 +199,7 @@ export class TraceabilityComponent implements OnInit {
       this.errorMsg.set('');
       
       try {
-          // 1. Try Direct Log Lookup
+          // 1. Try Direct Log Lookup (Priority 1)
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
           let snap = await getDoc(logRef);
 
@@ -208,13 +208,11 @@ export class TraceabilityComponent implements OnInit {
               return;
           }
 
-          // 2. Try Lookup by Print Job ID (Legacy or linked)
+          // 2. Try Lookup by Print Job ID (Legacy or linked) (Priority 2)
           const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
           let jobSnap = await getDoc(jobRef);
           
           if (jobSnap.exists()) {
-              // Found a print job, reconstruct a "Log-like" view or find the parent log
-              // Or just show the print job data as a log
               const jobData = jobSnap.data() as any;
               const mockLog: Log = {
                   id: id,
@@ -229,7 +227,54 @@ export class TraceabilityComponent implements OnInit {
               return;
           }
 
-          // 3. Not Found
+          // 3. Try Lookup by REQUEST ID (Dashboard links point here) (Priority 3)
+          const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${id}`);
+          let reqSnap = await getDoc(reqRef);
+
+          if (reqSnap.exists()) {
+              const reqData = reqSnap.data() as any;
+              
+              // Map Request format to Log format for display consistency
+              // RequestItem needs to be mapped to CalculatedItem-like structure for the template
+              const mappedItems = (reqData.items || []).map((item: any) => ({
+                  name: item.name,
+                  displayName: item.displayName,
+                  stockNeed: item.amount, // Request stores 'amount' as stock deduction
+                  stockUnit: item.stockUnit || item.unit,
+                  // Request items are usually flattened, so no breakdown
+                  isComposite: false
+              }));
+
+              const mockLog: Log = {
+                  id: reqSnap.id,
+                  action: reqData.status === 'approved' ? 'APPROVED_REQUEST' : 'PENDING_REQUEST',
+                  details: `Yêu cầu phân tích: ${reqData.sopName}`,
+                  timestamp: reqData.approvedAt || reqData.timestamp,
+                  user: reqData.user || 'Unknown',
+                  printable: true,
+                  sopBasicInfo: {
+                      name: reqData.sopName,
+                      category: 'Request Record'
+                  },
+                  printData: {
+                      // We might not have the full SOP object here, but we have inputs
+                      sop: { name: reqData.sopName, category: 'Request', id: reqData.sopId } as any,
+                      inputs: { 
+                          ...reqData.inputs, 
+                          sampleList: reqData.sampleList,
+                          targetIds: reqData.targetIds
+                      },
+                      items: mappedItems,
+                      margin: reqData.margin,
+                      analysisDate: reqData.analysisDate
+                  }
+              };
+              
+              this.handleLogData(mockLog);
+              return;
+          }
+
+          // 4. Not Found
           this.errorMsg.set(`Không tìm thấy dữ liệu cho mã: ${id}`);
 
       } catch (e: any) {

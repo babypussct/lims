@@ -99,11 +99,11 @@ export class DateRangeFilterComponent {
   initEnd = input<string>('');
   dateChange = output<{ start: string, end: string, label: string }>();
 
-  // State
+  // State - Changed default to 'today'
   startDate = signal('');
   endDate = signal('');
-  activePreset = signal<DateRangePreset>('this_month');
-  currentLabel = signal('Tháng này');
+  activePreset = signal<DateRangePreset>('today');
+  currentLabel = signal('Hôm nay');
   isOpen = signal(false);
 
   constructor() {
@@ -111,7 +111,6 @@ export class DateRangeFilterComponent {
       effect(() => {
           if(this.initStart()) this.startDate.set(this.initStart());
           if(this.initEnd()) this.endDate.set(this.initEnd());
-          // Auto-detect preset could be added here, but simplicity is better
       }, { allowSignalWrites: true });
   }
 
@@ -163,15 +162,11 @@ export class DateRangeFilterComponent {
               const day = today.getDay(); 
               const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
               start.setDate(diffToMon);
-              // End is typically today or end of week. Let's set end of week (Sunday)
-              // But for reporting "up to now", usually today is better. 
-              // Requirement said: "Tuan nay: Tu T2 den hien tai"
-              // Keep end as today.
+              // End is today
               break;
 
           case 'last_week':
               label = 'Tuần trước';
-              // Last week Mon - Sun
               const currentDay = today.getDay();
               const diffToLastMon = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1) - 7;
               start.setDate(diffToLastMon);
@@ -182,26 +177,23 @@ export class DateRangeFilterComponent {
           case 'this_month':
               label = 'Tháng này';
               start = new Date(today.getFullYear(), today.getMonth(), 1);
-              // End is today
               break;
 
           case 'last_month':
               label = 'Tháng trước';
               start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-              end = new Date(today.getFullYear(), today.getMonth(), 0); // Last day of prev month
+              end = new Date(today.getFullYear(), today.getMonth(), 0); 
               break;
           
           case 'this_quarter':
               label = 'Quý này';
               const q = Math.floor((today.getMonth() + 3) / 3);
               start = new Date(today.getFullYear(), (q - 1) * 3, 1);
-              // End is today
               break;
 
           case 'this_year':
               label = 'Năm nay';
               start = new Date(today.getFullYear(), 0, 1);
-              // End is today
               break;
       }
 

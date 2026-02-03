@@ -39,13 +39,16 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                 <button (click)="activeTab.set('general')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2" [class]="activeTab() === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
                     <i class="fa-solid fa-server"></i> Hệ thống & Dữ liệu
                 </button>
+                <button (click)="activeTab.set('safety')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2" [class]="activeTab() === 'safety' ? 'border-orange-600 text-orange-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <i class="fa-solid fa-shield-halved"></i> Định mức & Tiêu hao
+                </button>
                 <button (click)="activeTab.set('users')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2" [class]="activeTab() === 'users' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
                     <i class="fa-solid fa-users-gear"></i> Người dùng & Phân quyền
                 </button>
             </div>
 
             @if (activeTab() === 'general') {
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start animate-fade-in">
                     
                     <!-- LEFT COLUMN -->
                     <div class="space-y-6">
@@ -132,7 +135,6 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                                 </label>
                             </div>
 
-                            <!-- FIRESTORE RULES DISPLAY (KEPT AS REQUESTED) -->
                             <div class="relative mt-2">
                                 <div class="flex justify-between items-center mb-1">
                                     <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules (Config)</span>
@@ -173,6 +175,111 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                         <button (click)="resetDefaults()" class="px-5 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white rounded-xl font-bold text-sm transition shadow-sm">
                             <i class="fa-solid fa-eraser mr-1"></i> Xóa Sạch Dữ Liệu (Wipe All)
                         </button>
+                    </div>
+
+                </div>
+            }
+
+            @if (activeTab() === 'safety') {
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in items-start">
+                    
+                    <!-- Safety Config Card -->
+                    <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-percent"></i></div>
+                                    Quy định Hao hụt (Safety Margin)
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1">Cấu hình tỷ lệ hao hụt tự động dựa trên phân loại hóa chất.</p>
+                            </div>
+                            <button (click)="saveSafety()" class="px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu hình
+                            </button>
+                        </div>
+
+                        <!-- Default Margin -->
+                        <div class="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex items-center justify-between">
+                            <div>
+                                <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Mức Hao hụt Mặc định</label>
+                                <p class="text-[10px] text-slate-500">Áp dụng cho các loại không có quy tắc riêng.</p>
+                            </div>
+                            <div class="relative w-24">
+                                <input type="number" [(ngModel)]="safetyConfigLocal.defaultMargin" class="w-full pl-3 pr-8 py-2 border border-orange-200 rounded-lg font-bold text-slate-700 text-center outline-none focus:ring-2 focus:ring-orange-200 transition">
+                                <span class="absolute right-3 top-2 text-xs font-bold text-orange-400">%</span>
+                            </div>
+                        </div>
+
+                        <!-- Category Rules Table -->
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quy tắc chi tiết theo Loại (Category)</h4>
+                                <button (click)="addSafetyRule()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Quy tắc</button>
+                            </div>
+                            
+                            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase">
+                                        <tr>
+                                            <th class="px-4 py-3">Loại Hóa chất (Category)</th>
+                                            <th class="px-4 py-3 w-32 text-center">Mức Hao hụt</th>
+                                            <th class="px-4 py-3 w-16"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @for (rule of safetyRulesLocal(); track $index) {
+                                            <tr class="hover:bg-slate-50 transition group">
+                                                <td class="px-4 py-2">
+                                                    <input [(ngModel)]="rule.category" list="catOptions" class="w-full bg-transparent border border-transparent hover:border-slate-200 focus:border-orange-300 rounded px-2 py-1 outline-none text-xs font-bold text-slate-700" placeholder="VD: reagent, standard...">
+                                                    <datalist id="catOptions">
+                                                        <option value="reagent">Hóa chất (reagent)</option>
+                                                        <option value="standard">Chất chuẩn (standard)</option>
+                                                        <option value="solvent">Dung môi (solvent)</option>
+                                                        <option value="consumable">Vật tư (consumable)</option>
+                                                        <option value="kit">Kit xét nghiệm (kit)</option>
+                                                    </datalist>
+                                                </td>
+                                                <td class="px-4 py-2 text-center">
+                                                    <div class="relative mx-auto w-20">
+                                                        <input type="number" [(ngModel)]="rule.margin" class="w-full pl-2 pr-6 py-1 border border-slate-200 rounded text-center text-xs font-bold outline-none focus:border-orange-400">
+                                                        <span class="absolute right-2 top-1 text-[10px] font-bold text-slate-400">%</span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-2 text-center">
+                                                    <button (click)="removeSafetyRule($index)" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        }
+                                        @if(safetyRulesLocal().length === 0) {
+                                            <tr><td colspan="3" class="p-6 text-center text-slate-400 italic text-xs">Chưa có quy tắc riêng. Hệ thống sẽ dùng mức mặc định.</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Helper / Info Panel -->
+                    <div class="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-6">
+                        <h4 class="font-bold text-indigo-800 text-sm mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info"></i> Hướng dẫn
+                        </h4>
+                        <ul class="text-xs text-slate-600 space-y-3 list-disc pl-4">
+                            <li>
+                                <b>Mức mặc định:</b> Được áp dụng cho tất cả các chất không thuộc danh sách quy tắc riêng.
+                            </li>
+                            <li>
+                                <b>Auto Mode:</b> Khi chạy Calculator hoặc Smart Batch, nếu bạn chọn chế độ hao hụt là "Auto" (hoặc để trống), hệ thống sẽ tra cứu bảng này.
+                            </li>
+                            <li>
+                                <b>Gợi ý thiết lập:</b>
+                                <ul class="list-circle pl-4 mt-1 space-y-1 text-slate-500">
+                                    <li><i>Standard (Chất chuẩn):</i> 2% (Vì đắt tiền).</li>
+                                    <li><i>Solvent (Dung môi):</i> 15-20% (Do bay hơi).</li>
+                                    <li><i>Reagent (Hóa chất thường):</i> 10%.</li>
+                                </ul>
+                            </li>
+                        </ul>
                     </div>
 
                 </div>
@@ -373,11 +480,15 @@ export class ConfigComponent implements OnInit {
   
   printConfig = this.state.printConfig;
   
-  activeTab = signal<'general' | 'users'>('general');
+  activeTab = signal<'general' | 'users' | 'safety'>('general');
   loadingHealth = signal(false);
   healthItems = signal<HealthCheckItem[]>([]);
   storageEstimate = signal<{ totalDocs: number, estimatedSizeKB: number, details: any } | null>(null);
   
+  // Safety Config State
+  safetyConfigLocal = { defaultMargin: 10, rules: {} as Record<string, number> };
+  safetyRulesLocal = signal<{category: string, margin: number}[]>([]);
+
   userList = signal<UserProfile[]>([]);
   availablePermissions = [
       { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
@@ -444,6 +555,16 @@ service cloud.firestore {
       if (this.state.isAdmin()) {
           this.versionControl.setValue(this.state.systemVersion()); 
           this.loadUsers();
+          
+          // Hydrate safety config from state signal
+          const sVal = this.state.safetyConfig();
+          this.safetyConfigLocal = { 
+              defaultMargin: sVal.defaultMargin, 
+              rules: { ...sVal.rules } 
+          };
+          this.safetyRulesLocal.set(
+              Object.entries(sVal.rules).map(([category, margin]) => ({ category, margin }))
+          );
       }
   }
 
@@ -545,5 +666,31 @@ service cloud.firestore {
   async saveUser(u: UserProfile) {
       try { await this.fb.updateUserPermissions(u.uid, u.role, u.permissions || []); this.toast.show(`Đã cập nhật ${u.displayName}`, 'success'); } 
       catch (e) { this.toast.show('Lỗi cập nhật.', 'error'); }
+  }
+
+  // --- SAFETY CONFIG METHODS ---
+  addSafetyRule() {
+      this.safetyRulesLocal.update(r => [...r, { category: '', margin: 10 }]);
+  }
+
+  removeSafetyRule(index: number) {
+      this.safetyRulesLocal.update(r => r.filter((_, i) => i !== index));
+  }
+
+  saveSafety() {
+      const rulesObj: Record<string, number> = {};
+      this.safetyRulesLocal().forEach(item => {
+          if (item.category && item.category.trim()) {
+              rulesObj[item.category.trim()] = item.margin;
+          }
+      });
+      
+      const config = {
+          defaultMargin: this.safetyConfigLocal.defaultMargin,
+          rules: rulesObj
+      };
+      
+      this.state.saveSafetyConfig(config);
+      this.toast.show('Đã lưu cấu hình định mức.');
   }
 }

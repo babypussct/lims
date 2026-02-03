@@ -84,7 +84,7 @@ declare var QRious: any;
                             <!-- Margin -->
                             <div class="param-item margin-item">
                                 <span class="p-label">Hao hụt:</span>
-                                <span class="p-value margin-val">+{{formatNum(job.margin || job.inputs['safetyMargin'] || 0)}}%</span>
+                                <span class="p-value margin-val" [class.text-blue-600]="isAutoMargin(job)">{{getMarginDisplay(job)}}</span>
                             </div>
                         </div>
                     </div>
@@ -350,4 +350,16 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
 
   getFooterText(): string { return this.state.printConfig()?.footerText || 'Cam kết sử dụng đúng mục đích. Phiếu được quản lý trên LIMS Cloud.'; }
   getSelectLabel(inp: any, value: any): string { return inp.options?.find((o: any) => o.value == value)?.label || value; }
+
+  // New Helper for Margin Display
+  isAutoMargin(job: PrintJob): boolean {
+      const val = job.margin !== undefined ? job.margin : (job.inputs['safetyMargin'] || 0);
+      return val < 0;
+  }
+
+  getMarginDisplay(job: PrintJob): string {
+      const val = job.margin !== undefined ? job.margin : (job.inputs['safetyMargin'] || 0);
+      if (val < 0) return 'Theo cấu hình (Auto)';
+      return `+${this.formatNum(val)}%`;
+  }
 }

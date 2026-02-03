@@ -10,9 +10,10 @@ import { StandardService } from '../standards/standard.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
-import { formatNum, formatDate, getAvatarUrl } from '../../shared/utils/utils';
+import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component'; 
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import Chart from 'chart.js/auto'; 
 
 interface PriorityStandard {
@@ -22,12 +23,33 @@ interface PriorityStandard {
     status: 'expired' | 'warning' | 'safe';
 }
 
+interface BatchHistoryItem {
+    id: string; // Request ID / Trace ID
+    timestamp: any;
+    user: string;
+    sampleCount: number;
+    sampleList: string[]; // Raw list for this batch
+    sampleDisplay: string; // Formatted range for this batch
+}
+
+interface KanbanColumn {
+    sopName: string;
+    sopId: string;
+    totalSamples: number;
+    sampleList: string[]; // Aggregated list
+    sampleDisplay: string; // Formatted aggregated list
+    users: Set<string>;
+    batchCount: number; 
+    lastRun: Date; 
+    history: BatchHistoryItem[]; // Detailed history for modal
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, FormsModule, QrScannerComponent], 
+  imports: [CommonModule, SkeletonComponent, FormsModule, QrScannerComponent, DateRangeFilterComponent], 
   template: `
-    <div class="pb-10 fade-in font-sans">
+    <div class="pb-20 fade-in font-sans">
         
         <!-- HEADER: Welcome & Scan -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -39,7 +61,6 @@ interface PriorityStandard {
             </div>
             
             <div class="flex gap-2">
-                <!-- NEW: Mobile Login Shortcut -->
                 <button (click)="router.navigate(['/mobile-login'])" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-desktop"></i> Login PC
                 </button>
@@ -50,9 +71,8 @@ interface PriorityStandard {
             </div>
         </div>
 
-        <!-- SECTION 1: KPI CARDS (Soft UI Style) -->
+        <!-- SECTION 1: KPI CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-            
             <!-- Card 1: Pending Requests -->
             <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()"
                  class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent hover:border-purple-100">
@@ -63,7 +83,6 @@ interface PriorityStandard {
                             @if(isLoading()) { ... } @else { {{state.requests().length}} }
                         </h4>
                     </div>
-                    <!-- Gradient Purple-Pink -->
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-clipboard-list text-lg"></i>
                     </div>
@@ -87,7 +106,6 @@ interface PriorityStandard {
                             @if(isLoading()) { ... } @else { {{lowStockItems().length}} }
                         </h4>
                     </div>
-                    <!-- Gradient Red-Rose -->
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-box-open text-lg"></i>
                     </div>
@@ -111,7 +129,6 @@ interface PriorityStandard {
                             @if(isLoading()) { ... } @else { {{todayActivityCount()}} }
                         </h4>
                     </div>
-                    <!-- Gradient Blue-Cyan -->
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-bolt text-lg"></i>
                     </div>
@@ -133,7 +150,6 @@ interface PriorityStandard {
                             <h4 class="text-lg font-black text-gray-800">An toàn</h4>
                         }
                     </div>
-                    <!-- Gradient Orange-Yellow -->
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
                         <i class="fa-solid fa-clock text-lg"></i>
                     </div>
@@ -150,24 +166,31 @@ interface PriorityStandard {
             </div>
         </div>
 
-        <!-- SECTION 2: ANALYTICS & FEED -->
+        <!-- SECTION 2: ANALYTICS & FEED (MOVED UP) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            
             <!-- Left: Chart (2/3) -->
             <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h6 class="font-bold text-gray-700 capitalize text-lg">Hiệu suất Phân tích</h6>
-                        <p class="text-sm text-gray-500 flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-up text-emerald-500 text-xs"></i>
-                            <span class="font-bold text-gray-600">7 ngày gần nhất</span>
+                        <!-- Trend Indicator -->
+                        <p class="text-sm font-bold flex items-center gap-1.5"
+                           [class.text-emerald-500]="trendInfo().direction === 'up'"
+                           [class.text-red-500]="trendInfo().direction === 'down'"
+                           [class.text-gray-500]="trendInfo().direction === 'neutral'">
+                            <i class="fa-solid" [class]="trendInfo().icon"></i>
+                            @if(trendInfo().direction !== 'neutral') {
+                                <span>{{trendInfo().percent}}%</span>
+                            } @else {
+                                <span>Ổn định</span>
+                            }
+                            <span class="text-gray-400 font-normal text-xs">so với hôm qua</span>
                         </p>
                     </div>
                     <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
                         <i class="fa-solid fa-chart-column"></i>
                     </div>
                 </div>
-                
                 <div class="flex-1 relative w-full min-h-0 bg-gradient-to-b from-transparent to-gray-50/30 rounded-xl">
                     @if(isLoading()) {
                         <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
@@ -180,25 +203,19 @@ interface PriorityStandard {
             <!-- Right: Activity Feed (1/3) -->
             <div class="bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100">
                 <h6 class="font-bold text-gray-700 capitalize text-lg mb-4">Hoạt động gần đây</h6>
-                
                 <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
                     <div class="relative border-l border-gray-200 ml-3 space-y-6 pb-2">
                         @for (log of recentLogs(); track log.id) {
                             <div class="relative pl-6">
-                                <!-- Dot on Timeline -->
                                 <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm"
                                      [class.bg-fuchsia-500]="log.action.includes('APPROVE')"
                                      [class.bg-blue-500]="log.action.includes('STOCK')"
                                      [class.bg-gray-400]="!log.action.includes('APPROVE') && !log.action.includes('STOCK')">
                                 </div>
-                                
                                 <div class="flex flex-col">
                                     <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
-                                    
-                                    <!-- Avatar & Content Row -->
                                     <div class="flex items-start gap-3">
                                         <img [src]="getAvatarUrl(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 shadow-sm object-cover bg-white shrink-0" alt="Avatar">
-                                        
                                         <div class="flex-1 min-w-0">
                                             <div class="text-xs font-bold text-gray-700 leading-tight">
                                                 <span class="text-gray-900">{{log.user}}</span> 
@@ -219,97 +236,142 @@ interface PriorityStandard {
             </div>
         </div>
 
-        <!-- SECTION 3: MODULES GRID (Updated with 8 items) -->
-        <h6 class="font-bold text-slate-700 text-sm mb-4 px-1">Truy cập nhanh (Quick Actions)</h6>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- SECTION 3: SMART KANBAN (MOVED DOWN & GRID LAYOUT) -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
+                <h6 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-500"></i> Hiệu suất Phân tích (Hoàn thành)
+                </h6>
+                
+                <!-- Date Filter Component -->
+                <app-date-range-filter 
+                    [initStart]="startDate()" 
+                    [initEnd]="endDate()" 
+                    (dateChange)="onDateRangeChange($event)">
+                </app-date-range-filter>
+            </div>
             
-            <!-- 1. Calculator -->
-            <div (click)="auth.canViewSop() ? navTo('calculator') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-fuchsia-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-calculator text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-fuchsia-700">Chạy Quy trình</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Tính toán đơn lẻ</p>
-            </div>
+            <!-- UPDATED: Grid Layout (5 columns max) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                
+                @for (col of kanbanBoard(); track col.sopName) {
+                    <div (click)="openSopDetails(col)" 
+                         class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col cursor-pointer hover:-translate-y-1 transition-all hover:shadow-md group relative overflow-hidden h-full">
+                        
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1 min-w-0 pr-2">
+                                <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-indigo-100 mb-1 inline-block">
+                                    {{col.batchCount}} mẻ
+                                </span>
+                                <h4 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2" [title]="col.sopName">
+                                    {{col.sopName}}
+                                </h4>
+                            </div>
+                            <!-- Success Indicator -->
+                            <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                            </div>
+                        </div>
 
-            <!-- 2. Smart Batch -->
-            <div (click)="auth.canViewSop() ? navTo('smart-batch') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-teal-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-teal-700">Smart Batch</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Chạy mẻ & Tối ưu</p>
-            </div>
+                        <!-- Sample List (Grouped Text) -->
+                        <div class="flex-1 bg-slate-50/50 rounded-xl p-3 mb-3 border border-slate-50">
+                            <div class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Mẫu đã xử lý:</div>
+                            <p class="text-xs font-mono font-bold text-slate-700 break-words leading-relaxed line-clamp-3">
+                                {{ col.sampleDisplay }}
+                            </p>
+                        </div>
 
-            <!-- 3. Smart Prep -->
-            <div (click)="auth.canViewInventory() ? navTo('prep') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-violet-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-flask-vial text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-violet-700">Trạm Pha Chế</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Pha loãng & Dãy chuẩn</p>
-            </div>
-
-            <!-- 4. Inventory -->
-            <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-blue-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-boxes-stacked text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-blue-700">Kho Hóa chất</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Nhập xuất & Kiểm kê</p>
-            </div>
-
-            <!-- 5. Requests -->
-            <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-orange-200 cursor-pointer relative overflow-hidden">
-                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-clipboard-list text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-orange-700">Yêu cầu Duyệt</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Phê duyệt & In phiếu</p>
-                @if(state.requests().length > 0) {
-                    <div class="absolute top-4 right-4 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg animate-pulse">
-                        {{state.requests().length}}
+                        <!-- Footer Info -->
+                        <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                            <!-- Avatars -->
+                            <div class="flex -space-x-2 overflow-hidden">
+                                @for(user of col.users; track user) {
+                                    <img [src]="getAvatarUrl(user)" class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200" [title]="user">
+                                }
+                            </div>
+                            
+                            <div class="text-right">
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Lần cuối: {{formatDateShort(col.lastRun)}}</span>
+                                <span class="text-xs font-bold text-slate-700">Tổng: <b class="text-lg text-indigo-600">{{col.totalSamples}}</b> mẫu</span>
+                            </div>
+                        </div>
                     </div>
+                } 
+                @empty {
+                    @if(!isLoading()) {
+                        <div class="col-span-full py-10 flex items-center justify-center text-slate-400 italic text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            Không có dữ liệu hiệu suất trong khoảng thời gian này.
+                        </div>
+                    }
                 }
-            </div>
-
-            <!-- 6. Standards -->
-            <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-indigo-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-vial-circle-check text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-indigo-700">Chuẩn Đối chiếu</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Theo dõi hạn dùng</p>
-            </div>
-
-            <!-- 7. Recipes -->
-            <div (click)="auth.canViewRecipes() ? navTo('recipes') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-purple-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-scroll text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-purple-700">Thư viện Công thức</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">Quản lý hỗn hợp</p>
-            </div>
-
-            <!-- 8. Reports -->
-            <div (click)="auth.canViewReports() ? navTo('stats') : denyAccess()" 
-                 class="bg-white p-4 rounded-2xl shadow-soft-xl hover:-translate-y-1 transition-all group border border-transparent hover:border-rose-200 cursor-pointer">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
-                </div>
-                <h6 class="font-bold text-slate-700 text-sm group-hover:text-rose-700">Báo cáo & Stats</h6>
-                <p class="text-[10px] text-slate-400 mt-0.5">NXT & Biểu đồ</p>
             </div>
         </div>
 
-        <!-- SCAN QR MODAL -->
+        <!-- DETAIL MODAL -->
+        @if (selectedSopDetails(); as details) {
+            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" (click)="selectedSopDetails.set(null)">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in" (click)="$event.stopPropagation()">
+                    
+                    <!-- Modal Header -->
+                    <div class="bg-slate-50 border-b border-slate-100 p-5 shrink-0 flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Chi tiết Hiệu suất</span>
+                            <h3 class="text-xl font-black text-slate-800 leading-tight mt-1">{{details.sopName}}</h3>
+                            <div class="flex gap-2 mt-2">
+                                <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-200">
+                                    {{details.totalSamples}} mẫu
+                                </span>
+                                <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold border border-purple-200">
+                                    {{details.batchCount}} mẻ
+                                </span>
+                            </div>
+                        </div>
+                        <button (click)="selectedSopDetails.set(null)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition shadow-sm active:scale-90">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body: History List -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                        @for (batch of details.history; track batch.id) {
+                            <div class="p-4 border-b border-slate-50 hover:bg-slate-50 transition group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <img [src]="getAvatarUrl(batch.user)" class="w-6 h-6 rounded-full border border-slate-200">
+                                        <span class="text-xs font-bold text-slate-700">{{batch.user}}</span>
+                                    </div>
+                                    <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>
+                                </div>
+                                
+                                <div class="pl-8">
+                                    <div class="text-sm font-bold text-slate-800 mb-1">
+                                        <span class="text-indigo-600">{{batch.sampleCount}} mẫu</span>
+                                    </div>
+                                    <div class="text-xs font-mono text-slate-500 bg-slate-50/50 p-2 rounded-lg border border-slate-100 break-words">
+                                        {{batch.sampleDisplay}}
+                                    </div>
+                                    <div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button (click)="navTo('traceability/' + batch.id)" class="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 hover:text-blue-600 font-bold shadow-sm transition">
+                                            <i class="fa-solid fa-qrcode mr-1"></i> Truy xuất
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                        <button (click)="createBatchForSop(details.sopId)" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Tạo Mẻ Mới Ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- SCAN QR MODAL (Unchanged) -->
         @if (showScanModal()) {
             <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in" (click)="closeScanModal()">
                 <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col h-[500px] animate-bounce-in" (click)="$event.stopPropagation()">
@@ -370,11 +432,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   toast = inject(ToastService);
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
+  formatSampleList = formatSampleList;
   
   isLoading = signal(true);
   lowStockItems = signal<InventoryItem[]>([]); 
   priorityStandard = signal<PriorityStandard | null>(null);
   
+  // Date Filters
+  startDate = signal<string>(this.getToday());
+  endDate = signal<string>(this.getToday());
+
+  // Modal State
+  selectedSopDetails = signal<KanbanColumn | null>(null);
+
   // LIVE DATA COMPUTED
   recentLogs = computed(() => this.state.logs().slice(0, 6)); 
   todayActivityCount = computed(() => {
@@ -385,8 +455,135 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }).length;
   });
 
+  // TREND INDICATOR (New)
+  trendInfo = computed(() => {
+      const history = this.state.approvedRequests();
+      const today = new Date();
+      const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+      
+      const todayStr = today.toISOString().split('T')[0];
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      let todaySamples = 0;
+      let yesterdaySamples = 0;
+
+      history.forEach(req => {
+          let dateStr = '';
+          if (req.analysisDate) {
+              const parts = req.analysisDate.split('-'); // YYYY-MM-DD
+              dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+          } else {
+              const ts = req.approvedAt || req.timestamp;
+              const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+              dateStr = d.toISOString().split('T')[0];
+          }
+
+          if (dateStr === todayStr || dateStr === yesterdayStr) {
+              let count = 0;
+              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
+              else count = 1; // Fallback
+
+              if (dateStr === todayStr) todaySamples += count;
+              if (dateStr === yesterdayStr) yesterdaySamples += count;
+          }
+      });
+
+      let percent = 0;
+      let direction: 'up' | 'down' | 'neutral' = 'neutral';
+      let icon = 'fa-minus';
+
+      if (yesterdaySamples > 0) {
+          const diff = todaySamples - yesterdaySamples;
+          percent = Math.round((Math.abs(diff) / yesterdaySamples) * 100);
+          if (diff > 0) { direction = 'up'; icon = 'fa-arrow-up'; }
+          else if (diff < 0) { direction = 'down'; icon = 'fa-arrow-down'; }
+      } else if (todaySamples > 0) {
+          percent = 100; direction = 'up'; icon = 'fa-arrow-up';
+      }
+
+      return { percent, direction, icon };
+  });
+
+  // SMART KANBAN DATA (Computed from APPROVED Requests with Time Filter)
+  kanbanBoard = computed<KanbanColumn[]>(() => {
+      const approvedReqs = this.state.approvedRequests();
+      const groups = new Map<string, KanbanColumn>();
+      
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+
+      approvedReqs.forEach(req => {
+          // Time Filter Check
+          let d: Date;
+          if (req.analysisDate) {
+              const parts = req.analysisDate.split('-');
+              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+          } else {
+              const ts = req.approvedAt || req.timestamp;
+              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          }
+          
+          if (d < start || d > end) return;
+
+          // Grouping Logic
+          const key = req.sopName;
+          
+          if (!groups.has(key)) {
+              groups.set(key, {
+                  sopName: req.sopName,
+                  sopId: req.sopId,
+                  totalSamples: 0,
+                  sampleList: [],
+                  sampleDisplay: '',
+                  users: new Set<string>(), 
+                  batchCount: 0,
+                  lastRun: d,
+                  history: []
+              });
+          }
+
+          const col = groups.get(key)!;
+          col.batchCount++;
+          if (req.user) col.users.add(req.user);
+          if (d > col.lastRun) col.lastRun = d; 
+          
+          // Process Samples for this batch
+          let currentBatchSamples: string[] = [];
+          if (req.sampleList && req.sampleList.length > 0) {
+              currentBatchSamples = req.sampleList;
+              col.sampleList.push(...req.sampleList);
+              col.totalSamples += req.sampleList.length;
+          } else {
+              const nSample = req.inputs?.['n_sample'] || 1;
+              col.totalSamples += Number(nSample);
+              currentBatchSamples = [`Batch #${req.id.substring(0,4)}`];
+              col.sampleList.push(...currentBatchSamples);
+          }
+
+          // Add to History
+          col.history.push({
+              id: req.id,
+              timestamp: d,
+              user: req.user || 'Unknown',
+              sampleCount: currentBatchSamples.length,
+              sampleList: currentBatchSamples,
+              sampleDisplay: this.formatSampleList(currentBatchSamples)
+          });
+      });
+
+      const result = Array.from(groups.values()).map(col => {
+          col.sampleList.sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+          col.sampleDisplay = this.formatSampleList(col.sampleList);
+          // Sort history desc
+          col.history.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime());
+          return col;
+      });
+      
+      return result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); // Sort by most recent
+  });
+
   today = new Date();
-  
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   chartInstance: any = null;
 
@@ -397,7 +594,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private scanTimeout: any;
 
   constructor() {
-      // Auto-draw chart when data arrives
+      // Auto-draw chart
       effect(() => {
           const reqs = this.state.approvedRequests();
           if (reqs.length >= 0 && !this.isLoading()) {
@@ -429,6 +626,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
+  private getToday(): string { return new Date().toISOString().split('T')[0]; }
+
+  onDateRangeChange(range: { start: string, end: string, label: string }) {
+      this.startDate.set(range.start);
+      this.endDate.set(range.end);
+  }
+
+  formatDateShort(date: Date): string {
+      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + 
+             date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  }
+
+  // --- Actions ---
+  openSopDetails(col: KanbanColumn) {
+      this.selectedSopDetails.set(col);
+  }
+
+  createBatchForSop(sopId: string) {
+      const sop = this.state.sops().find(s => s.id === sopId);
+      if (sop) {
+          this.state.selectedSop.set(sop);
+          this.router.navigate(['/calculator']);
+      } else {
+          this.toast.show('Không tìm thấy quy trình gốc.', 'error');
+      }
+  }
+
+  // ... (Chart logic remains same as previous) ...
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
@@ -438,9 +663,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Create Gradient for Chart Fill
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); // Fuchsia
+      gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); 
       gradient.addColorStop(1, 'rgba(203, 12, 159, 0)');
 
       const days = 7;
@@ -482,75 +706,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
               labels: labels,
               datasets: [
                   { 
-                      label: 'Số mẫu (Samples)', 
-                      data: sampleData, 
-                      backgroundColor: gradient, 
-                      borderColor: '#cb0c9f', 
-                      borderWidth: 3, 
-                      pointRadius: 4, 
-                      pointBackgroundColor: '#cb0c9f',
-                      pointBorderColor: '#fff',
-                      pointHoverRadius: 6,
-                      fill: true,
-                      tension: 0.4,
-                      yAxisID: 'y'
+                      label: 'Số mẫu (Samples)', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
+                      pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
                   },
                   { 
-                      label: 'Số mẻ (Batches)', 
-                      data: runData, 
-                      type: 'bar',
-                      backgroundColor: '#3a416f', 
-                      borderRadius: 4, 
-                      barThickness: 10,
-                      order: 1, 
-                      yAxisID: 'y1' 
+                      label: 'Số mẻ (Batches)', data: runData, type: 'bar', backgroundColor: '#3a416f', borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
                   }
               ]
           },
           options: { 
-              responsive: true, 
-              maintainAspectRatio: false, 
-              plugins: { 
-                  legend: { display: false },
-                  tooltip: {
-                      backgroundColor: '#fff',
-                      titleColor: '#1e293b',
-                      bodyColor: '#1e293b',
-                      borderColor: '#e2e8f0',
-                      borderWidth: 1,
-                      padding: 10,
-                      displayColors: true,
-                      usePointStyle: true,
-                  }
-              }, 
-              interaction: {
-                  mode: 'index',
-                  intersect: false,
-              },
+              responsive: true, maintainAspectRatio: false, 
+              plugins: { legend: { display: false }, tooltip: { backgroundColor: '#fff', titleColor: '#1e293b', bodyColor: '#1e293b', borderColor: '#e2e8f0', borderWidth: 1, padding: 10, displayColors: true, usePointStyle: true } }, 
+              interaction: { mode: 'index', intersect: false },
               scales: { 
-                  x: { 
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' }
-                  }, 
-                  y: { 
-                      type: 'linear', 
-                      display: true, 
-                      position: 'left', 
-                      beginAtZero: true,
-                      grid: { tickBorderDash: [5, 5], color: '#f1f5f9' },
-                      border: { display: false },
-                      ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 }
-                  }, 
-                  y1: { 
-                      type: 'linear', 
-                      display: true, 
-                      position: 'right', 
-                      beginAtZero: true, 
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: { display: false } 
-                  } 
+                  x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' } }, 
+                  y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: '#f1f5f9' }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
+                  y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
               } 
           }
       });
@@ -584,122 +755,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('DELETE')) return 'đã xóa'; return 'đã cập nhật';
   }
 
-  openScanModal() {
-      this.showScanModal.set(true);
-      this.scanMode.set('camera');
-      this.scanCode = '';
-  }
+  // --- Scan Methods (Unchanged) ---
+  openScanModal() { this.showScanModal.set(true); this.scanMode.set('camera'); this.scanCode = ''; }
+  closeScanModal() { this.showScanModal.set(false); }
+  onCameraScanSuccess(result: string) { this.scanCode = result; this.closeScanModal(); this.processScanCode(result); }
+  onCameraError(err: any) { this.toast.show('Lỗi Camera. Chuyển sang nhập tay.', 'info'); this.scanMode.set('manual'); setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100); }
+  onScanInput(val: string) { this.scanCode = val; if (this.scanTimeout) clearTimeout(this.scanTimeout); if (val && val.trim().length > 0) { this.scanTimeout = setTimeout(() => { this.onScanSubmit(); }, 300); } }
+  onScanSubmit() { if (!this.scanCode.trim()) return; const code = this.scanCode.trim(); this.closeScanModal(); this.processScanCode(code); }
 
-  closeScanModal() {
-      this.showScanModal.set(false);
-  }
-
-  onCameraScanSuccess(result: string) {
-      this.scanCode = result;
-      this.closeScanModal();
-      this.processScanCode(result);
-  }
-
-  onCameraError(err: any) {
-      this.toast.show('Lỗi Camera. Chuyển sang nhập tay.', 'info');
-      this.scanMode.set('manual');
-      setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100);
-  }
-
-  onScanInput(val: string) {
-      this.scanCode = val;
-      if (this.scanTimeout) clearTimeout(this.scanTimeout);
-      if (val && val.trim().length > 0) {
-          this.scanTimeout = setTimeout(() => {
-              this.onScanSubmit();
-          }, 300);
-      }
-  }
-
-  onScanSubmit() {
-      if (!this.scanCode.trim()) return;
-      const code = this.scanCode.trim();
-      this.closeScanModal();
-      this.processScanCode(code);
-  }
-
-  // --- SMART SCAN ROUTER ---
   private processScanCode(code: string) {
       let raw = code.trim();
-
-      // 1. URL INTELLIGENCE: Extract ID from URL if scanned
-      if (raw.includes('/') || raw.includes('http')) {
-          try {
-              if (raw.includes('#/traceability/')) {
-                  const parts = raw.split('#/traceability/');
-                  if (parts.length > 1) {
-                      raw = parts[1].split('?')[0].split('/')[0]; 
-                  }
-              } else if (raw.includes('id=')) {
-                  const urlObj = new URL(raw);
-                  const idParam = urlObj.searchParams.get('id');
-                  if (idParam) raw = idParam;
-              }
-          } catch (e) { 
-              console.warn('URL parsing failed'); 
-          }
-      }
-
+      if (raw.includes('/') || raw.includes('http')) { try { if (raw.includes('#/traceability/')) { raw = raw.split('#/traceability/')[1].split('?')[0].split('/')[0]; } else if (raw.includes('id=')) { raw = new URL(raw).searchParams.get('id') || raw; } } catch (e) { } }
       raw = raw.toUpperCase();
       this.toast.show(`Đang tra cứu: ${raw}`, 'info');
-
-      // Check for Login Session Handshake
-      if (raw.startsWith('SESS_')) {
-          this.router.navigate(['/mobile-login']);
-          // We can pre-fill but it's cleaner to let the mobile component rescan for confirmation UI
-          return;
-      }
-
-      // 1. Traceability (Logs)
-      if (raw.startsWith('TRC-') || raw.startsWith('REQ-') || raw.startsWith('LOG-')) {
-          this.router.navigate(['/traceability', raw]); 
-          return;
-      }
-
-      // 2. Inventory
-      if (raw.startsWith('INV-')) {
-          this.toast.show('Tìm thấy hóa chất!', 'success');
-          this.router.navigate(['/inventory'], { queryParams: { search: raw } }); 
-          return;
-      }
-
-      // 3. Standard
-      if (raw.startsWith('STD-')) {
-          this.router.navigate(['/standards'], { queryParams: { search: raw } });
-          return;
-      }
-
-      // 4. SOP (Calculator)
-      if (raw.startsWith('SOP-')) {
-          this.toast.show('Mở quy trình...', 'success');
-          this.router.navigate(['/editor']); // User can search there
-          return;
-      }
-
-      // 5. Recipe
-      if (raw.startsWith('RCP-')) {
-          this.router.navigate(['/recipes']);
-          return;
-      }
-
-      // 6. User
-      if (raw.startsWith('USR-')) {
-          this.router.navigate(['/config']); 
-          return;
-      }
-
-      // 7. Fallback (Legacy Log IDs)
-      if (raw.toLowerCase().startsWith('log_') || raw.match(/^\d+$/)) {
-           this.router.navigate(['/traceability', raw]); 
-           return;
-      }
-
-      // Default: Search in Inventory
+      if (raw.startsWith('SESS_')) { this.router.navigate(['/mobile-login']); return; }
+      if (raw.startsWith('TRC-') || raw.startsWith('REQ-') || raw.startsWith('LOG-')) { this.router.navigate(['/traceability', raw]); return; }
+      if (raw.startsWith('INV-')) { this.toast.show('Tìm thấy hóa chất!', 'success'); this.router.navigate(['/inventory'], { queryParams: { search: raw } }); return; }
+      if (raw.startsWith('STD-')) { this.router.navigate(['/standards'], { queryParams: { search: raw } }); return; }
+      if (raw.startsWith('SOP-')) { this.toast.show('Mở quy trình...', 'success'); this.router.navigate(['/editor']); return; }
+      if (raw.startsWith('RCP-')) { this.router.navigate(['/recipes']); return; }
+      if (raw.startsWith('USR-')) { this.router.navigate(['/config']); return; }
+      if (raw.toLowerCase().startsWith('log_') || raw.match(/^\d+$/)) { this.router.navigate(['/traceability', raw]); return; }
       this.router.navigate(['/inventory'], { queryParams: { search: raw } });
   }
 }
