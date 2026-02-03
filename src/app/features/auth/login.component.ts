@@ -14,42 +14,105 @@ declare var QRious: any;
   imports: [CommonModule, FormsModule],
   template: `
     @if (!auth.currentUser()) {
-      <div class="min-h-screen w-full flex bg-white overflow-hidden relative">
+      <div class="min-h-screen w-full flex bg-white overflow-hidden relative font-sans selection:bg-teal-500 selection:text-white">
         
-        <!-- LEFT SIDE: Atmosphere -->
-        <div class="hidden lg:flex lg:w-3/5 relative bg-slate-900 overflow-hidden">
-            <div class="absolute inset-0 bg-cover bg-center opacity-60 scale-105" 
-                 style="background-image: url('https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2070&auto=format&fit=crop');">
+        <!-- LEFT SIDE: Concept "Digital Lotus" (Sen Số) - GC Lab Context -->
+        <div class="hidden lg:flex lg:w-3/5 relative bg-[#020617] overflow-hidden flex-col justify-center items-center">
+            
+            <!-- 1. Background Atmosphere -->
+            <!-- Deep Teal Gradient Base: Water/Chemical feel -->
+            <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0f2027] to-[#115e59] opacity-90"></div>
+            
+            <!-- The Hidden Drum (Digital Dong Son Pattern) -->
+            <!-- Rotating concentric circles simulating the drum surface - Represents Precision & History -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none overflow-hidden">
+                <!-- Outer Ring -->
+                <div class="w-[800px] h-[800px] border border-dashed border-teal-200/40 rounded-full animate-spin-super-slow absolute"></div>
+                <div class="w-[780px] h-[780px] border border-dotted border-white/20 rounded-full animate-spin-super-slow absolute" style="animation-direction: reverse;"></div>
+                
+                <!-- Middle Ring -->
+                <div class="w-[500px] h-[500px] border-2 border-dashed border-amber-500/20 rounded-full animate-spin-slow absolute"></div>
+                
+                <!-- Inner Tech Ring -->
+                <div class="w-[300px] h-[300px] border border-teal-500/30 rounded-full absolute flex items-center justify-center">
+                    <div class="w-[90%] h-[90%] border-t-2 border-b-2 border-transparent border-t-teal-400/50 border-b-teal-400/50 rounded-full animate-spin"></div>
+                </div>
             </div>
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-blue-900/80 to-slate-900/90"></div>
-            <div class="relative z-10 w-full h-full flex flex-col justify-between p-12 text-white">
-                <div>
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                            <i class="fa-solid fa-flask text-xl"></i>
+
+            <!-- Bottom Red Glow (Subtle Spirit of Vietnam) -->
+            <div class="absolute bottom-[-20%] left-0 right-0 h-[400px] bg-gradient-to-t from-rose-900/30 to-transparent blur-3xl pointer-events-none"></div>
+
+            <!-- 2. Main Content Container -->
+            <div class="relative z-10 w-full max-w-3xl p-12 flex flex-col items-center text-center">
+                
+                <!-- The Glass Lotus (Hero Visual) -->
+                <div class="relative mb-12 animate-float">
+                    <!-- Core Glow (Amber Soul) -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl animate-pulse-slow"></div>
+                    
+                    <!-- Glass Structure Container -->
+                    <div class="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-[2rem] p-4 shadow-2xl ring-1 ring-white/5 group">
+                        <!-- Abstract Visual -->
+                        <div class="rounded-[1.5rem] overflow-hidden relative w-64 h-64 bg-slate-900 flex items-center justify-center border border-white/5">
+                            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" 
+                                 class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-1000 mix-blend-screen"
+                                 alt="Digital Lotus Abstract">
+                            
+                            <!-- Overlay Gradient -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent"></div>
+                            
+                            <!-- Floating Tech Elements -->
+                            <div class="absolute top-4 right-4 animate-float-delayed">
+                                <i class="fa-solid fa-cube text-xl text-teal-300 drop-shadow-[0_0_10px_rgba(94,234,212,0.5)]"></i>
+                            </div>
+                            <div class="absolute bottom-6 left-6 animate-float-reverse">
+                                <i class="fa-solid fa-flask text-2xl text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]"></i>
+                            </div>
                         </div>
-                        <span class="text-lg font-bold tracking-wide text-white/90">LIMS Cloud Pro</span>
+
+                        <!-- Orbiting Badges (Internal Context) -->
+                        <div class="absolute -right-16 top-8 bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg text-white text-[10px] font-bold shadow-lg flex items-center gap-2 animate-float-slow">
+                            <i class="fa-solid fa-microscope text-teal-400"></i>
+                            <span>Room: GC-01</span>
+                        </div>
+                        <div class="absolute -left-12 bottom-10 bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg text-white text-[10px] font-bold shadow-lg flex items-center gap-2 animate-float-delayed">
+                            <i class="fa-solid fa-bolt text-amber-400"></i>
+                            <span>Otada System</span>
+                        </div>
+                        <div class="absolute -right-8 bottom-[-20px] bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg text-white text-[10px] font-bold shadow-lg flex items-center gap-2 animate-float">
+                            <i class="fa-solid fa-lock text-rose-400"></i>
+                            <span>Internal Tool</span>
+                        </div>
                     </div>
-                    <h1 class="text-5xl font-black leading-tight max-w-xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                        Precision in <br>Every Drop.
+                </div>
+
+                <!-- Typography: Minimalist & Identity -->
+                <div class="space-y-2">
+                    <div class="inline-block border border-teal-500/30 bg-teal-900/20 px-3 py-1 rounded-full mb-2 backdrop-blur-sm">
+                        <h2 class="text-teal-400 font-bold tracking-[0.2em] text-[10px] uppercase">
+                            LƯU HÀNH NỘI BỘ
+                        </h2>
+                    </div>
+                    
+                    <h1 class="text-4xl md:text-5xl font-black text-white leading-tight tracking-tight">
+                        PHÒNG SẮC KÝ KHÍ<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 text-3xl md:text-4xl block mt-2">HỆ THỐNG QUẢN TRỊ DỮ LIỆU</span>
                     </h1>
-                    <p class="text-blue-100 text-lg max-w-md leading-relaxed font-light">
-                        Hệ thống quản lý phòng thí nghiệm hiện đại, tuân thủ tiêu chuẩn ISO/IEC 17025.
+                    
+                    <div class="h-px w-24 bg-gradient-to-r from-transparent via-white/30 to-transparent mx-auto my-4"></div>
+                    
+                    <p class="text-slate-400 text-sm font-medium tracking-wide">
+                        Kho hóa chất &bull; Quy trình SOP &bull; Truy xuất nguồn gốc
                     </p>
                 </div>
-                <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 max-w-lg">
-                    <div class="flex items-center gap-1 text-yellow-400 mb-2 text-xs">
-                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                    </div>
-                    <p class="text-sm text-slate-200 italic mb-4">"Nền tảng giúp chúng tôi tối ưu hóa quy trình kiểm nghiệm và truy xuất nguồn gốc một cách tuyệt vời."</p>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs">L</div>
-                        <div>
-                            <div class="text-xs font-bold">Lab Manager</div>
-                            <div class="text-[10px] text-slate-400">Quality Control Dept.</div>
-                        </div>
-                    </div>
+
+                <!-- Footer Brand -->
+                <div class="mt-16 opacity-60 hover:opacity-100 transition-opacity">
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                        Designed & Developed by OTADA
+                    </p>
                 </div>
+
             </div>
         </div>
 
@@ -57,7 +120,7 @@ declare var QRious: any;
         <div class="w-full lg:w-2/5 flex flex-col relative bg-white">
             
             <div class="lg:hidden p-6 flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                <div class="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white">
                     <i class="fa-solid fa-flask text-sm"></i>
                 </div>
                 <span class="font-bold text-slate-700">LIMS Cloud</span>
@@ -69,19 +132,19 @@ declare var QRious: any;
                 @if (mode() === 'password') {
                     <div class="animate-fade-in-up w-full max-w-sm mx-auto">
                         <div class="mb-10">
-                            <h2 class="text-3xl font-black text-slate-800 mb-2">Xin chào trở lại!</h2>
-                            <p class="text-slate-500 text-sm">Đăng nhập để tiếp tục phiên làm việc.</p>
+                            <h2 class="text-3xl font-black text-slate-800 mb-2">Đăng nhập</h2>
+                            <p class="text-slate-500 text-sm">Xác thực quyền truy cập hệ thống.</p>
                         </div>
 
                         <div class="space-y-5">
                             <div class="group">
                                 <label class="block text-xs font-bold text-slate-600 uppercase mb-2 ml-1">Email</label>
                                 <div class="relative">
-                                    <i class="fa-regular fa-envelope absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                    <i class="fa-regular fa-envelope absolute left-4 top-3.5 text-slate-400 group-focus-within:text-teal-600 transition-colors"></i>
                                     <input type="email" [(ngModel)]="email" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm placeholder:font-normal" 
+                                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition shadow-sm placeholder:font-normal" 
                                            [class.border-red-500]="errorMsg()"
-                                           placeholder="name@example.com"
+                                           placeholder="staff@otada.vn"
                                            [disabled]="isLoading()">
                                 </div>
                             </div>
@@ -89,12 +152,11 @@ declare var QRious: any;
                             <div class="group">
                                 <div class="flex justify-between items-center mb-2 ml-1">
                                     <label class="block text-xs font-bold text-slate-600 uppercase">Mật khẩu</label>
-                                    <a href="#" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Quên mật khẩu?</a>
                                 </div>
                                 <div class="relative">
-                                    <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                    <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400 group-focus-within:text-teal-600 transition-colors"></i>
                                     <input type="password" [(ngModel)]="password" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm placeholder:font-normal" 
+                                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition shadow-sm placeholder:font-normal" 
                                            [class.border-red-500]="errorMsg()"
                                            placeholder="••••••••"
                                            [disabled]="isLoading()">
@@ -108,9 +170,9 @@ declare var QRious: any;
                             }
 
                             <button (click)="login()" [disabled]="isLoading()"
-                                    class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                    class="w-full py-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-200 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 @if (isLoading() && !isGoogleLoading()) { <i class="fa-solid fa-circle-notch fa-spin"></i> }
-                                @else { <span>Đăng nhập</span> <i class="fa-solid fa-arrow-right"></i> }
+                                @else { <span>Vào Ca Làm Việc</span> <i class="fa-solid fa-arrow-right"></i> }
                             </button>
 
                             <div class="relative my-6 text-center">
@@ -121,13 +183,13 @@ declare var QRious: any;
                             <button (click)="loginGoogle()" [disabled]="isLoading()"
                                     class="w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition flex items-center justify-center gap-3 active:scale-95 group">
                                 @if (isGoogleLoading()) { <i class="fa-solid fa-spinner fa-spin text-slate-400"></i> } 
-                                @else { <i class="fa-brands fa-google text-indigo-500 text-lg group-hover:scale-110 transition-transform"></i> }
+                                @else { <i class="fa-brands fa-google text-red-500 text-lg group-hover:scale-110 transition-transform"></i> }
                                 <span>Google Workspace</span>
                             </button>
                         </div>
 
                         <div class="mt-8 text-center">
-                            <button (click)="switchMode('qr')" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold text-xs transition px-4 py-2 rounded-full hover:bg-indigo-50 border border-transparent hover:border-indigo-100">
+                            <button (click)="switchMode('qr')" class="inline-flex items-center gap-2 text-slate-500 hover:text-teal-700 font-bold text-xs transition px-4 py-2 rounded-full hover:bg-teal-50 border border-transparent hover:border-teal-100">
                                 <i class="fa-solid fa-qrcode text-lg"></i>
                                 <span>Đăng nhập bằng QR Code (Mobile)</span>
                             </button>
@@ -175,8 +237,8 @@ declare var QRious: any;
                                 <div class="w-2 h-2 rounded-full" [class.bg-emerald-500]="qrStatus() === 'waiting'" [class.animate-pulse]="qrStatus() === 'waiting'" [class.bg-slate-300]="qrStatus() !== 'waiting'"></div>
                                 {{ qrStatus() === 'waiting' ? 'Đang chờ điện thoại quét...' : (qrStatus() === 'scanned' ? 'Đã quét! Vui lòng xác nhận trên điện thoại.' : 'Trạng thái: ' + qrStatus()) }}
                             </div>
-                            <button (click)="switchMode('password')" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm transition mt-4">
-                                <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại Mật khẩu
+                            <button (click)="switchMode('password')" class="text-teal-600 hover:text-teal-800 font-bold text-sm transition mt-4">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
                             </button>
                         </div>
                     </div>
@@ -194,10 +256,32 @@ declare var QRious: any;
   `,
   styles: [`
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+    .animate-fade-in-up { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     
     @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     .animate-shake { animation: shake 0.3s ease-in-out; }
+
+    /* New Animations for Digital Lotus Concept */
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    
+    @keyframes floatDelayed { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    .animate-float-delayed { animation: floatDelayed 5s ease-in-out infinite 1s; }
+
+    @keyframes floatReverse { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(10px); } }
+    .animate-float-reverse { animation: floatReverse 7s ease-in-out infinite; }
+
+    @keyframes floatSlow { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(15px, 15px); } }
+    .animate-float-slow { animation: floatSlow 10s ease-in-out infinite; }
+
+    @keyframes pulseSlow { 0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.1); } }
+    .animate-pulse-slow { animation: pulseSlow 4s ease-in-out infinite; }
+
+    @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin-slow { animation: spinSlow 30s linear infinite; }
+
+    @keyframes spinSuperSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin-super-slow { animation: spinSuperSlow 60s linear infinite; }
   `]
 })
 export class LoginComponent implements OnDestroy {
@@ -257,8 +341,6 @@ export class LoginComponent implements OnDestroy {
       }
 
       // 3. Create Session in Firestore (Handshake)
-      // IMPORTANT: If Firestore Rules are strict, this step will FAIL for unauthenticated users (PC).
-      // We must catch this error.
       try {
           await this.auth.createAuthSession(this.currentSessionId);
       } catch (e: any) {
@@ -293,7 +375,6 @@ export class LoginComponent implements OnDestroy {
       if (this.sessionSub) { this.sessionSub(); this.sessionSub = undefined; }
       if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
       if (this.currentSessionId && clearId) {
-          // Attempt cleanup, but ignore errors if permission/network fails
           this.auth.deleteAuthSession(this.currentSessionId).catch(() => {});
           this.currentSessionId = null;
       }
@@ -302,8 +383,6 @@ export class LoginComponent implements OnDestroy {
   async handleApproval(encryptedData: string) {
       this.qrStatus.set('approved');
       
-      // 1. Decrypt: Simple XOR with Secret Key (Symmetric)
-      // Note: This relies on the Secret Key never leaving this client except via the QR visual
       try {
           const [userEmail, cipherText] = encryptedData.split('|');
           if (!this.currentSecretKey) throw new Error("Missing key");
@@ -311,7 +390,6 @@ export class LoginComponent implements OnDestroy {
           const decryptedPass = this.xorDecrypt(cipherText, this.currentSecretKey);
           
           if (userEmail && decryptedPass) {
-              // 2. Perform Login
               await this.auth.login(userEmail, decryptedPass);
               this.toast.show('Đăng nhập qua QR thành công!', 'success');
           }
@@ -324,11 +402,9 @@ export class LoginComponent implements OnDestroy {
       }
   }
 
-  // Simple XOR Cipher for Demo (Client-side Handshake)
-  // In production, use Web Crypto API or a library like 'crypto-js' for AES
   xorDecrypt(input: string, key: string): string {
       try {
-          const decoded = atob(input); // Base64 decode
+          const decoded = atob(input);
           let result = '';
           for (let i = 0; i < decoded.length; i++) {
               result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
