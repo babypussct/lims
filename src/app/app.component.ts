@@ -6,7 +6,8 @@ import { filter } from 'rxjs/operators';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
-import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component'; // Import
+import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component';
+import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; // Import
 import { LoginComponent } from './features/auth/login.component';
 
 import { StateService } from './core/services/state.service';
@@ -22,7 +23,8 @@ import { PrintService } from './core/services/print.service';
     RouterOutlet,
     SidebarComponent,
     ConfirmationModalComponent,
-    PrintPreviewModalComponent, // Register
+    PrintPreviewModalComponent,
+    GlobalScannerComponent, // Add to imports
     LoginComponent
   ],
   template: `
@@ -66,7 +68,8 @@ import { PrintService } from './core/services/print.service';
       @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
       
       <app-confirmation-modal></app-confirmation-modal>
-      <app-print-preview-modal></app-print-preview-modal> <!-- Add Preview Modal -->
+      <app-print-preview-modal></app-print-preview-modal>
+      <app-global-scanner></app-global-scanner> <!-- GLOBAL SCANNER -->
 
       @if (state.currentUser(); as user) {
         @if (user.role === 'pending') {
@@ -152,8 +155,6 @@ export class AppComponent {
         this.updatePageHeader();
         const isInPrintJob = this.router.url.includes('print-job') || window.location.hash.includes('print-job');
         this.isPrintMode.set(isInPrintJob);
-        
-        // Auto-disable focus mode on navigation
         this.state.focusMode.set(false);
     });
     this.updatePageHeader();

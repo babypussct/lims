@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
+import { QrGlobalService } from '../services/qr-global.service'; // Import
 import { getAvatarUrl } from '../../shared/utils/utils';
 
 @Component({
@@ -19,34 +20,41 @@ import { getAvatarUrl } from '../../shared/utils/utils';
            [class.md:translate-x-0]="true"
            [class.translate-x-0]="state.sidebarOpen()">
       
-      <!-- 1. Brand (Click to Toggle) -->
+      <!-- 1. Brand -->
       <div class="h-16 flex items-center px-6 shrink-0 relative cursor-pointer group"
            [class.justify-center]="state.sidebarCollapsed()"
            (click)="state.toggleSidebarCollapse()"
            title="Nhấn để Thu gọn / Mở rộng">
-         
-         <!-- Logo Icon -->
          <div class="w-8 h-8 rounded-lg bg-gradient-soft flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-110">
              <i class="fa-solid fa-flask text-white text-xs"></i>
          </div>
-         
-         <!-- Logo Text -->
          @if (!state.sidebarCollapsed()) {
             <span class="font-bold text-gray-700 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 transition-colors">
                 LIMS Cloud <span class="font-light text-gray-400">Pro</span>
             </span>
          }
-         
-         <!-- Mobile Close Button (Only visible on mobile when open) -->
          <button (click)="state.closeSidebar(); $event.stopPropagation()" class="md:hidden ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 active:bg-gray-200">
              <i class="fa-solid fa-times"></i>
          </button>
       </div>
 
-      <hr class="h-px mt-0 bg-gradient-to-r from-transparent via-gray-200 to-transparent border-none mx-4" />
+      <!-- 2. GLOBAL ACTION: SCAN -->
+      <div class="px-4 mt-2 mb-2">
+          <button (click)="qrService.startScan()" 
+                  class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-black text-white p-3 rounded-xl shadow-md shadow-slate-300 transition-all active:scale-95 group overflow-hidden relative">
+              <i class="fa-solid fa-qrcode text-lg relative z-10 group-hover:scale-110 transition-transform"></i>
+              @if (!state.sidebarCollapsed()) {
+                  <span class="font-bold text-xs uppercase tracking-wider relative z-10 fade-in">Quét Mã</span>
+              }
+              <!-- Hover Effect -->
+              <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+          </button>
+      </div>
 
-      <!-- 2. Modules Menu -->
-      <div class="px-3 py-4 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+      <hr class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent border-none mx-4 mb-2" />
+
+      <!-- 3. Modules Menu -->
+      <div class="px-3 py-2 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
          
          <!-- Dashboard -->
          <div (click)="navigateTo('dashboard')" 
@@ -63,7 +71,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             }
          </div>
 
-         <!-- Smart Batch (NEW) -->
+         <!-- Smart Batch -->
          @if(auth.canViewSop()) {
              <div (click)="navigateTo('smart-batch')" 
                   class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent"
@@ -97,7 +105,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
              </div>
          }
 
-         <!-- Smart Prep Station (NEW) -->
+         <!-- Smart Prep Station -->
          @if(auth.canViewInventory()) {
              <div (click)="navigateTo('prep')" 
                   class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent"
@@ -223,6 +231,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   auth = inject(AuthService);
   router: Router = inject(Router);
+  qrService = inject(QrGlobalService); // Inject service
   getAvatarUrl = getAvatarUrl;
 
   isOnline = signal(navigator.onLine);

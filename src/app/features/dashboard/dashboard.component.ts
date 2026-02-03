@@ -10,9 +10,9 @@ import { StandardService } from '../standards/standard.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
+import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component'; 
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import Chart from 'chart.js/auto'; 
 
@@ -47,7 +47,7 @@ interface KanbanColumn {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, FormsModule, QrScannerComponent, DateRangeFilterComponent], 
+  imports: [CommonModule, SkeletonComponent, FormsModule, DateRangeFilterComponent], 
   template: `
     <div class="pb-20 fade-in font-sans">
         
@@ -65,7 +65,8 @@ interface KanbanColumn {
                     <i class="fa-solid fa-desktop"></i> Login PC
                 </button>
 
-                <button (click)="openScanModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-300 hover:bg-black transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                <!-- Calls Global Service -->
+                <button (click)="qrService.startScan()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-300 hover:bg-black transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã
                 </button>
             </div>
@@ -166,7 +167,7 @@ interface KanbanColumn {
             </div>
         </div>
 
-        <!-- SECTION 2: ANALYTICS & FEED (MOVED UP) -->
+        <!-- SECTION 2: ANALYTICS & FEED -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Left: Chart (2/3) -->
             <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100">
@@ -236,7 +237,7 @@ interface KanbanColumn {
             </div>
         </div>
 
-        <!-- SECTION 3: SMART KANBAN (MOVED DOWN & GRID LAYOUT) -->
+        <!-- SECTION 3: SMART KANBAN -->
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
                 <h6 class="font-bold text-slate-700 text-sm flex items-center gap-2">
@@ -251,7 +252,6 @@ interface KanbanColumn {
                 </app-date-range-filter>
             </div>
             
-            <!-- UPDATED: Grid Layout (5 columns max) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 
                 @for (col of kanbanBoard(); track col.sopName) {
@@ -268,7 +268,6 @@ interface KanbanColumn {
                                     {{col.sopName}}
                                 </h4>
                             </div>
-                            <!-- Success Indicator -->
                             <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-clipboard-check"></i>
                             </div>
@@ -284,7 +283,6 @@ interface KanbanColumn {
 
                         <!-- Footer Info -->
                         <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-                            <!-- Avatars -->
                             <div class="flex -space-x-2 overflow-hidden">
                                 @for(user of col.users; track user) {
                                     <img [src]="getAvatarUrl(user)" class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200" [title]="user">
@@ -370,56 +368,6 @@ interface KanbanColumn {
                 </div>
             </div>
         }
-
-        <!-- SCAN QR MODAL (Unchanged) -->
-        @if (showScanModal()) {
-            <div class="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in" (click)="closeScanModal()">
-                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col h-[500px] animate-bounce-in" (click)="$event.stopPropagation()">
-                    <div class="flex border-b border-slate-100">
-                        <button (click)="scanMode.set('camera')" class="flex-1 py-3 text-xs font-bold uppercase transition" [class]="scanMode() === 'camera' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'">
-                            <i class="fa-solid fa-camera mr-1"></i> Camera
-                        </button>
-                        <button (click)="scanMode.set('manual')" class="flex-1 py-3 text-xs font-bold uppercase transition" [class]="scanMode() === 'manual' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'">
-                            <i class="fa-solid fa-keyboard mr-1"></i> Thủ công
-                        </button>
-                    </div>
-
-                    @if (scanMode() === 'camera') {
-                        <div class="flex-1 bg-black relative">
-                            <app-qr-scanner (scanSuccess)="onCameraScanSuccess($event)" (scanError)="onCameraError($event)"></app-qr-scanner>
-                            <button (click)="closeScanModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center z-30">
-                                <i class="fa-solid fa-times"></i>
-                            </button>
-                        </div>
-                    }
-
-                    @if (scanMode() === 'manual') {
-                        <div class="p-6 flex flex-col justify-center h-full">
-                            <div class="text-center mb-6">
-                                <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                                    <i class="fa-solid fa-keyboard text-3xl"></i>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-800">Nhập mã ID</h3>
-                                <p class="text-sm text-slate-500 mt-1">Sử dụng cho máy quét cầm tay hoặc nhập phím</p>
-                            </div>
-                            
-                            <input #scanInput 
-                                   [ngModel]="scanCode" 
-                                   (ngModelChange)="onScanInput($event)"
-                                   (keyup.enter)="onScanSubmit()"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center font-mono font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition mb-4 uppercase"
-                                   placeholder="CODE..."
-                                   autofocus>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <button (click)="closeScanModal()" class="py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition">Đóng</button>
-                                <button (click)="onScanSubmit()" class="py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-md shadow-blue-200">Tra cứu</button>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
     </div>
   `
 })
@@ -430,6 +378,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   auth = inject(AuthService); 
   router: Router = inject(Router);
   toast = inject(ToastService);
+  qrService = inject(QrGlobalService); // Injected Global Service
+
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
   formatSampleList = formatSampleList;
@@ -455,7 +405,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }).length;
   });
 
-  // TREND INDICATOR (New)
+  // TREND INDICATOR
   trendInfo = computed(() => {
       const history = this.state.approvedRequests();
       const today = new Date();
@@ -470,7 +420,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       history.forEach(req => {
           let dateStr = '';
           if (req.analysisDate) {
-              const parts = req.analysisDate.split('-'); // YYYY-MM-DD
+              const parts = req.analysisDate.split('-'); 
               dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
           } else {
               const ts = req.approvedAt || req.timestamp;
@@ -482,7 +432,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               let count = 0;
               if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
               else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-              else count = 1; // Fallback
+              else count = 1;
 
               if (dateStr === todayStr) todaySamples += count;
               if (dateStr === yesterdayStr) yesterdaySamples += count;
@@ -505,7 +455,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return { percent, direction, icon };
   });
 
-  // SMART KANBAN DATA (Computed from APPROVED Requests with Time Filter)
+  // KANBAN COMPUTED
   kanbanBoard = computed<KanbanColumn[]>(() => {
       const approvedReqs = this.state.approvedRequests();
       const groups = new Map<string, KanbanColumn>();
@@ -514,7 +464,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
 
       approvedReqs.forEach(req => {
-          // Time Filter Check
           let d: Date;
           if (req.analysisDate) {
               const parts = req.analysisDate.split('-');
@@ -526,7 +475,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           
           if (d < start || d > end) return;
 
-          // Grouping Logic
           const key = req.sopName;
           
           if (!groups.has(key)) {
@@ -548,7 +496,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (req.user) col.users.add(req.user);
           if (d > col.lastRun) col.lastRun = d; 
           
-          // Process Samples for this batch
           let currentBatchSamples: string[] = [];
           if (req.sampleList && req.sampleList.length > 0) {
               currentBatchSamples = req.sampleList;
@@ -561,7 +508,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
               col.sampleList.push(...currentBatchSamples);
           }
 
-          // Add to History
           col.history.push({
               id: req.id,
               timestamp: d,
@@ -575,26 +521,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const result = Array.from(groups.values()).map(col => {
           col.sampleList.sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
           col.sampleDisplay = this.formatSampleList(col.sampleList);
-          // Sort history desc
           col.history.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime());
           return col;
       });
       
-      return result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); // Sort by most recent
+      return result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); 
   });
 
   today = new Date();
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
   chartInstance: any = null;
 
-  showScanModal = signal(false);
-  scanMode = signal<'camera' | 'manual'>('camera');
-  scanCode = '';
-  scanInputRef = viewChild<ElementRef>('scanInput');
-  private scanTimeout: any;
-
   constructor() {
-      // Auto-draw chart
       effect(() => {
           const reqs = this.state.approvedRequests();
           if (reqs.length >= 0 && !this.isLoading()) {
@@ -638,7 +576,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
              date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
   }
 
-  // --- Actions ---
   openSopDetails(col: KanbanColumn) {
       this.selectedSopDetails.set(col);
   }
@@ -653,7 +590,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
-  // ... (Chart logic remains same as previous) ...
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       if (!canvas) return;
@@ -753,29 +689,5 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; if (action.includes('STOCK_IN')) return 'đã nhập kho';
       if (action.includes('STOCK_OUT')) return 'đã xuất kho'; if (action.includes('CREATE')) return 'đã tạo mới';
       if (action.includes('DELETE')) return 'đã xóa'; return 'đã cập nhật';
-  }
-
-  // --- Scan Methods (Unchanged) ---
-  openScanModal() { this.showScanModal.set(true); this.scanMode.set('camera'); this.scanCode = ''; }
-  closeScanModal() { this.showScanModal.set(false); }
-  onCameraScanSuccess(result: string) { this.scanCode = result; this.closeScanModal(); this.processScanCode(result); }
-  onCameraError(err: any) { this.toast.show('Lỗi Camera. Chuyển sang nhập tay.', 'info'); this.scanMode.set('manual'); setTimeout(() => this.scanInputRef()?.nativeElement?.focus(), 100); }
-  onScanInput(val: string) { this.scanCode = val; if (this.scanTimeout) clearTimeout(this.scanTimeout); if (val && val.trim().length > 0) { this.scanTimeout = setTimeout(() => { this.onScanSubmit(); }, 300); } }
-  onScanSubmit() { if (!this.scanCode.trim()) return; const code = this.scanCode.trim(); this.closeScanModal(); this.processScanCode(code); }
-
-  private processScanCode(code: string) {
-      let raw = code.trim();
-      if (raw.includes('/') || raw.includes('http')) { try { if (raw.includes('#/traceability/')) { raw = raw.split('#/traceability/')[1].split('?')[0].split('/')[0]; } else if (raw.includes('id=')) { raw = new URL(raw).searchParams.get('id') || raw; } } catch (e) { } }
-      raw = raw.toUpperCase();
-      this.toast.show(`Đang tra cứu: ${raw}`, 'info');
-      if (raw.startsWith('SESS_')) { this.router.navigate(['/mobile-login']); return; }
-      if (raw.startsWith('TRC-') || raw.startsWith('REQ-') || raw.startsWith('LOG-')) { this.router.navigate(['/traceability', raw]); return; }
-      if (raw.startsWith('INV-')) { this.toast.show('Tìm thấy hóa chất!', 'success'); this.router.navigate(['/inventory'], { queryParams: { search: raw } }); return; }
-      if (raw.startsWith('STD-')) { this.router.navigate(['/standards'], { queryParams: { search: raw } }); return; }
-      if (raw.startsWith('SOP-')) { this.toast.show('Mở quy trình...', 'success'); this.router.navigate(['/editor']); return; }
-      if (raw.startsWith('RCP-')) { this.router.navigate(['/recipes']); return; }
-      if (raw.startsWith('USR-')) { this.router.navigate(['/config']); return; }
-      if (raw.toLowerCase().startsWith('log_') || raw.match(/^\d+$/)) { this.router.navigate(['/traceability', raw]); return; }
-      this.router.navigate(['/inventory'], { queryParams: { search: raw } });
   }
 }
