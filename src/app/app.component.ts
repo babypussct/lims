@@ -127,8 +127,12 @@ import { PrintService } from './core/services/print.service';
                    }
 
                    <!-- Content Viewport -->
-                   <!-- Added pb-20 on mobile to clear bottom nav -->
-                   <div class="flex-1 overflow-y-auto p-0 md:p-6 custom-scrollbar flex flex-col pb-20 md:pb-6" [class.p-0]="state.focusMode()">
+                   <!-- UPDATED: Added 'px-3 pt-4' for mobile to prevent full-bleed -->
+                   <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-20 md:pb-6" 
+                        [class.px-3]="!state.focusMode()" 
+                        [class.pt-4]="!state.focusMode()" 
+                        [class.md:p-6]="!state.focusMode()"
+                        [class.p-0]="state.focusMode()">
                        <div class="flex-1 h-full"><router-outlet></router-outlet></div>
                        
                        @if (!state.focusMode()) {
