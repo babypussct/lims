@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -84,7 +83,7 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
 })
 export class MobileQrLoginComponent {
   auth = inject(AuthService);
-  router = inject(Router);
+  router: Router = inject(Router);
   toast = inject(ToastService);
 
   scanData = signal<{sessionId: string, key: string} | null>(null);

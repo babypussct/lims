@@ -23,18 +23,21 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
         <!-- Header -->
         @if(state.isAdmin()) {
             <div class="flex items-center justify-between">
-                <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
-                    <i class="fa-solid fa-gears text-slate-400"></i> Cấu hình Hệ thống
-                </h2>
+                <div>
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i class="fa-solid fa-gears text-slate-400"></i> Cấu hình Hệ thống
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1 font-medium ml-1">Quản trị viên: {{auth.currentUser()?.displayName}}</p>
+                </div>
                 <div class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                    App Context: <span class="text-blue-600 font-mono">{{fb.APP_ID}}</span>
+                    Version: <span class="text-blue-600 font-mono">{{state.systemVersion()}}</span>
                 </div>
             </div>
 
             <!-- TABS -->
             <div class="flex gap-6 border-b border-slate-200">
                 <button (click)="activeTab.set('general')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2" [class]="activeTab() === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
-                    <i class="fa-solid fa-server"></i> Hệ thống & Tài nguyên
+                    <i class="fa-solid fa-server"></i> Hệ thống & Dữ liệu
                 </button>
                 <button (click)="activeTab.set('users')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2" [class]="activeTab() === 'users' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'">
                     <i class="fa-solid fa-users-gear"></i> Người dùng & Phân quyền
@@ -44,233 +47,132 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
             @if (activeTab() === 'general') {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     
-                    <!-- NEW: MASTER DATA MANAGEMENT -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
+                    <!-- LEFT COLUMN -->
+                    <div class="space-y-6">
+                        
+                        <!-- 1. MASTER DATA -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                                 <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center"><i class="fa-solid fa-layer-group"></i></div>
-                                Master Data
+                                Danh mục Gốc (Master Data)
                             </h3>
+                            <div class="grid gap-3">
+                                <button (click)="router.navigate(['/master-targets'])" class="w-full py-3 px-4 border border-teal-200 bg-teal-50 text-teal-800 rounded-xl font-bold text-sm hover:bg-teal-100 transition flex items-center justify-between group">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-book-medical"></i> Thư viện Chỉ tiêu Gốc</span>
+                                    <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
+                                </button>
+                                <button (click)="router.navigate(['/target-groups'])" class="w-full py-3 px-4 border border-slate-200 bg-slate-50 text-slate-700 rounded-xl font-bold text-sm hover:bg-white hover:shadow-sm transition flex items-center justify-between group">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Bộ Chỉ tiêu (Groups)</span>
+                                    <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
+                                </button>
+                            </div>
                         </div>
-                        <p class="text-xs text-slate-500">Quản lý các danh mục dữ liệu gốc dùng chung.</p>
-                        
-                        <div class="grid gap-3">
-                            <button (click)="router.navigate(['/master-targets'])" class="w-full py-3 px-4 border border-teal-200 bg-teal-50 text-teal-800 rounded-xl font-bold text-sm hover:bg-teal-100 transition flex items-center justify-between group">
-                                <span class="flex items-center gap-2"><i class="fa-solid fa-book-medical"></i> Thư viện Chỉ tiêu Gốc (Master Library)</span>
-                                <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
-                            </button>
 
-                            <button (click)="router.navigate(['/target-groups'])" class="w-full py-3 px-4 border border-slate-200 bg-slate-50 text-slate-700 rounded-xl font-bold text-sm hover:bg-white hover:shadow-sm transition flex items-center justify-between group">
-                                <span class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Quản lý Bộ Chỉ tiêu (Groups)</span>
-                                <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
-                            </button>
+                        <!-- 2. PRINT CONFIG -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                    <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-print"></i></div>
+                                    Cấu hình In ấn
+                                </h3>
+                                <button (click)="savePrintConfig()" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-sm">Lưu</button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-700">Hiển thị Khung Ký Tên</div>
+                                    <div class="text-[10px] text-slate-400">Thêm mục "Xác nhận / Ký tên" vào cuối phiếu</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" [(ngModel)]="printConfig().showSignature" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Footer Text (Cam kết cuối phiếu)</label>
+                                <textarea [(ngModel)]="printConfig().footerText" rows="2" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:bg-white focus:border-purple-500 outline-none resize-none transition" placeholder="Nội dung chân trang..."></textarea>
+                            </div>
                         </div>
+
                     </div>
 
-                    <!-- 1. SYSTEM SETTINGS (App ID & Version) -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
+                    <!-- RIGHT COLUMN -->
+                    <div class="space-y-6">
+                        
+                        <!-- 3. SYSTEM & VERSION -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                                 <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-sliders"></i></div>
-                                Cài đặt chung
+                                Phiên bản & Bảo trì
                             </h3>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <!-- Version Control -->
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số hiệu Phiên bản (System Version)</label>
-                                <div class="flex gap-2">
-                                    <input [formControl]="versionControl" class="flex-1 border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:bg-white focus:border-blue-500 transition" placeholder="VD: V1.0 FINAL">
-                                    <button (click)="saveVersion()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm">Lưu</button>
+                            <div class="flex gap-2 items-end">
+                                <div class="flex-1">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">System Version</label>
+                                    <input [formControl]="versionControl" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:bg-white focus:border-blue-500 transition">
                                 </div>
-                                <p class="text-[9px] text-slate-400 mt-1 italic">Thay đổi này sẽ cập nhật hiển thị phiên bản trên toàn hệ thống.</p>
-                            </div>
-
-                            <hr class="border-slate-100">
-
-                            <!-- App ID Switch -->
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Switch App Context ID (Advanced)</label>
-                                <div class="flex gap-2">
-                                    <input [formControl]="appIdControl" class="flex-1 border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition">
-                                    <button (click)="saveAppId()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-black transition">Switch</button>
-                                </div>
+                                <button (click)="saveVersion()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm h-[34px]">Cập nhật</button>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- 2. RESOURCES & STORAGE -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-hard-drive"></i></div>
-                                Dung lượng & Tài nguyên
-                            </h3>
-                            <button (click)="loadUsage()" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-calculator"></i> Tính toán</button>
-                        </div>
-
-                        @if(storageEstimate(); as stat) {
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-[10px] text-slate-400 uppercase font-bold">Tổng Docs</div>
-                                    <div class="text-2xl font-black text-slate-700">{{stat.totalDocs}}</div>
-                                </div>
-                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                                    <div class="text-[10px] text-slate-400 uppercase font-bold">Size (JSON)</div>
-                                    <div class="text-2xl font-black text-emerald-600">{{stat.estimatedSizeKB}} <span class="text-xs text-slate-400 font-medium">KB</span></div>
-                                </div>
-                            </div>
-                            <div class="space-y-3 mt-2">
-                                @for(key of objectKeys(stat.details); track key) {
-                                    <div>
-                                        <div class="flex justify-between text-[10px] mb-1 font-bold text-slate-500 uppercase">
-                                            <span>{{key}}</span>
-                                            <span>{{stat.details[key].count}} docs ({{stat.details[key].sizeKB}} KB)</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                            <div class="bg-emerald-500 h-1.5 rounded-full" [style.width.%]="(stat.details[key].sizeKB / (stat.estimatedSizeKB || 1)) * 100"></div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        } @else {
-                            <div class="py-10 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                <p class="text-xs text-slate-400">Nhấn nút tính toán để xem chi tiết.</p>
-                            </div>
-                        }
-                    </div>
-
-                    <!-- 3. CONNECTION HEALTH -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                                <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-heart-pulse"></i></div>
-                                Trạng thái Kết nối
-                            </h3>
-                            <button (click)="checkHealth()" class="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition flex items-center gap-1">
-                                <i class="fa-solid fa-rotate" [class.fa-spin]="loadingHealth()"></i> Refresh
-                            </button>
-                        </div>
-                        
-                        <div class="border border-slate-100 rounded-xl overflow-hidden">
-                            <table class="w-full text-xs text-left">
-                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
-                                    <tr>
-                                        <th class="px-4 py-2">Collection</th>
-                                        <th class="px-4 py-2 text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50">
-                                    @for (item of healthItems(); track item.collection) {
-                                        <tr>
-                                            <td class="px-4 py-2 font-bold text-slate-700 capitalize">{{item.collection}}</td>
-                                            <td class="px-4 py-2 text-right">
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                                      [class]="item.status === 'Online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                                                    {{item.status}}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 4. PRINT CONFIG -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                                <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-print"></i></div>
-                                Cấu hình In ấn
-                            </h3>
-                            <button (click)="savePrintConfig()" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-sm">Lưu</button>
-                        </div>
-                        
-                        <!-- Toggle Signature -->
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div>
-                                <div class="text-xs font-bold text-slate-700">Hiển thị Khung Ký Tên</div>
-                                <div class="text-[10px] text-slate-400">Thêm mục "Xác nhận / Ký tên" vào cuối phiếu</div>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" [(ngModel)]="printConfig().showSignature" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
-                            </label>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Footer Text (Cam kết cuối phiếu)</label>
-                            <textarea [(ngModel)]="printConfig().footerText" rows="3" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none transition" placeholder="Nhập nội dung..."></textarea>
-                        </div>
-                    </div>
-
-                    <!-- 5. SECURITY RULES & BACKUP -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                        <div class="flex justify-between items-start">
+                        <!-- 4. SECURITY & BACKUP (Includes Rules) -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                             <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                                 <div class="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center"><i class="fa-solid fa-shield-cat"></i></div>
-                                Security & Backup
+                                An toàn Dữ liệu
                             </h3>
-                        </div>
-                        
-                        <!-- Backup Buttons -->
-                        <div class="grid grid-cols-2 gap-2 mb-2">
-                            <button (click)="exportData()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition">
-                                <i class="fa-solid fa-download"></i> Backup JSON
-                            </button>
-                            <label class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition cursor-pointer">
-                                <i class="fa-solid fa-upload"></i> Restore JSON
-                                <input type="file" class="hidden" accept=".json" (change)="importData($event)">
-                            </label>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <button (click)="exportData()" class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition">
+                                    <i class="fa-solid fa-download"></i> Backup JSON
+                                </button>
+                                <label class="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition cursor-pointer">
+                                    <i class="fa-solid fa-upload"></i> Restore JSON
+                                    <input type="file" class="hidden" accept=".json" (change)="importData($event)">
+                                </label>
+                            </div>
+
+                            <!-- FIRESTORE RULES DISPLAY (KEPT AS REQUESTED) -->
+                            <div class="relative mt-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules (Config)</span>
+                                    <button (click)="copyRules()" class="text-[10px] text-blue-600 font-bold hover:underline">Copy</button>
+                                </div>
+                                <textarea readonly class="w-full h-24 bg-slate-800 text-green-400 font-mono text-[9px] p-2 rounded-lg focus:outline-none resize-none leading-relaxed" spellcheck="false">{{firestoreRules()}}</textarea>
+                            </div>
                         </div>
 
-                        <!-- Rules -->
-                        <div class="relative">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">Firestore Rules (Update Required!)</span>
-                                <button (click)="copyRules()" class="text-[10px] text-blue-600 font-bold hover:underline">Copy</button>
+                        <!-- 5. RESOURCES (Compact) -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-hard-drive"></i></div>
+                                    Tài nguyên
+                                </h3>
+                                <button (click)="loadUsage()" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-rotate"></i> Check</button>
                             </div>
-                            <textarea readonly class="w-full h-32 bg-slate-800 text-green-400 font-mono text-[10px] p-2 rounded-lg focus:outline-none resize-none leading-relaxed" spellcheck="false">{{firestoreRules()}}</textarea>
-                            <p class="text-[9px] text-slate-400 mt-1 italic">
-                                <i class="fa-solid fa-circle-exclamation text-orange-500"></i>
-                                Để tính năng đăng nhập QR hoạt động, bạn <b>PHẢI</b> cập nhật Rules trên Firebase Console.
-                            </p>
+                            @if(storageEstimate(); as stat) {
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <div class="text-xs font-bold text-slate-500">Tổng Documents</div>
+                                    <div class="text-sm font-black text-slate-800">{{stat.totalDocs}}</div>
+                                </div>
+                            }
                         </div>
+
                     </div>
 
-                    <!-- 6. DANGER ZONE & MAINTENANCE -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 md:col-span-2">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
-                            <div class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            Vùng Quản trị & Bảo trì (Danger Zone)
-                        </h3>
-                        
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <!-- Logs Migration -->
-                            <button (click)="migrateLegacyLogs()" class="flex-1 p-4 border border-orange-100 bg-orange-50 rounded-xl hover:bg-orange-100 transition flex items-center justify-center gap-3 text-orange-700 font-bold text-sm">
-                                 <i class="fa-solid fa-file-export text-lg"></i>
-                                 <div>
-                                     <div>Migrate Logs (v1 -> v2)</div>
-                                     <div class="text-[10px] font-normal opacity-80">Tách PrintData</div>
-                                 </div>
-                            </button>
-
-                            <!-- SOP Targets Migration -->
-                            <button (click)="migrateSopTargets()" class="flex-1 p-4 border border-teal-100 bg-teal-50 rounded-xl hover:bg-teal-100 transition flex items-center justify-center gap-3 text-teal-700 font-bold text-sm">
-                                 <i class="fa-solid fa-bullseye text-lg"></i>
-                                 <div>
-                                     <div>Migrate SOP Targets</div>
-                                     <div class="text-[10px] font-normal opacity-80">Fix lỗi undefined targets</div>
-                                 </div>
-                            </button>
-
-                            <button (click)="resetDefaults()" class="flex-1 p-4 border border-red-200 bg-red-100 rounded-xl hover:bg-red-200 transition flex items-center justify-center gap-3 text-red-800 font-bold text-sm">
-                                 <i class="fa-solid fa-eraser text-lg"></i>
-                                 Xóa Sạch (Wipe All)
-                            </button>
+                    <!-- BOTTOM: DANGER ZONE -->
+                    <div class="md:col-span-2 bg-red-50 rounded-2xl border border-red-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div>
+                                <h3 class="font-bold text-red-800">Vùng Nguy Hiểm</h3>
+                                <p class="text-xs text-red-600">Các hành động dưới đây không thể hoàn tác. Hãy cẩn trọng.</p>
+                            </div>
                         </div>
+                        <button (click)="resetDefaults()" class="px-5 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white rounded-xl font-bold text-sm transition shadow-sm">
+                            <i class="fa-solid fa-eraser mr-1"></i> Xóa Sạch Dữ Liệu (Wipe All)
+                        </button>
                     </div>
 
                 </div>
@@ -467,8 +369,7 @@ export class ConfigComponent implements OnInit {
   confirmationService = inject(ConfirmationService);
   router = inject(Router);
   
-  appIdControl = new FormControl('');
-  versionControl = new FormControl(''); // New control for Version
+  versionControl = new FormControl(''); 
   
   printConfig = this.state.printConfig;
   
@@ -541,17 +442,8 @@ service cloud.firestore {
 
   ngOnInit() {
       if (this.state.isAdmin()) {
-          this.appIdControl.setValue(this.fb.APP_ID);
-          this.versionControl.setValue(this.state.systemVersion()); // Init version value
-          this.checkHealth();
+          this.versionControl.setValue(this.state.systemVersion()); 
           this.loadUsers();
-      }
-  }
-
-  async saveAppId() {
-      const val = this.appIdControl.value;
-      if (val && val !== this.fb.APP_ID) {
-          if(await this.confirmationService.confirm('Chuyển đổi App ID?')) this.fb.setAppId(val);
       }
   }
 
@@ -564,6 +456,7 @@ service cloud.firestore {
   }
 
   checkHealth() {
+      // Kept method but removed UI to simplify as requested, logic remains if needed later
       this.loadingHealth.set(true);
       this.fb.checkSystemHealth().subscribe({
           next: (res) => { this.healthItems.set(res); this.loadingHealth.set(false); },
@@ -605,109 +498,12 @@ service cloud.firestore {
       }
   }
 
-  async migrateLegacyLogs() {
-      if (!await this.confirmationService.confirm({ message: 'Chạy chuyển đổi dữ liệu cũ (Tách PrintData)?\nQuá trình này có thể mất thời gian.', confirmText: 'Chạy Migration' })) return;
-
-      this.toast.show('Đang xử lý migration...', 'info');
-      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`);
-      const snapshot = await getDocs(logsRef);
-      
-      let batch = writeBatch(this.fb.db);
-      let count = 0;
-      let migrated = 0;
-      const BATCH_SIZE = 400;
-
-      for (const docSnap of snapshot.docs) {
-          const log = docSnap.data() as any;
-          
-          // Only migrate if it has legacy printData AND hasn't been migrated yet
-          if (log.printData && !log.printJobId) {
-              // 1. Create Print Job
-              const jobRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs`));
-              const printJobData = {
-                  ...log.printData,
-                  createdAt: log.timestamp || serverTimestamp(),
-                  createdBy: log.user || 'System Migration',
-                  migratedFromLogId: docSnap.id
-              };
-              
-              batch.set(jobRef, printJobData);
-
-              // 2. Update Log
-              const sopBasic = {
-                  name: log.printData.sop?.name || 'Unknown',
-                  category: log.printData.sop?.category || '',
-                  ref: log.printData.sop?.ref || ''
-              };
-
-              batch.update(docSnap.ref, {
-                  printJobId: jobRef.id,
-                  sopBasicInfo: sopBasic,
-                  printData: deleteField() // Remove heavy data
-              });
-
-              migrated++;
-              count++;
-          }
-
-          if (count >= BATCH_SIZE) {
-              await batch.commit();
-              batch = writeBatch(this.fb.db);
-              count = 0;
-          }
-      }
-
-      if (count > 0) await batch.commit();
-      this.toast.show(`Hoàn tất! Đã chuyển đổi ${migrated} bản ghi.`, 'success');
-  }
-
-  // --- NEW MIGRATION FOR SOP TARGETS ---
-  async migrateSopTargets() {
-      if (!await this.confirmationService.confirm({ message: 'Cập nhật cấu trúc SOP cũ (Thêm trường Targets)?', confirmText: 'Cập nhật' })) return;
-      
-      this.toast.show('Đang cập nhật SOPs...', 'info');
-      const sopsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/sops`);
-      const snapshot = await getDocs(sopsRef);
-      
-      let batch = writeBatch(this.fb.db);
-      let count = 0;
-      let updated = 0;
-      const BATCH_SIZE = 400;
-
-      for (const docSnap of snapshot.docs) {
-          const sop = docSnap.data() as any;
-          
-          if (!sop.targets) {
-              batch.update(docSnap.ref, { targets: [] });
-              updated++;
-              count++;
-          }
-
-          if (count >= BATCH_SIZE) {
-              await batch.commit();
-              batch = writeBatch(this.fb.db);
-              count = 0;
-          }
-      }
-
-      if (count > 0) await batch.commit();
-      this.toast.show(`Đã cập nhật ${updated} quy trình.`, 'success');
-  }
-
   async resetDefaults() {
       if(await this.confirmationService.confirm({ message: 'XÓA SẠCH toàn bộ dữ liệu? Không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
           await this.fb.resetToDefaults();
           this.toast.show('Đã xóa sạch dữ liệu.', 'info');
           setTimeout(() => window.location.reload(), 1500);
       }
-  }
-
-  async loadSampleData() {
-    if(await this.confirmationService.confirm({ message: 'Nạp mẫu NAFI6 (Ghi đè)?', confirmText: 'Nạp Mẫu', isDangerous: true })) {
-        await this.fb.loadSampleData();
-        this.toast.show('Đã nạp mẫu! Refreshing...', 'success');
-        setTimeout(() => window.location.reload(), 1500);
-    }
   }
 
   async loadUsers() {
