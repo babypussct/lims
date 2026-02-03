@@ -150,7 +150,7 @@ declare var QRious: any;
                                     <!-- Smart Domain Suffix (Option A) -->
                                     @if (!email.includes('@')) {
                                         <span class="absolute right-4 top-3.5 text-slate-400 font-bold text-sm pointer-events-none select-none tracking-tight animate-fade-in">
-                                            @lims.com
+                                            &#64;lims.com
                                         </span>
                                     }
                                 </div>
