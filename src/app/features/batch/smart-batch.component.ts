@@ -29,6 +29,7 @@ interface JobBlock {
 
 interface ProposedBatch {
     id: string; 
+    name: string; // Display Name
     sop: Sop;
     targets: SopTarget[];
     samples: Set<string>; 
@@ -37,6 +38,8 @@ interface ProposedBatch {
     safetyMargin: number;
     resourceImpact: CalculatedItem[];
     status: 'ready' | 'missing_stock' | 'processed';
+    score?: number; // Debug info
+    tags?: string[]; // "Stock OK", "Best Match"
     alternativeSops?: Sop[]; 
 }
 
@@ -62,9 +65,9 @@ interface SplitState {
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
-                    Chạy Mẻ Thông Minh (Smart Batch)
+                    Chạy Mẻ Thông Minh (AI Smart Batch)
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động gom nhóm mẫu và tính toán hóa chất đa quy trình.</p>
+                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động tối ưu hóa chất và kiểm tra tồn kho.</p>
             </div>
             
             <div class="flex gap-2">
@@ -184,10 +187,10 @@ interface SplitState {
                 <!-- Right: Summary Dashboard -->
                 <div class="w-full lg:w-80 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm h-fit sticky top-0">
                     <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-teal-500"></i> Tổng quan Yêu cầu
+                        <i class="fa-solid fa-chart-pie text-teal-500"></i> Cấu hình Phân tích
                     </h4>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-4 mb-6">
                         <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                             <span class="text-xs text-slate-500 font-bold">Tổng mẫu (Unique)</span>
                             <span class="text-lg font-black text-slate-800">{{ totalUniqueSamples() }}</span>
@@ -198,7 +201,7 @@ interface SplitState {
                         </div>
                     </div>
 
-                    <div class="mt-6 pt-6 border-t border-slate-100">
+                    <div class="pt-4 border-t border-slate-100">
                         <button (click)="analyzePlan()" [disabled]="totalUniqueSamples() === 0 || totalUniqueTargets() === 0 || isProcessing()"
                                 class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
@@ -224,7 +227,8 @@ interface SplitState {
                         <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
                             <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
                             <div>
-                                <h4 class="text-sm font-bold text-red-800 mb-1">Không tìm thấy quy trình cho các chỉ tiêu sau:</h4>
+                                <h4 class="text-sm font-bold text-red-800 mb-1">Cảnh báo: Chỉ tiêu chưa được xử lý</h4>
+                                <div class="text-xs text-red-600 mb-2">Các chỉ tiêu sau đây không nằm trong bất kỳ SOP nào phù hợp:</div>
                                 <div class="flex flex-wrap gap-1">
                                     @for(t of unmappedTargets(); track t) {
                                         <span class="bg-white px-2 py-0.5 rounded text-[10px] font-bold text-red-600 border border-red-100">{{t}}</span>
@@ -251,12 +255,24 @@ interface SplitState {
                                     <div>
                                         <div class="flex items-center gap-2 mb-0.5">
                                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{batch.sop.category}}</span>
+                                            <!-- Smart Tags -->
+                                            @if(batch.tags) {
+                                                @for(tag of batch.tags; track tag) {
+                                                    <span class="text-[9px] px-1.5 py-0.5 rounded font-bold border" 
+                                                          [class.bg-emerald-100]="tag === 'Stock OK'" [class.text-emerald-700]="tag === 'Stock OK'" [class.border-emerald-200]="tag === 'Stock OK'"
+                                                          [class.bg-blue-100]="tag === 'Efficient'" [class.text-blue-700]="tag === 'Efficient'" [class.border-blue-200]="tag === 'Efficient'">
+                                                        {{tag}}
+                                                    </span>
+                                                }
+                                            }
                                             @if(batch.status === 'missing_stock') {
                                                 <span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold border border-red-200">Thiếu hàng</span>
                                             }
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <h3 class="text-lg font-bold text-slate-800">{{batch.sop.name}}</h3>
+                                            <h3 class="text-lg font-bold text-slate-800">
+                                                {{batch.name}} <span class="text-slate-400 text-sm font-normal">({{batch.sop.name}})</span>
+                                            </h3>
                                             @if(batch.alternativeSops && batch.alternativeSops.length > 0) {
                                                 <span (click)="openSplitModal(batchIdx)" 
                                                       class="cursor-pointer bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm hover:scale-105 transition flex items-center gap-1">
@@ -283,36 +299,56 @@ interface SplitState {
                                 </div>
                             </div>
 
-                            <!-- PARAMETER TUNING -->
+                            <!-- PARAMETER TUNING (DYNAMIC) -->
                             <div class="px-5 py-3 bg-slate-50 border-y border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Số lượng QC</label>
-                                    <input type="number" 
-                                           [ngModel]="batch.inputValues['n_qc']" 
-                                           (ngModelChange)="updateBatchInput(batchIdx, 'n_qc', $event)"
-                                           class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition">
-                                </div>
-                                @if (batch.inputValues['w_sample'] !== undefined) {
-                                    <div>
-                                        <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">KL Mẫu (g)</label>
-                                        <input type="number" 
-                                               [ngModel]="batch.inputValues['w_sample']" 
-                                               (ngModelChange)="updateBatchInput(batchIdx, 'w_sample', $event)"
-                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition">
-                                    </div>
+                                
+                                <!-- DYNAMIC INPUTS (Excluding n_sample) -->
+                                @for (inp of batch.sop.inputs; track inp.var) {
+                                    @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
+                                        <div class="group">
+                                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
+                                            
+                                            @switch (inp.type) {
+                                                @case ('select') {
+                                                    <select [ngModel]="batch.inputValues[inp.var]" 
+                                                            (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
+                                                            class="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 outline-none focus:border-teal-500 cursor-pointer h-[26px]">
+                                                        @for (opt of inp.options; track opt.value) {
+                                                            <option [value]="opt.value">{{opt.label}}</option>
+                                                        }
+                                                    </select>
+                                                }
+                                                @case ('checkbox') {
+                                                    <div class="flex items-center h-[26px]">
+                                                        <label class="flex items-center gap-2 cursor-pointer">
+                                                            <input type="checkbox" 
+                                                                   [ngModel]="batch.inputValues[inp.var]" 
+                                                                   (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
+                                                                   class="w-4 h-4 accent-teal-600 rounded">
+                                                            <span class="text-xs font-bold text-slate-700">{{batch.inputValues[inp.var] ? 'Bật' : 'Tắt'}}</span>
+                                                        </label>
+                                                    </div>
+                                                }
+                                                @default {
+                                                    <div class="relative">
+                                                        <input type="number" 
+                                                               [ngModel]="batch.inputValues[inp.var]" 
+                                                               (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
+                                                               [step]="inp.step || 1"
+                                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition h-[26px]">
+                                                        @if(inp.unitLabel) {
+                                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold pointer-events-none">{{inp.unitLabel}}</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
                                 }
-                                @if (batch.inputValues['v_sample'] !== undefined) {
-                                    <div>
-                                        <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">V Mẫu (mL)</label>
-                                        <input type="number" 
-                                               [ngModel]="batch.inputValues['v_sample']" 
-                                               (ngModelChange)="updateBatchInput(batchIdx, 'v_sample', $event)"
-                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition">
-                                    </div>
-                                }
+
+                                <!-- Safety Margin (Always Last) -->
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hao hụt (%)</label>
-                                    
                                     @if(batch.safetyMargin === -1) {
                                         <div (click)="setBatchMarginManual(batchIdx)" 
                                              class="w-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 transition shadow-sm h-[26px]">
@@ -380,7 +416,7 @@ interface SplitState {
                                 <span class="font-bold text-xl">{{totalUniqueSamples()}}</span>
                             </div>
                             <div class="flex justify-between border-b border-slate-700 pb-2">
-                                <span class="text-slate-400 text-sm">Số quy trình</span>
+                                <span class="text-slate-400 text-sm">Số mẻ (Batches)</span>
                                 <span class="font-bold text-xl text-teal-400">{{batches().length}}</span>
                             </div>
                         </div>
@@ -495,8 +531,8 @@ interface SplitState {
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
   `
 })
@@ -662,7 +698,7 @@ export class SmartBatchComponent {
       this.showGroupModal.set(false);
   }
 
-  // --- ANALYZE LOGIC ---
+  // --- SMART ANALYZE LOGIC ---
   async analyzePlan() {
       this.isProcessing.set(true);
       try {
@@ -699,50 +735,91 @@ export class SmartBatchComponent {
               targetGroups.get(key)!.samples.add(sample);
           });
 
-          // 4. Match SOPs
+          // 4. Match SOPs (Recursive & Weighted Scoring)
           targetGroups.forEach((group, key) => {
-              const reqTargets = Array.from(group.targets);
-              const validSops = allSops.filter(sop => {
-                  if (!sop.targets || sop.targets.length === 0) return false;
-                  const sopTargetIds = new Set(sop.targets.map(t => t.id));
-                  return reqTargets.every(reqT => sopTargetIds.has(reqT));
-              });
+              let currentReqTargets = Array.from(group.targets);
+              let loopCount = 0;
+              const maxLoops = 10;
 
-              if (validSops.length === 0) {
-                  reqTargets.forEach(t => {
-                      const tName = this.allAvailableTargets().find(x => x.id === t)?.name || t;
-                      if (!unmapped.includes(tName)) unmapped.push(tName);
+              while (currentReqTargets.length > 0 && loopCount < maxLoops) {
+                  loopCount++;
+
+                  // CALCULATE SCORES for Candidates
+                  const candidates = allSops.map(sop => {
+                      if (!sop.targets) return null;
+                      const sopTargetIds = new Set(sop.targets.map(t => t.id));
+                      const matching = currentReqTargets.filter(id => sopTargetIds.has(id));
+                      if (matching.length === 0) return null;
+
+                      // STOCK CHECK (Heuristic: Just check simple items exist)
+                      let stockScore = 0;
+                      let missingItems = 0;
+                      sop.consumables.forEach(c => {
+                          if (c.type === 'simple' && !this.inventoryCache[c.name]) missingItems++;
+                          if (c.type === 'simple' && this.inventoryCache[c.name]?.stock > 0) stockScore += 1;
+                      });
+
+                      // WEIGHTED SCORE CALCULATION
+                      // Coverage: +10 per target
+                      // Stock: +5 if stock exists (simple check)
+                      // Efficiency: -1 per consumable (prefer simpler SOPs)
+                      const score = (matching.length * 10) + (stockScore * 5) - (sop.consumables.length);
+
+                      return {
+                          sop,
+                          matchedIds: matching,
+                          score: score,
+                          efficiency: sop.consumables.length,
+                          hasStock: missingItems === 0
+                      };
+                  }).filter(x => x !== null) as {sop: Sop, matchedIds: string[], score: number, hasStock: boolean}[];
+
+                  if (candidates.length === 0) {
+                      currentReqTargets.forEach(t => {
+                          const tName = this.allAvailableTargets().find(x => x.id === t)?.name || t;
+                          if (!unmapped.includes(tName)) unmapped.push(tName);
+                      });
+                      break;
+                  }
+
+                  // Pick Best Candidate (Highest Score)
+                  candidates.sort((a, b) => b.score - a.score);
+                  const bestFit = candidates[0];
+                  const alternatives = candidates.slice(1).map(c => c.sop);
+
+                  // 5. NO AUTO-SPLIT (Reverted per request)
+                  const inputs: Record<string, any> = {};
+                  bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
+                  inputs['n_sample'] = group.samples.size;
+
+                  const needs = this.calculator.calculateSopNeeds(
+                      bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+                  );
+
+                  const coveredSet = new Set(bestFit.matchedIds);
+                  const batchTargets = (bestFit.sop.targets || []).filter(t => coveredSet.has(t.id));
+                  
+                  const batchId = `batch_${Date.now()}_${proposed.length}`;
+
+                  proposed.push({
+                      id: batchId,
+                      name: bestFit.sop.name, // Simple Name
+                      sop: bestFit.sop,
+                      targets: batchTargets,
+                      samples: group.samples,
+                      sampleCount: group.samples.size,
+                      inputValues: inputs,
+                      safetyMargin: -1, // Auto
+                      resourceImpact: needs,
+                      status: 'ready',
+                      alternativeSops: alternatives,
+                      score: bestFit.score,
+                      tags: bestFit.hasStock ? ['Stock OK'] : []
                   });
-                  return;
+
+                  // Remove covered targets
+                  currentReqTargets = currentReqTargets.filter(t => !coveredSet.has(t));
               }
-
-              // Prefer SOP with closest fit (least extra targets)
-              validSops.sort((a, b) => (a.targets!.length) - (b.targets!.length));
-              const bestSop = validSops[0];
-              const alternatives = validSops.slice(1);
-
-              const inputs: Record<string, any> = {};
-              bestSop.inputs.forEach(i => inputs[i.var] = i.default);
-              inputs['n_sample'] = group.samples.size;
-
-              const needs = this.calculator.calculateSopNeeds(
-                  bestSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-              );
-
-              const batchTargets = (bestSop.targets || []).filter(t => group.targets.has(t.id));
-
-              proposed.push({
-                  id: `batch_${Date.now()}_${proposed.length}`,
-                  sop: bestSop,
-                  targets: batchTargets,
-                  samples: group.samples,
-                  sampleCount: group.samples.size,
-                  inputValues: inputs,
-                  safetyMargin: -1, // Auto
-                  resourceImpact: needs,
-                  status: 'ready',
-                  alternativeSops: alternatives
-              });
           });
 
           this.batches.set(proposed);
@@ -924,7 +1001,9 @@ export class SmartBatchComponent {
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
       
       const newBatch: ProposedBatch = {
-          id: `batch_split_${Date.now()}`, sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size,
+          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`, // Added random suffix to prevent ID collision
+          name: targetSop.name + ' (Tách)',
+          sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size,
           inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready'
       };
 
