@@ -87,9 +87,9 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/calculator')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100">
-                            <i class="fa-solid fa-book"></i>
+                            <i class="fa-solid fa-play pl-0.5"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">SOPs</span>
+                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Vận hành</span>
                     </button>
                 }
 
@@ -97,7 +97,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/requests')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100">
-                            <i class="fa-solid fa-clipboard-check"></i>
+                            <i class="fa-solid fa-clipboard-list"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Duyệt</span>
                     </button>
