@@ -185,7 +185,7 @@ interface KanbanColumn {
                             } @else {
                                 <span>Ổn định</span>
                             }
-                            <span class="text-gray-400 font-normal text-xs">so với hôm qua</span>
+                            <span class="text-gray-400 font-normal text-xs">so với TB tuần trước</span>
                         </p>
                     </div>
                     <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
@@ -372,7 +372,8 @@ interface KanbanColumn {
             </div>
         }
     </div>
-  `
+  `,
+  styles: []
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   state = inject(StateService);
@@ -408,50 +409,94 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }).length;
   });
 
-  // TREND INDICATOR
+  // TREND INDICATOR (Revised Logic: Weekly Daily Average)
   trendInfo = computed(() => {
       const history = this.state.approvedRequests();
-      const today = new Date();
-      const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-      
-      const todayStr = today.toISOString().split('T')[0];
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      let todaySamples = 0;
-      let yesterdaySamples = 0;
+      // 1. Determine Date Ranges
+      // Get Monday of current week
+      const dayOfWeek = today.getDay(); // 0 (Sun) -> 6 (Sat)
+      // Calculate Monday of this week. If Sunday(0), subtract 6. Else subtract day-1.
+      const diffToMon = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      
+      const startThisWeek = new Date(today);
+      startThisWeek.setDate(diffToMon);
+      startThisWeek.setHours(0,0,0,0);
+
+      // Last week Monday = This week Monday - 7 days
+      const startLastWeek = new Date(startThisWeek);
+      startLastWeek.setDate(startLastWeek.getDate() - 7);
+
+      // Last week Sunday = This week Monday - 1 day
+      const endLastWeek = new Date(startThisWeek);
+      endLastWeek.setDate(endLastWeek.getDate() - 1);
+      endLastWeek.setHours(23,59,59,999);
+
+      // 2. Accumulate Data
+      let thisWeekTotal = 0;
+      let lastWeekTotal = 0;
+
+      const tStartThis = startThisWeek.getTime();
+      const tStartLast = startLastWeek.getTime();
+      const tEndLast = endLastWeek.getTime();
 
       history.forEach(req => {
-          let dateStr = '';
+          let timestamp = 0;
           if (req.analysisDate) {
               const parts = req.analysisDate.split('-'); 
-              dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
-          } else {
+              if (parts.length === 3) {
+                  timestamp = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime();
+              }
+          } 
+          
+          if (!timestamp) {
               const ts = req.approvedAt || req.timestamp;
               const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-              dateStr = d.toISOString().split('T')[0];
+              timestamp = d.getTime();
           }
 
-          if (dateStr === todayStr || dateStr === yesterdayStr) {
+          if (timestamp >= tStartThis) {
               let count = 0;
               if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
               else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
               else count = 1;
-
-              if (dateStr === todayStr) todaySamples += count;
-              if (dateStr === yesterdayStr) yesterdaySamples += count;
+              thisWeekTotal += count;
+          } else if (timestamp >= tStartLast && timestamp <= tEndLast) {
+              let count = 0;
+              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
+              else count = 1;
+              lastWeekTotal += count;
           }
       });
 
+      // 3. Calculate Averages
+      // Days passed this week (including today). 
+      // If Today is Monday, diff is 0 days, so daysPassed = 1.
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const daysPassed = Math.floor((now.getTime() - startThisWeek.getTime()) / msPerDay) + 1;
+      const validDaysPassed = Math.max(1, daysPassed); // Prevent divide by zero/negative if system time is off
+
+      const avgThisWeek = thisWeekTotal / validDaysPassed;
+      const avgLastWeek = lastWeekTotal / 7; // Last week is always 7 days
+
+      // 4. Calculate Trend
       let percent = 0;
       let direction: 'up' | 'down' | 'neutral' = 'neutral';
       let icon = 'fa-minus';
 
-      if (yesterdaySamples > 0) {
-          const diff = todaySamples - yesterdaySamples;
-          percent = Math.round((Math.abs(diff) / yesterdaySamples) * 100);
-          if (diff > 0) { direction = 'up'; icon = 'fa-arrow-up'; }
-          else if (diff < 0) { direction = 'down'; icon = 'fa-arrow-down'; }
-      } else if (todaySamples > 0) {
+      if (avgLastWeek > 0) {
+          const diff = avgThisWeek - avgLastWeek;
+          percent = Math.round((Math.abs(diff) / avgLastWeek) * 100);
+          
+          if (diff > 0.1) { // Threshold for floating point
+              direction = 'up'; icon = 'fa-arrow-up'; 
+          } else if (diff < -0.1) { 
+              direction = 'down'; icon = 'fa-arrow-down'; 
+          }
+      } else if (avgThisWeek > 0) {
           percent = 100; direction = 'up'; icon = 'fa-arrow-up';
       }
 
