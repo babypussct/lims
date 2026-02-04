@@ -73,17 +73,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             <!-- Grid Menu -->
             <div class="p-4 grid grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 
-                <!-- 1. Smart Batch -->
-                @if(auth.canViewSop()) {
-                    <button (click)="navTo('/smart-batch')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-teal-100">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Chạy Mẻ</span>
-                    </button>
-                }
-
-                <!-- 2. Smart Prep -->
+                <!-- 1. Smart Prep -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/prep')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-purple-100">
@@ -93,7 +83,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 3. SOP Library -->
+                <!-- 2. SOP Library / Calculator -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/calculator')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100">
@@ -103,7 +93,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 4. Requests -->
+                <!-- 3. Requests -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/requests')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100">
@@ -113,7 +103,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 5. Standards -->
+                <!-- 4. Standards -->
                 @if(auth.canViewStandards()) {
                     <button (click)="navTo('/standards')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100">
@@ -123,7 +113,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 6. Recipes (ADDED) -->
+                <!-- 5. Recipes -->
                 @if(auth.canViewRecipes()) {
                     <button (click)="navTo('/recipes')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-pink-100">
@@ -133,15 +123,17 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 7. INSTALL APP -->
-                <button (click)="toggleInstallGuide()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700">
-                        <i class="fa-brands fa-apple"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Cài App</span>
-                </button>
+                <!-- 6. Labels (Synced with Sidebar Inventory->Labels) -->
+                @if(auth.canViewInventory()) {
+                    <button (click)="navTo('/labels')" class="flex flex-col items-center gap-1 group">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200">
+                            <i class="fa-solid fa-tag"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">In Tem</span>
+                    </button>
+                }
 
-                <!-- 8. Reports -->
+                <!-- 7. Reports -->
                 @if(auth.canViewReports()) {
                     <button (click)="navTo('/stats')" class="flex flex-col items-center gap-1 group">
                         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-emerald-100">
@@ -151,7 +143,25 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 9. Logout -->
+                <!-- 8. Config (Shortcut) -->
+                @if(auth.canManageSystem()) {
+                    <button (click)="navTo('/config')" class="flex flex-col items-center gap-1 group">
+                        <div class="w-12 h-12 rounded-2xl bg-gray-50 text-gray-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-gray-200">
+                            <i class="fa-solid fa-gears"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Cấu hình</span>
+                    </button>
+                }
+
+                <!-- 9. INSTALL APP -->
+                <button (click)="toggleInstallGuide()" class="flex flex-col items-center gap-1 group">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700">
+                        <i class="fa-brands fa-apple"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Cài App</span>
+                </button>
+
+                <!-- 10. Logout -->
                 <button (click)="auth.logout()" class="flex flex-col items-center gap-1 group">
                     <div class="w-12 h-12 rounded-2xl bg-slate-100 text-red-500 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 hover:bg-red-50">
                         <i class="fa-solid fa-power-off"></i>
