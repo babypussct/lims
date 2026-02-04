@@ -29,7 +29,7 @@ interface JobBlock {
 
 interface ProposedBatch {
     id: string; 
-    name: string; // Display Name (e.g. Batch #1.1)
+    name: string; // Display Name
     sop: Sop;
     targets: SopTarget[];
     samples: Set<string>; 
@@ -67,7 +67,7 @@ interface SplitState {
                     </div>
                     Chạy Mẻ Thông Minh (AI Smart Batch)
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động tối ưu hóa chất, kiểm tra tồn kho và chia mẻ.</p>
+                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động tối ưu hóa chất và kiểm tra tồn kho.</p>
             </div>
             
             <div class="flex gap-2">
@@ -198,16 +198,6 @@ interface SplitState {
                         <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                             <span class="text-xs text-slate-500 font-bold">Tổng chỉ tiêu</span>
                             <span class="text-lg font-black text-slate-800">{{ totalUniqueTargets() }}</span>
-                        </div>
-                        
-                        <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                            <label class="text-[10px] font-bold text-indigo-700 uppercase mb-1 block">Giới hạn Máy (Max Batch Size)</label>
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-server text-indigo-400"></i>
-                                <input type="number" [(ngModel)]="maxBatchSize" min="1" max="200" 
-                                       class="flex-1 bg-white border border-indigo-200 rounded-lg px-2 py-1 text-sm font-bold text-indigo-700 outline-none focus:border-indigo-500 text-center">
-                                <span class="text-xs font-bold text-indigo-400">mẫu</span>
-                            </div>
                         </div>
                     </div>
 
@@ -541,8 +531,8 @@ interface SplitState {
                         </div>
                     </div>
                 </div>
-            }
-        </div>
+            </div>
+        }
     </div>
   `
 })
@@ -566,8 +556,6 @@ export class SmartBatchComponent {
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
   
-  maxBatchSize = signal<number>(20); // Default Capacity
-
   private inventoryCache: Record<string, InventoryItem> = {};
   private recipeCache: Record<string, Recipe> = {};
   
@@ -725,7 +713,6 @@ export class SmartBatchComponent {
           const proposed: ProposedBatch[] = [];
           const allSops = this.state.sops().filter(s => !s.isArchived);
           const unmapped: string[] = [];
-          const capacityLimit = this.maxBatchSize();
 
           // 2. Map Blocks to Requirements
           const sampleRequirements = new Map<string, Set<string>>();
@@ -800,56 +787,37 @@ export class SmartBatchComponent {
                   const bestFit = candidates[0];
                   const alternatives = candidates.slice(1).map(c => c.sop);
 
-                  // 5. AUTO-SPLIT BY CAPACITY (Recursion inside logic)
-                  const allSamplesArr = Array.from(group.samples);
-                  const totalSamples = allSamplesArr.length;
+                  // 5. NO AUTO-SPLIT (Reverted per request)
+                  const inputs: Record<string, any> = {};
+                  bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
+                  inputs['n_sample'] = group.samples.size;
+
+                  const needs = this.calculator.calculateSopNeeds(
+                      bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+                  );
+
+                  const coveredSet = new Set(bestFit.matchedIds);
+                  const batchTargets = (bestFit.sop.targets || []).filter(t => coveredSet.has(t.id));
                   
-                  // Split logic
-                  let sampleChunks: string[][] = [];
-                  if (totalSamples > capacityLimit) {
-                      for (let i = 0; i < totalSamples; i += capacityLimit) {
-                          sampleChunks.push(allSamplesArr.slice(i, i + capacityLimit));
-                      }
-                  } else {
-                      sampleChunks.push(allSamplesArr);
-                  }
+                  const batchId = `batch_${Date.now()}_${proposed.length}`;
 
-                  // Create Batch(es)
-                  sampleChunks.forEach((chunk, chunkIdx) => {
-                      const inputs: Record<string, any> = {};
-                      bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
-                      inputs['n_sample'] = chunk.length;
-
-                      const needs = this.calculator.calculateSopNeeds(
-                          bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-                      );
-
-                      const coveredSet = new Set(bestFit.matchedIds);
-                      const batchTargets = (bestFit.sop.targets || []).filter(t => coveredSet.has(t.id));
-                      
-                      // Naming: Batch #1, Batch #1.2 etc.
-                      const suffix = sampleChunks.length > 1 ? `.${chunkIdx + 1}` : '';
-                      const batchId = `batch_${Date.now()}_${proposed.length}`;
-
-                      proposed.push({
-                          id: batchId,
-                          name: `${bestFit.sop.name} ${suffix}`,
-                          sop: bestFit.sop,
-                          targets: batchTargets,
-                          samples: new Set(chunk),
-                          sampleCount: chunk.length,
-                          inputValues: inputs,
-                          safetyMargin: -1, // Auto
-                          resourceImpact: needs,
-                          status: 'ready',
-                          alternativeSops: alternatives,
-                          score: bestFit.score,
-                          tags: bestFit.hasStock ? ['Stock OK'] : []
-                      });
+                  proposed.push({
+                      id: batchId,
+                      name: bestFit.sop.name, // Simple Name
+                      sop: bestFit.sop,
+                      targets: batchTargets,
+                      samples: group.samples,
+                      sampleCount: group.samples.size,
+                      inputValues: inputs,
+                      safetyMargin: -1, // Auto
+                      resourceImpact: needs,
+                      status: 'ready',
+                      alternativeSops: alternatives,
+                      score: bestFit.score,
+                      tags: bestFit.hasStock ? ['Stock OK'] : []
                   });
 
                   // Remove covered targets
-                  const coveredSet = new Set(bestFit.matchedIds);
                   currentReqTargets = currentReqTargets.filter(t => !coveredSet.has(t));
               }
           });
