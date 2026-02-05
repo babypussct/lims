@@ -545,9 +545,12 @@ interface SplitState {
                                     <div class="flex flex-col gap-1 mt-2">
                                         @for(w of splitWarnings(); track w.text) {
                                             <div class="flex items-start gap-2 text-xs p-2 rounded-lg border"
+                                                 [class.bg-red-50]="w.type === 'missing'" [class.text-red-700]="w.type === 'missing'" [class.border-red-200]="w.type === 'missing'"
                                                  [class.bg-orange-50]="w.type === 'irrelevant'" [class.text-orange-700]="w.type === 'irrelevant'" [class.border-orange-200]="w.type === 'irrelevant'"
                                                  [class.bg-yellow-50]="w.type === 'duplicate'" [class.text-yellow-700]="w.type === 'duplicate'" [class.border-yellow-200]="w.type === 'duplicate'">
-                                                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                                                <i class="fa-solid mt-0.5" 
+                                                   [class.fa-circle-xmark]="w.type === 'missing'"
+                                                   [class.fa-triangle-exclamation]="w.type !== 'missing'"></i>
                                                 <span>{{w.text}}</span>
                                             </div>
                                         }
@@ -631,24 +634,43 @@ export class SmartBatchComponent {
       return result.sort((a,b) => b.missing - a.missing); 
   });
   
-  candidateSops = computed(() => { 
-      const s = this.splitState(); 
-      if (s.sourceBatchIndex < 0) return []; 
-      const sourceBatch = this.batches()[s.sourceBatchIndex]; 
-      const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id); 
-      if (s.showAllSops) return allSops; 
+  // 2. candidateSops computed (REVISED LOGIC: Overlap First)
+  candidateSops = computed(() => {
+      const s = this.splitState();
+      if (s.sourceBatchIndex < 0) return [];
+      const sourceBatch = this.batches()[s.sourceBatchIndex];
+      const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id);
       
+      // If show all, return alphabetical
+      if (s.showAllSops) return allSops.sort((a,b) => a.name.localeCompare(b.name));
+
       const reqTargets = this.getRequiredTargetsForSamples(s.selectedSamples);
-      
-      return allSops.filter(sop => { 
-          if (!sop.targets) return false; 
-          const sopTargetIds = new Set(sop.targets.map(t => t.id)); 
-          // Default logic: Show SOP if it covers AT LEAST ONE required target
-          for (const id of Array.from(reqTargets)) { 
-              if (sopTargetIds.has(id)) return true; 
-          } 
-          return false; 
-      }); 
+      if (reqTargets.size === 0) return allSops; // No specific reqs, return all
+
+      // Score each SOP based on how well it covers the REQUIRED targets
+      const scored = allSops.map(sop => {
+          if (!sop.targets) return { sop, score: -1, covered: 0 };
+          const sopTargetIds = new Set(sop.targets.map(t => t.id));
+          
+          let covered = 0;
+          reqTargets.forEach(id => { if (sopTargetIds.has(id)) covered++; });
+          
+          // No overlap -> Score -1 (unless showAll is handled separately)
+          if (covered === 0) return { sop, score: -1, covered: 0 }; 
+
+          // Base score: coverage count * 10
+          let score = covered * 10;
+          // Bonus: If it covers ALL required targets (Perfect Match), big boost
+          if (covered === reqTargets.size) score += 50;
+          
+          return { sop, score, covered };
+      });
+
+      // Filter out non-overlapping SOPs (score > 0) and Sort Descending by Score
+      return scored
+          .filter(x => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.sop);
   });
 
   // --- METHODS ---
@@ -858,12 +880,13 @@ export class SmartBatchComponent {
       }
   }
 
+  // 1. Helper to get requirements (Lookback)
   getRequiredTargetsForSamples(samples: Set<string>): Set<string> {
-      // Helper for Split Modal to know what targets selected samples need
       const required = new Set<string>();
       for (const block of this.blocks()) {
           const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
           const blockSampleSet = new Set(blockSamples);
+          
           for (const s of Array.from(samples)) {
               if (blockSampleSet.has(s)) {
                   block.selectedTargets.forEach(t => required.add(t));
@@ -960,6 +983,7 @@ export class SmartBatchComponent {
   moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set() })); }
   updateSplitTarget(sopId: string | null) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
 
+  // 3. Smart Warnings (Calculated based on selection)
   splitWarnings = computed(() => {
       const s = this.splitState();
       if (!s.targetSopId || s.selectedSamples.size === 0) return [];
@@ -970,36 +994,46 @@ export class SmartBatchComponent {
       const sopTargetIds = new Set(targetSop.targets.map(t => t.id));
       const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples);
       
-      const warnings: {type: 'irrelevant'|'duplicate', text: string}[] = [];
+      const warnings: {type: 'missing'|'irrelevant'|'duplicate', text: string}[] = [];
 
-      // 1. Check Irrelevant: SOP covers targets NOT in requirements
-      const irrelevantTargets = targetSop.targets.filter(t => !requiredTargetIds.has(t.id));
-      if (irrelevantTargets.length > 0) {
-          const names = irrelevantTargets.slice(0, 3).map(t => t.name).join(', ');
-          const extra = irrelevantTargets.length > 3 ? `...(+${irrelevantTargets.length-3})` : '';
+      // A. MISSING TARGETS CHECK (Critical)
+      const missingIds: string[] = [];
+      requiredTargetIds.forEach(id => {
+          if (!sopTargetIds.has(id)) missingIds.push(id);
+      });
+
+      if (missingIds.length > 0) {
+          const names = missingIds.map(id => this.allAvailableTargets().find(t => t.id === id)?.name || id).slice(0, 3).join(', ');
+          const extra = missingIds.length > 3 ? ` (+${missingIds.length-3})` : '';
           warnings.push({
-              type: 'irrelevant',
-              text: `SOP này phủ ${irrelevantTargets.length} chỉ tiêu không yêu cầu (${names}${extra}). Kết quả sẽ bị thừa.`
+              type: 'missing',
+              text: `SOP này KHÔNG phủ được ${missingIds.length} chỉ tiêu yêu cầu: ${names}${extra}. Các chỉ tiêu này sẽ bị bỏ.`
           });
       }
 
-      // 2. Check Duplicate: Targets in SOP & Req BUT already covered in OTHER batches
-      // We check if selected samples are present in other batches covering these targets
+      // B. IRRELEVANT CHECK (Informational)
+      // Check if SOP supports targets that are NOT required by selected samples.
+      const irrelevantTargets = targetSop.targets.filter(t => !requiredTargetIds.has(t.id));
+      if (irrelevantTargets.length > 0) {
+          const names = irrelevantTargets.slice(0, 3).map(t => t.name).join(', ');
+          const extra = irrelevantTargets.length > 3 ? `...` : '';
+          warnings.push({
+              type: 'irrelevant',
+              text: `SOP hỗ trợ thêm ${irrelevantTargets.length} chỉ tiêu thừa (${names}${extra}). Hệ thống sẽ tự động tắt chúng để tiết kiệm.`
+          });
+      }
+
+      // C. DUPLICATE CHECK (Optimization)
       const currentBatches = this.batches();
       const duplicateTargets = new Set<string>();
       
       targetSop.targets.forEach(t => {
           if (requiredTargetIds.has(t.id)) {
-              // Check other batches
               for (let i = 0; i < currentBatches.length; i++) {
                   if (i === s.sourceBatchIndex) continue; // Skip source
                   const batch = currentBatches[i];
-                  // If this batch covers target 't' AND contains any of our selected samples
-                  // Note: Logic simplification -> if batch covers 't', do we assume it covers for ALL its samples? Yes.
-                  // So we check if our samples are in that batch.
-                  const batchHasTarget = batch.targets.some(bt => bt.id === t.id);
-                  if (batchHasTarget) {
-                      // Check overlap of samples
+                  // If this batch covers target 't' and contains any of our samples
+                  if (batch.targets.some(bt => bt.id === t.id)) {
                       for (const sample of Array.from(s.selectedSamples)) {
                           if (batch.samples.has(sample)) {
                               duplicateTargets.add(t.name);
@@ -1013,10 +1047,9 @@ export class SmartBatchComponent {
 
       if (duplicateTargets.size > 0) {
           const names = Array.from(duplicateTargets).slice(0, 3).join(', ');
-          const extra = duplicateTargets.size > 3 ? `...` : '';
           warnings.push({
               type: 'duplicate',
-              text: `Chỉ tiêu trùng lặp: ${names}${extra} đã được xếp lịch trong mẻ khác.`
+              text: `Cảnh báo trùng lặp: Chỉ tiêu ${names}... đang được xử lý ở mẻ khác cho các mẫu này.`
           });
       }
 
@@ -1031,17 +1064,21 @@ export class SmartBatchComponent {
 
       if (!targetSop || samplesToMove.size === 0) return;
 
-      // 1. Create New Batch (Prepare Samples) - Moved up to fix scoping issue
+      // 1. Prepare New Batch Samples
       const newSamples = new Set(samplesToMove);
 
-      // STRICT INTERSECTION LOGIC
-      // Only enable targets that are BOTH in the new SOP AND in the Original Requirements
+      // --- LOGIC 2: STRICT TARGET INTERSECTION ---
+      // New Batch Targets = (New SOP Capabilities) INTERSECT (Original Requirements for these samples)
       const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
       const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
       
       if (finalNewTargets.length === 0) {
-          this.toast.show('SOP mới không phủ bất kỳ chỉ tiêu nào được yêu cầu!', 'error');
-          return;
+          // If intersection is empty, it means the new SOP doesn't solve ANY of the user's requests for these samples.
+          // We allow it but warn heavily or return? Let's allow but ensure user knows.
+          // Actually, if splitWarnings already showed missing, user might still proceed.
+          // But creating a batch with 0 targets is useless for calculation.
+          // However, maybe they just want to prep samples without targets? 
+          // Let's allow it but the resource impact might be just general consumables.
       }
 
       const newInputs: Record<string, any> = {};
@@ -1062,15 +1099,27 @@ export class SmartBatchComponent {
           inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready'
       };
 
-      // 2. Update Source
+      // --- LOGIC 3: SOURCE CLEANUP ---
+      // Update Source Batch: Remove moved samples AND remove targets that are no longer needed by remaining samples.
       const remainingSamples = new Set(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s)));
+      
       this.batches.update(current => {
           const next = [...current];
           if (remainingSamples.size === 0) {
               next.splice(state.sourceBatchIndex, 1);
           } else {
+              // Recalculate necessary targets for remaining samples
+              const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
+              // Filter existing targets of source batch
+              const updatedSourceTargets = sourceBatch.targets.filter(t => reqsForSource.has(t.id));
+
               // Update source batch
-              const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size };
+              const updatedSource = { 
+                  ...sourceBatch, 
+                  samples: remainingSamples, 
+                  sampleCount: remainingSamples.size,
+                  targets: updatedSourceTargets // Updated targets list
+              };
               updatedSource.inputValues = { ...updatedSource.inputValues, n_sample: remainingSamples.size };
               updatedSource.resourceImpact = this.calculator.calculateSopNeeds(updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
               next[state.sourceBatchIndex] = updatedSource;
