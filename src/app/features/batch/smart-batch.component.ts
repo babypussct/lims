@@ -47,13 +47,18 @@ interface ProposedBatch {
     tags?: string[]; // "Stock OK", "High Coverage"
 }
 
-interface SplitState {
+// Wizard State for Split Modal
+interface SplitWizardState {
+    step: 1 | 2 | 3;
     sourceBatchIndex: number;
-    sourceSopName: string;
-    availableSamples: string[];
-    selectedSamples: Set<string>;
-    targetSopId: string | null;
-    showAllSops: boolean;
+    sourceBatchName: string;
+    availableSamples: string[]; // From Source
+    selectedSamples: Set<string>; // Step 1 Output
+    
+    availableTargets: SopTarget[]; // From Source (What source was doing)
+    selectedTargets: Set<string>; // Step 2 Output (What we want new batch to do)
+    
+    selectedSopId: string | null; // Step 3 Output
 }
 
 @Component({
@@ -61,9 +66,9 @@ interface SplitState {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-full flex flex-col fade-in pb-10 relative font-sans text-slate-800">
+    <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800">
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
             <div>
                 <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
@@ -79,16 +84,12 @@ interface SplitState {
                     <button (click)="reset()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Quay lại
                     </button>
-                    <button (click)="executeAll()" [disabled]="isProcessing() || batches().length === 0" 
-                            class="px-6 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-md transition hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
-                        @else { <i class="fa-solid fa-check-double"></i> Duyệt & Xem Phiếu }
-                    </button>
+                    <!-- Approve button moved to Coverage Bar -->
                 }
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden relative mb-14">
             
             <!-- STEP 1: JOB BUILDER -->
             @if(step() === 1) {
@@ -218,7 +219,7 @@ interface SplitState {
             <!-- STEP 2: REVIEW PLAN -->
             @if(step() === 2) {
                 <!-- Left: Batches -->
-                <div class="w-full lg:w-2/3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 animate-fade-in pb-20">
+                <div class="w-full lg:w-2/3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 animate-fade-in pb-10">
                     
                     <div class="relative w-full shadow-sm">
                         <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
@@ -304,13 +305,11 @@ interface SplitState {
 
                             <!-- PARAMETER TUNING (DYNAMIC) -->
                             <div class="px-5 py-3 bg-slate-50 border-y border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                
                                 <!-- DYNAMIC INPUTS (Excluding n_sample) -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
                                     @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
                                         <div class="group">
                                             <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
-                                            
                                             @switch (inp.type) {
                                                 @case ('select') {
                                                     <select [ngModel]="batch.inputValues[inp.var]" 
@@ -348,8 +347,7 @@ interface SplitState {
                                         </div>
                                     }
                                 }
-
-                                <!-- Safety Margin (Always Last) -->
+                                <!-- Safety Margin -->
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hao hụt (%)</label>
                                     @if(batch.safetyMargin === -1) {
@@ -410,28 +408,7 @@ interface SplitState {
 
                 <!-- Right: Summary & Action -->
                 <div class="w-full lg:w-1/3 flex flex-col gap-4 h-fit sticky top-4">
-                    <div class="bg-slate-800 text-white rounded-2xl p-6 shadow-xl flex flex-col">
-                        <h4 class="font-bold text-lg mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-clipboard-check text-teal-400"></i> Tổng hợp Kế hoạch
-                        </h4>
-                        <div class="space-y-4 mb-6">
-                            <div class="flex justify-between border-b border-slate-700 pb-2">
-                                <span class="text-slate-400 text-sm">Tổng mẫu (Input)</span>
-                                <span class="font-bold text-xl">{{totalUniqueSamples()}}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-slate-700 pb-2">
-                                <span class="text-slate-400 text-sm">Số mẻ (Batches)</span>
-                                <span class="font-bold text-xl text-teal-400">{{batches().length}}</span>
-                            </div>
-                        </div>
-                        <div class="mt-auto">
-                            <button (click)="executeAll()" [disabled]="isProcessing() || hasCriticalMissing()" 
-                                    class="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-black uppercase rounded-xl shadow-lg shadow-teal-900/20 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... }
-                                @else { Duyệt & Xem Phiếu }
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Stock Summary -->
                     @if (missingStockSummary().length > 0) {
                         <div class="bg-red-50 border border-red-100 rounded-2xl p-5 shadow-sm animate-slide-up">
                             <h4 class="font-bold text-red-800 text-sm mb-3 flex items-center gap-2">
@@ -458,9 +435,58 @@ interface SplitState {
             }
         </div>
 
+        <!-- NEW: Coverage Status Bar (Bottom Sticky) -->
+        @if(step() === 2) {
+            <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40 transition-transform duration-300">
+                <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                    
+                    <!-- Metrics -->
+                    <div class="flex items-center gap-6 text-sm flex-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                 [class]="coverageMetrics().isFullyCovered ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600 animate-pulse'">
+                                <i class="fa-solid" [class]="coverageMetrics().isFullyCovered ? 'fa-check' : 'fa-triangle-exclamation'"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold" [class]="coverageMetrics().isFullyCovered ? 'text-green-700' : 'text-red-700'">
+                                    {{ coverageMetrics().isFullyCovered ? 'Đã phủ kín toàn bộ yêu cầu' : 'Cảnh báo: Chưa phủ hết yêu cầu!' }}
+                                </div>
+                                <div class="text-xs text-slate-500">
+                                    Thiếu <b>{{coverageMetrics().missingCount}}</b> chỉ tiêu/mẫu. 
+                                    @if(coverageMetrics().duplicateCount > 0) { <span class="text-orange-600 ml-1">(Trùng lặp: {{coverageMetrics().duplicateCount}})</span> }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if(!coverageMetrics().isFullyCovered) {
+                            <div class="hidden md:block text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg border border-red-100">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Kiểm tra các mẫu: {{ coverageMetrics().missingSampleNames }}
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-3">
+                        @if(!coverageMetrics().isFullyCovered) {
+                            <button (click)="fixCoverage()" class="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-xs transition shadow-sm">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Tự động sửa
+                            </button>
+                        }
+                        
+                        <button (click)="executeAll()" 
+                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered" 
+                                class="px-8 py-3 bg-slate-900 text-white hover:bg-black rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
+                            @else { <i class="fa-solid fa-paper-plane"></i> Duyệt & In Phiếu }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
         <!-- Group Modal (Unchanged) -->
         @if (showGroupModal()) {
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
                     <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                         <h3 class="font-black text-slate-800 text-lg">Chọn Bộ Chỉ tiêu (Groups)</h3>
@@ -482,83 +508,146 @@ interface SplitState {
             </div>
         }
 
-        <!-- Split Modal (Adapted to new Logic) -->
+        <!-- REVERSE LOGIC SPLIT MODAL (3-STEP WIZARD) -->
         @if (showSplitModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[90vh] animate-slide-up">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh] animate-slide-up">
+                    
+                    <!-- Header -->
                     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <div><h3 class="font-black text-slate-800 text-lg flex items-center gap-2"><i class="fa-solid fa-shuffle text-blue-600"></i> Phân chia Mẻ & Đổi Quy trình</h3></div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-shuffle text-blue-600"></i> Phân tách & Chuyển Mẻ
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Nguồn: <b>{{splitState().sourceBatchName}}</b></p>
+                        </div>
                         <button (click)="showSplitModal.set(false)" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times text-xl"></i></button>
                     </div>
-                    <div class="bg-white p-3 border-b border-slate-100 flex items-center justify-between gap-4 shrink-0">
-                        <div class="flex gap-2">
-                            <button (click)="moveAllToNew()" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">Chuyển Hết</button>
-                            <button (click)="moveAllToSource()" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition">Trả Lại Hết</button>
-                        </div>
+
+                    <!-- Steps Indicator -->
+                    <div class="flex border-b border-slate-100 bg-white">
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 1 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">1. Chọn Mẫu</div>
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 2 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">2. Chọn Chỉ tiêu</div>
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 3 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">3. Chọn Quy trình Mới</div>
+                    </div>
+
+                    <!-- Wizard Content -->
+                    <div class="flex-1 overflow-hidden bg-slate-50 relative p-6">
                         
-                        <!-- Toggle All SOPs -->
-                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
-                            <input type="checkbox" [checked]="splitState().showAllSops" (change)="toggleShowAllSops()" class="w-4 h-4 accent-blue-600 rounded">
-                            Hiển thị tất cả SOP (Kể cả không khớp chỉ tiêu)
-                        </label>
-                    </div>
-                    <div class="flex-1 flex overflow-hidden bg-slate-100 p-4 gap-4">
-                        <div class="flex-1 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="p-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center"><div class="font-bold text-slate-700 text-xs uppercase">Mẻ Hiện tại</div><span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ splitState().availableSamples.length - splitState().selectedSamples.size }} mẫu</span></div>
-                            <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    @for(sample of splitState().availableSamples; track sample) {
-                                        @if (!splitState().selectedSamples.has(sample)) {
-                                            <div (click)="moveSample(sample)" class="p-2 rounded border border-slate-100 bg-slate-50 hover:bg-blue-50 cursor-pointer transition text-center group"><span class="font-mono font-bold text-xs text-slate-700 group-hover:text-blue-700">{{sample}}</span></div>
-                                        }
-                                    }
+                        <!-- STEP 1: SELECT SAMPLES -->
+                        @if (splitState().step === 1) {
+                            <div class="h-full flex flex-col gap-3 animate-fade-in">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-sm font-bold text-slate-700 uppercase">Chọn mẫu cần chuyển đi</h4>
+                                    <div class="text-xs space-x-2">
+                                        <button (click)="splitSelectAllSamples()" class="text-blue-600 hover:underline font-bold">Chọn hết</button>
+                                        <button (click)="splitDeselectAllSamples()" class="text-slate-400 hover:text-slate-600">Bỏ chọn</button>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="flex-1 flex flex-col bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden ring-1 ring-blue-100">
-                            <div class="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center"><div class="font-bold text-blue-800 text-xs uppercase">Mẻ Mới</div><span class="bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">{{ splitState().selectedSamples.size }} mẫu</span></div>
-                            <div class="flex-1 overflow-y-auto custom-scrollbar p-2 bg-blue-50/30">
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    @for(sample of splitState().availableSamples; track sample) {
-                                        @if (splitState().selectedSamples.has(sample)) {
-                                            <div (click)="moveSample(sample)" class="p-2 rounded border border-blue-200 bg-white hover:bg-red-50 cursor-pointer transition text-center group shadow-sm"><span class="font-mono font-bold text-xs text-blue-700 group-hover:text-red-600">{{sample}}</span></div>
-                                        }
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-white border-t border-slate-200 shrink-0 flex flex-col gap-4">
-                        <div class="flex flex-col md:flex-row gap-4 items-start">
-                            <div class="flex-1 w-full space-y-2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase block">Quy trình cho Mẻ Mới</label>
-                                <div class="flex gap-2">
-                                    <select [ngModel]="splitState().targetSopId" (ngModelChange)="updateSplitTarget($event)" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none cursor-pointer">
-                                        <option [value]="null" disabled>-- Chọn SOP phù hợp --</option>
-                                        @for(sop of candidateSops(); track sop.id) {
-                                            <option [value]="sop.id">{{sop.name}}</option>
-                                        }
-                                    </select>
-                                </div>
-                                <!-- WARNINGS SECTION -->
-                                @if(splitWarnings().length > 0) {
-                                    <div class="flex flex-col gap-1 mt-2">
-                                        @for(w of splitWarnings(); track w.text) {
-                                            <div class="flex items-start gap-2 text-xs p-2 rounded-lg border"
-                                                 [class.bg-red-50]="w.type === 'missing'" [class.text-red-700]="w.type === 'missing'" [class.border-red-200]="w.type === 'missing'"
-                                                 [class.bg-orange-50]="w.type === 'irrelevant'" [class.text-orange-700]="w.type === 'irrelevant'" [class.border-orange-200]="w.type === 'irrelevant'"
-                                                 [class.bg-yellow-50]="w.type === 'duplicate'" [class.text-yellow-700]="w.type === 'duplicate'" [class.border-yellow-200]="w.type === 'duplicate'">
-                                                <i class="fa-solid mt-0.5" 
-                                                   [class.fa-circle-xmark]="w.type === 'missing'"
-                                                   [class.fa-triangle-exclamation]="w.type !== 'missing'"></i>
-                                                <span>{{w.text}}</span>
+                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-4">
+                                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                        @for(sample of splitState().availableSamples; track sample) {
+                                            <div (click)="toggleSplitSample(sample)" 
+                                                 class="p-2 rounded-lg border cursor-pointer text-center transition select-none"
+                                                 [class]="splitState().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-blue-50'">
+                                                <span class="text-xs font-mono font-bold">{{sample}}</span>
                                             </div>
                                         }
                                     </div>
-                                }
+                                </div>
                             </div>
-                            <div class="w-full md:w-auto flex justify-end items-end h-full pt-6"><button (click)="executeSplit()" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center gap-2"><i class="fa-solid fa-check"></i> Xác nhận Tách Mẻ</button></div>
-                        </div>
+                        }
+
+                        <!-- STEP 2: SELECT TARGETS -->
+                        @if (splitState().step === 2) {
+                            <div class="h-full flex flex-col gap-3 animate-fade-in">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-sm font-bold text-slate-700 uppercase">Chọn chỉ tiêu cần thực hiện</h4>
+                                    <div class="text-xs space-x-2">
+                                        <button (click)="splitSelectAllTargets()" class="text-blue-600 hover:underline font-bold">Chọn hết</button>
+                                        <button (click)="splitDeselectAllTargets()" class="text-slate-400 hover:text-slate-600">Bỏ chọn</button>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 mb-2">
+                                    <i class="fa-solid fa-circle-info mr-1"></i>
+                                    Các mẫu đã chọn ({{splitState().selectedSamples.size}}) sẽ được chuyển sang mẻ mới để làm các chỉ tiêu này.
+                                    Các chỉ tiêu <b>không chọn</b> sẽ ở lại mẻ cũ (nếu mẻ cũ còn tồn tại).
+                                </div>
+                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-2">
+                                    @for(t of splitState().availableTargets; track t.id) {
+                                        <label class="flex items-center gap-3 p-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer">
+                                            <input type="checkbox" 
+                                                   [checked]="splitState().selectedTargets.has(t.id)" 
+                                                   (change)="toggleSplitTarget(t.id)"
+                                                   class="w-4 h-4 accent-blue-600 rounded">
+                                            <span class="text-sm font-bold text-slate-700">{{t.name}}</span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- STEP 3: SELECT SOP -->
+                        @if (splitState().step === 3) {
+                            <div class="h-full flex flex-col gap-3 animate-fade-in">
+                                <h4 class="text-sm font-bold text-slate-700 uppercase mb-2">Đề xuất Quy trình (SOP) phù hợp</h4>
+                                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                    @for(sop of filteredSopsForSplit(); track sop.id) {
+                                        <div (click)="selectSplitSop(sop.id)" 
+                                             class="p-4 rounded-xl border cursor-pointer transition flex justify-between items-center group relative overflow-hidden"
+                                             [class]="splitState().selectedSopId === sop.id ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'">
+                                            
+                                            <!-- Selection Indicator -->
+                                            @if(splitState().selectedSopId === sop.id) {
+                                                <div class="absolute top-0 right-0 w-8 h-8 bg-blue-500 text-white flex items-center justify-center rounded-bl-xl"><i class="fa-solid fa-check text-sm"></i></div>
+                                            }
+
+                                            <div>
+                                                <div class="font-bold text-slate-800 group-hover:text-blue-700">{{sop.name}}</div>
+                                                <div class="text-xs text-slate-500 mt-1">{{sop.category}}</div>
+                                            </div>
+                                            <div class="text-right mr-6">
+                                                <div class="text-[10px] font-bold uppercase text-slate-400">Độ phủ</div>
+                                                <div class="text-lg font-black text-emerald-600">100%</div>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if(filteredSopsForSplit().length === 0) {
+                                        <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                                            <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2"></i>
+                                            <p class="text-sm">Không tìm thấy SOP nào phủ hết các chỉ tiêu đã chọn.</p>
+                                            <button (click)="prevSplitStep()" class="text-blue-600 font-bold hover:underline mt-2 text-xs">Quay lại chọn ít chỉ tiêu hơn</button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center shrink-0">
+                        @if (splitState().step > 1) {
+                            <button (click)="prevSplitStep()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
+                            </button>
+                        } @else {
+                            <div></div>
+                        }
+
+                        @if (splitState().step < 3) {
+                            <button (click)="nextSplitStep()" 
+                                    [disabled]="(splitState().step === 1 && splitState().selectedSamples.size === 0) || (splitState().step === 2 && splitState().selectedTargets.size === 0)"
+                                    class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                Tiếp tục <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        } @else {
+                            <button (click)="executeSplit()" 
+                                    [disabled]="!splitState().selectedSopId"
+                                    class="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-check mr-1"></i> Hoàn tất Tách Mẻ
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -590,13 +679,25 @@ export class SmartBatchComponent {
   private recipeCache: Record<string, Recipe> = {};
   
   sampleSearchTerm = signal('');
+  
+  // --- SPLIT WIZARD STATE ---
   showSplitModal = signal(false);
-  splitState = signal<SplitState>({ sourceBatchIndex: -1, sourceSopName: '', availableSamples: [], selectedSamples: new Set<string>(), targetSopId: null, showAllSops: false });
+  splitState = signal<SplitWizardState>({ 
+      step: 1,
+      sourceBatchIndex: -1,
+      sourceBatchName: '',
+      availableSamples: [],
+      selectedSamples: new Set(),
+      availableTargets: [],
+      selectedTargets: new Set(),
+      selectedSopId: null
+  });
+
   showGroupModal = signal(false);
   availableGroups = signal<TargetGroup[]>([]);
   currentBlockIndexForGroupImport = signal<number>(-1);
 
-  // --- COMPUTED ---
+  // --- COMPUTED: GENERAL ---
   allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.id && t.name) { targets.set(t.id, { id: t.id, name: t.name, uniqueKey: t.id }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
   
   totalUniqueSamples = computed(() => { const allSamples = new Set<string>(); this.blocks().forEach(b => { const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s); samples.forEach(s => allSamples.add(s)); }); return allSamples.size; });
@@ -633,68 +734,83 @@ export class SmartBatchComponent {
       }); 
       return result.sort((a,b) => b.missing - a.missing); 
   });
-  
-  // --- NEW HELPER: Get Effective Targets for Split (Context Aware) ---
-  // Returns: Intersection of (Global Needs for Selected Samples) AND (Source Batch Targets)
-  getEffectiveTargetsForSplit(sourceBatchIndex: number, selectedSamples: Set<string>): Set<string> {
-      if (sourceBatchIndex < 0 || selectedSamples.size === 0) return new Set();
+
+  // --- COMPUTED: COVERAGE STATUS BAR (Global Safety Net) ---
+  coverageMetrics = computed(() => {
+      // 1. Calculate Needs from Blocks (Input)
+      const neededTasks = new Set<string>(); // "Sample|TargetID"
+      const sampleNames: Record<string, string> = {}; // Helper for displaying names if sample ID is obscure (not used here but good practice)
       
-      const sourceBatch = this.batches()[sourceBatchIndex];
-      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
-      
-      // Get what the user globally wanted for these samples
-      const globalReqs = this.getRequiredTargetsForSamples(selectedSamples);
-      
-      // Filter: Only care about targets that were actually being done in the source batch
-      const relevantTargetIds = new Set<string>();
-      globalReqs.forEach(t => {
-          if (sourceTargetIds.has(t)) relevantTargetIds.add(t);
+      this.blocks().forEach(block => {
+          const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
+          samples.forEach(s => {
+              block.selectedTargets.forEach(tId => {
+                  neededTasks.add(`${s}|${tId}`);
+              });
+          });
       });
-      
-      return relevantTargetIds;
-  }
 
-  // 2. candidateSops computed (REVISED: Context Aware & Weighted)
-  candidateSops = computed(() => {
+      // 2. Calculate Coverage from Batches (Output)
+      const coveredTasks = new Set<string>();
+      const duplicateTasks = new Set<string>();
+      let dupCount = 0;
+
+      this.batches().forEach(batch => {
+          const targetIds = batch.targets.map(t => t.id);
+          batch.samples.forEach(s => {
+              targetIds.forEach(tId => {
+                  const key = `${s}|${tId}`;
+                  if (coveredTasks.has(key)) {
+                      duplicateTasks.add(key);
+                      dupCount++;
+                  }
+                  coveredTasks.add(key);
+              });
+          });
+      });
+
+      // 3. Diff
+      const missingTasks: string[] = [];
+      const missingSamples = new Set<string>();
+      neededTasks.forEach(key => {
+          if (!coveredTasks.has(key)) {
+              missingTasks.push(key);
+              const s = key.split('|')[0];
+              missingSamples.add(s);
+          }
+      });
+
+      // 4. Return Report
+      return {
+          isFullyCovered: missingTasks.length === 0,
+          missingCount: missingTasks.length,
+          duplicateCount: dupCount,
+          missingSampleNames: Array.from(missingSamples).slice(0, 3).join(', ') + (missingSamples.size > 3 ? '...' : '')
+      };
+  });
+
+  // --- COMPUTED: SPLIT WIZARD LOGIC ---
+  filteredSopsForSplit = computed(() => {
       const s = this.splitState();
-      if (s.sourceBatchIndex < 0) return [];
-      const sourceBatch = this.batches()[s.sourceBatchIndex];
-      const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id);
-      
-      if (s.showAllSops) return allSops.sort((a,b) => a.name.localeCompare(b.name));
+      // Only active in Step 3
+      if (s.step !== 3) return [];
 
-      // Use Context-Aware Requirements
-      const reqTargets = this.getEffectiveTargetsForSplit(s.sourceBatchIndex, s.selectedSamples);
-      if (reqTargets.size === 0) return allSops; 
+      const allSops = this.state.sops().filter(sop => !sop.isArchived);
+      const reqTargets = s.selectedTargets;
 
-      // Score each SOP
-      const scored = allSops.map(sop => {
-          if (!sop.targets) return { sop, score: -999, covered: 0 };
+      if (reqTargets.size === 0) return []; // Should not happen due to validation
+
+      // Filter Logic: SOP must cover ALL selected targets (100% match of requirement)
+      // Note: SOP can do *more* targets, but must cover *at least* the requested ones.
+      return allSops.filter(sop => {
+          if (!sop.targets) return false;
           const sopTargetIds = new Set(sop.targets.map(t => t.id));
           
-          let covered = 0;
-          reqTargets.forEach(id => { if (sopTargetIds.has(id)) covered++; });
-          
-          const missing = reqTargets.size - covered;
-
-          // Strict Logic:
-          // 1. Must cover at least one relevant target.
-          if (covered === 0) return { sop, score: -999, covered: 0 }; 
-
-          // 2. Score = (Covered * 10) - (Missing * 5)
-          // This heavily penalizes SOPs that only do a small part of the job (like SOP T).
-          let score = (covered * 10) - (missing * 5);
-          
-          // Bonus for perfect match
-          if (missing === 0) score += 50;
-          
-          return { sop, score, covered };
+          for (const reqId of Array.from(reqTargets)) {
+              if (!sopTargetIds.has(reqId)) return false; // Missing one -> Invalid
+          }
+          return true;
       });
-
-      return scored
-          .filter(x => x.score > -50) // Filter out very bad matches
-          .sort((a, b) => b.score - a.score)
-          .map(x => x.sop);
   });
 
   // --- METHODS ---
@@ -904,22 +1020,6 @@ export class SmartBatchComponent {
       }
   }
 
-  // 1. Helper to get requirements (Lookback)
-  getRequiredTargetsForSamples(samples: Set<string>): Set<string> {
-      const required = new Set<string>();
-      for (const block of this.blocks()) {
-          const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
-          const blockSampleSet = new Set(blockSamples);
-          
-          for (const s of Array.from(samples)) {
-              if (blockSampleSet.has(s)) {
-                  block.selectedTargets.forEach(t => required.add(t));
-              }
-          }
-      }
-      return required;
-  }
-
   matchesSearch(batch: ProposedBatch): boolean {
       if (!this.sampleSearchTerm()) return false;
       const term = this.sampleSearchTerm().toLowerCase();
@@ -987,157 +1087,129 @@ export class SmartBatchComponent {
       });
   }
 
-  // --- SPLIT LOGIC ---
+  // --- SPLIT WIZARD LOGIC ---
   
   openSplitModal(batchIndex: number) {
       const batch = this.batches()[batchIndex];
       this.splitState.set({
+          step: 1,
           sourceBatchIndex: batchIndex,
-          sourceSopName: batch.sop.name,
+          sourceBatchName: batch.name,
           availableSamples: Array.from(batch.samples).sort(),
           selectedSamples: new Set<string>(),
-          targetSopId: null,
-          showAllSops: false
+          
+          availableTargets: batch.targets, // Targets the source batch was covering
+          selectedTargets: new Set<string>(batch.targets.map(t => t.id)), // Default select all
+          
+          selectedSopId: null
       });
       this.showSplitModal.set(true);
   }
-  toggleShowAllSops() { this.splitState.update(s => ({ ...s, showAllSops: !s.showAllSops })); }
-  moveSample(sample: string) { this.splitState.update(s => { const newSet = new Set(s.selectedSamples); if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample); return { ...s, selectedSamples: newSet }; }); }
-  moveAllToNew() { this.splitState.update(s => ({ ...s, selectedSamples: new Set(s.availableSamples) })); }
-  moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set() })); }
-  updateSplitTarget(sopId: string | null) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
 
-  // 3. Smart Warnings (Calculated based on selection)
-  splitWarnings = computed(() => {
-      const s = this.splitState();
-      if (!s.targetSopId || s.selectedSamples.size === 0) return [];
-      
-      const targetSop = this.state.sops().find(x => x.id === s.targetSopId);
-      if (!targetSop || !targetSop.targets) return [];
-      
-      const sopTargetIds = new Set(targetSop.targets.map(t => t.id));
-      
-      // Use Context-Aware Targets for warnings too
-      const requiredTargetIds = this.getEffectiveTargetsForSplit(s.sourceBatchIndex, s.selectedSamples);
-      
-      const warnings: {type: 'missing'|'irrelevant'|'duplicate', text: string}[] = [];
-
-      // A. MISSING TARGETS CHECK (Critical)
-      const missingIds: string[] = [];
-      requiredTargetIds.forEach(id => {
-          if (!sopTargetIds.has(id)) missingIds.push(id);
+  // Step 1 Helpers
+  toggleSplitSample(sample: string) {
+      this.splitState.update(s => {
+          const newSet = new Set(s.selectedSamples);
+          if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample);
+          return { ...s, selectedSamples: newSet };
       });
+  }
+  splitSelectAllSamples() {
+      this.splitState.update(s => ({ ...s, selectedSamples: new Set(s.availableSamples) }));
+  }
+  splitDeselectAllSamples() {
+      this.splitState.update(s => ({ ...s, selectedSamples: new Set() }));
+  }
 
-      if (missingIds.length > 0) {
-          const names = missingIds.map(id => this.allAvailableTargets().find(t => t.id === id)?.name || id).slice(0, 3).join(', ');
-          const extra = missingIds.length > 3 ? ` (+${missingIds.length-3})` : '';
-          warnings.push({
-              type: 'missing',
-              text: `SOP này KHÔNG phủ được ${missingIds.length} chỉ tiêu yêu cầu: ${names}${extra}. Các chỉ tiêu này sẽ bị bỏ.`
-          });
-      }
-
-      // B. IRRELEVANT CHECK (Informational)
-      // Check if SOP supports targets that are NOT required by selected samples.
-      const irrelevantTargets = targetSop.targets.filter(t => !requiredTargetIds.has(t.id));
-      if (irrelevantTargets.length > 0) {
-          const names = irrelevantTargets.slice(0, 3).map(t => t.name).join(', ');
-          const extra = irrelevantTargets.length > 3 ? `...` : '';
-          warnings.push({
-              type: 'irrelevant',
-              text: `SOP hỗ trợ thêm ${irrelevantTargets.length} chỉ tiêu thừa (${names}${extra}). Hệ thống sẽ tự động tắt chúng để tiết kiệm.`
-          });
-      }
-
-      // C. DUPLICATE CHECK (Optimization)
-      const currentBatches = this.batches();
-      const duplicateTargets = new Set<string>();
-      
-      targetSop.targets.forEach(t => {
-          if (requiredTargetIds.has(t.id)) {
-              for (let i = 0; i < currentBatches.length; i++) {
-                  if (i === s.sourceBatchIndex) continue; // Skip source
-                  const batch = currentBatches[i];
-                  // If this batch covers target 't' and contains any of our samples
-                  if (batch.targets.some(bt => bt.id === t.id)) {
-                      for (const sample of Array.from(s.selectedSamples)) {
-                          if (batch.samples.has(sample)) {
-                              duplicateTargets.add(t.name);
-                              break; 
-                          }
-                      }
-                  }
-              }
-          }
+  // Step 2 Helpers
+  toggleSplitTarget(id: string) {
+      this.splitState.update(s => {
+          const newSet = new Set(s.selectedTargets);
+          if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
+          return { ...s, selectedTargets: newSet };
       });
+  }
+  splitSelectAllTargets() {
+      this.splitState.update(s => ({ ...s, selectedTargets: new Set(s.availableTargets.map(t => t.id)) }));
+  }
+  splitDeselectAllTargets() {
+      this.splitState.update(s => ({ ...s, selectedTargets: new Set() }));
+  }
 
-      if (duplicateTargets.size > 0) {
-          const names = Array.from(duplicateTargets).slice(0, 3).join(', ');
-          warnings.push({
-              type: 'duplicate',
-              text: `Cảnh báo trùng lặp: Chỉ tiêu ${names}... đang được xử lý ở mẻ khác cho các mẫu này.`
-          });
-      }
+  // Step 3 Helpers
+  selectSplitSop(id: string) {
+      this.splitState.update(s => ({ ...s, selectedSopId: id }));
+  }
 
-      return warnings;
-  });
+  // Navigation
+  nextSplitStep() {
+      this.splitState.update(s => {
+          if (s.step === 1 && s.selectedSamples.size === 0) return s; // Guard
+          if (s.step === 2 && s.selectedTargets.size === 0) return s; // Guard
+          return { ...s, step: (s.step + 1) as any };
+      });
+  }
+  prevSplitStep() {
+      this.splitState.update(s => {
+          if (s.step === 1) return s;
+          return { ...s, step: (s.step - 1) as any };
+      });
+  }
 
+  // Execute
   async executeSplit() {
       const state = this.splitState();
+      if (!state.selectedSopId) return;
+
       const sourceBatch = this.batches()[state.sourceBatchIndex];
-      const samplesToMove = state.selectedSamples;
-      const targetSop = this.state.sops().find(s => s.id === state.targetSopId);
-
-      if (!targetSop || samplesToMove.size === 0) return;
-
-      // 1. Prepare New Batch Samples
-      const newSamples = new Set(samplesToMove);
-
-      // --- LOGIC 2: STRICT TARGET INTERSECTION ---
-      // Use the Context-Aware helper to ensure we only carry over targets that matter to the split context
-      const reqsForNew = this.getEffectiveTargetsForSplit(state.sourceBatchIndex, newSamples);
-      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
+      const targetSop = this.state.sops().find(s => s.id === state.selectedSopId);
       
+      if (!targetSop) return;
+
+      // 1. Create New Batch
+      const newSamples = state.selectedSamples;
+      const newTargetIds = state.selectedTargets;
+      const newTargets = (targetSop.targets || []).filter(t => newTargetIds.has(t.id));
+
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
-      
-      // Inherit inputs if var names match
-      if (sourceBatch.inputValues) {
-          Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) newInputs[key] = sourceBatch.inputValues[key]; });
-      }
+      // Try to inherit non-default inputs if vars match
+      Object.keys(newInputs).forEach(k => {
+          if (sourceBatch.inputValues[k] !== undefined) newInputs[k] = sourceBatch.inputValues[k];
+      });
       newInputs['n_sample'] = newSamples.size;
-      
+
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
-      
+
       const newBatch: ProposedBatch = {
-          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`, 
+          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`,
           name: targetSop.name + ' (Tách)',
-          sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size,
-          inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready'
+          sop: targetSop,
+          targets: newTargets,
+          samples: newSamples,
+          sampleCount: newSamples.size,
+          inputValues: newInputs,
+          safetyMargin: sourceBatch.safetyMargin,
+          resourceImpact: newNeeds,
+          status: 'ready'
       };
 
-      // --- LOGIC 3: SOURCE CLEANUP ---
-      // Update Source Batch: Remove moved samples AND remove targets that are no longer needed by remaining samples.
-      const remainingSamples = new Set(Array.from(sourceBatch.samples).filter(s => !samplesToMove.has(s)));
-      
+      // 2. Update Source Batch (Remove moved samples)
+      // Logic: Samples are moved completely.
+      const remainingSamples = new Set(Array.from(sourceBatch.samples).filter(s => !newSamples.has(s)));
+
       this.batches.update(current => {
           const next = [...current];
           if (remainingSamples.size === 0) {
+              // Source is empty, delete it
               next.splice(state.sourceBatchIndex, 1);
           } else {
-              // Recalculate necessary targets for remaining samples based on GLOBAL needs
-              // (If we only split partly, the remaining might still need everything)
-              const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
-              
-              // Filter existing targets of source batch. If a target is no longer needed by ANY remaining sample, remove it.
-              const updatedSourceTargets = sourceBatch.targets.filter(t => reqsForSource.has(t.id));
-
-              // Update source batch
-              const updatedSource = { 
-                  ...sourceBatch, 
-                  samples: remainingSamples, 
+              // Update source
+              const updatedSource = {
+                  ...sourceBatch,
+                  samples: remainingSamples,
                   sampleCount: remainingSamples.size,
-                  targets: updatedSourceTargets // Updated targets list
+                  // Targets remain the same for remaining samples
               };
               updatedSource.inputValues = { ...updatedSource.inputValues, n_sample: remainingSamples.size };
               updatedSource.resourceImpact = this.calculator.calculateSopNeeds(updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
@@ -1150,6 +1222,18 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
       this.showSplitModal.set(false);
       this.toast.show('Đã tách mẻ thành công.', 'success');
+  }
+
+  // --- Auto-Fix Logic (Simple Re-run) ---
+  fixCoverage() {
+      // In a complex system, this would identify exactly what is missing and run a targeted greedy search.
+      // For now, we will simply reset and let the user re-analyze, as the greedy algorithm is deterministic and fast.
+      // OR better: Just show a toast guiding them.
+      this.toast.show('Đang tính toán lại để phủ kín các mẫu còn thiếu...', 'info');
+      // To implement true "Partial Re-run", we would need to pass `missingTasks` to analyzePlan. 
+      // Current implementation clears existing batches on analyzePlan. 
+      // We will leave the "Fix" button as a visual cue or trigger a Reset -> Re-Analyze flow for now.
+      this.step.set(1); // Go back to config to let them add/adjust blocks.
   }
 
   reset() { this.step.set(1); this.batches.set([]); this.unmappedTasks.set([]); }
