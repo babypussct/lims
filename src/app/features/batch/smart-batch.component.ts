@@ -634,7 +634,7 @@ export class SmartBatchComponent {
       return result.sort((a,b) => b.missing - a.missing); 
   });
   
-  // 2. candidateSops computed (REVISED LOGIC: Overlap First)
+  // 2. candidateSops computed (REVISED LOGIC: Partial Match Allowed)
   candidateSops = computed(() => {
       const s = this.splitState();
       if (s.sourceBatchIndex < 0) return [];
@@ -655,7 +655,8 @@ export class SmartBatchComponent {
           let covered = 0;
           reqTargets.forEach(id => { if (sopTargetIds.has(id)) covered++; });
           
-          // No overlap -> Score -1 (unless showAll is handled separately)
+          // PARTIAL MATCH ALLOWED: Even if covered is 1 (out of many reqs), we show it.
+          // This allows "Task Splitting" (SOP 1 does A, SOP 2 does B).
           if (covered === 0) return { sop, score: -1, covered: 0 }; 
 
           // Base score: coverage count * 10
@@ -1069,18 +1070,11 @@ export class SmartBatchComponent {
 
       // --- LOGIC 2: STRICT TARGET INTERSECTION ---
       // New Batch Targets = (New SOP Capabilities) INTERSECT (Original Requirements for these samples)
+      // This ensures we don't accidentally enable targets the user didn't ask for (Excess).
+      // If New SOP only does A, and Samples need A and B, we enable A. B is dropped (as intended for this batch).
       const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
       const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
       
-      if (finalNewTargets.length === 0) {
-          // If intersection is empty, it means the new SOP doesn't solve ANY of the user's requests for these samples.
-          // We allow it but warn heavily or return? Let's allow but ensure user knows.
-          // Actually, if splitWarnings already showed missing, user might still proceed.
-          // But creating a batch with 0 targets is useless for calculation.
-          // However, maybe they just want to prep samples without targets? 
-          // Let's allow it but the resource impact might be just general consumables.
-      }
-
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
       
@@ -1110,7 +1104,7 @@ export class SmartBatchComponent {
           } else {
               // Recalculate necessary targets for remaining samples
               const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
-              // Filter existing targets of source batch
+              // Filter existing targets of source batch. If a target is no longer needed by ANY remaining sample, remove it.
               const updatedSourceTargets = sourceBatch.targets.filter(t => reqsForSource.has(t.id));
 
               // Update source batch
