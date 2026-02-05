@@ -27,19 +27,26 @@ interface JobBlock {
     isCollapsed: boolean;
 }
 
+interface AnalysisTask {
+    sample: string;
+    targetId: string;
+    targetName: string;
+    covered: boolean;
+}
+
 interface ProposedBatch {
     id: string; 
-    name: string; // Display Name
+    name: string; // Display Name (e.g., "SOP A - Batch 1")
     sop: Sop;
-    targets: SopTarget[];
+    targets: SopTarget[]; // The specific targets this batch covers
     samples: Set<string>; 
     sampleCount: number;
     inputValues: Record<string, any>; 
     safetyMargin: number;
     resourceImpact: CalculatedItem[];
     status: 'ready' | 'missing_stock' | 'processed';
-    score?: number; // Debug info
-    tags?: string[]; // "Stock OK", "Best Match"
+    tags?: string[]; // "Stock OK", "High Coverage"
+    // For Split Logic
     alternativeSops?: Sop[]; 
 }
 
@@ -65,9 +72,9 @@ interface SplitState {
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
-                    Chạy Mẻ Thông Minh (AI Smart Batch)
+                    Chạy Mẻ Thông Minh (Smart Batch)
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động tối ưu hóa chất và kiểm tra tồn kho.</p>
+                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động ghép SOP theo chỉ tiêu & tối ưu hóa chất.</p>
             </div>
             
             <div class="flex gap-2">
@@ -75,7 +82,7 @@ interface SplitState {
                     <button (click)="reset()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Quay lại
                     </button>
-                    <button (click)="executeAll()" [disabled]="isProcessing() || hasCriticalMissing()" 
+                    <button (click)="executeAll()" [disabled]="isProcessing() || batches().length === 0" 
                             class="px-6 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-md transition hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                         @else { <i class="fa-solid fa-check-double"></i> Duyệt & Xem Phiếu }
@@ -223,15 +230,17 @@ interface SplitState {
                                placeholder="Tìm vị trí mẫu (VD: A05)...">
                     </div>
 
-                    @if (unmappedTargets().length > 0) {
+                    @if (unmappedTasks().length > 0) {
                         <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
                             <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
                             <div>
-                                <h4 class="text-sm font-bold text-red-800 mb-1">Cảnh báo: Chỉ tiêu chưa được xử lý</h4>
-                                <div class="text-xs text-red-600 mb-2">Các chỉ tiêu sau đây không nằm trong bất kỳ SOP nào phù hợp:</div>
-                                <div class="flex flex-wrap gap-1">
-                                    @for(t of unmappedTargets(); track t) {
-                                        <span class="bg-white px-2 py-0.5 rounded text-[10px] font-bold text-red-600 border border-red-100">{{t}}</span>
+                                <h4 class="text-sm font-bold text-red-800 mb-1">Cảnh báo: Không tìm thấy Quy trình (SOP)</h4>
+                                <div class="text-xs text-red-600 mb-2">Các yêu cầu sau không thể thực hiện do không có SOP phù hợp trong hệ thống:</div>
+                                <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                    @for(task of unmappedTasks(); track task.sample + task.targetId) {
+                                        <span class="bg-white px-2 py-1 rounded text-[10px] font-bold text-red-600 border border-red-100 flex items-center gap-1">
+                                            {{task.sample}} <i class="fa-solid fa-arrow-right text-[8px] text-red-300"></i> {{task.targetName}}
+                                        </span>
                                     }
                                 </div>
                             </div>
@@ -252,7 +261,7 @@ interface SplitState {
                             <!-- Header -->
                             <div class="p-5 pb-3">
                                 <div class="flex justify-between items-start mb-2 pl-2">
-                                    <div>
+                                    <div class="flex-1">
                                         <div class="flex items-center gap-2 mb-0.5">
                                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{batch.sop.category}}</span>
                                             <!-- Smart Tags -->
@@ -266,33 +275,30 @@ interface SplitState {
                                                 }
                                             }
                                             @if(batch.status === 'missing_stock') {
-                                                <span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold border border-red-200">Thiếu hàng</span>
+                                                <span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i> Thiếu hàng
+                                                </span>
                                             }
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <h3 class="text-lg font-bold text-slate-800">
                                                 {{batch.name}} <span class="text-slate-400 text-sm font-normal">({{batch.sop.name}})</span>
                                             </h3>
-                                            @if(batch.alternativeSops && batch.alternativeSops.length > 0) {
-                                                <span (click)="openSplitModal(batchIdx)" 
-                                                      class="cursor-pointer bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm hover:scale-105 transition flex items-center gap-1">
-                                                    <i class="fa-solid fa-shuffle"></i> +{{batch.alternativeSops.length}} lựa chọn
-                                                </span>
-                                            }
                                         </div>
                                         <div class="mt-1.5 text-xs font-mono font-bold text-slate-600 bg-slate-100/70 p-1.5 rounded-lg border border-slate-200 w-fit max-w-full flex items-start gap-2">
                                             <i class="fa-solid fa-vial text-slate-400 mt-0.5 shrink-0"></i>
                                             <span class="break-words leading-tight">{{ formatSampleList(batch.samples) }}</span>
                                         </div>
                                     </div>
-                                    <div class="flex flex-col items-end gap-1">
-                                        <button (click)="openSplitModal(batchIdx)" class="text-xs px-3 py-1.5 rounded-lg border font-bold transition flex items-center gap-1 active:scale-95 bg-slate-100 text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600">
+                                    <div class="flex flex-col items-end gap-1 ml-2">
+                                        <button (click)="openSplitModal(batchIdx)" class="text-xs px-3 py-1.5 rounded-lg border font-bold transition flex items-center gap-1 active:scale-95 bg-slate-100 text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600 whitespace-nowrap">
                                             <i class="fa-solid fa-gear"></i> Tùy chỉnh
                                         </button>
                                         <div class="text-lg font-black text-slate-700 mt-1">{{batch.samples.size}} <span class="text-xs font-normal text-slate-400">mẫu</span></div>
                                     </div>
                                 </div>
                                 <div class="flex flex-wrap gap-1.5 mb-3 pl-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase self-center mr-1">Chỉ tiêu phủ:</span>
                                     @for(t of batch.targets; track t.id) {
                                         <span class="px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-[10px] font-bold border border-teal-100">{{t.name}}</span>
                                     }
@@ -371,7 +377,8 @@ interface SplitState {
                                 </summary>
                                 <div class="p-3 bg-slate-50/30 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                     @for(s of batch.samples; track s) {
-                                        <div class="bg-white border border-slate-200 rounded px-2 py-1 text-[10px] font-mono font-bold text-slate-700 text-center truncate shadow-sm">
+                                        <div class="bg-white border border-slate-200 rounded px-2 py-1 text-[10px] font-mono font-bold text-slate-700 text-center truncate shadow-sm"
+                                             [class.bg-blue-100]="s.toLowerCase().includes(sampleSearchTerm().toLowerCase()) && sampleSearchTerm()">
                                             {{s}}
                                         </div>
                                     }
@@ -412,7 +419,7 @@ interface SplitState {
                         </h4>
                         <div class="space-y-4 mb-6">
                             <div class="flex justify-between border-b border-slate-700 pb-2">
-                                <span class="text-slate-400 text-sm">Tổng mẫu</span>
+                                <span class="text-slate-400 text-sm">Tổng mẫu (Input)</span>
                                 <span class="font-bold text-xl">{{totalUniqueSamples()}}</span>
                             </div>
                             <div class="flex justify-between border-b border-slate-700 pb-2">
@@ -454,7 +461,7 @@ interface SplitState {
             }
         </div>
 
-        <!-- Group Modal -->
+        <!-- Group Modal (Unchanged) -->
         @if (showGroupModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
@@ -478,7 +485,7 @@ interface SplitState {
             </div>
         }
 
-        <!-- Split Modal -->
+        <!-- Split Modal (Adapted to new Logic) -->
         @if (showSplitModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[90vh] animate-slide-up">
@@ -552,7 +559,7 @@ export class SmartBatchComponent {
   step = signal<number>(1);
   blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false } ]);
   batches = signal<ProposedBatch[]>([]);
-  unmappedTargets = signal<string[]>([]);
+  unmappedTasks = signal<AnalysisTask[]>([]);
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
   
@@ -614,15 +621,16 @@ export class SmartBatchComponent {
       const samplesToMove = s.selectedSamples; 
       let requiredTargetIds: Set<string>; 
       
-      if (samplesToMove.size === 0) { 
-          requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id)); 
-      } else { 
-          requiredTargetIds = this.getRequiredTargetsForSamples(samplesToMove); 
-      } 
+      // Heuristic for split: If moving ALL samples, allow any SOP that covers original targets.
+      // If moving SOME, we actually need to look up what those samples specifically needed.
+      // But simplified: assume they need the same targets as the source batch covered.
+      requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id)); 
       
       return allSops.filter(sop => { 
           if (!sop.targets) return false; 
           const sopTargetIds = new Set(sop.targets.map(t => t.id)); 
+          // Allow SOP if it covers AT LEAST ONE target? Or ALL? 
+          // For split context: usually strictly "All required".
           for (const id of Array.from(requiredTargetIds)) { 
               if (!sopTargetIds.has(id)) return false; 
           } 
@@ -698,7 +706,7 @@ export class SmartBatchComponent {
       this.showGroupModal.set(false);
   }
 
-  // --- SMART ANALYZE LOGIC ---
+  // --- REWRITTEN: TARGET-CENTRIC GREEDY ALGORITHM ---
   async analyzePlan() {
       this.isProcessing.set(true);
       try {
@@ -710,131 +718,129 @@ export class SmartBatchComponent {
           this.inventoryCache = {}; inv.forEach(i => this.inventoryCache[i.id] = i);
           this.recipeCache = {}; recipes.forEach(r => this.recipeCache[r.id] = r);
 
-          const proposed: ProposedBatch[] = [];
-          const allSops = this.state.sops().filter(s => !s.isArchived);
-          const unmapped: string[] = [];
+          const batches: ProposedBatch[] = [];
+          const sops = this.state.sops().filter(s => !s.isArchived);
 
-          // 2. Map Blocks to Requirements
-          const sampleRequirements = new Map<string, Set<string>>();
+          // 2. Flatten User Request -> "Analysis Tasks"
+          // List of { Sample, TargetID }
+          const allTasks: AnalysisTask[] = [];
+          
           for (const block of this.blocks()) {
               const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
               if (samples.length === 0 || block.selectedTargets.size === 0) continue;
-              for (const s of samples) {
-                  if (!sampleRequirements.has(s)) sampleRequirements.set(s, new Set());
-                  const reqs = sampleRequirements.get(s)!;
-                  block.selectedTargets.forEach(t => reqs.add(t));
+              
+              for (const sample of samples) {
+                  for (const targetId of block.selectedTargets) {
+                      const tName = this.allAvailableTargets().find(t => t.id === targetId)?.name || targetId;
+                      allTasks.push({
+                          sample,
+                          targetId,
+                          targetName: tName,
+                          covered: false
+                      });
+                  }
               }
           }
 
-          // 3. Cluster Samples by Requirement
-          const targetGroups = new Map<string, {targets: Set<string>, samples: Set<string>}>();
-          sampleRequirements.forEach((reqs, sample) => {
-              if (reqs.size === 0) return;
-              const key = Array.from(reqs).sort().join('|');
-              if (!targetGroups.has(key)) targetGroups.set(key, { targets: reqs, samples: new Set() });
-              targetGroups.get(key)!.samples.add(sample);
-          });
+          // 3. Greedy Loop
+          // Find SOP that covers the MOST remaining tasks
+          
+          let remainingTasks = allTasks.filter(t => !t.covered);
+          let iterationLimit = 0;
+          const MAX_ITERATIONS = 50; // Safety break
 
-          // 4. Match SOPs (Recursive & Weighted Scoring)
-          targetGroups.forEach((group, key) => {
-              let currentReqTargets = Array.from(group.targets);
-              let loopCount = 0;
-              const maxLoops = 10;
+          while (remainingTasks.length > 0 && iterationLimit < MAX_ITERATIONS) {
+              iterationLimit++;
 
-              while (currentReqTargets.length > 0 && loopCount < maxLoops) {
-                  loopCount++;
-
-                  // CALCULATE SCORES for Candidates
-                  const candidates = allSops.map(sop => {
-                      if (!sop.targets) return null;
-                      const sopTargetIds = new Set(sop.targets.map(t => t.id));
-                      const matching = currentReqTargets.filter(id => sopTargetIds.has(id));
-                      if (matching.length === 0) return null;
-
-                      // STOCK CHECK (Heuristic: Just check simple items exist)
-                      let stockScore = 0;
-                      let missingItems = 0;
-                      sop.consumables.forEach(c => {
-                          if (c.type === 'simple' && !this.inventoryCache[c.name]) missingItems++;
-                          if (c.type === 'simple' && this.inventoryCache[c.name]?.stock > 0) stockScore += 1;
-                      });
-
-                      // WEIGHTED SCORE CALCULATION
-                      // Coverage: +10 per target
-                      // Stock: +5 if stock exists (simple check)
-                      // Efficiency: -1 per consumable (prefer simpler SOPs)
-                      const score = (matching.length * 10) + (stockScore * 5) - (sop.consumables.length);
-
-                      return {
-                          sop,
-                          matchedIds: matching,
-                          score: score,
-                          efficiency: sop.consumables.length,
-                          hasStock: missingItems === 0
-                      };
-                  }).filter(x => x !== null) as {sop: Sop, matchedIds: string[], score: number, hasStock: boolean}[];
-
-                  if (candidates.length === 0) {
-                      currentReqTargets.forEach(t => {
-                          const tName = this.allAvailableTargets().find(x => x.id === t)?.name || t;
-                          if (!unmapped.includes(tName)) unmapped.push(tName);
-                      });
-                      break;
-                  }
-
-                  // Pick Best Candidate (Highest Score)
-                  candidates.sort((a, b) => b.score - a.score);
-                  const bestFit = candidates[0];
-                  const alternatives = candidates.slice(1).map(c => c.sop);
-
-                  // 5. NO AUTO-SPLIT (Reverted per request)
-                  const inputs: Record<string, any> = {};
-                  bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
-                  inputs['n_sample'] = group.samples.size;
-
-                  const needs = this.calculator.calculateSopNeeds(
-                      bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-                  );
-
-                  const coveredSet = new Set(bestFit.matchedIds);
-                  const batchTargets = (bestFit.sop.targets || []).filter(t => coveredSet.has(t.id));
+              // Score each SOP
+              const candidates = sops.map(sop => {
+                  if (!sop.targets || sop.targets.length === 0) return null;
                   
-                  const batchId = `batch_${Date.now()}_${proposed.length}`;
+                  const sopTargetIds = new Set(sop.targets.map(t => t.id));
+                  
+                  // Filter tasks that this SOP can cover
+                  const coverableTasks = remainingTasks.filter(t => sopTargetIds.has(t.targetId));
+                  
+                  if (coverableTasks.length === 0) return null;
 
-                  proposed.push({
-                      id: batchId,
-                      name: bestFit.sop.name, // Simple Name
-                      sop: bestFit.sop,
-                      targets: batchTargets,
-                      samples: group.samples,
-                      sampleCount: group.samples.size,
-                      inputValues: inputs,
-                      safetyMargin: -1, // Auto
-                      resourceImpact: needs,
-                      status: 'ready',
-                      alternativeSops: alternatives,
-                      score: bestFit.score,
-                      tags: bestFit.hasStock ? ['Stock OK'] : []
+                  // Simple Score: Quantity of tasks covered
+                  const score = coverableTasks.length;
+                  
+                  // Secondary Score: Stock Availability (Tie-breaker)
+                  // Check if SOP uses items that are out of stock
+                  let missingStockCount = 0;
+                  sop.consumables.forEach(c => {
+                      if (c.type === 'simple' && !this.inventoryCache[c.name]) missingStockCount++;
                   });
+                  
+                  return {
+                      sop,
+                      coverableTasks,
+                      score: score - (missingStockCount * 0.1) // Slight penalty for missing stock
+                  };
+              }).filter(c => c !== null);
 
-                  // Remove covered targets
-                  currentReqTargets = currentReqTargets.filter(t => !coveredSet.has(t));
+              if (candidates.length === 0) {
+                  // No SOP matches remaining tasks
+                  break; 
               }
-          });
 
-          this.batches.set(proposed);
-          this.unmappedTargets.set(unmapped);
+              // Pick Winner
+              // Sort Descending by Score
+              candidates.sort((a, b) => b!.score - a!.score);
+              const bestFit = candidates[0]!;
+
+              // Construct Batch
+              const batchSamples = new Set(bestFit.coverableTasks.map(t => t.sample));
+              const batchTargetIds = new Set(bestFit.coverableTasks.map(t => t.targetId));
+              const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(t.id));
+
+              // Calculate Resources
+              const inputs: Record<string, any> = {};
+              bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
+              inputs['n_sample'] = batchSamples.size;
+
+              const needs = this.calculator.calculateSopNeeds(
+                  bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+              );
+
+              const batchId = `batch_${Date.now()}_${batches.length}`;
+              
+              batches.push({
+                  id: batchId,
+                  name: bestFit.sop.name,
+                  sop: bestFit.sop,
+                  targets: batchTargets,
+                  samples: batchSamples,
+                  sampleCount: batchSamples.size,
+                  inputValues: inputs,
+                  safetyMargin: -1, // Auto
+                  resourceImpact: needs,
+                  status: 'ready',
+                  tags: ['Auto-Optimized']
+              });
+
+              // Mark tasks as covered
+              const coveredSet = new Set(bestFit.coverableTasks); // Reference check works because object identity
+              remainingTasks = remainingTasks.filter(t => !coveredSet.has(t));
+          }
+
+          this.batches.set(batches);
+          this.unmappedTasks.set(remainingTasks);
+          
           this.validateGlobalStock();
           this.step.set(2);
 
       } catch (e: any) {
           this.toast.show('Lỗi phân tích: ' + e.message, 'error');
+          console.error(e);
       } finally {
           this.isProcessing.set(false);
       }
   }
 
   getRequiredTargetsForSamples(samples: Set<string>): Set<string> {
+      // Helper for Split Modal to know what targets selected samples need
       const required = new Set<string>();
       for (const block of this.blocks()) {
           const blockSamples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
@@ -875,28 +881,11 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
   }
 
-  recalculateBatch(index: number) {
-      this.batches.update(current => {
-          const next = [...current];
-          const batch = { ...next[index] };
-          batch.inputValues['n_sample'] = batch.samples.size; 
-          batch.resourceImpact = this.calculator.calculateSopNeeds(
-              batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
-          );
-          batch.sampleCount = batch.samples.size;
-          next[index] = batch;
-          return next;
-      });
-      this.validateGlobalStock();
-  }
-
   updateBatchInput(index: number, key: string, val: any) {
       this.batches.update(current => {
           const next = [...current];
           const batch = { ...next[index] };
           batch.inputValues = { ...batch.inputValues, [key]: val };
-          // Don't auto-recalc here to avoid lag, user triggers update explicitly or we debounce?
-          // Actually, let's auto recalc for UX
           batch.resourceImpact = this.calculator.calculateSopNeeds(
               batch.sop, batch.inputValues, batch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
           );
@@ -932,7 +921,7 @@ export class SmartBatchComponent {
       });
   }
 
-  // --- SPLIT LOGIC ---
+  // --- SPLIT LOGIC (Kept same structure but updated for data model) ---
   openSplitModal(batchIndex: number) {
       const batch = this.batches()[batchIndex];
       this.splitState.set({
@@ -957,7 +946,12 @@ export class SmartBatchComponent {
       const targetSop = this.state.sops().find(x => x.id === s.targetSopId);
       if (!targetSop || !targetSop.targets) return [];
       const sopTargetIds = new Set(targetSop.targets.map(t => t.id));
+      
+      // Calculate what targets are needed for selected samples
+      // Note: This uses the original block definition. 
+      // If a sample was already split across 2 batches, this logic only cares about "What did the user originally ask for?"
       const reqTargets = this.getRequiredTargetsForSamples(s.selectedSamples);
+      
       const missing: {id: string, name: string}[] = [];
       reqTargets.forEach(reqId => {
           if (!sopTargetIds.has(reqId)) {
@@ -989,19 +983,19 @@ export class SmartBatchComponent {
       const newSamples = new Set(samplesToMove);
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
-      // Copy compatible inputs
       if (sourceBatch.inputValues) {
           Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) newInputs[key] = sourceBatch.inputValues[key]; });
       }
       newInputs['n_sample'] = newSamples.size;
       
+      // Determine covered targets for new batch
       const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
       const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
       
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
       
       const newBatch: ProposedBatch = {
-          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`, // Added random suffix to prevent ID collision
+          id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`, 
           name: targetSop.name + ' (Tách)',
           sop: targetSop, targets: finalNewTargets, samples: newSamples, sampleCount: newSamples.size,
           inputValues: newInputs, safetyMargin: sourceBatch.safetyMargin, resourceImpact: newNeeds, status: 'ready'
@@ -1014,9 +1008,8 @@ export class SmartBatchComponent {
           if (remainingSamples.size === 0) {
               next.splice(state.sourceBatchIndex, 1);
           } else {
-              const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
-              const finalSourceTargets = (sourceBatch.sop.targets || []).filter(t => reqsForSource.has(t.id));
-              const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size, targets: finalSourceTargets };
+              // Update source batch
+              const updatedSource = { ...sourceBatch, samples: remainingSamples, sampleCount: remainingSamples.size };
               updatedSource.inputValues = { ...updatedSource.inputValues, n_sample: remainingSamples.size };
               updatedSource.resourceImpact = this.calculator.calculateSopNeeds(updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
               next[state.sourceBatchIndex] = updatedSource;
@@ -1030,7 +1023,7 @@ export class SmartBatchComponent {
       this.toast.show('Đã tách mẻ thành công.', 'success');
   }
 
-  reset() { this.step.set(1); this.batches.set([]); this.unmappedTargets.set([]); }
+  reset() { this.step.set(1); this.batches.set([]); this.unmappedTasks.set([]); }
 
   async executeAll() {
       if (!this.auth.canApprove()) {
