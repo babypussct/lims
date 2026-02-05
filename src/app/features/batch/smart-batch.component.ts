@@ -634,42 +634,65 @@ export class SmartBatchComponent {
       return result.sort((a,b) => b.missing - a.missing); 
   });
   
-  // 2. candidateSops computed (REVISED LOGIC: Partial Match Allowed)
+  // --- NEW HELPER: Get Effective Targets for Split (Context Aware) ---
+  // Returns: Intersection of (Global Needs for Selected Samples) AND (Source Batch Targets)
+  getEffectiveTargetsForSplit(sourceBatchIndex: number, selectedSamples: Set<string>): Set<string> {
+      if (sourceBatchIndex < 0 || selectedSamples.size === 0) return new Set();
+      
+      const sourceBatch = this.batches()[sourceBatchIndex];
+      const sourceTargetIds = new Set(sourceBatch.targets.map(t => t.id));
+      
+      // Get what the user globally wanted for these samples
+      const globalReqs = this.getRequiredTargetsForSamples(selectedSamples);
+      
+      // Filter: Only care about targets that were actually being done in the source batch
+      const relevantTargetIds = new Set<string>();
+      globalReqs.forEach(t => {
+          if (sourceTargetIds.has(t)) relevantTargetIds.add(t);
+      });
+      
+      return relevantTargetIds;
+  }
+
+  // 2. candidateSops computed (REVISED: Context Aware & Weighted)
   candidateSops = computed(() => {
       const s = this.splitState();
       if (s.sourceBatchIndex < 0) return [];
       const sourceBatch = this.batches()[s.sourceBatchIndex];
       const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id);
       
-      // If show all, return alphabetical
       if (s.showAllSops) return allSops.sort((a,b) => a.name.localeCompare(b.name));
 
-      const reqTargets = this.getRequiredTargetsForSamples(s.selectedSamples);
-      if (reqTargets.size === 0) return allSops; // No specific reqs, return all
+      // Use Context-Aware Requirements
+      const reqTargets = this.getEffectiveTargetsForSplit(s.sourceBatchIndex, s.selectedSamples);
+      if (reqTargets.size === 0) return allSops; 
 
-      // Score each SOP based on how well it covers the REQUIRED targets
+      // Score each SOP
       const scored = allSops.map(sop => {
-          if (!sop.targets) return { sop, score: -1, covered: 0 };
+          if (!sop.targets) return { sop, score: -999, covered: 0 };
           const sopTargetIds = new Set(sop.targets.map(t => t.id));
           
           let covered = 0;
           reqTargets.forEach(id => { if (sopTargetIds.has(id)) covered++; });
           
-          // PARTIAL MATCH ALLOWED: Even if covered is 1 (out of many reqs), we show it.
-          // This allows "Task Splitting" (SOP 1 does A, SOP 2 does B).
-          if (covered === 0) return { sop, score: -1, covered: 0 }; 
+          const missing = reqTargets.size - covered;
 
-          // Base score: coverage count * 10
-          let score = covered * 10;
-          // Bonus: If it covers ALL required targets (Perfect Match), big boost
-          if (covered === reqTargets.size) score += 50;
+          // Strict Logic:
+          // 1. Must cover at least one relevant target.
+          if (covered === 0) return { sop, score: -999, covered: 0 }; 
+
+          // 2. Score = (Covered * 10) - (Missing * 5)
+          // This heavily penalizes SOPs that only do a small part of the job (like SOP T).
+          let score = (covered * 10) - (missing * 5);
+          
+          // Bonus for perfect match
+          if (missing === 0) score += 50;
           
           return { sop, score, covered };
       });
 
-      // Filter out non-overlapping SOPs (score > 0) and Sort Descending by Score
       return scored
-          .filter(x => x.score > 0)
+          .filter(x => x.score > -50) // Filter out very bad matches
           .sort((a, b) => b.score - a.score)
           .map(x => x.sop);
   });
@@ -993,7 +1016,9 @@ export class SmartBatchComponent {
       if (!targetSop || !targetSop.targets) return [];
       
       const sopTargetIds = new Set(targetSop.targets.map(t => t.id));
-      const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples);
+      
+      // Use Context-Aware Targets for warnings too
+      const requiredTargetIds = this.getEffectiveTargetsForSplit(s.sourceBatchIndex, s.selectedSamples);
       
       const warnings: {type: 'missing'|'irrelevant'|'duplicate', text: string}[] = [];
 
@@ -1069,10 +1094,8 @@ export class SmartBatchComponent {
       const newSamples = new Set(samplesToMove);
 
       // --- LOGIC 2: STRICT TARGET INTERSECTION ---
-      // New Batch Targets = (New SOP Capabilities) INTERSECT (Original Requirements for these samples)
-      // This ensures we don't accidentally enable targets the user didn't ask for (Excess).
-      // If New SOP only does A, and Samples need A and B, we enable A. B is dropped (as intended for this batch).
-      const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
+      // Use the Context-Aware helper to ensure we only carry over targets that matter to the split context
+      const reqsForNew = this.getEffectiveTargetsForSplit(state.sourceBatchIndex, newSamples);
       const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
       
       const newInputs: Record<string, any> = {};
@@ -1102,8 +1125,10 @@ export class SmartBatchComponent {
           if (remainingSamples.size === 0) {
               next.splice(state.sourceBatchIndex, 1);
           } else {
-              // Recalculate necessary targets for remaining samples
+              // Recalculate necessary targets for remaining samples based on GLOBAL needs
+              // (If we only split partly, the remaining might still need everything)
               const reqsForSource = this.getRequiredTargetsForSamples(remainingSamples);
+              
               // Filter existing targets of source batch. If a target is no longer needed by ANY remaining sample, remove it.
               const updatedSourceTargets = sourceBatch.targets.filter(t => reqsForSource.has(t.id));
 
