@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -46,8 +45,6 @@ interface ProposedBatch {
     resourceImpact: CalculatedItem[];
     status: 'ready' | 'missing_stock' | 'processed';
     tags?: string[]; // "Stock OK", "High Coverage"
-    // For Split Logic
-    alternativeSops?: Sop[]; 
 }
 
 interface SplitState {
@@ -533,7 +530,30 @@ interface SplitState {
                     </div>
                     <div class="p-4 bg-white border-t border-slate-200 shrink-0 flex flex-col gap-4">
                         <div class="flex flex-col md:flex-row gap-4 items-start">
-                            <div class="flex-1 w-full"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Quy trình cho Mẻ Mới</label><div class="flex gap-2"><select [ngModel]="splitState().targetSopId" (ngModelChange)="updateSplitTarget($event)" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none cursor-pointer"><option [value]="null" disabled>-- Chọn SOP phù hợp --</option>@for(sop of candidateSops(); track sop.id) {<option [value]="sop.id">{{sop.name}}</option>}</select></div></div>
+                            <div class="flex-1 w-full space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block">Quy trình cho Mẻ Mới</label>
+                                <div class="flex gap-2">
+                                    <select [ngModel]="splitState().targetSopId" (ngModelChange)="updateSplitTarget($event)" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none cursor-pointer">
+                                        <option [value]="null" disabled>-- Chọn SOP phù hợp --</option>
+                                        @for(sop of candidateSops(); track sop.id) {
+                                            <option [value]="sop.id">{{sop.name}}</option>
+                                        }
+                                    </select>
+                                </div>
+                                <!-- WARNINGS SECTION -->
+                                @if(splitWarnings().length > 0) {
+                                    <div class="flex flex-col gap-1 mt-2">
+                                        @for(w of splitWarnings(); track w.text) {
+                                            <div class="flex items-start gap-2 text-xs p-2 rounded-lg border"
+                                                 [class.bg-orange-50]="w.type === 'irrelevant'" [class.text-orange-700]="w.type === 'irrelevant'" [class.border-orange-200]="w.type === 'irrelevant'"
+                                                 [class.bg-yellow-50]="w.type === 'duplicate'" [class.text-yellow-700]="w.type === 'duplicate'" [class.border-yellow-200]="w.type === 'duplicate'">
+                                                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                                                <span>{{w.text}}</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
                             <div class="w-full md:w-auto flex justify-end items-end h-full pt-6"><button (click)="executeSplit()" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center gap-2"><i class="fa-solid fa-check"></i> Xác nhận Tách Mẻ</button></div>
                         </div>
                     </div>
@@ -618,23 +638,16 @@ export class SmartBatchComponent {
       const allSops = this.state.sops().filter(sop => !sop.isArchived && sop.id !== sourceBatch.sop.id); 
       if (s.showAllSops) return allSops; 
       
-      const samplesToMove = s.selectedSamples; 
-      let requiredTargetIds: Set<string>; 
-      
-      // Heuristic for split: If moving ALL samples, allow any SOP that covers original targets.
-      // If moving SOME, we actually need to look up what those samples specifically needed.
-      // But simplified: assume they need the same targets as the source batch covered.
-      requiredTargetIds = new Set(sourceBatch.targets.map(t => t.id)); 
+      const reqTargets = this.getRequiredTargetsForSamples(s.selectedSamples);
       
       return allSops.filter(sop => { 
           if (!sop.targets) return false; 
           const sopTargetIds = new Set(sop.targets.map(t => t.id)); 
-          // Allow SOP if it covers AT LEAST ONE target? Or ALL? 
-          // For split context: usually strictly "All required".
-          for (const id of Array.from(requiredTargetIds)) { 
-              if (!sopTargetIds.has(id)) return false; 
+          // Default logic: Show SOP if it covers AT LEAST ONE required target
+          for (const id of Array.from(reqTargets)) { 
+              if (sopTargetIds.has(id)) return true; 
           } 
-          return true; 
+          return false; 
       }); 
   });
 
@@ -706,7 +719,7 @@ export class SmartBatchComponent {
       this.showGroupModal.set(false);
   }
 
-  // --- REWRITTEN: TARGET-CENTRIC GREEDY ALGORITHM ---
+  // --- REWRITTEN: TARGET-CENTRIC GREEDY ALGORITHM (WEIGHTED) ---
   async analyzePlan() {
       this.isProcessing.set(true);
       try {
@@ -722,7 +735,6 @@ export class SmartBatchComponent {
           const sops = this.state.sops().filter(s => !s.isArchived);
 
           // 2. Flatten User Request -> "Analysis Tasks"
-          // List of { Sample, TargetID }
           const allTasks: AnalysisTask[] = [];
           
           for (const block of this.blocks()) {
@@ -742,57 +754,64 @@ export class SmartBatchComponent {
               }
           }
 
-          // 3. Greedy Loop
-          // Find SOP that covers the MOST remaining tasks
-          
+          // 3. Greedy Loop with Weighted Scoring
           let remainingTasks = allTasks.filter(t => !t.covered);
           let iterationLimit = 0;
-          const MAX_ITERATIONS = 50; // Safety break
+          const MAX_ITERATIONS = 50;
 
           while (remainingTasks.length > 0 && iterationLimit < MAX_ITERATIONS) {
               iterationLimit++;
 
-              // Score each SOP
               const candidates = sops.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
-                  
                   const sopTargetIds = new Set(sop.targets.map(t => t.id));
                   
                   // Filter tasks that this SOP can cover
                   const coverableTasks = remainingTasks.filter(t => sopTargetIds.has(t.targetId));
-                  
                   if (coverableTasks.length === 0) return null;
 
-                  // Simple Score: Quantity of tasks covered
-                  const score = coverableTasks.length;
-                  
-                  // Secondary Score: Stock Availability (Tie-breaker)
-                  // Check if SOP uses items that are out of stock
+                  // --- WEIGHTED SCORING SYSTEM ---
+                  let score = 0;
+
+                  // 1. Coverage Score (+10 per task)
+                  score += coverableTasks.length * 10;
+
+                  // 2. Completeness Bonus (+5 per sample fully covered)
+                  // Reward if this SOP clears ALL remaining targets for a specific sample
+                  const involvedSamples = new Set(coverableTasks.map(t => t.sample));
+                  involvedSamples.forEach(s => {
+                      const tasksForSample = remainingTasks.filter(t => t.sample === s);
+                      const coveredForSample = coverableTasks.filter(t => t.sample === s);
+                      if (tasksForSample.length === coveredForSample.length) {
+                          score += 5; 
+                      }
+                  });
+
+                  // 3. Stock Penalty (-20 per missing item)
                   let missingStockCount = 0;
                   sop.consumables.forEach(c => {
                       if (c.type === 'simple' && !this.inventoryCache[c.name]) missingStockCount++;
                   });
-                  
-                  return {
-                      sop,
-                      coverableTasks,
-                      score: score - (missingStockCount * 0.1) // Slight penalty for missing stock
-                  };
+                  score -= (missingStockCount * 20);
+
+                  // 4. Efficiency Penalty (-1 per extraneous capability)
+                  // If SOP covers 50 targets but we only need 1, it's wasteful (maybe)
+                  const extraneous = sop.targets.length - new Set(coverableTasks.map(t => t.targetId)).size;
+                  score -= (extraneous * 1);
+
+                  return { sop, coverableTasks, score };
               }).filter(c => c !== null);
 
-              if (candidates.length === 0) {
-                  // No SOP matches remaining tasks
-                  break; 
-              }
+              if (candidates.length === 0) break;
 
               // Pick Winner
-              // Sort Descending by Score
               candidates.sort((a, b) => b!.score - a!.score);
               const bestFit = candidates[0]!;
 
               // Construct Batch
               const batchSamples = new Set(bestFit.coverableTasks.map(t => t.sample));
               const batchTargetIds = new Set(bestFit.coverableTasks.map(t => t.targetId));
+              // Only include targets relevant to the tasks being covered
               const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(t.id));
 
               // Calculate Resources
@@ -821,7 +840,7 @@ export class SmartBatchComponent {
               });
 
               // Mark tasks as covered
-              const coveredSet = new Set(bestFit.coverableTasks); // Reference check works because object identity
+              const coveredSet = new Set(bestFit.coverableTasks); 
               remainingTasks = remainingTasks.filter(t => !coveredSet.has(t));
           }
 
@@ -921,7 +940,8 @@ export class SmartBatchComponent {
       });
   }
 
-  // --- SPLIT LOGIC (Kept same structure but updated for data model) ---
+  // --- SPLIT LOGIC ---
+  
   openSplitModal(batchIndex: number) {
       const batch = this.batches()[batchIndex];
       this.splitState.set({
@@ -940,27 +960,68 @@ export class SmartBatchComponent {
   moveAllToSource() { this.splitState.update(s => ({ ...s, selectedSamples: new Set() })); }
   updateSplitTarget(sopId: string | null) { this.splitState.update(s => ({ ...s, targetSopId: sopId })); }
 
-  missingTargetsInSplit(): {id: string, name: string}[] {
+  splitWarnings = computed(() => {
       const s = this.splitState();
-      if (!s.targetSopId) return [];
+      if (!s.targetSopId || s.selectedSamples.size === 0) return [];
+      
       const targetSop = this.state.sops().find(x => x.id === s.targetSopId);
       if (!targetSop || !targetSop.targets) return [];
+      
       const sopTargetIds = new Set(targetSop.targets.map(t => t.id));
+      const requiredTargetIds = this.getRequiredTargetsForSamples(s.selectedSamples);
       
-      // Calculate what targets are needed for selected samples
-      // Note: This uses the original block definition. 
-      // If a sample was already split across 2 batches, this logic only cares about "What did the user originally ask for?"
-      const reqTargets = this.getRequiredTargetsForSamples(s.selectedSamples);
+      const warnings: {type: 'irrelevant'|'duplicate', text: string}[] = [];
+
+      // 1. Check Irrelevant: SOP covers targets NOT in requirements
+      const irrelevantTargets = targetSop.targets.filter(t => !requiredTargetIds.has(t.id));
+      if (irrelevantTargets.length > 0) {
+          const names = irrelevantTargets.slice(0, 3).map(t => t.name).join(', ');
+          const extra = irrelevantTargets.length > 3 ? `...(+${irrelevantTargets.length-3})` : '';
+          warnings.push({
+              type: 'irrelevant',
+              text: `SOP này phủ ${irrelevantTargets.length} chỉ tiêu không yêu cầu (${names}${extra}). Kết quả sẽ bị thừa.`
+          });
+      }
+
+      // 2. Check Duplicate: Targets in SOP & Req BUT already covered in OTHER batches
+      // We check if selected samples are present in other batches covering these targets
+      const currentBatches = this.batches();
+      const duplicateTargets = new Set<string>();
       
-      const missing: {id: string, name: string}[] = [];
-      reqTargets.forEach(reqId => {
-          if (!sopTargetIds.has(reqId)) {
-              const tName = this.allAvailableTargets().find(x => x.id === reqId)?.name || reqId;
-              missing.push({ id: reqId, name: tName });
+      targetSop.targets.forEach(t => {
+          if (requiredTargetIds.has(t.id)) {
+              // Check other batches
+              for (let i = 0; i < currentBatches.length; i++) {
+                  if (i === s.sourceBatchIndex) continue; // Skip source
+                  const batch = currentBatches[i];
+                  // If this batch covers target 't' AND contains any of our selected samples
+                  // Note: Logic simplification -> if batch covers 't', do we assume it covers for ALL its samples? Yes.
+                  // So we check if our samples are in that batch.
+                  const batchHasTarget = batch.targets.some(bt => bt.id === t.id);
+                  if (batchHasTarget) {
+                      // Check overlap of samples
+                      for (const sample of Array.from(s.selectedSamples)) {
+                          if (batch.samples.has(sample)) {
+                              duplicateTargets.add(t.name);
+                              break; 
+                          }
+                      }
+                  }
+              }
           }
       });
-      return missing;
-  }
+
+      if (duplicateTargets.size > 0) {
+          const names = Array.from(duplicateTargets).slice(0, 3).join(', ');
+          const extra = duplicateTargets.size > 3 ? `...` : '';
+          warnings.push({
+              type: 'duplicate',
+              text: `Chỉ tiêu trùng lặp: ${names}${extra} đã được xếp lịch trong mẻ khác.`
+          });
+      }
+
+      return warnings;
+  });
 
   async executeSplit() {
       const state = this.splitState();
@@ -970,27 +1031,27 @@ export class SmartBatchComponent {
 
       if (!targetSop || samplesToMove.size === 0) return;
 
-      const missing = this.missingTargetsInSplit();
-      if (missing.length > 0) {
-          const confirmed = await this.confirmation.confirm({
-              message: `CẢNH BÁO: Quy trình mới không hỗ trợ ${missing.length} chỉ tiêu (VD: ${missing[0].name}).\nCác chỉ tiêu này sẽ bị loại bỏ khỏi mẻ mới.`,
-              confirmText: 'Chấp nhận & Tiếp tục', isDangerous: true
-          });
-          if (!confirmed) return;
+      // 1. Create New Batch (Prepare Samples) - Moved up to fix scoping issue
+      const newSamples = new Set(samplesToMove);
+
+      // STRICT INTERSECTION LOGIC
+      // Only enable targets that are BOTH in the new SOP AND in the Original Requirements
+      const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
+      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
+      
+      if (finalNewTargets.length === 0) {
+          this.toast.show('SOP mới không phủ bất kỳ chỉ tiêu nào được yêu cầu!', 'error');
+          return;
       }
 
-      // 1. Create New Batch
-      const newSamples = new Set(samplesToMove);
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
+      
+      // Inherit inputs if var names match
       if (sourceBatch.inputValues) {
           Object.keys(newInputs).forEach(key => { if (sourceBatch.inputValues[key] !== undefined) newInputs[key] = sourceBatch.inputValues[key]; });
       }
       newInputs['n_sample'] = newSamples.size;
-      
-      // Determine covered targets for new batch
-      const reqsForNew = this.getRequiredTargetsForSamples(newSamples);
-      const finalNewTargets = (targetSop.targets || []).filter(t => reqsForNew.has(t.id));
       
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
       
