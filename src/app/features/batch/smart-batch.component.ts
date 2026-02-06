@@ -246,66 +246,73 @@ interface SplitWizardState {
                     }
 
                     @for (batch of batches(); track batch.id; let batchIdx = $index) {
-                        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm transition-all duration-300 relative overflow-hidden group"
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 group"
+                             [class.border-l-4]="true"
+                             [class.border-l-emerald-500]="batch.status === 'ready' && !batch.name.includes('(Tách)')"
+                             [class.border-l-red-500]="batch.status === 'missing_stock'"
+                             [class.border-l-yellow-400]="batch.name.includes('(Tách)') && batch.status !== 'missing_stock'"
                              [class.ring-2]="matchesSearch(batch)"
                              [class.ring-blue-400]="matchesSearch(batch)"
                              [class.opacity-40]="sampleSearchTerm() && !matchesSearch(batch)">
-                             
-                            <!-- Status Stripe -->
-                            <div class="absolute left-0 top-0 bottom-0 w-1" 
-                                 [class.bg-emerald-500]="batch.status === 'ready'" 
-                                 [class.bg-red-500]="batch.status === 'missing_stock'"></div>
 
-                            <!-- Header -->
-                            <div class="p-5 pb-3">
-                                <div class="flex justify-between items-start mb-2 pl-2">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2 mb-0.5">
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{batch.sop.category}}</span>
-                                            <!-- Smart Tags -->
-                                            @if(batch.tags) {
-                                                @for(tag of batch.tags; track tag) {
-                                                    <span class="text-[9px] px-1.5 py-0.5 rounded font-bold border" 
-                                                          [class.bg-emerald-100]="tag === 'Stock OK'" [class.text-emerald-700]="tag === 'Stock OK'" [class.border-emerald-200]="tag === 'Stock OK'"
-                                                          [class.bg-blue-100]="tag === 'Efficient'" [class.text-blue-700]="tag === 'Efficient'" [class.border-blue-200]="tag === 'Efficient'">
-                                                        {{tag}}
-                                                    </span>
-                                                }
-                                            }
-                                            @if(batch.status === 'missing_stock') {
-                                                <span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
-                                                    <i class="fa-solid fa-triangle-exclamation"></i> Thiếu hàng
-                                                </span>
-                                            }
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <h3 class="text-lg font-bold text-slate-800">
-                                                {{batch.name}} <span class="text-slate-400 text-sm font-normal">({{batch.sop.name}})</span>
-                                            </h3>
-                                        </div>
-                                        <div class="mt-1.5 text-xs font-mono font-bold text-slate-600 bg-slate-100/70 p-1.5 rounded-lg border border-slate-200 w-fit max-w-full flex items-start gap-2">
-                                            <i class="fa-solid fa-vial text-slate-400 mt-0.5 shrink-0"></i>
-                                            <span class="break-words leading-tight">{{ formatSampleList(batch.samples) }}</span>
-                                        </div>
+                            <!-- Header Section -->
+                            <div class="p-4 border-b border-slate-100">
+                                <!-- Top Row: Category & Status Badges -->
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{batch.sop.category}}</span>
+                                        
+                                        @if(batch.status === 'missing_stock') {
+                                            <span class="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Thiếu hàng
+                                            </span>
+                                        }
+                                        @if(batch.name.includes('(Tách)')) {
+                                             <span class="text-[9px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-bold border border-yellow-200 animate-pulse flex items-center gap-1">
+                                                <i class="fa-solid fa-star text-[8px]"></i> Mới tách
+                                            </span>
+                                        }
                                     </div>
-                                    <div class="flex flex-col items-end gap-1 ml-2">
-                                        <button (click)="openSplitModal(batchIdx)" class="text-xs px-3 py-1.5 rounded-lg border font-bold transition flex items-center gap-1 active:scale-95 bg-slate-100 text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600 whitespace-nowrap">
-                                            <i class="fa-solid fa-gear"></i> Tùy chỉnh
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="flex gap-2">
+                                         <button (click)="openSplitModal(batchIdx)" class="text-xs px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
+                                            <i class="fa-solid fa-shuffle"></i> <span class="hidden sm:inline">Tách</span>
                                         </button>
-                                        <div class="text-lg font-black text-slate-700 mt-1">{{batch.samples.size}} <span class="text-xs font-normal text-slate-400">mẫu</span></div>
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap gap-1.5 mb-3 pl-2">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase self-center mr-1">Chỉ tiêu phủ:</span>
+
+                                <!-- Main Title & Sample Range -->
+                                <div class="mb-3">
+                                    <h3 class="text-base font-bold text-slate-800 leading-tight mb-2">
+                                        {{batch.name}} <span class="text-slate-400 font-normal text-xs">({{batch.sop.name}})</span>
+                                    </h3>
+                                    
+                                    <!-- Consolidated Sample Display -->
+                                    <div class="flex items-center gap-2 group/tooltip relative w-fit max-w-full">
+                                        <div class="bg-indigo-50 text-indigo-700 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 flex items-center gap-2 cursor-help shadow-sm truncate max-w-full">
+                                            <span class="bg-white px-1.5 rounded text-[10px] shadow-sm text-slate-500 border border-slate-100 shrink-0">{{batch.samples.size}} mẫu</span>
+                                            <span class="truncate">{{ formatSampleList(batch.samples) }}</span>
+                                        </div>
+                                        <!-- Hover Tooltip for full list -->
+                                        <div class="absolute left-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-3 rounded-xl shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition z-20 hidden group-hover/tooltip:block border border-slate-700">
+                                            <div class="font-bold border-b border-slate-600 pb-1 mb-1 text-slate-300 uppercase tracking-wider">Danh sách chi tiết</div>
+                                            <div class="font-mono leading-relaxed break-words text-slate-200">{{ getFullSampleString(batch.samples) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tags (Targets) -->
+                                <div class="flex flex-wrap gap-1">
                                     @for(t of batch.targets; track t.id) {
-                                        <span class="px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-[10px] font-bold border border-teal-100">{{t.name}}</span>
+                                        <span class="px-1.5 py-0.5 bg-slate-50 text-slate-500 rounded text-[9px] border border-slate-200 font-bold">{{t.name}}</span>
                                     }
                                 </div>
                             </div>
 
-                            <!-- PARAMETER TUNING (DYNAMIC) -->
-                            <div class="px-5 py-3 bg-slate-50 border-y border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <!-- DYNAMIC INPUTS (Excluding n_sample) -->
+                            <!-- Controls (Gray Block) -->
+                            <div class="bg-slate-50 p-3 border-b border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <!-- DYNAMIC INPUTS -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
                                     @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
                                         <div class="group">
@@ -314,15 +321,15 @@ interface SplitWizardState {
                                                 @case ('select') {
                                                     <select [ngModel]="batch.inputValues[inp.var]" 
                                                             (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
-                                                            class="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 outline-none focus:border-teal-500 cursor-pointer h-[26px]">
+                                                            class="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 outline-none focus:border-teal-500 cursor-pointer h-8 shadow-sm">
                                                         @for (opt of inp.options; track opt.value) {
                                                             <option [value]="opt.value">{{opt.label}}</option>
                                                         }
                                                     </select>
                                                 }
                                                 @case ('checkbox') {
-                                                    <div class="flex items-center h-[26px]">
-                                                        <label class="flex items-center gap-2 cursor-pointer">
+                                                    <div class="flex items-center h-8 bg-white border border-slate-200 rounded-lg px-2">
+                                                        <label class="flex items-center gap-2 cursor-pointer w-full">
                                                             <input type="checkbox" 
                                                                    [ngModel]="batch.inputValues[inp.var]" 
                                                                    (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
@@ -337,7 +344,7 @@ interface SplitWizardState {
                                                                [ngModel]="batch.inputValues[inp.var]" 
                                                                (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                                [step]="inp.step || 1"
-                                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition h-[26px]">
+                                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition h-8 shadow-sm">
                                                         @if(inp.unitLabel) {
                                                             <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold pointer-events-none">{{inp.unitLabel}}</span>
                                                         }
@@ -352,55 +359,59 @@ interface SplitWizardState {
                                     <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hao hụt (%)</label>
                                     @if(batch.safetyMargin === -1) {
                                         <div (click)="setBatchMarginManual(batchIdx)" 
-                                             class="w-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 transition shadow-sm h-[26px]">
+                                             class="w-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 transition shadow-sm h-8">
                                             <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
                                         </div>
                                     } @else {
                                         <input type="number" 
                                                [ngModel]="batch.safetyMargin" 
                                                (ngModelChange)="updateBatchMargin(batchIdx, $event)"
-                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-orange-500 transition h-[26px]">
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-orange-500 transition h-8 shadow-sm">
                                     }
                                 </div>
                             </div>
 
-                            <!-- Expandable Sample List -->
-                            <details class="group/acc border-b border-slate-100" [open]="matchesSearch(batch)">
-                                <summary class="flex justify-between items-center px-5 py-2 bg-white cursor-pointer hover:bg-slate-50 transition text-[10px] font-bold text-slate-500 list-none uppercase tracking-wide">
-                                    <span><i class="fa-solid fa-vial mr-1"></i> Danh sách mẫu ({{batch.samples.size}})</span>
-                                    <i class="fa-solid fa-chevron-down transition-transform group-open/acc:rotate-180"></i>
-                                </summary>
-                                <div class="p-3 bg-slate-50/30 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                    @for(s of batch.samples; track s) {
-                                        <div class="bg-white border border-slate-200 rounded px-2 py-1 text-[10px] font-mono font-bold text-slate-700 text-center truncate shadow-sm"
-                                             [class.bg-blue-100]="s.toLowerCase().includes(sampleSearchTerm().toLowerCase()) && sampleSearchTerm()">
-                                            {{s}}
-                                        </div>
-                                    }
-                                </div>
-                            </details>
-
-                            <!-- Resource Summary -->
-                            <div class="bg-white p-5 pt-3">
-                                <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Dự trù (Real-time)</div>
-                                <div class="space-y-1">
-                                    @for(item of batch.resourceImpact; track item.name) {
-                                        @if(!item.isComposite) {
-                                            <div class="flex justify-between text-xs border-b border-slate-50 last:border-0 pb-1">
-                                                <span class="text-slate-600 truncate max-w-[200px]" [class.text-red-600]="item.isMissing">{{item.displayName || item.name}}</span>
-                                                <span class="font-mono font-bold text-slate-700">{{formatNum(item.stockNeed)}} {{item.stockUnit}}</span>
-                                            </div>
-                                        } @else {
-                                            <div class="text-xs font-bold text-slate-700 mt-1 mb-0.5">{{item.displayName}}</div>
-                                            @for(sub of item.breakdown; track sub.name) {
-                                                <div class="flex justify-between text-xs pl-2 border-l-2 border-slate-100 mb-0.5">
-                                                    <span class="text-slate-500 truncate max-w-[200px]" [class.text-red-600]="sub.isMissing">{{sub.displayName || sub.name}}</span>
-                                                    <span class="font-mono font-bold text-slate-600">{{formatNum(sub.totalNeed)}} {{sub.stockUnit}}</span>
-                                                </div>
+                            <!-- Resource Mini-Table -->
+                            <div class="flex-1 p-0 overflow-hidden bg-white">
+                                <table class="w-full text-xs text-left border-collapse">
+                                    <thead class="bg-white text-slate-400 border-b border-slate-50">
+                                        <tr>
+                                            <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
+                                            <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        @for(item of batch.resourceImpact; track item.name) {
+                                            <!-- Parent Item -->
+                                            <tr class="hover:bg-slate-50 transition group/row">
+                                                <td class="px-5 py-2 align-middle">
+                                                    <div class="truncate max-w-[200px] font-medium text-slate-700 text-xs" [title]="item.displayName || item.name" [class.text-red-600]="item.isMissing">
+                                                        {{item.displayName || item.name}}
+                                                        @if(item.isComposite) { <span class="text-[9px] text-slate-400 italic font-normal ml-1">(Mix)</span> }
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 text-xs">
+                                                    {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.stockUnit}}</span>
+                                                </td>
+                                            </tr>
+                                            <!-- Sub Items -->
+                                            @if(item.isComposite) {
+                                                @for(sub of item.breakdown; track sub.name) {
+                                                    <tr class="bg-slate-50/30">
+                                                        <td class="px-5 py-1 pl-8 align-middle">
+                                                            <div class="truncate max-w-[180px] text-[10px] text-slate-500 flex items-center gap-1.5" [class.text-red-500]="sub.isMissing">
+                                                                <div class="w-1 h-1 rounded-full bg-slate-300"></div> {{sub.displayName || sub.name}}
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500">
+                                                            {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
+                                                        </td>
+                                                    </tr>
+                                                }
                                             }
                                         }
-                                    }
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     }
@@ -814,6 +825,10 @@ export class SmartBatchComponent {
   });
 
   // --- METHODS ---
+
+  getFullSampleString(samples: Set<string>): string {
+      return Array.from(samples).sort().join(', ');
+  }
 
   // ... Block management helpers ...
   addBlock() {
