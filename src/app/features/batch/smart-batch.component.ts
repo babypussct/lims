@@ -45,6 +45,7 @@ interface ProposedBatch {
     resourceImpact: CalculatedItem[];
     status: 'ready' | 'missing_stock' | 'processed';
     tags?: string[]; // "Stock OK", "High Coverage"
+    isExpanded?: boolean; // UX State: Accordion toggle
 }
 
 // Wizard State for Split Modal
@@ -256,7 +257,7 @@ interface SplitWizardState {
                              [class.opacity-40]="sampleSearchTerm() && !matchesSearch(batch)">
 
                             <!-- Header Section -->
-                            <div class="p-4 border-b border-slate-100">
+                            <div class="p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition" (click)="toggleBatchDetails(batchIdx)">
                                 <!-- Top Row: Category & Status Badges -->
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
@@ -276,8 +277,11 @@ interface SplitWizardState {
                                     
                                     <!-- Action Buttons -->
                                     <div class="flex gap-2">
-                                         <button (click)="openSplitModal(batchIdx)" class="text-xs px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
+                                         <button (click)="openSplitModal(batchIdx); $event.stopPropagation()" class="text-xs px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
                                             <i class="fa-solid fa-shuffle"></i> <span class="hidden sm:inline">Tách</span>
+                                        </button>
+                                        <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 transition" title="Mở rộng / Thu gọn">
+                                            <i class="fa-solid fa-chevron-down transition-transform duration-300" [class.rotate-180]="batch.isExpanded"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -289,7 +293,7 @@ interface SplitWizardState {
                                     </h3>
                                     
                                     <!-- Consolidated Sample Display -->
-                                    <div class="flex items-center gap-2 group/tooltip relative w-fit max-w-full">
+                                    <div class="flex items-center gap-2 group/tooltip relative w-fit max-w-full" (click)="$event.stopPropagation()">
                                         <div class="bg-indigo-50 text-indigo-700 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 flex items-center gap-2 cursor-help shadow-sm truncate max-w-full">
                                             <span class="bg-white px-1.5 rounded text-[10px] shadow-sm text-slate-500 border border-slate-100 shrink-0">{{batch.samples.size}} mẫu</span>
                                             <span class="truncate">{{ formatSampleList(batch.samples) }}</span>
@@ -310,7 +314,7 @@ interface SplitWizardState {
                                 </div>
                             </div>
 
-                            <!-- Controls (Gray Block) -->
+                            <!-- Controls (Gray Block - Always Visible) -->
                             <div class="bg-slate-50 p-3 border-b border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <!-- DYNAMIC INPUTS -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
@@ -371,48 +375,69 @@ interface SplitWizardState {
                                 </div>
                             </div>
 
-                            <!-- Resource Mini-Table -->
-                            <div class="flex-1 p-0 overflow-hidden bg-white">
-                                <table class="w-full text-xs text-left border-collapse">
-                                    <thead class="bg-white text-slate-400 border-b border-slate-50">
-                                        <tr>
-                                            <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
-                                            <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-50">
-                                        @for(item of batch.resourceImpact; track item.name) {
-                                            <!-- Parent Item -->
-                                            <tr class="hover:bg-slate-50 transition group/row">
-                                                <td class="px-5 py-2 align-middle">
-                                                    <div class="truncate max-w-[200px] font-medium text-slate-700 text-xs" [title]="item.displayName || item.name" [class.text-red-600]="item.isMissing">
-                                                        {{item.displayName || item.name}}
-                                                        @if(item.isComposite) { <span class="text-[9px] text-slate-400 italic font-normal ml-1">(Mix)</span> }
-                                                    </div>
-                                                </td>
-                                                <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 text-xs">
-                                                    {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.stockUnit}}</span>
-                                                </td>
+                            <!-- Resource Table (ACCORDION) -->
+                            @if (batch.isExpanded) {
+                                <div class="w-full bg-white animate-slide-down">
+                                    <table class="w-full text-xs text-left border-collapse">
+                                        <thead class="bg-white text-slate-400 border-b border-slate-50">
+                                            <tr>
+                                                <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
+                                                <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
                                             </tr>
-                                            <!-- Sub Items -->
-                                            @if(item.isComposite) {
-                                                @for(sub of item.breakdown; track sub.name) {
-                                                    <tr class="bg-slate-50/30">
-                                                        <td class="px-5 py-1 pl-8 align-middle">
-                                                            <div class="truncate max-w-[180px] text-[10px] text-slate-500 flex items-center gap-1.5" [class.text-red-500]="sub.isMissing">
-                                                                <div class="w-1 h-1 rounded-full bg-slate-300"></div> {{sub.displayName || sub.name}}
-                                                            </div>
-                                                        </td>
-                                                        <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500">
-                                                            {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
-                                                        </td>
-                                                    </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-50">
+                                            @for(item of batch.resourceImpact; track item.name) {
+                                                <!-- Parent Item -->
+                                                <tr class="hover:bg-slate-50 transition group/row">
+                                                    <td class="px-5 py-2 align-middle">
+                                                        <div class="truncate max-w-[200px] font-medium text-slate-700 text-xs" [title]="item.displayName || item.name" [class.text-red-600]="item.isMissing">
+                                                            {{item.displayName || item.name}}
+                                                            @if(item.isComposite) { <span class="text-[9px] text-slate-400 italic font-normal ml-1">(Mix)</span> }
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 text-xs">
+                                                        {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.stockUnit}}</span>
+                                                    </td>
+                                                </tr>
+                                                <!-- Sub Items -->
+                                                @if(item.isComposite) {
+                                                    @for(sub of item.breakdown; track sub.name) {
+                                                        <tr class="bg-slate-50/30">
+                                                            <td class="px-5 py-1 pl-8 align-middle">
+                                                                <div class="truncate max-w-[180px] text-[10px] text-slate-500 flex items-center gap-1.5" [class.text-red-500]="sub.isMissing">
+                                                                    <div class="w-1 h-1 rounded-full bg-slate-300"></div> {{sub.displayName || sub.name}}
+                                                                </div>
+                                                            </td>
+                                                            <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500">
+                                                                {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
+                                                            </td>
+                                                        </tr>
+                                                    }
                                                 }
                                             }
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            } @else {
+                                <!-- SUMMARY VIEW (When collapsed) -->
+                                <div class="px-4 py-2 bg-white flex items-center justify-between text-xs cursor-pointer hover:bg-slate-50 transition" (click)="toggleBatchDetails(batchIdx)">
+                                    @let missingCount = getMissingCount(batch);
+                                    @let totalItems = countTotalItems(batch);
+                                    
+                                    @if(missingCount > 0) {
+                                        <div class="text-red-600 font-bold flex items-center gap-2">
+                                            <i class="fa-solid fa-circle-xmark"></i> Thiếu {{missingCount}} hóa chất
+                                        </div>
+                                    } @else {
+                                        <div class="text-emerald-600 font-bold flex items-center gap-2">
+                                            <i class="fa-solid fa-circle-check"></i> Đủ {{totalItems}}/{{totalItems}} hóa chất
+                                        </div>
+                                    }
+                                    <div class="text-slate-400 text-[10px] font-medium flex items-center gap-1">
+                                        Xem chi tiết <i class="fa-solid fa-angle-down"></i>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -1013,7 +1038,8 @@ export class SmartBatchComponent {
                   safetyMargin: -1, // Auto
                   resourceImpact: needs,
                   status: 'ready',
-                  tags: ['Auto-Optimized']
+                  tags: ['Auto-Optimized'],
+                  isExpanded: false // Collapsed by default
               });
 
               // Mark tasks as covered
@@ -1076,6 +1102,36 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
   }
 
+  toggleBatchDetails(index: number) {
+      this.batches.update(current => {
+          const next = [...current];
+          next[index] = { ...next[index], isExpanded: !next[index].isExpanded };
+          return next;
+      });
+  }
+
+  // Helpers for summary view
+  getMissingCount(batch: ProposedBatch): number {
+      let count = 0;
+      batch.resourceImpact.forEach(item => {
+          if (item.isComposite) {
+              item.breakdown.forEach(sub => { if (sub.isMissing) count++; });
+          } else {
+              if (item.isMissing) count++;
+          }
+      });
+      return count;
+  }
+
+  countTotalItems(batch: ProposedBatch): number {
+      let count = 0;
+      batch.resourceImpact.forEach(item => {
+          if (item.isComposite) count += item.breakdown.length;
+          else count++;
+      });
+      return count;
+  }
+
   private validateGlobalStock() {
       const ledger: Record<string, number> = {};
       Object.entries(this.inventoryCache).forEach(([k, v]) => ledger[k] = v.stock);
@@ -1097,7 +1153,12 @@ export class SmartBatchComponent {
                       if (ledger[item.name] !== undefined) ledger[item.name] -= item.stockNeed;
                   }
               });
-              return { ...batch, status: isMissing ? 'missing_stock' : 'ready' };
+              
+              // Auto-expand if critical error, otherwise respect user choice or default
+              const newStatus = isMissing ? 'missing_stock' : 'ready';
+              const shouldExpand = isMissing ? true : (batch.isExpanded || false);
+
+              return { ...batch, status: newStatus, isExpanded: shouldExpand };
           });
       });
   }
@@ -1206,7 +1267,8 @@ export class SmartBatchComponent {
           inputValues: newInputs,
           safetyMargin: sourceBatch.safetyMargin,
           resourceImpact: newNeeds,
-          status: 'ready'
+          status: 'ready',
+          isExpanded: false
       };
 
       // 2. Update Source Batch (Remove moved samples)
