@@ -77,7 +77,7 @@ declare var QRious: any;
                         </div>
                         <div class="absolute -left-12 bottom-10 bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg text-white text-[10px] font-bold shadow-lg flex items-center gap-2 animate-float-delayed">
                             <i class="fa-solid fa-bolt text-amber-400"></i>
-                            <span>Otada System</span>
+                            <span>Secure System</span>
                         </div>
                         <div class="absolute -right-8 bottom-[-20px] bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg text-white text-[10px] font-bold shadow-lg flex items-center gap-2 animate-float">
                             <i class="fa-solid fa-lock text-rose-400"></i>
@@ -103,13 +103,6 @@ declare var QRious: any;
                     
                     <p class="text-slate-400 text-sm font-medium tracking-wide">
                         Kho hóa chất &bull; Quy trình SOP &bull; Truy xuất nguồn gốc
-                    </p>
-                </div>
-
-                <!-- Footer Brand -->
-                <div class="mt-16 opacity-60 hover:opacity-100 transition-opacity">
-                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                        Designed & Developed by OTADA
                     </p>
                 </div>
 
@@ -254,7 +247,7 @@ declare var QRious: any;
             </div>
             
             <div class="p-6 text-center text-[10px] text-slate-400 border-t border-slate-50">
-                &copy; {{year}} Otada Technology. All rights reserved.<br>
+                &copy; {{year}} Laboratory Information Management System. All rights reserved.<br>
                 <span class="font-medium text-slate-500">LIMS Cloud Pro v1.0</span>
             </div>
         </div>

@@ -1,11 +1,9 @@
-
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { RouterOutlet, Router } from '@angular/router';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
-import { BottomNavComponent } from './core/layout/bottom-nav.component'; // New Import
+import { BottomNavComponent } from './core/layout/bottom-nav.component';
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
 import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component';
 import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; 
@@ -23,7 +21,7 @@ import { PrintService } from './core/services/print.service';
     CommonModule,
     RouterOutlet,
     SidebarComponent,
-    BottomNavComponent, // Include in imports
+    BottomNavComponent,
     ConfirmationModalComponent,
     PrintPreviewModalComponent,
     GlobalScannerComponent, 
@@ -134,12 +132,6 @@ import { PrintService } from './core/services/print.service';
                         [class.md:p-6]="!state.focusMode()"
                         [class.p-0]="state.focusMode()">
                        <div class="flex-1 h-full"><router-outlet></router-outlet></div>
-                       
-                       @if (!state.focusMode()) {
-                           <footer class="hidden md:block mt-6 pt-4 pb-2 text-center shrink-0 opacity-60 hover:opacity-100 transition-opacity">
-                               <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-default select-none">© Otada. Sử dụng nội bộ phòng GC</p>
-                           </footer>
-                       }
                    </div>
                 </main>
 
@@ -155,38 +147,33 @@ import { PrintService } from './core/services/print.service';
   `
 })
 export class AppComponent {
-  state = inject(StateService);
   auth = inject(AuthService);
+  state = inject(StateService);
   toast = inject(ToastService);
   printService = inject(PrintService);
-  router: Router = inject(Router);
-  pageTitle = signal('Dashboard');
-  
-  isPrintMode = signal(window.location.hash.includes('print-job'));
+  router = inject(Router);
 
-  constructor() {
-    this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => { 
-        this.updatePageHeader();
-        const isInPrintJob = this.router.url.includes('print-job') || window.location.hash.includes('print-job');
-        this.isPrintMode.set(isInPrintJob);
-        this.state.focusMode.set(false);
-    });
-    this.updatePageHeader();
-  }
-
-  private updatePageHeader() {
+  isPrintMode = computed(() => {
+    // Basic logic to determine if we should hide layout for specific routes
     const url = this.router.url;
-    if (url.includes('/dashboard')) this.pageTitle.set('Dashboard');
-    else if (url.includes('/calculator')) this.pageTitle.set('Chạy Quy trình');
-    else if (url.includes('/inventory')) this.pageTitle.set('Kho Hóa chất');
-    else if (url.includes('/standards')) this.pageTitle.set('Chuẩn Đối chiếu');
-    else if (url.includes('/recipes')) this.pageTitle.set('Thư viện Công thức');
-    else if (url.includes('/requests')) this.pageTitle.set('Quản lý Yêu cầu');
-    else if (url.includes('/stats')) this.pageTitle.set('Báo cáo & Thống kê');
-    else if (url.includes('/printing')) this.pageTitle.set('In Phiếu Dự trù');
-    else if (url.includes('/labels')) this.pageTitle.set('In Tem Nhãn');
-    else if (url.includes('/editor')) this.pageTitle.set('Soạn thảo SOP');
-    else if (url.includes('/config')) this.pageTitle.set('Cấu hình Hệ thống');
-    else this.pageTitle.set('LIMS Cloud');
-  }
+    return url.includes('/mobile-login') || url.includes('/labels');
+  });
+
+  pageTitle = computed(() => {
+    const url = this.router.url.split('/')[1]?.split('?')[0] || 'dashboard';
+    const titles: Record<string, string> = {
+        'dashboard': 'Trang chủ',
+        'inventory': 'Kho Hóa chất',
+        'calculator': 'Vận hành SOP',
+        'requests': 'Quản lý Yêu cầu',
+        'stats': 'Báo cáo',
+        'config': 'Cấu hình',
+        'standards': 'Chuẩn đối chiếu',
+        'recipes': 'Thư viện Công thức',
+        'prep': 'Trạm Pha Chế',
+        'smart-batch': 'Chạy Mẻ Smart',
+        'traceability': 'Truy xuất nguồn gốc'
+    };
+    return titles[url] || 'LIMS Cloud';
+  });
 }
