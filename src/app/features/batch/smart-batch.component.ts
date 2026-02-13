@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -35,17 +36,18 @@ interface AnalysisTask {
 
 interface ProposedBatch {
     id: string; 
-    name: string; // Display Name (e.g., "SOP A - Batch 1")
+    name: string; 
     sop: Sop;
-    targets: SopTarget[]; // The specific targets this batch covers
+    targets: SopTarget[]; 
     samples: Set<string>; 
     sampleCount: number;
+    tasks: AnalysisTask[]; // TRACKING TASKS (Task-Based Logic)
     inputValues: Record<string, any>; 
     safetyMargin: number;
     resourceImpact: CalculatedItem[];
     status: 'ready' | 'missing_stock' | 'processed';
-    tags?: string[]; // "Stock OK", "High Coverage"
-    isExpanded?: boolean; // UX State: Accordion toggle
+    tags?: string[]; 
+    isExpanded?: boolean; 
 }
 
 // Wizard State for Split Modal
@@ -383,6 +385,7 @@ interface SplitWizardState {
                                             <tr>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
+                                                <th class="px-5 py-2 w-20"></th> <!-- Action Column -->
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-50">
@@ -398,6 +401,13 @@ interface SplitWizardState {
                                                     <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 text-xs">
                                                         {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.stockUnit}}</span>
                                                     </td>
+                                                    <td class="px-5 py-2 text-right">
+                                                        @if(item.isMissing && !item.isComposite) {
+                                                            <button (click)="openQuickImport(item)" class="text-[9px] bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-bold border border-red-100 flex items-center gap-1 transition ml-auto">
+                                                                <i class="fa-solid fa-bolt"></i> Bù kho
+                                                            </button>
+                                                        }
+                                                    </td>
                                                 </tr>
                                                 <!-- Sub Items -->
                                                 @if(item.isComposite) {
@@ -410,6 +420,13 @@ interface SplitWizardState {
                                                             </td>
                                                             <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500">
                                                                 {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
+                                                            </td>
+                                                            <td class="px-5 py-1 text-right">
+                                                                @if(sub.isMissing) {
+                                                                    <button (click)="openQuickImport(sub)" class="text-[9px] bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-bold border border-red-100 flex items-center gap-1 transition ml-auto">
+                                                                        <i class="fa-solid fa-bolt"></i> Bù
+                                                                    </button>
+                                                                }
                                                             </td>
                                                         </tr>
                                                     }
@@ -453,13 +470,18 @@ interface SplitWizardState {
                             <div class="overflow-hidden rounded-xl border border-red-100">
                                 <table class="w-full text-xs text-left">
                                     <thead class="bg-red-100/50 text-red-800 uppercase font-bold">
-                                        <tr><th class="px-3 py-2">Hóa chất</th><th class="px-3 py-2 text-right">Thiếu hụt</th></tr>
+                                        <tr><th class="px-3 py-2">Hóa chất</th><th class="px-3 py-2 text-right">Thiếu hụt</th><th class="px-2 w-10"></th></tr>
                                     </thead>
                                     <tbody class="bg-white divide-y divide-red-50">
                                         @for (item of missingStockSummary(); track item.name) {
                                             <tr>
                                                 <td class="px-3 py-2 font-medium text-slate-700 truncate max-w-[120px]">{{item.name}}</td>
                                                 <td class="px-3 py-2 text-right font-bold text-red-600 font-mono">-{{formatNum(item.missing)}} {{item.unit}}</td>
+                                                <td class="px-2 py-1 text-center">
+                                                    <button (click)="openQuickImport(item)" class="text-red-500 hover:bg-red-50 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập nhanh">
+                                                        <i class="fa-solid fa-plus-circle"></i>
+                                                    </button>
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>
@@ -607,7 +629,7 @@ interface SplitWizardState {
                                 <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 mb-2">
                                     <i class="fa-solid fa-circle-info mr-1"></i>
                                     Các mẫu đã chọn ({{splitState().selectedSamples.size}}) sẽ được chuyển sang mẻ mới để làm các chỉ tiêu này.
-                                    Các chỉ tiêu <b>không chọn</b> sẽ ở lại mẻ cũ (nếu mẻ cũ còn tồn tại).
+                                    Hệ thống đã tự động chọn các chỉ tiêu liên quan.
                                 </div>
                                 <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-2">
                                     @for(t of splitState().availableTargets; track t.id) {
@@ -688,6 +710,50 @@ interface SplitWizardState {
                 </div>
             </div>
         }
+
+        <!-- QUICK IMPORT MODAL -->
+        @if (showQuickImport()) {
+            <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-bounce-in">
+                    <div class="p-5 border-b border-slate-100 flex justify-between items-start">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-yellow-500"></i> Nhập Kho Nhanh
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1">Bù hàng cho mẻ phân tích</p>
+                        </div>
+                        <button (click)="showQuickImport.set(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    
+                    <div class="p-5 space-y-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div class="text-xs font-bold text-slate-500 uppercase mb-1">Hóa chất</div>
+                            <div class="font-bold text-slate-800 text-sm truncate">{{quickImportState().name}}</div>
+                            <div class="flex justify-between mt-2 pt-2 border-t border-slate-200">
+                                <div class="text-[10px]">Tồn: <b class="text-slate-700">{{formatNum(quickImportState().currentStock)}}</b></div>
+                                <div class="text-[10px]">Thiếu: <b class="text-red-600">-{{formatNum(quickImportState().missingAmount)}}</b></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Số lượng thực nhập</label>
+                            <div class="relative">
+                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-xl text-lg font-bold text-emerald-600 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition" placeholder="0" autofocus>
+                                <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400">{{quickImportState().unit}}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1 italic">* Nhập trực tiếp theo đơn vị gốc ({{quickImportState().unit}})</p>
+                        </div>
+                    </div>
+
+                    <div class="p-5 border-t border-slate-100 flex gap-3">
+                        <button (click)="showQuickImport.set(false)" class="flex-1 py-3 text-slate-500 font-bold text-xs bg-slate-100 hover:bg-slate-200 rounded-xl transition">Hủy</button>
+                        <button (click)="submitQuickImport()" [disabled]="quickImportInput <= 0 || isProcessing()" class="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                            Xác nhận Nhập
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
   `
 })
@@ -733,6 +799,13 @@ export class SmartBatchComponent {
   availableGroups = signal<TargetGroup[]>([]);
   currentBlockIndexForGroupImport = signal<number>(-1);
 
+  // --- QUICK IMPORT STATE ---
+  showQuickImport = signal(false);
+  quickImportState = signal<{id: string, name: string, unit: string, currentStock: number, missingAmount: number}>({
+      id: '', name: '', unit: '', currentStock: 0, missingAmount: 0
+  });
+  quickImportInput = 0;
+
   // --- COMPUTED: GENERAL ---
   allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.id && t.name) { targets.set(t.id, { id: t.id, name: t.name, uniqueKey: t.id }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
   
@@ -753,13 +826,13 @@ export class SmartBatchComponent {
                       const current = ledger[sub.name] || 0; 
                       const remaining = current - sub.totalNeed; 
                       ledger[sub.name] = remaining; 
-                      if (!summary.has(sub.name)) { summary.set(sub.name, { name: sub.displayName || sub.name, unit: sub.stockUnit, missing: 0, currentStock: current }); } 
+                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, missing: 0, currentStock: current }); } 
                   } 
               } else { 
                   const current = ledger[item.name] || 0; 
                   const remaining = current - item.stockNeed; 
                   ledger[item.name] = remaining; 
-                  if (!summary.has(item.name)) { summary.set(item.name, { name: item.displayName || item.name, unit: item.stockUnit, missing: 0, currentStock: current }); } 
+                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, missing: 0, currentStock: current }); } 
               } 
           } 
       } 
@@ -792,17 +865,30 @@ export class SmartBatchComponent {
       let dupCount = 0;
 
       this.batches().forEach(batch => {
-          const targetIds = batch.targets.map(t => t.id);
-          batch.samples.forEach(s => {
-              targetIds.forEach(tId => {
-                  const key = `${s}|${tId}`;
+          // Use tasks directly if available (Task-Based)
+          if (batch.tasks && batch.tasks.length > 0) {
+              batch.tasks.forEach(t => {
+                  const key = `${t.sample}|${t.targetId}`;
                   if (coveredTasks.has(key)) {
                       duplicateTasks.add(key);
                       dupCount++;
                   }
                   coveredTasks.add(key);
               });
-          });
+          } else {
+              // Fallback for legacy structure (should not happen with new logic)
+              const targetIds = batch.targets.map(t => t.id);
+              batch.samples.forEach(s => {
+                  targetIds.forEach(tId => {
+                      const key = `${s}|${tId}`;
+                      if (coveredTasks.has(key)) {
+                          duplicateTasks.add(key);
+                          dupCount++;
+                      }
+                      coveredTasks.add(key);
+                  });
+              });
+          }
       });
 
       // 3. Diff
@@ -1034,6 +1120,7 @@ export class SmartBatchComponent {
                   targets: batchTargets,
                   samples: batchSamples,
                   sampleCount: batchSamples.size,
+                  tasks: bestFit.coverableTasks, // Save granular task info for future splits
                   inputValues: inputs,
                   safetyMargin: -1, // Auto
                   resourceImpact: needs,
@@ -1140,25 +1227,36 @@ export class SmartBatchComponent {
           return current.map(batch => {
               const needs = batch.resourceImpact;
               let isMissing = false;
-              needs.forEach(item => {
-                  if (item.isComposite) {
-                      item.breakdown.forEach(sub => {
+              
+              // We need to map over needs and update isMissing flags on a deep copy or in place if mutable
+              // Since signals update is immutable, we map and return new structure if changes
+              const updatedNeeds = needs.map(item => {
+                  let newItem = { ...item };
+                  
+                  if (newItem.isComposite) {
+                      const newBreakdown = newItem.breakdown.map(sub => {
                           const available = ledger[sub.name] || 0;
-                          if (available < sub.totalNeed) isMissing = true;
+                          const subMissing = available < sub.totalNeed;
+                          if (subMissing) isMissing = true;
                           if (ledger[sub.name] !== undefined) ledger[sub.name] -= sub.totalNeed;
+                          return { ...sub, isMissing: subMissing };
                       });
+                      newItem.breakdown = newBreakdown;
                   } else {
-                      const available = ledger[item.name] || 0;
-                      if (available < item.stockNeed) isMissing = true;
-                      if (ledger[item.name] !== undefined) ledger[item.name] -= item.stockNeed;
+                      const available = ledger[newItem.name] || 0;
+                      const itemMissing = available < newItem.stockNeed;
+                      if (itemMissing) isMissing = true;
+                      if (ledger[newItem.name] !== undefined) ledger[newItem.name] -= newItem.stockNeed;
+                      newItem.isMissing = itemMissing;
                   }
+                  return newItem;
               });
               
               // Auto-expand if critical error, otherwise respect user choice or default
               const newStatus = isMissing ? 'missing_stock' : 'ready';
               const shouldExpand = isMissing ? true : (batch.isExpanded || false);
 
-              return { ...batch, status: newStatus, isExpanded: shouldExpand };
+              return { ...batch, resourceImpact: updatedNeeds, status: newStatus, isExpanded: shouldExpand };
           });
       });
   }
@@ -1220,7 +1318,26 @@ export class SmartBatchComponent {
   // Navigation
   nextSplitStep() {
       this.splitState.update(s => {
-          if (s.step === 1 && s.selectedSamples.size === 0) return s; // Guard
+          if (s.step === 1) {
+              if (s.selectedSamples.size === 0) return s; 
+              
+              // STICKY TARGET LOGIC: Pre-select targets relevant to the selected samples
+              const sourceBatch = this.batches()[s.sourceBatchIndex];
+              const relevantTargets = new Set<string>();
+              
+              if (sourceBatch.tasks) {
+                  sourceBatch.tasks.forEach(t => {
+                      if (s.selectedSamples.has(t.sample)) {
+                          relevantTargets.add(t.targetId);
+                      }
+                  });
+              } else {
+                  // Fallback for batches without tasks (legacy)
+                  s.availableTargets.forEach(t => relevantTargets.add(t.id));
+              }
+              
+              return { ...s, step: 2, selectedTargets: relevantTargets };
+          }
           if (s.step === 2 && s.selectedTargets.size === 0) return s; // Guard
           return { ...s, step: (s.step + 1) as any };
       });
@@ -1230,6 +1347,32 @@ export class SmartBatchComponent {
           if (s.step === 1) return s;
           return { ...s, step: (s.step - 1) as any };
       });
+  }
+
+  // Helper to re-generate batch metadata from a list of tasks
+  private recalculateBatchMetadata(tasks: AnalysisTask[], sop: Sop, originalBatch: ProposedBatch): Partial<ProposedBatch> {
+      const uniqueSamples = new Set(tasks.map(t => t.sample));
+      const uniqueTargetIds = new Set(tasks.map(t => t.targetId));
+      const batchTargets = (sop.targets || []).filter(t => uniqueTargetIds.has(t.id));
+      
+      const newInputs = { ...originalBatch.inputValues };
+      // Try to reset n_sample based on new size, but keep other manual inputs
+      newInputs['n_sample'] = uniqueSamples.size;
+
+      // Recalculate resource impact using calculator service
+      // Note: We need inventory/recipe cache which should be available
+      const needs = this.calculator.calculateSopNeeds(
+          sop, newInputs, originalBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+      );
+
+      return {
+          samples: uniqueSamples,
+          sampleCount: uniqueSamples.size,
+          targets: batchTargets,
+          tasks: tasks,
+          inputValues: newInputs,
+          resourceImpact: needs
+      };
   }
 
   // Execute
@@ -1242,18 +1385,47 @@ export class SmartBatchComponent {
       
       if (!targetSop) return;
 
-      // 1. Create New Batch
-      const newSamples = state.selectedSamples;
-      const newTargetIds = state.selectedTargets;
-      const newTargets = (targetSop.targets || []).filter(t => newTargetIds.has(t.id));
+      // 1. Identify TASKS to Move (Intersection of Selected Samples & Selected Targets)
+      // Logic: Move specific AnalysisTasks. If Sample L01 is selected, and Target A is selected, move (L01, A).
+      // Keep (L01, B) in old batch if B wasn't selected.
+      
+      let tasksToMove: AnalysisTask[] = [];
+      let tasksToKeep: AnalysisTask[] = [];
 
+      if (sourceBatch.tasks) {
+          sourceBatch.tasks.forEach(t => {
+              if (state.selectedSamples.has(t.sample) && state.selectedTargets.has(t.targetId)) {
+                  tasksToMove.push(t);
+              } else {
+                  tasksToKeep.push(t);
+              }
+          });
+      } else {
+          // Fallback: Artificial task creation if source lacks them
+          state.selectedSamples.forEach(s => {
+              state.selectedTargets.forEach(tid => {
+                  const tName = state.availableTargets.find(t => t.id === tid)?.name || tid;
+                  tasksToMove.push({ sample: s, targetId: tid, targetName: tName, covered: true });
+              });
+          });
+          // For legacy, we just clear the source if all samples moved, hard to reconstruct exact 'keep' without original tasks
+          // Assuming source is valid Task-Based from now on.
+      }
+
+      if (tasksToMove.length === 0) return;
+
+      // 2. Create New Batch
+      // Metadata calculation for new batch
+      const uniqueSamplesNew = new Set(tasksToMove.map(t => t.sample));
+      const uniqueTargetIdsNew = new Set(tasksToMove.map(t => t.targetId));
+      const newBatchTargets = (targetSop.targets || []).filter(t => uniqueTargetIdsNew.has(t.id));
+      
       const newInputs: Record<string, any> = {};
       targetSop.inputs.forEach(i => newInputs[i.var] = i.default);
-      // Try to inherit non-default inputs if vars match
       Object.keys(newInputs).forEach(k => {
           if (sourceBatch.inputValues[k] !== undefined) newInputs[k] = sourceBatch.inputValues[k];
       });
-      newInputs['n_sample'] = newSamples.size;
+      newInputs['n_sample'] = uniqueSamplesNew.size;
 
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
 
@@ -1261,9 +1433,10 @@ export class SmartBatchComponent {
           id: `batch_split_${Date.now()}_${Math.floor(Math.random()*1000)}`,
           name: targetSop.name + ' (Tách)',
           sop: targetSop,
-          targets: newTargets,
-          samples: newSamples,
-          sampleCount: newSamples.size,
+          targets: newBatchTargets,
+          samples: uniqueSamplesNew,
+          sampleCount: uniqueSamplesNew.size,
+          tasks: tasksToMove,
           inputValues: newInputs,
           safetyMargin: sourceBatch.safetyMargin,
           resourceImpact: newNeeds,
@@ -1271,26 +1444,21 @@ export class SmartBatchComponent {
           isExpanded: false
       };
 
-      // 2. Update Source Batch (Remove moved samples)
-      // Logic: Samples are moved completely.
-      const remainingSamples = new Set(Array.from(sourceBatch.samples).filter(s => !newSamples.has(s)));
-
+      // 3. Update Source Batch
       this.batches.update(current => {
           const next = [...current];
-          if (remainingSamples.size === 0) {
-              // Source is empty, delete it
+          
+          if (tasksToKeep.length === 0) {
+              // Source completely drained
               next.splice(state.sourceBatchIndex, 1);
           } else {
-              // Update source
-              const updatedSource = {
+              // Recalculate source based on remaining tasks
+              const updatedMeta = this.recalculateBatchMetadata(tasksToKeep, sourceBatch.sop, sourceBatch);
+              
+              next[state.sourceBatchIndex] = {
                   ...sourceBatch,
-                  samples: remainingSamples,
-                  sampleCount: remainingSamples.size,
-                  // Targets remain the same for remaining samples
+                  ...updatedMeta
               };
-              updatedSource.inputValues = { ...updatedSource.inputValues, n_sample: remainingSamples.size };
-              updatedSource.resourceImpact = this.calculator.calculateSopNeeds(updatedSource.sop, updatedSource.inputValues, updatedSource.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
-              next[state.sourceBatchIndex] = updatedSource;
           }
           next.push(newBatch);
           return next;
@@ -1299,6 +1467,106 @@ export class SmartBatchComponent {
       this.validateGlobalStock();
       this.showSplitModal.set(false);
       this.toast.show('Đã tách mẻ thành công.', 'success');
+  }
+
+  // --- QUICK IMPORT LOGIC ---
+  async openQuickImport(item: CalculatedItem | any) {
+      if (!this.auth.canEditInventory()) {
+          this.toast.show('Bạn không có quyền sửa kho.', 'error');
+          return;
+      }
+      
+      this.isProcessing.set(true);
+      try {
+          // FIX: Determine correct Inventory ID
+          // Summary Item: id=InventoryID, name=DisplayName
+          // CalculatedItem: name=InventoryID, displayName=DisplayName
+          // We use the ID if available, otherwise name.
+          const targetId = item.id || item.name;
+
+          // FETCH FRESH DATA directly from Firestore to ensure accuracy
+          const freshItems = await this.invService.getItemsByIds([targetId]);
+          const freshStock = freshItems.length > 0 ? freshItems[0].stock : 0;
+          
+          // Update the local cache with this fresh value immediately
+          if (freshItems.length > 0) {
+              this.inventoryCache[targetId] = freshItems[0];
+          }
+
+          // Calculate missing based on FRESH stock
+          // If item comes from summary (has .missing), we can try to use it as a hint, 
+          // or re-calculate total need.
+          let missingAmount = 0;
+          
+          if (item.missing !== undefined) {
+              // Re-calculate Total Need for this specific Item across all batches to be accurate against fresh stock
+              let totalNeed = 0;
+              for (const b of this.batches()) {
+                  b.resourceImpact.forEach(ri => {
+                      if (ri.isComposite) {
+                          ri.breakdown.forEach(sub => { if(sub.name === targetId) totalNeed += sub.totalNeed; });
+                      } else {
+                          if (ri.name === targetId) totalNeed += ri.stockNeed;
+                      }
+                  });
+              }
+              missingAmount = Math.max(0, totalNeed - freshStock);
+          } else {
+              // Single item context
+              const needed = item.totalNeed || item.stockNeed || 0;
+              missingAmount = Math.max(0, needed - freshStock);
+          }
+
+          this.quickImportState.set({
+              id: targetId,
+              name: item.displayName || item.name, // Display Name
+              unit: item.stockUnit || item.unit,
+              currentStock: freshStock,
+              missingAmount: missingAmount
+          });
+          this.quickImportInput = 0;
+          this.showQuickImport.set(true);
+      } catch (e: any) {
+          this.toast.show('Lỗi tải dữ liệu kho: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
+  async submitQuickImport() {
+      if (this.isProcessing()) return;
+      const state = this.quickImportState();
+      const amount = this.quickImportInput;
+      
+      if (amount <= 0) return;
+
+      this.isProcessing.set(true);
+      try {
+          // Use Base Unit directly as per requirement
+          await this.invService.updateStock(state.id, state.currentStock, amount, 'Bù hàng (Smart Batch)');
+          
+          // Update Local Cache to reflect new stock immediately
+          const newItem = { ...this.inventoryCache[state.id] };
+          if (!newItem.id) {
+              // Handle case where item didn't exist in cache (phantom item) - Reload
+              const freshItem = (await this.invService.getItemsByIds([state.id]))[0];
+              if (freshItem) this.inventoryCache[state.id] = freshItem;
+          } else {
+              newItem.stock += amount;
+              this.inventoryCache[state.id] = newItem;
+          }
+
+          this.toast.show(`Đã nhập +${formatNum(amount)} ${state.unit}`, 'success');
+          this.showQuickImport.set(false);
+          
+          // Re-validate Batches
+          this.validateGlobalStock();
+
+      } catch (e: any) {
+          this.toast.show('Lỗi nhập kho: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   // --- Auto-Fix Logic (Simple Re-run) ---

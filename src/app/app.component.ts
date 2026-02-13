@@ -1,6 +1,7 @@
-import { Component, inject, computed, effect } from '@angular/core';
+
+import { Component, inject, computed, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
 import { BottomNavComponent } from './core/layout/bottom-nav.component';
@@ -153,14 +154,28 @@ export class AppComponent {
   printService = inject(PrintService);
   router = inject(Router);
 
+  // Reactive URL signal for computed dependencies
+  currentUrl = signal<string>('');
+
+  constructor() {
+    // Initialize currentUrl
+    this.currentUrl.set(this.router.url);
+
+    // Listen to router events to update signal
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.currentUrl.set(this.router.url);
+      }
+    });
+  }
+
   isPrintMode = computed(() => {
-    // Basic logic to determine if we should hide layout for specific routes
-    const url = this.router.url;
+    const url = this.currentUrl();
     return url.includes('/mobile-login') || url.includes('/labels');
   });
 
   pageTitle = computed(() => {
-    const url = this.router.url.split('/')[1]?.split('?')[0] || 'dashboard';
+    const url = this.currentUrl().split('/')[1]?.split('?')[0] || 'dashboard';
     const titles: Record<string, string> = {
         'dashboard': 'Trang chủ',
         'inventory': 'Kho Hóa chất',
