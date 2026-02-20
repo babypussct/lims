@@ -3,25 +3,26 @@ import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
+import { BatchService } from '../../core/services/batch.service';
 
 type PrintMode = 'brother' | 'sheet_a5' | 'sheet_a4';
 
 interface LabelCell {
-  subLabels: string[];
-  isEmpty: boolean;
-  index: number;
+    subLabels: string[];
+    isEmpty: boolean;
+    index: number;
 }
 
 interface LabelPage {
-  cells: LabelCell[];
-  pageIndex: number;
+    cells: LabelCell[];
+    pageIndex: number;
 }
 
 @Component({
-  selector: 'app-label-print',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-label-print',
+    standalone: true,
+    imports: [CommonModule, FormsModule],
+    template: `
     <div class="h-full flex flex-col md:flex-row bg-slate-100 fade-in font-sans text-slate-800">
         
         <!-- LEFT: Controls & Config -->
@@ -77,9 +78,14 @@ interface LabelPage {
                     <textarea [ngModel]="rawInput()" (ngModelChange)="updateInput($event)" 
                               class="w-full h-28 p-3 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-slate-400 outline-none resize-none shadow-inner bg-slate-50 focus:bg-white transition" 
                               placeholder="Paste mã vào đây..."></textarea>
-                    <div class="flex gap-2 mt-2 justify-end">
-                        <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
-                        <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
+                    <div class="flex gap-2 mt-2 justify-between items-center">
+                        <button (click)="fetchFromSmartBatch()" class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-bolt"></i> Lấy mã từ SmartBatch
+                        </button>
+                        <div class="flex gap-2">
+                            <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
+                            <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
+                        </div>
                     </div>
                 </div>
 
@@ -90,20 +96,34 @@ interface LabelPage {
                     <div class="space-y-4 animate-bounce-in">
                         <div class="flex items-center gap-2 bg-red-50 p-3 rounded-lg border border-red-100 text-red-800 text-xs">
                             <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span class="font-medium">Lưu ý: Chọn khổ giấy <b>62mm</b> trong hộp thoại in.</span>
+                            <span class="font-medium">Lưu ý: Chọn khổ giấy tương ứng trong hộp thoại in của Brother.</span>
                         </div>
 
                         <div>
+                            <label class="label-std">Loại giấy (Cuộn Brother)</label>
+                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 mb-3">
+                                <button (click)="setBrotherPaper('DK-22214')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
+                                        [class]="brotherPaperType() === 'DK-22214' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                                    <span>DK-22214</span>
+                                    <span class="text-[8px] opacity-70 font-normal">12mm x Cắt tự do</span>
+                                </button>
+                                <button (click)="setBrotherPaper('DK-11221')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
+                                        [class]="brotherPaperType() === 'DK-11221' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                                    <span>DK-11221</span>
+                                    <span class="text-[8px] opacity-70 font-normal">23mm x 23mm (Vuông)</span>
+                                </button>
+                            </div>
+
                             <label class="label-std">Kích thước Tem (mm)</label>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <span class="label-mini">Chiều rộng (Cố định)</span>
-                                    <input value="62mm (DK-22205)" disabled class="input-std bg-slate-100 text-slate-500">
+                                    <input [value]="brotherWidth() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 font-mono">
                                 </div>
                                 <div>
                                     <span class="label-mini">Chiều dài (Cắt)</span>
                                     <div class="relative">
-                                        <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" class="input-std pr-8">
+                                        <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" [disabled]="brotherPaperType() === 'DK-11221'" class="input-std pr-8 disabled:bg-slate-100 disabled:text-slate-500">
                                         <span class="absolute right-3 top-2 text-xs text-slate-400 font-bold">mm</span>
                                     </div>
                                 </div>
@@ -229,10 +249,11 @@ interface LabelPage {
                 <!-- A. BROTHER PREVIEW -->
                 @if (printMode() === 'brother') {
                     <div class="flex flex-col gap-1 items-center">
-                        <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Mô phỏng cuộn in (62mm)</div>
+                        <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Mô phỏng cuộn in ({{brotherWidth()}}mm)</div>
                         <div class="bg-slate-300 p-2 pb-10 rounded-t-lg shadow-inner">
                             <!-- Continuous Strip Simulation -->
-                            <div id="brother-preview-strip" class="bg-white shadow-xl w-[62mm] min-h-[100mm] flex flex-col items-center">
+                            <div id="brother-preview-strip" class="bg-white shadow-xl flex flex-col items-center"
+                                 [style.width.mm]="brotherWidth()" [style.min-height.mm]="100">
                                 @for (label of parseInput(rawInput()); track $index) {
                                     <div class="w-full border-b border-dashed border-slate-300 relative flex items-center justify-center overflow-hidden"
                                          [style.height.mm]="brotherHeight()">
@@ -252,7 +273,7 @@ interface LabelPage {
                                 }
                             </div>
                         </div>
-                        <div class="w-[70mm] h-4 bg-slate-800 rounded-b-lg shadow-lg"></div> <!-- Printer Slot Visual -->
+                        <div class="h-4 bg-slate-800 rounded-b-lg shadow-lg" [style.width.mm]="brotherWidth() + 8"></div> <!-- Printer Slot Visual -->
                     </div>
                 }
 
@@ -315,7 +336,7 @@ interface LabelPage {
         </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .label-std { display: block; font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
     .label-mini { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
     .input-std { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; transition: all; }
@@ -334,187 +355,205 @@ interface LabelPage {
   `]
 })
 export class LabelPrintComponent {
-  Math = Math;
-  toast = inject(ToastService);
+    Math = Math;
+    toast = inject(ToastService);
+    batchService = inject(BatchService);
 
-  // Core State
-  printMode = signal<PrintMode>('sheet_a5');
-  rawInput = signal('');
-  isProcessing = signal(false);
-  zoomLevel = signal(1.0);
-  
-  // Layout Config
-  layoutMode = signal<'landscape' | 'portrait'>('landscape');
-  splitCount = signal<number>(1);
-  fontSize = signal<number>(12);
-  rotateText = signal<boolean>(false);
-  
-  // Sheet Calibration (A4/A5)
-  marginTop = signal<number>(5); 
-  marginLeft = signal<number>(5); 
-  gapX = signal<number>(1);
-  gapY = signal<number>(1);
-  skippedCells = signal<number>(0);
-  showAdvanced = signal(false);
+    // Core State
+    printMode = signal<PrintMode>('sheet_a5');
+    rawInput = signal('');
+    isProcessing = signal(false);
+    zoomLevel = signal(1.0);
 
-  // Brother Config
-  brotherHeight = signal<number>(25); // Default 25mm length per label
+    // Layout Config
+    layoutMode = signal<'landscape' | 'portrait'>('landscape');
+    splitCount = signal<number>(1);
+    fontSize = signal<number>(12);
+    rotateText = signal<boolean>(false);
 
-  // Computed
-  rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
+    // Sheet Calibration (A4/A5)
+    marginTop = signal<number>(5);
+    marginLeft = signal<number>(5);
+    gapX = signal<number>(1);
+    gapY = signal<number>(1);
+    skippedCells = signal<number>(0);
+    showAdvanced = signal(false);
 
-  layoutDims = computed(() => {
-      const mode = this.printMode();
-      const isLand = this.layoutMode() === 'landscape';
+    // Brother Config
+    brotherPaperType = signal<'DK-11221' | 'DK-22214'>('DK-22214');
+    brotherHeight = signal<number>(25); // Default 25mm length per label cho DK-22214
+    brotherWidth = computed(() => this.brotherPaperType() === 'DK-11221' ? 23 : 12);
 
-      if (mode === 'sheet_a5') {
-          // A5: 148 x 210 mm
-          if (isLand) return { pageW: 210, pageH: 148, cellW: 19, cellH: 45 }; // 10x3
-          else return { pageW: 148, pageH: 210, cellW: 45, cellH: 19 }; // 3x10
-      } 
-      else if (mode === 'sheet_a4') {
-          // A4: 210 x 297 mm
-          // Default Layout: 4 cols x 11 rows (Tomy 145 style approximation)
-          return { pageW: 210, pageH: 297, cellW: 48, cellH: 25 }; 
-      }
-      return { pageW: 0, pageH: 0, cellW: 0, cellH: 0 };
-  });
+    // Computed
+    rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
 
-  constructor() {
-      // Auto-defaults when switching input count or mode
-      effect(() => {
-          const mode = this.printMode();
-          if (mode === 'brother') {
-              this.fontSize.set(16);
-              this.rotateText.set(false);
-          } else {
-              // Sheet defaults
-              const split = this.splitCount();
-              this.fontSize.set(split === 1 ? 12 : split === 2 ? 10 : 8);
-          }
-      }, { allowSignalWrites: true });
-  }
+    layoutDims = computed(() => {
+        const mode = this.printMode();
+        const isLand = this.layoutMode() === 'landscape';
 
-  setMode(mode: PrintMode) {
-      this.printMode.set(mode);
-      // Reset view defaults
-      this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
-      if (mode === 'sheet_a4') {
-          this.splitCount.set(1);
-          this.gapX.set(2); this.gapY.set(2);
-          this.marginTop.set(10); this.marginLeft.set(5);
-      } else if (mode === 'sheet_a5') {
-          this.marginTop.set(5); this.marginLeft.set(5);
-      }
-  }
+        if (mode === 'sheet_a5') {
+            // A5: 148 x 210 mm
+            if (isLand) return { pageW: 210, pageH: 148, cellW: 19, cellH: 45 }; // 10x3
+            else return { pageW: 148, pageH: 210, cellW: 45, cellH: 19 }; // 3x10
+        }
+        else if (mode === 'sheet_a4') {
+            // A4: 210 x 297 mm
+            // Default Layout: 4 cols x 11 rows (Tomy 145 style approximation)
+            return { pageW: 210, pageH: 297, cellW: 48, cellH: 25 };
+        }
+        return { pageW: 0, pageH: 0, cellW: 0, cellH: 0 };
+    });
 
-  setLayout(mode: 'landscape' | 'portrait') {
-      this.layoutMode.set(mode);
-      if (mode === 'landscape') { this.rotateText.set(true); } 
-      else { this.rotateText.set(false); }
-  }
+    constructor() {
+        // Auto-defaults when switching input count or mode
+        effect(() => {
+            const mode = this.printMode();
+            if (mode === 'brother') {
+                this.fontSize.set(16);
+                this.rotateText.set(false);
+            } else {
+                // Sheet defaults
+                const split = this.splitCount();
+                this.fontSize.set(split === 1 ? 12 : split === 2 ? 10 : 8);
+            }
+        }, { allowSignalWrites: true });
+    }
 
-  updateInput(val: string) { this.rawInput.set(val); }
-  clearInput() { this.rawInput.set(''); }
-  
-  addExample() {
-      const ex = Array.from({length: 15}, (_, i) => `STD-${(i+1).toString().padStart(3,'0')}`).join('\n');
-      this.rawInput.set(ex);
-  }
+    setBrotherPaper(type: 'DK-11221' | 'DK-22214') {
+        this.brotherPaperType.set(type);
+        if (type === 'DK-11221') {
+            this.brotherHeight.set(23); // Cố định chiều dài 23mm cho loại vuông
+            this.fontSize.set(8); // Font nhỏ hơn cho tem vuông
+            this.rotateText.set(false);
+        } else {
+            this.brotherHeight.set(25); // Mặc định 25mm cho loại cuộn cắt
+            this.fontSize.set(12);
+            this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
+        }
+    }
 
-  adjustZoom(delta: number) {
-      this.zoomLevel.update(z => Math.max(0.5, Math.min(2.5, z + delta)));
-  }
+    setMode(mode: PrintMode) {
+        this.printMode.set(mode);
+        // Reset view defaults
+        this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
+        if (mode === 'sheet_a4') {
+            this.splitCount.set(1);
+            this.gapX.set(2); this.gapY.set(2);
+            this.marginTop.set(10); this.marginLeft.set(5);
+        } else if (mode === 'sheet_a5') {
+            this.marginTop.set(5); this.marginLeft.set(5);
+        } else if (mode === 'brother') {
+            this.setBrotherPaper('DK-22214'); // Default brother paper
+        }
+    }
 
-  parseInput(text: string): string[] {
-      return text.split(/[\n,;]+/).map(s => s.trim()).filter(s => s !== '');
-  }
+    setLayout(mode: 'landscape' | 'portrait') {
+        this.layoutMode.set(mode);
+        if (mode === 'landscape') { this.rotateText.set(true); }
+        else { this.rotateText.set(false); }
+    }
 
-  // --- SHEET LOGIC ---
-  pages = computed<LabelPage[]>(() => {
-      if (this.printMode() === 'brother') return [];
+    updateInput(val: string) { this.rawInput.set(val); }
+    clearInput() { this.rawInput.set(''); }
 
-      const rawIds = this.parseInput(this.rawInput());
-      const split = this.splitCount();
-      const skipped = this.skippedCells();
-      
-      // Calculate cells per page based on layout
-      let cols = 3; let rows = 10;
-      if (this.printMode() === 'sheet_a5') {
-          if (this.layoutMode() === 'landscape') { cols = 10; rows = 3; }
-      } else {
-          // A4 Defaults
-          cols = 4; rows = 11; 
-      }
-      const CELLS_PER_PAGE = cols * rows;
-      
-      const allCells: LabelCell[] = [];
-      let globalCellIndex = 0;
+    addExample() {
+        const ex = Array.from({ length: 15 }, (_, i) => `STD-${(i + 1).toString().padStart(3, '0')}`).join('\n');
+        this.rawInput.set(ex);
+    }
 
-      // Fill Skipped
-      for(let i=0; i<skipped; i++) {
-          allCells.push({ subLabels: [], isEmpty: true, index: globalCellIndex++ });
-      }
+    adjustZoom(delta: number) {
+        this.zoomLevel.update(z => Math.max(0.5, Math.min(2.5, z + delta)));
+    }
 
-      // Fill Data
-      let currentSub: string[] = [];
-      for(const id of rawIds) {
-          currentSub.push(id);
-          if(currentSub.length === split) {
-              allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
-              currentSub = [];
-          }
-      }
-      if(currentSub.length > 0) {
-          allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
-      }
+    parseInput(text: string): string[] {
+        return text.split(/[\n,;]+/).map(s => s.trim()).filter(s => s !== '');
+    }
 
-      // Pagination
-      const pages: LabelPage[] = [];
-      for (let i = 0; i < allCells.length; i += CELLS_PER_PAGE) {
-          const pageCells = allCells.slice(i, i + CELLS_PER_PAGE);
-          while(pageCells.length < CELLS_PER_PAGE) {
-              pageCells.push({ subLabels: [], isEmpty: true, index: -1 });
-          }
-          pages.push({ cells: pageCells, pageIndex: pages.length });
-      }
-      
-      if (pages.length === 0 && rawIds.length === 0) {
-           const emptyCells = Array(CELLS_PER_PAGE).fill(null).map((_, idx) => ({ 
-               subLabels: [], isEmpty: true, index: idx < skipped ? idx : -1 
-           }));
-           pages.push({ cells: emptyCells, pageIndex: 0 });
-      }
+    // --- SHEET LOGIC ---
+    pages = computed<LabelPage[]>(() => {
+        if (this.printMode() === 'brother') return [];
 
-      return pages;
-  });
+        const rawIds = this.parseInput(this.rawInput());
+        const split = this.splitCount();
+        const skipped = this.skippedCells();
 
-  // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
-  printBrother() {
-      const labels = this.parseInput(this.rawInput());
-      if (labels.length === 0) return;
+        // Calculate cells per page based on layout
+        let cols = 3; let rows = 10;
+        if (this.printMode() === 'sheet_a5') {
+            if (this.layoutMode() === 'landscape') { cols = 10; rows = 3; }
+        } else {
+            // A4 Defaults
+            cols = 4; rows = 11;
+        }
+        const CELLS_PER_PAGE = cols * rows;
 
-      const h = this.brotherHeight();
-      const fs = this.fontSize();
-      const rotate = this.rotateText();
+        const allCells: LabelCell[] = [];
+        let globalCellIndex = 0;
 
-      // Create a dedicated print window to isolate styles
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (!printWindow) {
-          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
-          return;
-      }
+        // Fill Skipped
+        for (let i = 0; i < skipped; i++) {
+            allCells.push({ subLabels: [], isEmpty: true, index: globalCellIndex++ });
+        }
 
-      const css = `
-        @page { size: 62mm auto; margin: 0; }
+        // Fill Data
+        let currentSub: string[] = [];
+        for (const id of rawIds) {
+            currentSub.push(id);
+            if (currentSub.length === split) {
+                allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
+                currentSub = [];
+            }
+        }
+        if (currentSub.length > 0) {
+            allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
+        }
+
+        // Pagination
+        const pages: LabelPage[] = [];
+        for (let i = 0; i < allCells.length; i += CELLS_PER_PAGE) {
+            const pageCells = allCells.slice(i, i + CELLS_PER_PAGE);
+            while (pageCells.length < CELLS_PER_PAGE) {
+                pageCells.push({ subLabels: [], isEmpty: true, index: -1 });
+            }
+            pages.push({ cells: pageCells, pageIndex: pages.length });
+        }
+
+        if (pages.length === 0 && rawIds.length === 0) {
+            const emptyCells = Array(CELLS_PER_PAGE).fill(null).map((_, idx) => ({
+                subLabels: [], isEmpty: true, index: idx < skipped ? idx : -1
+            }));
+            pages.push({ cells: emptyCells, pageIndex: 0 });
+        }
+
+        return pages;
+    });
+
+    // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
+    printBrother() {
+        const labels = this.parseInput(this.rawInput());
+        if (labels.length === 0) return;
+
+        const h = this.brotherHeight();
+        const w = this.brotherWidth();
+        const fs = this.fontSize();
+        const rotate = this.rotateText();
+
+        // Create a dedicated print window to isolate styles
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        if (!printWindow) {
+            this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
+            return;
+        }
+
+        const css = `
+        @page { size: ${w}mm ${h}mm; margin: 0; }
         body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; }
         .label-container {
-            width: 60mm; /* Safety margin for 62mm roll */
+            width: ${w}mm;
             height: ${h}mm;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-bottom: 1px dashed #ccc; /* Cut line guide */
             page-break-after: always;
             box-sizing: border-box;
             overflow: hidden;
@@ -525,91 +564,127 @@ export class LabelPrintComponent {
             font-weight: bold;
             text-align: center;
             line-height: 1;
+            white-space: nowrap;
             ${rotate ? 'writing-mode: vertical-rl; transform: rotate(180deg);' : ''}
-        }
-        /* Remove cut lines in actual print if desired, but Brother cutter handles length */
-        @media print {
-            .label-container { border-bottom: none; }
         }
       `;
 
-      let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
-      
-      labels.forEach(label => {
-          htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
-      });
+        let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
 
-      htmlContent += `</body></html>`;
+        labels.forEach(label => {
+            htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
+        });
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+        htmlContent += `</body></html>`;
 
-      // Wait for content to load then print
-      printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-          // Optional: printWindow.close();
-      };
-  }
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
 
-  // --- SHEET PDF GENERATION (A4/A5) ---
-  async generateImagePdf() {
-      const pages = this.pages();
-      const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
-      
-      if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
+        // Wait for content to load then print
+        printWindow.onload = () => {
+            printWindow.focus();
+            printWindow.print();
+            // Optional: printWindow.close();
+        };
+    }
 
-      this.isProcessing.set(true);
-      this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
-      await new Promise(resolve => setTimeout(resolve, 150));
+    // --- SMART BATCH INTEGRATION ---
+    fetchFromSmartBatch() {
+        const items = this.batchService.getSelectedItems();
+        if (items.length === 0) {
+            this.toast.show('Chưa có dữ liệu trong SmartBatch. Vui lòng tạo mẻ trước.', 'warning');
+            return;
+        }
 
-      try {
-          // Dynamic imports fix ESM issues
-          const { jsPDF } = await import('jspdf');
-          const html2canvas = (await import('html2canvas')).default;
+        let generatedIds: string[] = [];
+        const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
 
-          const isA5 = this.printMode() === 'sheet_a5';
-          const isLandscape = this.layoutMode() === 'landscape' && isA5;
-          
-          let format = isA5 ? 'a5' : 'a4';
-          // Fix: Type orientation explicitly to satisfy jsPDF constructor
-          let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
-          
-          // PDF Dimensions (mm)
-          let pdfW = 210; let pdfH = 297; // A4 Portrait
-          if (isA5) {
-              pdfW = isLandscape ? 210 : 148;
-              pdfH = isLandscape ? 148 : 210;
-          }
+        items.forEach(item => {
+            // Extract sample count from inputs
+            let sampleCount = 1;
+            for (const key in item.inputs) {
+                const k = key.toLowerCase();
+                if (k === 'num_samples' || k === 'n_samples' || k === 'samples' || (k.includes('num') && k.includes('sample'))) {
+                    sampleCount = Number(item.inputs[key]) || 1;
+                    break;
+                }
+            }
 
-          const doc = new jsPDF(orientation, 'mm', format);
+            // Generate IDs: SOP_PREFIX-YYMMDD-001
+            const prefix = item.sop.category ? item.sop.category.substring(0, 3).toUpperCase() : 'SMP';
+            for (let i = 1; i <= sampleCount; i++) {
+                generatedIds.push(`${prefix}-${todayStr}-${i.toString().padStart(3, '0')}`);
+            }
+        });
 
-          for (let i = 0; i < validPages.length; i++) {
-              const elementId = `label-page-${validPages[i].pageIndex}`;
-              const element = document.getElementById(elementId);
-              if (!element) continue;
+        if (generatedIds.length > 0) {
+            const currentInput = this.rawInput().trim();
+            const newText = generatedIds.join('\n');
+            this.rawInput.set(currentInput ? currentInput + '\n' + newText : newText);
+            this.toast.show(`Đã lấy ${generatedIds.length} mã mẫu từ SmartBatch`, 'success');
+        } else {
+            this.toast.show('Không tìm thấy số lượng mẫu hợp lệ trong SmartBatch', 'warning');
+        }
+    }
 
-              const canvas = await html2canvas(element, {
-                  scale: 3, // 3x scale for crisp text
-                  useCORS: true,
-                  logging: false,
-                  backgroundColor: '#ffffff'
-              });
+    // --- SHEET PDF GENERATION (A4/A5) ---
+    async generateImagePdf() {
+        const pages = this.pages();
+        const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
 
-              const imgData = canvas.toDataURL('image/jpeg', 0.95);
-              if (i > 0) doc.addPage();
-              doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-          }
+        if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
 
-          const filename = `Labels_${format.toUpperCase()}_${new Date().toISOString().slice(0,10)}.pdf`;
-          doc.save(filename);
-          this.toast.show('Tạo PDF thành công!', 'success');
+        this.isProcessing.set(true);
+        this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 150));
 
-      } catch (e: any) {
-          console.error(e);
-          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
+        try {
+            // Dynamic imports fix ESM issues
+            const { jsPDF } = await import('jspdf');
+            const html2canvas = (await import('html2canvas')).default;
+
+            const isA5 = this.printMode() === 'sheet_a5';
+            const isLandscape = this.layoutMode() === 'landscape' && isA5;
+
+            let format = isA5 ? 'a5' : 'a4';
+            // Fix: Type orientation explicitly to satisfy jsPDF constructor
+            let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
+
+            // PDF Dimensions (mm)
+            let pdfW = 210; let pdfH = 297; // A4 Portrait
+            if (isA5) {
+                pdfW = isLandscape ? 210 : 148;
+                pdfH = isLandscape ? 148 : 210;
+            }
+
+            const doc = new jsPDF(orientation, 'mm', format);
+
+            for (let i = 0; i < validPages.length; i++) {
+                const elementId = `label-page-${validPages[i].pageIndex}`;
+                const element = document.getElementById(elementId);
+                if (!element) continue;
+
+                const canvas = await html2canvas(element, {
+                    scale: 3, // 3x scale for crisp text
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                if (i > 0) doc.addPage();
+                doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+            }
+
+            const filename = `Labels_${format.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.pdf`;
+            doc.save(filename);
+            this.toast.show('Tạo PDF thành công!', 'success');
+
+        } catch (e: any) {
+            console.error(e);
+            this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
+        } finally {
+            this.isProcessing.set(false);
+        }
+    }
 }
