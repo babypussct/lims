@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
-import { BatchService } from '../../core/services/batch.service';
+import { StateService } from '../../core/services/state.service';
 
 type PrintMode = 'brother' | 'sheet_a5' | 'sheet_a4';
 
@@ -75,17 +75,21 @@ interface LabelPage {
                         </label>
                         <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold border border-slate-200">{{rawInputCount()}} tem</span>
                     </div>
+                    
+                    <!-- Fetch from Requests -->
+                    <div class="flex gap-2 mb-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                        <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white">
+                        <button (click)="fetchFromRequests()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1 whitespace-nowrap">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Lấy mẫu
+                        </button>
+                    </div>
+
                     <textarea [ngModel]="rawInput()" (ngModelChange)="updateInput($event)" 
                               class="w-full h-28 p-3 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-slate-400 outline-none resize-none shadow-inner bg-slate-50 focus:bg-white transition" 
-                              placeholder="Paste mã vào đây..."></textarea>
-                    <div class="flex gap-2 mt-2 justify-between items-center">
-                        <button (click)="fetchFromSmartBatch()" class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-bolt"></i> Lấy mã từ SmartBatch
-                        </button>
-                        <div class="flex gap-2">
-                            <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
-                            <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
-                        </div>
+                              placeholder="Paste mã vào đây hoặc lấy từ yêu cầu..."></textarea>
+                    <div class="flex gap-2 mt-2 justify-end">
+                        <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
+                        <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
                     </div>
                 </div>
 
@@ -96,34 +100,26 @@ interface LabelPage {
                     <div class="space-y-4 animate-bounce-in">
                         <div class="flex items-center gap-2 bg-red-50 p-3 rounded-lg border border-red-100 text-red-800 text-xs">
                             <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span class="font-medium">Lưu ý: Chọn khổ giấy tương ứng trong hộp thoại in của Brother.</span>
+                            <span class="font-medium">Lưu ý: Chọn đúng khổ giấy trong hộp thoại in.</span>
                         </div>
 
                         <div>
-                            <label class="label-std">Loại giấy (Cuộn Brother)</label>
-                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 mb-3">
-                                <button (click)="setBrotherPaper('DK-22214')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
-                                        [class]="brotherPaperType() === 'DK-22214' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                                    <span>DK-22214</span>
-                                    <span class="text-[8px] opacity-70 font-normal">12mm x Cắt tự do</span>
-                                </button>
-                                <button (click)="setBrotherPaper('DK-11221')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
-                                        [class]="brotherPaperType() === 'DK-11221' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                                    <span>DK-11221</span>
-                                    <span class="text-[8px] opacity-70 font-normal">23mm x 23mm (Vuông)</span>
-                                </button>
-                            </div>
+                            <label class="label-std">Loại Giấy (Brother)</label>
+                            <select [ngModel]="brotherPaperType()" (ngModelChange)="onBrotherPaperChange($event)" class="input-std mb-3 bg-slate-50">
+                                <option value="62">62mm (DK-22205) - Cắt tự do</option>
+                                <option value="12">12mm (DK-22214) - Cắt tự do</option>
+                                <option value="23x23">23mm x 23mm (DK-11221) - Cố định</option>
+                            </select>
 
-                            <label class="label-std">Kích thước Tem (mm)</label>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <span class="label-mini">Chiều rộng (Cố định)</span>
-                                    <input [value]="brotherWidth() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 font-mono">
+                                    <span class="label-mini">Chiều rộng</span>
+                                    <input [value]="brotherWidth() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 text-center">
                                 </div>
                                 <div>
                                     <span class="label-mini">Chiều dài (Cắt)</span>
                                     <div class="relative">
-                                        <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" [disabled]="brotherPaperType() === 'DK-11221'" class="input-std pr-8 disabled:bg-slate-100 disabled:text-slate-500">
+                                        <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" [disabled]="brotherPaperType() === '23x23'" class="input-std pr-8 text-center disabled:bg-slate-100 disabled:text-slate-500">
                                         <span class="absolute right-3 top-2 text-xs text-slate-400 font-bold">mm</span>
                                     </div>
                                 </div>
@@ -265,7 +261,9 @@ interface LabelPage {
                                         </span>
 
                                         <!-- Cut Line Visual -->
-                                        <div class="absolute bottom-0 left-0 w-full h-[1px] bg-red-200 opacity-50"></div>
+                                        @if (brotherPaperType() !== '23x23') {
+                                            <div class="absolute bottom-0 left-0 w-full h-[1px] bg-red-200 opacity-50"></div>
+                                        }
                                     </div>
                                 }
                                 @if (rawInputCount() === 0) {
@@ -357,13 +355,16 @@ interface LabelPage {
 export class LabelPrintComponent {
     Math = Math;
     toast = inject(ToastService);
-    batchService = inject(BatchService);
+    state = inject(StateService);
 
     // Core State
     printMode = signal<PrintMode>('sheet_a5');
     rawInput = signal('');
     isProcessing = signal(false);
     zoomLevel = signal(1.0);
+
+    // Fetch Data State
+    fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
 
     // Layout Config
     layoutMode = signal<'landscape' | 'portrait'>('landscape');
@@ -380,9 +381,9 @@ export class LabelPrintComponent {
     showAdvanced = signal(false);
 
     // Brother Config
-    brotherPaperType = signal<'DK-11221' | 'DK-22214'>('DK-22214');
-    brotherHeight = signal<number>(25); // Default 25mm length per label cho DK-22214
-    brotherWidth = computed(() => this.brotherPaperType() === 'DK-11221' ? 23 : 12);
+    brotherPaperType = signal<'62' | '12' | '23x23'>('62');
+    brotherWidth = signal<number>(62);
+    brotherHeight = signal<number>(25); // Default length per label
 
     // Computed
     rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
@@ -419,32 +420,79 @@ export class LabelPrintComponent {
         }, { allowSignalWrites: true });
     }
 
-    setBrotherPaper(type: 'DK-11221' | 'DK-22214') {
-        this.brotherPaperType.set(type);
-        if (type === 'DK-11221') {
-            this.brotherHeight.set(23); // Cố định chiều dài 23mm cho loại vuông
-            this.fontSize.set(8); // Font nhỏ hơn cho tem vuông
-            this.rotateText.set(false);
-        } else {
-            this.brotherHeight.set(25); // Mặc định 25mm cho loại cuộn cắt
-            this.fontSize.set(12);
-            this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
-        }
-    }
-
     setMode(mode: PrintMode) {
         this.printMode.set(mode);
         // Reset view defaults
         this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
-        if (mode === 'sheet_a4') {
+        if (mode === 'brother') {
+            this.onBrotherPaperChange(this.brotherPaperType());
+        } else if (mode === 'sheet_a4') {
             this.splitCount.set(1);
             this.gapX.set(2); this.gapY.set(2);
             this.marginTop.set(10); this.marginLeft.set(5);
         } else if (mode === 'sheet_a5') {
             this.marginTop.set(5); this.marginLeft.set(5);
-        } else if (mode === 'brother') {
-            this.setBrotherPaper('DK-22214'); // Default brother paper
         }
+    }
+
+    onBrotherPaperChange(type: '62' | '12' | '23x23') {
+        this.brotherPaperType.set(type);
+        if (type === '62') {
+            this.brotherWidth.set(62);
+            this.brotherHeight.set(25);
+            this.fontSize.set(16);
+            this.rotateText.set(false);
+        } else if (type === '12') {
+            this.brotherWidth.set(12);
+            this.brotherHeight.set(30);
+            this.fontSize.set(10);
+            this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
+        } else if (type === '23x23') {
+            this.brotherWidth.set(23);
+            this.brotherHeight.set(23);
+            this.fontSize.set(10);
+            this.rotateText.set(false);
+        }
+    }
+
+    fetchFromRequests() {
+        const targetDate = this.fetchDate();
+        if (!targetDate) return;
+
+        const approvedReqs = this.state.approvedRequests();
+        const samples = new Set<string>();
+
+        approvedReqs.forEach(req => {
+            // Lấy ngày phân tích hoặc ngày duyệt
+            let reqDateStr = '';
+            if (req.analysisDate) {
+                reqDateStr = req.analysisDate;
+            } else {
+                const ts = req.approvedAt || req.timestamp;
+                const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+                reqDateStr = d.toISOString().split('T')[0];
+            }
+
+            if (reqDateStr === targetDate && req.sampleList && req.sampleList.length > 0) {
+                req.sampleList.forEach(s => samples.add(s));
+            }
+        });
+
+        if (samples.size === 0) {
+            this.toast.show(`Không tìm thấy mẫu nào trong các yêu cầu đã duyệt ngày ${targetDate}`, 'info');
+            return;
+        }
+
+        const currentInput = this.rawInput().trim();
+        const newSamples = Array.from(samples).join('\n');
+
+        if (currentInput) {
+            this.rawInput.set(currentInput + '\n' + newSamples);
+        } else {
+            this.rawInput.set(newSamples);
+        }
+
+        this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
     }
 
     setLayout(mode: 'landscape' | 'portrait') {
@@ -533,10 +581,11 @@ export class LabelPrintComponent {
         const labels = this.parseInput(this.rawInput());
         if (labels.length === 0) return;
 
-        const h = this.brotherHeight();
         const w = this.brotherWidth();
+        const h = this.brotherHeight();
         const fs = this.fontSize();
         const rotate = this.rotateText();
+        const isFixed = this.brotherPaperType() === '23x23';
 
         // Create a dedicated print window to isolate styles
         const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -546,7 +595,7 @@ export class LabelPrintComponent {
         }
 
         const css = `
-        @page { size: ${w}mm ${h}mm; margin: 0; }
+        @page { size: ${w}mm ${isFixed ? h + 'mm' : 'auto'}; margin: 0; }
         body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; }
         .label-container {
             width: ${w}mm;
@@ -554,6 +603,7 @@ export class LabelPrintComponent {
             display: flex;
             align-items: center;
             justify-content: center;
+            ${!isFixed ? 'border-bottom: 1px dashed #ccc;' : ''}
             page-break-after: always;
             box-sizing: border-box;
             overflow: hidden;
@@ -564,8 +614,12 @@ export class LabelPrintComponent {
             font-weight: bold;
             text-align: center;
             line-height: 1;
-            white-space: nowrap;
+            word-break: break-all;
+            padding: 1mm;
             ${rotate ? 'writing-mode: vertical-rl; transform: rotate(180deg);' : ''}
+        }
+        @media print {
+            .label-container { border-bottom: none; }
         }
       `;
 
@@ -586,45 +640,6 @@ export class LabelPrintComponent {
             printWindow.print();
             // Optional: printWindow.close();
         };
-    }
-
-    // --- SMART BATCH INTEGRATION ---
-    fetchFromSmartBatch() {
-        const items = this.batchService.getSelectedItems();
-        if (items.length === 0) {
-            this.toast.show('Chưa có dữ liệu trong SmartBatch. Vui lòng tạo mẻ trước.', 'warning');
-            return;
-        }
-
-        let generatedIds: string[] = [];
-        const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
-
-        items.forEach(item => {
-            // Extract sample count from inputs
-            let sampleCount = 1;
-            for (const key in item.inputs) {
-                const k = key.toLowerCase();
-                if (k === 'num_samples' || k === 'n_samples' || k === 'samples' || (k.includes('num') && k.includes('sample'))) {
-                    sampleCount = Number(item.inputs[key]) || 1;
-                    break;
-                }
-            }
-
-            // Generate IDs: SOP_PREFIX-YYMMDD-001
-            const prefix = item.sop.category ? item.sop.category.substring(0, 3).toUpperCase() : 'SMP';
-            for (let i = 1; i <= sampleCount; i++) {
-                generatedIds.push(`${prefix}-${todayStr}-${i.toString().padStart(3, '0')}`);
-            }
-        });
-
-        if (generatedIds.length > 0) {
-            const currentInput = this.rawInput().trim();
-            const newText = generatedIds.join('\n');
-            this.rawInput.set(currentInput ? currentInput + '\n' + newText : newText);
-            this.toast.show(`Đã lấy ${generatedIds.length} mã mẫu từ SmartBatch`, 'success');
-        } else {
-            this.toast.show('Không tìm thấy số lượng mẫu hợp lệ trong SmartBatch', 'warning');
-        }
     }
 
     // --- SHEET PDF GENERATION (A4/A5) ---
