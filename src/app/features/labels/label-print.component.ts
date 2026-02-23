@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 
-type PrintMode = 'brother' | 'tomy_a4';
+type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 
 interface TomyTemplate {
   id: string;
@@ -58,12 +58,12 @@ interface LabelPage {
                 </h2>
                 
                 <!-- Mode Selector Cards -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                     <button (click)="setMode('brother')" 
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
                             [class]="printMode() === 'brother' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-500 hover:border-red-200'">
                         <i class="fa-solid fa-tape text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase">Máy in Brother</span>
+                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">Máy in<br>Brother</span>
                         @if(printMode() === 'brother') { <div class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-bl-lg"></div> }
                     </button>
 
@@ -71,8 +71,16 @@ interface LabelPage {
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
                             [class]="printMode() === 'tomy_a4' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-200'">
                         <i class="fa-solid fa-file-lines text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase">Giấy Decal A4 (Tomy)</span>
+                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">Decal A4<br>(Tomy)</span>
                         @if(printMode() === 'tomy_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-bl-lg"></div> }
+                    </button>
+
+                    <button (click)="setMode('plain_a4')" 
+                            class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
+                            [class]="printMode() === 'plain_a4' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:border-emerald-200'">
+                        <i class="fa-solid fa-scissors text-xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase text-center leading-tight mt-1">A4 Trơn<br>(Cắt tay)</span>
+                        @if(printMode() === 'plain_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-bl-lg"></div> }
                     </button>
                 </div>
             </div>
@@ -213,6 +221,70 @@ interface LabelPage {
                         </div>
                     </div>
                 }
+
+                <!-- 5. PLAIN A4 SPECIFIC CONFIG -->
+                @if (printMode() === 'plain_a4') {
+                    <div class="space-y-4 animate-bounce-in">
+                        <div class="text-[10px] text-slate-500 bg-emerald-50 p-2 rounded border border-emerald-100 flex items-start gap-2">
+                            <i class="fa-solid fa-scissors mt-0.5 text-emerald-500"></i>
+                            <span>In trên giấy Decal A4 nguyên tờ. Hệ thống sẽ tự chia lưới và in viền mờ để bạn tự cắt.</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="label-mini">Số cột (Ngang)</label>
+                                <input type="number" [ngModel]="plainCols()" (ngModelChange)="plainCols.set($event)" class="input-std text-center">
+                            </div>
+                            <div>
+                                <label class="label-mini">Số hàng (Dọc)</label>
+                                <input type="number" [ngModel]="plainRows()" (ngModelChange)="plainRows.set($event)" class="input-std text-center">
+                            </div>
+                        </div>
+
+                        <!-- Split Settings -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="label-std mb-0">Chia nhỏ Tem (Split)</label>
+                                <span class="text-[9px] text-slate-400">In nhiều mã vào 1 ô tem</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="grid grid-cols-5 gap-1 flex-1">
+                                    @for (n of [1, 2, 3, 4, 5]; track n) {
+                                        <button (click)="splitCount.set(n)" 
+                                                class="py-1.5 rounded border text-xs font-bold transition"
+                                                [class]="splitCount() === n ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'">
+                                            {{n}}
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calibration -->
+                        <div>
+                            <button (click)="showAdvanced.set(!showAdvanced())" class="flex items-center justify-between w-full text-xs font-bold text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                <span><i class="fa-solid fa-ruler-combined mr-1"></i> Căn chỉnh & Viền</span>
+                                <i class="fa-solid" [class]="showAdvanced() ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                            </button>
+                            
+                            @if (showAdvanced()) {
+                                <div class="mt-2 grid grid-cols-2 gap-3 bg-white p-3 border border-slate-100 rounded-lg shadow-sm">
+                                    <div><label class="label-mini">Lề trên/dưới (mm)</label><input type="number" [ngModel]="marginTop()" (ngModelChange)="marginTop.set($event)" class="input-mini"></div>
+                                    <div><label class="label-mini">Lề trái/phải (mm)</label><input type="number" [ngModel]="marginLeft()" (ngModelChange)="marginLeft.set($event)" class="input-mini"></div>
+                                    <div><label class="label-mini">Khoảng cách X</label><input type="number" [ngModel]="gapX()" (ngModelChange)="gapX.set($event)" class="input-mini"></div>
+                                    <div><label class="label-mini">Khoảng cách Y</label><input type="number" [ngModel]="gapY()" (ngModelChange)="gapY.set($event)" class="input-mini"></div>
+                                    <div><label class="label-mini">Font Size</label><input type="number" [ngModel]="fontSize()" (ngModelChange)="fontSize.set($event)" class="input-mini"></div>
+                                    <div class="flex items-center justify-center pt-3">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" [ngModel]="showCutLines()" (ngModelChange)="showCutLines.set($event)" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                                            <span class="text-[10px] font-bold text-slate-600 uppercase">In viền cắt</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Footer Action -->
@@ -284,14 +356,14 @@ interface LabelPage {
                     </div>
                 }
 
-                <!-- B. TOMY A4 PREVIEW -->
-                @if (printMode() === 'tomy_a4') {
+                <!-- B. TOMY A4 & PLAIN A4 PREVIEW -->
+                @if (printMode() === 'tomy_a4' || printMode() === 'plain_a4') {
                     @for (page of pages(); track page.pageIndex) {
                         <div id="label-page-{{page.pageIndex}}" 
                              class="bg-white shadow-2xl relative transition-all duration-300 box-border overflow-hidden ring-1 ring-slate-900/5" 
                              [style.width.mm]="layoutDims().pageW"
                              [style.height.mm]="layoutDims().pageH"
-                             style="padding-top: {{marginTop()}}mm; padding-left: {{marginLeft()}}mm;">
+                             style="padding-top: {{marginTop()}}mm; padding-left: {{marginLeft()}}mm; padding-right: {{marginLeft()}}mm; padding-bottom: {{marginTop()}}mm;">
                             
                             <!-- The Grid -->
                             <div class="grid content-start h-full"
@@ -299,10 +371,13 @@ interface LabelPage {
                                  [style.gap]="gapY() + 'mm ' + gapX() + 'mm'">
                                 
                                 @for (cell of page.cells; track cell.index) {
-                                    <div class="relative border border-slate-200 flex flex-col overflow-hidden group cursor-default transition-colors hover:border-blue-400"
+                                    <div class="relative flex flex-col overflow-hidden group cursor-default transition-colors"
+                                         [class.border]="printMode() === 'tomy_a4' || (printMode() === 'plain_a4' && showCutLines())"
+                                         [class.border-slate-200]="printMode() === 'tomy_a4'"
+                                         [class.border-slate-300]="printMode() === 'plain_a4' && showCutLines()"
+                                         [class.border-dashed]="printMode() === 'plain_a4' && showCutLines()"
                                          [class.bg-slate-50]="cell.isEmpty"
                                          [class.opacity-40]="cell.isEmpty"
-                                         [class.border-dashed]="cell.isEmpty"
                                          [style.width.mm]="layoutDims().cellW"
                                          [style.height.mm]="layoutDims().cellH">
                                         
@@ -382,6 +457,11 @@ export class LabelPrintComponent {
   tomyTemplates = TOMY_TEMPLATES;
   selectedTomyId = signal<string>('tomy_145');
   
+  // Plain A4 Config
+  plainCols = signal<number>(4);
+  plainRows = signal<number>(10);
+  showCutLines = signal<boolean>(true);
+  
   // Sheet Calibration (A4/A5)
   marginTop = signal<number>(10); 
   marginLeft = signal<number>(5); 
@@ -404,6 +484,12 @@ export class LabelPrintComponent {
       if (mode === 'tomy_a4') {
           const tmpl = this.tomyTemplates.find(t => t.id === this.selectedTomyId()) || this.tomyTemplates[0];
           return { pageW: 210, pageH: 297, cellW: tmpl.cellW, cellH: tmpl.cellH, cols: tmpl.cols, rows: tmpl.rows }; 
+      } else if (mode === 'plain_a4') {
+          const c = this.plainCols();
+          const r = this.plainRows();
+          const w = (210 - this.marginLeft() * 2 - this.gapX() * (c - 1)) / c;
+          const h = (297 - this.marginTop() * 2 - this.gapY() * (r - 1)) / r;
+          return { pageW: 210, pageH: 297, cellW: w, cellH: h, cols: c, rows: r };
       }
       return { pageW: 0, pageH: 0, cellW: 0, cellH: 0, cols: 0, rows: 0 };
   });
@@ -431,6 +517,14 @@ export class LabelPrintComponent {
           this.onBrotherPaperChange(this.brotherPaperType());
       } else if (mode === 'tomy_a4') {
           this.onTomyChange(this.selectedTomyId());
+      } else if (mode === 'plain_a4') {
+          this.marginTop.set(10);
+          this.marginLeft.set(10);
+          this.gapX.set(0);
+          this.gapY.set(0);
+          this.splitCount.set(1);
+          this.rotateText.set(false);
+          this.fontSize.set(10);
       }
   }
 
