@@ -490,18 +490,48 @@ export class LabelPrintComponent {
   });
 
   constructor() {
-      // Auto-defaults when switching input count or mode
-      effect(() => {
-          const mode = this.printMode();
-          if (mode === 'brother') {
-              this.fontSize.set(16);
-              this.rotateText.set(false);
-          } else {
-              // Sheet defaults
-              const split = this.splitCount();
-              this.fontSize.set(split === 1 ? 10 : split === 2 ? 8 : 6);
+      // Load saved config from localStorage
+      const saved = localStorage.getItem('labelPrintConfig');
+      if (saved) {
+          try {
+              const config = JSON.parse(saved);
+              if (config.printMode) this.printMode.set(config.printMode);
+              if (config.brotherPaperType) this.brotherPaperType.set(config.brotherPaperType);
+              if (config.selectedTomyId) this.selectedTomyId.set(config.selectedTomyId);
+              if (config.plainCols) this.plainCols.set(config.plainCols);
+              if (config.plainRows) this.plainRows.set(config.plainRows);
+              if (config.marginTop !== undefined) this.marginTop.set(config.marginTop);
+              if (config.marginLeft !== undefined) this.marginLeft.set(config.marginLeft);
+              if (config.gapX !== undefined) this.gapX.set(config.gapX);
+              if (config.gapY !== undefined) this.gapY.set(config.gapY);
+              if (config.fontSize) this.fontSize.set(config.fontSize);
+              if (config.rotateText !== undefined) this.rotateText.set(config.rotateText);
+              if (config.showCutLines !== undefined) this.showCutLines.set(config.showCutLines);
+              if (config.splitCount) this.splitCount.set(config.splitCount);
+          } catch (e) {
+              console.error('Failed to load print config', e);
           }
-      }, { allowSignalWrites: true });
+      }
+
+      // Save config to localStorage whenever it changes
+      effect(() => {
+          const config = {
+              printMode: this.printMode(),
+              brotherPaperType: this.brotherPaperType(),
+              selectedTomyId: this.selectedTomyId(),
+              plainCols: this.plainCols(),
+              plainRows: this.plainRows(),
+              marginTop: this.marginTop(),
+              marginLeft: this.marginLeft(),
+              gapX: this.gapX(),
+              gapY: this.gapY(),
+              fontSize: this.fontSize(),
+              rotateText: this.rotateText(),
+              showCutLines: this.showCutLines(),
+              splitCount: this.splitCount()
+          };
+          localStorage.setItem('labelPrintConfig', JSON.stringify(config));
+      });
   }
 
   setMode(mode: PrintMode) {
@@ -687,7 +717,7 @@ export class LabelPrintComponent {
 
       const css = `
         @page { size: ${w}mm ${isFixed ? h + 'mm' : 'auto'}; margin: 0; }
-        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; }
+        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .label-container {
             width: ${w}mm;
             height: ${h}mm;
@@ -710,7 +740,10 @@ export class LabelPrintComponent {
             ${rotate ? 'writing-mode: vertical-rl; transform: rotate(180deg);' : ''}
         }
         @media print {
+            @page { margin: 0; }
             .label-container { border-bottom: none; }
+            /* Hide browser headers/footers */
+            body { margin: 0; }
         }
       `;
 
@@ -764,6 +797,7 @@ export class LabelPrintComponent {
             page-break-after: always;
             position: relative;
             overflow: hidden;
+            background: white;
         }
         .grid {
             display: grid;
@@ -804,6 +838,10 @@ export class LabelPrintComponent {
             writing-mode: vertical-rl;
             text-orientation: mixed;
             transform: rotate(180deg);
+        }
+        @media print {
+            @page { margin: 0; }
+            body { margin: 0; }
         }
       `;
 
