@@ -8,25 +8,25 @@ import { StateService } from '../../core/services/state.service';
 type PrintMode = 'brother' | 'sheet_a5' | 'sheet_a4';
 
 interface LabelCell {
-    subLabels: string[];
-    isEmpty: boolean;
-    index: number;
+  subLabels: string[];
+  isEmpty: boolean;
+  index: number;
 }
 
 interface LabelPage {
-    cells: LabelCell[];
-    pageIndex: number;
+  cells: LabelCell[];
+  pageIndex: number;
 }
 
 @Component({
-    selector: 'app-label-print',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
-    <div class="h-full flex flex-col md:flex-row bg-slate-100 fade-in font-sans text-slate-800">
+  selector: 'app-label-print',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="h-full flex flex-col md:flex-row bg-slate-100 fade-in font-sans text-slate-800 overflow-y-auto md:overflow-hidden">
         
         <!-- LEFT: Controls & Config -->
-        <div class="w-full md:w-[420px] flex flex-col bg-white border-r border-slate-200 z-20 shrink-0 shadow-xl h-full">
+        <div class="w-full md:w-[420px] flex flex-col bg-white border-r border-slate-200 z-20 shrink-0 shadow-xl md:h-full relative">
             
             <!-- 1. Header & Mode Selection -->
             <div class="p-5 border-b border-slate-100 bg-slate-50 shrink-0">
@@ -65,7 +65,7 @@ interface LabelPage {
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+            <div class="flex-1 md:overflow-y-auto p-5 space-y-6 custom-scrollbar">
                 
                 <!-- 2. Data Input -->
                 <div>
@@ -207,7 +207,7 @@ interface LabelPage {
             </div>
 
             <!-- Footer Action -->
-            <div class="p-5 border-t border-slate-200 bg-white">
+            <div class="p-5 border-t border-slate-200 bg-white shrink-0 sticky bottom-0 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 @if (printMode() === 'brother') {
                     <button (click)="printBrother()" [disabled]="rawInputCount() === 0" 
                             class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-200 transition font-bold flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
@@ -229,7 +229,7 @@ interface LabelPage {
         </div>
 
         <!-- RIGHT: Live Preview -->
-        <div class="flex-1 bg-slate-200/50 overflow-auto p-8 flex justify-center items-start min-h-0 relative">
+        <div class="flex-1 bg-slate-200/50 md:overflow-auto p-8 flex justify-center items-start min-h-[500px] md:min-h-0 relative md:h-full">
             
             <!-- Zoom Controls -->
             <div class="absolute bottom-6 right-6 flex flex-col gap-2 bg-white p-2 rounded-xl shadow-lg border border-slate-200 z-30">
@@ -334,7 +334,7 @@ interface LabelPage {
         </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .label-std { display: block; font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
     .label-mini { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
     .input-std { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; transition: all; }
@@ -353,248 +353,248 @@ interface LabelPage {
   `]
 })
 export class LabelPrintComponent {
-    Math = Math;
-    toast = inject(ToastService);
-    state = inject(StateService);
+  Math = Math;
+  toast = inject(ToastService);
+  state = inject(StateService);
 
-    // Core State
-    printMode = signal<PrintMode>('sheet_a5');
-    rawInput = signal('');
-    isProcessing = signal(false);
-    zoomLevel = signal(1.0);
+  // Core State
+  printMode = signal<PrintMode>('sheet_a5');
+  rawInput = signal('');
+  isProcessing = signal(false);
+  zoomLevel = signal(1.0);
+  
+  // Fetch Data State
+  fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
+  
+  // Layout Config
+  layoutMode = signal<'landscape' | 'portrait'>('landscape');
+  splitCount = signal<number>(1);
+  fontSize = signal<number>(12);
+  rotateText = signal<boolean>(false);
+  
+  // Sheet Calibration (A4/A5)
+  marginTop = signal<number>(5); 
+  marginLeft = signal<number>(5); 
+  gapX = signal<number>(1);
+  gapY = signal<number>(1);
+  skippedCells = signal<number>(0);
+  showAdvanced = signal(false);
 
-    // Fetch Data State
-    fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
+  // Brother Config
+  brotherPaperType = signal<'62' | '12' | '23x23'>('62');
+  brotherWidth = signal<number>(62);
+  brotherHeight = signal<number>(25); // Default length per label
 
-    // Layout Config
-    layoutMode = signal<'landscape' | 'portrait'>('landscape');
-    splitCount = signal<number>(1);
-    fontSize = signal<number>(12);
-    rotateText = signal<boolean>(false);
+  // Computed
+  rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
 
-    // Sheet Calibration (A4/A5)
-    marginTop = signal<number>(5);
-    marginLeft = signal<number>(5);
-    gapX = signal<number>(1);
-    gapY = signal<number>(1);
-    skippedCells = signal<number>(0);
-    showAdvanced = signal(false);
+  layoutDims = computed(() => {
+      const mode = this.printMode();
+      const isLand = this.layoutMode() === 'landscape';
 
-    // Brother Config
-    brotherPaperType = signal<'62' | '12' | '23x23'>('62');
-    brotherWidth = signal<number>(62);
-    brotherHeight = signal<number>(25); // Default length per label
+      if (mode === 'sheet_a5') {
+          // A5: 148 x 210 mm
+          if (isLand) return { pageW: 210, pageH: 148, cellW: 19, cellH: 45 }; // 10x3
+          else return { pageW: 148, pageH: 210, cellW: 45, cellH: 19 }; // 3x10
+      } 
+      else if (mode === 'sheet_a4') {
+          // A4: 210 x 297 mm
+          // Default Layout: 4 cols x 11 rows (Tomy 145 style approximation)
+          return { pageW: 210, pageH: 297, cellW: 48, cellH: 25 }; 
+      }
+      return { pageW: 0, pageH: 0, cellW: 0, cellH: 0 };
+  });
 
-    // Computed
-    rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
+  constructor() {
+      // Auto-defaults when switching input count or mode
+      effect(() => {
+          const mode = this.printMode();
+          if (mode === 'brother') {
+              this.fontSize.set(16);
+              this.rotateText.set(false);
+          } else {
+              // Sheet defaults
+              const split = this.splitCount();
+              this.fontSize.set(split === 1 ? 12 : split === 2 ? 10 : 8);
+          }
+      }, { allowSignalWrites: true });
+  }
 
-    layoutDims = computed(() => {
-        const mode = this.printMode();
-        const isLand = this.layoutMode() === 'landscape';
+  setMode(mode: PrintMode) {
+      this.printMode.set(mode);
+      // Reset view defaults
+      this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
+      if (mode === 'brother') {
+          this.onBrotherPaperChange(this.brotherPaperType());
+      } else if (mode === 'sheet_a4') {
+          this.splitCount.set(1);
+          this.gapX.set(2); this.gapY.set(2);
+          this.marginTop.set(10); this.marginLeft.set(5);
+      } else if (mode === 'sheet_a5') {
+          this.marginTop.set(5); this.marginLeft.set(5);
+      }
+  }
 
-        if (mode === 'sheet_a5') {
-            // A5: 148 x 210 mm
-            if (isLand) return { pageW: 210, pageH: 148, cellW: 19, cellH: 45 }; // 10x3
-            else return { pageW: 148, pageH: 210, cellW: 45, cellH: 19 }; // 3x10
-        }
-        else if (mode === 'sheet_a4') {
-            // A4: 210 x 297 mm
-            // Default Layout: 4 cols x 11 rows (Tomy 145 style approximation)
-            return { pageW: 210, pageH: 297, cellW: 48, cellH: 25 };
-        }
-        return { pageW: 0, pageH: 0, cellW: 0, cellH: 0 };
-    });
+  onBrotherPaperChange(type: '62' | '12' | '23x23') {
+      this.brotherPaperType.set(type);
+      if (type === '62') {
+          this.brotherWidth.set(62);
+          this.brotherHeight.set(25);
+          this.fontSize.set(16);
+          this.rotateText.set(false);
+      } else if (type === '12') {
+          this.brotherWidth.set(12);
+          this.brotherHeight.set(30);
+          this.fontSize.set(10);
+          this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
+      } else if (type === '23x23') {
+          this.brotherWidth.set(23);
+          this.brotherHeight.set(23);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+      }
+  }
 
-    constructor() {
-        // Auto-defaults when switching input count or mode
-        effect(() => {
-            const mode = this.printMode();
-            if (mode === 'brother') {
-                this.fontSize.set(16);
-                this.rotateText.set(false);
-            } else {
-                // Sheet defaults
-                const split = this.splitCount();
-                this.fontSize.set(split === 1 ? 12 : split === 2 ? 10 : 8);
-            }
-        }, { allowSignalWrites: true });
-    }
+  fetchFromRequests() {
+      const targetDate = this.fetchDate();
+      if (!targetDate) return;
 
-    setMode(mode: PrintMode) {
-        this.printMode.set(mode);
-        // Reset view defaults
-        this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
-        if (mode === 'brother') {
-            this.onBrotherPaperChange(this.brotherPaperType());
-        } else if (mode === 'sheet_a4') {
-            this.splitCount.set(1);
-            this.gapX.set(2); this.gapY.set(2);
-            this.marginTop.set(10); this.marginLeft.set(5);
-        } else if (mode === 'sheet_a5') {
-            this.marginTop.set(5); this.marginLeft.set(5);
-        }
-    }
+      const approvedReqs = this.state.approvedRequests();
+      const samples = new Set<string>();
 
-    onBrotherPaperChange(type: '62' | '12' | '23x23') {
-        this.brotherPaperType.set(type);
-        if (type === '62') {
-            this.brotherWidth.set(62);
-            this.brotherHeight.set(25);
-            this.fontSize.set(16);
-            this.rotateText.set(false);
-        } else if (type === '12') {
-            this.brotherWidth.set(12);
-            this.brotherHeight.set(30);
-            this.fontSize.set(10);
-            this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
-        } else if (type === '23x23') {
-            this.brotherWidth.set(23);
-            this.brotherHeight.set(23);
-            this.fontSize.set(10);
-            this.rotateText.set(false);
-        }
-    }
+      approvedReqs.forEach(req => {
+          // Lấy ngày phân tích hoặc ngày duyệt
+          let reqDateStr = '';
+          if (req.analysisDate) {
+              reqDateStr = req.analysisDate;
+          } else {
+              const ts = req.approvedAt || req.timestamp;
+              const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+              reqDateStr = d.toISOString().split('T')[0];
+          }
 
-    fetchFromRequests() {
-        const targetDate = this.fetchDate();
-        if (!targetDate) return;
+          if (reqDateStr === targetDate && req.sampleList && req.sampleList.length > 0) {
+              req.sampleList.forEach(s => samples.add(s));
+          }
+      });
 
-        const approvedReqs = this.state.approvedRequests();
-        const samples = new Set<string>();
+      if (samples.size === 0) {
+          this.toast.show(`Không tìm thấy mẫu nào trong các yêu cầu đã duyệt ngày ${targetDate}`, 'info');
+          return;
+      }
 
-        approvedReqs.forEach(req => {
-            // Lấy ngày phân tích hoặc ngày duyệt
-            let reqDateStr = '';
-            if (req.analysisDate) {
-                reqDateStr = req.analysisDate;
-            } else {
-                const ts = req.approvedAt || req.timestamp;
-                const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-                reqDateStr = d.toISOString().split('T')[0];
-            }
+      const currentInput = this.rawInput().trim();
+      const newSamples = Array.from(samples).join('\n');
+      
+      if (currentInput) {
+          this.rawInput.set(currentInput + '\n' + newSamples);
+      } else {
+          this.rawInput.set(newSamples);
+      }
+      
+      this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
+  }
 
-            if (reqDateStr === targetDate && req.sampleList && req.sampleList.length > 0) {
-                req.sampleList.forEach(s => samples.add(s));
-            }
-        });
+  setLayout(mode: 'landscape' | 'portrait') {
+      this.layoutMode.set(mode);
+      if (mode === 'landscape') { this.rotateText.set(true); } 
+      else { this.rotateText.set(false); }
+  }
 
-        if (samples.size === 0) {
-            this.toast.show(`Không tìm thấy mẫu nào trong các yêu cầu đã duyệt ngày ${targetDate}`, 'info');
-            return;
-        }
+  updateInput(val: string) { this.rawInput.set(val); }
+  clearInput() { this.rawInput.set(''); }
+  
+  addExample() {
+      const ex = Array.from({length: 15}, (_, i) => `STD-${(i+1).toString().padStart(3,'0')}`).join('\n');
+      this.rawInput.set(ex);
+  }
 
-        const currentInput = this.rawInput().trim();
-        const newSamples = Array.from(samples).join('\n');
+  adjustZoom(delta: number) {
+      this.zoomLevel.update(z => Math.max(0.5, Math.min(2.5, z + delta)));
+  }
 
-        if (currentInput) {
-            this.rawInput.set(currentInput + '\n' + newSamples);
-        } else {
-            this.rawInput.set(newSamples);
-        }
+  parseInput(text: string): string[] {
+      return text.split(/[\n,;]+/).map(s => s.trim()).filter(s => s !== '');
+  }
 
-        this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
-    }
+  // --- SHEET LOGIC ---
+  pages = computed<LabelPage[]>(() => {
+      if (this.printMode() === 'brother') return [];
 
-    setLayout(mode: 'landscape' | 'portrait') {
-        this.layoutMode.set(mode);
-        if (mode === 'landscape') { this.rotateText.set(true); }
-        else { this.rotateText.set(false); }
-    }
+      const rawIds = this.parseInput(this.rawInput());
+      const split = this.splitCount();
+      const skipped = this.skippedCells();
+      
+      // Calculate cells per page based on layout
+      let cols = 3; let rows = 10;
+      if (this.printMode() === 'sheet_a5') {
+          if (this.layoutMode() === 'landscape') { cols = 10; rows = 3; }
+      } else {
+          // A4 Defaults
+          cols = 4; rows = 11; 
+      }
+      const CELLS_PER_PAGE = cols * rows;
+      
+      const allCells: LabelCell[] = [];
+      let globalCellIndex = 0;
 
-    updateInput(val: string) { this.rawInput.set(val); }
-    clearInput() { this.rawInput.set(''); }
+      // Fill Skipped
+      for(let i=0; i<skipped; i++) {
+          allCells.push({ subLabels: [], isEmpty: true, index: globalCellIndex++ });
+      }
 
-    addExample() {
-        const ex = Array.from({ length: 15 }, (_, i) => `STD-${(i + 1).toString().padStart(3, '0')}`).join('\n');
-        this.rawInput.set(ex);
-    }
+      // Fill Data
+      let currentSub: string[] = [];
+      for(const id of rawIds) {
+          currentSub.push(id);
+          if(currentSub.length === split) {
+              allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
+              currentSub = [];
+          }
+      }
+      if(currentSub.length > 0) {
+          allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
+      }
 
-    adjustZoom(delta: number) {
-        this.zoomLevel.update(z => Math.max(0.5, Math.min(2.5, z + delta)));
-    }
+      // Pagination
+      const pages: LabelPage[] = [];
+      for (let i = 0; i < allCells.length; i += CELLS_PER_PAGE) {
+          const pageCells = allCells.slice(i, i + CELLS_PER_PAGE);
+          while(pageCells.length < CELLS_PER_PAGE) {
+              pageCells.push({ subLabels: [], isEmpty: true, index: -1 });
+          }
+          pages.push({ cells: pageCells, pageIndex: pages.length });
+      }
+      
+      if (pages.length === 0 && rawIds.length === 0) {
+           const emptyCells = Array(CELLS_PER_PAGE).fill(null).map((_, idx) => ({ 
+               subLabels: [], isEmpty: true, index: idx < skipped ? idx : -1 
+           }));
+           pages.push({ cells: emptyCells, pageIndex: 0 });
+      }
 
-    parseInput(text: string): string[] {
-        return text.split(/[\n,;]+/).map(s => s.trim()).filter(s => s !== '');
-    }
+      return pages;
+  });
 
-    // --- SHEET LOGIC ---
-    pages = computed<LabelPage[]>(() => {
-        if (this.printMode() === 'brother') return [];
+  // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
+  printBrother() {
+      const labels = this.parseInput(this.rawInput());
+      if (labels.length === 0) return;
 
-        const rawIds = this.parseInput(this.rawInput());
-        const split = this.splitCount();
-        const skipped = this.skippedCells();
+      const w = this.brotherWidth();
+      const h = this.brotherHeight();
+      const fs = this.fontSize();
+      const rotate = this.rotateText();
+      const isFixed = this.brotherPaperType() === '23x23';
 
-        // Calculate cells per page based on layout
-        let cols = 3; let rows = 10;
-        if (this.printMode() === 'sheet_a5') {
-            if (this.layoutMode() === 'landscape') { cols = 10; rows = 3; }
-        } else {
-            // A4 Defaults
-            cols = 4; rows = 11;
-        }
-        const CELLS_PER_PAGE = cols * rows;
+      // Create a dedicated print window to isolate styles
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (!printWindow) {
+          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
+          return;
+      }
 
-        const allCells: LabelCell[] = [];
-        let globalCellIndex = 0;
-
-        // Fill Skipped
-        for (let i = 0; i < skipped; i++) {
-            allCells.push({ subLabels: [], isEmpty: true, index: globalCellIndex++ });
-        }
-
-        // Fill Data
-        let currentSub: string[] = [];
-        for (const id of rawIds) {
-            currentSub.push(id);
-            if (currentSub.length === split) {
-                allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
-                currentSub = [];
-            }
-        }
-        if (currentSub.length > 0) {
-            allCells.push({ subLabels: [...currentSub], isEmpty: false, index: globalCellIndex++ });
-        }
-
-        // Pagination
-        const pages: LabelPage[] = [];
-        for (let i = 0; i < allCells.length; i += CELLS_PER_PAGE) {
-            const pageCells = allCells.slice(i, i + CELLS_PER_PAGE);
-            while (pageCells.length < CELLS_PER_PAGE) {
-                pageCells.push({ subLabels: [], isEmpty: true, index: -1 });
-            }
-            pages.push({ cells: pageCells, pageIndex: pages.length });
-        }
-
-        if (pages.length === 0 && rawIds.length === 0) {
-            const emptyCells = Array(CELLS_PER_PAGE).fill(null).map((_, idx) => ({
-                subLabels: [], isEmpty: true, index: idx < skipped ? idx : -1
-            }));
-            pages.push({ cells: emptyCells, pageIndex: 0 });
-        }
-
-        return pages;
-    });
-
-    // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
-    printBrother() {
-        const labels = this.parseInput(this.rawInput());
-        if (labels.length === 0) return;
-
-        const w = this.brotherWidth();
-        const h = this.brotherHeight();
-        const fs = this.fontSize();
-        const rotate = this.rotateText();
-        const isFixed = this.brotherPaperType() === '23x23';
-
-        // Create a dedicated print window to isolate styles
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) {
-            this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
-            return;
-        }
-
-        const css = `
+      const css = `
         @page { size: ${w}mm ${isFixed ? h + 'mm' : 'auto'}; margin: 0; }
         body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; }
         .label-container {
@@ -623,83 +623,83 @@ export class LabelPrintComponent {
         }
       `;
 
-        let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
+      let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
+      
+      labels.forEach(label => {
+          htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
+      });
 
-        labels.forEach(label => {
-            htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
-        });
+      htmlContent += `</body></html>`;
 
-        htmlContent += `</body></html>`;
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
 
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
+      // Wait for content to load then print
+      printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+          // Optional: printWindow.close();
+      };
+  }
 
-        // Wait for content to load then print
-        printWindow.onload = () => {
-            printWindow.focus();
-            printWindow.print();
-            // Optional: printWindow.close();
-        };
-    }
+  // --- SHEET PDF GENERATION (A4/A5) ---
+  async generateImagePdf() {
+      const pages = this.pages();
+      const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
+      
+      if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
 
-    // --- SHEET PDF GENERATION (A4/A5) ---
-    async generateImagePdf() {
-        const pages = this.pages();
-        const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
+      this.isProcessing.set(true);
+      this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-        if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
+      try {
+          // Dynamic imports fix ESM issues
+          const { jsPDF } = await import('jspdf');
+          const html2canvas = (await import('html2canvas')).default;
 
-        this.isProcessing.set(true);
-        this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
-        await new Promise(resolve => setTimeout(resolve, 150));
+          const isA5 = this.printMode() === 'sheet_a5';
+          const isLandscape = this.layoutMode() === 'landscape' && isA5;
+          
+          let format = isA5 ? 'a5' : 'a4';
+          // Fix: Type orientation explicitly to satisfy jsPDF constructor
+          let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
+          
+          // PDF Dimensions (mm)
+          let pdfW = 210; let pdfH = 297; // A4 Portrait
+          if (isA5) {
+              pdfW = isLandscape ? 210 : 148;
+              pdfH = isLandscape ? 148 : 210;
+          }
 
-        try {
-            // Dynamic imports fix ESM issues
-            const { jsPDF } = await import('jspdf');
-            const html2canvas = (await import('html2canvas')).default;
+          const doc = new jsPDF(orientation, 'mm', format);
 
-            const isA5 = this.printMode() === 'sheet_a5';
-            const isLandscape = this.layoutMode() === 'landscape' && isA5;
+          for (let i = 0; i < validPages.length; i++) {
+              const elementId = `label-page-${validPages[i].pageIndex}`;
+              const element = document.getElementById(elementId);
+              if (!element) continue;
 
-            let format = isA5 ? 'a5' : 'a4';
-            // Fix: Type orientation explicitly to satisfy jsPDF constructor
-            let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
+              const canvas = await html2canvas(element, {
+                  scale: 3, // 3x scale for crisp text
+                  useCORS: true,
+                  logging: false,
+                  backgroundColor: '#ffffff'
+              });
 
-            // PDF Dimensions (mm)
-            let pdfW = 210; let pdfH = 297; // A4 Portrait
-            if (isA5) {
-                pdfW = isLandscape ? 210 : 148;
-                pdfH = isLandscape ? 148 : 210;
-            }
+              const imgData = canvas.toDataURL('image/jpeg', 0.95);
+              if (i > 0) doc.addPage();
+              doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+          }
 
-            const doc = new jsPDF(orientation, 'mm', format);
+          const filename = `Labels_${format.toUpperCase()}_${new Date().toISOString().slice(0,10)}.pdf`;
+          doc.save(filename);
+          this.toast.show('Tạo PDF thành công!', 'success');
 
-            for (let i = 0; i < validPages.length; i++) {
-                const elementId = `label-page-${validPages[i].pageIndex}`;
-                const element = document.getElementById(elementId);
-                if (!element) continue;
-
-                const canvas = await html2canvas(element, {
-                    scale: 3, // 3x scale for crisp text
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                });
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                if (i > 0) doc.addPage();
-                doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-            }
-
-            const filename = `Labels_${format.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.pdf`;
-            doc.save(filename);
-            this.toast.show('Tạo PDF thành công!', 'success');
-
-        } catch (e: any) {
-            console.error(e);
-            this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
-        } finally {
-            this.isProcessing.set(false);
-        }
-    }
+      } catch (e: any) {
+          console.error(e);
+          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
 }

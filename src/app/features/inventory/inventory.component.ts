@@ -19,10 +19,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { LabelPrintComponent } from '../labels/label-print.component';
 
 @Component({
-    selector: 'app-inventory',
-    standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent],
-    template: `
+  selector: 'app-inventory',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent],
+  template: `
     <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative">
       
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
@@ -289,7 +289,9 @@ import { LabelPrintComponent } from '../labels/label-print.component';
 
         <!-- LABELS TAB -->
         @if (activeTab() === 'labels') {
-            <app-label-print class="h-full block pb-20 md:pb-0"></app-label-print>
+            <div class="flex-1 min-h-0 w-full relative">
+                <app-label-print class="absolute inset-0 block"></app-label-print>
+            </div>
         }
       </div>
 
@@ -392,316 +394,316 @@ import { LabelPrintComponent } from '../labels/label-print.component';
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
   `]
 })
 export class InventoryComponent implements OnDestroy {
-    state = inject(StateService);
-    inventoryService = inject(InventoryService);
-    recipeService = inject(RecipeService); // Inject RecipeService
-    auth = inject(AuthService);
-    toast = inject(ToastService);
-    calcService = inject(CalculatorService);
-    confirmationService = inject(ConfirmationService);
-    private fb: FormBuilder = inject(FormBuilder);
+  state = inject(StateService);
+  inventoryService = inject(InventoryService);
+  recipeService = inject(RecipeService); // Inject RecipeService
+  auth = inject(AuthService); 
+  toast = inject(ToastService);
+  calcService = inject(CalculatorService);
+  confirmationService = inject(ConfirmationService);
+  private fb: FormBuilder = inject(FormBuilder);
 
-    // Added 'labels' to type definition
-    activeTab = signal<'list' | 'capacity' | 'labels'>('list');
+  // Added 'labels' to type definition
+  activeTab = signal<'list' | 'capacity' | 'labels'>('list');
+  
+  // Data & Pagination (Client-side filtering for instant UX)
+  allItems = signal<InventoryItem[]>([]);
+  displayLimit = signal(20);
+  isInitialLoading = signal(true); 
+  isProcessing = signal(false); 
 
-    // Data & Pagination (Client-side filtering for instant UX)
-    allItems = signal<InventoryItem[]>([]);
-    displayLimit = signal(20);
-    isInitialLoading = signal(true);
-    isProcessing = signal(false);
+  filteredItems = computed(() => {
+      let items = this.allItems();
+      const term = this.searchTerm().toLowerCase().trim();
+      const filter = this.filterType();
 
-    filteredItems = computed(() => {
-        let items = this.allItems();
-        const term = this.searchTerm().toLowerCase().trim();
-        const filter = this.filterType();
+      // 1. Lọc theo Phân loại
+      if (filter !== 'all') {
+          if (filter === 'low') {
+              items = items.filter(i => i.stock <= (i.threshold || 5));
+          } else {
+              items = items.filter(i => i.category === filter);
+          }
+      }
 
-        // 1. Lọc theo Phân loại
-        if (filter !== 'all') {
-            if (filter === 'low') {
-                items = items.filter(i => i.stock <= (i.threshold || 5));
-            } else {
-                items = items.filter(i => i.category === filter);
-            }
-        }
+      // 2. Lọc theo Từ khóa (Tìm trên cả Tên và ID, bỏ qua dấu tiếng Việt)
+      if (term) {
+          const removeAccents = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const normalizedTerm = removeAccents(term);
+          
+          items = items.filter(i => {
+              const nameMatch = i.name ? removeAccents(i.name.toLowerCase()).includes(normalizedTerm) : false;
+              const idMatch = i.id ? removeAccents(i.id.toLowerCase()).includes(normalizedTerm) : false;
+              return nameMatch || idMatch;
+          });
+      }
 
-        // 2. Lọc theo Từ khóa (Tìm trên cả Tên và ID, bỏ qua dấu tiếng Việt)
-        if (term) {
-            const removeAccents = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const normalizedTerm = removeAccents(term);
+      // 3. Sắp xếp mới nhất lên đầu
+      return items.sort((a, b) => {
+          const timeA = a.lastUpdated?.seconds || 0;
+          const timeB = b.lastUpdated?.seconds || 0;
+          return timeB - timeA;
+      });
+  });
 
-            items = items.filter(i => {
-                const nameMatch = i.name ? removeAccents(i.name.toLowerCase()).includes(normalizedTerm) : false;
-                const idMatch = i.id ? removeAccents(i.id.toLowerCase()).includes(normalizedTerm) : false;
-                return nameMatch || idMatch;
-            });
-        }
+  items = computed(() => this.filteredItems().slice(0, this.displayLimit()));
+  hasMore = computed(() => this.displayLimit() < this.filteredItems().length);
+  totalCount = computed(() => this.allItems().length);
 
-        // 3. Sắp xếp mới nhất lên đầu
-        return items.sort((a, b) => {
-            const timeA = a.lastUpdated?.seconds || 0;
-            const timeB = b.lastUpdated?.seconds || 0;
-            return timeB - timeA;
-        });
-    });
+  // Filters
+  searchTerm = signal('');
+  filterType = signal('all');
+  searchSubject = new Subject<string>();
+  
+  selectedIds = signal<Set<string>>(new Set());
 
-    items = computed(() => this.filteredItems().slice(0, this.displayLimit()));
-    hasMore = computed(() => this.displayLimit() < this.filteredItems().length);
-    totalCount = computed(() => this.allItems().length);
+  // Capacity - Local Inventory Snapshot
+  capacityInventoryMap = signal<Record<string, InventoryItem>>({}); 
+  capacityRecipeMap = signal<Record<string, Recipe>>({}); // New Signal for Recipes
+  capacityLoading = signal(false);
+  selectedSopForCap = signal<Sop | null>(null);
+  capacityMode = signal<'marginal' | 'standard'>('marginal');
+  
+  capacityResult = computed(() => { 
+      const s = this.selectedSopForCap(); 
+      // Use the locally fetched maps
+      return s ? this.calcService.calculateCapacity(
+          s, 
+          this.capacityMode(), 
+          this.capacityInventoryMap(), 
+          this.capacityRecipeMap() // Pass Recipe Map
+      ) : null; 
+  });
 
-    // Filters
-    searchTerm = signal('');
-    filterType = signal('all');
-    searchSubject = new Subject<string>();
+  // Modal
+  showModal = signal(false);
+  isEditing = signal(false);
+  oldStock = signal(0); // Theo dõi tồn kho cũ để ghi log
+  form = this.fb.group({
+    id: ['', Validators.required], 
+    name: ['', Validators.required], 
+    category: ['reagent'], 
+    stock: [0, [Validators.required, Validators.min(0)]],
+    unit: ['ml', Validators.required], 
+    threshold: [10], 
+    location: [''], 
+    supplier: [''], 
+    notes: [''],
+    reason: ['', Validators.required] 
+  });
+  
+  unitOptions = UNIT_OPTIONS;
 
-    selectedIds = signal<Set<string>>(new Set());
+  constructor() {
+      this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(term => { 
+          this.searchTerm.set(term); 
+          this.displayLimit.set(20); // Reset trang khi tìm kiếm
+      });
+      // Initial Load
+      setTimeout(() => {
+          this.refreshData();
+      }, 100); 
+  }
+  ngOnDestroy() { this.searchSubject.complete(); }
 
-    // Capacity - Local Inventory Snapshot
-    capacityInventoryMap = signal<Record<string, InventoryItem>>({});
-    capacityRecipeMap = signal<Record<string, Recipe>>({}); // New Signal for Recipes
-    capacityLoading = signal(false);
-    selectedSopForCap = signal<Sop | null>(null);
-    capacityMode = signal<'marginal' | 'standard'>('marginal');
+  // --- TAB SWITCH LOGIC ---
+  async switchTab(tab: 'list' | 'capacity' | 'labels') {
+      this.activeTab.set(tab);
+      if (tab === 'capacity' && Object.keys(this.capacityInventoryMap()).length === 0) {
+          // Lazy load full inventory AND recipes for capacity calculation
+          this.capacityLoading.set(true);
+          try {
+              // Fetch Both
+              const [allItems, allRecipes] = await Promise.all([
+                  this.inventoryService.getAllInventory(),
+                  this.recipeService.getAllRecipes()
+              ]);
 
-    capacityResult = computed(() => {
-        const s = this.selectedSopForCap();
-        // Use the locally fetched maps
-        return s ? this.calcService.calculateCapacity(
-            s,
-            this.capacityMode(),
-            this.capacityInventoryMap(),
-            this.capacityRecipeMap() // Pass Recipe Map
-        ) : null;
-    });
+              const invMap: Record<string, InventoryItem> = {};
+              allItems.forEach(i => invMap[i.id] = i);
+              this.capacityInventoryMap.set(invMap);
 
-    // Modal
-    showModal = signal(false);
-    isEditing = signal(false);
-    oldStock = signal(0); // Theo dõi tồn kho cũ để ghi log
-    form = this.fb.group({
-        id: ['', Validators.required],
-        name: ['', Validators.required],
-        category: ['reagent'],
-        stock: [0, [Validators.required, Validators.min(0)]],
-        unit: ['ml', Validators.required],
-        threshold: [10],
-        location: [''],
-        supplier: [''],
-        notes: [''],
-        reason: ['', Validators.required]
-    });
+              const recMap: Record<string, Recipe> = {};
+              allRecipes.forEach(r => recMap[r.id] = r);
+              this.capacityRecipeMap.set(recMap);
 
-    unitOptions = UNIT_OPTIONS;
+          } catch(e) {
+              console.error("Error loading full inventory for capacity", e);
+          } finally {
+              this.capacityLoading.set(false);
+          }
+      }
+  }
 
-    constructor() {
-        this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(term => {
-            this.searchTerm.set(term);
-            this.displayLimit.set(20); // Reset trang khi tìm kiếm
-        });
-        // Initial Load
-        setTimeout(() => {
-            this.refreshData();
-        }, 100);
+  // Helpers
+  formatNum = formatNum;
+  formatSmartUnit = formatSmartUnit; 
+  
+  // Updated Icon Logic
+  getIcon(cat: string | undefined): string { 
+      if (!cat) return 'fa-flask';
+      const c = cat.toLowerCase();
+      if (c === 'solvent') return 'fa-droplet';
+      if (c === 'standard') return 'fa-award'; // or fa-star
+      if (c === 'reagent') return 'fa-flask';
+      if (c === 'consumable') return 'fa-vial';
+      if (c === 'kit') return 'fa-box-open';
+      return 'fa-cube'; 
+  }
+
+  getIconGradient(item: InventoryItem): string {
+      if (item.stock <= 0) return 'bg-gradient-to-tl from-red-600 to-rose-400';
+      if (this.isLowStock(item)) return 'bg-gradient-to-tl from-orange-500 to-yellow-400';
+      
+      const c = (item.category || '').toLowerCase();
+      if (c === 'solvent') return 'bg-gradient-to-tl from-cyan-600 to-blue-400';
+      if (c === 'standard') return 'bg-gradient-to-tl from-amber-500 to-yellow-300';
+      
+      return 'bg-gradient-to-tl from-purple-700 to-pink-500';
+  }
+
+  isLowStock(item: InventoryItem) { return item.stock <= (item.threshold || 5); }
+  
+  // Stock Percentage for Gauge
+  getStockPercent(item: InventoryItem): number {
+      const safeLevel = (item.threshold || 5) * 3; // Assume 3x threshold is "Safe/Full"
+      const ratio = item.stock / safeLevel;
+      return Math.min(ratio * 100, 100);
+  }
+  
+  // Resolve name specifically for capacity tab using local map
+  resolveCapacityName(id: string): string {
+    const item = this.capacityInventoryMap()[id];
+    return item ? (item.name || item.id) : id;
+  }
+
+  // Data Loading
+  async refreshData() {
+      this.isInitialLoading.set(true);
+      try {
+          const data = await this.inventoryService.getAllInventory();
+          this.allItems.set(data);
+          this.displayLimit.set(20);
+          this.selectedIds.set(new Set());
+      } catch (e) {
+          console.error("Error loading inventory", e);
+          this.toast.show('Lỗi tải dữ liệu kho', 'error');
+      } finally {
+          this.isInitialLoading.set(false);
+      }
+  }
+
+  loadMore() {
+      this.displayLimit.update(l => l + 20);
+  }
+
+  onSearchInput(val: string) { this.searchSubject.next(val); }
+  onFilterChange(val: string) { 
+      this.filterType.set(val); 
+      this.displayLimit.set(20); // Reset trang khi đổi bộ lọc
+  }
+
+  // Actions
+  toggleSelection(id: string) { this.selectedIds.update(c => { const n = new Set(c); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  
+  openModal(item?: InventoryItem) {
+    if (!this.auth.canEditInventory()) {
+        this.toast.show('Bạn không có quyền sửa kho.', 'error');
+        return;
     }
-    ngOnDestroy() { this.searchSubject.complete(); }
-
-    // --- TAB SWITCH LOGIC ---
-    async switchTab(tab: 'list' | 'capacity' | 'labels') {
-        this.activeTab.set(tab);
-        if (tab === 'capacity' && Object.keys(this.capacityInventoryMap()).length === 0) {
-            // Lazy load full inventory AND recipes for capacity calculation
-            this.capacityLoading.set(true);
-            try {
-                // Fetch Both
-                const [allItems, allRecipes] = await Promise.all([
-                    this.inventoryService.getAllInventory(),
-                    this.recipeService.getAllRecipes()
-                ]);
-
-                const invMap: Record<string, InventoryItem> = {};
-                allItems.forEach(i => invMap[i.id] = i);
-                this.capacityInventoryMap.set(invMap);
-
-                const recMap: Record<string, Recipe> = {};
-                allRecipes.forEach(r => recMap[r.id] = r);
-                this.capacityRecipeMap.set(recMap);
-
-            } catch (e) {
-                console.error("Error loading full inventory for capacity", e);
-            } finally {
-                this.capacityLoading.set(false);
-            }
-        }
+    this.showModal.set(true);
+    if(item) { 
+        this.isEditing.set(true); 
+        this.oldStock.set(item.stock);
+        this.form.patchValue({ ...item, reason: '' }); 
+        this.form.controls.id.disable(); 
     }
-
-    // Helpers
-    formatNum = formatNum;
-    formatSmartUnit = formatSmartUnit;
-
-    // Updated Icon Logic
-    getIcon(cat: string | undefined): string {
-        if (!cat) return 'fa-flask';
-        const c = cat.toLowerCase();
-        if (c === 'solvent') return 'fa-droplet';
-        if (c === 'standard') return 'fa-award'; // or fa-star
-        if (c === 'reagent') return 'fa-flask';
-        if (c === 'consumable') return 'fa-vial';
-        if (c === 'kit') return 'fa-box-open';
-        return 'fa-cube';
+    else { 
+        this.isEditing.set(false); 
+        this.oldStock.set(0);
+        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới' }); 
+        this.form.controls.id.enable(); 
     }
-
-    getIconGradient(item: InventoryItem): string {
-        if (item.stock <= 0) return 'bg-gradient-to-tl from-red-600 to-rose-400';
-        if (this.isLowStock(item)) return 'bg-gradient-to-tl from-orange-500 to-yellow-400';
-
-        const c = (item.category || '').toLowerCase();
-        if (c === 'solvent') return 'bg-gradient-to-tl from-cyan-600 to-blue-400';
-        if (c === 'standard') return 'bg-gradient-to-tl from-amber-500 to-yellow-300';
-
-        return 'bg-gradient-to-tl from-purple-700 to-pink-500';
+  }
+  closeModal() { 
+      if (!this.isProcessing()) {
+          this.showModal.set(false); 
+      }
+  }
+  onNameChange(e: any) { if(!this.isEditing()) this.form.patchValue({ id: generateSlug(e.target.value) }); }
+  
+  // --- HARDENED UX: Save Item ---
+  async save() {
+      if (this.isProcessing()) return; 
+      if (this.form.invalid) {
+          this.toast.show('Vui lòng nhập đầy đủ thông tin và Lý do thay đổi!', 'error');
+          return;
+      }
+      this.isProcessing.set(true); 
+      try { 
+          const raw = this.form.getRawValue();
+          const reason = raw.reason || ''; 
+          const { reason: _, ...itemData } = raw; 
+          await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason, this.oldStock()); 
+          this.toast.show(this.isEditing() ? 'Đã cập nhật' : 'Đã thêm mới', 'success');
+          this.showModal.set(false); 
+          this.refreshData(); 
+      } catch (e: any) {
+          if (e.code === 'resource-exhausted') {
+             this.toast.show('Lỗi: Hết dung lượng lưu trữ (Quota).', 'error');
+          } else {
+             this.toast.show('Lỗi lưu kho: ' + (e.message || 'Unknown'), 'error');
+          }
+      } finally { 
+          this.isProcessing.set(false); 
+      }
+  }
+  
+  // --- HARDENED UX: Delete Item ---
+  async deleteItem(item: InventoryItem) {
+      if (this.isProcessing()) return; 
+      if(await this.confirmationService.confirm({ message: 'Xóa mục này? Hành động này cần được ghi nhận.', confirmText: 'Xác nhận Xóa', isDangerous: true })) {
+          this.isProcessing.set(true); 
+          try {
+              await this.inventoryService.deleteItem(item.id, 'Xóa thủ công');
+              this.toast.show('Đã xóa thành công', 'success');
+              this.showModal.set(false);
+              this.refreshData();
+          } catch (e: any) {
+              this.toast.show('Lỗi xóa: ' + e.message, 'error');
+          } finally {
+              this.isProcessing.set(false); 
+          }
+      }
+  }
+  
+  // --- HARDENED UX: Quick Update ---
+  async quickUpdate(item: InventoryItem, valStr: string) {
+    if (this.isProcessing()) return; 
+    const val = parseQuantityInput(valStr, item.unit); 
+    if (val === null) {
+        this.toast.show(`Lỗi: Đơn vị không khớp hoặc định dạng sai. Yêu cầu nhập theo (${item.unit}) hoặc quy đổi tương đương.`, 'error');
+        return;
     }
-
-    isLowStock(item: InventoryItem) { return item.stock <= (item.threshold || 5); }
-
-    // Stock Percentage for Gauge
-    getStockPercent(item: InventoryItem): number {
-        const safeLevel = (item.threshold || 5) * 3; // Assume 3x threshold is "Safe/Full"
-        const ratio = item.stock / safeLevel;
-        return Math.min(ratio * 100, 100);
+    if (val === 0) return;
+    this.isProcessing.set(true); 
+    try {
+      const reason = val > 0 ? 'Nhập nhanh' : 'Xuất nhanh';
+      await this.inventoryService.updateStock(item.id, item.stock, val, reason);
+      const msg = val > 0 ? `Đã nhập +${val} ${item.unit}` : `Đã xuất ${val} ${item.unit}`;
+      this.toast.show(msg, 'success');
+      this.refreshData();
+    } catch (e: any) {
+      this.toast.show('Lỗi cập nhật kho: ' + e.message, 'error');
+    } finally {
+      this.isProcessing.set(false); 
     }
-
-    // Resolve name specifically for capacity tab using local map
-    resolveCapacityName(id: string): string {
-        const item = this.capacityInventoryMap()[id];
-        return item ? (item.name || item.id) : id;
-    }
-
-    // Data Loading
-    async refreshData() {
-        this.isInitialLoading.set(true);
-        try {
-            const data = await this.inventoryService.getAllInventory();
-            this.allItems.set(data);
-            this.displayLimit.set(20);
-            this.selectedIds.set(new Set());
-        } catch (e) {
-            console.error("Error loading inventory", e);
-            this.toast.show('Lỗi tải dữ liệu kho', 'error');
-        } finally {
-            this.isInitialLoading.set(false);
-        }
-    }
-
-    loadMore() {
-        this.displayLimit.update(l => l + 20);
-    }
-
-    onSearchInput(val: string) { this.searchSubject.next(val); }
-    onFilterChange(val: string) {
-        this.filterType.set(val);
-        this.displayLimit.set(20); // Reset trang khi đổi bộ lọc
-    }
-
-    // Actions
-    toggleSelection(id: string) { this.selectedIds.update(c => { const n = new Set(c); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
-
-    openModal(item?: InventoryItem) {
-        if (!this.auth.canEditInventory()) {
-            this.toast.show('Bạn không có quyền sửa kho.', 'error');
-            return;
-        }
-        this.showModal.set(true);
-        if (item) {
-            this.isEditing.set(true);
-            this.oldStock.set(item.stock);
-            this.form.patchValue({ ...item, reason: '' });
-            this.form.controls.id.disable();
-        }
-        else {
-            this.isEditing.set(false);
-            this.oldStock.set(0);
-            this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới' });
-            this.form.controls.id.enable();
-        }
-    }
-    closeModal() {
-        if (!this.isProcessing()) {
-            this.showModal.set(false);
-        }
-    }
-    onNameChange(e: any) { if (!this.isEditing()) this.form.patchValue({ id: generateSlug(e.target.value) }); }
-
-    // --- HARDENED UX: Save Item ---
-    async save() {
-        if (this.isProcessing()) return;
-        if (this.form.invalid) {
-            this.toast.show('Vui lòng nhập đầy đủ thông tin và Lý do thay đổi!', 'error');
-            return;
-        }
-        this.isProcessing.set(true);
-        try {
-            const raw = this.form.getRawValue();
-            const reason = raw.reason || '';
-            const { reason: _, ...itemData } = raw;
-            await this.inventoryService.upsertItem(itemData as any, !this.isEditing(), reason, this.oldStock());
-            this.toast.show(this.isEditing() ? 'Đã cập nhật' : 'Đã thêm mới', 'success');
-            this.showModal.set(false);
-            this.refreshData();
-        } catch (e: any) {
-            if (e.code === 'resource-exhausted') {
-                this.toast.show('Lỗi: Hết dung lượng lưu trữ (Quota).', 'error');
-            } else {
-                this.toast.show('Lỗi lưu kho: ' + (e.message || 'Unknown'), 'error');
-            }
-        } finally {
-            this.isProcessing.set(false);
-        }
-    }
-
-    // --- HARDENED UX: Delete Item ---
-    async deleteItem(item: InventoryItem) {
-        if (this.isProcessing()) return;
-        if (await this.confirmationService.confirm({ message: 'Xóa mục này? Hành động này cần được ghi nhận.', confirmText: 'Xác nhận Xóa', isDangerous: true })) {
-            this.isProcessing.set(true);
-            try {
-                await this.inventoryService.deleteItem(item.id, 'Xóa thủ công');
-                this.toast.show('Đã xóa thành công', 'success');
-                this.showModal.set(false);
-                this.refreshData();
-            } catch (e: any) {
-                this.toast.show('Lỗi xóa: ' + e.message, 'error');
-            } finally {
-                this.isProcessing.set(false);
-            }
-        }
-    }
-
-    // --- HARDENED UX: Quick Update ---
-    async quickUpdate(item: InventoryItem, valStr: string) {
-        if (this.isProcessing()) return;
-        const val = parseQuantityInput(valStr, item.unit);
-        if (val === null) {
-            this.toast.show(`Lỗi: Đơn vị không khớp hoặc định dạng sai. Yêu cầu nhập theo (${item.unit}) hoặc quy đổi tương đương.`, 'error');
-            return;
-        }
-        if (val === 0) return;
-        this.isProcessing.set(true);
-        try {
-            const reason = val > 0 ? 'Nhập nhanh' : 'Xuất nhanh';
-            await this.inventoryService.updateStock(item.id, item.stock, val, reason);
-            const msg = val > 0 ? `Đã nhập +${val} ${item.unit}` : `Đã xuất ${val} ${item.unit}`;
-            this.toast.show(msg, 'success');
-            this.refreshData();
-        } catch (e: any) {
-            this.toast.show('Lỗi cập nhật kho: ' + e.message, 'error');
-        } finally {
-            this.isProcessing.set(false);
-        }
-    }
+  }
 }
