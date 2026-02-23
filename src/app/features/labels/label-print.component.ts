@@ -5,7 +5,27 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 
-type PrintMode = 'brother' | 'sheet_a5' | 'sheet_a4';
+type PrintMode = 'brother' | 'tomy_a4';
+
+interface TomyTemplate {
+  id: string;
+  name: string;
+  cols: number;
+  rows: number;
+  cellW: number;
+  cellH: number;
+  marginTop: number;
+  marginLeft: number;
+  gapX: number;
+  gapY: number;
+}
+
+const TOMY_TEMPLATES: TomyTemplate[] = [
+  { id: 'tomy_145', name: 'Tomy 145 (65 tem - 38x21mm)', cols: 5, rows: 13, cellW: 38, cellH: 21, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
+  { id: 'tomy_149', name: 'Tomy 149 (21 tem - 70x42.5mm)', cols: 3, rows: 7, cellW: 70, cellH: 42.5, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
+  { id: 'tomy_144', name: 'Tomy 144 (30 tem - 67x28mm)', cols: 3, rows: 10, cellW: 67, cellH: 28, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
+  { id: 'tomy_109', name: 'Tomy 109 (100 tem - 22x14mm)', cols: 8, rows: 12, cellW: 22, cellH: 14, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
+];
 
 interface LabelCell {
   subLabels: string[];
@@ -38,29 +58,21 @@ interface LabelPage {
                 </h2>
                 
                 <!-- Mode Selector Cards -->
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 gap-2">
                     <button (click)="setMode('brother')" 
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
                             [class]="printMode() === 'brother' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-500 hover:border-red-200'">
                         <i class="fa-solid fa-tape text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase">Brother QL</span>
+                        <span class="text-[10px] font-bold uppercase">Máy in Brother</span>
                         @if(printMode() === 'brother') { <div class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-bl-lg"></div> }
                     </button>
 
-                    <button (click)="setMode('sheet_a5')" 
+                    <button (click)="setMode('tomy_a4')" 
                             class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
-                            [class]="printMode() === 'sheet_a5' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200'">
-                        <i class="fa-solid fa-note-sticky text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase">Decal A5</span>
-                        @if(printMode() === 'sheet_a5') { <div class="absolute top-0 right-0 w-3 h-3 bg-blue-500 rounded-bl-lg"></div> }
-                    </button>
-
-                    <button (click)="setMode('sheet_a4')" 
-                            class="flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all relative overflow-hidden"
-                            [class]="printMode() === 'sheet_a4' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-200'">
-                        <i class="fa-solid fa-file text-xl mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase">Giấy A4</span>
-                        @if(printMode() === 'sheet_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-bl-lg"></div> }
+                            [class]="printMode() === 'tomy_a4' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-200'">
+                        <i class="fa-solid fa-file-lines text-xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase">Giấy Decal A4 (Tomy)</span>
+                        @if(printMode() === 'tomy_a4') { <div class="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-bl-lg"></div> }
                     </button>
                 </div>
             </div>
@@ -145,23 +157,20 @@ interface LabelPage {
                     </div>
                 }
 
-                <!-- 4. SHEET (A4/A5) SPECIFIC CONFIG -->
-                @if (printMode().startsWith('sheet')) {
+                <!-- 4. TOMY A4 SPECIFIC CONFIG -->
+                @if (printMode() === 'tomy_a4') {
                     <div class="space-y-4 animate-bounce-in">
-                        <!-- Layout Mode -->
+                        <!-- Template Selection -->
                         <div>
-                            <label class="label-std">Hướng giấy & Grid</label>
-                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                                <button (click)="setLayout('landscape')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
-                                        [class]="layoutMode() === 'landscape' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                                    <span>Ngang (Landscape)</span>
-                                    <span class="text-[8px] opacity-70 font-normal">Tem đứng</span>
-                                </button>
-                                <button (click)="setLayout('portrait')" class="flex-1 py-2 text-xs font-bold rounded-md transition flex flex-col items-center gap-1"
-                                        [class]="layoutMode() === 'portrait' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                                    <span>Dọc (Portrait)</span>
-                                    <span class="text-[8px] opacity-70 font-normal">Tem nằm</span>
-                                </button>
+                            <label class="label-std">Mẫu giấy Decal (Tomy)</label>
+                            <select [ngModel]="selectedTomyId()" (ngModelChange)="onTomyChange($event)" class="input-std mb-2 bg-slate-50">
+                                @for (tmpl of tomyTemplates; track tmpl.id) {
+                                    <option [value]="tmpl.id">{{tmpl.name}}</option>
+                                }
+                            </select>
+                            <div class="text-[10px] text-slate-500 bg-indigo-50 p-2 rounded border border-indigo-100 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-info mt-0.5 text-indigo-400"></i>
+                                <span>Hệ thống tự động căn lề theo mẫu giấy bế sẵn. Bạn chỉ cần nạp giấy vào máy in A4 thông thường.</span>
                             </div>
                         </div>
 
@@ -221,7 +230,7 @@ interface LabelPage {
                             <i class="fa-solid fa-spinner fa-spin text-lg"></i> <span>Đang tạo PDF...</span>
                         } @else {
                             <i class="fa-solid fa-file-pdf text-lg group-hover:-translate-y-1 transition-transform"></i> 
-                            <span>Tải PDF ({{printMode() === 'sheet_a5' ? 'A5' : 'A4'}})</span>
+                            <span>Tải PDF (A4)</span>
                         }
                     </button>
                 }
@@ -275,8 +284,8 @@ interface LabelPage {
                     </div>
                 }
 
-                <!-- B. SHEET PREVIEW (A4/A5) -->
-                @if (printMode().startsWith('sheet')) {
+                <!-- B. TOMY A4 PREVIEW -->
+                @if (printMode() === 'tomy_a4') {
                     @for (page of pages(); track page.pageIndex) {
                         <div id="label-page-{{page.pageIndex}}" 
                              class="bg-white shadow-2xl relative transition-all duration-300 box-border overflow-hidden ring-1 ring-slate-900/5" 
@@ -286,9 +295,7 @@ interface LabelPage {
                             
                             <!-- The Grid -->
                             <div class="grid content-start h-full"
-                                 [class.grid-cols-10]="layoutMode() === 'landscape' && printMode() === 'sheet_a5'"
-                                 [class.grid-cols-3]="layoutMode() === 'portrait' && printMode() === 'sheet_a5'"
-                                 [class.grid-cols-4]="printMode() === 'sheet_a4'" 
+                                 [style.grid-template-columns]="'repeat(' + layoutDims().cols + ', minmax(0, 1fr))'"
                                  [style.gap]="gapY() + 'mm ' + gapX() + 'mm'">
                                 
                                 @for (cell of page.cells; track cell.index) {
@@ -324,7 +331,7 @@ interface LabelPage {
 
                             <div class="absolute bottom-2 left-0 w-full text-center pointer-events-none">
                                 <span class="bg-slate-100/90 text-slate-400 text-[8px] font-bold px-2 py-0.5 rounded border border-slate-200 shadow-sm">
-                                    Page {{page.pageIndex + 1}} ({{printMode() === 'sheet_a5' ? 'A5' : 'A4'}})
+                                    Page {{page.pageIndex + 1}} (A4)
                                 </span>
                             </div>
                         </div>
@@ -358,7 +365,7 @@ export class LabelPrintComponent {
   state = inject(StateService);
 
   // Core State
-  printMode = signal<PrintMode>('sheet_a5');
+  printMode = signal<PrintMode>('tomy_a4');
   rawInput = signal('');
   isProcessing = signal(false);
   zoomLevel = signal(1.0);
@@ -367,16 +374,19 @@ export class LabelPrintComponent {
   fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
   
   // Layout Config
-  layoutMode = signal<'landscape' | 'portrait'>('landscape');
   splitCount = signal<number>(1);
   fontSize = signal<number>(12);
   rotateText = signal<boolean>(false);
   
+  // Tomy Config
+  tomyTemplates = TOMY_TEMPLATES;
+  selectedTomyId = signal<string>('tomy_145');
+  
   // Sheet Calibration (A4/A5)
-  marginTop = signal<number>(5); 
+  marginTop = signal<number>(10); 
   marginLeft = signal<number>(5); 
-  gapX = signal<number>(1);
-  gapY = signal<number>(1);
+  gapX = signal<number>(2);
+  gapY = signal<number>(2);
   skippedCells = signal<number>(0);
   showAdvanced = signal(false);
 
@@ -390,19 +400,12 @@ export class LabelPrintComponent {
 
   layoutDims = computed(() => {
       const mode = this.printMode();
-      const isLand = this.layoutMode() === 'landscape';
 
-      if (mode === 'sheet_a5') {
-          // A5: 148 x 210 mm
-          if (isLand) return { pageW: 210, pageH: 148, cellW: 19, cellH: 45 }; // 10x3
-          else return { pageW: 148, pageH: 210, cellW: 45, cellH: 19 }; // 3x10
-      } 
-      else if (mode === 'sheet_a4') {
-          // A4: 210 x 297 mm
-          // Default Layout: 4 cols x 11 rows (Tomy 145 style approximation)
-          return { pageW: 210, pageH: 297, cellW: 48, cellH: 25 }; 
+      if (mode === 'tomy_a4') {
+          const tmpl = this.tomyTemplates.find(t => t.id === this.selectedTomyId()) || this.tomyTemplates[0];
+          return { pageW: 210, pageH: 297, cellW: tmpl.cellW, cellH: tmpl.cellH, cols: tmpl.cols, rows: tmpl.rows }; 
       }
-      return { pageW: 0, pageH: 0, cellW: 0, cellH: 0 };
+      return { pageW: 0, pageH: 0, cellW: 0, cellH: 0, cols: 0, rows: 0 };
   });
 
   constructor() {
@@ -415,7 +418,7 @@ export class LabelPrintComponent {
           } else {
               // Sheet defaults
               const split = this.splitCount();
-              this.fontSize.set(split === 1 ? 12 : split === 2 ? 10 : 8);
+              this.fontSize.set(split === 1 ? 10 : split === 2 ? 8 : 6);
           }
       }, { allowSignalWrites: true });
   }
@@ -426,12 +429,21 @@ export class LabelPrintComponent {
       this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
       if (mode === 'brother') {
           this.onBrotherPaperChange(this.brotherPaperType());
-      } else if (mode === 'sheet_a4') {
+      } else if (mode === 'tomy_a4') {
+          this.onTomyChange(this.selectedTomyId());
+      }
+  }
+
+  onTomyChange(id: string) {
+      this.selectedTomyId.set(id);
+      const tmpl = this.tomyTemplates.find(t => t.id === id);
+      if (tmpl) {
+          this.marginTop.set(tmpl.marginTop);
+          this.marginLeft.set(tmpl.marginLeft);
+          this.gapX.set(tmpl.gapX);
+          this.gapY.set(tmpl.gapY);
           this.splitCount.set(1);
-          this.gapX.set(2); this.gapY.set(2);
-          this.marginTop.set(10); this.marginLeft.set(5);
-      } else if (mode === 'sheet_a5') {
-          this.marginTop.set(5); this.marginLeft.set(5);
+          this.rotateText.set(false);
       }
   }
 
@@ -495,12 +507,6 @@ export class LabelPrintComponent {
       this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
   }
 
-  setLayout(mode: 'landscape' | 'portrait') {
-      this.layoutMode.set(mode);
-      if (mode === 'landscape') { this.rotateText.set(true); } 
-      else { this.rotateText.set(false); }
-  }
-
   updateInput(val: string) { this.rawInput.set(val); }
   clearInput() { this.rawInput.set(''); }
   
@@ -526,13 +532,9 @@ export class LabelPrintComponent {
       const skipped = this.skippedCells();
       
       // Calculate cells per page based on layout
-      let cols = 3; let rows = 10;
-      if (this.printMode() === 'sheet_a5') {
-          if (this.layoutMode() === 'landscape') { cols = 10; rows = 3; }
-      } else {
-          // A4 Defaults
-          cols = 4; rows = 11; 
-      }
+      const dims = this.layoutDims();
+      const cols = dims.cols || 1;
+      const rows = dims.rows || 1;
       const CELLS_PER_PAGE = cols * rows;
       
       const allCells: LabelCell[] = [];
@@ -642,7 +644,7 @@ export class LabelPrintComponent {
       };
   }
 
-  // --- SHEET PDF GENERATION (A4/A5) ---
+  // --- SHEET PDF GENERATION (A4) ---
   async generateImagePdf() {
       const pages = this.pages();
       const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
@@ -658,19 +660,11 @@ export class LabelPrintComponent {
           const { jsPDF } = await import('jspdf');
           const html2canvas = (await import('html2canvas')).default;
 
-          const isA5 = this.printMode() === 'sheet_a5';
-          const isLandscape = this.layoutMode() === 'landscape' && isA5;
-          
-          let format = isA5 ? 'a5' : 'a4';
-          // Fix: Type orientation explicitly to satisfy jsPDF constructor
-          let orientation: 'p' | 'l' = (isA5 && isLandscape) ? 'l' : 'p';
+          let format = 'a4';
+          let orientation: 'p' | 'l' = 'p';
           
           // PDF Dimensions (mm)
           let pdfW = 210; let pdfH = 297; // A4 Portrait
-          if (isA5) {
-              pdfW = isLandscape ? 210 : 148;
-              pdfH = isLandscape ? 148 : 210;
-          }
 
           const doc = new jsPDF(orientation, 'mm', format);
 
@@ -691,7 +685,7 @@ export class LabelPrintComponent {
               doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
           }
 
-          const filename = `Labels_${format.toUpperCase()}_${new Date().toISOString().slice(0,10)}.pdf`;
+          const filename = `Labels_A4_Tomy_${new Date().toISOString().slice(0,10)}.pdf`;
           doc.save(filename);
           this.toast.show('Tạo PDF thành công!', 'success');
 
