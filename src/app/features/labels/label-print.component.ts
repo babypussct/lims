@@ -296,14 +296,10 @@ interface LabelPage {
                         <span>In ngay (Brother)</span>
                     </button>
                 } @else {
-                    <button (click)="generateImagePdf()" [disabled]="rawInputCount() === 0 || isProcessing()" 
+                    <button (click)="printA4()" [disabled]="rawInputCount() === 0" 
                             class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 transition font-bold flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
-                        @if(isProcessing()) {
-                            <i class="fa-solid fa-spinner fa-spin text-lg"></i> <span>Đang tạo PDF...</span>
-                        } @else {
-                            <i class="fa-solid fa-file-pdf text-lg group-hover:-translate-y-1 transition-transform"></i> 
-                            <span>Tải PDF (A4)</span>
-                        }
+                        <i class="fa-solid fa-print text-lg group-hover:scale-110 transition-transform"></i> 
+                        <span>In ngay (A4)</span>
                     </button>
                 }
             </div>
@@ -442,7 +438,6 @@ export class LabelPrintComponent {
   // Core State
   printMode = signal<PrintMode>('tomy_a4');
   rawInput = signal('');
-  isProcessing = signal(false);
   zoomLevel = signal(1.0);
   
   // Fetch Data State
@@ -738,56 +733,111 @@ export class LabelPrintComponent {
       };
   }
 
-  // --- SHEET PDF GENERATION (A4) ---
-  async generateImagePdf() {
+  // --- A4 PRINTING LOGIC (Direct Window Print) ---
+  printA4() {
       const pages = this.pages();
       const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
       
       if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
 
-      this.isProcessing.set(true);
-      this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
-      await new Promise(resolve => setTimeout(resolve, 150));
+      const dims = this.layoutDims();
+      const isPlain = this.printMode() === 'plain_a4';
+      const showCut = isPlain && this.showCutLines();
 
-      try {
-          // Dynamic imports fix ESM issues
-          const { jsPDF } = await import('jspdf');
-          const html2canvas = (await import('html2canvas')).default;
-
-          let format = 'a4';
-          let orientation: 'p' | 'l' = 'p';
-          
-          // PDF Dimensions (mm)
-          let pdfW = 210; let pdfH = 297; // A4 Portrait
-
-          const doc = new jsPDF(orientation, 'mm', format);
-
-          for (let i = 0; i < validPages.length; i++) {
-              const elementId = `label-page-${validPages[i].pageIndex}`;
-              const element = document.getElementById(elementId);
-              if (!element) continue;
-
-              const canvas = await html2canvas(element, {
-                  scale: 3, // 3x scale for crisp text
-                  useCORS: true,
-                  logging: false,
-                  backgroundColor: '#ffffff'
-              });
-
-              const imgData = canvas.toDataURL('image/jpeg', 0.95);
-              if (i > 0) doc.addPage();
-              doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-          }
-
-          const filename = `Labels_A4_Tomy_${new Date().toISOString().slice(0,10)}.pdf`;
-          doc.save(filename);
-          this.toast.show('Tạo PDF thành công!', 'success');
-
-      } catch (e: any) {
-          console.error(e);
-          this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
+      const printWindow = window.open('', '_blank', 'width=800,height=1000');
+      if (!printWindow) {
+          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
+          return;
       }
+
+      const css = `
+        @page { size: A4 portrait; margin: 0; }
+        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        * { box-sizing: border-box; }
+        .page {
+            width: 210mm;
+            height: 297mm;
+            padding-top: ${this.marginTop()}mm;
+            padding-left: ${this.marginLeft()}mm;
+            padding-right: ${this.marginLeft()}mm;
+            padding-bottom: ${this.marginTop()}mm;
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(${dims.cols}, minmax(0, 1fr));
+            gap: ${this.gapY()}mm ${this.gapX()}mm;
+            height: 100%;
+            align-content: start;
+        }
+        .cell {
+            width: ${dims.cellW}mm;
+            height: ${dims.cellH}mm;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            ${showCut ? 'border: 1px dashed #cbd5e1;' : ''}
+        }
+        .sub-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 0.5mm;
+        }
+        .sub-label:not(:last-child) {
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .text {
+            font-size: ${this.fontSize()}pt;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1;
+            word-break: break-all;
+            display: block;
+        }
+        .vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+        }
+      `;
+
+      let htmlContent = `<html><head><title>Print A4 Labels</title><style>${css}</style></head><body>`;
+      
+      validPages.forEach(page => {
+          htmlContent += `<div class="page"><div class="grid">`;
+          page.cells.forEach(cell => {
+              if (cell.isEmpty) {
+                  htmlContent += `<div class="cell" style="opacity: 0;"></div>`;
+              } else {
+                  htmlContent += `<div class="cell">`;
+                  cell.subLabels.forEach((label, idx) => {
+                      const isLast = idx === cell.subLabels.length - 1;
+                      htmlContent += `
+                        <div class="sub-label" ${!isLast ? '' : 'style="border-bottom: none;"'}>
+                            <span class="text ${this.rotateText() ? 'vertical' : ''}">${label}</span>
+                        </div>
+                      `;
+                  });
+                  htmlContent += `</div>`;
+              }
+          });
+          htmlContent += `</div></div>`;
+      });
+
+      htmlContent += `</body></html>`;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+      };
   }
 }
