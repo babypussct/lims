@@ -707,6 +707,9 @@ export class LabelPrintComponent {
       const fs = this.fontSize();
       const rotate = this.rotateText();
       const isFixed = this.brotherPaperType() === '23x23';
+      
+      // Tính tổng chiều dài trang cho cuộn cắt tự do để tránh lỗi 'auto' của trình duyệt
+      const totalHeight = isFixed ? h : (h * labels.length);
 
       // Create a dedicated print window to isolate styles
       const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -716,8 +719,9 @@ export class LabelPrintComponent {
       }
 
       const css = `
-        @page { size: ${w}mm ${isFixed ? h + 'mm' : 'auto'}; margin: 0; }
+        @page { size: ${w}mm ${totalHeight}mm; margin: 0; }
         body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        * { box-sizing: border-box; }
         .label-container {
             width: ${w}mm;
             height: ${h}mm;
@@ -725,8 +729,8 @@ export class LabelPrintComponent {
             align-items: center;
             justify-content: center;
             ${!isFixed ? 'border-bottom: 1px dashed #ccc;' : ''}
-            page-break-after: always;
-            box-sizing: border-box;
+            page-break-after: ${isFixed ? 'always' : 'avoid'};
+            page-break-inside: avoid;
             overflow: hidden;
             position: relative;
         }
@@ -737,7 +741,8 @@ export class LabelPrintComponent {
             line-height: 1;
             word-break: break-all;
             padding: 1mm;
-            ${rotate ? 'writing-mode: vertical-rl; transform: rotate(180deg);' : ''}
+            width: 100%;
+            ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
         }
         @media print {
             @page { margin: 0; }
@@ -795,6 +800,7 @@ export class LabelPrintComponent {
             padding-right: ${this.marginLeft()}mm;
             padding-bottom: ${this.marginTop()}mm;
             page-break-after: always;
+            page-break-inside: avoid;
             position: relative;
             overflow: hidden;
             background: white;
@@ -802,13 +808,14 @@ export class LabelPrintComponent {
         .grid {
             display: grid;
             grid-template-columns: repeat(${dims.cols}, minmax(0, 1fr));
+            grid-template-rows: repeat(${dims.rows}, ${dims.cellH}mm);
             gap: ${this.gapY()}mm ${this.gapX()}mm;
             height: 100%;
             align-content: start;
         }
         .cell {
-            width: ${dims.cellW}mm;
-            height: ${dims.cellH}mm;
+            width: 100%;
+            height: 100%;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -822,6 +829,7 @@ export class LabelPrintComponent {
             justify-content: center;
             position: relative;
             padding: 0.5mm;
+            overflow: hidden;
         }
         .sub-label:not(:last-child) {
             border-bottom: 1px dashed #cbd5e1;
@@ -833,6 +841,7 @@ export class LabelPrintComponent {
             line-height: 1;
             word-break: break-all;
             display: block;
+            width: 100%;
         }
         .vertical {
             writing-mode: vertical-rl;
