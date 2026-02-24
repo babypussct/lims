@@ -2,6 +2,7 @@
 import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { InventoryService } from '../inventory/inventory.service';
 import { AuthService } from '../../core/services/auth.service';
 import { InventoryItem } from '../../core/models/inventory.model';
@@ -17,9 +18,11 @@ type SystemMode = 'sandbox' | 'real';
 const CONC_UNITS = [
     { val: 'M', factor: 1, label: 'M (Molar)' },
     { val: 'mM', factor: 0.001, label: 'mM' },
-    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' },
+    { val: 'uM', factor: 0.000001, label: 'µM' },
     { val: '%', factor: 10, label: '%' },
-    { val: 'mg/ml', factor: 1, label: 'mg/mL' }
+    { val: 'mg/ml', factor: 1, label: 'mg/mL' },
+    { val: 'ppm', factor: 0.001, label: 'ppm (mg/L)' },
+    { val: 'ppb', factor: 0.000001, label: 'ppb (µg/L)' }
 ];
 
 const VOL_UNITS = [
@@ -168,14 +171,14 @@ interface MixRow {
                                     <div class="space-y-1">
                                         <label class="label">Phân tử lượng (MW)</label>
                                         <div class="input-wrapper">
-                                            <input type="number" [(ngModel)]="mw" class="input-field text-center" placeholder="e.g. 58.44">
+                                            <input type="number" min="0" step="any" [(ngModel)]="mw" class="input-field text-center" placeholder="e.g. 58.44">
                                             <span class="unit-badge">g/mol</span>
                                         </div>
                                     </div>
                                     <div class="space-y-1">
                                         <label class="label">Độ tinh khiết</label>
                                         <div class="input-wrapper">
-                                            <input type="number" [(ngModel)]="purity" class="input-field text-center text-blue-600 font-bold" placeholder="100">
+                                            <input type="number" min="0" step="any" [(ngModel)]="purity" class="input-field text-center text-blue-600 font-bold" placeholder="100">
                                             <span class="unit-badge">%</span>
                                         </div>
                                     </div>
@@ -184,21 +187,21 @@ interface MixRow {
                         </div>
 
                         <div class="card-input border-blue-100">
-                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-bullseye"></i> Đích mong muốn</div>
+                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-scale-balanced"></i> Cân thực tế & Định mức</div>
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
-                                    <label class="label">Nồng độ đích</label>
+                                    <label class="label">Khối lượng cân thực tế (m)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C">
-                                        <select [(ngModel)]="targetConcUnit" class="select-unit w-24">
-                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        <input type="number" min="0" step="any" [(ngModel)]="actualMass" class="input-field flex-1 font-bold text-blue-600" placeholder="m">
+                                        <select [(ngModel)]="actualMassUnit" class="select-unit w-24">
+                                            @for(u of massUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="label">Thể tích đích</label>
+                                    <label class="label">Thể tích định mức (V)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
                                             @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -216,7 +219,7 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Gốc (Stock)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-orange-600" placeholder="C1">
+                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-orange-600" placeholder="C1">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
                                             @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -225,14 +228,16 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Đích (Target)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
-                                        <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C2">
+                                        <select [(ngModel)]="targetConcUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="label">Thể tích Đích (V2)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V2">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V2">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
                                             @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -249,7 +254,7 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Chuẩn (Stock)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600" placeholder="C_stock">
+                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600" placeholder="C_stock">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
                                             @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -258,16 +263,23 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Thêm (Added)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C_add">
-                                        <div class="w-24 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500">{{concUnit()}}</div>
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetConc" class="input-field flex-1" placeholder="C_add">
+                                        <select [(ngModel)]="targetConcUnit" class="select-unit w-24">
+                                            @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="label">Thể tích Mẫu (V_sample)</label>
+                                    <label class="label">Khối lượng / Thể tích Mẫu (Sample)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V_sample">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="m/V">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
-                                            @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                            <optgroup label="Khối lượng">
+                                                @for(u of massUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                            </optgroup>
+                                            <optgroup label="Thể tích">
+                                                @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                            </optgroup>
                                         </select>
                                     </div>
                                 </div>
@@ -282,7 +294,7 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Gốc (Stock)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600" placeholder="C1">
+                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600" placeholder="C1">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
                                             @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -291,7 +303,7 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Thể tích định mức mỗi điểm (V_point)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1" placeholder="V">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
                                             @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -300,21 +312,26 @@ interface MixRow {
                                 
                                 <!-- Dynamic List for Points -->
                                 <div class="space-y-2 pt-2 border-t border-slate-100">
-                                    <div class="flex justify-between items-center">
+                                    <div class="flex justify-between items-center mb-1">
                                         <label class="label mb-0">Các điểm chuẩn</label>
-                                        <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-700 px-2 py-1 rounded hover:bg-fuchsia-100 transition">+ Thêm điểm</button>
+                                        <div class="flex items-center gap-2">
+                                            <select [(ngModel)]="targetConcUnit" class="select-unit w-20 h-6 py-0 text-[10px]">
+                                                @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
+                                            </select>
+                                            <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-700 px-2 py-1 rounded hover:bg-fuchsia-100 transition">+ Thêm điểm</button>
+                                        </div>
                                     </div>
                                     <div class="space-y-2">
                                         <!-- FIX: Iterate over signal value and use update helper -->
                                         @for (pt of serialPoints(); track $index) {
                                             <div class="flex gap-2 items-center animate-slide-up">
                                                 <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">{{$index + 1}}</div>
-                                                <input type="number" 
+                                                <input type="number" min="0" step="any" 
                                                        [ngModel]="pt" 
                                                        (ngModelChange)="updateSerialPoint($index, $event)"
                                                        class="input-field py-1.5 text-sm" 
                                                        placeholder="Conc">
-                                                <div class="text-xs font-bold text-slate-400 w-8">{{concUnit()}}</div>
+                                                <div class="text-xs font-bold text-slate-400 w-8">{{targetConcUnit()}}</div>
                                                 <button (click)="removeSerialPoint($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fa-solid fa-times"></i></button>
                                             </div>
                                         }
@@ -331,7 +348,7 @@ interface MixRow {
                                 <div class="space-y-1">
                                     <label class="label">Tổng thể tích hỗn hợp (V_final)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600 text-lg" placeholder="100">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600 text-lg" placeholder="100">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
                                             @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -342,7 +359,10 @@ interface MixRow {
                                 <div class="pt-2">
                                     <div class="flex justify-between items-center mb-2">
                                         <label class="label mb-0">Thành phần</label>
-                                        <button (click)="addMixRow()" class="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition">+ Thêm chất</button>
+                                        <div class="flex gap-2">
+                                            <button (click)="pasteFromExcel()" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-paste"></i> Paste Excel</button>
+                                            <button (click)="addMixRow()" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition border border-indigo-200">+ Thêm chất</button>
+                                        </div>
                                     </div>
                                     
                                     <div class="space-y-2">
@@ -386,7 +406,7 @@ interface MixRow {
                                                     <div>
                                                         <label class="text-[8px] font-bold text-slate-400 uppercase">Stock Conc</label>
                                                         <!-- FIX: Safe update for stockConc -->
-                                                        <input type="number" 
+                                                        <input type="number" min="0" step="any" 
                                                                [ngModel]="row.stockConc" 
                                                                (ngModelChange)="updateMixItem(i, 'stockConc', $event)"
                                                                class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
@@ -396,7 +416,7 @@ interface MixRow {
                                                         <div class="flex-1">
                                                             <label class="text-[8px] font-bold text-slate-400 uppercase">Target</label>
                                                             <!-- FIX: Safe update for targetConc -->
-                                                            <input type="number" 
+                                                            <input type="number" min="0" step="any" 
                                                                    [ngModel]="row.targetConc" 
                                                                    (ngModelChange)="updateMixItem(i, 'targetConc', $event)"
                                                                    class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
@@ -434,14 +454,14 @@ interface MixRow {
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Khối lượng mẫu (m)</label>
                                         <div class="relative">
-                                            <input type="number" [(ngModel)]="sampleMass" class="input-field pr-6" placeholder="10">
+                                            <input type="number" min="0" step="any" [(ngModel)]="sampleMass" class="input-field pr-6" placeholder="10">
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">g</span>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Dung môi chiết (V1)</label>
                                         <div class="relative">
-                                            <input type="number" [(ngModel)]="extractVol" class="input-field pr-8 text-teal-600 font-bold" placeholder="10">
+                                            <input type="number" min="0" step="any" [(ngModel)]="extractVol" class="input-field pr-8 text-teal-600 font-bold" placeholder="10">
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                     </div>
@@ -460,7 +480,7 @@ interface MixRow {
                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút dịch làm sạch (V2)</label>
                                     <div class="flex items-center gap-2">
                                         <div class="relative flex-1">
-                                            <input type="number" [(ngModel)]="cleanupAliquot" class="input-field pr-8" placeholder="6">
+                                            <input type="number" min="0" step="any" [(ngModel)]="cleanupAliquot" class="input-field pr-8" placeholder="6">
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                         @if(cleanupAliquot() > extractVol()) {
@@ -481,7 +501,7 @@ interface MixRow {
                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hút đi cô đặc (V3)</label>
                                     <div class="flex items-center gap-2">
                                         <div class="relative flex-1">
-                                            <input type="number" [(ngModel)]="concAliquot" class="input-field pr-8 text-sky-600 font-bold" placeholder="5">
+                                            <input type="number" min="0" step="any" [(ngModel)]="concAliquot" class="input-field pr-8 text-sky-600 font-bold" placeholder="5">
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                         @if(concAliquot() > cleanupAliquot()) {
@@ -503,14 +523,14 @@ interface MixRow {
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Thể tích cuối (V4)</label>
                                         <div class="relative">
-                                            <input type="number" [(ngModel)]="finalVol" class="input-field pr-8 text-indigo-600 font-black text-lg" placeholder="1">
+                                            <input type="number" min="0" step="any" [(ngModel)]="finalVol" class="input-field pr-8 text-indigo-600 font-black text-lg" placeholder="1">
                                             <span class="absolute right-3 top-3 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Hiệu suất (Recovery)</label>
                                         <div class="relative">
-                                            <input type="number" [(ngModel)]="recovery" class="input-field pr-8" placeholder="100">
+                                            <input type="number" min="0" step="any" [(ngModel)]="recovery" class="input-field pr-8" placeholder="100">
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">%</span>
                                         </div>
                                     </div>
@@ -570,7 +590,7 @@ interface MixRow {
                                     <div class="flex items-center gap-3">
                                         <div class="flex-1">
                                             <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Kết quả chạy máy</label>
-                                            <input type="number" [(ngModel)]="instConc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-700 outline-none focus:border-teal-500 transition" placeholder="C_inst">
+                                            <input type="number" min="0" step="any" [(ngModel)]="instConc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-700 outline-none focus:border-teal-500 transition" placeholder="C_inst">
                                         </div>
                                         <div class="text-slate-300 text-lg pt-4"><i class="fa-solid fa-arrow-right"></i></div>
                                         <div class="flex-1">
@@ -594,17 +614,40 @@ interface MixRow {
                         }
 
                         <!-- SINGLE VALUE MODES -->
-                        @if (['molar', 'dilution', 'spiking'].includes(calcMode())) {
+                        @if (['dilution', 'spiking'].includes(calcMode())) {
                             <div class="text-center space-y-4 animate-scale-in">
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Thể tích cần hút (Stock)</div>
                                 <div class="relative inline-block">
                                     <h1 class="text-6xl md:text-7xl font-black tracking-tight text-slate-800 tabular-nums">
                                         {{ formatNum(resultValue()) }}
                                     </h1>
-                                    <span class="absolute -right-8 top-0 text-lg font-bold text-slate-400">{{ resultUnit() }}</span>
+                                    <span class="absolute -right-10 top-0 text-lg font-bold text-slate-400">{{ resultUnit() }}</span>
                                 </div>
                                 <p class="text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     {{ resultDescription() }}
                                 </p>
+                            </div>
+                        }
+
+                        <!-- MOLAR RESULTS -->
+                        @if (calcMode() === 'molar') {
+                            <div class="text-center space-y-4 animate-scale-in">
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nồng độ đạt được</div>
+                                <div class="relative inline-block">
+                                    <h1 class="text-6xl md:text-7xl font-black tracking-tight text-blue-600 tabular-nums">
+                                        {{ formatNum(molarResult().val) }}
+                                    </h1>
+                                    <span class="absolute -right-12 top-0 text-lg font-bold text-slate-400">{{ molarResult().unit }}</span>
+                                </div>
+                                
+                                <div class="flex justify-center gap-4 mt-6">
+                                    @for(alt of molarResult().alternatives; track alt.unit) {
+                                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 min-w-[100px]">
+                                            <div class="text-lg font-bold text-slate-700">{{formatNum(alt.val)}}</div>
+                                            <div class="text-[10px] font-bold text-slate-400 uppercase">{{alt.unit}}</div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         }
 
@@ -622,14 +665,14 @@ interface MixRow {
                                     <tbody class="divide-y divide-slate-100">
                                         @for (pt of serialResult(); track $index) {
                                             <tr class="hover:bg-fuchsia-50/30 transition">
-                                                <td class="px-4 py-3 font-bold text-slate-700">{{pt.conc}} {{concUnit()}}</td>
-                                                <td class="px-4 py-3 text-right font-mono font-bold text-fuchsia-600">{{formatNum(pt.vStock)}} µL</td>
+                                                <td class="px-4 py-3 font-bold text-slate-700">{{pt.conc}} {{targetConcUnit()}}</td>
+                                                <td class="px-4 py-3 text-right font-mono font-bold text-fuchsia-600">{{formatNum(pt.vStock)}} {{pt.unit}}</td>
                                                 <td class="px-4 py-3 text-right text-slate-500">{{formatNum(pt.vSolvent)}} {{targetVolUnit()}}</td>
                                             </tr>
                                         }
                                         <tr class="bg-slate-50 font-bold border-t border-slate-200">
                                             <td class="px-4 py-3 text-slate-500">TỔNG STOCK CẦN</td>
-                                            <td class="px-4 py-3 text-right text-fuchsia-700 text-lg">{{formatNum(serialTotalStock())}} µL</td>
+                                            <td class="px-4 py-3 text-right text-fuchsia-700 text-lg">{{formatNum(serialTotalStock())}} {{serialResult()[0]?.unit || 'µL'}}</td>
                                             <td class="px-4 py-3"></td>
                                         </tr>
                                     </tbody>
@@ -655,7 +698,7 @@ interface MixRow {
                                         @for (res of mixResult().details; track res.name) {
                                             <tr class="hover:bg-indigo-50/30 transition">
                                                 <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]">{{res.name}}</td>
-                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600">{{formatNum(res.vStock)}} {{targetVolUnit()}}</td>
+                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600">{{formatNum(res.vStock)}} {{res.unit}}</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -710,7 +753,7 @@ interface MixRow {
 
                     <!-- FOOTER ACTIONS -->
                     <div class="p-5 bg-slate-50 border-t border-slate-200 flex gap-3 shrink-0">
-                        <button class="flex-1 bg-white border border-slate-300 text-slate-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2">
+                        <button (click)="goToLabels()" class="flex-1 bg-white border border-slate-300 text-slate-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2">
                             <i class="fa-solid fa-print text-slate-400"></i> In Nhãn
                         </button>
                         
@@ -747,6 +790,7 @@ export class SmartPrepComponent {
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   auth = inject(AuthService);
+  router = inject(Router);
   formatNum = formatNum;
 
   // --- CONFIG DATA ---
@@ -769,11 +813,13 @@ export class SmartPrepComponent {
   // Inputs
   mw = signal<number>(0);
   purity = signal<number>(100);
-  stockConc = signal<number>(0);
-  concUnit = signal<string>('M'); 
-  targetConc = signal<number>(0);
-  targetConcUnit = signal<string>('M');
-  targetVol = signal<number>(0);
+  actualMass = signal<number>(10);
+  actualMassUnit = signal<string>('mg');
+  stockConc = signal<number>(1000);
+  concUnit = signal<string>('ppm'); 
+  targetConc = signal<number>(10);
+  targetConcUnit = signal<string>('ppm');
+  targetVol = signal<number>(10);
   targetVolUnit = signal<string>('ml');
 
   // Sample Prep Inputs (New)
@@ -846,6 +892,39 @@ export class SmartPrepComponent {
   addSerialPoint() { this.serialPoints.update(p => [...p, 0]); }
   removeSerialPoint(i: number) { this.serialPoints.update(p => p.filter((_, idx) => idx !== i)); }
 
+  async pasteFromExcel() {
+      try {
+          const text = await navigator.clipboard.readText();
+          if (!text) return;
+          
+          const rows = text.split('\n').filter(r => r.trim() !== '');
+          const newItems: MixRow[] = [];
+          
+          rows.forEach((row, idx) => {
+              const cols = row.split('\t');
+              if (cols.length >= 2) {
+                  newItems.push({
+                      id: Date.now().toString() + idx,
+                      name: cols[0].trim(),
+                      stockConc: parseFloat(cols[1]) || 0,
+                      targetConc: cols.length >= 3 ? (parseFloat(cols[2]) || 0) : 0,
+                      unit: 'ppm', // Default
+                      invItem: null
+                  });
+              }
+          });
+
+          if (newItems.length > 0) {
+              this.mixItems.set(newItems);
+              this.toast.show(`Đã import ${newItems.length} chất từ Clipboard`, 'success');
+          } else {
+              this.toast.show('Không tìm thấy dữ liệu hợp lệ. Copy 3 cột: Tên | C_stock | C_target', 'error');
+          }
+      } catch (err) {
+          this.toast.show('Lỗi đọc Clipboard. Hãy cấp quyền cho trình duyệt.', 'error');
+      }
+  }
+
   // --- HELPER FOR IMMUTABLE UPDATES ---
   updateSerialPoint(index: number, value: number) {
     this.serialPoints.update(points => {
@@ -873,48 +952,112 @@ export class SmartPrepComponent {
       return found ? found.factor : 1;
   }
 
+  // Helper to convert calculated amount to stock unit for accurate comparison/deduction
+  private normalizeToStockUnit(amount: number, fromUnit: string, toUnit: string): number {
+      if (!fromUnit || !toUnit || fromUnit === toUnit) return amount;
+      
+      const fromUnitLower = fromUnit.toLowerCase();
+      const toUnitLower = toUnit.toLowerCase();
+
+      // Mass conversion
+      if (['g', 'mg', 'kg', 'ug'].includes(fromUnitLower) && ['g', 'mg', 'kg', 'ug'].includes(toUnitLower)) {
+          const fromFactor = this.getFactor(fromUnitLower, 'mass');
+          const toFactor = this.getFactor(toUnitLower, 'mass');
+          return amount * (fromFactor / toFactor);
+      }
+      
+      // Volume conversion
+      if (['l', 'ml', 'ul'].includes(fromUnitLower) && ['l', 'ml', 'ul'].includes(toUnitLower)) {
+          const fromFactor = this.getFactor(fromUnitLower, 'vol');
+          const toFactor = this.getFactor(toUnitLower, 'vol');
+          return amount * (fromFactor / toFactor);
+      }
+
+      // If units are incompatible (e.g. g to ml), return amount as is (assume user knows what they are doing or it's a 1:1 density assumption)
+      return amount;
+  }
+
   // --- CALCULATIONS ---
+  molarResult = computed(() => {
+      if (this.calcMode() !== 'molar') return { val: 0, unit: 'M', alternatives: [] };
+      
+      const m = this.actualMass();
+      const mUnit = this.actualMassUnit();
+      const v = this.targetVol();
+      const vUnit = this.targetVolUnit();
+      const MW = this.mw();
+      const P = this.purity() || 100;
+
+      if (m <= 0 || v <= 0) return { val: 0, unit: 'M', alternatives: [] };
+
+      // Convert mass to grams
+      const massG = m * this.getFactor(mUnit, 'mass') * (P / 100);
+      // Convert vol to Liters
+      const volL = v * this.getFactor(vUnit, 'vol');
+
+      // Base conc: g/L (which is also mg/mL)
+      const concGL = massG / volL;
+      
+      const alts = [
+          { val: concGL * 1000, unit: 'ppm' },
+          { val: concGL, unit: 'mg/mL' },
+          { val: concGL / 10, unit: '%' }
+      ];
+
+      if (MW > 0) {
+          const molar = concGL / MW; // mol/L = M
+          return {
+              val: molar, unit: 'M',
+              alternatives: [
+                  { val: molar * 1000, unit: 'mM' },
+                  { val: molar * 1000000, unit: 'µM' },
+                  ...alts
+              ]
+          };
+      }
+
+      return {
+          val: concGL * 1000, unit: 'ppm',
+          alternatives: alts.filter(a => a.unit !== 'ppm')
+      };
+  });
+
   resultValue = computed(() => {
       const mode = this.calcMode();
       
-      // Get Base Values (Normalized to M, L, g)
-      const cStockBase = this.stockConc() * this.getFactor(this.concUnit(), 'conc');
-      const cTargetBase = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc'); // Use target unit for Molar/Dilution target
-      const vTargetBase = this.targetVol() * this.getFactor(this.targetVolUnit(), 'vol');
-
-      if (mode === 'molar') {
-          const MW = this.mw();
-          const P = this.purity() || 100;
-          if (!MW) return 0;
-          // Mass (g) = M (mol/L) * V (L) * MW (g/mol) * (100/P)
-          // Note: cTargetBase is already normalized to Molar if using M/mM. 
-          // If using %, logic differs (usually m/v). Assuming Molar logic here.
-          const massG = cTargetBase * vTargetBase * MW * (100 / P);
-          return massG; // Always return base unit (g) for now, can display better later
-      }
+      if (mode === 'molar') return this.actualMass(); // Just return input for stock deduction
       
       if (mode === 'dilution') {
-          // V1 (L) = C2 * V2 / C1
-          if (cStockBase === 0) return 0;
-          // Target Conc for dilution uses the generic 'concUnit' for stock, but 'targetConc' input
-          // In the UI for dilution, I used `concUnit` for both for simplicity in old code, 
-          // but new UI has separate. Let's assume user converts or selects. 
-          // Actually UI shows: Stock has unit, Target has SAME unit display.
-          // Let's use `concUnit` for both C1 and C2 in Dilution to keep math simple V1 = C2*V2/C1
-          // If units differ, we need separate selectors. The UI above uses `concUnit` for Target display.
-          // Let's assume C1 and C2 share `concUnit`.
-          const c1 = this.stockConc(); const c2 = this.targetConc();
+          const c1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
+          const c2 = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
           if (c1 === 0) return 0;
-          const v1 = (c2 * this.targetVol()) / c1; // Result in Target Vol Unit
+          
+          // V1 = C2 * V2 / C1 (V1 will be in same unit as V2)
+          let v1 = (c2 * this.targetVol()) / c1; 
+          
+          // Auto convert to uL if < 1mL and unit is mL
+          if (v1 < 1 && this.targetVolUnit() === 'ml') {
+              return v1 * 1000;
+          }
           return v1; 
       }
 
       if (mode === 'spiking') {
-          // V_spike = V_sample * (C_add / C_stock)
-          // Assumes C_add and C_stock same unit
-          const cStock = this.stockConc(); const cAdd = this.targetConc();
+          const cStock = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
+          const cAdd = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
           if (cStock === 0) return 0;
-          return this.targetVol() * (cAdd / cStock);
+          
+          // V_spike = V_sample * (C_add / C_stock)
+          // Note: V_sample might be mass (g). We assume 1g ~ 1mL for simple spiking logic if density not provided.
+          // Or we just treat the 'targetVol' input as the base unit for the calculation.
+          let v1 = this.targetVol() * (cAdd / cStock);
+          
+          // Auto convert to uL if < 1mL
+          const vUnit = this.targetVolUnit();
+          if (v1 < 1 && (vUnit === 'ml' || vUnit === 'g')) {
+              return v1 * 1000;
+          }
+          return v1;
       }
 
       return 0;
@@ -922,8 +1065,26 @@ export class SmartPrepComponent {
 
   resultUnit = computed(() => {
       const mode = this.calcMode();
-      if (mode === 'molar') return 'g';
-      if (mode === 'dilution' || mode === 'spiking') return this.targetVolUnit(); 
+      if (mode === 'molar') return this.actualMassUnit();
+      
+      if (mode === 'dilution') {
+          const c1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
+          const c2 = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
+          if (c1 === 0) return this.targetVolUnit();
+          let v1 = (c2 * this.targetVol()) / c1; 
+          if (v1 < 1 && this.targetVolUnit() === 'ml') return 'ul';
+          return this.targetVolUnit();
+      }
+
+      if (mode === 'spiking') {
+          const cStock = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
+          const cAdd = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
+          if (cStock === 0) return this.targetVolUnit();
+          let v1 = this.targetVol() * (cAdd / cStock);
+          const vUnit = this.targetVolUnit();
+          if (v1 < 1 && (vUnit === 'ml' || vUnit === 'g')) return 'ul';
+          return vUnit;
+      }
       return '';
   });
 
@@ -951,30 +1112,38 @@ export class SmartPrepComponent {
       return inst * f * (100 / R);
   });
 
-  serialResult = computed<SerialPoint[]>(() => {
+  serialResult = computed<any[]>(() => {
       if (this.calcMode() !== 'serial') return [];
-      const C1 = this.stockConc();
+      const C1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc');
       const V2 = this.targetVol(); // Vol per point
       if (C1 <= 0 || V2 <= 0) return [];
 
-      return this.serialPoints().map(C2 => {
-          if (!C2) return { conc: 0, unit: this.concUnit(), vStock: 0, vSolvent: 0 };
-          // V1 = C2 * V2 / C1
-          // Result V1 is in same unit as V2
-          const v1 = (C2 * V2) / C1;
+      return this.serialPoints().map(C2_input => {
+          if (!C2_input) return { conc: 0, unit: 'ul', vStock: 0, vSolvent: 0 };
           
-          // Convert to uL for better readability if small
-          let v1_display = v1; 
-          let vSolvent = V2 - v1;
+          const C2 = C2_input * this.getFactor(this.targetConcUnit(), 'conc');
+          let v1 = (C2 * V2) / C1;
           
-          // Heuristic: If user selected 'mL', stock might be uL
-          if (this.targetVolUnit() === 'ml') v1_display = v1 * 1000; 
+          let vUnit = this.targetVolUnit();
+          if (v1 < 1 && this.targetVolUnit() === 'ml') {
+              v1 = v1 * 1000;
+              vUnit = 'ul';
+          }
           
-          return { conc: C2, unit: this.concUnit(), vStock: v1_display, vSolvent: vSolvent };
+          // Calculate solvent in original target unit
+          const v1_in_target_unit = (C2 * V2) / C1;
+          let vSolvent = V2 - v1_in_target_unit;
+          
+          return { conc: C2_input, unit: vUnit, vStock: v1, vSolvent: vSolvent };
       });
   });
 
-  serialTotalStock = computed(() => this.serialResult().reduce((sum, p) => sum + p.vStock, 0));
+  serialTotalStock = computed(() => {
+      // Return total in the unit of the first point for simplicity, or standardize to uL
+      const res = this.serialResult();
+      if (res.length === 0) return 0;
+      return res.reduce((sum, p) => sum + p.vStock, 0);
+  });
 
   mixResult = computed(() => {
       if (this.calcMode() !== 'mix') return { details: [], solventVol: 0 };
@@ -983,14 +1152,21 @@ export class SmartPrepComponent {
 
       let totalStockVol = 0;
       const details = this.mixItems().map(item => {
-          if (item.stockConc <= 0) return { name: item.name || 'Unknown', vStock: 0 };
+          if (item.stockConc <= 0) return { name: item.name || 'Unknown', vStock: 0, unit: this.targetVolUnit() };
           
-          // C1 * V1 = C2 * V2 => V1 = C2 * V2 / C1
-          // Need unit normalization if units differ. 
-          // For now assume same units for C1 and C2 in mix row.
-          const v = (item.targetConc * V_total) / item.stockConc;
-          totalStockVol += v;
-          return { name: item.name || 'Unknown', vStock: v };
+          const c1 = item.stockConc * this.getFactor('ppm', 'conc'); // Assume mix stock is ppm for now, or add unit selector
+          const c2 = item.targetConc * this.getFactor(item.unit, 'conc');
+          
+          let v1 = (c2 * V_total) / c1;
+          totalStockVol += v1; // Keep track in targetVolUnit
+          
+          let vUnit = this.targetVolUnit();
+          if (v1 < 1 && this.targetVolUnit() === 'ml') {
+              v1 = v1 * 1000;
+              vUnit = 'ul';
+          }
+          
+          return { name: item.name || 'Unknown', vStock: v1, unit: vUnit };
       });
 
       return { details, solventVol: Math.max(0, V_total - totalStockVol) };
@@ -1001,11 +1177,16 @@ export class SmartPrepComponent {
       const unit = this.resultUnit();
       const mode = this.calcMode();
       
-      if (mode === 'molar') return `Cân chính xác ${this.formatNum(val)} ${unit} chất rắn. Hòa tan và định mức tới ${this.targetVol()} ${this.targetVolUnit()}.`;
       if (mode === 'dilution') {
           const vTotal = this.targetVol();
-          const solvent = vTotal - val;
-          return `Hút ${this.formatNum(val)} ${unit} dung dịch gốc. Thêm ${this.formatNum(solvent)} ${unit} dung môi để đạt ${vTotal} ${unit}.`;
+          // If val is in uL but vTotal is in mL, need to convert for display
+          let vTotalDisplay = vTotal;
+          let vTotalUnit = this.targetVolUnit();
+          
+          return `Hút ${this.formatNum(val)} ${unit} dung dịch gốc. Định mức tới ${vTotalDisplay} ${vTotalUnit} bằng dung môi.`;
+      }
+      if (mode === 'spiking') {
+          return `Hút ${this.formatNum(val)} ${unit} dung dịch chuẩn thêm vào mẫu.`;
       }
       return '';
   });
@@ -1014,11 +1195,18 @@ export class SmartPrepComponent {
   
   stockPercentage = computed(() => {
       const item = this.selectedItem();
-      if (!item) return 0;
-      let req = this.resultValue();
-      // Normalize units comparison needed here in real app
-      // Assuming simple match for now
-      if (item.stock <= 0) return 0;
+      if (!item || item.stock <= 0) return 0;
+      
+      let req = 0;
+      if (this.calcMode() === 'serial') {
+          // Serial uses uL internally for display, need to convert to targetVolUnit first, then to stock unit
+          const totalStock_uL = this.serialTotalStock();
+          const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
+          req = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
+      } else {
+          req = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
+      }
+      
       return Math.min((req / item.stock) * 100, 100);
   });
 
@@ -1027,16 +1215,31 @@ export class SmartPrepComponent {
       const res = this.mixResult();
       return this.mixItems().map((item, idx) => {
           const required = res.details[idx]?.vStock || 0;
-          const hasStock = item.invItem ? (item.invItem.stock >= required) : true;
-          return { name: item.name || `Chất ${idx+1}`, ok: hasStock };
+          if (!item.invItem) return { name: item.name || `Chất ${idx+1}`, ok: true };
+          
+          const normalizedReq = this.normalizeToStockUnit(required, this.targetVolUnit(), item.invItem.unit);
+          return { name: item.name || `Chất ${idx+1}`, ok: item.invItem.stock >= normalizedReq };
       });
   });
 
   canFulfill = computed(() => {
       if (this.systemMode() === 'sandbox') return true;
       if (this.calcMode() === 'mix') return this.mixStockStatus().every(s => s.ok);
+      if (this.calcMode() === 'sample_prep') return true; // Sample prep doesn't deduct stock directly
+      
       const item = this.selectedItem();
-      return item ? item.stock >= this.resultValue() : false;
+      if (!item) return false;
+
+      let req = 0;
+      if (this.calcMode() === 'serial') {
+          const totalStock_uL = this.serialTotalStock();
+          const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
+          req = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
+      } else {
+          req = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
+      }
+
+      return item.stock >= req;
   });
 
   async confirmTransaction() {
@@ -1058,19 +1261,22 @@ export class SmartPrepComponent {
                       const mItem = this.mixItems()[i];
                       const amount = details[i].vStock;
                       if (mItem.invItem && amount > 0) {
-                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -amount, 'Pha Mix (Smart Prep)');
+                          const normalizedAmount = this.normalizeToStockUnit(amount, this.targetVolUnit(), mItem.invItem.unit);
+                          await this.invService.updateStock(mItem.invItem.id, mItem.invItem.stock, -normalizedAmount, 'Pha Mix (Smart Prep)');
                       }
                   }
-              } else {
+              } else if (this.calcMode() === 'serial') {
                   const item = this.selectedItem()!;
-                  let amount = this.resultValue();
-                  // Normalize unit if result is 'g' but stock is 'mg', etc. 
-                  // Simple logic: if result unit != stock unit, try simple conversion
-                  if (this.resultUnit() === 'g' && item.unit === 'mg') amount *= 1000;
-                  if (this.resultUnit() === 'l' && item.unit === 'ml') amount *= 1000;
-                  
-                  await this.invService.updateStock(item.id, item.stock, -amount, `Smart Prep: ${this.calcMode()}`);
+                  const totalStock_uL = this.serialTotalStock();
+                  const totalStock_TargetUnit = this.targetVolUnit() === 'ml' ? totalStock_uL / 1000 : totalStock_uL;
+                  const normalizedAmount = this.normalizeToStockUnit(totalStock_TargetUnit, this.targetVolUnit(), item.unit);
+                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Smart Prep: Dãy chuẩn`);
+              } else if (this.calcMode() !== 'sample_prep') {
+                  const item = this.selectedItem()!;
+                  const normalizedAmount = this.normalizeToStockUnit(this.resultValue(), this.resultUnit(), item.unit);
+                  await this.invService.updateStock(item.id, item.stock, -normalizedAmount, `Smart Prep: ${this.calcMode()}`);
               }
+              
               this.toast.show('Giao dịch thành công!', 'success');
               this.setSystemMode('sandbox');
           } catch (e: any) {
@@ -1079,5 +1285,9 @@ export class SmartPrepComponent {
               this.isProcessing.set(false);
           }
       }
+  }
+
+  goToLabels() {
+      this.router.navigate(['/labels']);
   }
 }
