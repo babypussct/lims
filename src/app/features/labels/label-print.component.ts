@@ -362,8 +362,9 @@ interface LabelPage {
                              style="padding-top: {{marginTop()}}mm; padding-left: {{marginLeft()}}mm; padding-right: {{marginLeft()}}mm; padding-bottom: {{marginTop()}}mm;">
                             
                             <!-- The Grid -->
-                            <div class="grid content-start h-full"
-                                 [style.grid-template-columns]="'repeat(' + layoutDims().cols + ', minmax(0, 1fr))'"
+                            <div class="grid content-start justify-start"
+                                 [style.grid-template-columns]="'repeat(' + layoutDims().cols + ', ' + layoutDims().cellW + 'mm)'"
+                                 [style.grid-template-rows]="'repeat(' + layoutDims().rows + ', ' + layoutDims().cellH + 'mm)'"
                                  [style.gap]="gapY() + 'mm ' + gapX() + 'mm'">
                                 
                                 @for (cell of page.cells; track cell.index) {
@@ -807,11 +808,11 @@ export class LabelPrintComponent {
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(${dims.cols}, minmax(0, 1fr));
+            grid-template-columns: repeat(${dims.cols}, ${dims.cellW}mm);
             grid-template-rows: repeat(${dims.rows}, ${dims.cellH}mm);
             gap: ${this.gapY()}mm ${this.gapX()}mm;
-            height: 100%;
             align-content: start;
+            justify-content: start;
         }
         .cell {
             width: 100%;
