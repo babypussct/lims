@@ -21,10 +21,10 @@ interface TomyTemplate {
 }
 
 const TOMY_TEMPLATES: TomyTemplate[] = [
-  { id: 'tomy_145', name: 'Tomy 145 (65 tem - 38x21mm)', cols: 5, rows: 13, cellW: 38, cellH: 21, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
-  { id: 'tomy_149', name: 'Tomy 149 (21 tem - 70x42.5mm)', cols: 3, rows: 7, cellW: 70, cellH: 42.5, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
-  { id: 'tomy_144', name: 'Tomy 144 (30 tem - 67x28mm)', cols: 3, rows: 10, cellW: 67, cellH: 28, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
-  { id: 'tomy_109', name: 'Tomy 109 (100 tem - 22x14mm)', cols: 8, rows: 12, cellW: 22, cellH: 14, marginTop: 10, marginLeft: 5, gapX: 2, gapY: 2 },
+  { id: 'tomy_145', name: 'Tomy 145 (65 tem - 38x21mm)', cols: 5, rows: 13, cellW: 38, cellH: 21, marginTop: 12, marginLeft: 10, gapX: 0, gapY: 0 },
+  { id: 'tomy_149', name: 'Tomy 149 (21 tem - 70x42.5mm)', cols: 3, rows: 7, cellW: 70, cellH: 42.5, marginTop: 0, marginLeft: 0, gapX: 0, gapY: 0 },
+  { id: 'tomy_144', name: 'Tomy 144 (30 tem - 67x28mm)', cols: 3, rows: 10, cellW: 67, cellH: 28, marginTop: 8.5, marginLeft: 4.5, gapX: 0, gapY: 0 },
+  { id: 'tomy_109', name: 'Tomy 109 (96 tem - 22x14mm)', cols: 8, rows: 12, cellW: 22, cellH: 14, marginTop: 64.5, marginLeft: 17, gapX: 0, gapY: 0 },
 ];
 
 interface LabelCell {
@@ -368,15 +368,13 @@ interface LabelPage {
                                  [style.gap]="gapY() + 'mm ' + gapX() + 'mm'">
                                 
                                 @for (cell of page.cells; track cell.index) {
-                                    <div class="relative flex flex-col overflow-hidden group cursor-default transition-colors"
+                                    <div class="relative flex flex-col overflow-hidden group cursor-default transition-colors w-full h-full box-border"
                                          [class.border]="printMode() === 'tomy_a4' || (printMode() === 'plain_a4' && showCutLines())"
                                          [class.border-slate-200]="printMode() === 'tomy_a4'"
                                          [class.border-slate-300]="printMode() === 'plain_a4' && showCutLines()"
                                          [class.border-dashed]="printMode() === 'plain_a4' && showCutLines()"
                                          [class.bg-slate-50]="cell.isEmpty"
-                                         [class.opacity-40]="cell.isEmpty"
-                                         [style.width.mm]="layoutDims().cellW"
-                                         [style.height.mm]="layoutDims().cellH">
+                                         [class.opacity-40]="cell.isEmpty">
                                         
                                         @if(!cell.isEmpty) {
                                             <div class="absolute top-0.5 right-1 text-[6px] text-slate-200 select-none">{{cell.index + 1}}</div>
