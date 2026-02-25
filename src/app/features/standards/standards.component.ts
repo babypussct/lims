@@ -59,6 +59,38 @@ import { Unsubscribe } from 'firebase/firestore';
         </div>
       </div>
 
+      <!-- Dashboard Widgets -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+          <div (click)="activeWidgetFilter.set('all')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 shadow-md ring-2 ring-indigo-50' : 'border-slate-100 shadow-sm'">
+              <div class="flex justify-between items-start mb-2">
+                  <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="text-2xl font-black text-slate-800">{{stats().total}}</span>
+              </div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Tất cả chuẩn</div>
+          </div>
+          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 shadow-md ring-2 ring-amber-50' : 'border-slate-100 shadow-sm'">
+              <div class="flex justify-between items-start mb-2">
+                  <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-battery-quarter"></i></div>
+                  <span class="text-2xl font-black text-amber-600">{{stats().lowStock}}</span>
+              </div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Sắp hết hàng</div>
+          </div>
+          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 shadow-md ring-2 ring-orange-50' : 'border-slate-100 shadow-sm'">
+              <div class="flex justify-between items-start mb-2">
+                  <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
+                  <span class="text-2xl font-black text-orange-600">{{stats().expiringSoon}}</span>
+              </div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
+          </div>
+          <div (click)="activeWidgetFilter.set('expired')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 shadow-md ring-2 ring-red-50' : 'border-slate-100 shadow-sm'">
+              <div class="flex justify-between items-start mb-2">
+                  <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-ban"></i></div>
+                  <span class="text-2xl font-black text-red-600">{{stats().expired}}</span>
+              </div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Đã hết hạn</div>
+          </div>
+      </div>
+
       <!-- Main Content -->
       <div class="flex-1 overflow-hidden bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col relative">
           
@@ -191,7 +223,10 @@ import { Unsubscribe } from 'firebase/firestore';
                                      </td>
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50">
                                         <div class="flex flex-col items-center gap-2">
-                                           <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                           <div class="flex gap-1">
+                                               <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                               <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 text-white hover:bg-slate-900 shadow-md shadow-slate-200 transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
+                                           </div>
                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-200" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
                                                @if(auth.canEditStandards()) { <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition" title="Sửa"><i class="fa-solid fa-pen text-[10px]"></i></button> }
@@ -313,6 +348,9 @@ import { Unsubscribe } from 'firebase/firestore';
                                                     }
                                                     <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition flex items-center justify-center" title="Lịch sử">
                                                         <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                                                    </button>
+                                                    <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 text-white border border-slate-700 hover:bg-slate-900 transition flex items-center justify-center" title="In nhãn">
+                                                        <i class="fa-solid fa-print text-xs"></i>
                                                     </button>
                                                     <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
                                                         <i class="fa-solid fa-weight-scale"></i> Cân
@@ -542,10 +580,18 @@ import { Unsubscribe } from 'firebase/firestore';
                 <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
                 <h3 class="font-black text-xl text-slate-800 mb-1">Cân chuẩn</h3>
                 <p class="text-sm text-slate-500 mb-6">{{selectedStd()?.name}}</p>
-                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6 flex justify-between items-center">
-                    <span class="text-xs font-bold text-indigo-800 uppercase">Tồn kho hiện tại</span>
-                    <span class="font-mono font-black text-xl text-indigo-600">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
+                
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex flex-col justify-center">
+                        <span class="text-[10px] font-bold text-indigo-800 uppercase mb-1">Tồn kho hiện tại</span>
+                        <span class="font-mono font-black text-lg text-indigo-600">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase mb-1">Độ tinh khiết (Purity)</span>
+                        <span class="font-mono font-black text-lg text-slate-700">{{selectedStd()?.purity || 'N/A'}}</span>
+                    </div>
                 </div>
+
                 <div class="space-y-4">
                     <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
                     <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
@@ -554,10 +600,16 @@ import { Unsubscribe } from 'firebase/firestore';
                         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 bg-slate-50 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
                     </div>
                     @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
+                    @if(isWeighAmountInvalid()) {
+                        <div class="text-[10px] text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Lượng cân vượt quá tồn kho hiện tại!</span>
+                        </div>
+                    }
                 </div>
                 <div class="flex justify-end gap-3 mt-8">
                     <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">
+                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isWeighAmountInvalid() || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xác nhận }
                     </button>
                 </div>
@@ -565,6 +617,40 @@ import { Unsubscribe } from 'firebase/firestore';
          </div>
       }
       
+      @if (showPrintModal()) {
+         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-bounce-in relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800"></div>
+                <h3 class="font-black text-xl text-slate-800 mb-1">In Nhãn Chuẩn</h3>
+                <p class="text-sm text-slate-500 mb-6">{{selectedStd()?.name}}</p>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Chiều rộng (mm)</label>
+                            <input type="number" [(ngModel)]="printWidth" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Chiều cao (mm)</label>
+                            <input type="number" [(ngModel)]="printHeight" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cỡ chữ (pt)</label>
+                        <input type="number" [(ngModel)]="printFontSize" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 mt-8">
+                    <button (click)="showPrintModal.set(false)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="printLabel()" class="px-8 py-3 bg-slate-800 text-white font-bold text-sm rounded-xl hover:bg-slate-900 shadow-lg shadow-slate-200 transition">
+                        <i class="fa-solid fa-print mr-2"></i> In ngay
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+
       @if (historyStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -622,14 +708,68 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- CHANGED: CLIENT-SIDE STATE ---
   allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
   displayLimit = signal<number>(50); // Virtual scroll limit
+  activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'low_stock'>('all');
   private snapshotUnsub?: Unsubscribe;
+
+  // Stats Computed
+  stats = computed(() => {
+      const data = this.allStandards();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+
+      let expired = 0;
+      let expiringSoon = 0;
+      let lowStock = 0;
+
+      data.forEach(item => {
+          if ((item.current_amount / (item.initial_amount || 1)) <= 0.2) {
+              lowStock++;
+          }
+          if (item.expiry_date) {
+              const expDate = new Date(item.expiry_date).getTime();
+              if (expDate < today) {
+                  expired++;
+              } else if (expDate <= thirtyDays) {
+                  expiringSoon++;
+              }
+          }
+      });
+
+      return { expired, expiringSoon, lowStock, total: data.length };
+  });
 
   // Computed: Filter -> Sort -> Slice
   filteredItems = computed(() => {
-      let data = this.allStandards();
+      let data = [...this.allStandards()]; // Clone array to avoid in-place mutation issues
       const term = this.searchTerm().trim().toLowerCase();
+      const widgetFilter = this.activeWidgetFilter();
       
-      // 1. FILTER
+      // 1. WIDGET FILTER
+      if (widgetFilter !== 'all') {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+          const thirtyDays = today + 30 * 24 * 60 * 60 * 1000;
+
+          data = data.filter(item => {
+              if (widgetFilter === 'low_stock') {
+                  return (item.current_amount / (item.initial_amount || 1)) <= 0.2;
+              }
+              
+              if (!item.expiry_date) return false;
+              const expDate = new Date(item.expiry_date).getTime();
+              
+              if (widgetFilter === 'expired') {
+                  return expDate < today;
+              }
+              if (widgetFilter === 'expiring_soon') {
+                  return expDate >= today && expDate <= thirtyDays;
+              }
+              return true;
+          });
+      }
+
+      // 2. SEARCH FILTER
       if (term) {
           const normalize = (s: string | undefined) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
           const normTerm = normalize(term);
@@ -650,7 +790,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           });
       }
 
-      // 2. SORT
+      // 3. SORT
       const option = this.sortOption();
       return data.sort((a, b) => {
           switch (option) {
@@ -688,12 +828,35 @@ export class StandardsComponent implements OnInit, OnDestroy {
   weighDate = signal<string>('');
   weighUnit = signal<string>('mg');
   
+  isWeighAmountInvalid = computed(() => {
+      const std = this.selectedStd();
+      const amount = this.weighAmount();
+      const unit = this.weighUnit();
+      if (!std || amount <= 0) return false;
+      
+      // Convert amount to std.unit if different
+      let amountInStdUnit = amount;
+      if (unit !== std.unit) {
+          if (unit === 'g' && std.unit === 'mg') amountInStdUnit = amount * 1000;
+          else if (unit === 'mg' && std.unit === 'g') amountInStdUnit = amount / 1000;
+          else if (unit === 'L' && std.unit === 'mL') amountInStdUnit = amount * 1000;
+          else if (unit === 'mL' && std.unit === 'L') amountInStdUnit = amount / 1000;
+      }
+      
+      return amountInStdUnit > std.current_amount;
+  });
+
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
   loadingHistory = signal(false);
   
   showModal = signal(false);
   isEditing = signal(false);
+  
+  showPrintModal = signal(false);
+  printWidth = signal(62);
+  printHeight = signal(25);
+  printFontSize = signal(10);
   
   previewUrl = signal<SafeResourceUrl | null>(null);
   previewImgUrl = signal<string>('');
@@ -1028,6 +1191,72 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
   
+  openPrintModal(std: ReferenceStandard) {
+      this.selectedStd.set(std);
+      this.showPrintModal.set(true);
+  }
+
+  printLabel() {
+      const std = this.selectedStd();
+      if (!std) return;
+      
+      const width = this.printWidth();
+      const height = this.printHeight();
+      const fontSize = this.printFontSize();
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+          this.toast.show('Vui lòng cho phép popup để in nhãn', 'error');
+          return;
+      }
+      
+      const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Print Label</title>
+              <style>
+                  @page { size: ${width}mm ${height}mm; margin: 0; }
+                  body { 
+                      margin: 0; 
+                      padding: 2mm; 
+                      width: ${width}mm; 
+                      height: ${height}mm; 
+                      box-sizing: border-box;
+                      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: center;
+                  }
+                  .label-content {
+                      font-size: ${fontSize}pt;
+                      line-height: 1.2;
+                  }
+                  .title { font-weight: bold; font-size: ${fontSize + 2}pt; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                  .row { display: flex; justify-content: space-between; margin-bottom: 1px; }
+                  .bold { font-weight: bold; }
+              </style>
+          </head>
+          <body>
+              <div class="label-content">
+                  <div class="title">${std.name}</div>
+                  <div class="row"><span>Lot: <span class="bold">${std.lot_number || 'N/A'}</span></span> <span>Purity: <span class="bold">${std.purity || 'N/A'}</span></span></div>
+                  <div class="row"><span>Opened: <span class="bold">${std.date_opened ? new Date(std.date_opened).toLocaleDateString('vi-VN') : '___/___/___'}</span></span></div>
+                  <div class="row"><span>Expiry: <span class="bold">${std.expiry_date ? new Date(std.expiry_date).toLocaleDateString('vi-VN') : 'N/A'}</span></span></div>
+              </div>
+              <script>
+                  window.onload = () => { window.print(); window.close(); }
+              </script>
+          </body>
+          </html>
+      `;
+      
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      this.showPrintModal.set(false);
+  }
+
   // --- HARDENED: Confirm Weigh ---
   async confirmWeigh() {
       if (this.isProcessing()) return;
