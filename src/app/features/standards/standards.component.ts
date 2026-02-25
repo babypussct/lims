@@ -20,7 +20,7 @@ import { Unsubscribe } from 'firebase/firestore';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent],
   template: `
-    <div class="max-w-full mx-auto space-y-5 pb-20 fade-in h-full flex flex-col relative">
+    <div class="flex flex-col space-y-4 md:space-y-5 fade-in h-full relative">
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
         <div>
@@ -92,7 +92,7 @@ import { Unsubscribe } from 'firebase/firestore';
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 overflow-hidden bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col relative">
+      <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col relative">
           
           <!-- Omnibox Filters -->
           <div class="p-5 border-b border-slate-50 flex flex-col gap-4 bg-slate-50/30">
@@ -139,7 +139,7 @@ import { Unsubscribe } from 'firebase/firestore';
           </div>
 
           <!-- Content Body -->
-          <div class="flex-1 overflow-y-auto custom-scrollbar relative bg-slate-50/30">
+          <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30">
              
              <!-- VIEW MODE: LIST (HIGH DENSITY TABLE) -->
              @if (viewMode() === 'list') {
