@@ -785,8 +785,24 @@ interface MixRow {
                     <div class="p-6 space-y-4">
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-500 uppercase">Nội dung nhãn (Có thể sửa)</label>
-                            <textarea [(ngModel)]="labelData" class="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50"></textarea>
+                            <textarea [ngModel]="labelData()" (ngModelChange)="labelData.set($event)" class="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50"></textarea>
                         </div>
+                        
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Khổ rộng (mm)</label>
+                                <input type="number" [ngModel]="quickPrintWidth()" (ngModelChange)="quickPrintWidth.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Chiều dài (mm)</label>
+                                <input type="number" [ngModel]="quickPrintHeight()" (ngModelChange)="quickPrintHeight.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Cỡ chữ (pt)</label>
+                                <input type="number" [ngModel]="quickPrintFontSize()" (ngModelChange)="quickPrintFontSize.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+
                         <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
                             <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
                             <div class="text-xs text-blue-800">
@@ -1325,6 +1341,9 @@ export class SmartPrepComponent {
   // --- LABEL PRINT MODAL STATE ---
   showLabelModal = signal(false);
   labelData = signal('');
+  quickPrintWidth = signal(62);
+  quickPrintHeight = signal(25);
+  quickPrintFontSize = signal(12);
 
   openLabelModal() {
       const mode = this.calcMode();
@@ -1373,10 +1392,9 @@ export class SmartPrepComponent {
           return;
       }
 
-      // Default Brother 62mm settings for quick print
-      const w = 62;
-      const h = 25;
-      const fs = 12;
+      const w = this.quickPrintWidth();
+      const h = this.quickPrintHeight();
+      const fs = this.quickPrintFontSize();
 
       const css = `
         @page { size: ${w}mm ${h * labels.length}mm; margin: 0; }
