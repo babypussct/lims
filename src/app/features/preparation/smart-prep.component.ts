@@ -769,6 +769,41 @@ interface MixRow {
                 </div>
             </div>
         </div>
+
+        <!-- QUICK PRINT MODAL -->
+        @if (showLabelModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-print text-blue-500"></i> In Nhãn Nhanh
+                        </h3>
+                        <button (click)="closeLabelModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Nội dung nhãn (Có thể sửa)</label>
+                            <textarea [(ngModel)]="labelData" class="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50"></textarea>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
+                            <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                            <div class="text-xs text-blue-800">
+                                <p class="font-bold mb-1">Mẹo in nhanh:</p>
+                                <p>Bạn có thể chỉnh sửa nội dung trước khi in. Để cài đặt khổ giấy hoặc in hàng loạt, vui lòng truy cập menu <a routerLink="/labels" class="font-bold underline cursor-pointer">In Tem & Nhãn</a>.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
+                        <button (click)="closeLabelModal()" class="px-4 py-2 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition">Hủy</button>
+                        <button (click)="printQuickLabel()" class="px-6 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 transition flex items-center gap-2">
+                            <i class="fa-solid fa-print"></i> In Ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
   `,
   styles: [`
@@ -1287,7 +1322,113 @@ export class SmartPrepComponent {
       }
   }
 
+  // --- LABEL PRINT MODAL STATE ---
+  showLabelModal = signal(false);
+  labelData = signal('');
+
+  openLabelModal() {
+      const mode = this.calcMode();
+      let labelText = '';
+      const dateStr = new Date().toISOString().split('T')[0];
+      const user = this.auth.currentUser()?.displayName || 'User';
+
+      if (mode === 'molar') {
+          const item = this.selectedItem();
+          const name = item ? item.name : 'Hóa chất';
+          const conc = `${this.formatNum(this.molarResult().val)} ${this.molarResult().unit}`;
+          labelText = `${name}\n${conc}\n${dateStr} - ${user}`;
+      } else if (mode === 'dilution') {
+          const item = this.selectedItem();
+          const name = item ? item.name : 'Dung dịch';
+          const conc = `${this.formatNum(this.targetConc())} ${this.targetConcUnit()}`;
+          labelText = `${name}\n${conc}\n${dateStr} - ${user}`;
+      } else if (mode === 'spiking') {
+          labelText = `Mẫu Spike\n+${this.formatNum(this.targetConc())} ${this.targetConcUnit()}\n${dateStr} - ${user}`;
+      } else if (mode === 'serial') {
+          const item = this.selectedItem();
+          const name = item ? item.name : 'Chuẩn';
+          const points = this.serialResult();
+          labelText = points.map((p, i) => `STD ${i+1}: ${name}\n${p.conc} ${this.targetConcUnit()}\n${dateStr} - ${user}`).join('\n\n');
+      } else if (mode === 'mix') {
+          labelText = `Mix Chuẩn\n${this.mixItems().length} thành phần\n${dateStr} - ${user}`;
+      } else if (mode === 'sample_prep') {
+          labelText = `Mẫu xử lý\nf = ${this.formatNum(this.samplePrepFactor())}\n${dateStr} - ${user}`;
+      }
+
+      this.labelData.set(labelText);
+      this.showLabelModal.set(true);
+  }
+
+  closeLabelModal() {
+      this.showLabelModal.set(false);
+  }
+
+  printQuickLabel() {
+      const labels = this.labelData().split('\n\n').filter(l => l.trim() !== '');
+      if (labels.length === 0) return;
+
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (!printWindow) {
+          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
+          return;
+      }
+
+      // Default Brother 62mm settings for quick print
+      const w = 62;
+      const h = 25;
+      const fs = 12;
+
+      const css = `
+        @page { size: ${w}mm ${h * labels.length}mm; margin: 0; }
+        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        * { box-sizing: border-box; }
+        .label-container {
+            width: ${w}mm;
+            height: ${h}mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px dashed #ccc;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+            overflow: hidden;
+            position: relative;
+        }
+        .label-text {
+            font-size: ${fs}pt;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+            word-break: break-all;
+            padding: 1mm;
+            width: 100%;
+            white-space: pre-wrap;
+        }
+        @media print {
+            @page { margin: 0; }
+            .label-container { border-bottom: none; }
+            body { margin: 0; }
+        }
+      `;
+
+      let htmlContent = `<html><head><title>Quick Print</title><style>${css}</style></head><body>`;
+      
+      labels.forEach(label => {
+          htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
+      });
+
+      htmlContent += `</body></html>`;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+      };
+  }
+
   goToLabels() {
-      this.router.navigate(['/labels']);
+      this.openLabelModal();
   }
 }
