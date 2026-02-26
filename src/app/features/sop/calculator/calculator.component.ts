@@ -19,11 +19,12 @@ import { formatNum, cleanName, generateSlug, formatDate, naturalCompare } from '
 import { startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
+import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 
 @Component({
   selector: 'app-calculator',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent],
   template: `
     <div class="max-w-8xl mx-auto pb-24 fade-in lg:h-full h-auto flex flex-col no-print px-4 md:px-6">
       
@@ -61,10 +62,15 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
                        <form [formGroup]="form()" class="space-y-6">
                           <!-- 1. SAMPLE MANAGEMENT -->
                           <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                              <label class="text-[11px] font-bold text-blue-800 uppercase tracking-wide mb-2 block flex justify-between">
-                                  <span>Danh sách Mã Mẫu</span>
-                                  <span class="bg-blue-100 text-blue-700 px-2 rounded-md">{{sampleCount()}} mẫu</span>
-                              </label>
+                              <div class="flex justify-between items-center mb-2">
+                                  <label class="text-[11px] font-bold text-blue-800 uppercase tracking-wide flex items-center gap-2">
+                                      <span>Danh sách Mã Mẫu</span>
+                                      <button type="button" (click)="openQuickGenerateModal()" class="text-[10px] text-blue-600 hover:bg-blue-100 px-2 py-1 rounded transition font-bold flex items-center gap-1 normal-case tracking-normal">
+                                          <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo nhanh
+                                      </button>
+                                  </label>
+                                  <span class="bg-blue-100 text-blue-700 px-2 rounded-md text-[11px] font-bold">{{sampleCount()}} mẫu</span>
+                              </div>
                               <textarea [ngModel]="sampleListText()" (ngModelChange)="onSampleListChange($event)" [ngModelOptions]="{standalone: true}"
                                         class="w-full p-3 text-xs font-mono border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200 outline-none bg-white min-h-[80px] resize-y placeholder-blue-300/50"
                                         placeholder="Dán mã mẫu vào đây (mỗi mã 1 dòng)..."></textarea>
@@ -390,6 +396,14 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
             }
         </div>
       }
+
+      <!-- QUICK GENERATE MODAL -->
+      @if (quickGenerateModalOpen()) {
+          <app-quick-generate-sample-modal
+              (close)="closeQuickGenerateModal()"
+              (generated)="handleGeneratedSamples($event)">
+          </app-quick-generate-sample-modal>
+      }
     </div>
   `
 })
@@ -423,6 +437,9 @@ export class CalculatorComponent implements OnDestroy {
   selectedTargets = signal<Set<string>>(new Set());
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
+  
+  // Quick Generate Modal State
+  quickGenerateModalOpen = signal(false);
   
   // SAFETY MARGIN MODE: 'auto' means use Config (-1), 'manual' uses explicit number
   marginMode = signal<'auto' | 'manual'>('auto');
@@ -653,5 +670,26 @@ export class CalculatorComponent implements OnDestroy {
     } finally {
         this.isProcessing.set(false);
     }
+  }
+
+  // --- QUICK GENERATE MODAL HANDLERS ---
+  openQuickGenerateModal() {
+      this.quickGenerateModalOpen.set(true);
+  }
+
+  closeQuickGenerateModal() {
+      this.quickGenerateModalOpen.set(false);
+  }
+
+  handleGeneratedSamples(samples: string[]) {
+      const currentSamples = this.sampleListText();
+      const newSamplesStr = samples.join('\n');
+      const updatedSamples = currentSamples 
+          ? `${currentSamples.trim()}\n${newSamplesStr}` 
+          : newSamplesStr;
+          
+      this.onSampleListChange(updatedSamples);
+      this.toast.show(`Đã thêm ${samples.length} mẫu vào danh sách.`, 'success');
+      this.closeQuickGenerateModal();
   }
 }
