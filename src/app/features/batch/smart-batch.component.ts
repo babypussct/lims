@@ -64,10 +64,12 @@ interface SplitWizardState {
     selectedSopId: string | null; // Step 3 Output
 }
 
+import { QuickGenerateSampleModalComponent } from '../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
+
 @Component({
   selector: 'app-smart-batch',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent],
   template: `
     <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800">
         <!-- HEADER -->
@@ -136,7 +138,12 @@ interface SplitWizardState {
                                     <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <!-- Sample Input -->
                                         <div>
-                                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Danh sách mẫu</label>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <label class="text-[10px] font-bold text-slate-400 uppercase block">Danh sách mẫu</label>
+                                                <button (click)="openQuickGenerateModal(i)" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold flex items-center gap-1">
+                                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo nhanh
+                                                </button>
+                                            </div>
                                             <textarea [ngModel]="block.rawSamples" (ngModelChange)="updateBlockSamples(i, $event)"
                                                       class="w-full h-40 p-3 text-sm font-mono border border-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none resize-none bg-slate-50 focus:bg-white transition"
                                                       placeholder="A01&#10;A02&#10;..."></textarea>
@@ -754,6 +761,14 @@ interface SplitWizardState {
                 </div>
             </div>
         }
+
+        <!-- QUICK GENERATE MODAL -->
+        @if (quickGenerateModalOpen()) {
+            <app-quick-generate-sample-modal
+                (close)="closeQuickGenerateModal()"
+                (generated)="handleGeneratedSamples($event)">
+            </app-quick-generate-sample-modal>
+        }
     </div>
   `
 })
@@ -776,6 +791,10 @@ export class SmartBatchComponent {
   unmappedTasks = signal<AnalysisTask[]>([]);
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
+  
+  // Quick Generate Modal State
+  quickGenerateModalOpen = signal(false);
+  activeBlockIndexForGenerate = signal<number | null>(null);
   
   private inventoryCache: Record<string, InventoryItem> = {};
   private recipeCache: Record<string, Recipe> = {};
@@ -1628,5 +1647,32 @@ export class SmartBatchComponent {
               this.isProcessing.set(false);
           }
       }
+  }
+
+  // --- QUICK GENERATE MODAL HANDLERS ---
+  openQuickGenerateModal(index: number) {
+      this.activeBlockIndexForGenerate.set(index);
+      this.quickGenerateModalOpen.set(true);
+  }
+
+  closeQuickGenerateModal() {
+      this.quickGenerateModalOpen.set(false);
+      this.activeBlockIndexForGenerate.set(null);
+  }
+
+  handleGeneratedSamples(samples: string[]) {
+      const index = this.activeBlockIndexForGenerate();
+      if (index !== null && index >= 0 && index < this.blocks().length) {
+          const currentSamples = this.blocks()[index].rawSamples;
+          const newSamplesStr = samples.join('\n');
+          
+          const updatedSamples = currentSamples 
+              ? `${currentSamples.trim()}\n${newSamplesStr}` 
+              : newSamplesStr;
+              
+          this.updateBlockSamples(index, updatedSamples);
+          this.toast.show(`Đã thêm ${samples.length} mẫu vào danh sách.`, 'success');
+      }
+      this.closeQuickGenerateModal();
   }
 }
