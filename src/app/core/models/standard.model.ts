@@ -57,3 +57,12 @@ export interface ImportPreviewItem {
     logs: any[]; 
     isValid: boolean;
 }
+
+export interface ImportUsageLogPreviewItem {
+    raw: any;
+    standard: ReferenceStandard | null; // Null if standard not found
+    log: UsageLog;
+    isDuplicate: boolean;
+    isValid: boolean;
+    errorMessage?: string;
+}

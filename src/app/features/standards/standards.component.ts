@@ -6,7 +6,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog, ImportPreviewItem } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -44,10 +44,15 @@ import { Unsubscribe } from 'firebase/firestore';
              <button (click)="openAddModal()" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition font-bold text-xs flex items-center gap-2">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
-             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2">
-                <i class="fa-solid fa-file-excel"></i> Import
+             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2" title="Import danh sách chuẩn">
+                <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
              <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleFileSelect($event)">
+             
+             <button (click)="usageLogFileInput.click()" class="px-5 py-2 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl border border-teal-200 transition font-bold text-xs flex items-center gap-2" title="Import nhật ký sử dụng">
+                <i class="fa-solid fa-book-open"></i> Import Nhật ký
+             </button>
+             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleUsageLogFileSelect($event)">
            }
            
            @if(state.isAdmin()) {
@@ -573,6 +578,100 @@ import { Unsubscribe } from 'firebase/firestore';
          </div>
       }
 
+      <!-- IMPORT USAGE LOG PREVIEW MODAL -->
+      @if (importUsageLogPreviewData().length > 0) {
+         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-teal-600"></i> Xác nhận Import Nhật ký
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
+                    </div>
+                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-auto p-6 bg-white">
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500"></i>
+                        <div>
+                            <strong>Lưu ý quan trọng:</strong>
+                            <ul class="list-disc pl-5 mt-1 space-y-1 text-amber-700/80">
+                                <li>Hệ thống sẽ tự động tìm kiếm chất chuẩn dựa trên <strong>Số nhận diện</strong> hoặc <strong>Tên + Số lô</strong>.</li>
+                                <li>Nếu nhật ký (cùng ngày, người pha, lượng dùng) đã tồn tại, dòng đó sẽ bị bỏ qua (trùng lặp).</li>
+                                <li>Lượng dùng sẽ được tự động trừ vào tồn kho hiện tại của chất chuẩn.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-sm text-left mt-4">
+                        <thead>
+                            <tr class="text-xs text-slate-500 uppercase bg-slate-100">
+                                <th class="p-2 border border-slate-200 w-10 text-center">STT</th>
+                                <th class="p-2 border border-slate-200">Chất chuẩn (Excel)</th>
+                                <th class="p-2 border border-slate-200">Ngày pha</th>
+                                <th class="p-2 border border-slate-200">Người pha</th>
+                                <th class="p-2 border border-slate-200 text-right">Lượng dùng</th>
+                                <th class="p-2 border border-slate-200">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (item of importUsageLogPreviewData().slice(0, 15); track $index) {
+                                <tr class="hover:bg-slate-50" [class.bg-red-50]="!item.isValid" [class.bg-amber-50]="item.isDuplicate">
+                                    <td class="p-2 border border-slate-200 text-center text-slate-400">{{$index + 1}}</td>
+                                    <td class="p-2 border border-slate-200">
+                                        <div class="font-bold text-slate-700 truncate max-w-[200px]" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
+                                        <div class="text-xs text-slate-500 font-mono">Lô: {{item.raw['Lô']}}</div>
+                                        @if(item.standard) {
+                                            <div class="text-[10px] text-emerald-600 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
+                                        }
+                                    </td>
+                                    <td class="p-2 border border-slate-200 font-mono">{{item.raw['Ngày']}} <br> <span class="text-xs text-slate-400">{{item.log.date | date:'dd/MM/yyyy'}}</span></td>
+                                    <td class="p-2 border border-slate-200">{{item.raw['Người']}}</td>
+                                    <td class="p-2 border border-slate-200 text-right font-mono font-bold">
+                                        {{item.raw['Lượng']}}
+                                        @if(item.standard) { <span class="text-xs font-normal text-slate-500">{{item.standard.unit}}</span> }
+                                    </td>
+                                    <td class="p-2 border border-slate-200">
+                                        @if(item.isValid && !item.isDuplicate) {
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold"><i class="fa-solid fa-check"></i> Hợp lệ</span>
+                                        } @else if (item.isDuplicate) {
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold" title="Nhật ký này đã có trong hệ thống"><i class="fa-solid fa-copy"></i> Trùng lặp</span>
+                                        } @else {
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold" [title]="item.errorMessage"><i class="fa-solid fa-xmark"></i> Lỗi</span>
+                                            <div class="text-[10px] text-red-500 mt-1">{{item.errorMessage}}</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if(importUsageLogPreviewData().length > 15) {
+                        <p class="text-center text-xs text-slate-400 mt-2 italic">... và {{importUsageLogPreviewData().length - 15}} dòng khác.</p>
+                    }
+                </div>
+
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <div class="text-sm font-bold text-slate-600">
+                        Tổng: {{importUsageLogPreviewData().length}} | 
+                        <span class="text-emerald-600">Hợp lệ: {{validUsageLogsCount()}}</span> | 
+                        <span class="text-amber-600">Trùng: {{duplicateUsageLogsCount()}}</span> | 
+                        <span class="text-red-500">Lỗi: {{errorUsageLogsCount()}}</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                        <button (click)="confirmUsageLogImport()" [disabled]="isImporting() || validUsageLogsCount() === 0" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
+                            @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
+                            @else { <i class="fa-solid fa-check"></i> Import Hợp lệ }
+                        </button>
+                    </div>
+                </div>
+            </div>
+         </div>
+      }
+
       <!-- Weigh, History, COA Preview Modals... (No changes needed here) -->
       @if (selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
@@ -821,6 +920,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   // Import Preview State
   importPreviewData = signal<ImportPreviewItem[]>([]);
+  importUsageLogPreviewData = signal<ImportUsageLogPreviewItem[]>([]);
+  validUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => i.isValid && !i.isDuplicate).length);
+  duplicateUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => i.isDuplicate).length);
+  errorUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => !i.isValid && !i.isDuplicate).length);
 
   selectedStd = signal<ReferenceStandard | null>(null);
   weighAmount = signal<number>(0);
@@ -1040,8 +1143,25 @@ export class StandardsComponent implements OnInit, OnDestroy {
      }
   }
 
+  async handleUsageLogFileSelect(event: any) {
+     const file = event.target.files[0];
+     if (!file) return;
+     this.isLoading.set(true);
+     try {
+         const data = await this.stdService.parseUsageLogExcelData(file);
+         this.importUsageLogPreviewData.set(data);
+         this.toast.show(`Đã đọc ${data.length} dòng nhật ký.`);
+     } catch (e: any) {
+         this.toast.show('Lỗi đọc file: ' + e.message, 'error');
+     } finally {
+         this.isLoading.set(false);
+         event.target.value = ''; // Reset input
+     }
+  }
+
   cancelImport() {
       this.importPreviewData.set([]);
+      this.importUsageLogPreviewData.set([]);
   }
 
   // --- HARDENED: Confirm Import ---
@@ -1054,6 +1174,20 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.importPreviewData.set([]);
       } catch (e: any) {
           this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+      } finally {
+          this.isImporting.set(false);
+      }
+  }
+
+  async confirmUsageLogImport() {
+      if (this.importUsageLogPreviewData().length === 0 || this.isImporting()) return;
+      this.isImporting.set(true);
+      try {
+          await this.stdService.saveImportedUsageLogs(this.importUsageLogPreviewData());
+          this.toast.show('Import nhật ký thành công!', 'success');
+          this.importUsageLogPreviewData.set([]);
+      } catch (e: any) {
+          this.toast.show('Lỗi lưu import nhật ký: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
       }

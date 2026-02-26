@@ -5,7 +5,7 @@ import {
   updateDoc, setDoc, getDocs, deleteDoc, 
   query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
 
@@ -501,6 +501,180 @@ export class StandardService {
 
           if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
+      if (opCount > 0) await batch.commit();
+  }
+
+  // --- USAGE LOG EXCEL PARSER ---
+  async parseUsageLogExcelData(file: File): Promise<ImportUsageLogPreviewItem[]> {
+    const XLSX = await import('xlsx');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: false }); 
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+          if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
+
+          const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const results: ImportUsageLogPreviewItem[] = [];
+          
+          // Fetch all existing standards to match against
+          const existingStandards = await this.getAllStandardsForMatching();
+          const logsCache = new Map<string, UsageLog[]>(); // Cache logs per standard ID
+
+          for (const rawRow of rawRows) {
+             const row: Record<string, any> = {};
+             Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
+
+             const rawName = row['tên chuẩn'] || '';
+             const nameParts = rawName.split(/[\n\r]+/);
+             const name = nameParts[0]?.trim();
+
+             if (!name) continue;
+
+             const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
+             const internalId = (row['số nhận diện'] || '').toString().trim();
+             
+             // Match standard
+             let matchedStandard: ReferenceStandard | null = null;
+             if (internalId) {
+                 matchedStandard = existingStandards.find(s => s.internal_id === internalId) || null;
+             }
+             if (!matchedStandard && name && lot) {
+                 matchedStandard = existingStandards.find(s => s.name.toLowerCase() === name.toLowerCase() && s.lot_number === lot) || null;
+             }
+
+             // Parse Usage Log Data
+             const prepDateRaw = row['ngày pha chế'] || row['ngày sử dụng'] || '';
+             const preparer = (row['người pha chế'] || row['người sử dụng'] || '').toString().trim();
+             const amountUsedRaw = row['lượng dùng'] || row['khối lượng dùng'] || '';
+             
+             const prepDate = this.parseExcelDate(prepDateRaw);
+             let amountUsed = 0;
+             if (amountUsedRaw !== undefined && amountUsedRaw !== null && amountUsedRaw !== '') {
+                 const val = parseFloat(amountUsedRaw.toString().replace(',', '.'));
+                 if (!isNaN(val)) amountUsed = val;
+             }
+
+             let isValid = true;
+             let errorMessage = '';
+
+             if (!matchedStandard) {
+                 isValid = false;
+                 errorMessage = 'Không tìm thấy chất chuẩn tương ứng trong hệ thống.';
+             } else if (!prepDate) {
+                 isValid = false;
+                 errorMessage = 'Ngày pha chế không hợp lệ.';
+             } else if (!preparer) {
+                 isValid = false;
+                 errorMessage = 'Thiếu người pha chế.';
+             } else if (amountUsed <= 0) {
+                 isValid = false;
+                 errorMessage = 'Lượng dùng không hợp lệ.';
+             }
+
+             const log: UsageLog = {
+                 date: prepDate || new Date().toISOString().split('T')[0],
+                 user: preparer,
+                 amount_used: amountUsed,
+                 unit: matchedStandard ? matchedStandard.unit : 'mg', // Default to standard's unit
+                 timestamp: new Date().getTime()
+             };
+
+             let isDuplicate = false;
+             if (matchedStandard && isValid) {
+                 // Fetch existing logs for this standard to check for duplicates if not cached
+                 if (!logsCache.has(matchedStandard.id!)) {
+                     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${matchedStandard.id}/logs`);
+                     const snapshot = await getDocs(logsRef);
+                     const logs = snapshot.docs.map(doc => doc.data() as UsageLog);
+                     logsCache.set(matchedStandard.id!, logs);
+                 }
+                 
+                 const existingLogs = logsCache.get(matchedStandard.id!) || [];
+                 const duplicate = existingLogs.find(l => l.date === log.date && l.user === log.user && l.amount_used === log.amount_used);
+                 
+                 if (duplicate) {
+                     isDuplicate = true;
+                     isValid = false;
+                     errorMessage = 'Nhật ký đã tồn tại.';
+                 } else {
+                     // Add to cache to detect duplicates within the same file
+                     existingLogs.push(log);
+                     logsCache.set(matchedStandard.id!, existingLogs);
+                 }
+             }
+
+             results.push({
+                 raw: { 'Tên': name, 'Lô': lot, 'Ngày': prepDateRaw, 'Người': preparer, 'Lượng': amountUsedRaw },
+                 standard: matchedStandard,
+                 log: log,
+                 isDuplicate: isDuplicate,
+                 isValid: isValid,
+                 errorMessage: errorMessage
+             });
+          }
+          resolve(results);
+        } catch (err: any) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  private async getAllStandardsForMatching(): Promise<ReferenceStandard[]> {
+      const standardsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
+      const snapshot = await getDocs(standardsRef);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReferenceStandard));
+  }
+
+  async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]) {
+      if (!data || data.length === 0) return;
+      
+      const validItems = data.filter(item => item.isValid && !item.isDuplicate && item.standard);
+      if (validItems.length === 0) return;
+
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0;
+      const MAX_BATCH_SIZE = 400;
+
+      // Group logs by standard ID to calculate total amount to deduct
+      const logsByStandard = new Map<string, { standard: ReferenceStandard, logs: UsageLog[] }>();
+
+      for (const item of validItems) {
+          const stdId = item.standard!.id;
+          if (!logsByStandard.has(stdId)) {
+              logsByStandard.set(stdId, { standard: item.standard!, logs: [] });
+          }
+          logsByStandard.get(stdId)!.logs.push(item.log);
+      }
+
+      for (const [stdId, { standard, logs }] of logsByStandard.entries()) {
+          const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+          let totalAmountDeducted = 0;
+
+          for (const log of logs) {
+              const logsCollRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+              const logRef = doc(logsCollRef);
+              batch.set(logRef, log);
+              opCount++;
+
+              // Calculate deduction based on unit
+              const deduction = getStandardizedAmount(log.amount_used, log.unit || 'mg', standard.unit);
+              if (deduction !== null) {
+                  totalAmountDeducted += deduction;
+              }
+          }
+
+          // Update standard's current amount
+          const newAmount = Math.max(0, standard.current_amount - totalAmountDeducted);
+          batch.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
+          opCount++;
+
+          if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+      }
+
       if (opCount > 0) await batch.commit();
   }
 }
