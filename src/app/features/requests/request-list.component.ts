@@ -69,7 +69,7 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
             <!-- TAB: LISTS (Pending / Approved) -->
             @else {
                 <div class="h-full overflow-y-auto custom-scrollbar pb-20 pr-2">
-                    <div class="grid gap-4 max-w-5xl mx-auto">
+                    <div class="grid gap-4 w-full">
                         @if(isLoading()) {
                             @for(i of [1,2,3]; track i) {
                                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex gap-4">

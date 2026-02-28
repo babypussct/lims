@@ -26,7 +26,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent],
   template: `
-    <div class="max-w-8xl mx-auto pb-24 fade-in lg:h-full h-auto flex flex-col no-print px-4 md:px-6">
+    <div class="w-full max-w-[1920px] mx-auto pb-24 fade-in lg:h-full h-auto flex flex-col no-print px-4 md:px-6">
       
       @if (activeSop(); as currentSop) {
         <!-- VIEW: CALCULATOR FORM (RUNNER) -->
@@ -354,7 +354,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                     </div>
 
                     <div class="overflow-y-auto pb-10 custom-scrollbar p-1 flex-1">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                             @for (sop of filteredSops(); track sop.id) {
                                 <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 group relative flex flex-col h-full min-h-[160px]"
                                      (click)="selectSop(sop)">

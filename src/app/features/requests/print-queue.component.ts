@@ -16,7 +16,7 @@ import { ToastService } from '../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, SkeletonComponent],
   template: `
-    <div class="max-w-5xl mx-auto space-y-6 pb-20 fade-in h-full flex flex-col">
+    <div class="w-full space-y-6 pb-20 fade-in h-full flex flex-col">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
             <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
                 <i class="fa-solid fa-print text-purple-500"></i> Hàng đợi In

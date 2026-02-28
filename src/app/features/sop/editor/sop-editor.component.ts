@@ -78,7 +78,7 @@ const STANDARD_VARS = [
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-                   <form [formGroup]="form" class="max-w-3xl mx-auto space-y-6">
+                   <form [formGroup]="form" class="max-w-5xl mx-auto space-y-6">
                       
                       <!-- TAB 1: GENERAL INFO -->
                       @if (currentTab() === 'general') {

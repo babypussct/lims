@@ -311,7 +311,7 @@ interface KanbanColumn {
         <!-- DETAIL MODAL -->
         @if (selectedSopDetails(); as details) {
             <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" (click)="selectedSopDetails.set(null)">
-                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in" (click)="$event.stopPropagation()">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in" (click)="$event.stopPropagation()">
                     
                     <!-- Modal Header -->
                     <div class="bg-slate-50 border-b border-slate-100 p-5 shrink-0 flex justify-between items-start">

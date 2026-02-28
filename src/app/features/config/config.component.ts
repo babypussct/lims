@@ -18,7 +18,7 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div class="max-w-6xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
+    <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
         
         <!-- Header -->
         @if(state.isAdmin()) {

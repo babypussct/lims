@@ -38,7 +38,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
             </div>
         } @else {
             <!-- List -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar p-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto custom-scrollbar p-1">
                 @for (recipe of recipes(); track recipe.id) {
                     <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-purple-300 flex flex-col">
                         <div class="flex justify-between items-start mb-3">

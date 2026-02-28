@@ -14,7 +14,7 @@ declare var QRious: any;
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="max-w-4xl mx-auto pb-20 fade-in px-4 md:px-0">
+    <div class="w-full max-w-7xl mx-auto pb-20 fade-in px-4 md:px-0">
         <!-- HEADER -->
         <div class="flex items-center gap-4 mb-8 pt-6">
             <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-300">

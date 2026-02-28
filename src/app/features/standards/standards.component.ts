@@ -515,7 +515,7 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- IMPORT PREVIEW MODAL -->
       @if (importPreviewData().length > 0) {
          <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
                 
                 <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                     <div>
@@ -581,7 +581,7 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
       @if (importUsageLogPreviewData().length > 0) {
          <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
                 
                 <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                     <div>
@@ -752,7 +752,7 @@ import { Unsubscribe } from 'firebase/firestore';
 
       @if (historyStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh]">
                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                   <div><h3 class="font-bold text-slate-800 text-lg">Lịch sử sử dụng</h3><p class="text-xs text-slate-500 font-mono">{{historyStd()?.name}}</p></div>
                   <button (click)="historyStd.set(null)" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-times text-xl"></i></button>
@@ -771,7 +771,7 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- COA PREVIEW -->
       @if (previewUrl() || previewImgUrl()) {
           <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in" (click)="closeCoaPreview()">
-              <div class="relative w-full max-w-5xl h-[85vh] bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+              <div class="relative w-full max-w-7xl h-[85vh] bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
                   <div class="bg-slate-900 text-white p-3 flex justify-between items-center shrink-0"><span class="text-sm font-bold pl-2"><i class="fa-solid fa-file-pdf mr-2"></i> Preview Certificate of Analysis</span><div class="flex gap-3"><a [href]="previewRawUrl()" target="_blank" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition">Mở Tab mới</a><button (click)="closeCoaPreview()" class="text-white hover:text-red-400 transition"><i class="fa-solid fa-times text-lg"></i></button></div></div>
                   <div class="flex-1 bg-slate-100 relative">
                       @if(previewType() === 'image') { <div class="w-full h-full flex items-center justify-center overflow-auto"><img [src]="previewImgUrl()" class="max-w-full max-h-full object-contain shadow-lg"></div> } 
