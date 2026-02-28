@@ -92,7 +92,7 @@ interface MixRow {
         <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
             <!-- LEFT PANEL: CONFIG -->
-            <div class="w-full xl:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden">
+            <div class="w-full xl:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden h-[600px] xl:h-auto">
                 
                 <!-- Mode Tabs -->
                 <div class="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
@@ -542,7 +542,7 @@ interface MixRow {
             </div>
 
             <!-- RIGHT PANEL: RESULTS -->
-            <div class="flex-1 flex flex-col gap-6">
+            <div class="flex-1 flex flex-col gap-6 h-[600px] xl:h-auto">
                 
                 <div class="bg-white rounded-3xl shadow-soft-xl border border-slate-100 overflow-hidden relative flex-1 flex flex-col">
                     <!-- Color Bar -->

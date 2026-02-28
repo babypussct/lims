@@ -26,7 +26,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent],
   template: `
-    <div class="w-full max-w-[1920px] mx-auto pb-24 fade-in lg:h-full h-auto flex flex-col no-print px-4 md:px-6">
+    <div class="w-full max-w-[1920px] mx-auto pb-24 md:pb-6 fade-in h-full flex flex-col no-print px-4 md:px-6">
       
       @if (activeSop(); as currentSop) {
         <!-- VIEW: CALCULATOR FORM (RUNNER) -->
@@ -45,10 +45,10 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
         </div>
 
         <!-- Main Layout -->
-        <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-stretch lg:h-full lg:overflow-hidden h-auto">
+        <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-stretch flex-1 min-h-0">
             
             <!-- LEFT PANEL: INPUTS -->
-            <div class="w-full lg:w-[400px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto min-h-[400px]">
+            <div class="w-full lg:w-[400px] shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col h-[600px] lg:h-full">
                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 shrink-0">
                   <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-blue-200 shadow-md">
                     <i class="fa-solid fa-sliders"></i>
@@ -227,7 +227,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
             </div>
 
             <!-- RIGHT PANEL: RESULTS -->
-            <div class="flex-1 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col lg:h-full h-auto min-h-[500px]">
+            <div class="flex-1 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden flex flex-col h-[600px] lg:h-full">
                 <div class="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                   <h3 class="font-black text-slate-800 text-base flex items-center gap-3">
                     <i class="fa-solid fa-flask-vial text-purple-600"></i> Bảng Dự Trù Hóa Chất
@@ -311,7 +311,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
       } 
       @else {
         <!-- LIBRARY VIEW (Unchanged) -->
-        <div class="flex flex-col h-full animate-fade-in relative">
+        <div class="flex flex-col flex-1 min-h-0 animate-fade-in relative">
             <div class="flex justify-between items-end border-b border-slate-200 mb-6 shrink-0 pt-4 px-1">
                 <div class="flex gap-6">
                     <button (click)="libraryTab.set('sops')" 
@@ -330,7 +330,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
             </div>
 
             @if (libraryTab() === 'sops') {
-                <div class="flex flex-col h-full animate-slide-up">
+                <div class="flex flex-col flex-1 min-h-0 animate-slide-up">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
                         <div class="relative flex-1 md:max-w-md">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -390,7 +390,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
             }
 
             @if (libraryTab() === 'recipes') {
-                <div class="h-full animate-slide-up">
+                <div class="flex-1 min-h-0 animate-slide-up">
                     <app-recipe-manager></app-recipe-manager>
                 </div>
             }

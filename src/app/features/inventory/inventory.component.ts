@@ -211,7 +211,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
 
         <!-- CAPACITY TAB -->
         @if (activeTab() === 'capacity') {
-            <div class="flex flex-col md:flex-row h-full overflow-hidden">
+            <div class="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
                 <div class="w-full md:w-72 border-r border-slate-100 overflow-y-auto p-3 bg-slate-50/50 h-1/3 md:h-full shrink-0">
                     <h6 class="text-[10px] font-bold text-slate-400 uppercase pl-1 mb-2 sticky top-0 bg-slate-50/50 backdrop-blur-sm py-1 z-10">Chọn Quy trình</h6>
                     @for (sop of state.sops(); track sop.id) {
