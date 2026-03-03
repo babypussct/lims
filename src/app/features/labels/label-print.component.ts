@@ -1,9 +1,11 @@
 
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 
@@ -104,10 +106,12 @@ interface LabelPage {
                         </button>
                     </div>
 
-                    <textarea [ngModel]="rawInput()" (ngModelChange)="updateInput($event)" 
+                    <textarea [ngModel]="rawInput()" (ngModelChange)="onInputChanged($event)" 
                               class="w-full h-28 p-3 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-slate-400 outline-none resize-none shadow-inner bg-slate-50 focus:bg-white transition" 
                               placeholder="Paste mã vào đây hoặc lấy từ yêu cầu..."></textarea>
                     <div class="flex gap-2 mt-2 justify-end">
+                        <button (click)="removeDuplicates()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-filter"></i> Lọc trùng</button>
+                        <button (click)="sortInput()" class="text-[10px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-arrow-down-a-z"></i> Sắp xếp</button>
                         <button (click)="clearInput()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded transition font-bold"><i class="fa-solid fa-trash"></i> Xóa</button>
                         <button (click)="addExample()" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold">+ Mẫu thử</button>
                     </div>
@@ -127,22 +131,41 @@ interface LabelPage {
                             <label class="label-std">Loại Giấy (Brother)</label>
                             <select [ngModel]="brotherPaperType()" (ngModelChange)="onBrotherPaperChange($event)" class="input-std mb-3 bg-slate-50">
                                 <option value="62">62mm (DK-22205) - Cắt tự do</option>
+                                <option value="27">27mm (DK-xxxx) - Cắt tự do</option>
                                 <option value="12">12mm (DK-22214) - Cắt tự do</option>
                                 <option value="23x23">23mm x 23mm (DK-11221) - Cố định</option>
                             </select>
 
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
                                     <span class="label-mini">Chiều rộng</span>
                                     <input [value]="brotherWidth() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 text-center">
                                 </div>
                                 <div>
-                                    <span class="label-mini">Chiều dài (Cắt)</span>
+                                    <span class="label-mini">Chiều dài (Đoạn cắt)</span>
                                     <div class="relative">
                                         <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" [disabled]="brotherPaperType() === '23x23'" class="input-std pr-8 text-center disabled:bg-slate-100 disabled:text-slate-500">
                                         <span class="absolute right-3 top-2 text-xs text-slate-400 font-bold">mm</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <span class="label-mini">Số cột (Ngang)</span>
+                                    <input type="number" [ngModel]="brotherCols()" (ngModelChange)="brotherCols.set($event)" class="input-std text-center">
+                                </div>
+                                <div>
+                                    <span class="label-mini">Số hàng (Dọc)</span>
+                                    <input type="number" [ngModel]="brotherRows()" (ngModelChange)="brotherRows.set($event)" class="input-std text-center">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-start mb-3">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" [ngModel]="brotherShowCutLines()" (ngModelChange)="brotherShowCutLines.set($event)" class="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase">In viền chia tem (Cắt tay)</span>
+                                </label>
                             </div>
                         </div>
 
@@ -306,13 +329,15 @@ interface LabelPage {
         </div>
 
         <!-- RIGHT: Live Preview -->
-        <div class="flex-1 bg-slate-200/50 md:overflow-auto p-8 flex justify-center items-start min-h-[500px] md:min-h-0 relative md:h-full">
+        <div #previewContainer class="flex-1 bg-slate-200/50 md:overflow-auto p-8 flex justify-center items-start min-h-[500px] md:min-h-0 relative md:h-full">
             
             <!-- Zoom Controls -->
             <div class="absolute bottom-6 right-6 flex flex-col gap-2 bg-white p-2 rounded-xl shadow-lg border border-slate-200 z-30">
-                <button (click)="adjustZoom(0.1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600"><i class="fa-solid fa-plus"></i></button>
+                <button (click)="adjustZoom(0.1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
                 <span class="text-[10px] font-bold text-center text-slate-400">{{Math.round(zoomLevel() * 100)}}%</span>
-                <button (click)="adjustZoom(-0.1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600"><i class="fa-solid fa-minus"></i></button>
+                <button (click)="adjustZoom(-0.1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600" title="Thu nhỏ"><i class="fa-solid fa-minus"></i></button>
+                <div class="h-px bg-slate-200 w-full my-1"></div>
+                <button (click)="fitToScreen()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-blue-600" title="Vừa màn hình"><i class="fa-solid fa-expand"></i></button>
             </div>
 
             <!-- Preview Wrapper -->
@@ -327,20 +352,33 @@ interface LabelPage {
                             <!-- Continuous Strip Simulation -->
                             <div id="brother-preview-strip" class="bg-white shadow-xl flex flex-col items-center"
                                  [style.width.mm]="brotherWidth()" [style.min-height.mm]="100">
-                                @for (label of parseInput(rawInput()); track $index) {
-                                    <div class="w-full border-b border-dashed border-slate-300 relative flex items-center justify-center overflow-hidden"
-                                         [style.height.mm]="brotherHeight()">
+                                @for (page of brotherPages(); track $index) {
+                                    <div class="w-full relative overflow-hidden box-border"
+                                         [style.height.mm]="brotherHeight()"
+                                         [class.border-b]="brotherPaperType() !== '23x23'"
+                                         [class.border-dashed]="brotherPaperType() !== '23x23'"
+                                         [class.border-slate-300]="brotherPaperType() !== '23x23'">
                                         
-                                        <span class="font-bold font-mono leading-none whitespace-nowrap"
-                                              [class.vertical-text]="rotateText()"
-                                              [style.font-size.pt]="fontSize()">
-                                            {{label}}
-                                        </span>
-
-                                        <!-- Cut Line Visual -->
-                                        @if (brotherPaperType() !== '23x23') {
-                                            <div class="absolute bottom-0 left-0 w-full h-[1px] bg-red-200 opacity-50"></div>
-                                        }
+                                        <div class="w-full h-full grid"
+                                             [style.grid-template-columns]="'repeat(' + brotherCols() + ', 1fr)'"
+                                             [style.grid-template-rows]="'repeat(' + brotherRows() + ', 1fr)'">
+                                            @for (label of page; track $index) {
+                                                <div class="flex items-center justify-center overflow-hidden p-0.5 box-border"
+                                                     [class.border-r]="brotherShowCutLines() && ($index % brotherCols() !== brotherCols() - 1)"
+                                                     [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== brotherRows() - 1)"
+                                                     [class.border-dashed]="brotherShowCutLines()"
+                                                     [class.border-slate-300]="brotherShowCutLines()">
+                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden text-ellipsis w-full px-1"
+                                                          style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                          [class.text-red-600]="label.length > 30"
+                                                          [class.vertical-text]="rotateText()"
+                                                          [style.font-size.pt]="fontSize()"
+                                                          [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
+                                                        {{label}}
+                                                    </span>
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
                                 }
                                 @if (rawInputCount() === 0) {
@@ -386,10 +424,13 @@ interface LabelPage {
                                                  [class.border-b]="!last" 
                                                  style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1;">
                                                 <div class="w-full h-full flex items-center justify-center overflow-hidden p-0.5">
-                                                    <span class="font-bold leading-none break-all text-center block"
+                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden text-ellipsis w-full px-1"
+                                                          style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                          [class.text-red-600]="label.length > 30"
                                                           [class.vertical-text]="rotateText()"
                                                           [style.font-size.pt]="fontSize()"
-                                                          [style.font-family]="'Roboto Mono'">
+                                                          [style.font-family]="'Roboto Mono'"
+                                                          [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
                                                         {{label}}
                                                     </span>
                                                 </div>
@@ -429,16 +470,21 @@ interface LabelPage {
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
   `]
 })
-export class LabelPrintComponent {
+export class LabelPrintComponent implements AfterViewInit {
   Math = Math;
   toast = inject(ToastService);
   state = inject(StateService);
+
+  @ViewChild('previewContainer') previewContainer!: ElementRef;
 
   // Core State
   printMode = signal<PrintMode>('tomy_a4');
   rawInput = signal('');
   zoomLevel = signal(1.0);
   
+  // Input Debounce
+  private inputSubject = new Subject<string>();
+
   // Fetch Data State
   fetchDate = signal<string>(new Date().toISOString().split('T')[0]);
   
@@ -465,12 +511,32 @@ export class LabelPrintComponent {
   showAdvanced = signal(false);
 
   // Brother Config
-  brotherPaperType = signal<'62' | '12' | '23x23'>('62');
+  brotherPaperType = signal<'62' | '27' | '12' | '23x23'>('62');
   brotherWidth = signal<number>(62);
   brotherHeight = signal<number>(25); // Default length per label
+  brotherCols = signal<number>(1);
+  brotherRows = signal<number>(1);
+  brotherShowCutLines = signal<boolean>(false);
 
   // Computed
   rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
+
+  brotherPages = computed(() => {
+      const labels = this.parseInput(this.rawInput());
+      const cols = Math.max(1, this.brotherCols());
+      const rows = Math.max(1, this.brotherRows());
+      const perPage = cols * rows;
+      
+      const pages: string[][] = [];
+      for (let i = 0; i < labels.length; i += perPage) {
+          const chunk = labels.slice(i, i + perPage);
+          while (chunk.length < perPage) {
+              chunk.push(''); // Fill empty cells
+          }
+          pages.push(chunk);
+      }
+      return pages;
+  });
 
   layoutDims = computed(() => {
       const mode = this.printMode();
@@ -489,58 +555,123 @@ export class LabelPrintComponent {
   });
 
   constructor() {
+      // Setup Debounce for Input
+      this.inputSubject.pipe(
+          debounceTime(300),
+          distinctUntilChanged()
+      ).subscribe(val => {
+          this.rawInput.set(val);
+      });
+
       // Load saved config from localStorage
-      const saved = localStorage.getItem('labelPrintConfig');
-      if (saved) {
-          try {
-              const config = JSON.parse(saved);
-              if (config.printMode) this.printMode.set(config.printMode);
-              if (config.brotherPaperType) this.brotherPaperType.set(config.brotherPaperType);
-              if (config.selectedTomyId) this.selectedTomyId.set(config.selectedTomyId);
-              if (config.plainCols) this.plainCols.set(config.plainCols);
-              if (config.plainRows) this.plainRows.set(config.plainRows);
-              if (config.marginTop !== undefined) this.marginTop.set(config.marginTop);
-              if (config.marginLeft !== undefined) this.marginLeft.set(config.marginLeft);
-              if (config.gapX !== undefined) this.gapX.set(config.gapX);
-              if (config.gapY !== undefined) this.gapY.set(config.gapY);
-              if (config.fontSize) this.fontSize.set(config.fontSize);
-              if (config.rotateText !== undefined) this.rotateText.set(config.rotateText);
-              if (config.showCutLines !== undefined) this.showCutLines.set(config.showCutLines);
-              if (config.splitCount) this.splitCount.set(config.splitCount);
-          } catch (e) {
-              console.error('Failed to load print config', e);
-          }
-      }
+      this.loadProfile('tomy_a4'); // Load default profile first
 
       // Save config to localStorage whenever it changes
       effect(() => {
-          const config = {
-              printMode: this.printMode(),
-              brotherPaperType: this.brotherPaperType(),
-              selectedTomyId: this.selectedTomyId(),
-              plainCols: this.plainCols(),
-              plainRows: this.plainRows(),
-              marginTop: this.marginTop(),
-              marginLeft: this.marginLeft(),
-              gapX: this.gapX(),
-              gapY: this.gapY(),
-              fontSize: this.fontSize(),
-              rotateText: this.rotateText(),
-              showCutLines: this.showCutLines(),
-              splitCount: this.splitCount()
-          };
-          localStorage.setItem('labelPrintConfig', JSON.stringify(config));
+          this.saveCurrentProfile();
       });
   }
 
-  setMode(mode: PrintMode) {
-      this.printMode.set(mode);
-      // Reset view defaults
-      this.zoomLevel.set(mode === 'brother' ? 1.5 : 1.0);
+  ngAfterViewInit() {
+      // Auto fit to screen on load
+      setTimeout(() => this.fitToScreen(), 100);
+  }
+
+  // --- PROFILE MANAGEMENT ---
+  private getProfileKey(mode: PrintMode): string {
+      return `labelPrintConfig_${mode}`;
+  }
+
+  private loadProfile(mode: PrintMode) {
+      const saved = localStorage.getItem(this.getProfileKey(mode));
+      if (saved) {
+          try {
+              const config = JSON.parse(saved);
+              // Common
+              if (config.fontSize) this.fontSize.set(config.fontSize);
+              if (config.rotateText !== undefined) this.rotateText.set(config.rotateText);
+              if (config.splitCount) this.splitCount.set(config.splitCount);
+              
+              // Brother
+              if (mode === 'brother') {
+                  if (config.brotherPaperType) this.brotherPaperType.set(config.brotherPaperType);
+                  if (config.brotherCols) this.brotherCols.set(config.brotherCols);
+                  if (config.brotherRows) this.brotherRows.set(config.brotherRows);
+                  if (config.brotherShowCutLines !== undefined) this.brotherShowCutLines.set(config.brotherShowCutLines);
+                  // Width/Height are derived from paper type or saved
+                  if (config.brotherWidth) this.brotherWidth.set(config.brotherWidth);
+                  if (config.brotherHeight) this.brotherHeight.set(config.brotherHeight);
+              }
+              
+              // Tomy
+              if (mode === 'tomy_a4') {
+                  if (config.selectedTomyId) this.selectedTomyId.set(config.selectedTomyId);
+                  if (config.marginTop !== undefined) this.marginTop.set(config.marginTop);
+                  if (config.marginLeft !== undefined) this.marginLeft.set(config.marginLeft);
+                  if (config.gapX !== undefined) this.gapX.set(config.gapX);
+                  if (config.gapY !== undefined) this.gapY.set(config.gapY);
+              }
+              
+              // Plain A4
+              if (mode === 'plain_a4') {
+                  if (config.plainCols) this.plainCols.set(config.plainCols);
+                  if (config.plainRows) this.plainRows.set(config.plainRows);
+                  if (config.marginTop !== undefined) this.marginTop.set(config.marginTop);
+                  if (config.marginLeft !== undefined) this.marginLeft.set(config.marginLeft);
+                  if (config.gapX !== undefined) this.gapX.set(config.gapX);
+                  if (config.gapY !== undefined) this.gapY.set(config.gapY);
+                  if (config.showCutLines !== undefined) this.showCutLines.set(config.showCutLines);
+              }
+          } catch (e) {
+              console.error(`Failed to load print config for ${mode}`, e);
+          }
+      } else {
+          // Apply defaults if no profile exists
+          this.applyDefaultsForMode(mode);
+      }
+  }
+
+  private saveCurrentProfile() {
+      const mode = this.printMode();
+      const config: any = {
+          fontSize: this.fontSize(),
+          rotateText: this.rotateText(),
+          splitCount: this.splitCount()
+      };
+
       if (mode === 'brother') {
-          this.onBrotherPaperChange(this.brotherPaperType());
+          config.brotherPaperType = this.brotherPaperType();
+          config.brotherCols = this.brotherCols();
+          config.brotherRows = this.brotherRows();
+          config.brotherShowCutLines = this.brotherShowCutLines();
+          config.brotherWidth = this.brotherWidth();
+          config.brotherHeight = this.brotherHeight();
       } else if (mode === 'tomy_a4') {
-          this.onTomyChange(this.selectedTomyId());
+          config.selectedTomyId = this.selectedTomyId();
+          config.marginTop = this.marginTop();
+          config.marginLeft = this.marginLeft();
+          config.gapX = this.gapX();
+          config.gapY = this.gapY();
+      } else if (mode === 'plain_a4') {
+          config.plainCols = this.plainCols();
+          config.plainRows = this.plainRows();
+          config.marginTop = this.marginTop();
+          config.marginLeft = this.marginLeft();
+          config.gapX = this.gapX();
+          config.gapY = this.gapY();
+          config.showCutLines = this.showCutLines();
+      }
+
+      localStorage.setItem(this.getProfileKey(mode), JSON.stringify(config));
+      // Also save the last used mode
+      localStorage.setItem('labelPrintLastMode', mode);
+  }
+
+  private applyDefaultsForMode(mode: PrintMode) {
+      if (mode === 'brother') {
+          this.onBrotherPaperChange('62');
+      } else if (mode === 'tomy_a4') {
+          this.onTomyChange('tomy_145');
       } else if (mode === 'plain_a4') {
           this.marginTop.set(10);
           this.marginLeft.set(10);
@@ -549,7 +680,25 @@ export class LabelPrintComponent {
           this.splitCount.set(1);
           this.rotateText.set(false);
           this.fontSize.set(10);
+          this.plainCols.set(4);
+          this.plainRows.set(10);
+          this.showCutLines.set(true);
       }
+  }
+
+  setMode(mode: PrintMode) {
+      if (this.printMode() === mode) return;
+      
+      // Save current profile before switching
+      this.saveCurrentProfile();
+      
+      this.printMode.set(mode);
+      
+      // Load profile for new mode
+      this.loadProfile(mode);
+      
+      // Reset view defaults
+      setTimeout(() => this.fitToScreen(), 50);
   }
 
   onTomyChange(id: string) {
@@ -565,23 +714,36 @@ export class LabelPrintComponent {
       }
   }
 
-  onBrotherPaperChange(type: '62' | '12' | '23x23') {
+  onBrotherPaperChange(type: '62' | '27' | '12' | '23x23') {
       this.brotherPaperType.set(type);
       if (type === '62') {
           this.brotherWidth.set(62);
           this.brotherHeight.set(25);
           this.fontSize.set(16);
           this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
+      } else if (type === '27') {
+          this.brotherWidth.set(27);
+          this.brotherHeight.set(15);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
       } else if (type === '12') {
           this.brotherWidth.set(12);
           this.brotherHeight.set(30);
           this.fontSize.set(10);
           this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
       } else if (type === '23x23') {
           this.brotherWidth.set(23);
           this.brotherHeight.set(23);
           this.fontSize.set(10);
           this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
       }
   }
 
@@ -625,16 +787,64 @@ export class LabelPrintComponent {
       this.toast.show(`Đã thêm ${samples.size} mã mẫu từ ngày ${targetDate}`, 'success');
   }
 
+  onInputChanged(val: string) {
+      this.inputSubject.next(val);
+  }
+
   updateInput(val: string) { this.rawInput.set(val); }
-  clearInput() { this.rawInput.set(''); }
+  clearInput() { 
+      this.rawInput.set(''); 
+      this.inputSubject.next('');
+  }
   
+  removeDuplicates() {
+      const labels = this.parseInput(this.rawInput());
+      const unique = [...new Set(labels)];
+      const newVal = unique.join('\n');
+      this.rawInput.set(newVal);
+      this.inputSubject.next(newVal);
+      this.toast.show(`Đã lọc bỏ ${labels.length - unique.length} mã trùng lặp`, 'success');
+  }
+
+  sortInput() {
+      const labels = this.parseInput(this.rawInput());
+      const sorted = labels.sort((a, b) => a.localeCompare(b));
+      const newVal = sorted.join('\n');
+      this.rawInput.set(newVal);
+      this.inputSubject.next(newVal);
+      this.toast.show('Đã sắp xếp danh sách A-Z', 'success');
+  }
+
   addExample() {
       const ex = Array.from({length: 15}, (_, i) => `STD-${(i+1).toString().padStart(3,'0')}`).join('\n');
       this.rawInput.set(ex);
+      this.inputSubject.next(ex);
   }
 
   adjustZoom(delta: number) {
-      this.zoomLevel.update(z => Math.max(0.5, Math.min(2.5, z + delta)));
+      this.zoomLevel.update(z => Math.max(0.3, Math.min(3.0, z + delta)));
+  }
+
+  fitToScreen() {
+      if (!this.previewContainer) return;
+      
+      const containerWidth = this.previewContainer.nativeElement.clientWidth - 64; // 64px padding
+      const mode = this.printMode();
+      
+      let targetWidthMM = 210; // A4 width
+      if (mode === 'brother') {
+          targetWidthMM = this.brotherWidth();
+      }
+      
+      // Convert mm to pixels (approximate 1mm = 3.78px)
+      const targetWidthPx = targetWidthMM * 3.78;
+      
+      if (targetWidthPx > 0) {
+          // Calculate zoom to fit width (with a max of 2.0)
+          const newZoom = Math.min(2.0, Math.max(0.3, containerWidth / targetWidthPx));
+          // Round to 1 decimal place
+          this.zoomLevel.set(Math.round(newZoom * 10) / 10);
+      }
   }
 
   parseInput(text: string): string[] {
@@ -698,13 +908,16 @@ export class LabelPrintComponent {
 
   // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
   printBrother() {
-      const labels = this.parseInput(this.rawInput());
-      if (labels.length === 0) return;
+      const pages = this.brotherPages();
+      if (pages.length === 0) return;
 
       const w = this.brotherWidth() || 62;
       const h = this.brotherHeight() || 25;
       const fs = this.fontSize() || 16;
       const rotate = this.rotateText();
+      const cols = Math.max(1, this.brotherCols());
+      const rows = Math.max(1, this.brotherRows());
+      const showCut = this.brotherShowCutLines();
 
       // Create a dedicated print window to isolate styles
       const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -715,42 +928,59 @@ export class LabelPrintComponent {
 
       const css = `
         @page { size: ${w}mm ${h}mm; margin: 0; }
-        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; background: white; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { margin: 0; padding: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: white; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         * { box-sizing: border-box; }
-        .label-container {
+        .page-container {
             width: ${w}mm;
             height: ${h}mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             page-break-inside: avoid;
             overflow: hidden;
             position: relative;
+            display: grid;
+            grid-template-columns: repeat(${cols}, 1fr);
+            grid-template-rows: repeat(${rows}, 1fr);
         }
-        .label-container:not(:last-child) {
+        .page-container:not(:last-child) {
             page-break-after: always;
         }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 2px;
+        }
+        ${showCut ? `
+        .cell {
+            border-right: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .cell:nth-child(${cols}n) { border-right: none; }
+        .cell:nth-last-child(-n+${cols}) { border-bottom: none; }
+        ` : ''}
         .label-text {
             font-size: ${fs}pt;
             font-weight: bold;
             text-align: center;
             line-height: 1;
             word-break: break-all;
-            padding: 1mm;
             width: 100%;
             ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
         }
         @media print {
             @page { size: ${w}mm ${h}mm; margin: 0; }
             body { margin: 0; }
-            .label-container { border: none; }
         }
       `;
 
       let htmlContent = `<html><head><title>Brother Print</title><style>${css}</style></head><body>`;
       
-      labels.forEach(label => {
-          htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
+      pages.forEach(page => {
+          htmlContent += `<div class="page-container">`;
+          page.forEach(label => {
+              htmlContent += `<div class="cell"><div class="label-text">${label}</div></div>`;
+          });
+          htmlContent += `</div>`;
       });
 
       htmlContent += `</body></html>`;
