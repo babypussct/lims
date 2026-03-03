@@ -386,8 +386,15 @@ interface LabelPage {
                                                      [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== brotherRows() - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
                                                      [class.border-slate-300]="brotherShowCutLines()">
-                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden text-ellipsis w-full px-1"
-                                                          style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                          [style.display]="rotateText() ? 'flex' : '-webkit-box'"
+                                                          [style.align-items]="rotateText() ? 'center' : ''"
+                                                          [style.justify-content]="rotateText() ? 'center' : ''"
+                                                          [style.width]="'100%'"
+                                                          [style.height]="rotateText() ? '100%' : ''"
+                                                          [style.-webkit-line-clamp]="rotateText() ? 'unset' : '3'"
+                                                          [style.-webkit-box-orient]="rotateText() ? 'unset' : 'vertical'"
+                                                          style="word-break: break-all;"
                                                           [class.text-red-600]="label.length > 30"
                                                           [class.vertical-text]="rotateText()"
                                                           [style.font-size.pt]="fontSize()"
@@ -442,8 +449,15 @@ interface LabelPage {
                                                  [class.border-b]="!last" 
                                                  style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1;">
                                                 <div class="w-full h-full flex items-center justify-center overflow-hidden p-0.5">
-                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden text-ellipsis w-full px-1"
-                                                          style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                          [style.display]="rotateText() ? 'flex' : '-webkit-box'"
+                                                          [style.align-items]="rotateText() ? 'center' : ''"
+                                                          [style.justify-content]="rotateText() ? 'center' : ''"
+                                                          [style.width]="'100%'"
+                                                          [style.height]="rotateText() ? '100%' : ''"
+                                                          [style.-webkit-line-clamp]="rotateText() ? 'unset' : '3'"
+                                                          [style.-webkit-box-orient]="rotateText() ? 'unset' : 'vertical'"
+                                                          style="word-break: break-all;"
                                                           [class.text-red-600]="label.length > 30"
                                                           [class.vertical-text]="rotateText()"
                                                           [style.font-size.pt]="fontSize()"
@@ -1027,6 +1041,10 @@ export class LabelPrintComponent implements AfterViewInit {
             line-height: 1;
             word-break: break-all;
             width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
         }
         @media print {
@@ -1126,8 +1144,11 @@ export class LabelPrintComponent implements AfterViewInit {
             text-align: center;
             line-height: 1;
             word-break: break-all;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
+            height: 100%;
         }
         .vertical {
             writing-mode: vertical-rl;
