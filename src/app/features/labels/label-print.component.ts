@@ -130,23 +130,35 @@ interface LabelPage {
                         <div>
                             <label class="label-std">Loại Giấy (Brother)</label>
                             <select [ngModel]="brotherPaperType()" (ngModelChange)="onBrotherPaperChange($event)" class="input-std mb-3 bg-slate-50">
-                                <option value="62">62mm (DK-22205) - Cắt tự do</option>
-                                <option value="27">27mm (DK-xxxx) - Cắt tự do</option>
-                                <option value="12">12mm (DK-22214) - Cắt tự do</option>
-                                <option value="23x23">23mm x 23mm (DK-11221) - Cố định</option>
+                                <optgroup label="Cuộn liên tục (Cắt tự do)">
+                                    <option value="62">62mm (DK-22205)</option>
+                                    <option value="29">29mm (1.1")</option>
+                                    <option value="12">12mm (DK-22214)</option>
+                                </optgroup>
+                                <optgroup label="Kích thước cố định (Cắt theo trang)">
+                                    <option value="29x90">29mm x 90mm (1.1" x 3.5")</option>
+                                    <option value="29x42">29mm x 42mm (1.1" x 1.6")</option>
+                                    <option value="32x32">32mm x 32mm (Vuông)</option>
+                                    <option value="23x23">23mm x 23mm (DK-11221)</option>
+                                </optgroup>
                             </select>
 
                             <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
-                                    <span class="label-mini">Chiều rộng</span>
+                                    <span class="label-mini">Chiều rộng cuộn</span>
                                     <input [value]="brotherWidth() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 text-center">
                                 </div>
                                 <div>
-                                    <span class="label-mini">Chiều dài (Đoạn cắt)</span>
-                                    <div class="relative">
-                                        <input type="number" [ngModel]="brotherHeight()" (ngModelChange)="brotherHeight.set($event)" [disabled]="brotherPaperType() === '23x23'" class="input-std pr-8 text-center disabled:bg-slate-100 disabled:text-slate-500">
-                                        <span class="absolute right-3 top-2 text-xs text-slate-400 font-bold">mm</span>
-                                    </div>
+                                    @if (isBrotherFixed()) {
+                                        <span class="label-mini">Chiều dài trang in</span>
+                                        <input [value]="brotherPageHeight() + 'mm'" disabled class="input-std bg-slate-100 text-slate-500 text-center">
+                                    } @else {
+                                        <span class="label-mini">Chiều dài 1 tem</span>
+                                        <div class="relative">
+                                            <input type="number" [ngModel]="brotherLabelHeight()" (ngModelChange)="brotherLabelHeight.set($event)" class="input-std pr-8 text-center">
+                                            <span class="absolute right-3 top-2 text-xs text-slate-400 font-bold">mm</span>
+                                        </div>
+                                    }
                                 </div>
                             </div>
 
@@ -156,9 +168,15 @@ interface LabelPage {
                                     <input type="number" [ngModel]="brotherCols()" (ngModelChange)="brotherCols.set($event)" class="input-std text-center">
                                 </div>
                                 <div>
-                                    <span class="label-mini">Số hàng (Dọc)</span>
+                                    <span class="label-mini">{{ isBrotherFixed() ? 'Số tem / trang (Dọc)' : 'Số tem / lần cắt (Dọc)' }}</span>
                                     <input type="number" [ngModel]="brotherRows()" (ngModelChange)="brotherRows.set($event)" class="input-std text-center">
                                 </div>
+                            </div>
+
+                            <div class="bg-blue-50 p-2 rounded border border-blue-100 mb-3 text-xs text-blue-800 flex flex-col gap-1">
+                                <div><i class="fa-solid fa-circle-info"></i> <b>Tổng kết trang in:</b></div>
+                                <div>- Kích thước 1 tem: <b>{{brotherWidth()}}mm x {{Math.round(actualBrotherLabelHeight() * 10) / 10}}mm</b></div>
+                                <div>- Kích thước trang/cắt: <b>{{brotherWidth()}}mm x {{Math.round(actualBrotherPageHeight() * 10) / 10}}mm</b></div>
                             </div>
 
                             <div class="flex items-center justify-start mb-3">
@@ -354,10 +372,10 @@ interface LabelPage {
                                  [style.width.mm]="brotherWidth()" [style.min-height.mm]="100">
                                 @for (page of brotherPages(); track $index) {
                                     <div class="w-full relative overflow-hidden box-border"
-                                         [style.height.mm]="brotherHeight()"
-                                         [class.border-b]="brotherPaperType() !== '23x23'"
-                                         [class.border-dashed]="brotherPaperType() !== '23x23'"
-                                         [class.border-slate-300]="brotherPaperType() !== '23x23'">
+                                         [style.height.mm]="actualBrotherPageHeight()"
+                                         [class.border-b]="isBrotherFixed()"
+                                         [class.border-dashed]="isBrotherFixed()"
+                                         [class.border-slate-300]="isBrotherFixed()">
                                         
                                         <div class="w-full h-full grid"
                                              [style.grid-template-columns]="'repeat(' + brotherCols() + ', 1fr)'"
@@ -511,12 +529,25 @@ export class LabelPrintComponent implements AfterViewInit {
   showAdvanced = signal(false);
 
   // Brother Config
-  brotherPaperType = signal<'62' | '27' | '12' | '23x23'>('62');
+  brotherPaperType = signal<string>('62');
   brotherWidth = signal<number>(62);
-  brotherHeight = signal<number>(25); // Default length per label
+  brotherLabelHeight = signal<number>(25); // For continuous
+  brotherPageHeight = signal<number>(90); // For fixed
   brotherCols = signal<number>(1);
   brotherRows = signal<number>(1);
   brotherShowCutLines = signal<boolean>(false);
+
+  isBrotherFixed = computed(() => ['29x90', '29x42', '32x32', '23x23'].includes(this.brotherPaperType()));
+
+  actualBrotherPageHeight = computed(() => {
+      if (this.isBrotherFixed()) return this.brotherPageHeight();
+      return this.brotherLabelHeight() * this.brotherRows();
+  });
+
+  actualBrotherLabelHeight = computed(() => {
+      if (this.isBrotherFixed()) return this.brotherPageHeight() / this.brotherRows();
+      return this.brotherLabelHeight();
+  });
 
   // Computed
   rawInputCount = computed(() => this.parseInput(this.rawInput()).length);
@@ -598,9 +629,18 @@ export class LabelPrintComponent implements AfterViewInit {
                   if (config.brotherCols) this.brotherCols.set(config.brotherCols);
                   if (config.brotherRows) this.brotherRows.set(config.brotherRows);
                   if (config.brotherShowCutLines !== undefined) this.brotherShowCutLines.set(config.brotherShowCutLines);
-                  // Width/Height are derived from paper type or saved
                   if (config.brotherWidth) this.brotherWidth.set(config.brotherWidth);
-                  if (config.brotherHeight) this.brotherHeight.set(config.brotherHeight);
+                  if (config.brotherLabelHeight) this.brotherLabelHeight.set(config.brotherLabelHeight);
+                  if (config.brotherPageHeight) this.brotherPageHeight.set(config.brotherPageHeight);
+                  
+                  // Migration from old brotherHeight
+                  if (config.brotherHeight && !config.brotherLabelHeight && !config.brotherPageHeight) {
+                      if (['29x90', '29x42', '32x32', '23x23'].includes(config.brotherPaperType)) {
+                          this.brotherPageHeight.set(config.brotherHeight);
+                      } else {
+                          this.brotherLabelHeight.set(config.brotherHeight);
+                      }
+                  }
               }
               
               // Tomy
@@ -645,7 +685,8 @@ export class LabelPrintComponent implements AfterViewInit {
           config.brotherRows = this.brotherRows();
           config.brotherShowCutLines = this.brotherShowCutLines();
           config.brotherWidth = this.brotherWidth();
-          config.brotherHeight = this.brotherHeight();
+          config.brotherLabelHeight = this.brotherLabelHeight();
+          config.brotherPageHeight = this.brotherPageHeight();
       } else if (mode === 'tomy_a4') {
           config.selectedTomyId = this.selectedTomyId();
           config.marginTop = this.marginTop();
@@ -714,34 +755,55 @@ export class LabelPrintComponent implements AfterViewInit {
       }
   }
 
-  onBrotherPaperChange(type: '62' | '27' | '12' | '23x23') {
+  onBrotherPaperChange(type: string) {
       this.brotherPaperType.set(type);
       if (type === '62') {
           this.brotherWidth.set(62);
-          this.brotherHeight.set(25);
+          this.brotherLabelHeight.set(25);
           this.fontSize.set(16);
           this.rotateText.set(false);
           this.brotherCols.set(1);
           this.brotherRows.set(1);
-      } else if (type === '27') {
-          this.brotherWidth.set(27);
-          this.brotherHeight.set(15);
+      } else if (type === '29') {
+          this.brotherWidth.set(29);
+          this.brotherLabelHeight.set(15);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
+      } else if (type === '29x90') {
+          this.brotherWidth.set(29);
+          this.brotherPageHeight.set(90);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(6); // 6 labels of 15mm
+      } else if (type === '29x42') {
+          this.brotherWidth.set(29);
+          this.brotherPageHeight.set(42);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(3); // 3 labels of 14mm
+      } else if (type === '32x32') {
+          this.brotherWidth.set(32);
+          this.brotherPageHeight.set(32);
+          this.fontSize.set(10);
+          this.rotateText.set(false);
+          this.brotherCols.set(1);
+          this.brotherRows.set(1);
+      } else if (type === '23x23') {
+          this.brotherWidth.set(23);
+          this.brotherPageHeight.set(23);
           this.fontSize.set(10);
           this.rotateText.set(false);
           this.brotherCols.set(1);
           this.brotherRows.set(1);
       } else if (type === '12') {
           this.brotherWidth.set(12);
-          this.brotherHeight.set(30);
+          this.brotherLabelHeight.set(30);
           this.fontSize.set(10);
-          this.rotateText.set(true); // Thường in dọc trên cuộn 12mm
-          this.brotherCols.set(1);
-          this.brotherRows.set(1);
-      } else if (type === '23x23') {
-          this.brotherWidth.set(23);
-          this.brotherHeight.set(23);
-          this.fontSize.set(10);
-          this.rotateText.set(false);
+          this.rotateText.set(true);
           this.brotherCols.set(1);
           this.brotherRows.set(1);
       }
@@ -911,8 +973,8 @@ export class LabelPrintComponent implements AfterViewInit {
       const pages = this.brotherPages();
       if (pages.length === 0) return;
 
-      const w = this.brotherWidth() || 62;
-      const h = this.brotherHeight() || 25;
+      const w = this.brotherWidth();
+      const h = this.actualBrotherPageHeight();
       const fs = this.fontSize() || 16;
       const rotate = this.rotateText();
       const cols = Math.max(1, this.brotherCols());
