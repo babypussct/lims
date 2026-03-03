@@ -701,14 +701,10 @@ export class LabelPrintComponent {
       const labels = this.parseInput(this.rawInput());
       if (labels.length === 0) return;
 
-      const w = this.brotherWidth();
-      const h = this.brotherHeight();
-      const fs = this.fontSize();
+      const w = this.brotherWidth() || 62;
+      const h = this.brotherHeight() || 25;
+      const fs = this.fontSize() || 16;
       const rotate = this.rotateText();
-      const isFixed = this.brotherPaperType() === '23x23';
-      
-      // Tính tổng chiều dài trang cho cuộn cắt tự do để tránh lỗi 'auto' của trình duyệt
-      const totalHeight = isFixed ? h : (h * labels.length);
 
       // Create a dedicated print window to isolate styles
       const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -718,8 +714,8 @@ export class LabelPrintComponent {
       }
 
       const css = `
-        @page { size: ${w}mm ${totalHeight}mm; margin: 0; }
-        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @page { size: ${w}mm ${h}mm; margin: 0; }
+        body { margin: 0; padding: 0; font-family: 'Roboto Mono', monospace; background: white; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         * { box-sizing: border-box; }
         .label-container {
             width: ${w}mm;
@@ -727,11 +723,12 @@ export class LabelPrintComponent {
             display: flex;
             align-items: center;
             justify-content: center;
-            ${!isFixed ? 'border-bottom: 1px dashed #ccc;' : ''}
-            page-break-after: ${isFixed ? 'always' : 'avoid'};
             page-break-inside: avoid;
             overflow: hidden;
             position: relative;
+        }
+        .label-container:not(:last-child) {
+            page-break-after: always;
         }
         .label-text {
             font-size: ${fs}pt;
@@ -744,10 +741,9 @@ export class LabelPrintComponent {
             ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
         }
         @media print {
-            @page { margin: 0; }
-            .label-container { border-bottom: none; }
-            /* Hide browser headers/footers */
+            @page { size: ${w}mm ${h}mm; margin: 0; }
             body { margin: 0; }
+            .label-container { border: none; }
         }
       `;
 
@@ -763,11 +759,10 @@ export class LabelPrintComponent {
       printWindow.document.close();
 
       // Wait for content to load then print
-      printWindow.onload = () => {
+      setTimeout(() => {
           printWindow.focus();
           printWindow.print();
-          // Optional: printWindow.close();
-      };
+      }, 500);
   }
 
   // --- A4 PRINTING LOGIC (Direct Window Print) ---
@@ -881,9 +876,9 @@ export class LabelPrintComponent {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
 
-      printWindow.onload = () => {
+      setTimeout(() => {
           printWindow.focus();
           printWindow.print();
-      };
+      }, 500);
   }
 }
