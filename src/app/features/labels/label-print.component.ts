@@ -6,7 +6,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import * as JsBarcode from 'jsbarcode';
+import JsBarcode from 'jsbarcode';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text';
