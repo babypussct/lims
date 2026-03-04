@@ -6,8 +6,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import * as JsBarcode from 'jsbarcode';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
+type DisplayFormat = 'text' | 'barcode' | 'barcode_text';
 
 interface TomyTemplate {
   id: string;
@@ -190,7 +192,26 @@ interface LabelPage {
                         </div>
 
                         <div>
-                            <label class="label-std">Cỡ chữ & Định dạng</label>
+                            <label class="label-std">Định dạng & Mã vạch</label>
+                            <select [ngModel]="displayFormat()" (ngModelChange)="displayFormat.set($event)" class="input-std mb-3 bg-slate-50">
+                                <option value="text">Chỉ in Chữ (Text)</option>
+                                <option value="barcode">Chỉ in Mã vạch (Barcode)</option>
+                                <option value="barcode_text">Mã vạch + Chữ ở dưới</option>
+                            </select>
+
+                            @if (displayFormat() !== 'text') {
+                                <div class="grid grid-cols-2 gap-3 mb-3 bg-slate-50 p-2 rounded border border-slate-200">
+                                    <div>
+                                        <span class="label-mini">Độ rộng vạch (px)</span>
+                                        <input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-std text-center" min="1" max="4" step="0.5">
+                                    </div>
+                                    <div>
+                                        <span class="label-mini">Chiều cao mã (px)</span>
+                                        <input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-std text-center" min="10" max="100" step="5">
+                                    </div>
+                                </div>
+                            }
+
                             <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
                                     <span class="label-mini">Font Size (pt)</span>
@@ -259,6 +280,18 @@ interface LabelPage {
                                     <div><label class="label-mini">Gap Y</label><input type="number" [ngModel]="gapY()" (ngModelChange)="gapY.set($event)" class="input-mini"></div>
                                     <div><label class="label-mini">Bỏ qua (Tem)</label><input type="number" [ngModel]="skippedCells()" (ngModelChange)="skippedCells.set($event)" class="input-mini text-orange-600"></div>
                                     <div><label class="label-mini">Font Size</label><input type="number" [ngModel]="fontSize()" (ngModelChange)="fontSize.set($event)" class="input-mini"></div>
+                                    <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                        <label class="label-mini">Định dạng hiển thị</label>
+                                        <select [ngModel]="displayFormat()" (ngModelChange)="displayFormat.set($event)" class="input-mini bg-slate-50 text-left">
+                                            <option value="text">Chỉ in Chữ</option>
+                                            <option value="barcode">Chỉ in Mã vạch</option>
+                                            <option value="barcode_text">Mã vạch + Chữ</option>
+                                        </select>
+                                    </div>
+                                    @if (displayFormat() !== 'text') {
+                                        <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
+                                        <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
+                                    }
                                 </div>
                             }
                         </div>
@@ -317,7 +350,19 @@ interface LabelPage {
                                     <div><label class="label-mini">Khoảng cách X</label><input type="number" [ngModel]="gapX()" (ngModelChange)="gapX.set($event)" class="input-mini"></div>
                                     <div><label class="label-mini">Khoảng cách Y</label><input type="number" [ngModel]="gapY()" (ngModelChange)="gapY.set($event)" class="input-mini"></div>
                                     <div><label class="label-mini">Font Size</label><input type="number" [ngModel]="fontSize()" (ngModelChange)="fontSize.set($event)" class="input-mini"></div>
-                                    <div class="flex items-center justify-center pt-3">
+                                    <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                        <label class="label-mini">Định dạng hiển thị</label>
+                                        <select [ngModel]="displayFormat()" (ngModelChange)="displayFormat.set($event)" class="input-mini bg-slate-50 text-left">
+                                            <option value="text">Chỉ in Chữ</option>
+                                            <option value="barcode">Chỉ in Mã vạch</option>
+                                            <option value="barcode_text">Mã vạch + Chữ</option>
+                                        </select>
+                                    </div>
+                                    @if (displayFormat() !== 'text') {
+                                        <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
+                                        <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
+                                    }
+                                    <div class="flex items-center justify-center pt-3 col-span-2">
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input type="checkbox" [ngModel]="showCutLines()" (ngModelChange)="showCutLines.set($event)" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
                                             <span class="text-[10px] font-bold text-slate-600 uppercase">In viền cắt</span>
@@ -388,21 +433,22 @@ interface LabelPage {
                                                      [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== (page.length / brotherCols()) - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
                                                      [class.border-slate-300]="brotherShowCutLines()">
-                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
-                                                          [style.display]="rotateText() ? 'flex' : '-webkit-box'"
-                                                          [style.align-items]="rotateText() ? 'center' : ''"
-                                                          [style.justify-content]="rotateText() ? 'center' : ''"
-                                                          [style.width]="'100%'"
-                                                          [style.height]="rotateText() ? '100%' : ''"
-                                                          [style.-webkit-line-clamp]="rotateText() ? 'unset' : '3'"
-                                                          [style.-webkit-box-orient]="rotateText() ? 'unset' : 'vertical'"
-                                                          style="word-break: break-all;"
-                                                          [class.text-red-600]="label.length > 30"
-                                                          [class.vertical-text]="rotateText()"
-                                                          [style.font-size.pt]="fontSize()"
-                                                          [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
-                                                        {{label}}
-                                                    </span>
+                                                    <div class="flex flex-col items-center justify-center w-full h-full overflow-hidden"
+                                                         [class.vertical-text]="rotateText()">
+                                                        @if (displayFormat() !== 'text' && label) {
+                                                            <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
+                                                        }
+                                                        @if (displayFormat() !== 'barcode' && label) {
+                                                            <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                                  [class.mt-1]="displayFormat() === 'barcode_text'"
+                                                                  style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                                  [class.text-red-600]="label.length > 30"
+                                                                  [style.font-size.pt]="fontSize()"
+                                                                  [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
+                                                                {{label}}
+                                                            </span>
+                                                        }
+                                                    </div>
                                                 </div>
                                             }
                                         </div>
@@ -450,23 +496,22 @@ interface LabelPage {
                                             <div class="flex-1 flex flex-col items-center justify-center w-full relative" 
                                                  [class.border-b]="!last" 
                                                  style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1;">
-                                                <div class="w-full h-full flex items-center justify-center overflow-hidden p-0.5">
-                                                    <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
-                                                          [style.display]="rotateText() ? 'flex' : '-webkit-box'"
-                                                          [style.align-items]="rotateText() ? 'center' : ''"
-                                                          [style.justify-content]="rotateText() ? 'center' : ''"
-                                                          [style.width]="'100%'"
-                                                          [style.height]="rotateText() ? '100%' : ''"
-                                                          [style.-webkit-line-clamp]="rotateText() ? 'unset' : '3'"
-                                                          [style.-webkit-box-orient]="rotateText() ? 'unset' : 'vertical'"
-                                                          style="word-break: break-all;"
-                                                          [class.text-red-600]="label.length > 30"
-                                                          [class.vertical-text]="rotateText()"
-                                                          [style.font-size.pt]="fontSize()"
-                                                          [style.font-family]="'Roboto Mono'"
-                                                          [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
-                                                        {{label}}
-                                                    </span>
+                                                <div class="w-full h-full flex flex-col items-center justify-center overflow-hidden p-0.5"
+                                                     [class.vertical-text]="rotateText()">
+                                                    @if (displayFormat() !== 'text' && label) {
+                                                        <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
+                                                    }
+                                                    @if (displayFormat() !== 'barcode' && label) {
+                                                        <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                              [class.mt-1]="displayFormat() === 'barcode_text'"
+                                                              style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
+                                                              [class.text-red-600]="label.length > 30"
+                                                              [style.font-size.pt]="fontSize()"
+                                                              [style.font-family]="'Roboto Mono'"
+                                                              [title]="label.length > 30 ? 'Cảnh báo: Mã quá dài có thể bị cắt khi in' : ''">
+                                                            {{label}}
+                                                        </span>
+                                                    }
                                                 </div>
                                             </div>
                                         }
@@ -526,6 +571,9 @@ export class LabelPrintComponent implements AfterViewInit {
   splitCount = signal<number>(1);
   fontSize = signal<number>(12);
   rotateText = signal<boolean>(false);
+  displayFormat = signal<DisplayFormat>('text');
+  barcodeWidth = signal<number>(1.5);
+  barcodeHeight = signal<number>(30);
   
   // Tomy Config
   tomyTemplates = TOMY_TEMPLATES;
@@ -651,6 +699,9 @@ export class LabelPrintComponent implements AfterViewInit {
               if (config.fontSize) this.fontSize.set(config.fontSize);
               if (config.rotateText !== undefined) this.rotateText.set(config.rotateText);
               if (config.splitCount) this.splitCount.set(config.splitCount);
+              if (config.displayFormat) this.displayFormat.set(config.displayFormat);
+              if (config.barcodeWidth) this.barcodeWidth.set(config.barcodeWidth);
+              if (config.barcodeHeight) this.barcodeHeight.set(config.barcodeHeight);
               
               // Brother
               if (mode === 'brother') {
@@ -705,7 +756,10 @@ export class LabelPrintComponent implements AfterViewInit {
       const config: any = {
           fontSize: this.fontSize(),
           rotateText: this.rotateText(),
-          splitCount: this.splitCount()
+          splitCount: this.splitCount(),
+          displayFormat: this.displayFormat(),
+          barcodeWidth: this.barcodeWidth(),
+          barcodeHeight: this.barcodeHeight()
       };
 
       if (mode === 'brother') {
@@ -997,6 +1051,25 @@ export class LabelPrintComponent implements AfterViewInit {
       return pages;
   });
 
+  generateBarcode(text: string): string {
+      if (!text) return '';
+      try {
+          const canvas = document.createElement('canvas');
+          JsBarcode(canvas, text, {
+              format: "CODE128",
+              width: this.barcodeWidth(),
+              height: this.barcodeHeight(),
+              displayValue: false,
+              margin: 0,
+              background: "transparent"
+          });
+          return canvas.toDataURL('image/png');
+      } catch (e) {
+          console.error('Barcode error:', e);
+          return '';
+      }
+  }
+
   // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
   printBrother() {
       const pages = this.brotherPages();
@@ -1049,6 +1122,16 @@ export class LabelPrintComponent implements AfterViewInit {
         .cell:nth-child(${cols}n) { border-right: none; }
         .cell:nth-last-child(-n+${cols}) { border-bottom: none; }
         ` : ''}
+        .label-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
+        }
         .label-text {
             font-size: ${fs}pt;
             font-weight: bold;
@@ -1056,11 +1139,6 @@ export class LabelPrintComponent implements AfterViewInit {
             line-height: 1;
             word-break: break-all;
             width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
         }
         @media print {
             @page { size: ${w}mm ${h}mm; margin: 0; }
@@ -1073,7 +1151,17 @@ export class LabelPrintComponent implements AfterViewInit {
       pages.forEach(page => {
           htmlContent += `<div class="page-container">`;
           page.forEach(label => {
-              htmlContent += `<div class="cell"><div class="label-text">${label}</div></div>`;
+              htmlContent += `<div class="cell"><div class="label-content">`;
+              if (label) {
+                  if (this.displayFormat() !== 'text') {
+                      const barcodeSrc = this.generateBarcode(label);
+                      htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
+                  }
+                  if (this.displayFormat() !== 'barcode') {
+                      htmlContent += `<div class="label-text" style="${this.displayFormat() === 'barcode_text' ? 'margin-top: 2px;' : ''}">${label}</div>`;
+                  }
+              }
+              htmlContent += `</div></div>`;
           });
           htmlContent += `</div>`;
       });
@@ -1153,17 +1241,22 @@ export class LabelPrintComponent implements AfterViewInit {
         .sub-label:not(:last-child) {
             border-bottom: 1px dashed #cbd5e1;
         }
+        .label-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
         .text {
             font-size: ${this.fontSize()}pt;
             font-weight: bold;
             text-align: center;
             line-height: 1;
             word-break: break-all;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             width: 100%;
-            height: 100%;
         }
         .vertical {
             writing-mode: vertical-rl;
@@ -1189,9 +1282,18 @@ export class LabelPrintComponent implements AfterViewInit {
                       const isLast = idx === cell.subLabels.length - 1;
                       htmlContent += `
                         <div class="sub-label" ${!isLast ? '' : 'style="border-bottom: none;"'}>
-                            <span class="text ${this.rotateText() ? 'vertical' : ''}">${label}</span>
-                        </div>
+                            <div class="label-content ${this.rotateText() ? 'vertical' : ''}">
                       `;
+                      if (label) {
+                          if (this.displayFormat() !== 'text') {
+                              const barcodeSrc = this.generateBarcode(label);
+                              htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
+                          }
+                          if (this.displayFormat() !== 'barcode') {
+                              htmlContent += `<span class="text" style="${this.displayFormat() === 'barcode_text' ? 'margin-top: 2px;' : ''}">${label}</span>`;
+                          }
+                      }
+                      htmlContent += `</div></div>`;
                   });
                   htmlContent += `</div>`;
               }
