@@ -429,12 +429,15 @@ interface LabelPage {
                                              [style.grid-template-rows]="'repeat(' + (page.length / brotherCols()) + ', 1fr)'">
                                             @for (label of page; track $index) {
                                                 <div class="flex items-center justify-center overflow-hidden p-0.5 box-border"
+                                                     style="container-type: size; width: 100%; height: 100%;"
                                                      [class.border-r]="brotherShowCutLines() && ($index % brotherCols() !== brotherCols() - 1)"
                                                      [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== (page.length / brotherCols()) - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
                                                      [class.border-slate-300]="brotherShowCutLines()">
-                                                    <div class="flex flex-col items-center justify-center w-full h-full overflow-hidden"
-                                                         [class.vertical-text]="rotateText()">
+                                                    <div class="flex flex-col items-center justify-center overflow-hidden"
+                                                         [style.transform]="rotateText() ? 'rotate(-90deg)' : 'none'"
+                                                         [style.width]="rotateText() ? '100cqh' : '100cqw'"
+                                                         [style.height]="rotateText() ? '100cqw' : '100cqh'">
                                                         @if (displayFormat() !== 'text' && label) {
                                                             <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                         }
@@ -495,9 +498,11 @@ interface LabelPage {
                                         @for (label of cell.subLabels; track $index; let last = $last) {
                                             <div class="flex-1 flex flex-col items-center justify-center w-full relative" 
                                                  [class.border-b]="!last" 
-                                                 style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1;">
-                                                <div class="w-full h-full flex flex-col items-center justify-center overflow-hidden p-0.5"
-                                                     [class.vertical-text]="rotateText()">
+                                                 style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1; container-type: size;">
+                                                <div class="flex flex-col items-center justify-center overflow-hidden p-0.5"
+                                                     [style.transform]="rotateText() ? 'rotate(-90deg)' : 'none'"
+                                                     [style.width]="rotateText() ? '100cqh' : '100cqw'"
+                                                     [style.height]="rotateText() ? '100cqw' : '100cqh'">
                                                     @if (displayFormat() !== 'text' && label) {
                                                         <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                     }
@@ -539,11 +544,6 @@ interface LabelPage {
     .input-mini { width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; font-size: 11px; font-weight: 700; text-align: center; outline: none; }
     .input-mini:focus { background-color: white; border-color: #3b82f6; }
     
-    .vertical-text {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: rotate(180deg); 
-    }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
@@ -1113,6 +1113,9 @@ export class LabelPrintComponent implements AfterViewInit {
             justify-content: center;
             overflow: hidden;
             padding: 2px;
+            container-type: size;
+            width: 100%;
+            height: 100%;
         }
         ${showCut ? `
         .cell {
@@ -1127,10 +1130,15 @@ export class LabelPrintComponent implements AfterViewInit {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
             overflow: hidden;
-            ${rotate ? 'writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);' : ''}
+            ${rotate ? `
+            transform: rotate(-90deg);
+            width: 100cqh;
+            height: 100cqw;
+            ` : `
+            width: 100cqw;
+            height: 100cqh;
+            `}
         }
         .label-text {
             font-size: ${fs}pt;
@@ -1237,6 +1245,9 @@ export class LabelPrintComponent implements AfterViewInit {
             position: relative;
             padding: 0.5mm;
             overflow: hidden;
+            container-type: size;
+            width: 100%;
+            height: 100%;
         }
         .sub-label:not(:last-child) {
             border-bottom: 1px dashed #cbd5e1;
@@ -1246,9 +1257,15 @@ export class LabelPrintComponent implements AfterViewInit {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
             overflow: hidden;
+            ${this.rotateText() ? `
+            transform: rotate(-90deg);
+            width: 100cqh;
+            height: 100cqw;
+            ` : `
+            width: 100cqw;
+            height: 100cqh;
+            `}
         }
         .text {
             font-size: ${this.fontSize()}pt;
@@ -1257,11 +1274,6 @@ export class LabelPrintComponent implements AfterViewInit {
             line-height: 1;
             word-break: break-all;
             width: 100%;
-        }
-        .vertical {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
         }
         @media print {
             @page { margin: 0; }
@@ -1282,7 +1294,7 @@ export class LabelPrintComponent implements AfterViewInit {
                       const isLast = idx === cell.subLabels.length - 1;
                       htmlContent += `
                         <div class="sub-label" ${!isLast ? '' : 'style="border-bottom: none;"'}>
-                            <div class="label-content ${this.rotateText() ? 'vertical' : ''}">
+                            <div class="label-content">
                       `;
                       if (label) {
                           if (this.displayFormat() !== 'text') {
