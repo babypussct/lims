@@ -167,10 +167,12 @@ interface LabelPage {
                                     <span class="label-mini">Số cột (Ngang)</span>
                                     <input type="number" [ngModel]="brotherCols()" (ngModelChange)="brotherCols.set($event)" class="input-std text-center">
                                 </div>
-                                <div>
-                                    <span class="label-mini">{{ isBrotherFixed() ? 'Số tem / trang (Dọc)' : 'Số tem / lần cắt (Dọc)' }}</span>
-                                    <input type="number" [ngModel]="brotherRows()" (ngModelChange)="brotherRows.set($event)" class="input-std text-center">
-                                </div>
+                                @if (isBrotherFixed()) {
+                                    <div>
+                                        <span class="label-mini">Số tem / trang (Dọc)</span>
+                                        <input type="number" [ngModel]="brotherRows()" (ngModelChange)="brotherRows.set($event)" class="input-std text-center">
+                                    </div>
+                                }
                             </div>
 
                             <div class="bg-blue-50 p-2 rounded border border-blue-100 mb-3 text-xs text-blue-800 flex flex-col gap-1">
@@ -379,11 +381,11 @@ interface LabelPage {
                                         
                                         <div class="w-full h-full grid"
                                              [style.grid-template-columns]="'repeat(' + brotherCols() + ', 1fr)'"
-                                             [style.grid-template-rows]="'repeat(' + brotherRows() + ', 1fr)'">
+                                             [style.grid-template-rows]="'repeat(' + (page.length / brotherCols()) + ', 1fr)'">
                                             @for (label of page; track $index) {
                                                 <div class="flex items-center justify-center overflow-hidden p-0.5 box-border"
                                                      [class.border-r]="brotherShowCutLines() && ($index % brotherCols() !== brotherCols() - 1)"
-                                                     [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== brotherRows() - 1)"
+                                                     [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== (page.length / brotherCols()) - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
                                                      [class.border-slate-300]="brotherShowCutLines()">
                                                     <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
@@ -555,11 +557,14 @@ export class LabelPrintComponent implements AfterViewInit {
 
   actualBrotherPageHeight = computed(() => {
       if (this.isBrotherFixed()) return this.brotherPageHeight();
-      return this.brotherLabelHeight() * this.brotherRows();
+      const labels = this.parseInput(this.rawInput());
+      const cols = Math.max(1, this.brotherCols());
+      const rows = Math.max(1, Math.ceil(labels.length / cols));
+      return this.brotherLabelHeight() * rows;
   });
 
   actualBrotherLabelHeight = computed(() => {
-      if (this.isBrotherFixed()) return this.brotherPageHeight() / this.brotherRows();
+      if (this.isBrotherFixed()) return this.brotherPageHeight() / Math.max(1, this.brotherRows());
       return this.brotherLabelHeight();
   });
 
@@ -568,19 +573,29 @@ export class LabelPrintComponent implements AfterViewInit {
 
   brotherPages = computed(() => {
       const labels = this.parseInput(this.rawInput());
+      if (labels.length === 0) return [];
       const cols = Math.max(1, this.brotherCols());
-      const rows = Math.max(1, this.brotherRows());
-      const perPage = cols * rows;
       
-      const pages: string[][] = [];
-      for (let i = 0; i < labels.length; i += perPage) {
-          const chunk = labels.slice(i, i + perPage);
-          while (chunk.length < perPage) {
-              chunk.push(''); // Fill empty cells
+      if (!this.isBrotherFixed()) {
+          // Continuous roll: All labels in ONE single page
+          const totalCells = Math.ceil(labels.length / cols) * cols;
+          const page = [...labels];
+          while (page.length < totalCells) page.push('');
+          return [page];
+      } else {
+          // Fixed size: Split into multiple pages
+          const rows = Math.max(1, this.brotherRows());
+          const perPage = cols * rows;
+          const pages: string[][] = [];
+          for (let i = 0; i < labels.length; i += perPage) {
+              const chunk = labels.slice(i, i + perPage);
+              while (chunk.length < perPage) {
+                  chunk.push(''); // Fill empty cells
+              }
+              pages.push(chunk);
           }
-          pages.push(chunk);
+          return pages;
       }
-      return pages;
   });
 
   layoutDims = computed(() => {
@@ -992,7 +1007,7 @@ export class LabelPrintComponent implements AfterViewInit {
       const fs = this.fontSize() || 16;
       const rotate = this.rotateText();
       const cols = Math.max(1, this.brotherCols());
-      const rows = Math.max(1, this.brotherRows());
+      const rows = this.isBrotherFixed() ? Math.max(1, this.brotherRows()) : Math.max(1, Math.ceil(pages[0].length / cols));
       const showCut = this.brotherShowCutLines();
 
       // Create a dedicated print window to isolate styles
