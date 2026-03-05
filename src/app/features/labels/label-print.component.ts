@@ -226,6 +226,37 @@ interface LabelPage {
                                 </div>
                             </div>
                         </div>
+
+                        <div>
+                            <label class="label-std">Căn lề & Vị trí (Theo chiều chữ)</label>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3">
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <span class="label-mini">Ngang (Trái/Phải)</span>
+                                        <select [ngModel]="alignX()" (ngModelChange)="alignX.set($event)" class="input-mini text-left">
+                                            <option value="flex-start">Trái</option>
+                                            <option value="center">Giữa</option>
+                                            <option value="flex-end">Phải</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <span class="label-mini">Dọc (Trên/Dưới)</span>
+                                        <select [ngModel]="alignY()" (ngModelChange)="alignY.set($event)" class="input-mini text-left">
+                                            <option value="flex-start">Trên</option>
+                                            <option value="center">Giữa</option>
+                                            <option value="flex-end">Dưới</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <span class="label-mini mb-1">Khoảng cách lề (mm)</span>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <div><span class="text-[8px] text-slate-400 block text-center">Trên</span><input type="number" [ngModel]="padTop()" (ngModelChange)="padTop.set($event)" class="input-mini"></div>
+                                    <div><span class="text-[8px] text-slate-400 block text-center">Dưới</span><input type="number" [ngModel]="padBottom()" (ngModelChange)="padBottom.set($event)" class="input-mini"></div>
+                                    <div><span class="text-[8px] text-slate-400 block text-center">Trái</span><input type="number" [ngModel]="padLeft()" (ngModelChange)="padLeft.set($event)" class="input-mini"></div>
+                                    <div><span class="text-[8px] text-slate-400 block text-center">Phải</span><input type="number" [ngModel]="padRight()" (ngModelChange)="padRight.set($event)" class="input-mini"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 }
 
@@ -292,6 +323,33 @@ interface LabelPage {
                                         <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
                                         <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
                                     }
+                                    <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                        <label class="label-mini">Căn lề nội dung (mm)</label>
+                                        <div class="grid grid-cols-4 gap-2 mb-2">
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Trên</span><input type="number" [ngModel]="padTop()" (ngModelChange)="padTop.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Dưới</span><input type="number" [ngModel]="padBottom()" (ngModelChange)="padBottom.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Trái</span><input type="number" [ngModel]="padLeft()" (ngModelChange)="padLeft.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Phải</span><input type="number" [ngModel]="padRight()" (ngModelChange)="padRight.set($event)" class="input-mini"></div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <span class="text-[8px] text-slate-400 block text-center">Ngang</span>
+                                                <select [ngModel]="alignX()" (ngModelChange)="alignX.set($event)" class="input-mini text-center">
+                                                    <option value="flex-start">Trái</option>
+                                                    <option value="center">Giữa</option>
+                                                    <option value="flex-end">Phải</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <span class="text-[8px] text-slate-400 block text-center">Dọc</span>
+                                                <select [ngModel]="alignY()" (ngModelChange)="alignY.set($event)" class="input-mini text-center">
+                                                    <option value="flex-start">Trên</option>
+                                                    <option value="center">Giữa</option>
+                                                    <option value="flex-end">Dưới</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -362,7 +420,34 @@ interface LabelPage {
                                         <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
                                         <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
                                     }
-                                    <div class="flex items-center justify-center pt-3 col-span-2">
+                                    <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                        <label class="label-mini">Căn lề nội dung (mm)</label>
+                                        <div class="grid grid-cols-4 gap-2 mb-2">
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Trên</span><input type="number" [ngModel]="padTop()" (ngModelChange)="padTop.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Dưới</span><input type="number" [ngModel]="padBottom()" (ngModelChange)="padBottom.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Trái</span><input type="number" [ngModel]="padLeft()" (ngModelChange)="padLeft.set($event)" class="input-mini"></div>
+                                            <div><span class="text-[8px] text-slate-400 block text-center">Phải</span><input type="number" [ngModel]="padRight()" (ngModelChange)="padRight.set($event)" class="input-mini"></div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <span class="text-[8px] text-slate-400 block text-center">Ngang</span>
+                                                <select [ngModel]="alignX()" (ngModelChange)="alignX.set($event)" class="input-mini text-center">
+                                                    <option value="flex-start">Trái</option>
+                                                    <option value="center">Giữa</option>
+                                                    <option value="flex-end">Phải</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <span class="text-[8px] text-slate-400 block text-center">Dọc</span>
+                                                <select [ngModel]="alignY()" (ngModelChange)="alignY.set($event)" class="input-mini text-center">
+                                                    <option value="flex-start">Trên</option>
+                                                    <option value="center">Giữa</option>
+                                                    <option value="flex-end">Dưới</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-center pt-3 col-span-2 border-t border-slate-100 mt-2">
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input type="checkbox" [ngModel]="showCutLines()" (ngModelChange)="showCutLines.set($event)" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
                                             <span class="text-[10px] font-bold text-slate-600 uppercase">In viền cắt</span>
@@ -434,7 +519,13 @@ interface LabelPage {
                                                      [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== (page.length / brotherCols()) - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
                                                      [class.border-slate-300]="brotherShowCutLines()">
-                                                    <div class="flex flex-col items-center justify-center overflow-hidden"
+                                                    <div class="flex flex-col overflow-hidden box-border"
+                                                         [style.align-items]="alignX()"
+                                                         [style.justify-content]="alignY()"
+                                                         [style.padding-top.mm]="padTop()"
+                                                         [style.padding-bottom.mm]="padBottom()"
+                                                         [style.padding-left.mm]="padLeft()"
+                                                         [style.padding-right.mm]="padRight()"
                                                          [style.transform]="rotateText() ? 'rotate(-90deg)' : 'none'"
                                                          [style.width]="rotateText() ? '100cqh' : '100cqw'"
                                                          [style.height]="rotateText() ? '100cqw' : '100cqh'">
@@ -442,7 +533,8 @@ interface LabelPage {
                                                             <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                         }
                                                         @if (displayFormat() !== 'barcode' && label) {
-                                                            <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                            <span class="font-bold font-mono leading-none overflow-hidden px-1"
+                                                                  [style.text-align]="alignX() === 'flex-start' ? 'left' : alignX() === 'flex-end' ? 'right' : 'center'"
                                                                   [class.mt-1]="displayFormat() === 'barcode_text'"
                                                                   style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
                                                                   [class.text-red-600]="label.length > 30"
@@ -499,7 +591,13 @@ interface LabelPage {
                                             <div class="flex-1 flex flex-col items-center justify-center w-full relative" 
                                                  [class.border-b]="!last" 
                                                  style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1; container-type: size;">
-                                                <div class="flex flex-col items-center justify-center overflow-hidden p-0.5"
+                                                <div class="flex flex-col overflow-hidden box-border"
+                                                     [style.align-items]="alignX()"
+                                                     [style.justify-content]="alignY()"
+                                                     [style.padding-top.mm]="padTop()"
+                                                     [style.padding-bottom.mm]="padBottom()"
+                                                     [style.padding-left.mm]="padLeft()"
+                                                     [style.padding-right.mm]="padRight()"
                                                      [style.transform]="rotateText() ? 'rotate(-90deg)' : 'none'"
                                                      [style.width]="rotateText() ? '100cqh' : '100cqw'"
                                                      [style.height]="rotateText() ? '100cqw' : '100cqh'">
@@ -507,7 +605,8 @@ interface LabelPage {
                                                         <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                     }
                                                     @if (displayFormat() !== 'barcode' && label) {
-                                                        <span class="font-bold font-mono leading-none text-center overflow-hidden px-1"
+                                                        <span class="font-bold font-mono leading-none overflow-hidden px-1"
+                                                              [style.text-align]="alignX() === 'flex-start' ? 'left' : alignX() === 'flex-end' ? 'right' : 'center'"
                                                               [class.mt-1]="displayFormat() === 'barcode_text'"
                                                               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
                                                               [class.text-red-600]="label.length > 30"
@@ -574,6 +673,14 @@ export class LabelPrintComponent implements AfterViewInit {
   displayFormat = signal<DisplayFormat>('text');
   barcodeWidth = signal<number>(1.5);
   barcodeHeight = signal<number>(30);
+  
+  // Content Alignment & Padding
+  alignX = signal<'flex-start' | 'center' | 'flex-end'>('center');
+  alignY = signal<'flex-start' | 'center' | 'flex-end'>('center');
+  padTop = signal<number>(2);
+  padBottom = signal<number>(2);
+  padLeft = signal<number>(2);
+  padRight = signal<number>(2);
   
   // Tomy Config
   tomyTemplates = TOMY_TEMPLATES;
@@ -702,6 +809,12 @@ export class LabelPrintComponent implements AfterViewInit {
               if (config.displayFormat) this.displayFormat.set(config.displayFormat);
               if (config.barcodeWidth) this.barcodeWidth.set(config.barcodeWidth);
               if (config.barcodeHeight) this.barcodeHeight.set(config.barcodeHeight);
+              if (config.alignX) this.alignX.set(config.alignX);
+              if (config.alignY) this.alignY.set(config.alignY);
+              if (config.padTop !== undefined) this.padTop.set(config.padTop);
+              if (config.padBottom !== undefined) this.padBottom.set(config.padBottom);
+              if (config.padLeft !== undefined) this.padLeft.set(config.padLeft);
+              if (config.padRight !== undefined) this.padRight.set(config.padRight);
               
               // Brother
               if (mode === 'brother') {
@@ -759,7 +872,13 @@ export class LabelPrintComponent implements AfterViewInit {
           splitCount: this.splitCount(),
           displayFormat: this.displayFormat(),
           barcodeWidth: this.barcodeWidth(),
-          barcodeHeight: this.barcodeHeight()
+          barcodeHeight: this.barcodeHeight(),
+          alignX: this.alignX(),
+          alignY: this.alignY(),
+          padTop: this.padTop(),
+          padBottom: this.padBottom(),
+          padLeft: this.padLeft(),
+          padRight: this.padRight()
       };
 
       if (mode === 'brother') {
@@ -1128,8 +1247,10 @@ export class LabelPrintComponent implements AfterViewInit {
         .label-content {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: ${this.alignX()};
+            justify-content: ${this.alignY()};
+            padding: ${this.padTop()}mm ${this.padRight()}mm ${this.padBottom()}mm ${this.padLeft()}mm;
+            box-sizing: border-box;
             overflow: hidden;
             ${rotate ? `
             transform: rotate(-90deg);
@@ -1143,8 +1264,8 @@ export class LabelPrintComponent implements AfterViewInit {
         .label-text {
             font-size: ${fs}pt;
             font-weight: bold;
-            text-align: center;
-            line-height: 1;
+            text-align: ${this.alignX() === 'flex-start' ? 'left' : this.alignX() === 'flex-end' ? 'right' : 'center'};
+            line-height: 1.2;
             word-break: break-all;
             width: 100%;
         }
@@ -1255,8 +1376,10 @@ export class LabelPrintComponent implements AfterViewInit {
         .label-content {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: ${this.alignX()};
+            justify-content: ${this.alignY()};
+            padding: ${this.padTop()}mm ${this.padRight()}mm ${this.padBottom()}mm ${this.padLeft()}mm;
+            box-sizing: border-box;
             overflow: hidden;
             ${this.rotateText() ? `
             transform: rotate(-90deg);
@@ -1270,8 +1393,8 @@ export class LabelPrintComponent implements AfterViewInit {
         .text {
             font-size: ${this.fontSize()}pt;
             font-weight: bold;
-            text-align: center;
-            line-height: 1;
+            text-align: ${this.alignX() === 'flex-start' ? 'left' : this.alignX() === 'flex-end' ? 'right' : 'center'};
+            line-height: 1.2;
             word-break: break-all;
             width: 100%;
         }
