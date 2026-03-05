@@ -257,6 +257,15 @@ interface LabelPage {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-800 text-xs space-y-1">
+                            <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> Mẹo khắc phục thừa giấy trắng:</div>
+                            <ul class="list-disc pl-4 space-y-1 mt-1">
+                                <li><b>Trên App:</b> Giảm "Chiều dài 1 tem" và "Khoảng cách lề" (Trên/Dưới) xuống mức tối thiểu vừa đủ nội dung.</li>
+                                <li><b>Hộp thoại in (Trình duyệt):</b> Mục <b>Lề (Margins)</b> bắt buộc chọn <b>Không có (None)</b>. Tắt <b>Đầu trang & Chân trang</b>.</li>
+                                <li><b>Driver Brother (Windows/Mac):</b> Vào Printing Preferences, tìm mục <b>Margins / Feed Margin (Lề nạp giấy)</b> và chỉnh về <b>0mm</b> (hoặc mức nhỏ nhất 1.5mm).</li>
+                            </ul>
+                        </div>
                     </div>
                 }
 
@@ -1210,8 +1219,19 @@ export class LabelPrintComponent implements AfterViewInit {
       }
 
       const css = `
-        @page { size: ${w}mm ${h}mm; margin: 0; }
-        body { margin: 0; padding: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: white; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @page { size: ${w}mm ${h}mm; margin: 0; padding: 0; }
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            width: ${w}mm; 
+            height: ${h}mm; 
+            overflow: hidden; /* Ngăn chặn trình duyệt tự sinh trang trắng thừa */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; 
+            background: white; 
+            color: black; 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+        }
         * { box-sizing: border-box; }
         .page-container {
             width: ${w}mm;
