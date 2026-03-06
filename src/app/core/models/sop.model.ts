@@ -105,6 +105,8 @@ export interface CalculatedIngredient {
   displayName?: string; // Human readable name (Hydrated)
   unit: string;
   amountPerUnit: number;
+  baseAmount?: number; // Theoretical amount without margin
+  appliedMargin?: number; // Margin percentage applied
   totalNeed: number; // In stock unit
   displayAmount: number; // In ingredient unit
   stockUnit: string;
@@ -114,6 +116,8 @@ export interface CalculatedIngredient {
 
 export interface CalculatedItem extends Consumable {
   displayName?: string; // Tên hiển thị (Hydrated)
+  baseQty?: number; // Theoretical quantity without margin
+  appliedMargin?: number; // Margin percentage applied
   totalQty: number;
   stockNeed: number; 
   stockUnit: string;

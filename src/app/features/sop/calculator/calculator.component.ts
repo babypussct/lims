@@ -257,7 +257,9 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                      <thead class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase bg-slate-50 dark:bg-slate-800/80 sticky top-0 shadow-sm z-10">
                         <tr>
                           <th class="px-6 py-3 tracking-wider w-1/3">Hóa chất / Vật tư</th>
-                          <th class="px-6 py-3 tracking-wider text-right hidden sm:table-cell">Định mức gốc</th>
+                          <th class="px-6 py-3 tracking-wider text-right hidden sm:table-cell">Công thức</th>
+                          <th class="px-6 py-3 tracking-wider text-right hidden sm:table-cell">Định mức</th>
+                          <th class="px-6 py-3 tracking-wider text-right hidden sm:table-cell">Tiêu hao</th>
                           <th class="px-6 py-3 tracking-wider text-right w-32">Tổng Cần</th>
                           <th class="px-6 py-3 tracking-wider text-center w-20">Đơn vị</th>
                         </tr>
@@ -283,6 +285,12 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                 <td class="px-6 py-4 text-right align-top hidden sm:table-cell">
                                   <code class="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">{{item.formula}}</code>
                                 </td>
+                                <td class="px-6 py-4 text-right align-top hidden sm:table-cell">
+                                  <span class="font-medium text-slate-600 dark:text-slate-400 text-sm tabular-nums">{{formatNum(item.baseQty || 0)}}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right align-top hidden sm:table-cell">
+                                  <span class="text-xs font-bold text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/50">+{{item.appliedMargin || 0}}%</span>
+                                </td>
                                 <td class="px-6 py-4 text-right align-top">
                                   <span class="font-black text-blue-600 dark:text-blue-400 text-lg tabular-nums">{{formatNum(item.totalQty)}}</span>
                                 </td>
@@ -291,7 +299,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                               
                               @if (item.isComposite) {
                                  <tr class="bg-slate-50/50 dark:bg-slate-800/30">
-                                    <td colspan="4" class="px-6 py-2 pb-4">
+                                    <td colspan="6" class="px-6 py-2 pb-4">
                                         <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-sm ml-4">
                                             <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Thành phần</div>
                                             <div class="grid gap-2">
@@ -302,7 +310,11 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                                             @if(sub.isMissing) { <i class="fa-solid fa-circle-exclamation text-[10px]" title="Không tìm thấy trong kho"></i> }
                                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 italic">({{sub.amountPerUnit}} / {{item.unit}})</span>
                                                         </div>
-                                                        <div class="flex items-center gap-1"><span class="font-bold text-slate-700 dark:text-slate-300 font-mono">{{formatNum(sub.displayAmount)}}</span><span class="text-[10px] text-slate-500 dark:text-slate-400">{{sub.unit}}</span></div>
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="text-[10px] text-slate-400 dark:text-slate-500">Định mức: {{formatNum(sub.baseAmount || 0)}}</span>
+                                                            <span class="text-[10px] font-bold text-orange-500 dark:text-orange-400">+{{sub.appliedMargin || 0}}%</span>
+                                                            <div class="flex items-center gap-1"><span class="font-bold text-slate-700 dark:text-slate-300 font-mono">{{formatNum(sub.displayAmount)}}</span><span class="text-[10px] text-slate-500 dark:text-slate-400">{{sub.unit}}</span></div>
+                                                        </div>
                                                     </div>
                                                 }
                                             </div>
@@ -552,6 +564,9 @@ export class CalculatorComponent implements OnDestroy {
                 }
             } else {
                 this.marginMode.set('auto');
+            }
+            if (editingReq.analysisDate && newForm.contains('analysisDate')) {
+                patchData['analysisDate'] = editingReq.analysisDate;
             }
             newForm.patchValue(patchData);
             
