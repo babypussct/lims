@@ -497,9 +497,9 @@ export class CalculatorComponent implements OnDestroy {
                     this.state.selectedSop.set(sop);
                     // We need to wait for the effect to set up the form, then patch it
                     setTimeout(() => {
+                        const currentForm = this.form();
                         if (req.inputs) {
                             // Only patch controls that actually exist in the form
-                            const currentForm = this.form();
                             const patchData: any = {};
                             Object.keys(req.inputs).forEach(key => {
                                 if (currentForm.contains(key)) {
@@ -516,11 +516,16 @@ export class CalculatorComponent implements OnDestroy {
                         }
                         if (req.margin !== undefined && req.margin !== -1) {
                             this.marginMode.set('manual');
-                            this.form().patchValue({ safetyMargin: req.margin });
+                            if (currentForm.contains('safetyMargin')) {
+                                currentForm.patchValue({ safetyMargin: req.margin });
+                            }
                         } else {
                             this.marginMode.set('auto');
                         }
-                    }, 100);
+                        
+                        // Force a recalculation after patching
+                        this.runCalculation(sop, currentForm.value);
+                    }, 200); // Increased timeout slightly to ensure form is ready
                 } else {
                     this.toast.show('Không tìm thấy SOP của phiếu này.', 'error');
                 }
@@ -542,7 +547,9 @@ export class CalculatorComponent implements OnDestroy {
         s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
         const newForm = this.fb.group(controls);
         const cached = this.state.cachedCalculatorState();
-        if (cached && cached.sopId === s.id) { newForm.patchValue(cached.formValues); }
+        if (cached && cached.sopId === s.id && !this.editingRequest()) { 
+            newForm.patchValue(cached.formValues); 
+        }
         this.form.set(newForm);
         this.localInventoryMap.set({}); this.localRecipeMap.set({});
         this.sampleListText.set('');
