@@ -9,6 +9,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 
+import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-request-list',
   standalone: true,
@@ -18,31 +20,31 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
         <!-- Header & Tabs -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 mb-6">
             <div>
-                <h2 class="text-2xl font-black text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-list-check text-blue-600"></i> Quản lý Yêu cầu
+                <h2 class="text-2xl font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-600 dark:text-blue-500"></i> Quản lý Yêu cầu
                 </h2>
-                <p class="text-xs text-slate-500 mt-1">Phê duyệt yêu cầu và in phiếu pha chế.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Phê duyệt yêu cầu và in phiếu pha chế.</p>
             </div>
             
-            <div class="flex bg-slate-100 p-1.5 rounded-xl self-start border border-slate-200">
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl self-start border border-slate-200 dark:border-slate-700">
                <button (click)="currentTab.set('pending')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'pending' ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'">
+                       [class]="currentTab() === 'pending' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-clock"></i> Chờ duyệt 
-                   @if(state.requests().length > 0) { <span class="bg-orange-100 text-orange-700 px-1.5 rounded-md text-[10px]">{{state.requests().length}}</span> }
+                   @if(state.requests().length > 0) { <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 rounded-md text-[10px]">{{state.requests().length}}</span> }
                </button>
                
                <button (click)="currentTab.set('approved')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'approved' ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'">
+                       [class]="currentTab() === 'approved' ? 'bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-check-double"></i> Lịch sử
                </button>
 
                <button (click)="currentTab.set('printing')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
-                       [class]="currentTab() === 'printing' ? 'bg-white text-purple-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'">
+                       [class]="currentTab() === 'printing' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                    <i class="fa-solid fa-print"></i> Hàng đợi In
-                   @if(state.printableLogs().length > 0) { <span class="bg-purple-100 text-purple-700 px-1.5 rounded-md text-[10px]">{{state.printableLogs().length}}</span> }
+                   @if(state.printableLogs().length > 0) { <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 rounded-md text-[10px]">{{state.printableLogs().length}}</span> }
                </button>
             </div>
         </div>
@@ -72,7 +74,7 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                     <div class="grid gap-4 w-full">
                         @if(isLoading()) {
                             @for(i of [1,2,3]; track i) {
-                                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex gap-4">
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex gap-4">
                                     <div class="flex-1 space-y-2">
                                         <app-skeleton width="120px" height="16px"></app-skeleton>
                                         <app-skeleton width="250px" height="24px"></app-skeleton>
@@ -82,13 +84,13 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                             }
                         } @else {
                             @for (req of displayRequests(); track req.id) {
-                                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 transition hover:shadow-md relative overflow-hidden group">
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 transition hover:shadow-md dark:hover:shadow-none relative overflow-hidden group">
                                     
                                     @if(processingId() === req.id) {
-                                        <div class="absolute inset-0 bg-white/80 z-20 flex items-center justify-center backdrop-blur-sm">
-                                            <div class="bg-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-slate-100">
-                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i> 
-                                                <span class="text-sm font-bold text-slate-600">Đang xử lý...</span>
+                                        <div class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 z-20 flex items-center justify-center backdrop-blur-sm">
+                                            <div class="bg-white dark:bg-slate-800 px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-slate-100 dark:border-slate-700">
+                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600 dark:text-blue-500"></i> 
+                                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">Đang xử lý...</span>
                                             </div>
                                         </div>
                                     }
@@ -96,44 +98,44 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3 mb-2">
                                              @if (req.status === 'pending') {
-                                                <span class="px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 text-[10px] font-black uppercase tracking-wider border border-orange-100">Chờ duyệt</span>
+                                                <span class="px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider border border-orange-100 dark:border-orange-800/50">Chờ duyệt</span>
                                              } @else {
-                                                <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider border border-emerald-100">Đã duyệt</span>
+                                                <span class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">Đã duyệt</span>
                                              }
-                                             <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                                             <span class="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
                                                 <i class="fa-regular fa-calendar"></i>
                                                 {{ getAnalysisDate(req) }}
                                              </span>
                                         </div>
                                         
-                                        <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">{{req.sopName}}</h3>
-                                        <div class="text-xs text-slate-500 mb-4 flex items-center gap-2">
-                                            <div class="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fa-solid fa-user text-[10px]"></i></div>
-                                            <span class="font-bold text-slate-600">{{req.user || 'Unknown'}}</span>
+                                        <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{req.sopName}}</h3>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+                                            <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-user text-[10px]"></i></div>
+                                            <span class="font-bold text-slate-600 dark:text-slate-300">{{req.user || 'Unknown'}}</span>
                                         </div>
 
                                         <!-- Sample List Summary -->
                                         @if(req.sampleList && req.sampleList.length > 0) {
-                                            <div class="mb-3 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-start gap-2">
-                                                <i class="fa-solid fa-vial text-slate-400 mt-0.5"></i>
+                                            <div class="mb-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700 flex items-start gap-2">
+                                                <i class="fa-solid fa-vial text-slate-400 dark:text-slate-500 mt-0.5"></i>
                                                 <span class="break-words font-mono font-medium">{{ formatSampleList(req.sampleList) }}</span>
                                             </div>
                                         }
 
-                                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
                                              <table class="w-full text-sm">
                                                 <thead>
-                                                    <tr class="text-[10px] text-slate-400 uppercase text-left font-bold tracking-wider">
+                                                    <tr class="text-[10px] text-slate-400 dark:text-slate-500 uppercase text-left font-bold tracking-wider">
                                                         <th class="pb-2">Hóa chất</th>
                                                         <th class="pb-2 text-right">Lượng dùng</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody class="divide-y divide-slate-100">
+                                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     @for (item of req.items; track item.name) {
                                                         <tr>
-                                                            <td class="py-2 font-medium text-slate-600 text-xs">{{getItemName(item)}}</td>
-                                                            <td class="py-2 text-right font-bold text-slate-700 font-mono text-xs">
-                                                                {{formatNum(item.displayAmount)}} <span class="text-[10px] text-slate-400 font-normal">{{item.unit}}</span>
+                                                            <td class="py-2 font-medium text-slate-600 dark:text-slate-300 text-xs">{{getItemName(item)}}</td>
+                                                            <td class="py-2 text-right font-bold text-slate-700 dark:text-slate-200 font-mono text-xs">
+                                                                {{formatNum(item.displayAmount)}} <span class="text-[10px] text-slate-400 dark:text-slate-500 font-normal">{{item.unit}}</span>
                                                             </td>
                                                         </tr>
                                                     }
@@ -146,28 +148,32 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                                         <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
                                             @if (currentTab() === 'pending') {
                                                 <button (click)="approve(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        class="flex-1 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-check"></i> Duyệt
                                                 </button>
                                                 <button (click)="reject(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-white border border-slate-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-slate-600 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-xmark"></i> Từ chối
                                                 </button>
                                             } @else {
+                                                <button (click)="editApproved(req)" [disabled]="!!processingId()" 
+                                                        class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    <i class="fa-solid fa-pen"></i> Chỉnh sửa
+                                                </button>
                                                 <button (click)="revoke(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-500 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 rounded-xl font-bold shadow-sm transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn tác
                                                 </button>
                                             }
                                         </div>
                                     } @else {
                                         @if(currentTab() === 'pending') {
-                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-slate-300 gap-2 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-slate-300 dark:text-slate-600 gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                                 <i class="fa-solid fa-hourglass-half text-2xl animate-pulse"></i>
                                                 <span class="text-[10px] uppercase font-bold text-center">Đang chờ<br>quản lý duyệt</span>
                                             </div>
                                         } @else {
-                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-emerald-500 gap-2 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-emerald-500 dark:text-emerald-400 gap-2 p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
                                                 <i class="fa-solid fa-circle-check text-2xl"></i>
                                                 <span class="text-[10px] uppercase font-bold text-center">Hoàn thành</span>
                                             </div>
@@ -175,11 +181,11 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
                                     }
                                 </div>
                             } @empty {
-                                <div class="text-center py-20 bg-white rounded-3xl border border-slate-200 border-dashed">
-                                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
+                                    <div class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-500">
                                         <i class="fa-solid fa-inbox text-3xl"></i>
                                     </div>
-                                    <p class="text-slate-500 font-medium text-sm">
+                                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">
                                         {{ currentTab() === 'pending' ? 'Không có yêu cầu nào đang chờ.' : 'Không có dữ liệu lịch sử trong khoảng thời gian này.' }}
                                     </p>
                                 </div>
@@ -195,6 +201,7 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
 export class RequestListComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService);
+  router = inject(Router);
   cleanName = cleanName; formatNum = formatNum; formatDate = formatDate; formatSampleList = formatSampleList;
   
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
@@ -285,5 +292,9 @@ export class RequestListComponent implements OnInit {
       if (this.processingId()) return;
       this.processingId.set(req.id);
       try { await this.state.revokeApproval(req); } finally { this.processingId.set(null); }
+  }
+
+  editApproved(req: Request) {
+      this.router.navigate(['/calculator'], { queryParams: { editRequestId: req.id } });
   }
 }

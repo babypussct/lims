@@ -6,6 +6,7 @@ export interface PrintData {
   margin: number;
   items: CalculatedItem[];
   analysisDate?: string;
+  requestId?: string; // Reference to 'requests' collection
 }
 
 export interface LogDiff {
@@ -34,6 +35,7 @@ export interface Log {
 
   // New Architecture (Split Data)
   printJobId?: string; // Reference to 'print_jobs' collection
+  requestId?: string; // Reference to 'requests' collection
   sopBasicInfo?: {     // Lightweight info for list display
       name: string;
       category: string;

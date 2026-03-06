@@ -79,7 +79,15 @@ export class StateService implements OnDestroy {
   // --- FOCUS MODE (New Feature) ---
   focusMode = signal<boolean>(false);
 
+  // --- DARK MODE ---
+  darkMode = signal<boolean>(false);
+
   constructor() {
+    // Initialize Dark Mode from localStorage
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    this.darkMode.set(savedDarkMode);
+    this.applyDarkMode(savedDarkMode);
+
     effect(() => {
       const user = this.auth.currentUser();
       if (user) {
@@ -97,6 +105,24 @@ export class StateService implements OnDestroy {
   
   // Toggle Focus Mode
   toggleFocusMode() { this.focusMode.update(v => !v); }
+
+  // Toggle Dark Mode
+  toggleDarkMode() {
+    this.darkMode.update(v => {
+      const newVal = !v;
+      localStorage.setItem('darkMode', String(newVal));
+      this.applyDarkMode(newVal);
+      return newVal;
+    });
+  }
+
+  private applyDarkMode(isDark: boolean) {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
 
   private cleanupListeners() {
     this.listeners.forEach(unsub => unsub());
@@ -318,7 +344,8 @@ export class StateService implements OnDestroy {
             inputs: formInputs, 
             margin: formInputs.safetyMargin || 0, 
             items: calculatedItems,
-            analysisDate: formInputs.analysisDate
+            analysisDate: formInputs.analysisDate,
+            requestId: reqRef.id
         };
         transaction.set(printJobRef, { 
             ...sanitizeForFirebase(printData), 
@@ -333,6 +360,7 @@ export class StateService implements OnDestroy {
           user: this.getCurrentUserName(),
           printable: true, 
           printJobId: printJobRef.id,
+          requestId: reqRef.id,
           sopBasicInfo: { 
               name: sop.name, 
               category: sop.category,
@@ -412,7 +440,8 @@ export class StateService implements OnDestroy {
                 inputs: extendedInputs, 
                 margin: req.margin || 0, 
                 items: calculatedItems,
-                analysisDate: req.analysisDate 
+                analysisDate: req.analysisDate,
+                requestId: req.id
             };
             transaction.set(printJobRef, { 
                 ...sanitizeForFirebase(printData),
@@ -427,6 +456,7 @@ export class StateService implements OnDestroy {
               user: this.getCurrentUserName(),
               printable: true,
               printJobId: printJobRef.id,
+              requestId: req.id,
               sopBasicInfo: { 
                   name: sop.name, 
                   category: sop.category,
@@ -435,7 +465,7 @@ export class StateService implements OnDestroy {
             });
         } else {
             transaction.set(logRef, {
-              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false
+              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
             });
         }
       });
@@ -459,10 +489,117 @@ export class StateService implements OnDestroy {
         transaction.update(reqRef, { status: 'pending', approvedAt: deleteField() });
         
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false });
+        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id });
       });
       this.toast.show('Đã hoàn tác!', 'info');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
+  }
+
+  async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
+    if (!this.auth.canApprove()) return;
+    if (!await this.confirmationService.confirm('Xác nhận lưu thay đổi và cập nhật kho?')) return;
+
+    try {
+      const oldItems = req.items;
+      const newItems = this.mapToRequestItems(calculatedItems, invMap);
+      
+      // Calculate inventory diff
+      const inventoryDiff: Record<string, number> = {};
+      
+      // Add back old items (positive diff)
+      oldItems.forEach(item => {
+          inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) + item.amount;
+      });
+      
+      // Subtract new items (negative diff)
+      const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
+      itemsToDeduct.forEach(item => {
+          inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) - item.amount;
+      });
+
+      await runTransaction(this.fb.db, async (transaction) => {
+        // 1. Check inventory for negative diffs
+        const invRefs: Record<string, DocumentReference> = {};
+        const invSnaps: Record<string, any> = {};
+        
+        for (const itemName of Object.keys(inventoryDiff)) {
+            const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemName);
+            invRefs[itemName] = ref;
+            invSnaps[itemName] = await transaction.get(ref);
+            
+            if (inventoryDiff[itemName] < 0) {
+                if (!invSnaps[itemName].exists()) throw new Error(`Hóa chất "${itemName}" không tồn tại!`);
+                const currentStock = invSnaps[itemName].data()['stock'] || 0;
+                if (currentStock < Math.abs(inventoryDiff[itemName])) {
+                    throw new Error(`Kho không đủ "${itemName}" để cập nhật. Hiện có: ${currentStock}, Cần thêm: ${Math.abs(inventoryDiff[itemName])}`);
+                }
+            }
+        }
+        
+        // 2. Update inventory
+        for (const itemName of Object.keys(inventoryDiff)) {
+            if (inventoryDiff[itemName] !== 0) {
+                transaction.update(invRefs[itemName], { stock: increment(inventoryDiff[itemName]) });
+            }
+        }
+        
+        // 3. Update request document
+        const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
+        const reqData: any = {
+            items: newItems,
+            inputs: formInputs,
+            margin: formInputs.safetyMargin || 0,
+            analysisDate: formInputs.analysisDate || null,
+            updatedAt: serverTimestamp()
+        };
+        if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
+        else reqData.sampleList = deleteField();
+        
+        if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
+        else reqData.targetIds = deleteField();
+        
+        transaction.update(reqRef, reqData);
+        
+        // 4. Create a new log and print job for the update
+        const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+        
+        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
+        const printData: PrintData = { 
+            sop, 
+            inputs: formInputs, 
+            margin: formInputs.safetyMargin || 0, 
+            items: calculatedItems,
+            analysisDate: formInputs.analysisDate,
+            requestId: req.id
+        };
+        transaction.set(printJobRef, { 
+            ...sanitizeForFirebase(printData),
+            createdAt: serverTimestamp(),
+            createdBy: this.getCurrentUserName()
+        });
+
+        transaction.set(logRef, {
+          action: 'EDIT_REQUEST', 
+          details: `Chỉnh sửa phiếu: ${req.sopName}`, 
+          timestamp: serverTimestamp(), 
+          user: this.getCurrentUserName(),
+          printable: true,
+          printJobId: printJobRef.id,
+          requestId: req.id,
+          sopBasicInfo: { 
+              name: sop.name, 
+              category: sop.category,
+              ref: sop.ref 
+          }
+        });
+      });
+      this.toast.show('Cập nhật phiếu thành công!', 'success');
+      return true;
+    } catch (e: any) { 
+        this.toast.show(e.message, 'error'); 
+        return false;
+    }
   }
 
   async rejectRequest(req: Request) {
