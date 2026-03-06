@@ -484,58 +484,43 @@ export class CalculatorComponent implements OnDestroy {
   formatNum = formatNum;
   formatDate = formatDate;
 
+  editRequestIdSignal = signal<string | null>(null);
+
   constructor() {
     this.route.queryParams.subscribe(params => {
-        const editId = params['editRequestId'];
+        this.editRequestIdSignal.set(params['editRequestId'] || null);
+    });
+
+    effect(() => {
+        const editId = this.editRequestIdSignal();
         if (editId) {
-            // Find the request
-            const req = this.state.approvedRequests().find(r => r.id === editId);
-            if (req) {
-                this.editingRequest.set(req);
-                const sop = this.state.sops().find(s => s.id === req.sopId);
-                if (sop) {
-                    this.state.selectedSop.set(sop);
-                    // We need to wait for the effect to set up the form, then patch it
-                    setTimeout(() => {
-                        const currentForm = this.form();
-                        if (req.inputs) {
-                            // Only patch controls that actually exist in the form
-                            const patchData: any = {};
-                            Object.keys(req.inputs).forEach(key => {
-                                if (currentForm.contains(key)) {
-                                    patchData[key] = req.inputs[key];
-                                }
-                            });
-                            currentForm.patchValue(patchData);
-                        }
-                        if (req.sampleList) {
-                            this.onSampleListChange(req.sampleList.join('\n'));
-                        }
-                        if (req.targetIds) {
-                            this.selectedTargets.set(new Set(req.targetIds));
-                        }
-                        if (req.margin !== undefined && req.margin !== -1) {
-                            this.marginMode.set('manual');
-                            if (currentForm.contains('safetyMargin')) {
-                                currentForm.patchValue({ safetyMargin: req.margin });
-                            }
+            const reqs = this.state.approvedRequests();
+            if (reqs.length > 0) { // Wait until loaded
+                const req = reqs.find(r => r.id === editId);
+                if (req) {
+                    if (this.editingRequest()?.id !== req.id) {
+                        this.editingRequest.set(req);
+                        const sop = this.state.sops().find(s => s.id === req.sopId);
+                        if (sop) {
+                            this.currentFormSopId = null; // Force form re-init
+                            this.state.selectedSop.set(sop);
                         } else {
-                            this.marginMode.set('auto');
+                            this.toast.show('Không tìm thấy SOP của phiếu này.', 'error');
                         }
-                        
-                        // Force a recalculation after patching
-                        this.runCalculation(sop, currentForm.value);
-                    }, 200); // Increased timeout slightly to ensure form is ready
+                    }
                 } else {
-                    this.toast.show('Không tìm thấy SOP của phiếu này.', 'error');
+                    if (this.editingRequest() !== null) {
+                        this.editingRequest.set(null);
+                        this.toast.show('Không tìm thấy phiếu yêu cầu.', 'error');
+                    }
                 }
-            } else {
-                this.toast.show('Không tìm thấy phiếu yêu cầu.', 'error');
             }
         } else {
-            this.editingRequest.set(null);
+            if (this.editingRequest() !== null) {
+                this.editingRequest.set(null);
+            }
         }
-    });
+    }, { allowSignalWrites: true });
 
     effect(() => {
       const s = this.activeSop();
@@ -546,20 +531,61 @@ export class CalculatorComponent implements OnDestroy {
         const controls: Record<string, any> = { safetyMargin: [10], analysisDate: [this.getTodayDate()] };
         s.inputs.forEach(i => { if (i.var !== 'safetyMargin') controls[i.var] = [i.default !== undefined ? i.default : 0]; });
         const newForm = this.fb.group(controls);
+        
         const cached = this.state.cachedCalculatorState();
-        if (cached && cached.sopId === s.id && !this.editingRequest()) { 
-            newForm.patchValue(cached.formValues); 
+        const editingReq = this.editingRequest();
+        
+        if (editingReq && editingReq.sopId === s.id) {
+            // Patch from request
+            const patchData: any = {};
+            if (editingReq.inputs) {
+                Object.keys(editingReq.inputs).forEach(key => {
+                    if (newForm.contains(key)) {
+                        patchData[key] = editingReq.inputs[key];
+                    }
+                });
+            }
+            if (editingReq.margin !== undefined && editingReq.margin !== -1) {
+                this.marginMode.set('manual');
+                if (newForm.contains('safetyMargin')) {
+                    patchData['safetyMargin'] = editingReq.margin;
+                }
+            } else {
+                this.marginMode.set('auto');
+            }
+            newForm.patchValue(patchData);
+            
+            if (editingReq.sampleList) {
+                const samplesStr = editingReq.sampleList.join('\n');
+                this.sampleListText.set(samplesStr);
+                this.sampleCount.set(editingReq.sampleList.length);
+                if (newForm.contains('n_sample') && editingReq.sampleList.length > 0) {
+                    newForm.patchValue({ n_sample: editingReq.sampleList.length });
+                }
+            } else {
+                this.sampleListText.set('');
+                this.sampleCount.set(0);
+            }
+            
+            if (editingReq.targetIds) {
+                this.selectedTargets.set(new Set(editingReq.targetIds));
+            } else {
+                this.selectedTargets.set(new Set());
+            }
+        } else {
+            if (cached && cached.sopId === s.id) { 
+                newForm.patchValue(cached.formValues); 
+            }
+            this.sampleListText.set('');
+            this.sampleCount.set(0);
+            this.selectedTargets.set(new Set());
+            this.marginMode.set('auto');
         }
+        
         this.form.set(newForm);
         this.localInventoryMap.set({}); this.localRecipeMap.set({});
-        this.sampleListText.set('');
-        this.sampleCount.set(0);
-        this.selectedTargets.set(new Set());
         this.targetsOpen.set(false);
         this.targetSearchTerm.set('');
-        
-        // Reset to Auto mode by default for new SOPs
-        this.marginMode.set('auto');
         
         this.runCalculation(s, newForm.value);
         this.fetchData(s);
