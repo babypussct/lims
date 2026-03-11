@@ -430,6 +430,14 @@ export class StatisticsComponent {
                           result.push({ id: targetId, delta: newStock - oldStock }); 
                       }
                   }
+                  else if (log.action === 'DELETE_ITEM') {
+                      // When an item is deleted, we don't know its exact stock at the time of deletion from the log details alone.
+                      // However, to balance the NXT report, we should ideally reverse its entire stock.
+                      // Since we don't have the exact stock in the log, and the item is gone from inventory,
+                      // it will show up with 0 current stock. We ignore the delta here to avoid complex historical lookups,
+                      // but it might cause a slight imbalance if the item had stock when deleted.
+                      // A better approach would be logging the stock at deletion time.
+                  }
                   else if (log.action.includes('APPROVE') && log.printData?.items) {
                       log.printData.items.forEach(item => {
                           if (item.isComposite && item.breakdown) {
