@@ -715,6 +715,40 @@ import { Unsubscribe } from 'firebase/firestore';
          </div>
       }
 
+      @if (showPrintModal()) {
+         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-bounce-in relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800 dark:bg-slate-700"></div>
+                <h3 class="font-black text-xl text-slate-800 dark:text-slate-200 mb-1">In Nhãn Chuẩn</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">{{selectedStd()?.name}}</p>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Chiều rộng (mm)</label>
+                            <input type="number" [(ngModel)]="printWidth" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-500 dark:focus:ring-slate-500/50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Chiều cao (mm)</label>
+                            <input type="number" [(ngModel)]="printHeight" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-500 dark:focus:ring-slate-500/50">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Cỡ chữ (pt)</label>
+                        <input type="number" [(ngModel)]="printFontSize" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-500 dark:focus:ring-slate-500/50">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 mt-8">
+                    <button (click)="showPrintModal.set(false)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="printLabel()" class="px-8 py-3 bg-slate-800 dark:bg-slate-700 text-white font-bold text-sm rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 shadow-lg shadow-slate-200 dark:shadow-none transition">
+                        <i class="fa-solid fa-print mr-2"></i> In ngay
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+
       @if (historyStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
             <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -921,6 +955,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
   
   showModal = signal(false);
   isEditing = signal(false);
+  
+  showPrintModal = signal(false);
+  printWidth = signal(62);
+  printHeight = signal(25);
+  printFontSize = signal(10);
   
   previewUrl = signal<SafeResourceUrl | null>(null);
   previewImgUrl = signal<string>('');
@@ -1287,7 +1326,69 @@ export class StandardsComponent implements OnInit, OnDestroy {
   openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
   
   openPrintModal(std: ReferenceStandard) {
-      this.router.navigate(['/labels'], { queryParams: { data: std.id } });
+      this.selectedStd.set(std);
+      this.showPrintModal.set(true);
+  }
+
+  printLabel() {
+      const std = this.selectedStd();
+      if (!std) return;
+      
+      const width = this.printWidth();
+      const height = this.printHeight();
+      const fontSize = this.printFontSize();
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+          this.toast.show('Vui lòng cho phép popup để in nhãn', 'error');
+          return;
+      }
+      
+      const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Print Label</title>
+              <style>
+                  @page { size: ${width}mm ${height}mm; margin: 0; }
+                  body { 
+                      margin: 0; 
+                      padding: 2mm; 
+                      width: ${width}mm; 
+                      height: ${height}mm; 
+                      box-sizing: border-box;
+                      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: center;
+                  }
+                  .label-content {
+                      font-size: ${fontSize}pt;
+                      line-height: 1.2;
+                  }
+                  .title { font-weight: bold; font-size: ${fontSize + 2}pt; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                  .row { display: flex; justify-content: space-between; margin-bottom: 1px; }
+                  .bold { font-weight: bold; }
+              </style>
+          </head>
+          <body>
+              <div class="label-content">
+                  <div class="title">${std.name}</div>
+                  <div class="row"><span>Lot: <span class="bold">${std.lot_number || 'N/A'}</span></span> <span>Purity: <span class="bold">${std.purity || 'N/A'}</span></span></div>
+                  <div class="row"><span>Opened: <span class="bold">${std.date_opened ? new Date(std.date_opened).toLocaleDateString('vi-VN') : '___/___/___'}</span></span></div>
+                  <div class="row"><span>Expiry: <span class="bold">${std.expiry_date ? new Date(std.expiry_date).toLocaleDateString('vi-VN') : 'N/A'}</span></span></div>
+              </div>
+              <script>
+                  window.onload = () => { window.print(); window.close(); }
+              </script>
+          </body>
+          </html>
+      `;
+      
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      this.showPrintModal.set(false);
   }
 
   // --- HARDENED: Confirm Weigh ---
