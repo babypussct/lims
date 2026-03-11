@@ -3,6 +3,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
@@ -22,10 +23,10 @@ import { Unsubscribe } from 'firebase/firestore';
   template: `
     <div class="flex flex-col space-y-4 md:space-y-5 fade-in h-full relative">
       <!-- Header -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
         <div>
-            <h2 class="text-xl font-black text-slate-800 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shadow-sm">
+            <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none">
                     <i class="fa-solid fa-vial-circle-check"></i>
                 </div>
                 Quản lý Chuẩn Đối Chiếu
@@ -34,29 +35,29 @@ import { Unsubscribe } from 'firebase/firestore';
         
         <div class="flex gap-2 items-center">
            @if(selectedIds().size > 0 && auth.canEditStandards()) {
-                <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition font-bold text-xs flex items-center gap-2 animate-bounce-in disabled:opacity-50">
+                <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-xl shadow-lg shadow-red-200 dark:shadow-none transition font-bold text-xs flex items-center gap-2 animate-bounce-in disabled:opacity-50">
                     @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-trash"></i> } Xóa {{selectedIds().size}} mục
                 </button>
-                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+                <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
            }
 
            @if(auth.canEditStandards()) {
-             <button (click)="openAddModal()" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition font-bold text-xs flex items-center gap-2">
+             <button (click)="openAddModal()" class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition font-bold text-xs flex items-center gap-2">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
-             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition font-bold text-xs flex items-center gap-2" title="Import danh sách chuẩn">
+             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-xs flex items-center gap-2" title="Import danh sách chuẩn">
                 <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
              <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleFileSelect($event)">
              
-             <button (click)="usageLogFileInput.click()" class="px-5 py-2 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl border border-teal-200 transition font-bold text-xs flex items-center gap-2" title="Import nhật ký sử dụng">
+             <button (click)="usageLogFileInput.click()" class="px-5 py-2 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-xl border border-teal-200 dark:border-teal-800/50 transition font-bold text-xs flex items-center gap-2" title="Import nhật ký sử dụng">
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleUsageLogFileSelect($event)">
            }
            
            @if(state.isAdmin()) {
-             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
+             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
                 @if(isLoading() || isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
                 @else { <i class="fa-solid fa-bomb"></i> }
              </button>
@@ -66,68 +67,68 @@ import { Unsubscribe } from 'firebase/firestore';
 
       <!-- Dashboard Widgets -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-          <div (click)="activeWidgetFilter.set('all')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 shadow-md ring-2 ring-indigo-50' : 'border-slate-100 shadow-sm'">
+          <div (click)="activeWidgetFilter.set('all')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 dark:border-indigo-500 shadow-md ring-2 ring-indigo-50 dark:ring-indigo-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
               <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-boxes-stacked"></i></div>
-                  <span class="text-2xl font-black text-slate-800">{{stats().total}}</span>
+                  <div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="text-2xl font-black text-slate-800 dark:text-slate-100">{{stats().total}}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Tất cả chuẩn</div>
+              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tất cả chuẩn</div>
           </div>
-          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 shadow-md ring-2 ring-amber-50' : 'border-slate-100 shadow-sm'">
+          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 dark:border-amber-500 shadow-md ring-2 ring-amber-50 dark:ring-amber-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
               <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-battery-quarter"></i></div>
-                  <span class="text-2xl font-black text-amber-600">{{stats().lowStock}}</span>
+                  <div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fa-solid fa-battery-quarter"></i></div>
+                  <span class="text-2xl font-black text-amber-600 dark:text-amber-400">{{stats().lowStock}}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Sắp hết hàng</div>
+              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hàng</div>
           </div>
-          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 shadow-md ring-2 ring-orange-50' : 'border-slate-100 shadow-sm'">
+          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 dark:border-orange-500 shadow-md ring-2 ring-orange-50 dark:ring-orange-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
               <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
-                  <span class="text-2xl font-black text-orange-600">{{stats().expiringSoon}}</span>
+                  <div class="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
+                  <span class="text-2xl font-black text-orange-600 dark:text-orange-400">{{stats().expiringSoon}}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
+              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
           </div>
-          <div (click)="activeWidgetFilter.set('expired')" class="bg-white p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 shadow-md ring-2 ring-red-50' : 'border-slate-100 shadow-sm'">
+          <div (click)="activeWidgetFilter.set('expired')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 dark:border-red-500 shadow-md ring-2 ring-red-50 dark:ring-red-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
               <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-ban"></i></div>
-                  <span class="text-2xl font-black text-red-600">{{stats().expired}}</span>
+                  <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center"><i class="fa-solid fa-ban"></i></div>
+                  <span class="text-2xl font-black text-red-600 dark:text-red-400">{{stats().expired}}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Đã hết hạn</div>
+              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Đã hết hạn</div>
           </div>
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col relative">
+      <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
           
           <!-- Omnibox Filters -->
-          <div class="p-5 border-b border-slate-50 flex flex-col gap-4 bg-slate-50/30">
+          <div class="p-5 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-4 bg-slate-50/30 dark:bg-slate-800/50">
              <div class="flex flex-col md:flex-row gap-4">
                  <div class="relative flex-1 group">
-                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm group-focus-within:text-indigo-500 transition-colors"></i>
+                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 dark:text-slate-500 text-sm group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors"></i>
                     <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
-                           class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition shadow-sm"
+                           class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
                            placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
                  </div>
                  
                  <!-- SORT DROPDOWN -->
-                 <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 shadow-sm h-[46px]">
-                     <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
+                 <div class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 shadow-sm dark:shadow-none h-[46px]">
+                     <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
                      <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
-                             class="bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer border-none py-2 pr-2">
-                         <option value="received_desc">Ngày nhận (Mới nhất)</option>
-                         <option value="updated_desc">Mới cập nhật</option>
-                         <option value="name_asc">Tên (A-Z)</option>
-                         <option value="name_desc">Tên (Z-A)</option>
-                         <option value="expiry_asc">Hạn dùng (Gần nhất)</option>
-                         <option value="expiry_desc">Hạn dùng (Xa nhất)</option>
+                             class="bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-2 pr-2">
+                         <option value="received_desc" class="dark:bg-slate-800">Ngày nhận (Mới nhất)</option>
+                         <option value="updated_desc" class="dark:bg-slate-800">Mới cập nhật</option>
+                         <option value="name_asc" class="dark:bg-slate-800">Tên (A-Z)</option>
+                         <option value="name_desc" class="dark:bg-slate-800">Tên (Z-A)</option>
+                         <option value="expiry_asc" class="dark:bg-slate-800">Hạn dùng (Gần nhất)</option>
+                         <option value="expiry_desc" class="dark:bg-slate-800">Hạn dùng (Xa nhất)</option>
                      </select>
                  </div>
 
-                 <div class="flex bg-slate-200/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
-                    <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
+                 <div class="flex bg-slate-200/50 dark:bg-slate-700/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
+                    <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
                         <i class="fa-solid fa-list"></i>
                     </button>
-                    <button (click)="viewMode.set('grid')" [class]="viewMode() === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Lưới (Thẻ)">
+                    <button (click)="viewMode.set('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Lưới (Thẻ)">
                         <i class="fa-solid fa-border-all"></i>
                     </button>
                  </div>
@@ -135,24 +136,24 @@ import { Unsubscribe } from 'firebase/firestore';
              
              <!-- Search Stats -->
              <div class="flex justify-between items-center px-1">
-                 <span class="text-[10px] font-bold text-slate-400">
+                 <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                      Hiển thị: {{visibleItems().length}} / {{filteredItems().length}} kết quả 
-                     @if(searchTerm()) { <span class="text-indigo-500">(Lọc theo "{{searchTerm()}}")</span> }
+                     @if(searchTerm()) { <span class="text-indigo-500 dark:text-indigo-400">(Lọc theo "{{searchTerm()}}")</span> }
                  </span>
-                 @if(isLoading()) { <span class="text-[10px] text-blue-500 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
+                 @if(isLoading()) { <span class="text-[10px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
              </div>
           </div>
 
           <!-- Content Body -->
-          <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30">
+          <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30 dark:bg-slate-900/50">
              
              <!-- VIEW MODE: LIST (HIGH DENSITY TABLE) -->
              @if (viewMode() === 'list') {
                  <div class="min-w-[1000px]"> 
                      <table class="w-full text-sm text-left relative border-collapse">
-                        <thead class="text-[11px] text-slate-500 font-bold uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-200 shadow-sm h-12 tracking-wide">
+                        <thead class="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none h-12 tracking-wide">
                            <tr>
-                              <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 cursor-pointer"></th>
+                              <th class="px-4 py-3 w-10 text-center"><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll()" class="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer"></th>
                               <th class="px-4 py-3 w-[25%]">Định danh & Vị trí</th>
                               <th class="px-4 py-3 w-[20%]">Thông tin Lô/SX</th>
                               <th class="px-4 py-3 w-[15%]">Tồn kho & Bảo quản</th>
@@ -161,7 +162,7 @@ import { Unsubscribe } from 'firebase/firestore';
                               <th class="px-4 py-3 w-[10%] text-center">Tác vụ</th>
                            </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-slate-100">
+                        <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
                            @if (isLoading() && allStandards().length === 0) {
                                 @for (i of [1,2,3,4,5]; track i) {
                                     <tr class="h-24">
@@ -176,71 +177,69 @@ import { Unsubscribe } from 'firebase/firestore';
                                 }
                            } @else {
                                @for (std of visibleItems(); track std.id) {
-                                  <tr class="hover:bg-indigo-50/30 transition group h-24" [class.bg-indigo-50]="selectedIds().has(std.id)">
+                                  <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition group h-24" [ngClass]="{'bg-indigo-50 dark:bg-indigo-900/30': selectedIds().has(std.id)}">
                                      <td class="px-4 py-3 text-center align-top pt-4">
-                                         <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
+                                         <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-4 h-4 accent-indigo-600 dark:accent-indigo-500 cursor-pointer">
                                      </td>
                                      <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col h-full">
-                                            <div class="font-bold text-slate-800 text-sm mb-0.5 hover:text-indigo-600 transition cursor-pointer leading-snug line-clamp-2" (click)="openEditModal(std)" [title]="std.name">
+                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-sm mb-0.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug line-clamp-2" (click)="openEditModal(std)" [title]="std.name">
                                                 {{std.name}}
                                             </div>
-                                            @if(std.chemical_name) { <div class="text-xs text-slate-500 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> }
+                                            @if(std.chemical_name) { <div class="text-xs text-slate-500 dark:text-slate-400 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> }
                                             <div class="flex flex-wrap gap-1.5 mt-auto">
-                                                @if(std.internal_id) { <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 tracking-tight">{{std.internal_id}}</span> }
-                                                @if(std.location) { <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200 flex items-center gap-1"><i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}</span> }
+                                                @if(std.internal_id) { <span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
+                                                @if(std.location) { <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1"><i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}</span> }
                                             </div>
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 align-top border-l border-slate-50">
-                                        <div class="text-xs font-bold text-slate-700 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
-                                        <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px] text-slate-500">
-                                            <span class="font-bold text-slate-400">LOT:</span><span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
-                                            <span class="font-bold text-slate-400">CODE:</span><span class="font-mono text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
-                                            @if(std.cas_number) { <span class="font-bold text-slate-400">CAS:</span><span class="font-mono text-slate-700">{{std.cas_number}}</span> }
+                                     <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
+                                        <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
+                                        <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                            <span class="font-bold text-slate-400 dark:text-slate-500">LOT:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
+                                            <span class="font-bold text-slate-400 dark:text-slate-500">CODE:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
+                                            @if(std.cas_number) { <span class="font-bold text-slate-400 dark:text-slate-500">CAS:</span><span class="font-mono text-slate-700 dark:text-slate-300">{{std.cas_number}}</span> }
                                         </div>
-                                        <div class="mt-2 pt-1 border-t border-slate-100 text-[10px] flex items-center gap-2 text-slate-500">
-                                            @if(std.purity) { <span>Pur: <b class="text-slate-700">{{std.purity}}</b></span> }
-                                            @if(std.pack_size) { <span>Pack: <b class="text-slate-700">{{std.pack_size}}</b></span> }
+                                        <div class="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                                            @if(std.purity) { <span>Pur: <b class="text-slate-700 dark:text-slate-300">{{std.purity}}</b></span> }
+                                            @if(std.pack_size) { <span>Pack: <b class="text-slate-700 dark:text-slate-300">{{std.pack_size}}</b></span> }
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 align-top border-l border-slate-50">
-                                        <div class="flex items-baseline justify-between mb-1"><span class="text-lg font-black text-indigo-600 leading-none">{{formatNum(std.current_amount)}}</span><span class="text-[10px] font-bold text-slate-400 ml-1">{{std.unit}}</span></div>
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden relative"><div class="h-full rounded-full transition-all duration-500" [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)" [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2" [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2"></div></div>
-                                        @let sInfo = getStorageInfo(std.storage_condition);
+                                     <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
+                                        <div class="flex items-baseline justify-between mb-1"><span class="text-lg font-black text-indigo-600 dark:text-indigo-400 leading-none">{{formatNum(std.current_amount)}}</span><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-1">{{std.unit}}</span></div>
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden relative"><div class="h-full rounded-full transition-all duration-500" [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)" [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2" [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2"></div></div>
                                         <div class="flex flex-col gap-1 mt-1">
-                                            @for (info of sInfo; track $index) { <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span></div> }
+                                            @for (info of getStorageInfo(std.storage_condition); track $index) { <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span></div> }
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 align-top border-l border-slate-50">
+                                     <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col gap-0.5 mb-2">
                                             <div class="font-mono font-bold text-xs" [class]="getExpiryClass(std.expiry_date)">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
                                             <div class="text-[10px] font-medium" [class]="getExpiryTimeClass(std.expiry_date)">{{ getExpiryTimeLeft(std.expiry_date) }}</div>
                                         </div>
                                         <div class="flex flex-col gap-1.5">
-                                            @if(std.certificate_ref) { <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
-                                            @if(std.contract_ref) { <div class="text-[10px] text-slate-400 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
+                                            @if(std.certificate_ref) { <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
+                                            @if(std.contract_ref) { <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
                                         </div>
                                      </td>
-                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50">
-                                         @let status = getStandardStatus(std);
-                                         <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="status.class">{{status.label}}</span>
+                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
+                                         <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="getStandardStatus(std).class">{{getStandardStatus(std).label}}</span>
                                      </td>
-                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50">
+                                     <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col items-center gap-2">
                                            <div class="flex gap-1">
-                                               <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
-                                               <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 text-white hover:bg-slate-900 shadow-md shadow-slate-200 transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
+                                               <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                               <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 shadow-md shadow-slate-200 dark:shadow-none transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
                                            </div>
                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                               <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-200" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
-                                               @if(auth.canEditStandards()) { <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition" title="Sửa"><i class="fa-solid fa-pen text-[10px]"></i></button> }
+                                               <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
+                                               @if(auth.canEditStandards()) { <button (click)="openEditModal(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition" title="Sửa"><i class="fa-solid fa-pen text-[10px]"></i></button> }
                                            </div>
                                         </div>
                                      </td>
                                   </tr>
                                } 
-                               @if (visibleItems().length === 0) { <tr><td colspan="7" class="p-16 text-center text-slate-400 italic">Không tìm thấy dữ liệu.</td></tr> }
+                               @if (visibleItems().length === 0) { <tr><td colspan="7" class="p-16 text-center text-slate-400 dark:text-slate-500 italic">Không tìm thấy dữ liệu.</td></tr> }
                            }
                         </tbody>
                      </table>
@@ -255,21 +254,21 @@ import { Unsubscribe } from 'firebase/firestore';
                         </div> 
                     } @else {
                         @if (visibleItems().length === 0) {
-                            <div class="py-16 text-center text-slate-400 italic w-full">
-                                <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
+                            <div class="py-16 text-center text-slate-400 dark:text-slate-500 italic w-full">
+                                <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300 dark:text-slate-600"></i>
                                 <p>Không tìm thấy dữ liệu chuẩn phù hợp.</p>
                             </div>
                         } @else {
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                                 @for (std of visibleItems(); track std.id) {
-                                    <div class="bg-white rounded-2xl border transition-all duration-200 flex flex-col relative group h-full hover:-translate-y-1 hover:shadow-lg overflow-hidden"
-                                         [class.border-slate-200]="!selectedIds().has(std.id)"
-                                         [class.border-indigo-400]="selectedIds().has(std.id)"
-                                         [class.shadow-md]="selectedIds().has(std.id)"
-                                         [class.bg-indigo-50]="selectedIds().has(std.id)">
+                                    <div class="bg-white dark:bg-slate-800 rounded-2xl border transition-all duration-200 flex flex-col relative group h-full hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-none overflow-hidden"
+                                         [ngClass]="{
+                                             'border-slate-200 dark:border-slate-700': !selectedIds().has(std.id),
+                                             'border-indigo-400 dark:border-indigo-500 shadow-md bg-indigo-50 dark:bg-indigo-900/30': selectedIds().has(std.id)
+                                         }">
                                         
                                         <!-- Header: Status Bar -->
-                                        <div class="w-full h-1.5 flex bg-slate-100 shrink-0">
+                                        <div class="w-full h-1.5 flex bg-slate-100 dark:bg-slate-700 shrink-0">
                                             <div class="h-full w-full" [class]="getExpiryBarClass(std.expiry_date)"></div>
                                         </div>
 
@@ -278,52 +277,52 @@ import { Unsubscribe } from 'firebase/firestore';
                                             <div class="flex justify-between items-start mb-3">
                                                 <div class="flex flex-wrap gap-1.5 items-start pr-2">
                                                     @if(std.internal_id) {
-                                                        <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 shadow-sm whitespace-nowrap">
+                                                        <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
                                                             {{std.internal_id}}
                                                         </span>
                                                     }
                                                     @if(std.location) {
-                                                        <span class="bg-white text-slate-600 px-2 py-1 rounded text-[10px] font-bold border border-slate-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
+                                                        <span class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm dark:shadow-none whitespace-nowrap">
                                                             <i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}
                                                         </span>
                                                     }
                                                 </div>
-                                                <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-5 h-5 accent-indigo-600 cursor-pointer shrink-0 mt-0.5">
+                                                <input type="checkbox" [checked]="selectedIds().has(std.id)" (change)="toggleSelection(std.id)" class="w-5 h-5 accent-indigo-600 dark:accent-indigo-500 cursor-pointer shrink-0 mt-0.5">
                                             </div>
 
                                             <!-- Identity -->
                                             <div class="mb-4 cursor-pointer" (click)="openEditModal(std)">
-                                                <h3 class="font-bold text-slate-800 text-sm leading-snug mb-1 hover:text-indigo-600 transition line-clamp-2 min-h-[2.5em]">{{std.name}}</h3>
-                                                @if(std.chemical_name) { <p class="text-xs text-slate-500 italic line-clamp-1 font-medium">{{std.chemical_name}}</p> }
+                                                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition line-clamp-2 min-h-[2.5em]">{{std.name}}</h3>
+                                                @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-1 font-medium">{{std.chemical_name}}</p> }
                                             </div>
 
                                             <!-- Data Grid (Click to copy) -->
-                                            <div class="grid grid-cols-2 gap-px bg-slate-100 rounded-lg overflow-hidden border border-slate-100 mb-4 text-[10px]">
-                                                <div class="bg-white p-2 hover:bg-blue-50 transition cursor-pointer group/cell" (click)="copyText(std.lot_number, $event)" title="Copy Lot">
-                                                    <div class="text-slate-400 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
-                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.lot_number || '-'}}</div>
+                                            <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[10px]">
+                                                <div class="bg-white dark:bg-slate-800 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText(std.lot_number, $event)" title="Copy Lot">
+                                                    <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                                    <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.lot_number || '-'}}</div>
                                                 </div>
-                                                <div class="bg-white p-2 hover:bg-blue-50 transition cursor-pointer group/cell" (click)="copyText(std.product_code, $event)" title="Copy Code">
-                                                    <div class="text-slate-400 font-bold uppercase mb-0.5 flex justify-between">Code <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
-                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.product_code || '-'}}</div>
+                                                <div class="bg-white dark:bg-slate-800 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText(std.product_code, $event)" title="Copy Code">
+                                                    <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Code <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
+                                                    <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.product_code || '-'}}</div>
                                                 </div>
-                                                <div class="bg-white p-2">
-                                                    <div class="text-slate-400 font-bold uppercase mb-0.5">Mfg</div>
-                                                    <div class="font-bold text-slate-700 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
+                                                <div class="bg-white dark:bg-slate-800 p-2">
+                                                    <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">Mfg</div>
+                                                    <div class="font-bold text-slate-700 dark:text-slate-300 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
                                                 </div>
-                                                <div class="bg-white p-2">
-                                                    <div class="text-slate-400 font-bold uppercase mb-0.5">CAS</div>
-                                                    <div class="font-mono font-bold text-slate-700 truncate">{{std.cas_number || '-'}}</div>
+                                                <div class="bg-white dark:bg-slate-800 p-2">
+                                                    <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">CAS</div>
+                                                    <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.cas_number || '-'}}</div>
                                                 </div>
                                             </div>
 
                                             <!-- Stock & Storage -->
                                             <div class="mt-auto">
                                                 <div class="flex justify-between items-end mb-1">
-                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Tồn kho</span>
-                                                    <span class="font-black text-indigo-600 text-lg leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400">{{std.unit}}</small></span>
+                                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tồn kho</span>
+                                                    <span class="font-black text-indigo-600 dark:text-indigo-400 text-lg leading-none">{{formatNum(std.current_amount)}} <small class="text-xs font-bold text-slate-400 dark:text-slate-500">{{std.unit}}</small></span>
                                                 </div>
-                                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-3">
+                                                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden mb-3">
                                                     <div class="bg-indigo-500 h-1.5 rounded-full transition-all" [style.width.%]="(std.current_amount / (std.initial_amount || 1)) * 100"></div>
                                                 </div>
                                                 
@@ -339,25 +338,25 @@ import { Unsubscribe } from 'firebase/firestore';
                                             </div>
 
                                             <!-- Footer Actions -->
-                                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
                                                 <div class="flex flex-col">
-                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Hết hạn</span>
+                                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Hết hạn</span>
                                                     <span class="text-xs font-bold" [class]="getExpiryTimeClass(std.expiry_date)">{{getExpiryTimeLeft(std.expiry_date) || 'N/A'}}</span>
                                                 </div>
                                                 
                                                 <div class="flex gap-1">
                                                     @if(std.certificate_ref) {
-                                                        <button (click)="$event.stopPropagation(); openCoaPreview(std.certificate_ref, $event)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition flex items-center justify-center" title="Xem CoA">
+                                                        <button (click)="$event.stopPropagation(); openCoaPreview(std.certificate_ref, $event)" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition flex items-center justify-center" title="Xem CoA">
                                                             <i class="fa-solid fa-file-pdf text-xs"></i>
                                                         </button>
                                                     }
-                                                    <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition flex items-center justify-center" title="Lịch sử">
+                                                    <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Lịch sử">
                                                         <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                                                     </button>
-                                                    <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 text-white border border-slate-700 hover:bg-slate-900 transition flex items-center justify-center" title="In nhãn">
+                                                    <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
                                                         <i class="fa-solid fa-print text-xs"></i>
                                                     </button>
-                                                    <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
+                                                    <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
                                                         <i class="fa-solid fa-weight-scale"></i> Cân
                                                     </button>
                                                 </div>
@@ -373,7 +372,7 @@ import { Unsubscribe } from 'firebase/firestore';
              
              @if (hasMore() && !isLoading()) {
                 <div class="text-center p-4">
-                    <button (click)="loadMore()" class="text-xs font-bold text-gray-500 hover:text-indigo-600 transition active:scale-95 bg-white border border-gray-200 px-4 py-2 rounded-full shadow-sm">
+                    <button (click)="loadMore()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
                         Xem thêm...
                     </button>
                 </div>
@@ -396,37 +395,37 @@ import { Unsubscribe } from 'firebase/firestore';
                 </div>
 
                 <!-- Tabs Header -->
-                <div class="flex bg-white border-b border-slate-100 px-6 shrink-0">
-                   <button (click)="activeModalTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'general' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">1. Thông tin chung</button>
-                   <button (click)="activeModalTab.set('stock')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'stock' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">2. Kho & Bảo quản</button>
-                   <button (click)="activeModalTab.set('docs')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="activeModalTab() === 'docs' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'">3. Hồ sơ & Hạn dùng</button>
+                <div class="flex bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 shrink-0">
+                   <button (click)="activeModalTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'general' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">1. Thông tin chung</button>
+                   <button (click)="activeModalTab.set('stock')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'stock' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">2. Kho & Bảo quản</button>
+                   <button (click)="activeModalTab.set('docs')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="activeModalTab() === 'docs' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">3. Hồ sơ & Hạn dùng</button>
                 </div>
                 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white">
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
                     <form [formGroup]="form" class="space-y-6">
                         
                         <!-- TAB 1: GENERAL INFO -->
                         @if (activeModalTab() === 'general') {
                             <div class="space-y-4 fade-in">
                                 <div>
-                                    <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Tên Chuẩn <span class="text-red-500">*</span></label>
-                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: Sulfadiazine Standard">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên Chuẩn <span class="text-red-500 dark:text-red-400">*</span></label>
+                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: Sulfadiazine Standard">
                                 </div>
                                 <!-- NEW: Chemical Name Field -->
                                 <div>
-                                    <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Tên hóa học / Tên khác</label>
-                                    <input formControlName="chemical_name" class="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 italic text-slate-600" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên hóa học / Tên khác</label>
+                                    <input formControlName="chemical_name" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 italic" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white" placeholder="VD: 99.5%"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800" placeholder="VD: 99.5%"></div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                                    <div><label class="text-[10px] font-bold text-indigo-700 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full border border-indigo-200 rounded-lg p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="VD: 10mg"></div>
-                                    <div><label class="text-[10px] font-bold text-indigo-700 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full border border-indigo-200 rounded-lg p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="VD: BCBW1234"></div>
+                                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: 10mg"></div>
+                                    <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: BCBW1234"></div>
                                 </div>
                             </div>
                         }
@@ -436,29 +435,29 @@ import { Unsubscribe } from 'firebase/firestore';
                             <div class="space-y-4 fade-in">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
-                                        <input formControlName="internal_id" (input)="onInternalIdChange($event)" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold font-mono outline-none focus:border-indigo-500 uppercase" placeholder="VD: AA01">
+                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
+                                        <input formControlName="internal_id" (input)="onInternalIdChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Vị trí (Location)</label>
-                                        <input formControlName="location" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-slate-50" placeholder="Tự động từ mã ID (VD: Tủ A)">
+                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Vị trí (Location)</label>
+                                        <input formControlName="location" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Tự động từ mã ID (VD: Tủ A)">
                                     </div>
                                 </div>
                                 
-                                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 grid grid-cols-3 gap-4">
-                                    <div><label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full border border-white rounded-lg p-2 text-center font-bold outline-none"></div>
-                                    <div><label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full border border-white rounded-lg p-2 text-center font-bold text-indigo-600 outline-none text-lg"></div>
+                                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 grid grid-cols-3 gap-4">
+                                    <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
+                                    <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-indigo-600 dark:text-indigo-400 outline-none text-lg"></div>
                                     <div>
-                                        <label class="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Đơn vị</label>
-                                        <select formControlName="unit" class="w-full border border-white rounded-lg p-2.5 text-center font-bold outline-none bg-white h-[44px]">
+                                        <label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Đơn vị</label>
+                                        <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
                                             @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
                                         </select>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Điều kiện bảo quản</label>
-                                    <input formControlName="storage_condition" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500" placeholder="VD: FT (Tủ đông), RT (Nhiệt độ phòng)...">
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Điều kiện bảo quản</label>
+                                    <input formControlName="storage_condition" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="VD: FT (Tủ đông), RT (Nhiệt độ phòng)...">
                                 </div>
                             </div>
                         }
@@ -468,31 +467,31 @@ import { Unsubscribe } from 'firebase/firestore';
                             <div class="space-y-4 fade-in">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ngày nhận (Received)</label>
-                                        <input type="date" formControlName="received_date" class="w-full border border-slate-200 rounded-lg p-2 text-sm font-bold outline-none focus:border-indigo-500">
+                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
+                                        <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] font-bold text-red-400 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
+                                        <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
                                         <div class="flex items-center gap-2">
-                                            <input type="date" formControlName="expiry_date" class="w-full border border-red-200 rounded-lg p-2 text-sm font-bold text-red-600 outline-none focus:border-red-500 bg-red-50">
+                                            <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
                                 </div>
                                 
-                                <div class="pt-2 border-t border-slate-100">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">COA File (Link/Upload)</label>
+                                <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
                                     <div class="flex gap-2">
-                                        <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-500 text-blue-600 underline" placeholder="Paste URL here...">
-                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
+                                        <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here...">
+                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
                                             @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
                                         </button>
                                         <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
                                     </div>
-                                    <p class="text-[9px] text-slate-400 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
+                                    <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
                                 </div>
                             </div>
                         }
@@ -501,9 +500,9 @@ import { Unsubscribe } from 'firebase/firestore';
                 </div>
 
                 <!-- Footer Actions -->
-                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="saveStandard()" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
+                    <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="saveStandard()" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
                         @else { {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
                     </button>
@@ -515,20 +514,20 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- IMPORT PREVIEW MODAL -->
       @if (importPreviewData().length > 0) {
          <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
                 
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <div>
-                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600"></i> Xác nhận Import
+                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i> Xác nhận Import
                         </h3>
-                        <p class="text-xs text-slate-500 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
                     </div>
-                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
                 </div>
 
                 <div class="flex-1 overflow-auto custom-scrollbar p-6">
-                    <div class="mb-4 bg-yellow-50 border border-yellow-100 rounded-lg p-3 flex gap-3 text-sm text-yellow-800">
+                    <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg p-3 flex gap-3 text-sm text-yellow-800 dark:text-yellow-500">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                         <div>
                             <span class="font-bold">Lưu ý ngày tháng:</span> Hệ thống đang ép kiểu ngày tháng theo định dạng <b>dd/mm/yyyy</b> (Việt Nam).<br>
@@ -536,26 +535,26 @@ import { Unsubscribe } from 'firebase/firestore';
                         </div>
                     </div>
 
-                    <table class="w-full text-xs text-left border-collapse border border-slate-200">
-                        <thead class="bg-slate-100 text-slate-500 font-bold uppercase sticky top-0">
+                    <table class="w-full text-xs text-left border-collapse border border-slate-200 dark:border-slate-700">
+                        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
                             <tr>
-                                <th class="p-2 border border-slate-200">Tên Chuẩn</th>
-                                <th class="p-2 border border-slate-200">Lô (Lot)</th>
-                                <th class="p-2 border border-slate-200 bg-red-50 text-red-700 w-32">Ngày nhận (Gốc)</th>
-                                <th class="p-2 border border-slate-200 bg-emerald-50 text-emerald-700 w-32">Kết quả (Hệ thống hiểu)</th>
-                                <th class="p-2 border border-slate-200">Hạn dùng (Parsed)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Tên Chuẩn</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Lô (Lot)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 w-32">Ngày nhận (Gốc)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 w-32">Kết quả (Hệ thống hiểu)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Hạn dùng (Parsed)</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="text-slate-700 dark:text-slate-300">
                             @for (item of importPreviewData().slice(0, 10); track $index) {
-                                <tr class="hover:bg-slate-50">
-                                    <td class="p-2 border border-slate-200 truncate max-w-[200px]" [title]="item.parsed.name">{{item.parsed.name}}</td>
-                                    <td class="p-2 border border-slate-200 font-mono">{{item.parsed.lot_number}}</td>
-                                    <td class="p-2 border border-slate-200 font-mono bg-red-50/30">{{item.raw['Ngày nhận (Gốc)']}}</td>
-                                    <td class="p-2 border border-slate-200 font-bold font-mono text-emerald-700 bg-emerald-50/30">
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 truncate max-w-[200px]" [title]="item.parsed.name">{{item.parsed.name}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.parsed.lot_number}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono bg-red-50/30 dark:bg-red-900/10">{{item.raw['Ngày nhận (Gốc)']}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-900/10">
                                         {{item.parsed.received_date ? (item.parsed.received_date | date:'dd/MM/yyyy') : '---'}}
                                     </td>
-                                    <td class="p-2 border border-slate-200 font-mono">
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">
                                         {{item.parsed.expiry_date ? (item.parsed.expiry_date | date:'dd/MM/yyyy') : '---'}}
                                     </td>
                                 </tr>
@@ -563,13 +562,13 @@ import { Unsubscribe } from 'firebase/firestore';
                         </tbody>
                     </table>
                     @if(importPreviewData().length > 10) {
-                        <p class="text-center text-xs text-slate-400 mt-2 italic">... và {{importPreviewData().length - 10}} dòng khác.</p>
+                        <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-2 italic">... và {{importPreviewData().length - 10}} dòng khác.</p>
                     }
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                    <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="confirmImport()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
+                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
+                    <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                    <button (click)="confirmImport()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                         @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
                         @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
                     </button>
@@ -581,24 +580,24 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
       @if (importUsageLogPreviewData().length > 0) {
          <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
                 
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                     <div>
-                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-book-open text-teal-600"></i> Xác nhận Import Nhật ký
+                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-teal-600 dark:text-teal-500"></i> Xác nhận Import Nhật ký
                         </h3>
-                        <p class="text-xs text-slate-500 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
                     </div>
-                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-auto p-6 bg-white">
-                    <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex items-start gap-3">
-                        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500"></i>
+                <div class="flex-1 overflow-auto p-6 bg-white dark:bg-slate-900">
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-500 p-4 rounded-xl text-sm flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500 dark:text-amber-400"></i>
                         <div>
                             <strong>Lưu ý quan trọng:</strong>
-                            <ul class="list-disc pl-5 mt-1 space-y-1 text-amber-700/80">
+                            <ul class="list-disc pl-5 mt-1 space-y-1 text-amber-700/80 dark:text-amber-400/80">
                                 <li>Hệ thống sẽ tự động tìm kiếm chất chuẩn dựa trên <strong>Số nhận diện</strong> hoặc <strong>Tên + Số lô</strong>.</li>
                                 <li>Nếu nhật ký (cùng ngày, người pha, lượng dùng) đã tồn tại, dòng đó sẽ bị bỏ qua (trùng lặp).</li>
                                 <li>Lượng dùng sẽ được tự động trừ vào tồn kho hiện tại của chất chuẩn.</li>
@@ -608,40 +607,40 @@ import { Unsubscribe } from 'firebase/firestore';
 
                     <table class="w-full text-sm text-left mt-4">
                         <thead>
-                            <tr class="text-xs text-slate-500 uppercase bg-slate-100">
-                                <th class="p-2 border border-slate-200 w-10 text-center">STT</th>
-                                <th class="p-2 border border-slate-200">Chất chuẩn (Excel)</th>
-                                <th class="p-2 border border-slate-200">Ngày pha</th>
-                                <th class="p-2 border border-slate-200">Người pha</th>
-                                <th class="p-2 border border-slate-200 text-right">Lượng dùng</th>
-                                <th class="p-2 border border-slate-200">Trạng thái</th>
+                            <tr class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-800">
+                                <th class="p-2 border border-slate-200 dark:border-slate-700 w-10 text-center">STT</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Chất chuẩn (Excel)</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Ngày pha</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Người pha</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700 text-right">Lượng dùng</th>
+                                <th class="p-2 border border-slate-200 dark:border-slate-700">Trạng thái</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="text-slate-700 dark:text-slate-300">
                             @for (item of importUsageLogPreviewData().slice(0, 15); track $index) {
-                                <tr class="hover:bg-slate-50" [class.bg-red-50]="!item.isValid" [class.bg-amber-50]="item.isDuplicate">
-                                    <td class="p-2 border border-slate-200 text-center text-slate-400">{{$index + 1}}</td>
-                                    <td class="p-2 border border-slate-200">
-                                        <div class="font-bold text-slate-700 truncate max-w-[200px]" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
-                                        <div class="text-xs text-slate-500 font-mono">Lô: {{item.raw['Lô']}}</div>
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50" [ngClass]="{'bg-red-50 dark:bg-red-900/10': !item.isValid, 'bg-amber-50 dark:bg-amber-900/10': item.isDuplicate}">
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 text-center text-slate-400 dark:text-slate-500">{{$index + 1}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700">
+                                        <div class="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[200px]" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">Lô: {{item.raw['Lô']}}</div>
                                         @if(item.standard) {
-                                            <div class="text-[10px] text-emerald-600 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
+                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
                                         }
                                     </td>
-                                    <td class="p-2 border border-slate-200 font-mono">{{item.raw['Ngày']}} <br> <span class="text-xs text-slate-400">{{item.log.date | date:'dd/MM/yyyy'}}</span></td>
-                                    <td class="p-2 border border-slate-200">{{item.raw['Người']}}</td>
-                                    <td class="p-2 border border-slate-200 text-right font-mono font-bold">
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.raw['Ngày']}} <br> <span class="text-xs text-slate-400 dark:text-slate-500">{{item.log.date | date:'dd/MM/yyyy'}}</span></td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700">{{item.raw['Người']}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 text-right font-mono font-bold">
                                         {{item.raw['Lượng']}}
-                                        @if(item.standard) { <span class="text-xs font-normal text-slate-500">{{item.standard.unit}}</span> }
+                                        @if(item.standard) { <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{item.standard.unit}}</span> }
                                     </td>
-                                    <td class="p-2 border border-slate-200">
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700">
                                         @if(item.isValid && !item.isDuplicate) {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold"><i class="fa-solid fa-check"></i> Hợp lệ</span>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded text-xs font-bold"><i class="fa-solid fa-check"></i> Hợp lệ</span>
                                         } @else if (item.isDuplicate) {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold" title="Nhật ký này đã có trong hệ thống"><i class="fa-solid fa-copy"></i> Trùng lặp</span>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-bold" title="Nhật ký này đã có trong hệ thống"><i class="fa-solid fa-copy"></i> Trùng lặp</span>
                                         } @else {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold" [title]="item.errorMessage"><i class="fa-solid fa-xmark"></i> Lỗi</span>
-                                            <div class="text-[10px] text-red-500 mt-1">{{item.errorMessage}}</div>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-bold" [title]="item.errorMessage"><i class="fa-solid fa-xmark"></i> Lỗi</span>
+                                            <div class="text-[10px] text-red-500 dark:text-red-400 mt-1">{{item.errorMessage}}</div>
                                         }
                                     </td>
                                 </tr>
@@ -649,20 +648,20 @@ import { Unsubscribe } from 'firebase/firestore';
                         </tbody>
                     </table>
                     @if(importUsageLogPreviewData().length > 15) {
-                        <p class="text-center text-xs text-slate-400 mt-2 italic">... và {{importUsageLogPreviewData().length - 15}} dòng khác.</p>
+                        <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-2 italic">... và {{importUsageLogPreviewData().length - 15}} dòng khác.</p>
                     }
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                    <div class="text-sm font-bold text-slate-600">
+                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
+                    <div class="text-sm font-bold text-slate-600 dark:text-slate-400">
                         Tổng: {{importUsageLogPreviewData().length}} | 
-                        <span class="text-emerald-600">Hợp lệ: {{validUsageLogsCount()}}</span> | 
-                        <span class="text-amber-600">Trùng: {{duplicateUsageLogsCount()}}</span> | 
-                        <span class="text-red-500">Lỗi: {{errorUsageLogsCount()}}</span>
+                        <span class="text-emerald-600 dark:text-emerald-400">Hợp lệ: {{validUsageLogsCount()}}</span> | 
+                        <span class="text-amber-600 dark:text-amber-400">Trùng: {{duplicateUsageLogsCount()}}</span> | 
+                        <span class="text-red-500 dark:text-red-400">Lỗi: {{errorUsageLogsCount()}}</span>
                     </div>
                     <div class="flex gap-3">
-                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                        <button (click)="confirmUsageLogImport()" [disabled]="isImporting() || validUsageLogsCount() === 0" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 flex items-center gap-2">
+                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
+                        <button (click)="confirmUsageLogImport()" [disabled]="isImporting() || validUsageLogsCount() === 0" class="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
                             @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
                             @else { <i class="fa-solid fa-check"></i> Import Hợp lệ }
                         </button>
@@ -675,75 +674,41 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- Weigh, History, COA Preview Modals... (No changes needed here) -->
       @if (selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
-                <h3 class="font-black text-xl text-slate-800 mb-1">Cân chuẩn</h3>
-                <p class="text-sm text-slate-500 mb-6">{{selectedStd()?.name}}</p>
+            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500 dark:bg-indigo-600"></div>
+                <h3 class="font-black text-xl text-slate-800 dark:text-slate-200 mb-1">Cân chuẩn</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">{{selectedStd()?.name}}</p>
                 
                 <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex flex-col justify-center">
-                        <span class="text-[10px] font-bold text-indigo-800 uppercase mb-1">Tồn kho hiện tại</span>
-                        <span class="font-mono font-black text-lg text-indigo-600">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3 flex flex-col justify-center">
+                        <span class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-1">Tồn kho hiện tại</span>
+                        <span class="font-mono font-black text-lg text-indigo-600 dark:text-indigo-400">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
                     </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase mb-1">Độ tinh khiết (Purity)</span>
-                        <span class="font-mono font-black text-lg text-slate-700">{{selectedStd()?.purity || 'N/A'}}</span>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex flex-col justify-center">
+                        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Độ tinh khiết (Purity)</span>
+                        <span class="font-mono font-black text-lg text-slate-700 dark:text-slate-300">{{selectedStd()?.purity || 'N/A'}}</span>
                     </div>
                 </div>
 
                 <div class="space-y-4">
-                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
                     <div class="grid grid-cols-3 gap-2">
-                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 rounded-xl p-3 font-black text-2xl text-indigo-600 outline-none focus:border-indigo-500 text-center" placeholder="0.00" autofocus></div>
-                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 bg-slate-50 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
+                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 dark:border-indigo-800/50 bg-white dark:bg-slate-800 rounded-xl p-3 font-black text-2xl text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-center" placeholder="0.00" autofocus></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
                     </div>
-                    @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
+                    @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-800/50 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
                     @if(isWeighAmountInvalid()) {
-                        <div class="text-[10px] text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 flex items-center gap-2">
+                        <div class="text-[10px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-800/50 flex items-center gap-2">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                             <span>Lượng cân vượt quá tồn kho hiện tại!</span>
                         </div>
                     }
                 </div>
                 <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isWeighAmountInvalid() || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition disabled:opacity-50">
+                    <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isWeighAmountInvalid() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xác nhận }
-                    </button>
-                </div>
-            </div>
-         </div>
-      }
-      
-      @if (showPrintModal()) {
-         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-bounce-in relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800"></div>
-                <h3 class="font-black text-xl text-slate-800 mb-1">In Nhãn Chuẩn</h3>
-                <p class="text-sm text-slate-500 mb-6">{{selectedStd()?.name}}</p>
-                
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Chiều rộng (mm)</label>
-                            <input type="number" [(ngModel)]="printWidth" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Chiều cao (mm)</label>
-                            <input type="number" [(ngModel)]="printHeight" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cỡ chữ (pt)</label>
-                        <input type="number" [(ngModel)]="printFontSize" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-500">
-                    </div>
-                </div>
-                
-                <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="showPrintModal.set(false)" class="px-5 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="printLabel()" class="px-8 py-3 bg-slate-800 text-white font-bold text-sm rounded-xl hover:bg-slate-900 shadow-lg shadow-slate-200 transition">
-                        <i class="fa-solid fa-print mr-2"></i> In ngay
                     </button>
                 </div>
             </div>
@@ -752,15 +717,15 @@ import { Unsubscribe } from 'firebase/firestore';
 
       @if (historyStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh]">
-               <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
-                  <div><h3 class="font-bold text-slate-800 text-lg">Lịch sử sử dụng</h3><p class="text-xs text-slate-500 font-mono">{{historyStd()?.name}}</p></div>
-                  <button (click)="historyStd.set(null)" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-times text-xl"></i></button>
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh]">
+               <div class="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
+                  <div><h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg">Lịch sử sử dụng</h3><p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{historyStd()?.name}}</p></div>
+                  <button (click)="historyStd.set(null)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition"><i class="fa-solid fa-times text-xl"></i></button>
                </div>
                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                  <table class="w-full text-sm text-left"><thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase sticky top-0 border-b border-slate-100 shadow-sm"><tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()){<th class="px-6 py-4 text-center w-24">Tác vụ</th>}</tr></thead><tbody class="divide-y divide-slate-50">
-                        @if (loadingHistory()) { <tr><td colspan="4" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr> } @else {
-                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 transition group"> <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 text-xs">{{ log.user }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" [disabled]="isProcessing()" class="text-red-500 hover:text-red-700 p-2 disabled:opacity-50"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Chưa có dữ liệu.</td></tr> }
+                  <table class="w-full text-sm text-left"><thead class="bg-slate-50 dark:bg-slate-800/50 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase sticky top-0 border-b border-slate-100 dark:border-slate-800 shadow-sm"><tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()){<th class="px-6 py-4 text-center w-24">Tác vụ</th>}</tr></thead><tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+                        @if (loadingHistory()) { <tr><td colspan="4" class="p-8 text-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr> } @else {
+                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group"> <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 dark:text-slate-300 text-xs">{{ log.user }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500 dark:text-slate-400">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" [disabled]="isProcessing()" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 disabled:opacity-50"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="4" class="p-8 text-center text-slate-400 dark:text-slate-500 italic">Chưa có dữ liệu.</td></tr> }
                         }
                   </tbody></table>
                </div>
@@ -771,9 +736,9 @@ import { Unsubscribe } from 'firebase/firestore';
       <!-- COA PREVIEW -->
       @if (previewUrl() || previewImgUrl()) {
           <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in" (click)="closeCoaPreview()">
-              <div class="relative w-full max-w-7xl h-[85vh] bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
-                  <div class="bg-slate-900 text-white p-3 flex justify-between items-center shrink-0"><span class="text-sm font-bold pl-2"><i class="fa-solid fa-file-pdf mr-2"></i> Preview Certificate of Analysis</span><div class="flex gap-3"><a [href]="previewRawUrl()" target="_blank" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition">Mở Tab mới</a><button (click)="closeCoaPreview()" class="text-white hover:text-red-400 transition"><i class="fa-solid fa-times text-lg"></i></button></div></div>
-                  <div class="flex-1 bg-slate-100 relative">
+              <div class="relative w-full max-w-7xl h-[85vh] bg-white dark:bg-slate-900 rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+                  <div class="bg-slate-900 dark:bg-slate-950 text-white p-3 flex justify-between items-center shrink-0"><span class="text-sm font-bold pl-2"><i class="fa-solid fa-file-pdf mr-2"></i> Preview Certificate of Analysis</span><div class="flex gap-3"><a [href]="previewRawUrl()" target="_blank" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition">Mở Tab mới</a><button (click)="closeCoaPreview()" class="text-white hover:text-red-400 transition"><i class="fa-solid fa-times text-lg"></i></button></div></div>
+                  <div class="flex-1 bg-slate-100 dark:bg-slate-800 relative">
                       @if(previewType() === 'image') { <div class="w-full h-full flex items-center justify-center overflow-auto"><img [src]="previewImgUrl()" class="max-w-full max-h-full object-contain shadow-lg"></div> } 
                       @else { <iframe [src]="previewUrl()" class="w-full h-full border-none"></iframe> }
                   </div>
@@ -791,6 +756,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
+  router = inject(Router);
   private fb: FormBuilder = inject(FormBuilder);
   Math = Math;
   
@@ -955,11 +921,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   
   showModal = signal(false);
   isEditing = signal(false);
-  
-  showPrintModal = signal(false);
-  printWidth = signal(62);
-  printHeight = signal(25);
-  printFontSize = signal(10);
   
   previewUrl = signal<SafeResourceUrl | null>(null);
   previewImgUrl = signal<string>('');
@@ -1326,69 +1287,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
   
   openPrintModal(std: ReferenceStandard) {
-      this.selectedStd.set(std);
-      this.showPrintModal.set(true);
-  }
-
-  printLabel() {
-      const std = this.selectedStd();
-      if (!std) return;
-      
-      const width = this.printWidth();
-      const height = this.printHeight();
-      const fontSize = this.printFontSize();
-      
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-          this.toast.show('Vui lòng cho phép popup để in nhãn', 'error');
-          return;
-      }
-      
-      const html = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>Print Label</title>
-              <style>
-                  @page { size: ${width}mm ${height}mm; margin: 0; }
-                  body { 
-                      margin: 0; 
-                      padding: 2mm; 
-                      width: ${width}mm; 
-                      height: ${height}mm; 
-                      box-sizing: border-box;
-                      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                      display: flex;
-                      flex-direction: column;
-                      justify-content: center;
-                  }
-                  .label-content {
-                      font-size: ${fontSize}pt;
-                      line-height: 1.2;
-                  }
-                  .title { font-weight: bold; font-size: ${fontSize + 2}pt; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                  .row { display: flex; justify-content: space-between; margin-bottom: 1px; }
-                  .bold { font-weight: bold; }
-              </style>
-          </head>
-          <body>
-              <div class="label-content">
-                  <div class="title">${std.name}</div>
-                  <div class="row"><span>Lot: <span class="bold">${std.lot_number || 'N/A'}</span></span> <span>Purity: <span class="bold">${std.purity || 'N/A'}</span></span></div>
-                  <div class="row"><span>Opened: <span class="bold">${std.date_opened ? new Date(std.date_opened).toLocaleDateString('vi-VN') : '___/___/___'}</span></span></div>
-                  <div class="row"><span>Expiry: <span class="bold">${std.expiry_date ? new Date(std.expiry_date).toLocaleDateString('vi-VN') : 'N/A'}</span></span></div>
-              </div>
-              <script>
-                  window.onload = () => { window.print(); window.close(); }
-              </script>
-          </body>
-          </html>
-      `;
-      
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      this.showPrintModal.set(false);
+      this.router.navigate(['/labels'], { queryParams: { data: std.id } });
   }
 
   // --- HARDENED: Confirm Weigh ---
