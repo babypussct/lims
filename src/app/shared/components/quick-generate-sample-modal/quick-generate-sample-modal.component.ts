@@ -40,8 +40,14 @@ import { FormsModule } from '@angular/forms';
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Hậu tố (Suffix)</label>
-                    <input type="text" [ngModel]="suffix()" (ngModelChange)="suffix.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition" placeholder="VD: 24">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hậu tố (Suffix)</label>
+                        <label class="flex items-center gap-1.5 cursor-pointer group">
+                            <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 transition cursor-pointer">
+                            <span class="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 transition">Tự động lấy ngày (dd-1)</span>
+                        </label>
+                    </div>
+                    <input type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100" placeholder="VD: 24">
                 </div>
                 
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mt-4">
@@ -70,6 +76,17 @@ export class QuickGenerateSampleModalComponent {
   fromStr = signal('');
   toStr = signal('');
   suffix = signal('');
+  autoSuffix = signal(true);
+
+  get currentDaySuffix(): string {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return String(d.getDate()).padStart(2, '0');
+  }
+
+  get effectiveSuffix(): string {
+      return this.autoSuffix() ? this.currentDaySuffix : this.suffix();
+  }
 
   canGenerate(): boolean {
       const from = parseInt(this.fromStr(), 10);
@@ -93,10 +110,11 @@ export class QuickGenerateSampleModalComponent {
       
       const results: string[] = [];
       const end = !isNaN(to) ? to : from;
+      const currentSuffix = this.effectiveSuffix;
       
       for (let i = from; i <= end; i++) {
           const numStr = i.toString().padStart(padding, '0');
-          results.push(`${this.prefix()}${numStr}${this.suffix()}`);
+          results.push(`${this.prefix()}${numStr}${currentSuffix}`);
       }
       
       return results;
