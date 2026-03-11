@@ -516,7 +516,7 @@ interface LabelPage {
                                          [style.height.mm]="actualBrotherPageHeight()"
                                          [class.border-b]="isBrotherFixed()"
                                          [class.border-dashed]="isBrotherFixed()"
-                                         [class.border-slate-300]="isBrotherFixed()">
+                                         [class.border-slate-600]="isBrotherFixed()">
                                         
                                         <div class="w-full h-full grid"
                                              [style.grid-template-columns]="'repeat(' + brotherCols() + ', 1fr)'"
@@ -527,7 +527,7 @@ interface LabelPage {
                                                      [class.border-r]="brotherShowCutLines() && ($index % brotherCols() !== brotherCols() - 1)"
                                                      [class.border-b]="brotherShowCutLines() && (Math.floor($index / brotherCols()) !== (page.length / brotherCols()) - 1)"
                                                      [class.border-dashed]="brotherShowCutLines()"
-                                                     [class.border-slate-300]="brotherShowCutLines()">
+                                                     [class.border-slate-600]="brotherShowCutLines()">
                                                     <div class="flex flex-col overflow-hidden box-border"
                                                          [style.align-items]="alignX()"
                                                          [style.justify-content]="alignY()"
@@ -586,7 +586,7 @@ interface LabelPage {
                                     <div class="relative flex flex-col overflow-hidden group cursor-default transition-colors w-full h-full box-border"
                                          [class.border]="printMode() === 'tomy_a4' || (printMode() === 'plain_a4' && showCutLines())"
                                          [class.border-slate-200]="printMode() === 'tomy_a4'"
-                                         [class.border-slate-300]="printMode() === 'plain_a4' && showCutLines()"
+                                         [class.border-slate-600]="printMode() === 'plain_a4' && showCutLines()"
                                          [class.border-dashed]="printMode() === 'plain_a4' && showCutLines()"
                                          [class.bg-slate-50]="cell.isEmpty"
                                          [class.opacity-40]="cell.isEmpty">
@@ -599,7 +599,7 @@ interface LabelPage {
                                         @for (label of cell.subLabels; track $index; let last = $last) {
                                             <div class="flex-1 flex flex-col items-center justify-center w-full relative" 
                                                  [class.border-b]="!last" 
-                                                 style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #cbd5e1; container-type: size;">
+                                                 style="border-bottom-style: dashed; border-bottom-width: 1px; border-bottom-color: #475569; container-type: size;">
                                                 <div class="flex flex-col overflow-hidden box-border"
                                                      [style.align-items]="alignX()"
                                                      [style.justify-content]="alignY()"
@@ -1258,8 +1258,8 @@ export class LabelPrintComponent implements AfterViewInit {
         }
         ${showCut ? `
         .cell {
-            border-right: 1px dashed #cbd5e1;
-            border-bottom: 1px dashed #cbd5e1;
+            border-right: 1px dashed #475569;
+            border-bottom: 1px dashed #475569;
         }
         .cell:nth-child(${cols}n) { border-right: none; }
         .cell:nth-last-child(-n+${cols}) { border-bottom: none; }
@@ -1376,7 +1376,7 @@ export class LabelPrintComponent implements AfterViewInit {
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            ${showCut ? 'border: 1px dashed #cbd5e1;' : ''}
+            ${showCut ? 'border: 1px dashed #475569;' : ''}
         }
         .sub-label {
             flex: 1;
@@ -1391,7 +1391,7 @@ export class LabelPrintComponent implements AfterViewInit {
             height: 100%;
         }
         .sub-label:not(:last-child) {
-            border-bottom: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #475569;
         }
         .label-content {
             display: flex;
