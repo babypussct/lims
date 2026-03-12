@@ -71,22 +71,22 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
   standalone: true,
   imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent],
   template: `
-    <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800">
+    <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800 dark:text-slate-200">
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
             <div>
-                <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
+                <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800 dark:text-slate-200">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg dark:shadow-teal-900/20">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
                     Chạy Mẻ Thông Minh (Smart Batch)
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Tự động ghép SOP theo chỉ tiêu & tối ưu hóa chất.</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 ml-1">Tự động ghép SOP theo chỉ tiêu & tối ưu hóa chất.</p>
             </div>
             
             <div class="flex gap-2">
                 @if(step() === 2) {
-                    <button (click)="reset()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition">
+                    <button (click)="reset()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Quay lại
                     </button>
                     <!-- Approve button moved to Coverage Bar -->
@@ -103,33 +103,33 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                         
                         @for (block of blocks(); track block.id; let i = $index) {
-                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up transition-all hover:shadow-md group">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden animate-slide-up transition-all hover:shadow-md group">
                                 <!-- Block Header -->
-                                <div class="bg-slate-50/50 p-3 flex justify-between items-center border-b border-slate-100 cursor-pointer" 
+                                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 cursor-pointer" 
                                      (click)="toggleBlockCollapse(i)">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">{{i + 1}}</div>
+                                        <div class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs font-bold">{{i + 1}}</div>
                                         @if(isEditingName() === block.id) {
                                             <input [ngModel]="block.name" (ngModelChange)="updateBlockName(i, $event)" 
                                                    (blur)="isEditingName.set(null)" (keyup.enter)="isEditingName.set(null)" (click)="$event.stopPropagation()"
-                                                   class="font-bold text-sm bg-white border border-slate-300 rounded px-2 py-1 outline-none focus:border-teal-500" autofocus>
+                                                   class="font-bold text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:border-teal-500 dark:focus:border-teal-400 text-slate-800 dark:text-slate-200" autofocus>
                                         } @else {
-                                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2" (dblclick)="isEditingName.set(block.id)">
-                                                {{block.name}} <i class="fa-solid fa-pen text-[10px] text-slate-300 opacity-0 group-hover:opacity-100"></i>
+                                            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2" (dblclick)="isEditingName.set(block.id)">
+                                                {{block.name}} <i class="fa-solid fa-pen text-[10px] text-slate-300 dark:text-slate-500 opacity-0 group-hover:opacity-100"></i>
                                             </h3>
                                         }
-                                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">
+                                        <span class="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
                                             {{ countSamples(block.rawSamples) }} mẫu • {{ block.selectedTargets.size }} chỉ tiêu
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button (click)="duplicateBlock(i); $event.stopPropagation()" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition" title="Nhân bản">
+                                        <button (click)="duplicateBlock(i); $event.stopPropagation()" class="w-8 h-8 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition" title="Nhân bản">
                                             <i class="fa-regular fa-clone"></i>
                                         </button>
-                                        <button (click)="removeBlock(i); $event.stopPropagation()" class="w-8 h-8 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition" title="Xóa">
+                                        <button (click)="removeBlock(i); $event.stopPropagation()" class="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition" title="Xóa">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
-                                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-300 ml-2" [class.rotate-180]="block.isCollapsed"></i>
+                                        <i class="fa-solid fa-chevron-down text-slate-400 dark:text-slate-500 text-xs transition-transform duration-300 ml-2" [class.rotate-180]="block.isCollapsed"></i>
                                     </div>
                                 </div>
 
@@ -139,52 +139,52 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                         <!-- Sample Input -->
                                         <div>
                                             <div class="flex justify-between items-center mb-1">
-                                                <label class="text-[10px] font-bold text-slate-400 uppercase block">Danh sách mẫu</label>
-                                                <button (click)="openQuickGenerateModal(i)" class="text-[10px] text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition font-bold flex items-center gap-1">
+                                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Danh sách mẫu</label>
+                                                <button (click)="openQuickGenerateModal(i)" class="text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded transition font-bold flex items-center gap-1">
                                                     <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo nhanh
                                                 </button>
                                             </div>
                                             <textarea [ngModel]="block.rawSamples" (ngModelChange)="updateBlockSamples(i, $event)"
-                                                      class="w-full h-40 p-3 text-sm font-mono border border-slate-200 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none resize-none bg-slate-50 focus:bg-white transition"
+                                                      class="w-full h-40 p-3 text-sm font-mono border border-slate-200 dark:border-slate-700 rounded-xl focus:border-teal-500 dark:focus:border-teal-400 focus:ring-1 focus:ring-teal-200 dark:focus:ring-teal-900/30 outline-none resize-none bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-900 transition text-slate-800 dark:text-slate-200"
                                                       placeholder="A01&#10;A02&#10;..."></textarea>
                                         </div>
 
                                         <!-- Target Selector -->
                                         <div class="flex flex-col h-40">
-                                            <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm</label>
+                                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm</label>
                                             <div class="flex gap-2 mb-2">
                                                 <div class="relative flex-1">
-                                                    <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                                                    <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
                                                     <input [ngModel]="block.targetSearch" (ngModelChange)="updateBlockSearch(i, $event)"
-                                                           class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500 transition"
+                                                           class="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-teal-500 dark:focus:border-teal-400 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                                                            placeholder="Tìm chỉ tiêu...">
                                                 </div>
-                                                <button (click)="openGroupModal(i)" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition flex items-center gap-1 text-[10px] font-bold" title="Chọn từ Bộ chỉ tiêu">
+                                                <button (click)="openGroupModal(i)" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-lg border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition flex items-center gap-1 text-[10px] font-bold" title="Chọn từ Bộ chỉ tiêu">
                                                     <i class="fa-solid fa-layer-group"></i> Groups
                                                 </button>
-                                                <button (click)="selectAllTargets(i)" class="px-2 py-1.5 bg-teal-50 text-teal-700 rounded-lg border border-teal-100 hover:bg-teal-100 transition" title="Chọn tất cả">
+                                                <button (click)="selectAllTargets(i)" class="px-2 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 rounded-lg border border-teal-100 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition" title="Chọn tất cả">
                                                     <i class="fa-solid fa-check-double text-xs"></i>
                                                 </button>
-                                                <button (click)="deselectAllTargets(i)" class="px-2 py-1.5 bg-slate-50 text-slate-600 rounded-lg border border-slate-200 hover:bg-slate-100 transition" title="Bỏ chọn tất cả">
+                                                <button (click)="deselectAllTargets(i)" class="px-2 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Bỏ chọn tất cả">
                                                     <i class="fa-solid fa-xmark text-xs"></i>
                                                 </button>
                                             </div>
                                             
-                                            <div class="flex-1 border border-slate-200 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white">
+                                            <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white dark:bg-slate-900">
                                                 @for (t of getFilteredTargets(block); track t.uniqueKey) {
-                                                    <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer group"
-                                                           [class.bg-teal-50]="block.selectedTargets.has(t.uniqueKey)">
+                                                    <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer group"
+                                                           [ngClass]="{'bg-teal-50 dark:bg-teal-900/20': block.selectedTargets.has(t.uniqueKey)}">
                                                         <input type="checkbox" 
                                                                [checked]="block.selectedTargets.has(t.uniqueKey)" 
                                                                (change)="toggleBlockTarget(i, t.uniqueKey)" 
                                                                class="w-3.5 h-3.5 accent-teal-600 rounded cursor-pointer">
                                                         <div class="flex-1 min-w-0">
-                                                            <div class="text-xs font-bold text-slate-700 truncate group-hover:text-teal-700">{{t.name}}</div>
+                                                            <div class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate group-hover:text-teal-700 dark:group-hover:text-teal-400">{{t.name}}</div>
                                                         </div>
                                                     </label>
                                                 }
                                                 @if(getFilteredTargets(block).length === 0) {
-                                                    <div class="text-center py-4 text-slate-400 text-[10px] italic">Không tìm thấy.</div>
+                                                    <div class="text-center py-4 text-slate-400 dark:text-slate-500 text-[10px] italic">Không tìm thấy.</div>
                                                 }
                                             </div>
                                         </div>
@@ -193,30 +193,30 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                             </div>
                         }
 
-                        <button (click)="addBlock()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 font-bold text-sm hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50 transition flex items-center justify-center gap-2">
+                        <button (click)="addBlock()" class="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl text-slate-500 dark:text-slate-400 font-bold text-sm hover:border-teal-400 dark:hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-plus-circle"></i> Thêm Nhóm Mẫu Mới
                         </button>
                     </div>
                 </div>
 
                 <!-- Right: Summary Dashboard -->
-                <div class="w-full lg:w-80 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm h-fit sticky top-0">
-                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div class="w-full lg:w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm h-fit sticky top-0">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-chart-pie text-teal-500"></i> Cấu hình Phân tích
                     </h4>
                     
                     <div class="space-y-4 mb-6">
-                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <span class="text-xs text-slate-500 font-bold">Tổng mẫu (Unique)</span>
-                            <span class="text-lg font-black text-slate-800">{{ totalUniqueSamples() }}</span>
+                        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-bold">Tổng mẫu (Unique)</span>
+                            <span class="text-lg font-black text-slate-800 dark:text-slate-200">{{ totalUniqueSamples() }}</span>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <span class="text-xs text-slate-500 font-bold">Tổng chỉ tiêu</span>
-                            <span class="text-lg font-black text-slate-800">{{ totalUniqueTargets() }}</span>
+                        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-bold">Tổng chỉ tiêu</span>
+                            <span class="text-lg font-black text-slate-800 dark:text-slate-200">{{ totalUniqueTargets() }}</span>
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-slate-100">
+                    <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
                         <button (click)="analyzePlan()" [disabled]="totalUniqueSamples() === 0 || totalUniqueTargets() === 0 || isProcessing()"
                                 class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
@@ -232,22 +232,22 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                 <div class="w-full lg:w-2/3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 animate-fade-in pb-10">
                     
                     <div class="relative w-full shadow-sm">
-                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
                         <input [ngModel]="sampleSearchTerm()" (ngModelChange)="sampleSearchTerm.set($event)"
-                               class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white"
+                               class="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition bg-white dark:bg-slate-800"
                                placeholder="Tìm vị trí mẫu (VD: A05)...">
                     </div>
 
                     @if (unmappedTasks().length > 0) {
-                        <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
-                            <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
+                            <i class="fa-solid fa-circle-exclamation text-red-500 dark:text-red-400 mt-0.5"></i>
                             <div>
-                                <h4 class="text-sm font-bold text-red-800 mb-1">Cảnh báo: Không tìm thấy Quy trình (SOP)</h4>
-                                <div class="text-xs text-red-600 mb-2">Các yêu cầu sau không thể thực hiện do không có SOP phù hợp trong hệ thống:</div>
+                                <h4 class="text-sm font-bold text-red-800 dark:text-red-300 mb-1">Cảnh báo: Không tìm thấy Quy trình (SOP)</h4>
+                                <div class="text-xs text-red-600 dark:text-red-400 mb-2">Các yêu cầu sau không thể thực hiện do không có SOP phù hợp trong hệ thống:</div>
                                 <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
                                     @for(task of unmappedTasks(); track task.sample + task.targetId) {
-                                        <span class="bg-white px-2 py-1 rounded text-[10px] font-bold text-red-600 border border-red-100 flex items-center gap-1">
-                                            {{task.sample}} <i class="fa-solid fa-arrow-right text-[8px] text-red-300"></i> {{task.targetName}}
+                                        <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 flex items-center gap-1">
+                                            {{task.sample}} <i class="fa-solid fa-arrow-right text-[8px] text-red-300 dark:text-red-500/50"></i> {{task.targetName}}
                                         </span>
                                     }
                                 </div>
@@ -256,7 +256,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     }
 
                     @for (batch of batches(); track batch.id; let batchIdx = $index) {
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 group"
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden transition-all duration-300 group"
                              [class.border-l-4]="true"
                              [class.border-l-emerald-500]="batch.status === 'ready' && !batch.name.includes('(Tách)')"
                              [class.border-l-red-500]="batch.status === 'missing_stock'"
@@ -266,19 +266,19 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                              [class.opacity-40]="sampleSearchTerm() && !matchesSearch(batch)">
 
                             <!-- Header Section -->
-                            <div class="p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition" (click)="toggleBatchDetails(batchIdx)">
+                            <div class="p-4 border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition" (click)="toggleBatchDetails(batchIdx)">
                                 <!-- Top Row: Category & Status Badges -->
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{batch.sop.category}}</span>
+                                        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600">{{batch.sop.category}}</span>
                                         
                                         @if(batch.status === 'missing_stock') {
-                                            <span class="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                            <span class="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded font-bold border border-red-200 dark:border-red-800 flex items-center gap-1">
                                                 <i class="fa-solid fa-triangle-exclamation"></i> Thiếu hàng
                                             </span>
                                         }
                                         @if(batch.name.includes('(Tách)')) {
-                                             <span class="text-[9px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-bold border border-yellow-200 animate-pulse flex items-center gap-1">
+                                             <span class="text-[9px] bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded font-bold border border-yellow-200 dark:border-yellow-800 animate-pulse flex items-center gap-1">
                                                 <i class="fa-solid fa-star text-[8px]"></i> Mới tách
                                             </span>
                                         }
@@ -286,10 +286,10 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                     
                                     <!-- Action Buttons -->
                                     <div class="flex gap-2">
-                                         <button (click)="openSplitModal(batchIdx); $event.stopPropagation()" class="text-xs px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
+                                         <button (click)="openSplitModal(batchIdx); $event.stopPropagation()" class="text-xs px-2 py-1.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-500 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
                                             <i class="fa-solid fa-shuffle"></i> <span class="hidden sm:inline">Tách</span>
                                         </button>
-                                        <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 transition" title="Mở rộng / Thu gọn">
+                                        <button (click)="toggleBatchDetails(batchIdx); $event.stopPropagation()" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition" title="Mở rộng / Thu gọn">
                                             <i class="fa-solid fa-chevron-down transition-transform duration-300" [class.rotate-180]="batch.isExpanded"></i>
                                         </button>
                                     </div>
@@ -297,20 +297,20 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
 
                                 <!-- Main Title & Sample Range -->
                                 <div class="mb-3">
-                                    <h3 class="text-base font-bold text-slate-800 leading-tight mb-2">
-                                        {{batch.name}} <span class="text-slate-400 font-normal text-xs">({{batch.sop.name}})</span>
+                                    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">
+                                        {{batch.name}} <span class="text-slate-400 dark:text-slate-500 font-normal text-xs">({{batch.sop.name}})</span>
                                     </h3>
                                     
                                     <!-- Consolidated Sample Display -->
                                     <div class="flex items-center gap-2 group/tooltip relative w-fit max-w-full" (click)="$event.stopPropagation()">
-                                        <div class="bg-indigo-50 text-indigo-700 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 flex items-center gap-2 cursor-help shadow-sm truncate max-w-full">
-                                            <span class="bg-white px-1.5 rounded text-[10px] shadow-sm text-slate-500 border border-slate-100 shrink-0">{{batch.samples.size}} mẫu</span>
+                                        <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-800 flex items-center gap-2 cursor-help shadow-sm truncate max-w-full">
+                                            <span class="bg-white dark:bg-slate-800 px-1.5 rounded text-[10px] shadow-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 shrink-0">{{batch.samples.size}} mẫu</span>
                                             <span class="truncate">{{ formatSampleList(batch.samples) }}</span>
                                         </div>
                                         <!-- Hover Tooltip for full list -->
-                                        <div class="absolute left-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-3 rounded-xl shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition z-20 hidden group-hover/tooltip:block border border-slate-700">
-                                            <div class="font-bold border-b border-slate-600 pb-1 mb-1 text-slate-300 uppercase tracking-wider">Danh sách chi tiết</div>
-                                            <div class="font-mono leading-relaxed break-words text-slate-200">{{ getFullSampleString(batch.samples) }}</div>
+                                        <div class="absolute left-0 top-full mt-2 w-64 bg-slate-800 dark:bg-slate-700 text-white text-[10px] p-3 rounded-xl shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition z-20 hidden group-hover/tooltip:block border border-slate-700 dark:border-slate-600">
+                                            <div class="font-bold border-b border-slate-600 dark:border-slate-500 pb-1 mb-1 text-slate-300 dark:text-slate-200 uppercase tracking-wider">Danh sách chi tiết</div>
+                                            <div class="font-mono leading-relaxed break-words text-slate-200 dark:text-slate-100">{{ getFullSampleString(batch.samples) }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -318,36 +318,37 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 <!-- Tags (Targets) -->
                                 <div class="flex flex-wrap gap-1">
                                     @for(t of batch.targets; track t.id) {
-                                        <span class="px-1.5 py-0.5 bg-slate-50 text-slate-500 rounded text-[9px] border border-slate-200 font-bold">{{t.name}}</span>
+                                        <span class="px-1.5 py-0.5 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded text-[9px] border border-slate-200 dark:border-slate-600 font-bold">{{t.name}}</span>
                                     }
                                 </div>
                             </div>
 
-                            <!-- Controls (Gray Block - Always Visible) -->
-                            <div class="bg-slate-50 p-3 border-b border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <!-- DYNAMIC INPUTS -->
+                            @if (batch.isExpanded) {
+                                <!-- Controls (Gray Block - Only Visible when expanded) -->
+                                <div class="bg-slate-50 dark:bg-slate-800/50 p-3 border-b border-slate-100 dark:border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-3 animate-slide-down">
+                                    <!-- DYNAMIC INPUTS -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
                                     @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
                                         <div class="group">
-                                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
+                                            <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
                                             @switch (inp.type) {
                                                 @case ('select') {
                                                     <select [ngModel]="batch.inputValues[inp.var]" 
                                                             (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
-                                                            class="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 outline-none focus:border-teal-500 cursor-pointer h-8 shadow-sm">
+                                                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 dark:focus:border-teal-400 cursor-pointer h-8 shadow-sm">
                                                         @for (opt of inp.options; track opt.value) {
                                                             <option [value]="opt.value">{{opt.label}}</option>
                                                         }
                                                     </select>
                                                 }
                                                 @case ('checkbox') {
-                                                    <div class="flex items-center h-8 bg-white border border-slate-200 rounded-lg px-2">
+                                                    <div class="flex items-center h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2">
                                                         <label class="flex items-center gap-2 cursor-pointer w-full">
                                                             <input type="checkbox" 
                                                                    [ngModel]="batch.inputValues[inp.var]" 
                                                                    (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                                    class="w-4 h-4 accent-teal-600 rounded">
-                                                            <span class="text-xs font-bold text-slate-700">{{batch.inputValues[inp.var] ? 'Bật' : 'Tắt'}}</span>
+                                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{batch.inputValues[inp.var] ? 'Bật' : 'Tắt'}}</span>
                                                         </label>
                                                     </div>
                                                 }
@@ -357,9 +358,9 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                                [ngModel]="batch.inputValues[inp.var]" 
                                                                (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                                [step]="inp.step || 1"
-                                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-teal-500 transition h-8 shadow-sm">
+                                                               class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 text-center outline-none focus:border-teal-500 dark:focus:border-teal-400 transition h-8 shadow-sm">
                                                         @if(inp.unitLabel) {
-                                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold pointer-events-none">{{inp.unitLabel}}</span>
+                                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 dark:text-slate-500 font-bold pointer-events-none">{{inp.unitLabel}}</span>
                                                         }
                                                     </div>
                                                 }
@@ -369,48 +370,47 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 }
                                 <!-- Safety Margin -->
                                 <div>
-                                    <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hao hụt (%)</label>
+                                    <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hao hụt (%)</label>
                                     @if(batch.safetyMargin === -1) {
                                         <div (click)="setBatchMarginManual(batchIdx)" 
-                                             class="w-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 transition shadow-sm h-8">
+                                             class="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shadow-sm h-8">
                                             <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
                                         </div>
                                     } @else {
                                         <input type="number" 
                                                [ngModel]="batch.safetyMargin" 
                                                (ngModelChange)="updateBatchMargin(batchIdx, $event)"
-                                               class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 text-center outline-none focus:border-orange-500 transition h-8 shadow-sm">
+                                               class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 text-center outline-none focus:border-orange-500 dark:focus:border-orange-400 transition h-8 shadow-sm">
                                     }
                                 </div>
                             </div>
 
                             <!-- Resource Table (ACCORDION) -->
-                            @if (batch.isExpanded) {
-                                <div class="w-full bg-white animate-slide-down">
+                            <div class="w-full bg-white dark:bg-slate-800 animate-slide-down">
                                     <table class="w-full text-xs text-left border-collapse">
-                                        <thead class="bg-white text-slate-400 border-b border-slate-50">
+                                        <thead class="bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-b border-slate-50 dark:border-slate-700/50">
                                             <tr>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
                                                 <th class="px-5 py-2 w-20"></th> <!-- Action Column -->
                                             </tr>
                                         </thead>
-                                        <tbody class="divide-y divide-slate-50">
+                                        <tbody class="divide-y divide-slate-50 dark:divide-slate-700/50">
                                             @for(item of batch.resourceImpact; track item.name) {
                                                 <!-- Parent Item -->
-                                                <tr class="hover:bg-slate-50 transition group/row">
+                                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group/row">
                                                     <td class="px-5 py-2 align-middle">
-                                                        <div class="truncate max-w-[200px] font-medium text-slate-700 text-xs" [title]="item.displayName || item.name" [class.text-red-600]="item.isMissing">
+                                                        <div class="truncate max-w-[200px] font-medium text-slate-700 dark:text-slate-300 text-xs" [title]="item.displayName || item.name" [ngClass]="{'text-red-600 dark:text-red-400': item.isMissing}">
                                                             {{item.displayName || item.name}}
-                                                            @if(item.isComposite) { <span class="text-[9px] text-slate-400 italic font-normal ml-1">(Mix)</span> }
+                                                            @if(item.isComposite) { <span class="text-[9px] text-slate-400 dark:text-slate-500 italic font-normal ml-1">(Mix)</span> }
                                                         </div>
                                                     </td>
-                                                    <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 text-xs">
-                                                        {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.stockUnit}}</span>
+                                                    <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 dark:text-slate-400 text-xs">
+                                                        {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal">{{item.stockUnit}}</span>
                                                     </td>
                                                     <td class="px-5 py-2 text-right">
                                                         @if(item.isMissing && !item.isComposite) {
-                                                            <button (click)="openQuickImport(item)" class="text-[9px] bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-bold border border-red-100 flex items-center gap-1 transition ml-auto">
+                                                            <button (click)="openQuickImport(item)" class="text-[9px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-2 py-1 rounded font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto">
                                                                 <i class="fa-solid fa-bolt"></i> Bù kho
                                                             </button>
                                                         }
@@ -419,18 +419,18 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                 <!-- Sub Items -->
                                                 @if(item.isComposite) {
                                                     @for(sub of item.breakdown; track sub.name) {
-                                                        <tr class="bg-slate-50/30">
+                                                        <tr class="bg-slate-50/30 dark:bg-slate-800/30">
                                                             <td class="px-5 py-1 pl-8 align-middle">
-                                                                <div class="truncate max-w-[180px] text-[10px] text-slate-500 flex items-center gap-1.5" [class.text-red-500]="sub.isMissing">
-                                                                    <div class="w-1 h-1 rounded-full bg-slate-300"></div> {{sub.displayName || sub.name}}
+                                                                <div class="truncate max-w-[180px] text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
+                                                                    <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div> {{sub.displayName || sub.name}}
                                                                 </div>
                                                             </td>
-                                                            <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500">
+                                                            <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500 dark:text-slate-400">
                                                                 {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
                                                             </td>
                                                             <td class="px-5 py-1 text-right">
                                                                 @if(sub.isMissing) {
-                                                                    <button (click)="openQuickImport(sub)" class="text-[9px] bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-bold border border-red-100 flex items-center gap-1 transition ml-auto">
+                                                                    <button (click)="openQuickImport(sub)" class="text-[9px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-2 py-1 rounded font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto">
                                                                         <i class="fa-solid fa-bolt"></i> Bù
                                                                     </button>
                                                                 }
@@ -444,20 +444,17 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 </div>
                             } @else {
                                 <!-- SUMMARY VIEW (When collapsed) -->
-                                <div class="px-4 py-2 bg-white flex items-center justify-between text-xs cursor-pointer hover:bg-slate-50 transition" (click)="toggleBatchDetails(batchIdx)">
-                                    @let missingCount = getMissingCount(batch);
-                                    @let totalItems = countTotalItems(batch);
-                                    
-                                    @if(missingCount > 0) {
-                                        <div class="text-red-600 font-bold flex items-center gap-2">
-                                            <i class="fa-solid fa-circle-xmark"></i> Thiếu {{missingCount}} hóa chất
+                                <div class="px-4 py-2 bg-white dark:bg-slate-800 flex items-center justify-between text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition" (click)="toggleBatchDetails(batchIdx)">
+                                    @if(getMissingCount(batch) > 0) {
+                                        <div class="text-red-600 dark:text-red-400 font-bold flex items-center gap-2">
+                                            <i class="fa-solid fa-circle-xmark"></i> Thiếu {{getMissingCount(batch)}} hóa chất
                                         </div>
                                     } @else {
-                                        <div class="text-emerald-600 font-bold flex items-center gap-2">
-                                            <i class="fa-solid fa-circle-check"></i> Đủ {{totalItems}}/{{totalItems}} hóa chất
+                                        <div class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2">
+                                            <i class="fa-solid fa-circle-check"></i> Đủ {{countTotalItems(batch)}}/{{countTotalItems(batch)}} hóa chất
                                         </div>
                                     }
-                                    <div class="text-slate-400 text-[10px] font-medium flex items-center gap-1">
+                                    <div class="text-slate-400 dark:text-slate-500 text-[10px] font-medium flex items-center gap-1">
                                         Xem chi tiết <i class="fa-solid fa-angle-down"></i>
                                     </div>
                                 </div>
@@ -470,22 +467,22 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                 <div class="w-full lg:w-1/3 flex flex-col gap-4 h-fit sticky top-4">
                     <!-- Stock Summary -->
                     @if (missingStockSummary().length > 0) {
-                        <div class="bg-red-50 border border-red-100 rounded-2xl p-5 shadow-sm animate-slide-up">
-                            <h4 class="font-bold text-red-800 text-sm mb-3 flex items-center gap-2">
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-2xl p-5 shadow-sm animate-slide-up">
+                            <h4 class="font-bold text-red-800 dark:text-red-300 text-sm mb-3 flex items-center gap-2">
                                 <i class="fa-solid fa-cart-shopping"></i> Dự trù Mua sắm
                             </h4>
-                            <div class="overflow-hidden rounded-xl border border-red-100">
+                            <div class="overflow-hidden rounded-xl border border-red-100 dark:border-red-800">
                                 <table class="w-full text-xs text-left">
-                                    <thead class="bg-red-100/50 text-red-800 uppercase font-bold">
+                                    <thead class="bg-red-100/50 dark:bg-red-900/30 text-red-800 dark:text-red-300 uppercase font-bold">
                                         <tr><th class="px-3 py-2">Hóa chất</th><th class="px-3 py-2 text-right">Thiếu hụt</th><th class="px-2 w-10"></th></tr>
                                     </thead>
-                                    <tbody class="bg-white divide-y divide-red-50">
+                                    <tbody class="bg-white dark:bg-slate-800 divide-y divide-red-50 dark:divide-red-900/20">
                                         @for (item of missingStockSummary(); track item.name) {
                                             <tr>
-                                                <td class="px-3 py-2 font-medium text-slate-700 truncate max-w-[120px]">{{item.name}}</td>
-                                                <td class="px-3 py-2 text-right font-bold text-red-600 font-mono">-{{formatNum(item.missing)}} {{item.unit}}</td>
+                                                <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{{item.name}}</td>
+                                                <td class="px-3 py-2 text-right font-bold text-red-600 dark:text-red-400 font-mono">-{{formatNum(item.missing)}} {{item.unit}}</td>
                                                 <td class="px-2 py-1 text-center">
-                                                    <button (click)="openQuickImport(item)" class="text-red-500 hover:bg-red-50 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập nhanh">
+                                                    <button (click)="openQuickImport(item)" class="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập nhanh">
                                                         <i class="fa-solid fa-plus-circle"></i>
                                                     </button>
                                                 </td>
@@ -502,29 +499,29 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
 
         <!-- NEW: Coverage Status Bar (Bottom Sticky) -->
         @if(step() === 2) {
-            <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40 transition-transform duration-300">
+            <div class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)] z-40 transition-transform duration-300">
                 <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     
                     <!-- Metrics -->
                     <div class="flex items-center gap-6 text-sm flex-1">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                                 [class]="coverageMetrics().isFullyCovered ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600 animate-pulse'">
+                                 [class]="coverageMetrics().isFullyCovered ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 animate-pulse'">
                                 <i class="fa-solid" [class]="coverageMetrics().isFullyCovered ? 'fa-check' : 'fa-triangle-exclamation'"></i>
                             </div>
                             <div>
-                                <div class="font-bold" [class]="coverageMetrics().isFullyCovered ? 'text-green-700' : 'text-red-700'">
+                                <div class="font-bold" [class]="coverageMetrics().isFullyCovered ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">
                                     {{ coverageMetrics().isFullyCovered ? 'Đã phủ kín toàn bộ yêu cầu' : 'Cảnh báo: Chưa phủ hết yêu cầu!' }}
                                 </div>
-                                <div class="text-xs text-slate-500">
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
                                     Thiếu <b>{{coverageMetrics().missingCount}}</b> chỉ tiêu/mẫu. 
-                                    @if(coverageMetrics().duplicateCount > 0) { <span class="text-orange-600 ml-1">(Trùng lặp: {{coverageMetrics().duplicateCount}})</span> }
+                                    @if(coverageMetrics().duplicateCount > 0) { <span class="text-orange-600 dark:text-orange-400 ml-1">(Trùng lặp: {{coverageMetrics().duplicateCount}})</span> }
                                 </div>
                             </div>
                         </div>
                         
                         @if(!coverageMetrics().isFullyCovered) {
-                            <div class="hidden md:block text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg border border-red-100">
+                            <div class="hidden md:block text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-800">
                                 <i class="fa-solid fa-circle-info mr-1"></i> Kiểm tra các mẫu: {{ coverageMetrics().missingSampleNames }}
                             </div>
                         }
@@ -533,14 +530,14 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     <!-- Actions -->
                     <div class="flex items-center gap-3">
                         @if(!coverageMetrics().isFullyCovered) {
-                            <button (click)="fixCoverage()" class="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-xs transition shadow-sm">
+                            <button (click)="fixCoverage()" class="px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold text-xs transition shadow-sm">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Tự động sửa
                             </button>
                         }
                         
                         <button (click)="executeAll()" 
                                 [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered" 
-                                class="px-8 py-3 bg-slate-900 text-white hover:bg-black rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                class="px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white hover:bg-black dark:hover:bg-slate-600 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                             @else { <i class="fa-solid fa-paper-plane"></i> Duyệt & In Phiếu }
                         </button>
@@ -552,19 +549,19 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
         <!-- Group Modal (Unchanged) -->
         @if (showGroupModal()) {
             <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
-                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                        <h3 class="font-black text-slate-800 text-lg">Chọn Bộ Chỉ tiêu (Groups)</h3>
-                        <button (click)="showGroupModal.set(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-lg"></i></button>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
+                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg">Chọn Bộ Chỉ tiêu (Groups)</h3>
+                        <button (click)="showGroupModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times text-lg"></i></button>
                     </div>
                     <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
                         @if (availableGroups().length === 0) {
-                            <div class="p-8 text-center text-slate-400 italic text-sm"><i class="fa-solid fa-spinner fa-spin mb-2 text-xl"></i><br>Đang tải hoặc chưa có bộ chỉ tiêu nào.</div>
+                            <div class="p-8 text-center text-slate-400 dark:text-slate-500 italic text-sm"><i class="fa-solid fa-spinner fa-spin mb-2 text-xl"></i><br>Đang tải hoặc chưa có bộ chỉ tiêu nào.</div>
                         } @else {
                             @for(g of availableGroups(); track g.id) {
-                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 hover:bg-indigo-50 cursor-pointer transition group">
-                                    <div class="font-bold text-slate-700 text-sm group-hover:text-indigo-700">{{g.name}}</div>
-                                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between"><span>{{g.targets.length}} chỉ tiêu</span></div>
+                                <div (click)="importGroup(g)" class="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer transition group">
+                                    <div class="font-bold text-slate-700 dark:text-slate-300 text-sm group-hover:text-indigo-700 dark:group-hover:text-indigo-400">{{g.name}}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex justify-between"><span>{{g.targets.length}} chỉ tiêu</span></div>
                                 </div>
                             }
                         }
@@ -576,45 +573,45 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
         <!-- REVERSE LOGIC SPLIT MODAL (3-STEP WIZARD) -->
         @if (showSplitModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh] animate-slide-up">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh] animate-slide-up">
                     
                     <!-- Header -->
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                         <div>
-                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-shuffle text-blue-600"></i> Phân tách & Chuyển Mẻ
+                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-shuffle text-blue-600 dark:text-blue-400"></i> Phân tách & Chuyển Mẻ
                             </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Nguồn: <b>{{splitState().sourceBatchName}}</b></p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Nguồn: <b>{{splitState().sourceBatchName}}</b></p>
                         </div>
-                        <button (click)="showSplitModal.set(false)" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times text-xl"></i></button>
+                        <button (click)="showSplitModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition"><i class="fa-solid fa-times text-xl"></i></button>
                     </div>
 
                     <!-- Steps Indicator -->
-                    <div class="flex border-b border-slate-100 bg-white">
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 1 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">1. Chọn Mẫu</div>
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 2 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">2. Chọn Chỉ tiêu</div>
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 3 ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-300'">3. Chọn Quy trình Mới</div>
+                    <div class="flex border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn Mẫu</div>
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 2 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">2. Chọn Chỉ tiêu</div>
+                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 3 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">3. Chọn Quy trình Mới</div>
                     </div>
 
                     <!-- Wizard Content -->
-                    <div class="flex-1 overflow-hidden bg-slate-50 relative p-6">
+                    <div class="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-900/50 relative p-6">
                         
                         <!-- STEP 1: SELECT SAMPLES -->
                         @if (splitState().step === 1) {
                             <div class="h-full flex flex-col gap-3 animate-fade-in">
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-sm font-bold text-slate-700 uppercase">Chọn mẫu cần chuyển đi</h4>
+                                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn mẫu cần chuyển đi</h4>
                                     <div class="text-xs space-x-2">
-                                        <button (click)="splitSelectAllSamples()" class="text-blue-600 hover:underline font-bold">Chọn hết</button>
-                                        <button (click)="splitDeselectAllSamples()" class="text-slate-400 hover:text-slate-600">Bỏ chọn</button>
+                                        <button (click)="splitSelectAllSamples()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
+                                        <button (click)="splitDeselectAllSamples()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
                                     </div>
                                 </div>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-4">
+                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                                     <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                         @for(sample of splitState().availableSamples; track sample) {
                                             <div (click)="toggleSplitSample(sample)" 
                                                  class="p-2 rounded-lg border cursor-pointer text-center transition select-none"
-                                                 [class]="splitState().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-blue-50'">
+                                                 [class]="splitState().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'">
                                                 <span class="text-xs font-mono font-bold">{{sample}}</span>
                                             </div>
                                         }
@@ -627,25 +624,25 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                         @if (splitState().step === 2) {
                             <div class="h-full flex flex-col gap-3 animate-fade-in">
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-sm font-bold text-slate-700 uppercase">Chọn chỉ tiêu cần thực hiện</h4>
+                                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn chỉ tiêu cần thực hiện</h4>
                                     <div class="text-xs space-x-2">
-                                        <button (click)="splitSelectAllTargets()" class="text-blue-600 hover:underline font-bold">Chọn hết</button>
-                                        <button (click)="splitDeselectAllTargets()" class="text-slate-400 hover:text-slate-600">Bỏ chọn</button>
+                                        <button (click)="splitSelectAllTargets()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
+                                        <button (click)="splitDeselectAllTargets()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
                                     </div>
                                 </div>
-                                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 mb-2">
+                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 mb-2">
                                     <i class="fa-solid fa-circle-info mr-1"></i>
                                     Các mẫu đã chọn ({{splitState().selectedSamples.size}}) sẽ được chuyển sang mẻ mới để làm các chỉ tiêu này.
                                     Hệ thống đã tự động chọn các chỉ tiêu liên quan.
                                 </div>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-2">
+                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-2">
                                     @for(t of splitState().availableTargets; track t.id) {
-                                        <label class="flex items-center gap-3 p-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer">
+                                        <label class="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 dark:border-slate-700/50 last:border-0 cursor-pointer">
                                             <input type="checkbox" 
                                                    [checked]="splitState().selectedTargets.has(t.id)" 
                                                    (change)="toggleSplitTarget(t.id)"
                                                    class="w-4 h-4 accent-blue-600 rounded">
-                                            <span class="text-sm font-bold text-slate-700">{{t.name}}</span>
+                                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{t.name}}</span>
                                         </label>
                                     }
                                 </div>
@@ -655,12 +652,12 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                         <!-- STEP 3: SELECT SOP -->
                         @if (splitState().step === 3) {
                             <div class="h-full flex flex-col gap-3 animate-fade-in">
-                                <h4 class="text-sm font-bold text-slate-700 uppercase mb-2">Đề xuất Quy trình (SOP) phù hợp</h4>
+                                <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">Đề xuất Quy trình (SOP) phù hợp</h4>
                                 <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                                     @for(sop of filteredSopsForSplit(); track sop.id) {
                                         <div (click)="selectSplitSop(sop.id)" 
                                              class="p-4 rounded-xl border cursor-pointer transition flex justify-between items-center group relative overflow-hidden"
-                                             [class]="splitState().selectedSopId === sop.id ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'">
+                                             [class]="splitState().selectedSopId === sop.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-1 ring-blue-500' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md'">
                                             
                                             <!-- Selection Indicator -->
                                             @if(splitState().selectedSopId === sop.id) {
@@ -668,20 +665,20 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                             }
 
                                             <div>
-                                                <div class="font-bold text-slate-800 group-hover:text-blue-700">{{sop.name}}</div>
-                                                <div class="text-xs text-slate-500 mt-1">{{sop.category}}</div>
+                                                <div class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-700 dark:group-hover:text-blue-400">{{sop.name}}</div>
+                                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{sop.category}}</div>
                                             </div>
                                             <div class="text-right mr-6">
-                                                <div class="text-[10px] font-bold uppercase text-slate-400">Độ phủ</div>
-                                                <div class="text-lg font-black text-emerald-600">100%</div>
+                                                <div class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Độ phủ</div>
+                                                <div class="text-lg font-black text-emerald-600 dark:text-emerald-400">100%</div>
                                             </div>
                                         </div>
                                     }
                                     @if(filteredSopsForSplit().length === 0) {
-                                        <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                                        <div class="p-8 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                             <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2"></i>
                                             <p class="text-sm">Không tìm thấy SOP nào phủ hết các chỉ tiêu đã chọn.</p>
-                                            <button (click)="prevSplitStep()" class="text-blue-600 font-bold hover:underline mt-2 text-xs">Quay lại chọn ít chỉ tiêu hơn</button>
+                                            <button (click)="prevSplitStep()" class="text-blue-600 dark:text-blue-400 font-bold hover:underline mt-2 text-xs">Quay lại chọn ít chỉ tiêu hơn</button>
                                         </div>
                                     }
                                 </div>
@@ -691,9 +688,9 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     </div>
 
                     <!-- Footer Buttons -->
-                    <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center shrink-0">
+                    <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
                         @if (splitState().step > 1) {
-                            <button (click)="prevSplitStep()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition">
+                            <button (click)="prevSplitStep()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">
                                 <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
                             </button>
                         } @else {
@@ -721,39 +718,39 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
         <!-- QUICK IMPORT MODAL -->
         @if (showQuickImport()) {
             <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-bounce-in">
-                    <div class="p-5 border-b border-slate-100 flex justify-between items-start">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-bounce-in">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-start">
                         <div>
-                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
                                 <i class="fa-solid fa-bolt text-yellow-500"></i> Nhập Kho Nhanh
                             </h3>
-                            <p class="text-xs text-slate-500 mt-1">Bù hàng cho mẻ phân tích</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Bù hàng cho mẻ phân tích</p>
                         </div>
-                        <button (click)="showQuickImport.set(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times"></i></button>
+                        <button (click)="showQuickImport.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times"></i></button>
                     </div>
                     
                     <div class="p-5 space-y-4">
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div class="text-xs font-bold text-slate-500 uppercase mb-1">Hóa chất</div>
-                            <div class="font-bold text-slate-800 text-sm truncate">{{quickImportState().name}}</div>
-                            <div class="flex justify-between mt-2 pt-2 border-t border-slate-200">
-                                <div class="text-[10px]">Tồn: <b class="text-slate-700">{{formatNum(quickImportState().currentStock)}}</b></div>
-                                <div class="text-[10px]">Thiếu: <b class="text-red-600">-{{formatNum(quickImportState().missingAmount)}}</b></div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hóa chất</div>
+                            <div class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{{quickImportState().name}}</div>
+                            <div class="flex justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">Tồn: <b class="text-slate-700 dark:text-slate-300">{{formatNum(quickImportState().currentStock)}}</b></div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">Thiếu: <b class="text-red-600 dark:text-red-400">-{{formatNum(quickImportState().missingAmount)}}</b></div>
                             </div>
                         </div>
 
                         <div>
-                            <label class="text-xs font-bold text-slate-700 uppercase block mb-1">Số lượng thực nhập</label>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Số lượng thực nhập</label>
                             <div class="relative">
-                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-xl text-lg font-bold text-emerald-600 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition" placeholder="0" autofocus>
-                                <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400">{{quickImportState().unit}}</span>
+                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition bg-white dark:bg-slate-900" placeholder="0" autofocus>
+                                <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400 dark:text-slate-500">{{quickImportState().unit}}</span>
                             </div>
-                            <p class="text-[10px] text-slate-400 mt-1 italic">* Nhập trực tiếp theo đơn vị gốc ({{quickImportState().unit}})</p>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">* Nhập trực tiếp theo đơn vị gốc ({{quickImportState().unit}})</p>
                         </div>
                     </div>
 
-                    <div class="p-5 border-t border-slate-100 flex gap-3">
-                        <button (click)="showQuickImport.set(false)" class="flex-1 py-3 text-slate-500 font-bold text-xs bg-slate-100 hover:bg-slate-200 rounded-xl transition">Hủy</button>
+                    <div class="p-5 border-t border-slate-100 dark:border-slate-700 flex gap-3">
+                        <button (click)="showQuickImport.set(false)" class="flex-1 py-3 text-slate-500 dark:text-slate-400 font-bold text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">Hủy</button>
                         <button (click)="submitQuickImport()" [disabled]="quickImportInput <= 0 || isProcessing()" class="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
                             Xác nhận Nhập
                         </button>
