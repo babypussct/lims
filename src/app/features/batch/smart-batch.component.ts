@@ -94,13 +94,14 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden relative mb-14">
+        <div class="flex-1 overflow-y-auto custom-scrollbar relative mb-14 p-1">
+            <div class="flex flex-col lg:flex-row gap-6 min-h-fit">
             
             <!-- STEP 1: JOB BUILDER -->
             @if(step() === 1) {
                 <!-- Left: Blocks List -->
-                <div class="flex-1 flex flex-col min-h-0 bg-transparent gap-4">
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                <div class="flex-1 flex flex-col bg-transparent gap-4">
+                    <div class="space-y-4">
                         
                         @for (block of blocks(); track block.id; let i = $index) {
                             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden animate-slide-up transition-all hover:shadow-md group">
@@ -229,16 +230,17 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
             <!-- STEP 2: REVIEW PLAN -->
             @if(step() === 2) {
                 <!-- Left: Batches -->
-                <div class="w-full lg:w-2/3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 animate-fade-in pb-10">
+                <div class="flex-1 lg:w-2/3 flex flex-col gap-4 animate-fade-in">
                     
-                    <div class="relative w-full shadow-sm">
+                    <div class="relative w-full shadow-sm shrink-0 sticky top-0 z-10">
                         <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
                         <input [ngModel]="sampleSearchTerm()" (ngModelChange)="sampleSearchTerm.set($event)"
                                class="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition bg-white dark:bg-slate-800"
                                placeholder="Tìm vị trí mẫu (VD: A05)...">
                     </div>
 
-                    @if (unmappedTasks().length > 0) {
+                    <div class="pb-10 flex flex-col gap-4">
+                        @if (unmappedTasks().length > 0) {
                         <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
                             <i class="fa-solid fa-circle-exclamation text-red-500 dark:text-red-400 mt-0.5"></i>
                             <div>
@@ -305,9 +307,10 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                     <div class="flex items-start gap-2 w-full mt-1" (click)="$event.stopPropagation()">
                                         <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-800 flex items-start gap-2 shadow-sm w-full">
                                             <span class="bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] shadow-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 shrink-0 mt-0.5">{{batch.samples.size}} mẫu</span>
-                                            <span class="break-words whitespace-normal" [class.line-clamp-2]="!batch.isExpanded">
+                                            <div class="break-words whitespace-normal flex-1" 
+                                                 [class.line-clamp-2]="!batch.isExpanded">
                                                 {{ batch.isExpanded ? getFullSampleString(batch.samples) : formatSampleList(batch.samples) }}
-                                            </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -459,6 +462,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                             }
                         </div>
                     }
+                    </div>
                 </div>
 
                 <!-- Right: Summary & Action -->
@@ -493,6 +497,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     }
                 </div>
             }
+            </div>
         </div>
 
         <!-- NEW: Coverage Status Bar (Bottom Sticky) -->
