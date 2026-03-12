@@ -672,7 +672,7 @@ import { Unsubscribe } from 'firebase/firestore';
       }
 
       <!-- Weigh, History, COA Preview Modals... (No changes needed here) -->
-      @if (selectedStd()) {
+      @if (showWeighModal() && selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
             <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500 dark:bg-indigo-600"></div>
@@ -706,7 +706,7 @@ import { Unsubscribe } from 'firebase/firestore';
                     }
                 </div>
                 <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="selectedStd.set(null)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="showWeighModal.set(false)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
                     <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isWeighAmountInvalid() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xác nhận }
                     </button>
@@ -735,15 +735,15 @@ import { Unsubscribe } from 'firebase/firestore';
                         <div>
                             <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mẫu nhãn</label>
                             <div class="grid grid-cols-3 gap-2">
-                                <button (click)="printTemplate.set('standard')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'standard'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                                <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'standard'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                                     <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Tiêu chuẩn</div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-400">Thông tin cơ bản</div>
                                 </button>
-                                <button (click)="printTemplate.set('detailed')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'detailed'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                                <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'detailed'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                                     <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Chi tiết</div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-400">Đầy đủ thông tin</div>
                                 </button>
-                                <button (click)="printTemplate.set('qr')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'qr'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                                <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'qr'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                                     <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Mã QR</div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-400">Kèm mã QR code</div>
                                 </button>
@@ -751,19 +751,32 @@ import { Unsubscribe } from 'firebase/firestore';
                         </div>
 
                         <!-- Dimensions -->
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Rộng (mm)</label>
-                                <input type="number" [ngModel]="printWidth()" (ngModelChange)="printWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cao (mm)</label>
-                                <input type="number" [ngModel]="printHeight()" (ngModelChange)="printHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cỡ chữ (pt)</label>
-                                <input type="number" [ngModel]="printFontSize()" (ngModelChange)="printFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                            </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Kích thước nhãn</label>
+                            <select [ngModel]="printPaperSize()" (ngModelChange)="onPaperSizeChange($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition mb-3">
+                                <option value="22x12">22 x 12 mm (Tem nhỏ)</option>
+                                <option value="35x22">35 x 22 mm (Tem chuẩn)</option>
+                                <option value="50x30">50 x 30 mm (Tem trung)</option>
+                                <option value="70x50">70 x 50 mm (Tem lớn)</option>
+                                <option value="custom">Tùy chỉnh...</option>
+                            </select>
+                            
+                            @if (printPaperSize() === 'custom') {
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Rộng (mm)</label>
+                                        <input type="number" [ngModel]="printWidth()" (ngModelChange)="printWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cao (mm)</label>
+                                        <input type="number" [ngModel]="printHeight()" (ngModelChange)="printHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cỡ chữ (pt)</label>
+                                        <input type="number" [ngModel]="printFontSize()" (ngModelChange)="printFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
+                                    </div>
+                                </div>
+                            }
                         </div>
 
                         <!-- Fields to Include -->
@@ -848,14 +861,7 @@ import { Unsubscribe } from 'firebase/firestore';
                                         @if (printIncludeExpiry()) { <div style="display: flex; justify-content: space-between; margin-bottom: 1px;"><span>Exp: <span style="font-weight: bold;">{{selectedStd()?.expiry_date ? (selectedStd()?.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</span></span></div> }
                                     </div>
                                     <div style="width: 30%; display: flex; align-items: center; justify-content: center;">
-                                        <!-- Placeholder for QR -->
-                                        <div style="width: 100%; aspect-ratio: 1; background-color: #000; display: flex; align-items: center; justify-content: center; padding: 2px;">
-                                            <div style="width: 100%; height: 100%; background-color: #fff; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;">
-                                                <div style="background: #000"></div><div style="background: #fff"></div><div style="background: #000"></div>
-                                                <div style="background: #fff"></div><div style="background: #000"></div><div style="background: #fff"></div>
-                                                <div style="background: #000"></div><div style="background: #fff"></div><div style="background: #000"></div>
-                                            </div>
-                                        </div>
+                                        <img [src]="getQrCodeUrl(selectedStd())" style="width: 100%; height: auto; max-height: 100%;" />
                                     </div>
                                 </div>
                             } @else {
@@ -1110,10 +1116,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
   showModal = signal(false);
   isEditing = signal(false);
   
+  showWeighModal = signal(false);
   showPrintModal = signal(false);
-  printWidth = signal(62);
-  printHeight = signal(25);
-  printFontSize = signal(10);
+  printPaperSize = signal<'22x12' | '35x22' | '50x30' | '70x50' | 'custom'>('35x22');
+  printWidth = signal(35);
+  printHeight = signal(22);
+  printFontSize = signal(8);
   printTemplate = signal<'standard' | 'detailed' | 'qr'>('standard');
   printCopies = signal<number>(1);
   printIncludeName = signal<boolean>(true);
@@ -1487,11 +1495,46 @@ export class StandardsComponent implements OnInit, OnDestroy {
       navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
   }
 
-  openWeighModal(std: ReferenceStandard) { this.selectedStd.set(std); this.weighAmount.set(0); this.weighDate.set(new Date().toISOString().split('T')[0]); this.weighUser.set(this.state.currentUser()?.displayName || ''); this.weighUnit.set(std.unit); }
+  openWeighModal(std: ReferenceStandard) { 
+      this.selectedStd.set(std); 
+      this.weighAmount.set(0); 
+      this.weighDate.set(new Date().toISOString().split('T')[0]); 
+      this.weighUser.set(this.state.currentUser()?.displayName || ''); 
+      this.weighUnit.set(std.unit); 
+      this.showWeighModal.set(true);
+  }
   
   openPrintModal(std: ReferenceStandard) {
       this.selectedStd.set(std);
       this.showPrintModal.set(true);
+  }
+
+  onPaperSizeChange(size: string) {
+      this.printPaperSize.set(size as any);
+      switch(size) {
+          case '22x12': this.printWidth.set(22); this.printHeight.set(12); this.printFontSize.set(6); break;
+          case '35x22': this.printWidth.set(35); this.printHeight.set(22); this.printFontSize.set(8); break;
+          case '50x30': this.printWidth.set(50); this.printHeight.set(30); this.printFontSize.set(10); break;
+          case '70x50': this.printWidth.set(70); this.printHeight.set(50); this.printFontSize.set(12); break;
+      }
+  }
+
+  onTemplateChange(template: 'standard' | 'detailed' | 'qr') {
+      this.printTemplate.set(template);
+      if (template === 'detailed') {
+          this.printIncludeCas.set(true);
+          this.printIncludeManufacturer.set(true);
+          this.printIncludeStorage.set(true);
+      } else if (template === 'standard') {
+          this.printIncludeCas.set(false);
+          this.printIncludeManufacturer.set(false);
+          this.printIncludeStorage.set(false);
+      }
+  }
+
+  getQrCodeUrl(std: ReferenceStandard | null): string {
+      if (!std) return '';
+      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(std.internal_id || std.id)}`;
   }
 
   getPreviewScale(): number {
@@ -1657,7 +1700,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       try {
           await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() });
           this.toast.show('Đã cập nhật!'); 
-          this.selectedStd.set(null); 
+          this.showWeighModal.set(false); 
       } catch (e: any) { 
           this.toast.show('Lỗi: ' + e.message, 'error'); 
       } finally {
