@@ -323,10 +323,9 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 </div>
                             </div>
 
-                            @if (batch.isExpanded) {
-                                <!-- Controls (Gray Block - Only Visible when expanded) -->
-                                <div class="bg-slate-50 dark:bg-slate-800/50 p-3 border-b border-slate-100 dark:border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-3 animate-slide-down">
-                                    <!-- DYNAMIC INPUTS -->
+                            <!-- Controls (Gray Block - Always Visible) -->
+                            <div class="bg-slate-50 dark:bg-slate-800/50 p-3 border-b border-slate-100 dark:border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <!-- DYNAMIC INPUTS -->
                                 @for (inp of batch.sop.inputs; track inp.var) {
                                     @if(inp.var !== 'n_sample' && inp.var !== 'safetyMargin') {
                                         <div class="group">
@@ -386,7 +385,8 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                             </div>
 
                             <!-- Resource Table (ACCORDION) -->
-                            <div class="w-full bg-white dark:bg-slate-800 animate-slide-down">
+                            @if (batch.isExpanded) {
+                                <div class="w-full bg-white dark:bg-slate-800 animate-slide-down">
                                     <table class="w-full text-xs text-left border-collapse">
                                         <thead class="bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-b border-slate-50 dark:border-slate-700/50">
                                             <tr>
