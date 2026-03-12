@@ -302,15 +302,12 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                     </h3>
                                     
                                     <!-- Consolidated Sample Display -->
-                                    <div class="flex items-center gap-2 group/tooltip relative w-fit max-w-full" (click)="$event.stopPropagation()">
-                                        <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-800 flex items-center gap-2 cursor-help shadow-sm truncate max-w-full">
-                                            <span class="bg-white dark:bg-slate-800 px-1.5 rounded text-[10px] shadow-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 shrink-0">{{batch.samples.size}} mẫu</span>
-                                            <span class="truncate">{{ formatSampleList(batch.samples) }}</span>
-                                        </div>
-                                        <!-- Hover Tooltip for full list -->
-                                        <div class="absolute left-0 top-full mt-2 w-64 bg-slate-800 dark:bg-slate-700 text-white text-[10px] p-3 rounded-xl shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition z-20 hidden group-hover/tooltip:block border border-slate-700 dark:border-slate-600">
-                                            <div class="font-bold border-b border-slate-600 dark:border-slate-500 pb-1 mb-1 text-slate-300 dark:text-slate-200 uppercase tracking-wider">Danh sách chi tiết</div>
-                                            <div class="font-mono leading-relaxed break-words text-slate-200 dark:text-slate-100">{{ getFullSampleString(batch.samples) }}</div>
+                                    <div class="flex items-start gap-2 w-full mt-1" (click)="$event.stopPropagation()">
+                                        <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-800 flex items-start gap-2 shadow-sm w-full">
+                                            <span class="bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] shadow-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 shrink-0 mt-0.5">{{batch.samples.size}} mẫu</span>
+                                            <span class="break-words whitespace-normal" [class.line-clamp-2]="!batch.isExpanded">
+                                                {{ batch.isExpanded ? getFullSampleString(batch.samples) : formatSampleList(batch.samples) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -400,7 +397,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                 <!-- Parent Item -->
                                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group/row">
                                                     <td class="px-5 py-2 align-middle">
-                                                        <div class="truncate max-w-[200px] font-medium text-slate-700 dark:text-slate-300 text-xs" [title]="item.displayName || item.name" [ngClass]="{'text-red-600 dark:text-red-400': item.isMissing}">
+                                                        <div class="break-words whitespace-normal font-medium text-slate-700 dark:text-slate-300 text-xs" [ngClass]="{'text-red-600 dark:text-red-400': item.isMissing}">
                                                             {{item.displayName || item.name}}
                                                             @if(item.isComposite) { <span class="text-[9px] text-slate-400 dark:text-slate-500 italic font-normal ml-1">(Mix)</span> }
                                                         </div>
@@ -421,8 +418,9 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                     @for(sub of item.breakdown; track sub.name) {
                                                         <tr class="bg-slate-50/30 dark:bg-slate-800/30">
                                                             <td class="px-5 py-1 pl-8 align-middle">
-                                                                <div class="truncate max-w-[180px] text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
-                                                                    <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div> {{sub.displayName || sub.name}}
+                                                                <div class="break-words whitespace-normal text-[10px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 mt-0.5" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
+                                                                    <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0 mt-1.5"></div> 
+                                                                    <span>{{sub.displayName || sub.name}}</span>
                                                                 </div>
                                                             </td>
                                                             <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500 dark:text-slate-400">
@@ -479,7 +477,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                     <tbody class="bg-white dark:bg-slate-800 divide-y divide-red-50 dark:divide-red-900/20">
                                         @for (item of missingStockSummary(); track item.name) {
                                             <tr>
-                                                <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{{item.name}}</td>
+                                                <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-300 break-words whitespace-normal">{{item.name}}</td>
                                                 <td class="px-3 py-2 text-right font-bold text-red-600 dark:text-red-400 font-mono">-{{formatNum(item.missing)}} {{item.unit}}</td>
                                                 <td class="px-2 py-1 text-center">
                                                     <button (click)="openQuickImport(item)" class="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập nhanh">
@@ -732,7 +730,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     <div class="p-5 space-y-4">
                         <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                             <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hóa chất</div>
-                            <div class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{{quickImportState().name}}</div>
+                            <div class="font-bold text-slate-800 dark:text-slate-200 text-sm break-words whitespace-normal">{{quickImportState().name}}</div>
                             <div class="flex justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                                 <div class="text-[10px] text-slate-500 dark:text-slate-400">Tồn: <b class="text-slate-700 dark:text-slate-300">{{formatNum(quickImportState().currentStock)}}</b></div>
                                 <div class="text-[10px] text-slate-500 dark:text-slate-400">Thiếu: <b class="text-red-600 dark:text-red-400">-{{formatNum(quickImportState().missingAmount)}}</b></div>
