@@ -5,20 +5,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="LIMS Cloud - Hệ thống quản lý phòng thí nghiệm Soft UI">
+  <meta name="author" content="Otada Technology">
   <meta name="theme-color" content="#f8f9fa"> 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   
   <title>LIMS Cloud Pro | Soft UI</title>
   
-  <!-- 1. Fonts & Icons -->
+  <!-- 1. Apple Touch Icon (iOS Home Screen) -->
+  <script type="text/javascript" nonce="00cdda49629b4bd78e0d5ba77d4" src="//local.adguard.org?ts=1773572523598&amp;type=content-script&amp;dmn=aistudio.google.com&amp;url=https%3A%2F%2Faistudio.google.com%2F_%2Fupload%2Fb4fa19c1-214f-4e5d-baa2-1ec4d9b4f8ee%2Ffile%2F1b15ae6cc40d9c07717d960e34e07afd69e13e6fa0673e246dd85386864b32d6&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="00cdda49629b4bd78e0d5ba77d4" src="//local.adguard.org?ts=1773572523598&amp;name=AdGuard%20Extra&amp;type=user-script"></script><link rel="apple-touch-icon" href="https://img.icons8.com/color/480/laboratory.png">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- 2. Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- 2. Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 3. Tailwind CSS Config -->
   <script>
     tailwind.config = { 
+      darkMode: 'class',
       theme: { 
         extend: { 
           fontFamily: { 
@@ -60,16 +65,15 @@
       } 
     }
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 3. QR Libraries -->
+  <!-- 4. QR Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-  <!-- 3. Global CSS -->
+  <!-- 5. Global CSS -->
   <style>
     body { 
-        background-color: #f8f9fa; 
-        color: #67748e; 
         font-family: 'Open Sans', sans-serif;
     }
     
@@ -78,6 +82,9 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+    
+    html.dark ::-webkit-scrollbar-thumb { background: #475569; }
+    html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     
     /* Animations */
     .fade-in { animation: fadeIn 0.5s ease-out; }
@@ -90,57 +97,37 @@
     @media print {
       @page { size: A4 portrait; margin: 0; }
       
+      html, body {
+          width: 210mm;
+          height: 297mm;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+      }
+
       /* Hide the main app entirely */
       app-root { display: none !important; }
       
       /* Show the print container */
       #print-container { 
           display: block !important; 
-          position: absolute;
-          top: 0;
-          left: 0;
+          position: fixed; /* Fixed prevents scrolling issues */
+          top: 0 !important;
+          left: 0 !important;
           width: 100%;
+          height: 100%;
+          margin: 0 !important;
+          padding: 0 !important;
           background: white;
           z-index: 99999;
       }
-      
-      body { background: white; color: black; }
     }
     
     /* Screen styles for print container (Hidden by default) */
     #print-container { display: none; }
   </style>
-<script type="importmap">
-{
-  "imports": {
-    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
-    "jspdf": "https://esm.sh/jspdf@^4.0.0?external=rxjs",
-    "xlsx": "https://esm.sh/xlsx@^0.18.5?external=rxjs",
-    "firebase/auth": "https://esm.sh/firebase@^12.7.0/auth?external=rxjs",
-    "firebase/storage": "https://esm.sh/firebase@^12.7.0/storage?external=rxjs",
-    "firebase/firestore": "https://esm.sh/firebase@^12.7.0/firestore?external=rxjs",
-    "firebase/app": "https://esm.sh/firebase@^12.7.0/app?external=rxjs",
-    "@angular/forms": "https://esm.sh/@angular/forms@^21.0.8?external=rxjs",
-    "chart.js/auto": "https://esm.sh/chart.js@^4.5.1/auto?external=rxjs",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1?external=rxjs",
-    "@angular/router": "https://esm.sh/@angular/router@^21.0.8?external=rxjs",
-    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.0.8?external=rxjs",
-    "@angular/common": "https://esm.sh/@angular/common@^21.0.8?external=rxjs",
-    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.0.8?external=rxjs",
-    "@angular/core": "https://esm.sh/@angular/core@^21.0.8?external=rxjs",
-    "zone.js": "https://esm.sh/zone.js@^0.16.0?external=rxjs",
-    "pdfmake/build/vfs_fonts": "https://esm.sh/pdfmake@^0.3.3/build/vfs_fonts?external=rxjs",
-    "pdfmake/build/pdfmake": "https://esm.sh/pdfmake@^0.3.3/build/pdfmake?external=rxjs"
-  }
-}
-</script>
 </head>
-<body class="antialiased text-gray-600 bg-gray-50 h-full overflow-hidden">
+<body class="antialiased text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-900 h-full overflow-hidden transition-colors duration-300">
   <app-root></app-root>
   <!-- Dedicated Container for Direct Printing -->
   <div id="print-container"></div>
