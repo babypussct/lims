@@ -54,19 +54,19 @@ interface KanbanColumn {
         <!-- HEADER: Welcome & Scan -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-black text-slate-800 tracking-tight">
-                    Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{{auth.currentUser()?.displayName}}</span>!
+                <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                    Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
                 </h1>
-                <p class="text-sm text-slate-500 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
             </div>
             
             <div class="flex gap-2">
-                <button (click)="router.navigate(['/mobile-login'])" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                <button (click)="router.navigate(['/mobile-login'])" class="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-desktop"></i> Login PC
                 </button>
 
                 <!-- Calls Global Service -->
-                <button (click)="qrService.startScan()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-300 hover:bg-black transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                <button (click)="qrService.startScan()" class="px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã
                 </button>
             </div>
@@ -76,11 +76,11 @@ interface KanbanColumn {
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             <!-- Card 1: Pending Requests -->
             <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()"
-                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent hover:border-purple-100">
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-purple-100 dark:hover:border-purple-500/50">
                 <div class="flex justify-between items-start z-10">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
-                        <h4 class="text-2xl font-black text-gray-800">
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
                             @if(isLoading()) { ... } @else { {{state.requests().length}} }
                         </h4>
                     </div>
@@ -99,11 +99,11 @@ interface KanbanColumn {
 
             <!-- Card 2: Low Stock -->
             <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()"
-                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent hover:border-red-100">
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-red-100 dark:hover:border-red-500/50">
                 <div class="flex justify-between items-start z-10">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
-                        <h4 class="text-2xl font-black text-gray-800">
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
                             @if(isLoading()) { ... } @else { {{lowStockItems().length}} }
                         </h4>
                     </div>
@@ -113,20 +113,20 @@ interface KanbanColumn {
                 </div>
                 <div class="z-10">
                     @if(lowStockItems().length > 0) {
-                        <span class="text-xs font-bold text-red-500">Mục dưới định mức</span>
+                        <span class="text-xs font-bold text-red-500 dark:text-red-400">Mục dưới định mức</span>
                     } @else {
-                        <span class="text-xs font-bold text-emerald-500">Kho ổn định</span>
+                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Kho ổn định</span>
                     }
                 </div>
             </div>
 
             <!-- Card 3: Today's Activity -->
             <div (click)="auth.canViewReports() ? navTo('stats') : denyAccess()"
-                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent hover:border-blue-100">
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-blue-100 dark:hover:border-blue-500/50">
                 <div class="flex justify-between items-start z-10">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
-                        <h4 class="text-2xl font-black text-gray-800">
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
                             @if(isLoading()) { ... } @else { {{todayActivityCount()}} }
                         </h4>
                     </div>
@@ -135,20 +135,20 @@ interface KanbanColumn {
                     </div>
                 </div>
                 <div class="z-10">
-                    <span class="text-xs font-bold text-gray-400">Ghi nhận log hệ thống</span>
+                    <span class="text-xs font-bold text-gray-400 dark:text-slate-500">Ghi nhận log hệ thống</span>
                 </div>
             </div>
 
             <!-- Card 4: Standards Priority -->
             <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()"
-                 class="relative bg-white rounded-2xl shadow-soft-xl p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent hover:border-orange-100">
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-orange-100 dark:hover:border-orange-500/50">
                 <div class="flex justify-between items-start z-10">
                     <div class="min-w-0 pr-2">
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
                         @if(priorityStandard(); as std) {
-                            <h4 class="text-sm font-bold text-gray-800 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-slate-100 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
                         } @else {
-                            <h4 class="text-lg font-black text-gray-800">An toàn</h4>
+                            <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An toàn</h4>
                         }
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
@@ -157,11 +157,11 @@ interface KanbanColumn {
                 </div>
                 <div class="z-10">
                     @if(priorityStandard(); as std) {
-                        <span class="text-xs font-bold" [class.text-red-500]="std.status === 'expired'" [class.text-orange-500]="std.status === 'warning'">
+                        <span class="text-xs font-bold" [ngClass]="{'text-red-500 dark:text-red-400': std.status === 'expired', 'text-orange-500 dark:text-orange-400': std.status === 'warning'}">
                             {{std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày'}}
                         </span>
                     } @else {
-                        <span class="text-xs font-bold text-emerald-500">Tất cả còn hạn dùng</span>
+                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Tất cả còn hạn dùng</span>
                     }
                 </div>
             </div>
@@ -170,29 +170,31 @@ interface KanbanColumn {
         <!-- SECTION 2: ANALYTICS & FEED -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Left: Chart (2/3) -->
-            <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100">
+            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100 dark:border-slate-700">
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h6 class="font-bold text-gray-700 capitalize text-lg">Hiệu suất Phân tích</h6>
+                        <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
                         <!-- Trend Indicator -->
                         <p class="text-sm font-bold flex items-center gap-1.5"
-                           [class.text-emerald-500]="trendInfo().direction === 'up'"
-                           [class.text-red-500]="trendInfo().direction === 'down'"
-                           [class.text-gray-500]="trendInfo().direction === 'neutral'">
+                           [ngClass]="{
+                               'text-emerald-500 dark:text-emerald-400': trendInfo().direction === 'up',
+                               'text-red-500 dark:text-red-400': trendInfo().direction === 'down',
+                               'text-gray-500 dark:text-slate-400': trendInfo().direction === 'neutral'
+                           }">
                             <i class="fa-solid" [class]="trendInfo().icon"></i>
                             @if(trendInfo().direction !== 'neutral') {
                                 <span>{{trendInfo().percent}}%</span>
                             } @else {
                                 <span>Ổn định</span>
                             }
-                            <span class="text-gray-400 font-normal text-xs">so với TB tuần trước</span>
+                            <span class="text-gray-400 dark:text-slate-500 font-normal text-xs">so với TB tuần trước</span>
                         </p>
                     </div>
-                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                    <div class="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-slate-400">
                         <i class="fa-solid fa-chart-column"></i>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full min-h-0 bg-gradient-to-b from-transparent to-gray-50/30 rounded-xl">
+                <div class="flex-1 relative w-full min-h-0 bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
                     @if(isLoading()) {
                         <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
                     } @else {
@@ -202,28 +204,30 @@ interface KanbanColumn {
             </div>
 
             <!-- Right: Activity Feed (1/3) -->
-            <div class="bg-white rounded-2xl shadow-soft-xl p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100">
-                <h6 class="font-bold text-gray-700 capitalize text-lg mb-4">Hoạt động gần đây</h6>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100 dark:border-slate-700">
+                <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg mb-4">Hoạt động gần đây</h6>
                 <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
-                    <div class="relative border-l border-gray-200 ml-3 space-y-6 pb-2">
+                    <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
                         @for (log of recentLogs(); track log.id) {
                             <div class="relative pl-6">
-                                <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm"
-                                     [class.bg-fuchsia-500]="log.action.includes('APPROVE')"
-                                     [class.bg-blue-500]="log.action.includes('STOCK')"
-                                     [class.bg-gray-400]="!log.action.includes('APPROVE') && !log.action.includes('STOCK')">
+                                <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
+                                     [ngClass]="{
+                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE'),
+                                         'bg-blue-500 dark:bg-blue-400': log.action.includes('STOCK'),
+                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK')
+                                     }">
                                 </div>
                                 <div class="flex flex-col">
-                                    <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
+                                    <div class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
                                     <div class="flex items-start gap-3">
                                         <!-- UPDATED AVATAR CALL -->
-                                        <img [src]="getAvatarUrl(log.user, state.avatarStyle())" class="w-8 h-8 rounded-lg border border-gray-100 shadow-sm object-cover bg-white shrink-0" alt="Avatar">
+                                        <img [src]="getAvatarUrl(log.user, state.avatarStyle())" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
                                         <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-bold text-gray-700 leading-tight">
-                                                <span class="text-gray-900">{{log.user}}</span> 
-                                                <span class="font-normal text-[10px] text-gray-500 ml-1 block sm:inline">{{getLogActionText(log.action)}}</span>
+                                            <div class="text-xs font-bold text-gray-700 dark:text-slate-300 leading-tight">
+                                                <span class="text-gray-900 dark:text-slate-100">{{log.user}}</span> 
+                                                <span class="font-normal text-[10px] text-gray-500 dark:text-slate-400 ml-1 block sm:inline">{{getLogActionText(log.action)}}</span>
                                             </div>
-                                            <p class="text-[10px] text-gray-500 mt-1 line-clamp-2 bg-gray-50 p-2 rounded-lg border border-gray-100 font-medium">
+                                            <p class="text-[10px] text-gray-500 dark:text-slate-400 mt-1 line-clamp-2 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700 font-medium">
                                                 {{log.details}}
                                             </p>
                                         </div>
@@ -231,7 +235,7 @@ interface KanbanColumn {
                                 </div>
                             </div>
                         } @empty {
-                            <div class="text-center text-gray-400 text-sm py-10">Chưa có dữ liệu.</div>
+                            <div class="text-center text-gray-400 dark:text-slate-500 text-sm py-10">Chưa có dữ liệu.</div>
                         }
                     </div>
                 </div>
@@ -241,8 +245,8 @@ interface KanbanColumn {
         <!-- SECTION 3: SMART KANBAN -->
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
-                <h6 class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-blue-500"></i> Hiệu suất Phân tích (Hoàn thành)
+                <h6 class="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Hiệu suất Phân tích (Hoàn thành)
                 </h6>
                 
                 <!-- Date Filter Component -->
@@ -257,50 +261,50 @@ interface KanbanColumn {
                 
                 @for (col of kanbanBoard(); track col.sopName) {
                     <div (click)="openSopDetails(col)" 
-                         class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col cursor-pointer hover:-translate-y-1 transition-all hover:shadow-md group relative overflow-hidden h-full">
+                         class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col cursor-pointer hover:-translate-y-1 transition-all hover:shadow-md dark:hover:border-slate-600 group relative overflow-hidden h-full">
                         
                         <!-- Header -->
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex-1 min-w-0 pr-2">
-                                <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-indigo-100 mb-1 inline-block">
+                                <span class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-indigo-100 dark:border-indigo-800/30 mb-1 inline-block">
                                     {{col.batchCount}} mẻ
                                 </span>
-                                <h4 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2" [title]="col.sopName">
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm leading-snug line-clamp-2" [title]="col.sopName">
                                     {{col.sopName}}
                                 </h4>
                             </div>
-                            <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-clipboard-check"></i>
                             </div>
                         </div>
 
                         <!-- Sample List (Grouped Text) -->
-                        <div class="flex-1 bg-slate-50/50 rounded-xl p-3 mb-3 border border-slate-50">
-                            <div class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Mẫu đã xử lý:</div>
-                            <p class="text-xs font-mono font-bold text-slate-700 break-words leading-relaxed line-clamp-3">
+                        <div class="flex-1 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl p-3 mb-3 border border-slate-50 dark:border-slate-700/50">
+                            <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wide">Mẫu đã xử lý:</div>
+                            <p class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 break-words leading-relaxed line-clamp-3">
                                 {{ col.sampleDisplay }}
                             </p>
                         </div>
 
                         <!-- Footer Info -->
-                        <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                        <div class="mt-auto pt-3 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
                             <div class="flex -space-x-2 overflow-hidden">
                                 <!-- UPDATED AVATAR CALL -->
                                 @for(user of col.users; track user) {
-                                    <img [src]="getAvatarUrl(user, state.avatarStyle())" class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200" [title]="user">
+                                    <img [src]="getAvatarUrl(user, state.avatarStyle())" class="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-700" [title]="user">
                                 }
                             </div>
                             
                             <div class="text-right">
-                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Lần cuối: {{formatDateShort(col.lastRun)}}</span>
-                                <span class="text-xs font-bold text-slate-700">Tổng: <b class="text-lg text-indigo-600">{{col.totalSamples}}</b> mẫu</span>
+                                <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Lần cuối: {{formatDateShort(col.lastRun)}}</span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Tổng: <b class="text-lg text-indigo-600 dark:text-indigo-400">{{col.totalSamples}}</b> mẫu</span>
                             </div>
                         </div>
                     </div>
                 } 
                 @empty {
                     @if(!isLoading()) {
-                        <div class="col-span-full py-10 flex items-center justify-center text-slate-400 italic text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <div class="col-span-full py-10 flex items-center justify-center text-slate-400 dark:text-slate-500 italic text-xs bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                             Không có dữ liệu hiệu suất trong khoảng thời gian này.
                         </div>
                     }
@@ -311,23 +315,23 @@ interface KanbanColumn {
         <!-- DETAIL MODAL -->
         @if (selectedSopDetails(); as details) {
             <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" (click)="selectedSopDetails.set(null)">
-                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in" (click)="$event.stopPropagation()">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in border border-slate-100 dark:border-slate-700" (click)="$event.stopPropagation()">
                     
                     <!-- Modal Header -->
-                    <div class="bg-slate-50 border-b border-slate-100 p-5 shrink-0 flex justify-between items-start">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 p-5 shrink-0 flex justify-between items-start">
                         <div>
-                            <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Chi tiết Hiệu suất</span>
-                            <h3 class="text-xl font-black text-slate-800 leading-tight mt-1">{{details.sopName}}</h3>
+                            <span class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 tracking-wider">Chi tiết Hiệu suất</span>
+                            <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mt-1">{{details.sopName}}</h3>
                             <div class="flex gap-2 mt-2">
-                                <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-200">
+                                <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-200 dark:border-blue-800/50">
                                     {{details.totalSamples}} mẫu
                                 </span>
-                                <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold border border-purple-200">
+                                <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-bold border border-purple-200 dark:border-purple-800/50">
                                     {{details.batchCount}} mẻ
                                 </span>
                             </div>
                         </div>
-                        <button (click)="selectedSopDetails.set(null)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition shadow-sm active:scale-90">
+                        <button (click)="selectedSopDetails.set(null)" class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition shadow-sm active:scale-90">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
@@ -335,25 +339,25 @@ interface KanbanColumn {
                     <!-- Modal Body: History List -->
                     <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
                         @for (batch of details.history; track batch.id) {
-                            <div class="p-4 border-b border-slate-50 hover:bg-slate-50 transition group">
+                            <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
                                         <!-- UPDATED AVATAR CALL -->
-                                        <img [src]="getAvatarUrl(batch.user, state.avatarStyle())" class="w-6 h-6 rounded-full border border-slate-200">
-                                        <span class="text-xs font-bold text-slate-700">{{batch.user}}</span>
+                                        <img [src]="getAvatarUrl(batch.user, state.avatarStyle())" class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600">
+                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{batch.user}}</span>
                                     </div>
-                                    <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>
+                                    <span class="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>
                                 </div>
                                 
                                 <div class="pl-8">
-                                    <div class="text-sm font-bold text-slate-800 mb-1">
-                                        <span class="text-indigo-600">{{batch.sampleCount}} mẫu</span>
+                                    <div class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                        <span class="text-indigo-600 dark:text-indigo-400">{{batch.sampleCount}} mẫu</span>
                                     </div>
-                                    <div class="text-xs font-mono text-slate-500 bg-slate-50/50 p-2 rounded-lg border border-slate-100 break-words">
+                                    <div class="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700 break-words">
                                         {{batch.sampleDisplay}}
                                     </div>
                                     <div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button (click)="navTo('traceability/' + batch.id)" class="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 hover:text-blue-600 font-bold shadow-sm transition">
+                                        <button (click)="navTo('traceability/' + batch.id)" class="text-[10px] bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold shadow-sm transition">
                                             <i class="fa-solid fa-qrcode mr-1"></i> Truy xuất
                                         </button>
                                     </div>
@@ -363,8 +367,8 @@ interface KanbanColumn {
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
-                        <button (click)="createBatchForSop(details.sopId)" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                        <button (click)="createBatchForSop(details.sopId)" class="w-full py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none transition active:scale-95 flex items-center justify-center gap-2">
                             <i class="fa-solid fa-plus"></i> Tạo Mẻ Mới Ngay
                         </button>
                     </div>

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { QrGlobalService } from '../services/qr-global.service';
 import { AuthService } from '../services/auth.service';
+import { StateService } from '../services/state.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 
 @Component({
@@ -54,20 +55,20 @@ import { getAvatarUrl } from '../../shared/utils/utils';
     <!-- MENU OVERLAY (Bottom Sheet) -->
     @if (showMenu()) {
         <div class="fixed inset-0 z-[45] bg-black/60 backdrop-blur-sm fade-in" (click)="toggleMenu()"></div>
-        <div class="fixed bottom-20 right-2 left-2 z-[50] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-slide-up origin-bottom">
+        <div class="fixed bottom-20 right-2 left-2 z-[50] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-slide-up origin-bottom">
             
             <!-- User Profile Header -->
-            <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3 active:bg-slate-100 transition" (click)="navTo('/config')">
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 active:bg-slate-100 dark:active:bg-slate-800 transition" (click)="navTo('/config')">
                 <img [src]="getAvatarUrl(auth.currentUser()?.displayName, 'initials', auth.currentUser()?.photoURL)" 
-                     class="w-10 h-10 rounded-full border border-white shadow-sm bg-white object-cover">
+                     class="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 object-cover">
                 <div class="flex-1 min-w-0">
-                    <div class="font-bold text-slate-800 text-sm truncate">{{auth.currentUser()?.displayName}}</div>
-                    <div class="text-xs text-slate-500 truncate">{{auth.currentUser()?.email}}</div>
+                    <div class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{{auth.currentUser()?.displayName}}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{auth.currentUser()?.email}}</div>
                 </div>
                 <div class="flex flex-col items-end">
-                    <span class="text-[9px] font-bold uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded">{{auth.currentUser()?.role}}</span>
+                    <span class="text-[9px] font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">{{auth.currentUser()?.role}}</span>
                 </div>
-                <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-1"></i>
+                <i class="fa-solid fa-chevron-right text-slate-400 dark:text-slate-500 text-xs ml-1"></i>
             </div>
 
             <!-- Grid Menu -->
@@ -76,97 +77,105 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 1. Smart Prep -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/prep')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-purple-100">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-purple-100 dark:border-purple-800/30">
                             <i class="fa-solid fa-flask-vial"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Pha Chế</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Pha Chế</span>
                     </button>
                 }
 
                 <!-- 2. SOP Library / Calculator -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/calculator')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100 dark:border-blue-800/30">
                             <i class="fa-solid fa-play pl-0.5"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Vận hành</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Vận hành</span>
                     </button>
                 }
 
                 <!-- 3. Requests -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/requests')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100 dark:border-orange-800/30">
                             <i class="fa-solid fa-clipboard-list"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Duyệt</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Duyệt</span>
                     </button>
                 }
 
                 <!-- 4. Standards -->
                 @if(auth.canViewStandards()) {
                     <button (click)="navTo('/standards')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100 dark:border-indigo-800/30">
                             <i class="fa-solid fa-vial-circle-check"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Chuẩn</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Chuẩn</span>
                     </button>
                 }
 
                 <!-- 5. Recipes -->
                 @if(auth.canViewRecipes()) {
                     <button (click)="navTo('/recipes')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-pink-100">
+                        <div class="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-pink-100 dark:border-pink-800/30">
                             <i class="fa-solid fa-scroll"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Công thức</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Công thức</span>
                     </button>
                 }
 
                 <!-- 6. Labels (Synced with Sidebar Inventory->Labels) -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/labels')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
                             <i class="fa-solid fa-tag"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">In Tem</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">In Tem</span>
                     </button>
                 }
 
                 <!-- 7. Reports -->
                 @if(auth.canViewReports()) {
                     <button (click)="navTo('/stats')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-emerald-100">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-emerald-100 dark:border-emerald-800/30">
                             <i class="fa-solid fa-chart-pie"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Báo cáo</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Báo cáo</span>
                     </button>
                 }
 
                 <!-- 8. Config (Shortcut) -->
                 @if(auth.canManageSystem()) {
                     <button (click)="navTo('/config')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-gray-50 text-gray-600 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-gray-200">
+                        <div class="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-gray-200 dark:border-slate-600">
                             <i class="fa-solid fa-gears"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Cấu hình</span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Cấu hình</span>
                     </button>
                 }
 
+                <!-- Dark Mode Toggle -->
+                <button (click)="toggleDarkMode()" class="flex flex-col items-center gap-1 group">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
+                        <i class="fa-solid" [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">{{ state.darkMode() ? 'Sáng' : 'Tối' }}</span>
+                </button>
+
                 <!-- 9. INSTALL APP -->
                 <button (click)="toggleInstallGuide()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700 dark:border-slate-600">
                         <i class="fa-brands fa-apple"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Cài App</span>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Cài App</span>
                 </button>
 
                 <!-- 10. Logout -->
                 <button (click)="auth.logout()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-red-500 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 hover:bg-red-50">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700/50 text-red-500 dark:text-red-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20">
                         <i class="fa-solid fa-power-off"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-600 text-center leading-tight">Thoát</span>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Thoát</span>
                 </button>
 
             </div>
@@ -174,31 +183,31 @@ import { getAvatarUrl } from '../../shared/utils/utils';
     }
 
     <!-- MAIN BOTTOM BAR -->
-    <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-[40] md:hidden pb-safe">
+    <div class="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-none z-[40] md:hidden pb-safe">
       <div class="flex items-center justify-around h-16 px-1 relative">
         
         <!-- 1. Dashboard (Always) -->
         <button (click)="navTo('/dashboard')" class="flex flex-col items-center justify-center w-14 gap-1 group">
           <i class="fa-solid fa-house text-lg transition-all duration-300" 
-             [class]="isActive('/dashboard') ? 'text-blue-600 -translate-y-1' : 'text-slate-400 group-hover:text-slate-600'"></i>
+             [class]="isActive('/dashboard') ? 'text-blue-600 dark:text-blue-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
           <span class="text-[9px] font-bold transition-colors" 
-                [class]="isActive('/dashboard') ? 'text-blue-600' : 'text-slate-400'">Home</span>
+                [class]="isActive('/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">Home</span>
         </button>
 
         <!-- 2. Inventory (Checked) -->
         @if(auth.canViewInventory()) {
             <button (click)="navTo('/inventory')" class="flex flex-col items-center justify-center w-14 gap-1 group">
             <i class="fa-solid fa-boxes-stacked text-lg transition-all duration-300" 
-                [class]="isActive('/inventory') ? 'text-blue-600 -translate-y-1' : 'text-slate-400 group-hover:text-slate-600'"></i>
+                [class]="isActive('/inventory') ? 'text-blue-600 dark:text-blue-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
             <span class="text-[9px] font-bold transition-colors" 
-                    [class]="isActive('/inventory') ? 'text-blue-600' : 'text-slate-400'">Kho</span>
+                    [class]="isActive('/inventory') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">Kho</span>
             </button>
         }
 
         <!-- 3. SCAN (Center - Always) -->
         <div class="relative -top-6">
             <button (click)="qrService.startScan()" 
-                    class="w-14 h-14 rounded-full bg-slate-900 text-white shadow-lg shadow-slate-400 flex items-center justify-center transform active:scale-90 transition-all border-4 border-gray-50 group">
+                    class="w-14 h-14 rounded-full bg-slate-900 dark:bg-slate-700 text-white shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center transform active:scale-90 transition-all border-4 border-gray-50 dark:border-slate-900 group">
                 <i class="fa-solid fa-qrcode text-xl group-hover:scale-110 transition-transform"></i>
             </button>
         </div>
@@ -207,21 +216,21 @@ import { getAvatarUrl } from '../../shared/utils/utils';
         @if(auth.canViewSop()) {
             <button (click)="navTo('/smart-batch')" class="flex flex-col items-center justify-center w-14 gap-1 group">
             <i class="fa-solid fa-wand-magic-sparkles text-lg transition-all duration-300" 
-                [class]="isActive('/smart-batch') ? 'text-teal-600 -translate-y-1' : 'text-slate-400 group-hover:text-slate-600'"></i>
+                [class]="isActive('/smart-batch') ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
             <span class="text-[9px] font-bold transition-colors" 
-                    [class]="isActive('/smart-batch') ? 'text-teal-600' : 'text-slate-400'">Chạy Mẻ</span>
+                    [class]="isActive('/smart-batch') ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'">Chạy Mẻ</span>
             </button>
         }
 
         <!-- 5. MORE MENU (Always) -->
         <button (click)="toggleMenu()" class="flex flex-col items-center justify-center w-14 gap-1 group">
-          <div class="relative transition-all duration-300" [class]="showMenu() ? '-translate-y-1 text-blue-600' : 'text-slate-400 group-hover:text-slate-600'">
+          <div class="relative transition-all duration-300" [class]="showMenu() ? '-translate-y-1 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'">
              <i class="fa-solid" [class]="showMenu() ? 'fa-xmark text-xl' : 'fa-grid-2 text-lg'"></i>
              <!-- Use fa-grid-2 or fa-bars -->
              @if(!showMenu()) { <i class="fa-solid fa-bars text-lg"></i> }
           </div>
           <span class="text-[9px] font-bold transition-colors" 
-                [class]="showMenu() ? 'text-blue-600' : 'text-slate-400'">{{ showMenu() ? 'Đóng' : 'Thêm' }}</span>
+                [class]="showMenu() ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">{{ showMenu() ? 'Đóng' : 'Thêm' }}</span>
         </button>
 
       </div>
@@ -235,12 +244,18 @@ import { getAvatarUrl } from '../../shared/utils/utils';
 })
 export class BottomNavComponent {
   router: Router = inject(Router);
+  state = inject(StateService);
   qrService = inject(QrGlobalService);
   auth = inject(AuthService);
   getAvatarUrl = getAvatarUrl;
 
   showMenu = signal(false);
   showInstallGuide = signal(false);
+
+  toggleDarkMode() {
+    this.state.toggleDarkMode();
+    this.showMenu.set(false);
+  }
 
   toggleMenu() {
       this.showMenu.update(v => !v);

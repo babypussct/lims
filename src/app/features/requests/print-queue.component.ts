@@ -18,33 +18,33 @@ import { ToastService } from '../../core/services/toast.service';
   template: `
     <div class="w-full space-y-6 pb-20 fade-in h-full flex flex-col">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fa-solid fa-print text-purple-500"></i> Hàng đợi In
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-print text-purple-500 dark:text-purple-400"></i> Hàng đợi In
             </h2>
             
             <div class="flex gap-2">
                @if(state.isAdmin()) {
                  <button (click)="deleteSelected()" [disabled]="selectedLogIds().size === 0"
-                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="px-4 py-2 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg font-bold shadow-sm dark:shadow-none transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fa-solid fa-trash-can"></i> <span class="hidden md:inline">Xóa</span>
                  </button>
                }
                
                <button (click)="printSelected()" [disabled]="selectedLogIds().size === 0 || isPrinting()"
-                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-bold shadow-sm dark:shadow-none transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   @if(isPrinting()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                   @else { <i class="fa-solid fa-print"></i> } Xem & In
                </button>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex-1 flex flex-col overflow-hidden">
             <div class="flex-1 overflow-y-auto">
                 <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 shadow-sm">
+                    <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50 sticky top-0 shadow-sm dark:shadow-none border-b border-slate-200 dark:border-slate-700">
                         <tr>
                             <th class="px-3 py-3 w-12 text-center">
-                               <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll()" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                               <input type="checkbox" [checked]="areAllSelected()" (change)="toggleSelectAll()" class="w-4 h-4 accent-blue-600 dark:accent-blue-500 cursor-pointer">
                             </th>
                             <th class="px-4 py-3">Quy trình (SOP)</th>
                             <th class="px-4 py-3">Người duyệt</th>
@@ -52,7 +52,7 @@ import { ToastService } from '../../core/services/toast.service';
                             <th class="px-4 py-3 text-center">Hành động</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
                         @if(isLoading()) {
                             @for(i of [1,2,3,4,5]; track i) {
                                 <tr>
@@ -71,26 +71,26 @@ import { ToastService } from '../../core/services/toast.service';
                             }
                         } @else {
                             @for (log of filteredLogs(); track log.id) {
-                                <tr class="transition hover:bg-slate-50" [class.bg-blue-50]="selectedLogIds().has(log.id)">
+                                <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-700/50" [ngClass]="{'bg-blue-50 dark:bg-blue-900/20': selectedLogIds().has(log.id)}">
                                     <td class="px-3 py-2 text-center">
-                                    <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                                    <input type="checkbox" [checked]="selectedLogIds().has(log.id)" (change)="toggleSelection(log.id)" class="w-4 h-4 accent-blue-600 dark:accent-blue-500 cursor-pointer">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <div class="font-bold text-slate-700">
+                                        <div class="font-bold text-slate-700 dark:text-slate-200">
                                             {{ log.sopBasicInfo?.name || log.printData?.sop?.name || '---' }}
                                         </div>
-                                        <div class="text-xs text-slate-400">
+                                        <div class="text-xs text-slate-400 dark:text-slate-500">
                                             {{ log.sopBasicInfo?.category || log.printData?.sop?.category || '---' }}
                                         </div>
                                     </td>
-                                    <td class="px-4 py-2 text-slate-600 font-medium">{{log.user}}</td>
-                                    <td class="px-4 py-2 text-slate-500 text-xs">{{formatDate(log.timestamp)}}</td>
+                                    <td class="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium">{{log.user}}</td>
+                                    <td class="px-4 py-2 text-slate-500 dark:text-slate-400 text-xs">{{formatDate(log.timestamp)}}</td>
                                     <td class="px-4 py-2 text-center">
-                                        <button (click)="printSingle(log)" class="text-blue-600 hover:text-blue-800 p-2 rounded-md transition" title="In phiếu này">
+                                        <button (click)="printSingle(log)" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-2 rounded-md transition" title="In phiếu này">
                                             <i class="fa-solid fa-print"></i>
                                         </button>
                                         @if (state.isAdmin()) {
-                                        <button (click)="deleteSingle(log)" class="text-red-500 hover:text-red-700 p-2 rounded-md transition" title="Xóa phiếu này">
+                                        <button (click)="deleteSingle(log)" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-md transition" title="Xóa phiếu này">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                         }
@@ -98,8 +98,8 @@ import { ToastService } from '../../core/services/toast.service';
                                 </tr>
                             } @empty {
                                 <tr>
-                                    <td colspan="5" class="text-center py-20 text-slate-400">
-                                        <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-300"></i>
+                                    <td colspan="5" class="text-center py-20 text-slate-400 dark:text-slate-500">
+                                        <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-300 dark:text-slate-600"></i>
                                         <p>Không có phiếu in nào trong hàng đợi.</p>
                                     </td>
                                 </tr>

@@ -88,7 +88,7 @@ import { PrintService } from './core/services/print.service';
            </div>
         } 
         @else {
-           <div class="min-h-screen h-[100dvh] bg-gray-50 flex overflow-hidden relative">
+           <div class="min-h-screen h-[100dvh] bg-gray-50 dark:bg-slate-900 flex overflow-hidden relative">
                 
                 <!-- Desktop Sidebar (Hidden on Mobile) -->
                 @if (!state.focusMode()) {
@@ -103,35 +103,20 @@ import { PrintService } from './core/services/print.service';
                       [class.md:ml-20]="state.sidebarCollapsed() && !state.focusMode()"
                       [class.p-0]="state.focusMode()">
                    
-                   <!-- Desktop Navbar (Hidden on Focus Mode & Mobile) -->
-                   @if (!state.focusMode()) {
-                       <nav class="hidden md:flex relative flex-col justify-center px-4 py-2 mx-6 mt-4 transition-all shadow-none duration-250 ease-in-out backdrop-blur-2xl bg-white/80 rounded-2xl shadow-navbar z-30 shrink-0">
-                          @if (state.permissionError()) {
-                             <div class="w-full bg-red-50 border border-red-100 rounded-lg p-2 mb-2 flex items-center justify-between animate-bounce-in">
-                                 <div class="flex items-center gap-2 text-xs text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
-                             </div>
-                          }
-                          <div class="flex items-center justify-between w-full">
-                             <div class="flex items-center gap-3">
-                                <div><h6 class="mb-0 font-bold capitalize text-gray-800 text-base">{{ pageTitle() }}</h6></div>
-                             </div>
-                             
-                             <div class="flex items-center gap-3 ml-auto">
-                                 <div class="flex items-center px-2 py-2 text-sm font-semibold transition-all ease-nav-brand text-gray-600"><i class="fa fa-user mr-2"></i><span>{{state.currentUser()?.displayName}}</span></div>
-                                 <button (click)="router.navigate(['/config'])" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg active:scale-95" [title]="auth.canManageSystem() ? 'Cấu hình Hệ thống' : 'Tài khoản cá nhân'"><i class="fa-solid" [class.fa-gears]="auth.canManageSystem()" [class.fa-user-gear]="!auth.canManageSystem()"></i></button>
-                                 <button (click)="auth.logout()" class="w-10 h-10 flex items-center justify-center text-sm transition-all ease-nav-brand text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-95" title="Đăng xuất"><i class="fa-solid fa-power-off text-lg"></i></button>
-                             </div>
-                          </div>
-                       </nav>
-                   }
-
                    <!-- Content Viewport -->
-                   <!-- UPDATED: Added 'px-3 pt-4' for mobile to prevent full-bleed -->
+                   <!-- UPDATED: Adjusted padding to account for removed Topbar -->
                    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-20 md:pb-6" 
                         [class.px-3]="!state.focusMode()" 
                         [class.pt-4]="!state.focusMode()" 
                         [class.md:p-6]="!state.focusMode()"
                         [class.p-0]="state.focusMode()">
+                        
+                       @if (state.permissionError()) {
+                          <div class="w-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm">
+                              <div class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
+                          </div>
+                       }
+
                        <div class="flex-1 h-full"><router-outlet></router-outlet></div>
                    </div>
                 </main>

@@ -58,29 +58,29 @@ interface MixRow {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-full flex flex-col fade-in pb-10 font-sans text-slate-800">
+    <div class="h-full flex flex-col fade-in pb-10 font-sans text-slate-800 dark:text-slate-200">
         
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
             <div>
-                <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800">
+                <h2 class="text-2xl font-black flex items-center gap-3 text-slate-800 dark:text-slate-100">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg">
                         <i class="fa-solid fa-flask-vial"></i>
                     </div>
                     Trạm Pha Chế
                 </h2>
-                <p class="text-xs font-medium text-slate-500 mt-1 ml-1">Công cụ tính toán & Tương tác kho hóa chất</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 ml-1">Công cụ tính toán & Tương tác kho hóa chất</p>
             </div>
 
-            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                 <button (click)="setSystemMode('sandbox')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
-                        [class]="systemMode() === 'sandbox' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                        [class]="systemMode() === 'sandbox' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
                     <i class="fa-solid fa-calculator"></i> Nháp (Sandbox)
                 </button>
                 <button (click)="setSystemMode('real')" 
                         class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
-                        [class]="systemMode() === 'real' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'"
+                        [class]="systemMode() === 'real' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                         [class.opacity-60]="!auth.canEditInventory() && systemMode() !== 'real'"
                         [title]="auth.canEditInventory() ? 'Chế độ Thực (Trừ kho)' : 'Yêu cầu quyền Sửa Kho'">
                     <i class="fa-solid fa-link"></i> Kho (Real)
@@ -92,14 +92,14 @@ interface MixRow {
         <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
             <!-- LEFT PANEL: CONFIG -->
-            <div class="w-full xl:w-5/12 bg-white rounded-3xl shadow-soft-xl border border-slate-100 flex flex-col overflow-hidden h-[600px] xl:h-auto">
+            <div class="w-full xl:w-5/12 bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden h-[600px] xl:h-auto">
                 
                 <!-- Mode Tabs -->
-                <div class="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
+                <div class="flex border-b border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
                     @for (m of modes; track m.id) {
                         <button (click)="setCalcMode(m.id)" 
-                                class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 whitespace-nowrap flex flex-col items-center gap-1"
-                                [class]="calcMode() === m.id ? 'border-' + m.color + '-500 text-' + m.color + '-600 bg-' + m.color + '-50/20' : 'border-transparent text-slate-400'">
+                                class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap flex flex-col items-center gap-1"
+                                [class]="calcMode() === m.id ? 'border-' + m.color + '-500 text-' + m.color + '-600 dark:text-' + m.color + '-400 bg-' + m.color + '-50/20 dark:bg-' + m.color + '-900/20' : 'border-transparent text-slate-400 dark:text-slate-500'">
                             <i class="fa-solid {{m.icon}} text-sm mb-0.5"></i> {{m.label}}
                         </button>
                     }
@@ -109,8 +109,8 @@ interface MixRow {
                     
                     <!-- CHEMICAL SELECTOR (Real Mode & Not Mix & Not Sample Prep) -->
                     @if (systemMode() === 'real' && calcMode() !== 'mix' && calcMode() !== 'sample_prep') {
-                        <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 animate-slide-up relative">
-                            <label class="text-[10px] font-bold text-purple-800 uppercase flex items-center gap-2">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl border border-purple-100 dark:border-purple-800/30 space-y-2 animate-slide-up relative">
+                            <label class="text-[10px] font-bold text-purple-800 dark:text-purple-300 uppercase flex items-center gap-2">
                                 <i class="fa-solid fa-search"></i> Chọn Hóa chất (Trừ kho)
                             </label>
                             
@@ -118,8 +118,8 @@ interface MixRow {
                                 <div class="relative">
                                     <input [ngModel]="searchTerm()" (ngModelChange)="onSearch($event)" 
                                            placeholder="Nhập tên, mã số, hoặc công thức..." 
-                                           class="w-full pl-9 pr-4 py-3 rounded-xl border-none ring-1 ring-purple-200 focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 placeholder-purple-300 shadow-sm">
-                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-purple-300"></i>
+                                           class="w-full pl-9 pr-4 py-3 rounded-xl border-none ring-1 ring-purple-200 dark:ring-purple-700/50 focus:ring-2 focus:ring-purple-500 bg-white dark:bg-slate-800 outline-none text-sm font-bold text-slate-700 dark:text-slate-200 placeholder-purple-300 dark:placeholder-purple-500/50 shadow-sm">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-purple-300 dark:text-purple-500/50"></i>
                                     
                                     @if (isSearching()) {
                                         <div class="absolute right-3 top-3 text-purple-500"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
@@ -127,13 +127,13 @@ interface MixRow {
 
                                     <!-- Dropdown -->
                                     @if (searchResults().length > 0) {
-                                        <div class="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 max-h-60 overflow-y-auto z-50 custom-scrollbar">
+                                        <div class="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-60 overflow-y-auto z-50 custom-scrollbar">
                                             @for (item of searchResults(); track item.id) {
-                                                <div (click)="selectGlobalItem(item)" class="p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-50 last:border-0 group transition">
-                                                    <div class="font-bold text-sm text-slate-700 group-hover:text-purple-700">{{item.name}}</div>
+                                                <div (click)="selectGlobalItem(item)" class="p-3 hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer border-b border-slate-50 dark:border-slate-700/50 last:border-0 group transition">
+                                                    <div class="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-400">{{item.name}}</div>
                                                     <div class="flex justify-between mt-1">
-                                                        <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{{item.id}}</span>
-                                                        <span class="text-[10px] font-bold" [class]="item.stock > 0 ? 'text-emerald-600' : 'text-red-500'">
+                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{item.id}}</span>
+                                                        <span class="text-[10px] font-bold" [class]="item.stock > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'">
                                                             Tồn: {{formatNum(item.stock)}} {{item.unit}}
                                                         </span>
                                                     </div>
@@ -143,18 +143,18 @@ interface MixRow {
                                     }
                                 </div>
                             } @else {
-                                <div class="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-purple-200 shadow-sm">
-                                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg shrink-0">
+                                <div class="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3 rounded-xl border border-purple-200 dark:border-purple-800/50 shadow-sm">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-lg shrink-0">
                                         <i class="fa-solid fa-flask"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-bold text-slate-800 truncate">{{selectedItem()?.name}}</div>
-                                        <div class="text-[11px] text-slate-500 flex items-center gap-2">
-                                            <span class="bg-slate-100 px-1.5 rounded font-mono">{{selectedItem()?.id}}</span>
-                                            <span>Tồn: <b class="text-emerald-600">{{formatNum(selectedItem()?.stock)}} {{selectedItem()?.unit}}</b></span>
+                                        <div class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{{selectedItem()?.name}}</div>
+                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                            <span class="bg-slate-100 dark:bg-slate-700 px-1.5 rounded font-mono">{{selectedItem()?.id}}</span>
+                                            <span>Tồn: <b class="text-emerald-600 dark:text-emerald-400">{{formatNum(selectedItem()?.stock)}} {{selectedItem()?.unit}}</b></span>
                                         </div>
                                     </div>
-                                    <button (click)="clearSelection()" class="w-8 h-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition flex items-center justify-center">
+                                    <button (click)="clearSelection()" class="w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition flex items-center justify-center">
                                         <i class="fa-solid fa-times"></i>
                                     </button>
                                 </div>
@@ -544,7 +544,7 @@ interface MixRow {
             <!-- RIGHT PANEL: RESULTS -->
             <div class="flex-1 flex flex-col gap-6 h-[600px] xl:h-auto">
                 
-                <div class="bg-white rounded-3xl shadow-soft-xl border border-slate-100 overflow-hidden relative flex-1 flex flex-col">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl border border-slate-100 dark:border-slate-700 overflow-hidden relative flex-1 flex flex-col">
                     <!-- Color Bar -->
                     <div class="absolute top-0 left-0 w-full h-1.5 transition-colors duration-500" 
                          [class.bg-blue-500]="calcMode() === 'molar'"
@@ -556,7 +556,7 @@ interface MixRow {
                     </div>
 
                     <div class="p-6 md:p-8 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
-                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 text-center">Kết quả tính toán</div>
+                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6 text-center">Kết quả tính toán</div>
                         
                         <!-- SAMPLE PREP RESULTS -->
                         @if (calcMode() === 'sample_prep') {
@@ -752,15 +752,15 @@ interface MixRow {
                     </div>
 
                     <!-- FOOTER ACTIONS -->
-                    <div class="p-5 bg-slate-50 border-t border-slate-200 flex gap-3 shrink-0">
-                        <button (click)="goToLabels()" class="flex-1 bg-white border border-slate-300 text-slate-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-print text-slate-400"></i> In Nhãn
+                    <div class="p-5 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex gap-3 shrink-0">
+                        <button (click)="goToLabels()" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print text-slate-400 dark:text-slate-500"></i> In Nhãn
                         </button>
                         
                         @if (systemMode() === 'real') {
                             <button (click)="confirmTransaction()" 
                                     [disabled]="!canFulfill() || isProcessing()"
-                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-200 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-200 dark:shadow-none transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... } 
                                 @else { <i class="fa-solid fa-boxes-packing"></i> Xác nhận & Trừ kho }
                             </button>
@@ -823,13 +823,13 @@ interface MixRow {
     </div>
   `,
   styles: [`
-    .card-input { @apply bg-white rounded-2xl border shadow-sm overflow-hidden; }
+    .card-input { @apply bg-white dark:bg-slate-800 rounded-2xl border dark:border-slate-700 shadow-sm overflow-hidden; }
     .card-header { @apply px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2; }
-    .label { @apply text-[10px] font-bold text-slate-500 uppercase block mb-1 tracking-wide; }
-    .input-wrapper { @apply flex items-center border border-slate-200 rounded-xl bg-slate-50 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition overflow-hidden; }
-    .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-400 focus:bg-white transition placeholder-slate-300; }
-    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 select-none bg-transparent; }
-    .select-unit { @apply bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 cursor-pointer px-2; }
+    .label { @apply text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1 tracking-wide; }
+    .input-wrapper { @apply flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition overflow-hidden; }
+    .input-field { @apply w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition placeholder-slate-300 dark:placeholder-slate-600; }
+    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 dark:text-slate-500 select-none bg-transparent; }
+    .select-unit { @apply bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-blue-400 dark:focus:border-blue-500 cursor-pointer px-2; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -1429,7 +1429,7 @@ export class SmartPrepComponent {
         }
       `;
 
-      let htmlContent = `<html><head><title>Quick Print</title><style>${css}</style></head><body>`;
+      let htmlContent = `<!DOCTYPE html><html><head><title>Quick Print</title><style>${css}</style></head><body onload="window.focus(); window.print();">`;
       
       labels.forEach(label => {
           htmlContent += `<div class="label-container"><div class="label-text">${label}</div></div>`;
@@ -1437,13 +1437,9 @@ export class SmartPrepComponent {
 
       htmlContent += `</body></html>`;
 
+      printWindow.document.open();
       printWindow.document.write(htmlContent);
       printWindow.document.close();
-
-      printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-      };
   }
 
   goToLabels() {
