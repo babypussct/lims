@@ -468,17 +468,17 @@ import { Unsubscribe } from 'firebase/firestore';
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
-                                        <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500">
+                                        <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]">
                                     </div>
                                     <div>
                                         <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
                                         <div class="flex items-center gap-2">
-                                            <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500">
+                                            <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500 [color-scheme:light] dark:[color-scheme:dark]">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"></div>
                                     <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
                                 </div>
                                 
@@ -691,7 +691,7 @@ import { Unsubscribe } from 'firebase/firestore';
                 </div>
 
                 <div class="space-y-4">
-                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 [color-scheme:light] dark:[color-scheme:dark]"></div>
                     <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 dark:border-indigo-800/50 bg-white dark:bg-slate-800 rounded-xl p-3 font-black text-2xl text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-center" placeholder="0.00" autofocus></div>

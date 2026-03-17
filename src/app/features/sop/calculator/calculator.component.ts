@@ -130,8 +130,8 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                               <div class="group">
                                  <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Ngày phân tích</label>
                                  <div class="relative">
-                                    <input type="date" formControlName="analysisDate"
-                                           class="w-full pl-4 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm">
+                                    <input type="date" formControlName="analysisDate" class="[color-scheme:light] dark:[color-scheme:dark]"
+                                           class="w-full pl-4 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm [color-scheme:light] dark:[color-scheme:dark]">
                                  </div>
                               </div>
 

@@ -102,7 +102,7 @@ interface LabelPage {
                     
                     <!-- Fetch from Requests -->
                     <div class="flex gap-2 mb-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                        <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white">
+                        <input type="date" [ngModel]="fetchDate()" (ngModelChange)="fetchDate.set($event)" class="input-std py-1.5 text-xs flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                         <button (click)="fetchFromRequests()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1 whitespace-nowrap">
                             <i class="fa-solid fa-cloud-arrow-down"></i> Lấy mẫu
                         </button>
