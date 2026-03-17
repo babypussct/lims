@@ -92,14 +92,14 @@ interface MixRow {
         <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
             <!-- LEFT PANEL: CONFIG -->
-            <div class="w-full xl:w-5/12 bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden h-[600px] xl:h-auto">
+            <div class="w-full xl:w-5/12 bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden h-[600px] xl:h-auto">
                 
                 <!-- Mode Tabs -->
                 <div class="flex border-b border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
                     @for (m of modes; track m.id) {
                         <button (click)="setCalcMode(m.id)" 
                                 class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap flex flex-col items-center gap-1"
-                                [class]="calcMode() === m.id ? 'border-' + m.color + '-500 text-' + m.color + '-600 dark:text-' + m.color + '-400 bg-' + m.color + '-50/20 dark:bg-' + m.color + '-900/20' : 'border-transparent text-slate-400 dark:text-slate-500'">
+                                [class]="calcMode() === m.id ? m.activeClass : 'border-transparent text-slate-400'">
                             <i class="fa-solid {{m.icon}} text-sm mb-0.5"></i> {{m.label}}
                         </button>
                     }
@@ -132,7 +132,7 @@ interface MixRow {
                                                 <div (click)="selectGlobalItem(item)" class="p-3 hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer border-b border-slate-50 dark:border-slate-700/50 last:border-0 group transition">
                                                     <div class="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-400">{{item.name}}</div>
                                                     <div class="flex justify-between mt-1">
-                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{item.id}}</span>
+                                                        <span class="text-[10px] text-slate-400 font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{item.id}}</span>
                                                         <span class="text-[10px] font-bold" [class]="item.stock > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'">
                                                             Tồn: {{formatNum(item.stock)}} {{item.unit}}
                                                         </span>
@@ -154,7 +154,7 @@ interface MixRow {
                                             <span>Tồn: <b class="text-emerald-600 dark:text-emerald-400">{{formatNum(selectedItem()?.stock)}} {{selectedItem()?.unit}}</b></span>
                                         </div>
                                     </div>
-                                    <button (click)="clearSelection()" class="w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition flex items-center justify-center">
+                                    <button (click)="clearSelection()" class="w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 dark:text-red-400 dark:hover:text-red-400 transition flex items-center justify-center">
                                         <i class="fa-solid fa-times"></i>
                                     </button>
                                 </div>
@@ -164,8 +164,8 @@ interface MixRow {
 
                     <!-- 1. MOLAR (Pha rắn) -->
                     @if (calcMode() === 'molar') {
-                        <div class="card-input border-blue-100">
-                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-weight-hanging"></i> Thông số Chất tan</div>
+                        <div class="card-input border-blue-100 dark:border-blue-800/30">
+                            <div class="card-header bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"><i class="fa-solid fa-weight-hanging"></i> Thông số Chất tan</div>
                             <div class="p-4 space-y-4">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="space-y-1">
@@ -186,8 +186,8 @@ interface MixRow {
                             </div>
                         </div>
 
-                        <div class="card-input border-blue-100">
-                            <div class="card-header bg-blue-50 text-blue-700"><i class="fa-solid fa-scale-balanced"></i> Cân thực tế & Định mức</div>
+                        <div class="card-input border-blue-100 dark:border-blue-800/30">
+                            <div class="card-header bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"><i class="fa-solid fa-scale-balanced"></i> Cân thực tế & Định mức</div>
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Khối lượng cân thực tế (m)</label>
@@ -213,8 +213,8 @@ interface MixRow {
 
                     <!-- 2. DILUTION (Pha loãng) -->
                     @if (calcMode() === 'dilution') {
-                        <div class="card-input border-orange-100">
-                            <div class="card-header bg-orange-50 text-orange-700"><i class="fa-solid fa-flask"></i> Thông số Gốc & Đích</div>
+                        <div class="card-input border-orange-100 dark:border-orange-800/30">
+                            <div class="card-header bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400"><i class="fa-solid fa-flask"></i> Thông số Gốc & Đích</div>
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Gốc (Stock)</label>
@@ -249,12 +249,12 @@ interface MixRow {
 
                     <!-- 3. SPIKING -->
                     @if (calcMode() === 'spiking') {
-                        <div class="card-input border-emerald-100">
+                        <div class="card-input border-emerald-100 dark:border-emerald-800/30">
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Chuẩn (Stock)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600" placeholder="C_stock">
+                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-emerald-600 dark:text-emerald-400" placeholder="C_stock">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
                                             @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -289,12 +289,12 @@ interface MixRow {
 
                     <!-- 4. SERIAL DILUTION (Updated UI) -->
                     @if (calcMode() === 'serial') {
-                        <div class="card-input border-fuchsia-100">
+                        <div class="card-input border-fuchsia-100 dark:border-fuchsia-800/30">
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Nồng độ Gốc (Stock)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600" placeholder="C1">
+                                        <input type="number" min="0" step="any" [(ngModel)]="stockConc" class="input-field flex-1 font-bold text-fuchsia-600 dark:text-fuchsia-400" placeholder="C1">
                                         <select [(ngModel)]="concUnit" class="select-unit w-24">
                                             @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -311,28 +311,28 @@ interface MixRow {
                                 </div>
                                 
                                 <!-- Dynamic List for Points -->
-                                <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                                     <div class="flex justify-between items-center mb-1">
                                         <label class="label mb-0">Các điểm chuẩn</label>
                                         <div class="flex items-center gap-2">
                                             <select [(ngModel)]="targetConcUnit" class="select-unit w-20 h-6 py-0 text-[10px]">
                                                 @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                             </select>
-                                            <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-700 px-2 py-1 rounded hover:bg-fuchsia-100 transition">+ Thêm điểm</button>
+                                            <button (click)="addSerialPoint()" class="text-[10px] font-bold bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 px-2 py-1 rounded hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">+ Thêm điểm</button>
                                         </div>
                                     </div>
                                     <div class="space-y-2">
                                         <!-- FIX: Iterate over signal value and use update helper -->
                                         @for (pt of serialPoints(); track $index) {
                                             <div class="flex gap-2 items-center animate-slide-up">
-                                                <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">{{$index + 1}}</div>
+                                                <div class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">{{$index + 1}}</div>
                                                 <input type="number" min="0" step="any" 
                                                        [ngModel]="pt" 
                                                        (ngModelChange)="updateSerialPoint($index, $event)"
                                                        class="input-field py-1.5 text-sm" 
                                                        placeholder="Conc">
                                                 <div class="text-xs font-bold text-slate-400 w-8">{{targetConcUnit()}}</div>
-                                                <button (click)="removeSerialPoint($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fa-solid fa-times"></i></button>
+                                                <button (click)="removeSerialPoint($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition"><i class="fa-solid fa-times"></i></button>
                                             </div>
                                         }
                                     </div>
@@ -343,12 +343,12 @@ interface MixRow {
 
                     <!-- 5. MIXER (Table UI) -->
                     @if (calcMode() === 'mix') {
-                        <div class="card-input border-indigo-100">
+                        <div class="card-input border-indigo-100 dark:border-indigo-800/30">
                             <div class="p-4 space-y-4">
                                 <div class="space-y-1">
                                     <label class="label">Tổng thể tích hỗn hợp (V_final)</label>
                                     <div class="flex gap-2">
-                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600 text-lg" placeholder="100">
+                                        <input type="number" min="0" step="any" [(ngModel)]="targetVol" class="input-field flex-1 text-center font-black text-indigo-600 dark:text-indigo-400 text-lg" placeholder="100">
                                         <select [(ngModel)]="targetVolUnit" class="select-unit w-24">
                                             @for(u of volUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                         </select>
@@ -360,27 +360,27 @@ interface MixRow {
                                     <div class="flex justify-between items-center mb-2">
                                         <label class="label mb-0">Thành phần</label>
                                         <div class="flex gap-2">
-                                            <button (click)="pasteFromExcel()" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-paste"></i> Paste Excel</button>
-                                            <button (click)="addMixRow()" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition border border-indigo-200">+ Thêm chất</button>
+                                            <button (click)="pasteFromExcel()" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-2 py-1 rounded transition border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1"><i class="fa-solid fa-paste"></i> Paste Excel</button>
+                                            <button (click)="addMixRow()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2 py-1 rounded transition border border-indigo-200 dark:border-indigo-800/50">+ Thêm chất</button>
                                         </div>
                                     </div>
                                     
                                     <div class="space-y-2">
                                         @for (row of mixItems(); track row.id; let i = $index) {
-                                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 relative group transition hover:border-indigo-300 hover:shadow-sm">
-                                                <button (click)="removeMixRow(i)" class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-full hover:bg-white transition"><i class="fa-solid fa-times"></i></button>
+                                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 relative group transition hover:border-indigo-300 hover:shadow-sm">
+                                                <button (click)="removeMixRow(i)" class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center text-slate-300 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-white dark:hover:bg-slate-800 transition"><i class="fa-solid fa-times"></i></button>
                                                 
                                                 <!-- Row Header: Name Search -->
                                                 <div class="mb-2 pr-6 relative">
                                                     @if(systemMode() === 'real' && !row.invItem) {
                                                         <input placeholder="Tìm chất trong kho..." 
                                                                (input)="onSearchMix(i, $event)"
-                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0">
+                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:ring-0">
                                                         <!-- Dropdown -->
                                                         @if(activeMixSearchIndex() === i && searchResults().length > 0) {
-                                                            <div class="absolute top-full left-0 w-full z-20 bg-white shadow-xl rounded-lg max-h-40 overflow-y-auto mt-1 border border-slate-100">
+                                                            <div class="absolute top-full left-0 w-full z-20 bg-white dark:bg-slate-800 shadow-xl rounded-lg max-h-40 overflow-y-auto mt-1 border border-slate-100 dark:border-slate-700">
                                                                 @for(res of searchResults(); track res.id) {
-                                                                    <div (click)="selectMixItem(i, res)" class="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50">
+                                                                    <div (click)="selectMixItem(i, res)" class="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 cursor-pointer text-xs border-b border-slate-50 dark:border-slate-700/50">
                                                                         <div class="font-bold truncate">{{res.name}}</div>
                                                                         <div class="text-[9px] text-slate-400">Tồn: {{res.stock}} {{res.unit}}</div>
                                                                     </div>
@@ -389,14 +389,14 @@ interface MixRow {
                                                         }
                                                     } @else if (row.invItem) {
                                                         <div class="flex items-center gap-2">
-                                                            <span class="text-xs font-bold text-indigo-700 truncate flex-1">{{row.invItem.name}}</span>
-                                                            <button (click)="clearMixItem(i)" class="text-[10px] text-slate-400 hover:text-red-500"><i class="fa-solid fa-rotate-left"></i></button>
+                                                            <span class="text-xs font-bold text-indigo-700 dark:text-indigo-400 truncate flex-1">{{row.invItem.name}}</span>
+                                                            <button (click)="clearMixItem(i)" class="text-[10px] text-slate-400 hover:text-red-500 dark:text-red-400"><i class="fa-solid fa-rotate-left"></i></button>
                                                         </div>
                                                     } @else {
                                                         <!-- FIX: Use safe update method for name -->
                                                         <input [ngModel]="row.name" 
                                                                (ngModelChange)="updateMixItem(i, 'name', $event)" 
-                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 placeholder-slate-400 focus:ring-0" 
+                                                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:ring-0" 
                                                                placeholder="Tên chất {{i+1}}">
                                                     }
                                                 </div>
@@ -409,7 +409,7 @@ interface MixRow {
                                                         <input type="number" min="0" step="any" 
                                                                [ngModel]="row.stockConc" 
                                                                (ngModelChange)="updateMixItem(i, 'stockConc', $event)"
-                                                               class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                               class="w-full border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs text-center font-bold" 
                                                                placeholder="C_stock">
                                                     </div>
                                                     <div class="flex gap-1">
@@ -419,7 +419,7 @@ interface MixRow {
                                                             <input type="number" min="0" step="any" 
                                                                    [ngModel]="row.targetConc" 
                                                                    (ngModelChange)="updateMixItem(i, 'targetConc', $event)"
-                                                                   class="w-full border border-slate-200 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                                   class="w-full border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs text-center font-bold" 
                                                                    placeholder="C_target">
                                                         </div>
                                                         <div class="w-16">
@@ -427,7 +427,7 @@ interface MixRow {
                                                             <!-- FIX: Safe update for unit -->
                                                             <select [ngModel]="row.unit" 
                                                                     (ngModelChange)="updateMixItem(i, 'unit', $event)"
-                                                                    class="w-full border border-slate-200 rounded px-1 py-1 text-[10px] font-bold bg-white h-[26px]">
+                                                                    class="w-full border border-slate-200 dark:border-slate-700 rounded px-1 py-1 text-[10px] font-bold bg-white dark:bg-slate-800 h-[26px]">
                                                                 @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                                             </select>
                                                         </div>
@@ -445,10 +445,10 @@ interface MixRow {
                     @if (calcMode() === 'sample_prep') {
                         <div class="space-y-3">
                             <!-- Step 1 -->
-                            <div class="card-input border-teal-100 animate-slide-up">
-                                <div class="px-4 py-2 bg-teal-50 text-teal-700 text-xs font-bold uppercase flex justify-between items-center">
+                            <div class="card-input border-teal-100 dark:border-teal-800/30 animate-slide-up">
+                                <div class="px-4 py-2 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 text-xs font-bold uppercase flex justify-between items-center">
                                     <span><i class="fa-solid fa-scale-balanced"></i> Bước 1: Mẫu & Chiết</span>
-                                    <span class="text-[9px] bg-white px-2 rounded-full border border-teal-100">Start</span>
+                                    <span class="text-[9px] bg-white dark:bg-slate-800 px-2 rounded-full border border-teal-100 dark:border-teal-800/30">Start</span>
                                 </div>
                                 <div class="p-3 grid grid-cols-2 gap-3">
                                     <div>
@@ -469,11 +469,11 @@ interface MixRow {
                             </div>
 
                             <!-- Flow Arrow -->
-                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+                            <div class="flex justify-center -my-1 text-slate-300 dark:text-slate-400 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
 
                             <!-- Step 2 -->
-                            <div class="card-input border-cyan-100 animate-slide-up">
-                                <div class="px-4 py-2 bg-cyan-50 text-cyan-700 text-xs font-bold uppercase">
+                            <div class="card-input border-cyan-100 dark:border-cyan-800/30 animate-slide-up">
+                                <div class="px-4 py-2 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 text-xs font-bold uppercase">
                                     <i class="fa-solid fa-filter"></i> Bước 2: Làm sạch (Cleanup)
                                 </div>
                                 <div class="p-3">
@@ -484,17 +484,17 @@ interface MixRow {
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                         @if(cleanupAliquot() > extractVol()) {
-                                            <span class="text-red-500 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V1</span>
+                                            <span class="text-red-500 dark:text-red-400 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V1</span>
                                         }
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+                            <div class="flex justify-center -my-1 text-slate-300 dark:text-slate-400 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
 
                             <!-- Step 3 -->
-                            <div class="card-input border-sky-100 animate-slide-up">
-                                <div class="px-4 py-2 bg-sky-50 text-sky-700 text-xs font-bold uppercase">
+                            <div class="card-input border-sky-100 dark:border-sky-800/30 animate-slide-up">
+                                <div class="px-4 py-2 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400 text-xs font-bold uppercase">
                                     <i class="fa-solid fa-vial"></i> Bước 3: Phân đoạn (Aliquot)
                                 </div>
                                 <div class="p-3">
@@ -505,25 +505,25 @@ interface MixRow {
                                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                         @if(concAliquot() > cleanupAliquot()) {
-                                            <span class="text-red-500 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V2</span>
+                                            <span class="text-red-500 dark:text-red-400 text-[10px] font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> > V2</span>
                                         }
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex justify-center -my-1 text-slate-300 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
+                            <div class="flex justify-center -my-1 text-slate-300 dark:text-slate-400 relative z-0"><i class="fa-solid fa-arrow-down"></i></div>
 
                             <!-- Step 4 -->
-                            <div class="card-input border-indigo-100 animate-slide-up">
-                                <div class="px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase flex justify-between items-center">
+                            <div class="card-input border-indigo-100 dark:border-indigo-800/30 animate-slide-up">
+                                <div class="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold uppercase flex justify-between items-center">
                                     <span><i class="fa-solid fa-flask"></i> Bước 4: Định mức cuối</span>
-                                    <span class="text-[9px] bg-white px-2 rounded-full border border-indigo-100">End</span>
+                                    <span class="text-[9px] bg-white dark:bg-slate-800 px-2 rounded-full border border-indigo-100 dark:border-indigo-800/30">End</span>
                                 </div>
                                 <div class="p-3 grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Thể tích cuối (V4)</label>
                                         <div class="relative">
-                                            <input type="number" min="0" step="any" [(ngModel)]="finalVol" class="input-field pr-8 text-indigo-600 font-black text-lg" placeholder="1">
+                                            <input type="number" min="0" step="any" [(ngModel)]="finalVol" class="input-field pr-8 text-indigo-600 dark:text-indigo-400 font-black text-lg" placeholder="1">
                                             <span class="absolute right-3 top-3 text-xs font-bold text-slate-400">mL</span>
                                         </div>
                                     </div>
@@ -544,7 +544,7 @@ interface MixRow {
             <!-- RIGHT PANEL: RESULTS -->
             <div class="flex-1 flex flex-col gap-6 h-[600px] xl:h-auto">
                 
-                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl border border-slate-100 dark:border-slate-700 overflow-hidden relative flex-1 flex flex-col">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden relative flex-1 flex flex-col">
                     <!-- Color Bar -->
                     <div class="absolute top-0 left-0 w-full h-1.5 transition-colors duration-500" 
                          [class.bg-blue-500]="calcMode() === 'molar'"
@@ -556,7 +556,7 @@ interface MixRow {
                     </div>
 
                     <div class="p-6 md:p-8 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
-                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6 text-center">Kết quả tính toán</div>
+                        <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 text-center">Kết quả tính toán</div>
                         
                         <!-- SAMPLE PREP RESULTS -->
                         @if (calcMode() === 'sample_prep') {
@@ -570,32 +570,32 @@ interface MixRow {
                                             {{ formatNum(samplePrepFactor()) }}
                                         </h1>
                                         @if(samplePrepFactor() < 1) {
-                                            <span class="absolute -right-16 top-2 bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-1 rounded border border-teal-200">Cô đặc {{formatNum(1/samplePrepFactor())}}x</span>
+                                            <span class="absolute -right-16 top-2 bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 text-[10px] font-bold px-2 py-1 rounded border border-teal-200 dark:border-teal-800/50">Cô đặc {{formatNum(1/samplePrepFactor())}}x</span>
                                         } @else if(samplePrepFactor() > 1) {
-                                            <span class="absolute -right-16 top-2 bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded border border-orange-200">Loãng {{formatNum(samplePrepFactor())}}x</span>
+                                            <span class="absolute -right-16 top-2 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 text-[10px] font-bold px-2 py-1 rounded border border-orange-200 dark:border-orange-800/50">Loãng {{formatNum(samplePrepFactor())}}x</span>
                                         }
                                     </div>
-                                    <p class="text-[10px] font-mono text-slate-400 mt-2 bg-slate-50 px-3 py-1 rounded-full inline-block border border-slate-200">
+                                    <p class="text-[10px] font-mono text-slate-400 mt-2 bg-slate-50 dark:bg-slate-900/50 px-3 py-1 rounded-full inline-block border border-slate-200 dark:border-slate-700">
                                         f = (V1 × V4) / (m × V3)
                                     </p>
                                 </div>
 
                                 <!-- Reverse Calculator -->
-                                <div class="w-full max-w-sm bg-slate-50 rounded-2xl p-5 border border-slate-200 shadow-sm">
+                                <div class="w-full max-w-sm bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                                     <div class="flex items-center gap-2 mb-4 justify-center">
                                         <i class="fa-solid fa-calculator text-teal-500"></i>
-                                        <span class="text-xs font-bold text-slate-600 uppercase">Tính Nồng độ Mẫu</span>
+                                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Tính Nồng độ Mẫu</span>
                                     </div>
                                     
                                     <div class="flex items-center gap-3">
                                         <div class="flex-1">
                                             <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Kết quả chạy máy</label>
-                                            <input type="number" min="0" step="any" [(ngModel)]="instConc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-700 outline-none focus:border-teal-500 transition" placeholder="C_inst">
+                                            <input type="number" min="0" step="any" [(ngModel)]="instConc" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-center font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-teal-500 transition" placeholder="C_inst">
                                         </div>
-                                        <div class="text-slate-300 text-lg pt-4"><i class="fa-solid fa-arrow-right"></i></div>
+                                        <div class="text-slate-300 dark:text-slate-400 text-lg pt-4"><i class="fa-solid fa-arrow-right"></i></div>
                                         <div class="flex-1">
                                             <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Kết quả thực</label>
-                                            <div class="w-full bg-white border border-teal-200 rounded-xl px-3 py-2 text-center font-black text-teal-700 text-lg shadow-sm">
+                                            <div class="w-full bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-800/50 rounded-xl px-3 py-2 text-center font-black text-teal-700 dark:text-teal-400 text-lg shadow-sm">
                                                 {{ formatNum(sampleResult()) }}
                                             </div>
                                         </div>
@@ -603,7 +603,7 @@ interface MixRow {
                                     
                                     @if(recovery() !== 100) {
                                         <div class="mt-3 text-center">
-                                            <span class="text-[9px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                                            <span class="text-[9px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded border border-orange-100 dark:border-orange-800/30">
                                                 Đã bù hiệu suất {{recovery()}}%
                                             </span>
                                         </div>
@@ -618,12 +618,12 @@ interface MixRow {
                             <div class="text-center space-y-4 animate-scale-in">
                                 <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Thể tích cần hút (Stock)</div>
                                 <div class="relative inline-block">
-                                    <h1 class="text-6xl md:text-7xl font-black tracking-tight text-slate-800 tabular-nums">
+                                    <h1 class="text-6xl md:text-7xl font-black tracking-tight text-slate-800 dark:text-slate-100 tabular-nums">
                                         {{ formatNum(resultValue()) }}
                                     </h1>
                                     <span class="absolute -right-10 top-0 text-lg font-bold text-slate-400">{{ resultUnit() }}</span>
                                 </div>
-                                <p class="text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                                     {{ resultDescription() }}
                                 </p>
                             </div>
@@ -642,8 +642,8 @@ interface MixRow {
                                 
                                 <div class="flex justify-center gap-4 mt-6">
                                     @for(alt of molarResult().alternatives; track alt.unit) {
-                                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 min-w-[100px]">
-                                            <div class="text-lg font-bold text-slate-700">{{formatNum(alt.val)}}</div>
+                                        <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 min-w-[100px]">
+                                            <div class="text-lg font-bold text-slate-700 dark:text-slate-200">{{formatNum(alt.val)}}</div>
                                             <div class="text-[10px] font-bold text-slate-400 uppercase">{{alt.unit}}</div>
                                         </div>
                                     }
@@ -655,7 +655,7 @@ interface MixRow {
                         @if (calcMode() === 'serial') {
                             <div class="w-full animate-slide-up">
                                 <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-fuchsia-600 bg-fuchsia-50 uppercase font-bold">
+                                    <thead class="text-xs text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-900/20 uppercase font-bold">
                                         <tr>
                                             <th class="px-4 py-3 rounded-l-lg">Điểm chuẩn</th>
                                             <th class="px-4 py-3 text-right">Lượng Hút (Stock)</th>
@@ -664,15 +664,15 @@ interface MixRow {
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         @for (pt of serialResult(); track $index) {
-                                            <tr class="hover:bg-fuchsia-50/30 transition">
-                                                <td class="px-4 py-3 font-bold text-slate-700">{{pt.conc}} {{targetConcUnit()}}</td>
-                                                <td class="px-4 py-3 text-right font-mono font-bold text-fuchsia-600">{{formatNum(pt.vStock)}} {{pt.unit}}</td>
-                                                <td class="px-4 py-3 text-right text-slate-500">{{formatNum(pt.vSolvent)}} {{targetVolUnit()}}</td>
+                                            <tr class="hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/40 transition">
+                                                <td class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">{{pt.conc}} {{targetConcUnit()}}</td>
+                                                <td class="px-4 py-3 text-right font-mono font-bold text-fuchsia-600 dark:text-fuchsia-400">{{formatNum(pt.vStock)}} {{pt.unit}}</td>
+                                                <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{{formatNum(pt.vSolvent)}} {{targetVolUnit()}}</td>
                                             </tr>
                                         }
-                                        <tr class="bg-slate-50 font-bold border-t border-slate-200">
-                                            <td class="px-4 py-3 text-slate-500">TỔNG STOCK CẦN</td>
-                                            <td class="px-4 py-3 text-right text-fuchsia-700 text-lg">{{formatNum(serialTotalStock())}} {{serialResult()[0]?.unit || 'µL'}}</td>
+                                        <tr class="bg-slate-50 dark:bg-slate-900/50 font-bold border-t border-slate-200 dark:border-slate-700">
+                                            <td class="px-4 py-3 text-slate-500 dark:text-slate-400">TỔNG STOCK CẦN</td>
+                                            <td class="px-4 py-3 text-right text-fuchsia-700 dark:text-fuchsia-400 text-lg">{{formatNum(serialTotalStock())}} {{serialResult()[0]?.unit || 'µL'}}</td>
                                             <td class="px-4 py-3"></td>
                                         </tr>
                                     </tbody>
@@ -683,12 +683,12 @@ interface MixRow {
                         <!-- MIX TABLE -->
                         @if (calcMode() === 'mix') {
                             <div class="w-full animate-slide-up">
-                                <div class="mb-6 text-center bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <div class="mb-6 text-center bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
                                     <span class="text-xs text-indigo-400 uppercase font-bold">Dung môi thêm vào (QS):</span>
-                                    <div class="text-3xl font-black text-indigo-700">{{formatNum(mixResult().solventVol)}} <span class="text-sm font-normal">{{targetVolUnit()}}</span></div>
+                                    <div class="text-3xl font-black text-indigo-700 dark:text-indigo-400">{{formatNum(mixResult().solventVol)}} <span class="text-sm font-normal">{{targetVolUnit()}}</span></div>
                                 </div>
                                 <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-indigo-600 bg-indigo-50 uppercase font-bold">
+                                    <thead class="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 uppercase font-bold">
                                         <tr>
                                             <th class="px-3 py-2 rounded-l-lg">Chất</th>
                                             <th class="px-3 py-2 text-right rounded-r-lg">Lượng Hút</th>
@@ -696,9 +696,9 @@ interface MixRow {
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         @for (res of mixResult().details; track res.name) {
-                                            <tr class="hover:bg-indigo-50/30 transition">
-                                                <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]">{{res.name}}</td>
-                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600">{{formatNum(res.vStock)}} {{res.unit}}</td>
+                                            <tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition">
+                                                <td class="px-3 py-2 font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">{{res.name}}</td>
+                                                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">{{formatNum(res.vStock)}} {{res.unit}}</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -709,7 +709,7 @@ interface MixRow {
                         <!-- REAL MODE STOCK STATUS -->
                         @if (systemMode() === 'real' && (selectedItem() || calcMode() === 'serial' || calcMode() === 'mix')) {
                             <div class="w-full max-w-sm mx-auto mt-auto pt-6">
-                                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm relative overflow-hidden">
+                                <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
                                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500"></div>
                                     
                                     @if (calcMode() === 'mix') {
@@ -717,11 +717,11 @@ interface MixRow {
                                         <div class="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
                                             @for (status of mixStockStatus(); track status.name) {
                                                 <div class="flex justify-between items-center text-xs">
-                                                    <span class="truncate max-w-[150px] font-medium text-slate-700">{{status.name}}</span>
+                                                    <span class="truncate max-w-[150px] font-medium text-slate-700 dark:text-slate-200">{{status.name}}</span>
                                                     @if(status.ok) {
-                                                        <span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-check"></i> Đủ</span>
+                                                        <span class="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-check"></i> Đủ</span>
                                                     } @else {
-                                                        <span class="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-xmark"></i> Thiếu</span>
+                                                        <span class="text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-xmark"></i> Thiếu</span>
                                                     }
                                                 </div>
                                             }
@@ -730,15 +730,15 @@ interface MixRow {
                                         <div class="flex justify-between items-end mb-2">
                                             <div>
                                                 <div class="text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</div>
-                                                <div class="text-sm font-bold text-slate-800">{{ formatNum(selectedItem()?.stock || 0) }} {{ selectedItem()?.unit || ''}}</div>
+                                                <div class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ formatNum(selectedItem()?.stock || 0) }} {{ selectedItem()?.unit || ''}}</div>
                                             </div>
                                             @if(canFulfill()) {
-                                                <span class="text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-1 rounded"><i class="fa-solid fa-check-circle"></i> Đủ hàng</span>
+                                                <span class="text-emerald-600 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded"><i class="fa-solid fa-check-circle"></i> Đủ hàng</span>
                                             } @else {
-                                                <span class="text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded"><i class="fa-solid fa-circle-exclamation"></i> Thiếu hàng</span>
+                                                <span class="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded"><i class="fa-solid fa-circle-exclamation"></i> Thiếu hàng</span>
                                             }
                                         </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                             <div class="h-full rounded-full transition-all duration-500"
                                                  [style.width.%]="stockPercentage()"
                                                  [class.bg-emerald-500]="canFulfill()"
@@ -754,7 +754,7 @@ interface MixRow {
                     <!-- FOOTER ACTIONS -->
                     <div class="p-5 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex gap-3 shrink-0">
                         <button (click)="goToLabels()" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-print text-slate-400 dark:text-slate-500"></i> In Nhãn
+                            <i class="fa-solid fa-print text-slate-400"></i> In Nhãn
                         </button>
                         
                         @if (systemMode() === 'real') {
@@ -773,37 +773,37 @@ interface MixRow {
         <!-- QUICK PRINT MODAL -->
         @if (showLabelModal()) {
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
-                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                             <i class="fa-solid fa-print text-blue-500"></i> In Nhãn Nhanh
                         </h3>
-                        <button (click)="closeLabelModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition">
+                        <button (click)="closeLabelModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
                     <div class="p-6 space-y-4">
                         <div class="space-y-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Nội dung nhãn (Có thể sửa)</label>
-                            <textarea [ngModel]="labelData()" (ngModelChange)="labelData.set($event)" class="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50"></textarea>
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Nội dung nhãn (Có thể sửa)</label>
+                            <textarea [ngModel]="labelData()" (ngModelChange)="labelData.set($event)" class="w-full h-32 p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50 dark:bg-slate-900/50"></textarea>
                         </div>
                         
                         <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Khổ rộng (mm)</label>
-                                <input type="number" [ngModel]="quickPrintWidth()" (ngModelChange)="quickPrintWidth.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Khổ rộng (mm)</label>
+                                <input type="number" [ngModel]="quickPrintWidth()" (ngModelChange)="quickPrintWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Chiều dài (mm)</label>
-                                <input type="number" [ngModel]="quickPrintHeight()" (ngModelChange)="quickPrintHeight.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Chiều dài (mm)</label>
+                                <input type="number" [ngModel]="quickPrintHeight()" (ngModelChange)="quickPrintHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Cỡ chữ (pt)</label>
-                                <input type="number" [ngModel]="quickPrintFontSize()" (ngModelChange)="quickPrintFontSize.set($event)" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
+                                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Cỡ chữ (pt)</label>
+                                <input type="number" [ngModel]="quickPrintFontSize()" (ngModelChange)="quickPrintFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-center outline-none focus:border-blue-500">
                             </div>
                         </div>
 
-                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-start gap-3">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/30 flex items-start gap-3">
                             <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
                             <div class="text-xs text-blue-800">
                                 <p class="font-bold mb-1">Mẹo in nhanh:</p>
@@ -811,9 +811,9 @@ interface MixRow {
                             </div>
                         </div>
                     </div>
-                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
-                        <button (click)="closeLabelModal()" class="px-4 py-2 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition">Hủy</button>
-                        <button (click)="printQuickLabel()" class="px-6 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 transition flex items-center gap-2">
+                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
+                        <button (click)="closeLabelModal()" class="px-4 py-2 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Hủy</button>
+                        <button (click)="printQuickLabel()" class="px-6 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 dark:shadow-none transition flex items-center gap-2">
                             <i class="fa-solid fa-print"></i> In Ngay
                         </button>
                     </div>
@@ -828,7 +828,7 @@ interface MixRow {
     .label { @apply text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1 tracking-wide; }
     .input-wrapper { @apply flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition overflow-hidden; }
     .input-field { @apply w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition placeholder-slate-300 dark:placeholder-slate-600; }
-    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 dark:text-slate-500 select-none bg-transparent; }
+    .unit-badge { @apply pr-3 text-xs font-bold text-slate-400 select-none bg-transparent; }
     .select-unit { @apply bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-blue-400 dark:focus:border-blue-500 cursor-pointer px-2; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -848,13 +848,13 @@ export class SmartPrepComponent {
   concUnits = CONC_UNITS;
   volUnits = VOL_UNITS;
   massUnits = MASS_UNITS;
-  modes: {id: CalcMode, label: string, icon: string, color: string}[] = [
-      { id: 'molar', label: 'Molar (Rắn)', icon: 'fa-weight-hanging', color: 'blue' },
-      { id: 'dilution', label: 'Pha Loãng', icon: 'fa-droplet', color: 'orange' },
-      { id: 'spiking', label: 'Thêm Chuẩn', icon: 'fa-syringe', color: 'emerald' },
-      { id: 'serial', label: 'Dãy Chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia' },
-      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo' },
-      { id: 'sample_prep', label: 'Xử lý Mẫu', icon: 'fa-vials', color: 'teal' }
+  modes: {id: CalcMode, label: string, icon: string, color: string, activeClass: string}[] = [
+      { id: 'molar', label: 'Molar (Rắn)', icon: 'fa-weight-hanging', color: 'blue', activeClass: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/20 dark:bg-blue-900/20' },
+      { id: 'dilution', label: 'Pha Loãng', icon: 'fa-droplet', color: 'orange', activeClass: 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50/20 dark:bg-orange-900/20' },
+      { id: 'spiking', label: 'Thêm Chuẩn', icon: 'fa-syringe', color: 'emerald', activeClass: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/20' },
+      { id: 'serial', label: 'Dãy Chuẩn', icon: 'fa-arrow-down-wide-short', color: 'fuchsia', activeClass: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50/20 dark:bg-fuchsia-900/20' },
+      { id: 'mix', label: 'Pha Mix', icon: 'fa-blender', color: 'indigo', activeClass: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50/20 dark:bg-indigo-900/20' },
+      { id: 'sample_prep', label: 'Xử lý Mẫu', icon: 'fa-vials', color: 'teal', activeClass: 'border-teal-500 text-teal-600 dark:text-teal-400 bg-teal-50/20 dark:bg-teal-900/20' }
   ];
 
   // --- STATE ---
