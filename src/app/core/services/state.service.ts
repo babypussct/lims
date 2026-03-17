@@ -74,7 +74,7 @@ export class StateService implements OnDestroy {
   
   // UI STATE
   sidebarOpen = signal<boolean>(false);
-  sidebarCollapsed = signal<boolean>(true);
+  sidebarCollapsed = signal<boolean>(false);
   
   // --- FOCUS MODE (New Feature) ---
   focusMode = signal<boolean>(false);
@@ -119,8 +119,10 @@ export class StateService implements OnDestroy {
   private applyDarkMode(isDark: boolean) {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     }
   }
 
@@ -517,6 +519,11 @@ export class StateService implements OnDestroy {
           inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) - item.amount;
       });
 
+      // Round to avoid floating point issues
+      Object.keys(inventoryDiff).forEach(key => {
+          inventoryDiff[key] = Math.round(inventoryDiff[key] * 1000000) / 1000000;
+      });
+
       await runTransaction(this.fb.db, async (transaction) => {
         // 1. Check inventory for negative diffs
         const invRefs: Record<string, DocumentReference> = {};
@@ -539,7 +546,7 @@ export class StateService implements OnDestroy {
         // 2. Update inventory
         for (const itemName of Object.keys(inventoryDiff)) {
             if (inventoryDiff[itemName] !== 0) {
-                transaction.update(invRefs[itemName], { stock: increment(inventoryDiff[itemName]) });
+                transaction.set(invRefs[itemName], { stock: increment(inventoryDiff[itemName]) }, { merge: true });
             }
         }
         

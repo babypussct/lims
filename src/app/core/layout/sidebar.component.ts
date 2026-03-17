@@ -100,7 +100,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                    <i class="fa-solid fa-chart-pie text-xs"></i>
                 </div>
                 @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/stats') ? 'text-slate-800' : 'text-slate-500'">Báo cáo</span>
+                    <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/stats') ? 'text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'">Báo cáo</span>
                 }
              </div>
          }
@@ -259,7 +259,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                           <span>Cài đặt tài khoản</span>
                       </button>
                       <button (click)="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors text-left">
-                          <i class="fa-solid" [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()" class="w-4 text-center"></i>
+                          <i class="fa-solid w-4 text-center" [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
                           <span>{{ state.darkMode() ? 'Giao diện Sáng' : 'Giao diện Tối' }}</span>
                       </button>
                       <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
