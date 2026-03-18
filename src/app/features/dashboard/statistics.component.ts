@@ -384,6 +384,17 @@ interface NxtReportItem {
                                     </div>
                                 }
                             </label>
+                            
+                            <hr class="border-slate-200 dark:border-slate-700 my-2">
+                            
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                                   [ngClass]="{'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800': excludeMargin()}">
+                                <input type="checkbox" [ngModel]="excludeMargin()" (ngModelChange)="excludeMargin.set($event)" class="w-4 h-4 text-amber-600 focus:ring-amber-500 rounded">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Bỏ qua Quy định Hao hụt (Safety Margin)</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">Xuất số liệu gốc theo SOP, không cộng thêm phần hao hụt.</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
                     <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
@@ -436,6 +447,7 @@ export class StatisticsComponent {
   showExportModal = signal(false);
   exportType = signal<'summary' | 'daily' | 'monthly' | 'specific_day'>('summary');
   specificDay = signal<number>(1);
+  excludeMargin = signal<boolean>(false);
 
   constructor() {
     effect(() => {
@@ -670,16 +682,42 @@ export class StatisticsComponent {
       let data: any[] = [];
       let sheetName = 'TieuHao';
       let fileName = `TieuHao_${this.startDate()}_${this.endDate()}.xlsx`;
+      
+      const useBaseAmount = this.excludeMargin();
+      const safetyConfig = this.state.safetyConfig();
+      const inventoryMap = new Map(this.state.inventory().map(i => [i.name, i]));
+
+      const getCalculatedItemAmount = (item: any, reqMargin: number) => {
+          if (!useBaseAmount) return item.amount;
+          if (item.baseAmount !== undefined) return item.baseAmount;
+          
+          // Fallback for old data
+          if (reqMargin > 0) {
+              return item.amount / (1 + reqMargin / 100);
+          } else if (reqMargin < 0) {
+              const invItem = inventoryMap.get(item.name);
+              let appliedMargin = 10;
+              if (safetyConfig && invItem && invItem.category && safetyConfig.rules[invItem.category] !== undefined) {
+                  appliedMargin = safetyConfig.rules[invItem.category];
+              } else if (safetyConfig && safetyConfig.defaultMargin !== undefined) {
+                  appliedMargin = safetyConfig.defaultMargin;
+              }
+              return item.amount / (1 + appliedMargin / 100);
+          }
+          return item.amount;
+      };
 
       if (type === 'summary' || type === 'specific_day') {
           // SUMMARY MODE (or Specific Day Summary)
           const map = new Map<string, {amount: number, unit: string, displayName: string}>();
           
           filteredHistory.forEach(req => {
+              const reqMargin = req.margin !== undefined ? req.margin : 0;
               req.items.forEach(item => {
+                  const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
                   map.set(item.name, { 
-                      amount: current.amount + item.amount, 
+                      amount: current.amount + itemAmount, 
                       unit: current.unit,
                       displayName: item.displayName || current.displayName || item.name
                   });
@@ -733,7 +771,9 @@ export class StatisticsComponent {
               }
               columnsSet.add(colKey);
 
+              const reqMargin = req.margin !== undefined ? req.margin : 0;
               req.items.forEach(item => {
+                  const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   if (!pivotMap.has(item.name)) {
                       pivotMap.set(item.name, { 
                           displayName: item.displayName || item.name, 
@@ -744,8 +784,8 @@ export class StatisticsComponent {
                   }
                   
                   const record = pivotMap.get(item.name)!;
-                  record.totals[colKey] = (record.totals[colKey] || 0) + item.amount;
-                  record.grandTotal += item.amount;
+                  record.totals[colKey] = (record.totals[colKey] || 0) + itemAmount;
+                  record.grandTotal += itemAmount;
               });
           });
 

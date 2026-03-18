@@ -199,9 +199,18 @@ export class CalculatorService {
       if (!isComposite && !isSharedRecipe) {
         if (!stockItem) isMissing = true;
         
+        // Calculate base stock need (without margin)
+        let baseStockNeed = baseQty;
+        if (stockItem) {
+            const convertedBase = getStandardizedAmount(baseQty, item.unit, stockUnit);
+            if (convertedBase !== null) {
+                baseStockNeed = convertedBase;
+            }
+        }
+
         return { 
           ...item, displayName, baseQty, appliedMargin, totalQty, stockNeed, stockUnit, isComposite: false, breakdown: [],
-          displayWarning, validationError, isMissing
+          displayWarning, validationError, isMissing, baseAmount: baseStockNeed
         } as CalculatedItem;
       }
 
@@ -233,6 +242,7 @@ export class CalculatorService {
         let ingStockUnit = ing.unit;
         let ingWarning: string | undefined = undefined;
         let ingTotalNeed = 0;
+        let ingBaseNeed = 0;
         let ingIsMissing = false;
 
         const ingStockItem = inventoryMap[ing.name];
@@ -273,22 +283,26 @@ export class CalculatorService {
         if (ingStockItem) {
           ingStockUnit = ingStockItem.unit;
           const converted = getStandardizedAmount(amountPerBatch, ing.unit, ingStockUnit);
+          const convertedBase = getStandardizedAmount(baseAmountPerBatch, ing.unit, ingStockUnit);
           
           if (converted === null) {
             ingWarning = `(Khác ĐV: ${ing.unit} != ${ingStockUnit})`;
             ingTotalNeed = amountPerBatch;
+            ingBaseNeed = baseAmountPerBatch;
           } else {
             ingTotalNeed = converted;
+            ingBaseNeed = convertedBase !== null ? convertedBase : baseAmountPerBatch;
           }
         } else {
           ingStockUnit = ing.unit;
           ingTotalNeed = amountPerBatch;
+          ingBaseNeed = baseAmountPerBatch;
           ingIsMissing = true;
         }
 
         return {
           name: ing.name, displayName: ingDisplayName, unit: ing.unit, amountPerUnit: ing.amount,
-          baseAmount: baseAmountPerBatch, appliedMargin: ingMargin, 
+          baseAmount: ingBaseNeed, appliedMargin: ingMargin, 
           totalNeed: ingTotalNeed, displayAmount: amountPerBatch,
           stockUnit: ingStockUnit, displayWarning: ingWarning, isMissing: ingIsMissing
         };

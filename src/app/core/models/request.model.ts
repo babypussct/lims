@@ -4,6 +4,7 @@ export interface RequestItem {
   displayName?: string; // Human readable name (Denormalized)
   amount: number;
   displayAmount: number;
+  baseAmount?: number; // Theoretical amount without margin (in stock unit)
   unit: string;
   stockUnit: string;
 }

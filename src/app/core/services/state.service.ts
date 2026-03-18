@@ -257,6 +257,7 @@ export class StateService implements OnDestroy {
              requestItems.push({ 
                  name: sub.name, displayName, 
                  amount: sub.totalNeed, displayAmount: sub.displayAmount, 
+                 baseAmount: sub.baseAmount,
                  unit: sub.unit, stockUnit: sub.stockUnit 
              });
           });
@@ -265,6 +266,7 @@ export class StateService implements OnDestroy {
           requestItems.push({ 
               name: item.name, displayName, 
               amount: item.stockNeed, displayAmount: item.totalQty, 
+              baseAmount: item.baseAmount,
               unit: item.unit, stockUnit: item.stockUnit 
           });
         }
