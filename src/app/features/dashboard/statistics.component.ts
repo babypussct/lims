@@ -342,7 +342,7 @@ interface NxtReportItem {
                     <div class="p-6 space-y-4">
                         <div class="space-y-3">
                             <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [class.bg-emerald-50]="exportType() === 'summary'" [class.border-emerald-200]="exportType() === 'summary'" [class.dark:bg-emerald-900/20]="exportType() === 'summary'" [class.dark:border-emerald-800]="exportType() === 'summary'">
+                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'summary'}">
                                 <input type="radio" name="exportType" value="summary" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
                                 <div>
                                     <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Tổng hợp (Mặc định)</div>
@@ -351,7 +351,7 @@ interface NxtReportItem {
                             </label>
                             
                             <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [class.bg-emerald-50]="exportType() === 'daily'" [class.border-emerald-200]="exportType() === 'daily'" [class.dark:bg-emerald-900/20]="exportType() === 'daily'" [class.dark:border-emerald-800]="exportType() === 'daily'">
+                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'daily'}">
                                 <input type="radio" name="exportType" value="daily" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
                                 <div>
                                     <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng ngày</div>
@@ -360,7 +360,7 @@ interface NxtReportItem {
                             </label>
 
                             <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [class.bg-emerald-50]="exportType() === 'monthly'" [class.border-emerald-200]="exportType() === 'monthly'" [class.dark:bg-emerald-900/20]="exportType() === 'monthly'" [class.dark:border-emerald-800]="exportType() === 'monthly'">
+                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'monthly'}">
                                 <input type="radio" name="exportType" value="monthly" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
                                 <div>
                                     <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng tháng</div>
@@ -369,7 +369,7 @@ interface NxtReportItem {
                             </label>
 
                             <label class="flex flex-col gap-2 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [class.bg-emerald-50]="exportType() === 'specific_day'" [class.border-emerald-200]="exportType() === 'specific_day'" [class.dark:bg-emerald-900/20]="exportType() === 'specific_day'" [class.dark:border-emerald-800]="exportType() === 'specific_day'">
+                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'specific_day'}">
                                 <div class="flex items-center gap-3">
                                     <input type="radio" name="exportType" value="specific_day" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
                                     <div>
