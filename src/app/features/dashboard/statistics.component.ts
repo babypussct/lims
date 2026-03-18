@@ -712,7 +712,7 @@ export class StatisticsComponent {
           const map = new Map<string, {amount: number, unit: string, displayName: string}>();
           
           filteredHistory.forEach(req => {
-              const reqMargin = req.margin !== undefined ? req.margin : 0;
+              const reqMargin = req.margin !== undefined ? req.margin : -1; // Assume Auto if undefined
               req.items.forEach(item => {
                   const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
@@ -771,7 +771,7 @@ export class StatisticsComponent {
               }
               columnsSet.add(colKey);
 
-              const reqMargin = req.margin !== undefined ? req.margin : 0;
+              const reqMargin = req.margin !== undefined ? req.margin : -1; // Assume Auto if undefined
               req.items.forEach(item => {
                   const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   if (!pivotMap.has(item.name)) {
