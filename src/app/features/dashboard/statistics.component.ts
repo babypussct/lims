@@ -240,6 +240,10 @@ interface NxtReportItem {
                                         <i class="fa-solid fa-chart-simple"></i> Top 10 Tiêu hao
                                         @if(selectedSopId() !== 'all') { <span class="text-blue-600 dark:text-blue-400">({{getSelectedSopName()}})</span> }
                                     </h4>
+                                    <button (click)="showExportModal.set(true)" 
+                                            class="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2 active:scale-95">
+                                        <i class="fa-solid fa-file-excel"></i> Xuất Excel
+                                    </button>
                                 </div>
                                 <div class="flex-1 relative w-full h-full min-h-0 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-2 shadow-sm">
                                     <!-- Lazy Load Canvas -->
@@ -322,6 +326,75 @@ interface NxtReportItem {
                 </div>
             </div>
         </div>
+
+        <!-- EXPORT MODAL -->
+        @if (showExportModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-file-export text-emerald-500"></i> Tùy chọn Xuất Dữ liệu
+                        </h3>
+                        <button (click)="showExportModal.set(false)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                                   [class.bg-emerald-50]="exportType() === 'summary'" [class.border-emerald-200]="exportType() === 'summary'" [class.dark:bg-emerald-900/20]="exportType() === 'summary'" [class.dark:border-emerald-800]="exportType() === 'summary'">
+                                <input type="radio" name="exportType" value="summary" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Tổng hợp (Mặc định)</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">Tổng lượng tiêu hao trong khoảng thời gian đã chọn.</div>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                                   [class.bg-emerald-50]="exportType() === 'daily'" [class.border-emerald-200]="exportType() === 'daily'" [class.dark:bg-emerald-900/20]="exportType() === 'daily'" [class.dark:border-emerald-800]="exportType() === 'daily'">
+                                <input type="radio" name="exportType" value="daily" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng ngày</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">Chi tiết lượng dùng mỗi ngày (Cột là các ngày).</div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                                   [class.bg-emerald-50]="exportType() === 'monthly'" [class.border-emerald-200]="exportType() === 'monthly'" [class.dark:bg-emerald-900/20]="exportType() === 'monthly'" [class.dark:border-emerald-800]="exportType() === 'monthly'">
+                                <input type="radio" name="exportType" value="monthly" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng tháng</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">Chi tiết lượng dùng mỗi tháng (Cột là các tháng).</div>
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col gap-2 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                                   [class.bg-emerald-50]="exportType() === 'specific_day'" [class.border-emerald-200]="exportType() === 'specific_day'" [class.dark:bg-emerald-900/20]="exportType() === 'specific_day'" [class.dark:border-emerald-800]="exportType() === 'specific_day'">
+                                <div class="flex items-center gap-3">
+                                    <input type="radio" name="exportType" value="specific_day" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Lọc theo ngày cụ thể trong tháng</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">Chỉ tính tổng các ngày được chọn (VD: Ngày 1 hàng tháng).</div>
+                                    </div>
+                                </div>
+                                @if (exportType() === 'specific_day') {
+                                    <div class="ml-7 mt-2 flex items-center gap-2 animate-slide-up">
+                                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Chọn ngày:</span>
+                                        <input type="number" min="1" max="31" [ngModel]="specificDay()" (ngModelChange)="specificDay.set($event)" class="w-16 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm text-center outline-none focus:border-emerald-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                                    </div>
+                                }
+                            </label>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
+                        <button (click)="showExportModal.set(false)" class="px-4 py-2 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Hủy</button>
+                        <button (click)="exportConsumptionExcel()" class="px-6 py-2 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Tải xuống
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     } @else {
         <div class="h-full flex items-center justify-center fade-in">
             <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-red-100 dark:border-red-900/30 max-w-md text-center">
@@ -359,6 +432,10 @@ export class StatisticsComponent {
   isLoading = signal(false);
   hasGenerated = signal(false);
   nxtData = signal<NxtReportItem[]>([]);
+
+  showExportModal = signal(false);
+  exportType = signal<'summary' | 'daily' | 'monthly' | 'specific_day'>('summary');
+  specificDay = signal<number>(1);
 
   constructor() {
     effect(() => {
@@ -557,6 +634,173 @@ export class StatisticsComponent {
       const wb: any = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
       XLSX.writeFile(wb, fileName);
+  }
+
+  async exportConsumptionExcel() {
+      const XLSX = await import('xlsx');
+      const history = this.state.approvedRequests();
+      
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const sopId = this.selectedSopId();
+      const type = this.exportType();
+      const specDay = this.specificDay();
+
+      // 1. Filter raw data based on Date Range and SOP
+      const filteredHistory = history.filter(req => {
+          let d: Date;
+          if (req.analysisDate) {
+              const parts = req.analysisDate.split('-');
+              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+          } else {
+              const ts = req.approvedAt || req.timestamp;
+              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          }
+
+          if (d < start || d > end) return false;
+          if (sopId !== 'all' && req.sopId !== sopId) return false;
+          
+          // Additional filter for 'specific_day'
+          if (type === 'specific_day' && d.getDate() !== specDay) return false;
+          
+          return true;
+      });
+
+      // 2. Process data based on export type
+      let data: any[] = [];
+      let sheetName = 'TieuHao';
+      let fileName = `TieuHao_${this.startDate()}_${this.endDate()}.xlsx`;
+
+      if (type === 'summary' || type === 'specific_day') {
+          // SUMMARY MODE (or Specific Day Summary)
+          const map = new Map<string, {amount: number, unit: string, displayName: string}>();
+          
+          filteredHistory.forEach(req => {
+              req.items.forEach(item => {
+                  const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
+                  map.set(item.name, { 
+                      amount: current.amount + item.amount, 
+                      unit: current.unit,
+                      displayName: item.displayName || current.displayName || item.name
+                  });
+              });
+          });
+
+          const sortedData = Array.from(map.entries())
+              .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
+              .sort((a,b) => b.amount - a.amount);
+
+          data = sortedData.map((row, index) => ({
+              'STT': index + 1,
+              'Mã Hóa chất/Vật tư': row.name,
+              'Tên Hóa chất/Vật tư': row.displayName,
+              'Tổng Tiêu Hao': row.amount,
+              'ĐVT': row.unit
+          }));
+
+          if (type === 'specific_day') {
+              sheetName = `Ngay_${specDay}`;
+              fileName = `TieuHao_Ngay${specDay}_${this.startDate()}_${this.endDate()}.xlsx`;
+          } else {
+              sheetName = 'TongHop';
+          }
+
+      } else if (type === 'daily' || type === 'monthly') {
+          // PIVOT MODE (Daily or Monthly)
+          const pivotMap = new Map<string, { displayName: string, unit: string, totals: { [key: string]: number }, grandTotal: number }>();
+          const columnsSet = new Set<string>();
+
+          filteredHistory.forEach(req => {
+              let d: Date;
+              if (req.analysisDate) {
+                  const parts = req.analysisDate.split('-');
+                  d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+              } else {
+                  const ts = req.approvedAt || req.timestamp;
+                  d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+              }
+
+              // Format column key based on type
+              let colKey = '';
+              if (type === 'daily') {
+                  const day = d.getDate().toString().padStart(2, '0');
+                  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                  colKey = `${day}/${month}`;
+              } else {
+                  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                  const year = d.getFullYear();
+                  colKey = `T${month}/${year}`;
+              }
+              columnsSet.add(colKey);
+
+              req.items.forEach(item => {
+                  if (!pivotMap.has(item.name)) {
+                      pivotMap.set(item.name, { 
+                          displayName: item.displayName || item.name, 
+                          unit: item.stockUnit || item.unit, 
+                          totals: {}, 
+                          grandTotal: 0 
+                      });
+                  }
+                  
+                  const record = pivotMap.get(item.name)!;
+                  record.totals[colKey] = (record.totals[colKey] || 0) + item.amount;
+                  record.grandTotal += item.amount;
+              });
+          });
+
+          // Sort columns chronologically (assuming format DD/MM or TMM/YYYY allows simple string sort for same year, 
+          // but for robustness, we should sort by actual date. For simplicity here, we sort the Set as array)
+          // A better sort for DD/MM and TMM/YYYY:
+          const sortedColumns = Array.from(columnsSet).sort((a, b) => {
+              if (type === 'daily') {
+                  const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
+                  if (m1 !== m2) return parseInt(m1) - parseInt(m2);
+                  return parseInt(d1) - parseInt(d2);
+              } else {
+                  const [m1, y1] = a.replace('T', '').split('/'); const [m2, y2] = b.replace('T', '').split('/');
+                  if (y1 !== y2) return parseInt(y1) - parseInt(y2);
+                  return parseInt(m1) - parseInt(m2);
+              }
+          });
+
+          // Build final data array
+          const sortedRows = Array.from(pivotMap.entries()).sort((a, b) => b[1].grandTotal - a[1].grandTotal);
+          
+          data = sortedRows.map(([id, val], index) => {
+              const rowObj: any = {
+                  'STT': index + 1,
+                  'Mã Hóa chất/Vật tư': id,
+                  'Tên Hóa chất/Vật tư': val.displayName,
+                  'ĐVT': val.unit,
+                  'Tổng Cộng': val.grandTotal
+              };
+              
+              // Add dynamic columns
+              sortedColumns.forEach(col => {
+                  rowObj[col] = val.totals[col] || 0;
+              });
+              
+              return rowObj;
+          });
+
+          sheetName = type === 'daily' ? 'TheoNgay' : 'TheoThang';
+          fileName = `TieuHao_${sheetName}_${this.startDate()}_${this.endDate()}.xlsx`;
+      }
+
+      if (data.length === 0) {
+          alert('Không có dữ liệu tiêu hao trong khoảng thời gian và điều kiện lọc này.');
+          this.showExportModal.set(false);
+          return;
+      }
+
+      // 3. Generate Excel File
+      const ws: any = XLSX.utils.json_to_sheet(data);
+      const wb: any = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, fileName);
+      
+      this.showExportModal.set(false);
   }
 
   filteredLogs = computed(() => {
