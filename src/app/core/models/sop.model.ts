@@ -117,6 +117,7 @@ export interface CalculatedIngredient {
 export interface CalculatedItem extends Consumable {
   displayName?: string; // Tên hiển thị (Hydrated)
   baseQty?: number; // Theoretical quantity without margin
+  baseAmount?: number; // Theoretical stock need without margin
   appliedMargin?: number; // Margin percentage applied
   totalQty: number;
   stockNeed: number; 
