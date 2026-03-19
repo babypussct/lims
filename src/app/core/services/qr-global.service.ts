@@ -3,15 +3,19 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastService } from './toast.service';
 import { StateService } from './state.service';
+import { parseGs1Data } from '../../shared/utils/gs1-parser';
 
 @Injectable({ providedIn: 'root' })
 export class QrGlobalService {
-  private router = inject(Router);
+  private router: Router = inject(Router);
   private toast = inject(ToastService);
   private state = inject(StateService);
 
   // State visibility of the scanner overlay
   isScanning = signal<boolean>(false);
+  
+  // State for GS1 scanned data to show in modal
+  scannedGs1Data = signal<any>(null);
 
   startScan() {
     this.isScanning.set(true);
@@ -48,6 +52,22 @@ export class QrGlobalService {
     }
 
     const cleanCode = code.toUpperCase();
+
+    // 2.5. Check for GS1 Data Matrix (Merck, etc.)
+    const gs1Data = parseGs1Data(cleanCode);
+    if (gs1Data.isGs1) {
+        if (gs1Data.error) {
+            this.toast.show(`Lỗi GS1: ${gs1Data.error}`, 'error');
+        } else {
+            this.toast.show(`Nhận diện GS1: GTIN ${gs1Data.gtin}, Lô ${gs1Data.lotNumber || 'N/A'}`, 'success');
+        }
+        console.log('Parsed GS1 Data:', gs1Data);
+        
+        // Open GS1 Info Modal instead of routing immediately
+        this.scannedGs1Data.set(gs1Data);
+        return;
+    }
+
     this.toast.show(`Đang xử lý: ${cleanCode}`, 'info');
 
     // 3. Smart Routing Strategy

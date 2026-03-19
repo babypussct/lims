@@ -1,7 +1,8 @@
 
-import { Component, inject, signal, computed, effect, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { InventoryService } from './inventory.service';
 import { InventoryItem } from '../../core/models/inventory.model';
@@ -370,6 +371,22 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                </div>
                            </div>
                            
+                           <!-- GS1 Data Fields -->
+                           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                               <div>
+                                   <label class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase ml-1 block mb-1">GTIN (Mã SP)</label>
+                                   <input formControlName="gtin" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm dark:shadow-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" placeholder="VD: 04059081234567">
+                               </div>
+                               <div>
+                                   <label class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase ml-1 block mb-1">Số Lô (Lot/Batch)</label>
+                                   <input formControlName="lotNumber" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm dark:shadow-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" placeholder="VD: A12345678">
+                               </div>
+                               <div>
+                                   <label class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase ml-1 block mb-1">Hạn sử dụng</label>
+                                   <input type="date" formControlName="expiryDate" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm dark:shadow-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                               </div>
+                           </div>
+                           
                            <div class="pt-2 border-t border-slate-200 dark:border-slate-700/50">
                                <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase ml-1 block mb-1">Lý do thay đổi <span class="text-red-500 dark:text-red-400">*</span></label>
                                <input formControlName="reason" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-xs outline-none shadow-sm dark:shadow-none bg-yellow-50 dark:bg-yellow-900/20 focus:bg-white dark:focus:bg-slate-800 text-slate-700 dark:text-slate-200 transition placeholder-slate-400 dark:placeholder-slate-500" placeholder="VD: Nhập kho, Kiểm kê, Vỡ hỏng..." required>
@@ -400,7 +417,7 @@ import { LabelPrintComponent } from '../labels/label-print.component';
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
   `]
 })
-export class InventoryComponent implements OnDestroy {
+export class InventoryComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   inventoryService = inject(InventoryService);
   recipeService = inject(RecipeService); // Inject RecipeService
@@ -408,6 +425,7 @@ export class InventoryComponent implements OnDestroy {
   toast = inject(ToastService);
   calcService = inject(CalculatorService);
   confirmationService = inject(ConfirmationService);
+  route = inject(ActivatedRoute);
   private fb: FormBuilder = inject(FormBuilder);
 
   // Added 'labels' to type definition
@@ -496,7 +514,10 @@ export class InventoryComponent implements OnDestroy {
     location: [''], 
     supplier: [''], 
     notes: [''],
-    reason: ['', Validators.required] 
+    reason: ['', Validators.required],
+    gtin: [''],
+    lotNumber: [''],
+    expiryDate: ['']
   });
   
   unitOptions = UNIT_OPTIONS;
@@ -506,12 +527,56 @@ export class InventoryComponent implements OnDestroy {
           this.searchTerm.set(term); 
           this.displayLimit.set(20); // Reset trang khi tìm kiếm
       });
+  }
+
+  ngOnInit() {
       // Initial Load
       setTimeout(() => {
-          this.refreshData();
+          this.refreshData().then(() => {
+              // Check query params for GS1 auto-fill
+              this.route.queryParams.subscribe(params => {
+                  if (params['action'] === 'scan_gs1') {
+                      this.handleGs1Scan(params);
+                  } else if (params['search']) {
+                      this.searchTerm.set(params['search']);
+                  }
+              });
+          });
       }, 100); 
   }
+
   ngOnDestroy() { this.searchSubject.complete(); }
+
+  // --- GS1 Auto-fill Logic ---
+  handleGs1Scan(params: any) {
+      const gtin = params['gtin'];
+      const lot = params['lot'];
+      const exp = params['exp'];
+      
+      // Try to find existing item by GTIN
+      let existingItem = null;
+      if (gtin) {
+          existingItem = this.allItems().find(i => i.gtin === gtin || i.ref_code === gtin);
+      }
+      
+      if (existingItem) {
+          // Found item, open edit modal
+          this.openModal(existingItem);
+          this.toast.show(`Tìm thấy hóa chất: ${existingItem.name}`, 'success');
+      } else {
+          // Not found, open create modal
+          this.openModal();
+          this.toast.show('Hóa chất mới, vui lòng nhập thông tin', 'info');
+      }
+      
+      // Auto-fill form fields
+      this.form.patchValue({
+          gtin: gtin || '',
+          lotNumber: lot || '',
+          expiryDate: exp || '',
+          reason: 'Nhập kho (Scan QR)'
+      });
+  }
 
   // --- TAB SWITCH LOGIC ---
   async switchTab(tab: 'list' | 'capacity' | 'labels') {

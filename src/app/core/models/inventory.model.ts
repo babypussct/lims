@@ -9,6 +9,9 @@ export interface InventoryItem {
   location?: string;
   supplier?: string;
   ref_code?: string;
+  gtin?: string;
+  lotNumber?: string;
+  expiryDate?: string;
   lastUpdated?: any;
   notes?: string;
 }

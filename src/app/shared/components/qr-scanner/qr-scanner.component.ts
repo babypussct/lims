@@ -2,6 +2,7 @@ import { Component, output, OnDestroy, AfterViewInit, signal, ElementRef, viewCh
 import { CommonModule } from '@angular/common';
 
 declare var Html5Qrcode: any;
+declare var Html5QrcodeSupportedFormats: any;
 
 @Component({
   selector: 'app-qr-scanner',
@@ -71,7 +72,21 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 
     try {
         this.html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        
+        let formatsToSupport = undefined;
+        if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+            formatsToSupport = [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.DATA_MATRIX
+            ];
+        }
+
+        const config = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 }, 
+            aspectRatio: 1.0,
+            formatsToSupport: formatsToSupport
+        };
         
         // Prefer back camera (environment)
         await this.html5QrCode.start(

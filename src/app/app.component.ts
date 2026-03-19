@@ -8,6 +8,7 @@ import { BottomNavComponent } from './core/layout/bottom-nav.component';
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
 import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component';
 import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; 
+import { Gs1InfoModalComponent } from './shared/components/gs1-info-modal/gs1-info-modal.component';
 import { LoginComponent } from './features/auth/login.component';
 
 import { StateService } from './core/services/state.service';
@@ -26,6 +27,7 @@ import { PrintService } from './core/services/print.service';
     ConfirmationModalComponent,
     PrintPreviewModalComponent,
     GlobalScannerComponent, 
+    Gs1InfoModalComponent,
     LoginComponent
   ],
   template: `
@@ -71,6 +73,7 @@ import { PrintService } from './core/services/print.service';
       <app-confirmation-modal></app-confirmation-modal>
       <app-print-preview-modal></app-print-preview-modal>
       <app-global-scanner></app-global-scanner> 
+      <app-gs1-info-modal></app-gs1-info-modal> 
 
       @if (state.currentUser(); as user) {
         @if (user.role === 'pending') {
