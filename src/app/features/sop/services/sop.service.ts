@@ -1,146 +1,136 @@
 
-export interface SopInput {
-  var: string;
-  label: string;
-  type: 'number' | 'checkbox' | 'select';
-  default: number | boolean | string;
-  step?: number;
-  unitLabel?: string;
-  // Options for 'select' type. Structure: { label: 'Option A', value: 1 }
-  options?: { label: string; value: string | number }[];
-}
+import { Injectable, inject } from '@angular/core';
+import { doc, deleteDoc, runTransaction, serverTimestamp, collection, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import { Sop, Consumable } from '../../../core/models/sop.model';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { generateSlug } from '../../../shared/utils/utils';
 
-export interface SopTarget {
-  id: string;
-  name: string;
-  unit?: string;
-  lod?: string; // Limit of Detection (e.g. "0.1 ppb")
-  loq?: string; // Limit of Quantitation (e.g. "0.3 ppb")
-  isMasterLinked?: boolean; // Flag to lock ID if imported from Master Library
-}
+@Injectable({ providedIn: 'root' })
+export class SopService {
+  private firebaseService = inject(FirebaseService);
 
-export interface TargetGroup {
-  id: string;
-  name: string;
-  description?: string;
-  targets: SopTarget[];
-  lastUpdated?: any;
-}
+  async saveSop(sop: Sop): Promise<void> {
+    const appId = this.firebaseService.APP_ID;
+    const sopRef = doc(this.firebaseService.db, `artifacts/${appId}/sops/${sop.id}`);
+    
+    // Sub-collection for history inside the SOP document
+    const historyCollectionRef = collection(this.firebaseService.db, `artifacts/${appId}/sops/${sop.id}/history`);
+    
+    // We use a new doc reference for the history item (auto-ID)
+    const historyDocRef = doc(historyCollectionRef);
 
-// NEW: Master Data for Analytes
-export interface MasterAnalyte {
-  id: string; // Unique slug (e.g., 'chloramphenicol')
-  name: string; // Standard Name (e.g., 'Chloramphenicol')
-  cas_number?: string; // CAS Registry Number
-  chemical_formula?: string; // e.g., 'C11H12Cl2N2O5'
-  default_unit?: string; // e.g., 'ppb' or 'µg/kg'
-  description?: string;
-  lastUpdated?: any;
-}
+    try {
+      await runTransaction(this.firebaseService.db, async (transaction) => {
+        const sfDoc = await transaction.get(sopRef);
+        
+        if (sfDoc.exists()) {
+          // UPDATE: Backup old version
+          const currentData = sfDoc.data() as Sop;
+          
+          // 1. Archive current version to history
+          transaction.set(historyDocRef, {
+            ...currentData,
+            archivedAt: serverTimestamp() // Mark when it was moved to history
+          });
 
-export interface Ingredient {
+          // 2. Logic for Versioning
+          // If sop.version is null/undefined (new doc), default to 1.
+          if (!sop.version) {
+             sop.version = (currentData.version || 0) + 1;
+          }
+        } else {
+          // CREATE: Start at version 1 if not specified
+          if (!sop.version) sop.version = 1;
+        }
+
+        // 3. Save new data as Active and un-archive if previously archived
+        sop.lastModified = serverTimestamp();
+        sop.isArchived = false; 
+        transaction.set(sopRef, sop);
+      });
+    } catch (e) {
+      console.warn("SOP Save Transaction Failed (handled in UI):", e);
+      throw e;
+    }
+  }
+
+  // Soft Delete (Preferred)
+  async archiveSop(id: string): Promise<void> {
+      const appId = this.firebaseService.APP_ID;
+      const ref = doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`);
+      await updateDoc(ref, { 
+          isArchived: true,
+          archivedAt: serverTimestamp()
+      });
+  }
+
+  // Hard Delete (Admin only)
+  async deleteSop(id: string): Promise<void> {
+    const appId = this.firebaseService.APP_ID;
+    await deleteDoc(doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`));
+  }
+
+  async getSopHistory(id: string): Promise<Sop[]> {
+    const appId = this.firebaseService.APP_ID;
+    const historyRef = collection(this.firebaseService.db, `artifacts/${appId}/sops/${id}/history`);
+    const snapshot = await getDocs(historyRef);
+    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Sop));
+    
+    // Sort in memory: Newest first
+    return items.sort((a, b) => {
+        const tA = (a.archivedAt?.seconds || 0);
+        const tB = (b.archivedAt?.seconds || 0);
+        return tB - tA;
+    });
+  }
+
   /**
-   * The ID of the chemical from the inventory. Must match an `InventoryItem.id`.
+   * MIGRATION UTILITY
    */
-  name: string;
-  amount: number;
-  unit: string;
-  // UI Helper (not saved to DB)
-  _displayName?: string;
-}
+  async normalizeOldData(): Promise<number> {
+      const appId = this.firebaseService.APP_ID;
+      const colRef = collection(this.firebaseService.db, `artifacts/${appId}/sops`);
+      const snapshot = await getDocs(colRef);
+      
+      const batch = writeBatch(this.firebaseService.db);
+      let updatedCount = 0;
 
-export interface Consumable {
-  /**
-   * For 'simple': Inventory ID.
-   * For 'composite': Internal unique ID (slug).
-   * For 'shared_recipe': Internal unique ID (slug).
-   */
-  name: string;
-  formula: string; // e.g. "total_n * 2"
-  unit: string;
-  base_note?: string; 
-  type: 'simple' | 'composite' | 'shared_recipe';
-  
-  condition?: string; // e.g. "!use_b2"
-  
-  /**
-   * Used only if type is 'composite'. Lists the raw chemicals from inventory.
-   */
-  ingredients?: Ingredient[];
+      snapshot.forEach(docSnap => {
+          const sop = docSnap.data() as Sop;
+          let changed = false;
 
-  /**
-   * Used only if type is 'shared_recipe'. Points to artifacts/recipes/{id}
-   */
-  recipeId?: string;
-  
-  // UI Helper (not saved to DB, used for display in Editor)
-  _displayName?: string;
-}
+          if (!sop.version) { sop.version = 1; changed = true; }
+          if (!sop.variables) { sop.variables = {}; changed = true; }
 
-export interface Sop {
-  id: string;
-  category: string;
-  name: string;
-  ref?: string;
-  inputs: SopInput[];
-  variables: { [key: string]: string }; 
-  consumables: Consumable[];
-  
-  // New Feature: Targets (Analytes)
-  targets?: SopTarget[];
+          const newConsumables: Consumable[] = (sop.consumables || []).map(c => {
+              let itemChanged = false;
+              if (!c.type) {
+                  if (c.ingredients && c.ingredients.length > 0) c.type = 'composite';
+                  else c.type = 'simple';
+                  itemChanged = true;
+              }
+              if (c.type === 'composite') {
+                  const safeId = 'mix_' + generateSlug(c.name);
+                  if (c.name !== safeId && (!c.name.startsWith('mix_') || c.name.match(/[\s\/]/))) {
+                      c.name = safeId;
+                      itemChanged = true;
+                  }
+              }
+              if (itemChanged) changed = true;
+              return c;
+          });
 
-  // Version Control Fields
-  version?: number;
-  lastModified?: any;
-  archivedAt?: any; // Used only for history records
-  
-  // Soft Delete Flag
-  isArchived?: boolean; 
-}
+          if (changed) {
+              batch.update(docSnap.ref, { 
+                  version: sop.version,
+                  variables: sop.variables,
+                  consumables: newConsumables 
+              });
+              updatedCount++;
+          }
+      });
 
-// --- Calculated Results ---
-
-export interface CalculatedIngredient {
-  name: string; // ID
-  displayName?: string; // Human readable name (Hydrated)
-  unit: string;
-  amountPerUnit: number;
-  baseAmount?: number; // Theoretical amount without margin
-  appliedMargin?: number; // Margin percentage applied
-  totalNeed: number; // In stock unit
-  displayAmount: number; // In ingredient unit
-  stockUnit: string;
-  displayWarning?: string;
-  isMissing?: boolean; // Flag if not found in inventory
-}
-
-export interface CalculatedItem extends Consumable {
-  displayName?: string; // Tên hiển thị (Hydrated)
-  baseQty?: number; // Theoretical quantity without margin
-  baseAmount?: number; // Theoretical stock need without margin
-  appliedMargin?: number; // Margin percentage applied
-  totalQty: number;
-  stockNeed: number; 
-  stockUnit: string;
-  
-  // Composite details
-  isComposite: boolean;
-  breakdown: CalculatedIngredient[];
-  
-  displayWarning?: string;
-  validationError?: string;
-  isMissing?: boolean; // Flag if simple item not found in inventory
-}
-
-export interface CapacityResult {
-  maxBatches: number;
-  limitingFactor: string;
-  details: CapacityDetail[];
-}
-
-export interface CapacityDetail {
-  name: string;
-  stock: number;
-  need: number;
-  batches: number;
+      if (updatedCount > 0) await batch.commit();
+      return updatedCount;
+  }
 }
