@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, computed, effect, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, ViewChild, ElementRef, AfterViewInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -7,9 +7,10 @@ import { StateService } from '../../core/services/state.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import JsBarcode from 'jsbarcode';
+import * as QRCode from 'qrcode';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
-type DisplayFormat = 'text' | 'barcode' | 'barcode_text';
+type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
 
 interface TomyTemplate {
   id: string;
@@ -195,14 +196,16 @@ interface LabelPage {
                             <label class="label-std">Định dạng & Mã vạch</label>
                             <select [ngModel]="displayFormat()" (ngModelChange)="displayFormat.set($event)" class="input-std mb-3 bg-slate-50">
                                 <option value="text">Chỉ in Chữ (Text)</option>
-                                <option value="barcode">Chỉ in Mã vạch (Barcode)</option>
+                                <option value="barcode">Mã vạch (Barcode 1D)</option>
                                 <option value="barcode_text">Mã vạch + Chữ ở dưới</option>
+                                <option value="qrcode">Mã QR (2D)</option>
+                                <option value="qrcode_text">Mã QR + Chữ ở dưới</option>
                             </select>
 
                             @if (displayFormat() !== 'text') {
                                 <div class="grid grid-cols-2 gap-3 mb-3 bg-slate-50 p-2 rounded border border-slate-200">
                                     <div>
-                                        <span class="label-mini">Độ rộng vạch (px)</span>
+                                        <span class="label-mini">Độ rộng vạch/QR (px)</span>
                                         <input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-std text-center" min="1" max="4" step="0.5">
                                     </div>
                                     <div>
@@ -326,8 +329,21 @@ interface LabelPage {
                                             <option value="text">Chỉ in Chữ</option>
                                             <option value="barcode">Chỉ in Mã vạch</option>
                                             <option value="barcode_text">Mã vạch + Chữ</option>
+                                            <option value="qrcode">Chỉ in QR Code</option>
+                                            <option value="qrcode_text">QR Code + Chữ</option>
+                                            <option value="qrcode_hybrid">QR Code (Hybrid GS1)</option>
                                         </select>
                                     </div>
+                                    @if (displayFormat() === 'qrcode_hybrid') {
+                                        <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                            <label class="label-mini">GS1 Domain</label>
+                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://lims.example.com">
+                                        </div>
+                                        <div class="col-span-2 mt-2">
+                                            <label class="label-mini">Mã GTIN</label>
+                                            <input type="text" [ngModel]="gs1Gtin()" (ngModelChange)="gs1Gtin.set($event)" class="input-mini w-full text-left px-2" placeholder="08934567890128">
+                                        </div>
+                                    }
                                     @if (displayFormat() !== 'text') {
                                         <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
                                         <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
@@ -423,8 +439,21 @@ interface LabelPage {
                                             <option value="text">Chỉ in Chữ</option>
                                             <option value="barcode">Chỉ in Mã vạch</option>
                                             <option value="barcode_text">Mã vạch + Chữ</option>
+                                            <option value="qrcode">Chỉ in QR Code</option>
+                                            <option value="qrcode_text">QR Code + Chữ</option>
+                                            <option value="qrcode_hybrid">QR Code (Hybrid GS1)</option>
                                         </select>
                                     </div>
+                                    @if (displayFormat() === 'qrcode_hybrid') {
+                                        <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
+                                            <label class="label-mini">GS1 Domain</label>
+                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://lims.example.com">
+                                        </div>
+                                        <div class="col-span-2 mt-2">
+                                            <label class="label-mini">Mã GTIN</label>
+                                            <input type="text" [ngModel]="gs1Gtin()" (ngModelChange)="gs1Gtin.set($event)" class="input-mini w-full text-left px-2" placeholder="08934567890128">
+                                        </div>
+                                    }
                                     @if (displayFormat() !== 'text') {
                                         <div><label class="label-mini">Rộng vạch (px)</label><input type="number" [ngModel]="barcodeWidth()" (ngModelChange)="barcodeWidth.set($event)" class="input-mini" min="1" max="4" step="0.5"></div>
                                         <div><label class="label-mini">Cao mã (px)</label><input type="number" [ngModel]="barcodeHeight()" (ngModelChange)="barcodeHeight.set($event)" class="input-mini" min="10" max="100" step="5"></div>
@@ -541,10 +570,10 @@ interface LabelPage {
                                                         @if (displayFormat() !== 'text' && label) {
                                                             <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                         }
-                                                        @if (displayFormat() !== 'barcode' && label) {
+                                                        @if (displayFormat() !== 'barcode' && displayFormat() !== 'qrcode' && label) {
                                                             <span class="font-bold font-mono leading-none overflow-hidden px-1"
                                                                   [style.text-align]="alignX() === 'flex-start' ? 'left' : alignX() === 'flex-end' ? 'right' : 'center'"
-                                                                  [class.mt-1]="displayFormat() === 'barcode_text'"
+                                                                  [class.mt-1]="displayFormat() === 'barcode_text' || displayFormat() === 'qrcode_text' || displayFormat() === 'qrcode_hybrid'"
                                                                   style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
                                                                   [class.text-red-600]="label.length > 30"
                                                                   [style.font-size.pt]="fontSize()"
@@ -613,10 +642,10 @@ interface LabelPage {
                                                     @if (displayFormat() !== 'text' && label) {
                                                         <img [src]="generateBarcode(label)" class="max-w-full object-contain" [style.height.px]="barcodeHeight()" />
                                                     }
-                                                    @if (displayFormat() !== 'barcode' && label) {
+                                                    @if (displayFormat() !== 'barcode' && displayFormat() !== 'qrcode' && label) {
                                                         <span class="font-bold font-mono leading-none overflow-hidden px-1"
                                                               [style.text-align]="alignX() === 'flex-start' ? 'left' : alignX() === 'flex-end' ? 'right' : 'center'"
-                                                              [class.mt-1]="displayFormat() === 'barcode_text'"
+                                                              [class.mt-1]="displayFormat() === 'barcode_text' || displayFormat() === 'qrcode_text' || displayFormat() === 'qrcode_hybrid'"
                                                               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-all;"
                                                               [class.text-red-600]="label.length > 30"
                                                               [style.font-size.pt]="fontSize()"
@@ -664,6 +693,13 @@ export class LabelPrintComponent implements AfterViewInit {
 
   @ViewChild('previewContainer') previewContainer!: ElementRef;
 
+  @Input() set initialData(value: string) {
+    if (value) {
+      this.rawInput.set(value);
+      this.displayFormat.set('qrcode_text');
+    }
+  }
+
   // Core State
   printMode = signal<PrintMode>('tomy_a4');
   rawInput = signal('');
@@ -707,6 +743,10 @@ export class LabelPrintComponent implements AfterViewInit {
   gapY = signal<number>(2);
   skippedCells = signal<number>(0);
   showAdvanced = signal(false);
+
+  // GS1 Config
+  gs1Domain = signal<string>('https://lims.example.com');
+  gs1Gtin = signal<string>('08934567890128');
 
   // Brother Config
   brotherPaperType = signal<string>('62');
@@ -1181,6 +1221,47 @@ export class LabelPrintComponent implements AfterViewInit {
 
   generateBarcode(text: string): string {
       if (!text) return '';
+      
+      const format = this.displayFormat();
+      if (format === 'qrcode' || format === 'qrcode_text' || format === 'qrcode_hybrid') {
+          try {
+              let qrText = text;
+              if (format === 'qrcode_hybrid') {
+                  const domain = this.gs1Domain().replace(/\/$/, '');
+                  const gtin = this.gs1Gtin();
+                  qrText = `${domain}/01/${gtin}/21/${encodeURIComponent(text)}`;
+              }
+              const qrcode = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
+              const canvas = document.createElement('canvas');
+              const size = qrcode.modules.size;
+              const scale = Math.max(1, Math.floor(this.barcodeWidth() * 2)); // Use barcodeWidth as scale factor
+              const margin = 2;
+              const actualSize = size + margin * 2;
+              canvas.width = actualSize * scale;
+              canvas.height = actualSize * scale;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return '';
+              
+              // Fill background
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Draw modules
+              ctx.fillStyle = '#000000';
+              for (let row = 0; row < size; row++) {
+                  for (let col = 0; col < size; col++) {
+                      if (qrcode.modules.get(row, col)) {
+                          ctx.fillRect((col + margin) * scale, (row + margin) * scale, scale, scale);
+                      }
+                  }
+              }
+              return canvas.toDataURL('image/png');
+          } catch (e) {
+              console.error('QR Code error:', e);
+              return '';
+          }
+      }
+
       try {
           const canvas = document.createElement('canvas');
           JsBarcode(canvas, text, {
@@ -1306,8 +1387,8 @@ export class LabelPrintComponent implements AfterViewInit {
                       const barcodeSrc = this.generateBarcode(label);
                       htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
                   }
-                  if (this.displayFormat() !== 'barcode') {
-                      htmlContent += `<div class="label-text" style="${this.displayFormat() === 'barcode_text' ? 'margin-top: 2px;' : ''}">${label}</div>`;
+                  if (this.displayFormat() !== 'barcode' && this.displayFormat() !== 'qrcode') {
+                      htmlContent += `<div class="label-text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${label}</div>`;
                   }
               }
               htmlContent += `</div></div>`;
@@ -1444,8 +1525,8 @@ export class LabelPrintComponent implements AfterViewInit {
                               const barcodeSrc = this.generateBarcode(label);
                               htmlContent += `<img src="${barcodeSrc}" style="height: ${this.barcodeHeight()}px; max-width: 100%; object-fit: contain;" />`;
                           }
-                          if (this.displayFormat() !== 'barcode') {
-                              htmlContent += `<span class="text" style="${this.displayFormat() === 'barcode_text' ? 'margin-top: 2px;' : ''}">${label}</span>`;
+                          if (this.displayFormat() !== 'barcode' && this.displayFormat() !== 'qrcode') {
+                              htmlContent += `<span class="text" style="${(this.displayFormat() === 'barcode_text' || this.displayFormat() === 'qrcode_text' || this.displayFormat() === 'qrcode_hybrid') ? 'margin-top: 2px;' : ''}">${label}</span>`;
                           }
                       }
                       htmlContent += `</div></div>`;

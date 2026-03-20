@@ -91,3 +91,40 @@ export function parseGs1Data(code: string): Gs1Data {
   
   return result;
 }
+
+/**
+ * Generates a Hybrid GS1 string from LIMS inventory item data.
+ * Includes AI 01 (GTIN), AI 17 (Expiry), AI 10 (Lot), and AI 240 (LIMS ID).
+ */
+export function generateHybridGs1Code(item: any): string {
+  let code = '';
+  
+  // 1. GTIN (AI 01) - 14 digits. If missing, use a placeholder.
+  const gtin = item.gtin ? String(item.gtin).padStart(14, '0') : '00000000000000';
+  code += `01${gtin}`;
+  
+  // 2. Expiry (AI 17) - 6 digits YYMMDD
+  if (item.expiryDate) {
+    const d = new Date(item.expiryDate);
+    if (!isNaN(d.getTime())) {
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      code += `17${yy}${mm}${dd}`;
+    }
+  }
+  
+  // 3. Lot Number (AI 10) - up to 20 chars
+  if (item.lotNumber) {
+    const lot = String(item.lotNumber).substring(0, 20);
+    code += `10${lot}\x1D`; // Add FNC1 separator
+  }
+  
+  // 4. LIMS ID (AI 240) - up to 30 chars
+  if (item.id) {
+    const id = String(item.id).substring(0, 30);
+    code += `240${id}`; // Last element doesn't need FNC1
+  }
+  
+  return code;
+}
