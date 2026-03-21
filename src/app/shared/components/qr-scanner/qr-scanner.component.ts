@@ -71,21 +71,27 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
     }
 
     try {
-        this.html5QrCode = new Html5Qrcode("reader");
-        
         let formatsToSupport = undefined;
         if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
             formatsToSupport = [
                 Html5QrcodeSupportedFormats.QR_CODE,
-                Html5QrcodeSupportedFormats.DATA_MATRIX
+                Html5QrcodeSupportedFormats.DATA_MATRIX,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF
             ];
         }
 
+        this.html5QrCode = new Html5Qrcode("reader", formatsToSupport ? { formatsToSupport } : undefined);
+        
         const config = { 
             fps: 10, 
             qrbox: { width: 250, height: 250 }, 
-            aspectRatio: 1.0,
-            formatsToSupport: formatsToSupport
+            aspectRatio: 1.0
         };
         
         // Prefer back camera (environment)
