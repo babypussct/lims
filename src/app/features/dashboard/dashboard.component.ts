@@ -165,9 +165,9 @@ interface KanbanColumn {
 
         <!-- SECTION 2: ANALYTICS & FEED -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Left: Chart (2/3) -->
-            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100 dark:border-slate-700">
-                <div class="flex justify-between items-start mb-4">
+            <!-- Left: Analytics (2/3) -->
+            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                     <div>
                         <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
                         <!-- Trend Indicator -->
@@ -186,21 +186,54 @@ interface KanbanColumn {
                             <span class="text-gray-400 dark:text-slate-500 font-normal text-xs">so với TB tuần trước</span>
                         </p>
                     </div>
-                    <div class="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-slate-400">
-                        <i class="fa-solid fa-chart-column"></i>
+                    <!-- Date Filter Component -->
+                    <app-date-range-filter 
+                        [initStart]="startDate()" 
+                        [initEnd]="endDate()" 
+                        (dateChange)="onDateRangeChange($event)">
+                    </app-date-range-filter>
+                </div>
+
+                <!-- KPIs Row -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
+                        <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
+                        <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">TB Mẫu/Mẻ</p>
+                        <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full min-h-0 bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
-                    @if(isLoading()) {
-                        <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
-                    } @else {
-                        <canvas #activityChart class="w-full h-full"></canvas>
-                    }
+
+                <!-- Charts Area -->
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[250px]">
+                    <div class="md:col-span-2 relative w-full h-full min-h-[200px] bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
+                        @if(isLoading()) {
+                            <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
+                        } @else {
+                            <canvas #activityChart class="w-full h-full"></canvas>
+                        }
+                    </div>
+                    <div class="relative w-full h-full min-h-[200px] flex flex-col items-center justify-center">
+                        <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full">Phân bổ SOP</h6>
+                        @if(isLoading()) {
+                            <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
+                        } @else {
+                            <div class="relative w-full h-full flex items-center justify-center">
+                                <canvas #doughnutChart class="max-w-[180px] max-h-[180px]"></canvas>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
 
             <!-- Right: Activity Feed (1/3) -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[400px] border border-slate-100 dark:border-slate-700">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[450px] border border-slate-100 dark:border-slate-700">
                 <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg mb-4">Hoạt động gần đây</h6>
                 <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
                     <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
@@ -242,15 +275,8 @@ interface KanbanColumn {
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
                 <h6 class="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Hiệu suất Phân tích (Hoàn thành)
+                    <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Bảng theo dõi SOP (Hoàn thành)
                 </h6>
-                
-                <!-- Date Filter Component -->
-                <app-date-range-filter 
-                    [initStart]="startDate()" 
-                    [initEnd]="endDate()" 
-                    (dateChange)="onDateRangeChange($event)">
-                </app-date-range-filter>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
@@ -409,6 +435,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }).length;
   });
 
+  private parseRequestDate(req: any): Date {
+      if (req.analysisDate) {
+          const parts = req.analysisDate.split('-');
+          if (parts.length === 3) {
+              return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+          }
+      }
+      const ts = req.approvedAt || req.timestamp;
+      return (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+  }
+
   // TREND INDICATOR (Revised Logic: Weekly Daily Average)
   trendInfo = computed(() => {
       const history = this.state.approvedRequests();
@@ -443,19 +480,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const tEndLast = endLastWeek.getTime();
 
       history.forEach(req => {
-          let timestamp = 0;
-          if (req.analysisDate) {
-              const parts = req.analysisDate.split('-'); 
-              if (parts.length === 3) {
-                  timestamp = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime();
-              }
-          } 
-          
-          if (!timestamp) {
-              const ts = req.approvedAt || req.timestamp;
-              const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-              timestamp = d.getTime();
-          }
+          const timestamp = this.parseRequestDate(req).getTime();
 
           if (timestamp >= tStartThis) {
               let count = 0;
@@ -512,14 +537,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
 
       approvedReqs.forEach(req => {
-          let d: Date;
-          if (req.analysisDate) {
-              const parts = req.analysisDate.split('-');
-              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-          } else {
-              const ts = req.approvedAt || req.timestamp;
-              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-          }
+          const d = this.parseRequestDate(req);
           
           if (d < start || d > end) return;
 
@@ -576,13 +594,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); 
   });
 
+  chartKpis = computed(() => {
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const history = this.state.approvedRequests();
+      let totalSamples = 0;
+      let totalBatches = 0;
+
+      history.forEach(req => {
+          const d = this.parseRequestDate(req);
+          
+          if (d >= start && d <= end) {
+              totalBatches++;
+              let samples = 0;
+              if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+              else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+              else samples = 1;
+              totalSamples += samples;
+          }
+      });
+
+      const avgSamplesPerBatch = totalBatches > 0 ? (totalSamples / totalBatches).toFixed(1) : '0';
+      
+      return { totalSamples, totalBatches, avgSamplesPerBatch };
+  });
+
   today = new Date();
   chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('activityChart');
+  doughnutChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('doughnutChart');
   chartInstance: any = null;
+  doughnutChartInstance: any = null;
 
   constructor() {
       effect(() => {
           const reqs = this.state.approvedRequests();
+          const start = this.startDate();
+          const end = this.endDate();
           if (reqs.length >= 0 && !this.isLoading()) {
               setTimeout(() => this.initChart(), 300);
           }
@@ -609,6 +656,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (this.chartInstance) {
           this.chartInstance.destroy();
           this.chartInstance = null;
+      }
+      if (this.doughnutChartInstance) {
+          this.doughnutChartInstance.destroy();
+          this.doughnutChartInstance = null;
       }
   }
 
@@ -640,73 +691,162 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
-      if (!canvas) return;
+      const dCanvas = this.doughnutChartCanvas()?.nativeElement;
+      if (!canvas || !dCanvas) return;
+
       const existingChart = Chart.getChart(canvas);
       if (existingChart) existingChart.destroy();
+      const existingDChart = Chart.getChart(dCanvas);
+      if (existingDChart) existingDChart.destroy();
+
       if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
+      if (this.doughnutChartInstance) { this.doughnutChartInstance.destroy(); this.doughnutChartInstance = null; }
+
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      const dCtx = dCanvas.getContext('2d');
+      if (!ctx || !dCtx) return;
 
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
       gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); 
       gradient.addColorStop(1, 'rgba(203, 12, 159, 0)');
 
-      const days = 7;
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
       const labels = [];
-      const sampleData = new Array(days).fill(0);
-      const runData = new Array(days).fill(0);
-      const now = new Date(); now.setHours(0,0,0,0);
+      const sampleData = new Array(diffDays).fill(0);
+      const runData = new Array(diffDays).fill(0);
+      const dailyDetails: Record<string, number>[] = new Array(diffDays).fill(null).map(() => ({}));
       const dateMap = new Map<string, number>();
       
-      for (let i = days - 1; i >= 0; i--) {
-          const d = new Date(now); d.setDate(d.getDate() - i);
+      for (let i = 0; i < diffDays; i++) {
+          const d = new Date(start); d.setDate(d.getDate() + i);
           const key = `${d.getDate()}/${d.getMonth() + 1}`;
-          labels.push(key); dateMap.set(key, days - 1 - i);
+          labels.push(key); dateMap.set(key, i);
       }
+
+      const sopCounts = new Map<string, number>();
 
       const history = this.state.approvedRequests();
       history.forEach(req => {
-          let key = '';
-          if (req.analysisDate) {
-              const parts = req.analysisDate.split('-');
-              if (parts.length === 3) key = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
-          }
-          if (!key) {
-              const ts = req.approvedAt || req.timestamp;
-              if (ts) { const d = (ts as any).toDate ? (ts as any).toDate() : new Date(ts); key = `${d.getDate()}/${d.getMonth() + 1}`; }
-          }
-          const idx = dateMap.get(key);
-          if (idx !== undefined) {
-              runData[idx]++;
-              let samples = 0;
-              if (req.inputs) { if (req.inputs['n_sample']) samples = Number(req.inputs['n_sample']); else if (req.inputs['sample_count']) samples = Number(req.inputs['sample_count']); }
-              sampleData[idx] += (samples || 0); 
+          const d = this.parseRequestDate(req);
+          
+          if (d >= start && d <= end) {
+              const key = `${d.getDate()}/${d.getMonth() + 1}`;
+              const idx = dateMap.get(key);
+              if (idx !== undefined) {
+                  runData[idx]++;
+                  let samples = 0;
+                  if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+                  else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+                  else samples = 1;
+                  sampleData[idx] += samples; 
+                  
+                  // SOP Distribution
+                  const sopName = req.sopName || 'Unknown';
+                  sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
+                  
+                  // Daily details
+                  dailyDetails[idx][sopName] = (dailyDetails[idx][sopName] || 0) + samples;
+              }
           }
       });
 
+      // Line Chart
       this.chartInstance = new Chart(ctx, {
           type: 'line',
           data: {
               labels: labels,
               datasets: [
                   { 
-                      label: 'Số mẫu (Samples)', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
+                      label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
                       pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
                   },
                   { 
-                      label: 'Số mẻ (Batches)', data: runData, type: 'bar', backgroundColor: '#3a416f', borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
+                      label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: '#3a416f', borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
                   }
               ]
           },
           options: { 
               responsive: true, maintainAspectRatio: false, 
-              plugins: { legend: { display: false }, tooltip: { backgroundColor: '#fff', titleColor: '#1e293b', bodyColor: '#1e293b', borderColor: '#e2e8f0', borderWidth: 1, padding: 10, displayColors: true, usePointStyle: true } }, 
+              plugins: { 
+                  legend: { display: false }, 
+                  tooltip: { 
+                      backgroundColor: '#fff', 
+                      titleColor: '#1e293b', 
+                      bodyColor: '#1e293b', 
+                      borderColor: '#e2e8f0', 
+                      borderWidth: 1, 
+                      padding: 10, 
+                      displayColors: true, 
+                      usePointStyle: true,
+                      callbacks: {
+                          afterBody: (context: any) => {
+                              const index = context[0].dataIndex;
+                              const details = dailyDetails[index];
+                              if (!details || Object.keys(details).length === 0) return '';
+                              let text = '\nChi tiết mẫu theo SOP:';
+                              for (const [sop, count] of Object.entries(details)) {
+                                  text += `\n- ${sop}: ${count} mẫu`;
+                              }
+                              return text;
+                          }
+                      }
+                  } 
+              }, 
               interaction: { mode: 'index', intersect: false },
               scales: { 
                   x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' } }, 
                   y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: '#f1f5f9' }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
                   y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
               } 
+          }
+      });
+
+      // Doughnut Chart
+      const sopLabels = Array.from(sopCounts.keys());
+      const sopData = Array.from(sopCounts.values());
+      const bgColors = ['#cb0c9f', '#3a416f', '#17c1e8', '#82d616', '#ea0606', '#ff9800', '#9c27b0', '#00bcd4'];
+
+      this.doughnutChartInstance = new Chart(dCtx, {
+          type: 'doughnut',
+          data: {
+              labels: sopLabels,
+              datasets: [{
+                  data: sopData,
+                  backgroundColor: bgColors.slice(0, sopLabels.length),
+                  borderWidth: 0,
+                  hoverOffset: 4
+              }]
+          },
+          options: {
+              responsive: true, maintainAspectRatio: false,
+              cutout: '70%',
+              plugins: {
+                  legend: { display: false },
+                  tooltip: { 
+                      backgroundColor: '#fff', 
+                      titleColor: '#1e293b', 
+                      bodyColor: '#1e293b', 
+                      borderColor: '#e2e8f0', 
+                      borderWidth: 1, 
+                      padding: 10, 
+                      displayColors: true, 
+                      usePointStyle: true,
+                      callbacks: {
+                          label: (context: any) => {
+                              const label = context.label || '';
+                              const value = context.raw || 0;
+                              const total = context.chart._metasets[context.datasetIndex].total;
+                              const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                              return `${label}: ${value} mẫu (${percentage}%)`;
+                          }
+                      }
+                  }
+              }
           }
       });
   }
