@@ -45,6 +45,7 @@ export class AuthService {
   private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
 
   currentUser = signal<UserProfile | null>(null);
+  isAuthReady = signal<boolean>(false);
 
   constructor() {
     this.auth = getAuth(this.fb.app);
@@ -54,6 +55,7 @@ export class AuthService {
         await this.syncUser(firebaseUser);
       } else {
         this.currentUser.set(null);
+        this.isAuthReady.set(true);
       }
     });
   }
@@ -126,6 +128,8 @@ export class AuthService {
     } catch (e) {
         console.error("Error syncing user:", e);
         this.currentUser.set(null);
+    } finally {
+        this.isAuthReady.set(true);
     }
   }
 
