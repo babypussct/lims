@@ -74,7 +74,7 @@ export class QrGlobalService {
     
     // CASE A: Auth Handshake (Mobile Login)
     if (cleanCode.startsWith('SESS_')) {
-        this.router.navigate(['/mobile-login']); 
+        this.router.navigate(['/mobile-login'], { queryParams: { qr: code } }); 
         return;
     }
 

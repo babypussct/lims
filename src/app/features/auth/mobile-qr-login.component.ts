@@ -1,7 +1,7 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
@@ -81,9 +81,10 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
     .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   `]
 })
-export class MobileQrLoginComponent {
+export class MobileQrLoginComponent implements OnInit {
   auth = inject(AuthService);
   router: Router = inject(Router);
+  route: ActivatedRoute = inject(ActivatedRoute);
   toast = inject(ToastService);
 
   scanData = signal<{sessionId: string, key: string} | null>(null);
@@ -100,13 +101,22 @@ export class MobileQrLoginComponent {
       }
   }
 
+  ngOnInit() {
+      // Check if QR code was passed via query params (e.g. from Global Scanner)
+      this.route.queryParams.subscribe(params => {
+          if (params['qr']) {
+              this.onScan(params['qr']);
+          }
+      });
+  }
+
   onScan(raw: string) {
       if (this.scanData()) return;
       
       console.log("Scanned:", raw);
       const parts = raw.split('|');
       
-      if (parts.length === 2 && parts[0].startsWith('sess_')) {
+      if (parts.length === 2 && parts[0].toLowerCase().startsWith('sess_')) {
           this.scanData.set({ sessionId: parts[0], key: parts[1] });
       } else {
           this.toast.show('Mã QR không hợp lệ. Vui lòng quét mã trên màn hình đăng nhập.', 'error');

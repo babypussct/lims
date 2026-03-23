@@ -61,10 +61,6 @@ interface KanbanColumn {
             </div>
             
             <div class="flex gap-2">
-                <button (click)="router.navigate(['/mobile-login'])" class="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
-                    <i class="fa-solid fa-desktop"></i> Login PC
-                </button>
-
                 <!-- Calls Global Service -->
                 <button (click)="qrService.startScan()" class="px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã
