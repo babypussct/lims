@@ -61,8 +61,8 @@ interface KanbanColumn {
             </div>
             
             <div class="flex gap-2">
-                <!-- Calls Global Service -->
-                <button (click)="qrService.startScan()" class="px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                <!-- Calls Global Service (Hidden on md and larger screens) -->
+                <button (click)="qrService.startScan()" class="md:hidden px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã
                 </button>
             </div>

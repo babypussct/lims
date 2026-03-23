@@ -40,7 +40,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
       </div>
 
       <!-- 2. GLOBAL ACTION: SCAN -->
-      <div class="px-4 mt-2 mb-2">
+      <div class="px-4 mt-2 mb-2 md:hidden">
           <button (click)="qrService.startScan()" 
                   class="w-full flex items-center justify-center gap-2 bg-slate-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white p-3 rounded-xl shadow-md shadow-slate-300 dark:shadow-none transition-all active:scale-95 group overflow-hidden relative">
               <i class="fa-solid fa-qrcode text-lg relative z-10 group-hover:scale-110 transition-transform"></i>
@@ -55,7 +55,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
           </button>
       </div>
 
-      <hr class="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent border-none mx-4 mb-2" />
+      <hr class="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent border-none mx-4 mb-2 md:hidden" />
 
       <!-- 3. Modules Menu -->
       <div class="px-3 py-2 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
