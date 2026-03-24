@@ -183,7 +183,7 @@ import { Unsubscribe } from 'firebase/firestore';
                                      </td>
                                      <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col h-full">
-                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug break-words" (click)="openEditModal(std)" [title]="std.name">
+                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-base mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug break-words" (click)="openEditModal(std)" [title]="std.name">
                                                 {{std.name}}
                                             </div>
                                             @if(std.chemical_name) { <div class="text-sm text-slate-500 dark:text-slate-400 italic mb-2 break-words" [title]="std.chemical_name">{{std.chemical_name}}</div> }
@@ -195,7 +195,7 @@ import { Unsubscribe } from 'firebase/firestore';
                                      </td>
                                      <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                                         <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 truncate" [title]="std.manufacturer">{{std.manufacturer || 'N/A'}}</div>
-                                        <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                        <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
                                             <span class="font-bold text-slate-400 dark:text-slate-500">LOT:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.lot_number, $event)">{{std.lot_number || '-'}}</span>
                                             <span class="font-bold text-slate-400 dark:text-slate-500">CODE:</span><span class="font-mono text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-dotted" title="Click để copy" (click)="copyText(std.product_code, $event)">{{std.product_code || '-'}}</span>
                                             @if(std.cas_number) { <span class="font-bold text-slate-400 dark:text-slate-500">CAS:</span><span class="font-mono text-slate-700 dark:text-slate-300">{{std.cas_number}}</span> }
@@ -292,12 +292,12 @@ import { Unsubscribe } from 'firebase/firestore';
 
                                             <!-- Identity -->
                                             <div class="mb-4 cursor-pointer" (click)="openEditModal(std)">
-                                                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
+                                                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
                                                 @if(std.chemical_name) { <p class="text-sm text-slate-500 dark:text-slate-400 italic font-medium break-words">{{std.chemical_name}}</p> }
                                             </div>
 
                                             <!-- Data Grid (Click to copy) -->
-                                            <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[10px]">
+                                            <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[11px]">
                                                 <div class="bg-white dark:bg-slate-800 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText(std.lot_number, $event)" title="Copy Lot">
                                                     <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lot <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
                                                     <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.lot_number || '-'}}</div>
