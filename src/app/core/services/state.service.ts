@@ -645,20 +645,4 @@ export class StateService implements OnDestroy {
       await batch.commit();
       this.toast.show(`Đã xóa ${logs.length} phiếu`);
   }
-  
-  async clearAllLogs() { 
-      const logs = this.logs();
-      if (logs.length === 0) return;
-      if (await this.confirmationService.confirm({ message: 'Xóa toàn bộ nhật ký hiển thị?', confirmText: 'Xóa', isDangerous: true })) {
-          const batch = writeBatch(this.fb.db);
-          logs.forEach(l => {
-              batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', l.id));
-              if (l.printJobId) {
-                  batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', l.printJobId));
-              }
-          });
-          await batch.commit();
-          this.toast.show('Đã xóa logs');
-      }
-  }
 }

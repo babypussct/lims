@@ -206,28 +206,6 @@ export class FirebaseService {
     if (opCount > 0) await batch.commit();
   }
 
-  // --- Danger Zone ---
-  async resetToDefaults() {
-    const collections = ['inventory', 'sops', 'requests', 'logs', 'stats', 'reference_standards', 'recipes'];
-    
-    for (const col of collections) {
-        const snapshot = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/${col}`));
-        let batch = writeBatch(this.db);
-        let count = 0;
-        
-        for (const d of snapshot.docs) {
-            batch.delete(d.ref);
-            count++;
-            if (count >= 400) {
-                await batch.commit();
-                batch = writeBatch(this.db);
-                count = 0;
-            }
-        }
-        if (count > 0) await batch.commit();
-    }
-  }
-
   // --- Sample Data Loader (GC-NAFIQPM 6) ---
   async loadSampleData() {
     const inventory = [

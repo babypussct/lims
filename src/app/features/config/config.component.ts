@@ -180,20 +180,6 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
 
                     </div>
 
-                    <!-- BOTTOM: DANGER ZONE -->
-                    <div class="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div>
-                                <h3 class="font-bold text-red-800 dark:text-red-400">Vùng Nguy Hiểm</h3>
-                                <p class="text-xs text-red-600 dark:text-red-500">Các hành động dưới đây không thể hoàn tác. Hãy cẩn trọng.</p>
-                            </div>
-                        </div>
-                        <button (click)="resetDefaults()" class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white rounded-xl font-bold text-sm transition shadow-sm dark:shadow-none">
-                            <i class="fa-solid fa-eraser mr-1"></i> Xóa Sạch Dữ Liệu (Wipe All)
-                        </button>
-                    </div>
-
                 </div>
             }
 
@@ -602,14 +588,6 @@ service cloud.firestore {
               catch (err) { this.toast.show('File lỗi', 'error'); }
           };
           reader.readAsText(file);
-      }
-  }
-
-  async resetDefaults() {
-      if(await this.confirmationService.confirm({ message: 'XÓA SẠCH toàn bộ dữ liệu? Không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          await this.fb.resetToDefaults();
-          this.toast.show('Đã xóa sạch dữ liệu.', 'info');
-          setTimeout(() => window.location.reload(), 1500);
       }
   }
 

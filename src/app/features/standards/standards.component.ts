@@ -55,13 +55,6 @@ import { Unsubscribe } from 'firebase/firestore';
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleUsageLogFileSelect($event)">
            }
-           
-           @if(state.isAdmin()) {
-             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-3 py-1.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-bold text-[11px] items-center gap-1.5 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
-                @if(isLoading() || isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
-                @else { <i class="fa-solid fa-bomb"></i> }
-             </button>
-           }
         </div>
       </div>
 
@@ -1326,23 +1319,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           } catch(e: any) { 
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
           } finally {
-              this.isProcessing.set(false);
-          }
-      }
-  }
-
-  async deleteAll() {
-      if (this.isProcessing()) return;
-      if (await this.confirmationService.confirm({ message: 'Reset toàn bộ dữ liệu Chuẩn? Hệ thống sẽ xóa sạch cả lịch sử dụng của từng chuẩn.\nHành động này không thể hoàn tác.', confirmText: 'Xóa Sạch', isDangerous: true })) {
-          this.isLoading.set(true);
-          this.isProcessing.set(true);
-          try { 
-              await this.stdService.deleteAllStandards(); 
-              this.toast.show('Đã xóa toàn bộ dữ liệu và logs.', 'success'); 
-          } catch (e: any) { 
-              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
-          } finally {
-              this.isLoading.set(false);
               this.isProcessing.set(false);
           }
       }
