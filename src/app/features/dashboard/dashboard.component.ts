@@ -171,20 +171,25 @@ interface KanbanColumn {
                     <div>
                         <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
                         <!-- Trend Indicator -->
-                        <p class="text-sm font-bold flex items-center gap-1.5"
-                           [ngClass]="{
-                               'text-emerald-500 dark:text-emerald-400': trendInfo().direction === 'up',
-                               'text-red-500 dark:text-red-400': trendInfo().direction === 'down',
-                               'text-gray-500 dark:text-slate-400': trendInfo().direction === 'neutral'
-                           }">
-                            <i class="fa-solid" [class]="trendInfo().icon"></i>
-                            @if(trendInfo().direction !== 'neutral') {
-                                <span>{{trendInfo().percent}}%</span>
-                            } @else {
-                                <span>Ổn định</span>
-                            }
-                            <span class="text-gray-400 dark:text-slate-500 font-normal text-xs">so với TB tuần trước</span>
-                        </p>
+                        <div class="flex flex-col">
+                            <p class="text-sm font-bold flex items-center gap-1.5"
+                               [ngClass]="{
+                                   'text-emerald-500 dark:text-emerald-400': trendInfo().direction === 'up',
+                                   'text-red-500 dark:text-red-400': trendInfo().direction === 'down',
+                                   'text-gray-500 dark:text-slate-400': trendInfo().direction === 'neutral'
+                               }">
+                                <i class="fa-solid" [class]="trendInfo().icon"></i>
+                                @if(trendInfo().direction !== 'neutral') {
+                                    <span>{{trendInfo().direction === 'up' ? 'Tăng' : 'Giảm'}} {{trendInfo().percent}}%</span>
+                                } @else {
+                                    <span>Ổn định</span>
+                                }
+                                <span class="text-gray-500 dark:text-slate-400 font-medium text-xs">({{trendInfo().currentTotal}} so với {{trendInfo().prevTotal}} mẫu)</span>
+                            </p>
+                            <p class="text-gray-400 dark:text-slate-500 font-normal text-[11px] mt-0.5">
+                                so với {{trendInfo().label}}
+                            </p>
+                        </div>
                     </div>
                     <!-- Date Filter Component -->
                     <app-date-range-filter 
@@ -446,86 +451,77 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
   }
 
-  // TREND INDICATOR (Revised Logic: Weekly Daily Average)
+  // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
       const history = this.state.approvedRequests();
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      // 1. Determine Date Ranges
-      // Get Monday of current week
-      const dayOfWeek = today.getDay(); // 0 (Sun) -> 6 (Sat)
-      // Calculate Monday of this week. If Sunday(0), subtract 6. Else subtract day-1.
-      const diffToMon = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
       
-      const startThisWeek = new Date(today);
-      startThisWeek.setDate(diffToMon);
-      startThisWeek.setHours(0,0,0,0);
+      const currentStart = new Date(this.startDate()); currentStart.setHours(0,0,0,0);
+      const currentEnd = new Date(this.endDate()); currentEnd.setHours(23,59,59,999);
+      
+      // Calculate diff days
+      const startForDiff = new Date(this.startDate()); startForDiff.setHours(0,0,0,0);
+      const endForDiff = new Date(this.endDate()); endForDiff.setHours(0,0,0,0);
+      const diffTime = Math.abs(endForDiff.getTime() - startForDiff.getTime());
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      // Last week Monday = This week Monday - 7 days
-      const startLastWeek = new Date(startThisWeek);
-      startLastWeek.setDate(startLastWeek.getDate() - 7);
+      // Previous period
+      const prevEnd = new Date(currentStart); prevEnd.setDate(prevEnd.getDate() - 1); prevEnd.setHours(23,59,59,999);
+      const prevStart = new Date(prevEnd); prevStart.setDate(prevStart.getDate() - diffDays + 1); prevStart.setHours(0,0,0,0);
 
-      // Last week Sunday = This week Monday - 1 day
-      const endLastWeek = new Date(startThisWeek);
-      endLastWeek.setDate(endLastWeek.getDate() - 1);
-      endLastWeek.setHours(23,59,59,999);
+      let currentTotal = 0;
+      let prevTotal = 0;
 
-      // 2. Accumulate Data
-      let thisWeekTotal = 0;
-      let lastWeekTotal = 0;
-
-      const tStartThis = startThisWeek.getTime();
-      const tStartLast = startLastWeek.getTime();
-      const tEndLast = endLastWeek.getTime();
+      const tCurrStart = currentStart.getTime();
+      const tCurrEnd = currentEnd.getTime();
+      const tPrevStart = prevStart.getTime();
+      const tPrevEnd = prevEnd.getTime();
 
       history.forEach(req => {
           const timestamp = this.parseRequestDate(req).getTime();
+          let count = 0;
+          if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+          else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
+          else count = 1;
 
-          if (timestamp >= tStartThis) {
-              let count = 0;
-              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-              else count = 1;
-              thisWeekTotal += count;
-          } else if (timestamp >= tStartLast && timestamp <= tEndLast) {
-              let count = 0;
-              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-              else count = 1;
-              lastWeekTotal += count;
+          if (timestamp >= tCurrStart && timestamp <= tCurrEnd) {
+              currentTotal += count;
+          } else if (timestamp >= tPrevStart && timestamp <= tPrevEnd) {
+              prevTotal += count;
           }
       });
 
-      // 3. Calculate Averages
-      // Days passed this week (including today). 
-      // If Today is Monday, diff is 0 days, so daysPassed = 1.
-      const msPerDay = 1000 * 60 * 60 * 24;
-      const daysPassed = Math.floor((now.getTime() - startThisWeek.getTime()) / msPerDay) + 1;
-      const validDaysPassed = Math.max(1, daysPassed); // Prevent divide by zero/negative if system time is off
-
-      const avgThisWeek = thisWeekTotal / validDaysPassed;
-      const avgLastWeek = lastWeekTotal / 7; // Last week is always 7 days
-
-      // 4. Calculate Trend
       let percent = 0;
       let direction: 'up' | 'down' | 'neutral' = 'neutral';
       let icon = 'fa-minus';
 
-      if (avgLastWeek > 0) {
-          const diff = avgThisWeek - avgLastWeek;
-          percent = Math.round((Math.abs(diff) / avgLastWeek) * 100);
-          
-          if (diff > 0.1) { // Threshold for floating point
-              direction = 'up'; icon = 'fa-arrow-up'; 
-          } else if (diff < -0.1) { 
-              direction = 'down'; icon = 'fa-arrow-down'; 
+      if (prevTotal === 0) {
+          if (currentTotal > 0) {
+              percent = 100;
+              direction = 'up';
+              icon = 'fa-arrow-trend-up';
           }
-      } else if (avgThisWeek > 0) {
-          percent = 100; direction = 'up'; icon = 'fa-arrow-up';
+      } else {
+          percent = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
+          if (percent > 0) {
+              direction = 'up';
+              icon = 'fa-arrow-trend-up';
+          } else if (percent < 0) {
+              direction = 'down';
+              icon = 'fa-arrow-trend-down';
+              percent = Math.abs(percent);
+          }
       }
 
-      return { percent, direction, icon };
+      let label = `kỳ trước (${diffDays} ngày)`;
+      if (diffDays === 1) {
+          label = 'hôm qua';
+      } else if (diffDays === 7) {
+          label = 'tuần trước';
+      } else if (diffDays === 30 || diffDays === 31) {
+          label = 'tháng trước';
+      }
+
+      return { direction, percent, icon, currentTotal, prevTotal, diffDays, label };
   });
 
   // KANBAN COMPUTED
@@ -713,8 +709,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
       
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const startForDiff = new Date(this.startDate()); startForDiff.setHours(0,0,0,0);
+      const endForDiff = new Date(this.endDate()); endForDiff.setHours(0,0,0,0);
+      const diffTime = Math.abs(endForDiff.getTime() - startForDiff.getTime());
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
       const labels = [];
       const sampleData = new Array(diffDays).fill(0);

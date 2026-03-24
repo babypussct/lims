@@ -21,13 +21,13 @@ import { Unsubscribe } from 'firebase/firestore';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent],
   template: `
-    <div class="flex flex-col space-y-4 md:space-y-5 fade-in h-full relative">
+    <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
       <!-- Header -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0 bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
         <div>
-            <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none">
-                    <i class="fa-solid fa-vial-circle-check"></i>
+            <h2 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none">
+                    <i class="fa-solid fa-vial-circle-check text-xs"></i>
                 </div>
                 Quản lý Chuẩn Đối Chiếu
             </h2>
@@ -35,29 +35,29 @@ import { Unsubscribe } from 'firebase/firestore';
         
         <div class="flex gap-2 items-center">
            @if(selectedIds().size > 0 && auth.canEditStandards()) {
-                <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-xl shadow-lg shadow-red-200 dark:shadow-none transition font-bold text-xs flex items-center gap-2 animate-bounce-in disabled:opacity-50">
+                <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
                     @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-trash"></i> } Xóa {{selectedIds().size}} mục
                 </button>
-                <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                <div class="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
            }
 
            @if(auth.canEditStandards()) {
-             <button (click)="openAddModal()" class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition font-bold text-xs flex items-center gap-2">
+             <button (click)="openAddModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
-             <button (click)="fileInput.click()" class="px-5 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-xs flex items-center gap-2" title="Import danh sách chuẩn">
+             <button (click)="fileInput.click()" class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import danh sách chuẩn">
                 <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
              <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleFileSelect($event)">
              
-             <button (click)="usageLogFileInput.click()" class="px-5 py-2 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-xl border border-teal-200 dark:border-teal-800/50 transition font-bold text-xs flex items-center gap-2" title="Import nhật ký sử dụng">
+             <button (click)="usageLogFileInput.click()" class="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-lg border border-teal-200 dark:border-teal-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import nhật ký sử dụng">
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleUsageLogFileSelect($event)">
            }
            
            @if(state.isAdmin()) {
-             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-bold text-xs items-center gap-2 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
+             <button (click)="deleteAll()" [disabled]="isLoading() || isProcessing()" class="hidden md:flex px-3 py-1.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-bold text-[11px] items-center gap-1.5 disabled:opacity-50" title="Xóa toàn bộ (Bao gồm Logs)">
                 @if(isLoading() || isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> }
                 @else { <i class="fa-solid fa-bomb"></i> }
              </button>
@@ -66,55 +66,55 @@ import { Unsubscribe } from 'firebase/firestore';
       </div>
 
       <!-- Dashboard Widgets -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-          <div (click)="activeWidgetFilter.set('all')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 dark:border-indigo-500 shadow-md ring-2 ring-indigo-50 dark:ring-indigo-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center"><i class="fa-solid fa-boxes-stacked"></i></div>
-                  <span class="text-2xl font-black text-slate-800 dark:text-slate-100">{{stats().total}}</span>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
+          <div (click)="activeWidgetFilter.set('all')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 dark:border-indigo-500 shadow-sm ring-1 ring-indigo-50 dark:ring-indigo-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
+              <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tất cả chuẩn</div>
               </div>
-              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tất cả chuẩn</div>
+              <span class="text-lg font-black text-slate-800 dark:text-slate-100">{{stats().total}}</span>
           </div>
-          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 dark:border-amber-500 shadow-md ring-2 ring-amber-50 dark:ring-amber-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fa-solid fa-battery-quarter"></i></div>
-                  <span class="text-2xl font-black text-amber-600 dark:text-amber-400">{{stats().lowStock}}</span>
+          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 dark:border-amber-500 shadow-sm ring-1 ring-amber-50 dark:ring-amber-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
+              <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs"><i class="fa-solid fa-battery-quarter"></i></div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hàng</div>
               </div>
-              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hàng</div>
+              <span class="text-lg font-black text-amber-600 dark:text-amber-400">{{stats().lowStock}}</span>
           </div>
-          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 dark:border-orange-500 shadow-md ring-2 ring-orange-50 dark:ring-orange-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
-                  <span class="text-2xl font-black text-orange-600 dark:text-orange-400">{{stats().expiringSoon}}</span>
+          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 dark:border-orange-500 shadow-sm ring-1 ring-orange-50 dark:ring-orange-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
+              <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs"><i class="fa-solid fa-hourglass-half"></i></div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
               </div>
-              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
+              <span class="text-lg font-black text-orange-600 dark:text-orange-400">{{stats().expiringSoon}}</span>
           </div>
-          <div (click)="activeWidgetFilter.set('expired')" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 dark:border-red-500 shadow-md ring-2 ring-red-50 dark:ring-red-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex justify-between items-start mb-2">
-                  <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center"><i class="fa-solid fa-ban"></i></div>
-                  <span class="text-2xl font-black text-red-600 dark:text-red-400">{{stats().expired}}</span>
+          <div (click)="activeWidgetFilter.set('expired')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 dark:border-red-500 shadow-sm ring-1 ring-red-50 dark:ring-red-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
+              <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-ban"></i></div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Đã hết hạn</div>
               </div>
-              <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Đã hết hạn</div>
+              <span class="text-lg font-black text-red-600 dark:text-red-400">{{stats().expired}}</span>
           </div>
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
+      <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
           
           <!-- Omnibox Filters -->
-          <div class="p-5 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-4 bg-slate-50/30 dark:bg-slate-800/50">
-             <div class="flex flex-col md:flex-row gap-4">
+          <div class="p-2 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-2 bg-slate-50/30 dark:bg-slate-800/50">
+             <div class="flex flex-col md:flex-row gap-2">
                  <div class="relative flex-1 group">
-                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 dark:text-slate-500 text-sm group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors"></i>
+                    <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors"></i>
                     <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
-                           class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
+                           class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
                            placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
                  </div>
                  
                  <!-- SORT DROPDOWN -->
-                 <div class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 shadow-sm dark:shadow-none h-[46px]">
-                     <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
+                 <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
+                     <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
                      <select [ngModel]="sortOption()" (ngModelChange)="onSortChange($event)" 
-                             class="bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-2 pr-2">
+                             class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
                          <option value="received_desc" class="dark:bg-slate-800">Ngày nhận (Mới nhất)</option>
                          <option value="updated_desc" class="dark:bg-slate-800">Mới cập nhật</option>
                          <option value="name_asc" class="dark:bg-slate-800">Tên (A-Z)</option>
@@ -124,23 +124,23 @@ import { Unsubscribe } from 'firebase/firestore';
                      </select>
                  </div>
 
-                 <div class="flex bg-slate-200/50 dark:bg-slate-700/50 p-1 rounded-xl shrink-0 h-[46px] self-start md:self-auto">
-                    <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Danh sách">
-                        <i class="fa-solid fa-list"></i>
+                 <div class="flex bg-slate-200/50 dark:bg-slate-700/50 p-0.5 rounded-lg shrink-0 h-[30px] self-start md:self-auto">
+                    <button (click)="viewMode.set('list')" [class]="viewMode() === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Danh sách">
+                        <i class="fa-solid fa-list text-[11px]"></i>
                     </button>
-                    <button (click)="viewMode.set('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-10 h-full flex items-center justify-center rounded-lg transition" title="Dạng Lưới (Thẻ)">
-                        <i class="fa-solid fa-border-all"></i>
+                    <button (click)="viewMode.set('grid')" [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'" class="w-7 h-full flex items-center justify-center rounded transition" title="Dạng Lưới (Thẻ)">
+                        <i class="fa-solid fa-border-all text-[11px]"></i>
                     </button>
                  </div>
              </div>
              
              <!-- Search Stats -->
              <div class="flex justify-between items-center px-1">
-                 <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                 <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
                      Hiển thị: {{visibleItems().length}} / {{filteredItems().length}} kết quả 
                      @if(searchTerm()) { <span class="text-indigo-500 dark:text-indigo-400">(Lọc theo "{{searchTerm()}}")</span> }
                  </span>
-                 @if(isLoading()) { <span class="text-[10px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
+                 @if(isLoading()) { <span class="text-[9px] text-blue-500 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-sync fa-spin"></i> Đang đồng bộ...</span> }
              </div>
           </div>
 
@@ -183,13 +183,13 @@ import { Unsubscribe } from 'firebase/firestore';
                                      </td>
                                      <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col h-full">
-                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-sm mb-0.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug line-clamp-2" (click)="openEditModal(std)" [title]="std.name">
+                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug break-words" (click)="openEditModal(std)" [title]="std.name">
                                                 {{std.name}}
                                             </div>
-                                            @if(std.chemical_name) { <div class="text-xs text-slate-500 dark:text-slate-400 italic mb-1.5 line-clamp-1" [title]="std.chemical_name">{{std.chemical_name}}</div> }
-                                            <div class="flex flex-wrap gap-1.5 mt-auto">
-                                                @if(std.internal_id) { <span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
-                                                @if(std.location) { <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1"><i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}</span> }
+                                            @if(std.chemical_name) { <div class="text-sm text-slate-500 dark:text-slate-400 italic mb-2 break-words" [title]="std.chemical_name">{{std.chemical_name}}</div> }
+                                            <div class="flex flex-wrap gap-2 mt-auto">
+                                                @if(std.internal_id) { <span class="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black border border-indigo-100 dark:border-indigo-800/50 tracking-tight">{{std.internal_id}}</span> }
+                                                @if(std.location) { <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}</span> }
                                             </div>
                                         </div>
                                      </td>
@@ -277,13 +277,13 @@ import { Unsubscribe } from 'firebase/firestore';
                                             <div class="flex justify-between items-start mb-3">
                                                 <div class="flex flex-wrap gap-1.5 items-start pr-2">
                                                     @if(std.internal_id) {
-                                                        <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
+                                                        <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
                                                             {{std.internal_id}}
                                                         </span>
                                                     }
                                                     @if(std.location) {
-                                                        <span class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-[10px] font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm dark:shadow-none whitespace-nowrap">
-                                                            <i class="fa-solid fa-location-dot text-[9px]"></i> {{std.location}}
+                                                        <span class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-sm dark:shadow-none whitespace-nowrap">
+                                                            <i class="fa-solid fa-location-dot text-[10px]"></i> {{std.location}}
                                                         </span>
                                                     }
                                                 </div>
@@ -292,8 +292,8 @@ import { Unsubscribe } from 'firebase/firestore';
 
                                             <!-- Identity -->
                                             <div class="mb-4 cursor-pointer" (click)="openEditModal(std)">
-                                                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition line-clamp-2 min-h-[2.5em]">{{std.name}}</h3>
-                                                @if(std.chemical_name) { <p class="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-1 font-medium">{{std.chemical_name}}</p> }
+                                                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
+                                                @if(std.chemical_name) { <p class="text-sm text-slate-500 dark:text-slate-400 italic font-medium break-words">{{std.chemical_name}}</p> }
                                             </div>
 
                                             <!-- Data Grid (Click to copy) -->
@@ -394,107 +394,99 @@ import { Unsubscribe } from 'firebase/firestore';
                     <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <!-- Tabs Header -->
-                <div class="flex bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 shrink-0">
-                   <button (click)="activeModalTab.set('general')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'general' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">1. Thông tin chung</button>
-                   <button (click)="activeModalTab.set('stock')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide mr-4" [class]="activeModalTab() === 'stock' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">2. Kho & Bảo quản</button>
-                   <button (click)="activeModalTab.set('docs')" class="py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide" [class]="activeModalTab() === 'docs' ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">3. Hồ sơ & Hạn dùng</button>
-                </div>
+                <!-- Tabs Header (Removed) -->
                 
                 <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <form [formGroup]="form" class="space-y-6">
+                    <form [formGroup]="form" class="space-y-8">
                         
-                        <!-- TAB 1: GENERAL INFO -->
-                        @if (activeModalTab() === 'general') {
-                            <div class="space-y-4 fade-in">
-                                <div>
-                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên Chuẩn <span class="text-red-500 dark:text-red-400">*</span></label>
-                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: Sulfadiazine Standard">
-                                </div>
-                                <!-- NEW: Chemical Name Field -->
-                                <div>
-                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên hóa học / Tên khác</label>
-                                    <input formControlName="chemical_name" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 italic" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800" placeholder="VD: 99.5%"></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: 10mg"></div>
-                                    <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: BCBW1234"></div>
-                                </div>
+                        <!-- SECTION 1: GENERAL INFO -->
+                        <div class="space-y-4 fade-in">
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">1. Thông tin chung</h4>
+                            <div>
+                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên Chuẩn <span class="text-red-500 dark:text-red-400">*</span></label>
+                                <input id="stdNameInput" formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: Sulfadiazine Standard">
                             </div>
-                        }
+                            <!-- NEW: Chemical Name Field -->
+                            <div>
+                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên hóa học / Tên khác</label>
+                                <input formControlName="chemical_name" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 italic" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
+                            </div>
 
-                        <!-- TAB 2: STOCK & STORAGE -->
-                        @if (activeModalTab() === 'stock') {
-                            <div class="space-y-4 fade-in">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
-                                        <input formControlName="internal_id" (input)="onInternalIdChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
-                                    </div>
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Vị trí (Location)</label>
-                                        <input formControlName="location" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Tự động từ mã ID (VD: Tủ A)">
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 grid grid-cols-3 gap-4">
-                                    <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
-                                    <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-indigo-600 dark:text-indigo-400 outline-none text-lg"></div>
-                                    <div>
-                                        <label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Đơn vị</label>
-                                        <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
-                                            @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
-                                        </select>
-                                    </div>
-                                </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800" placeholder="VD: 99.5%"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: 10mg"></div>
+                                <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: BCBW1234"></div>
+                            </div>
+                        </div>
 
+                        <!-- SECTION 2: STOCK & STORAGE -->
+                        <div class="space-y-4 fade-in">
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">2. Kho & Bảo quản</h4>
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Điều kiện bảo quản</label>
-                                    <input formControlName="storage_condition" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="VD: FT (Tủ đông), RT (Nhiệt độ phòng)...">
+                                    <input formControlName="storage_condition" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="VD: FT, CT, RT...">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Vị trí (Location)</label>
+                                    <input formControlName="location" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Tự động từ ĐK bảo quản (VD: Tủ A)">
                                 </div>
                             </div>
-                        }
+                            
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
+                                <input formControlName="internal_id" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
+                            </div>
+                            
+                            <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 grid grid-cols-3 gap-4">
+                                <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
+                                <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-indigo-600 dark:text-indigo-400 outline-none text-lg"></div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Đơn vị</label>
+                                    <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
+                                        @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-                        <!-- TAB 3: DOCS & EXPIRY -->
-                        @if (activeModalTab() === 'docs') {
-                            <div class="space-y-4 fade-in">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
-                                        <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]">
-                                    </div>
-                                    <div>
-                                        <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500 [color-scheme:light] dark:[color-scheme:dark]">
-                                        </div>
-                                    </div>
+                        <!-- SECTION 3: DOCS & EXPIRY -->
+                        <div class="space-y-4 fade-in pb-4">
+                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">3. Hồ sơ & Hạn dùng</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
+                                    <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]">
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"></div>
-                                    <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
-                                </div>
-                                
-                                <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
-                                    <div class="flex gap-2">
-                                        <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here...">
-                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
-                                            @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
-                                        </button>
-                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                <div>
+                                    <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500 [color-scheme:light] dark:[color-scheme:dark]" (keydown.enter)="saveStandard(false)">
                                     </div>
-                                    <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
                                 </div>
                             </div>
-                        }
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
+                            </div>
+                            
+                            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
+                                <div class="flex gap-2">
+                                    <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
+                                    <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
+                                        @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
+                                    </button>
+                                    <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                </div>
+                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
+                            </div>
+                        </div>
 
                     </form>
                 </div>
@@ -502,7 +494,13 @@ import { Unsubscribe } from 'firebase/firestore';
                 <!-- Footer Actions -->
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
                     <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="saveStandard()" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
+                    @if(!isEditing()) {
+                        <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
+                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
+                            @else { <i class="fa-solid fa-plus"></i> Lưu & Thêm tiếp }
+                        </button>
+                    }
+                    <button (click)="saveStandard(false)" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
                         @else { {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
                     </button>
@@ -548,7 +546,7 @@ import { Unsubscribe } from 'firebase/firestore';
                         <tbody class="text-slate-700 dark:text-slate-300">
                             @for (item of importPreviewData().slice(0, 10); track $index) {
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 truncate max-w-[200px]" [title]="item.parsed.name">{{item.parsed.name}}</td>
+                                    <td class="p-2 border border-slate-200 dark:border-slate-700 break-words" [title]="item.parsed.name">{{item.parsed.name}}</td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.parsed.lot_number}}</td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono bg-red-50/30 dark:bg-red-900/10">{{item.raw['Ngày nhận (Gốc)']}}</td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-900/10">
@@ -621,7 +619,7 @@ import { Unsubscribe } from 'firebase/firestore';
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50" [ngClass]="{'bg-red-50 dark:bg-red-900/10': !item.isValid, 'bg-amber-50 dark:bg-amber-900/10': item.isDuplicate}">
                                     <td class="p-2 border border-slate-200 dark:border-slate-700 text-center text-slate-400 dark:text-slate-500">{{$index + 1}}</td>
                                     <td class="p-2 border border-slate-200 dark:border-slate-700">
-                                        <div class="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[200px]" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
+                                        <div class="font-bold text-slate-700 dark:text-slate-200 break-words" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
                                         <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">Lô: {{item.raw['Lô']}}</div>
                                         @if(item.standard) {
                                             <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
@@ -726,7 +724,7 @@ import { Unsubscribe } from 'firebase/firestore';
                         </div>
                         <div>
                             <h3 class="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight">In Nhãn Chuẩn</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1" [title]="selectedStd()?.name">{{selectedStd()?.name}}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words" [title]="selectedStd()?.name">{{selectedStd()?.name}}</p>
                         </div>
                     </div>
                     
@@ -1075,7 +1073,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
   selectedIds = signal<Set<string>>(new Set());
-  activeModalTab = signal<'general' | 'stock' | 'docs'>('general');
   unitOptions = UNIT_OPTIONS;
 
   // Import Preview State
@@ -1165,6 +1162,20 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.allStandards.set(items);
           this.isLoading.set(false);
       });
+
+      // Auto-fill Location based on Storage Condition
+      this.form.get('storage_condition')?.valueChanges.subscribe(val => {
+          if (!val) return;
+          const lower = val.toLowerCase();
+          let loc = '';
+          if (lower.includes('rt') || lower.includes('thường')) loc = 'Tủ A';
+          else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) loc = 'Tủ B';
+          else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) loc = 'Tủ C';
+          
+          if (loc && this.form.get('location')?.value !== loc) {
+              this.form.patchValue({ location: loc });
+          }
+      });
   }
 
   ngOnDestroy() { 
@@ -1173,11 +1184,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   onInternalIdChange(event: any) {
-      const val = event.target.value.toUpperCase();
-      if (val && val.length > 0 && !this.isEditing()) {
-          const firstChar = val.charAt(0);
-          if (firstChar.match(/[A-Z]/)) this.form.patchValue({ location: `Tủ ${firstChar}` });
-      }
+      // Logic removed as per user request (Internal ID is manual, Location is based on Storage Condition)
   }
 
   toggleSelection(id: string) {
@@ -1207,12 +1214,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
   onSearchInput(val: string) { this.searchSubject.next(val); }
   onSortChange(val: string) { this.sortOption.set(val); }
 
-  openAddModal() { this.isEditing.set(false); this.activeModalTab.set('general'); this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); this.showModal.set(true); }
+  openAddModal() { 
+      this.isEditing.set(false); 
+      this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
+      this.showModal.set(true); 
+      setTimeout(() => document.getElementById('stdNameInput')?.focus(), 100);
+  }
   
   openEditModal(std: ReferenceStandard) { 
       if (!this.auth.canEditStandards()) return; 
       this.isEditing.set(true); 
-      this.activeModalTab.set('general'); 
       this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
       this.form.patchValue(std as any); 
       this.showModal.set(true); 
@@ -1241,19 +1252,58 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- HARDENED: Save ---
-  async saveStandard() {
+  async saveStandard(keepOpen: boolean = false) {
       if (this.isProcessing()) return;
       if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
       
+      const val = this.form.value;
+
+      // Validate Internal ID uniqueness
+      if (val.internal_id) {
+          const existing = this.allStandards().find(s => 
+              s.internal_id?.toLowerCase() === val.internal_id?.toLowerCase() && 
+              s.id !== this.form.get('id')?.value
+          );
+          if (existing) {
+              this.toast.show(`Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}"! Vui lòng chọn mã khác.`, 'error');
+              return;
+          }
+      }
+
       this.isProcessing.set(true);
       try {
-          const val = this.form.value;
+          // Auto-sync current_amount with initial_amount if current is 0 and initial > 0 (for new items)
+          if (!this.isEditing() && (val.initial_amount || 0) > 0 && (val.current_amount || 0) === 0) {
+              val.current_amount = val.initial_amount;
+          }
+
           if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
           const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
       
-          if (this.isEditing()) await this.stdService.updateStandard(std); else await this.stdService.addStandard(std);
-          this.toast.show(this.isEditing() ? 'Cập nhật thành công' : 'Tạo mới thành công'); 
-          this.showModal.set(false); // Force close
+          if (this.isEditing()) {
+              await this.stdService.updateStandard(std);
+              this.toast.show('Cập nhật chuẩn thành công!', 'success');
+          } else {
+              await this.stdService.addStandard(std);
+              this.toast.show('Thêm chuẩn mới thành công!', 'success');
+          }
+          
+          if (keepOpen && !this.isEditing()) {
+              // Reset form but keep some useful defaults for the next item
+              this.form.reset({
+                  initial_amount: 0,
+                  current_amount: 0,
+                  unit: val.unit || 'mg',
+                  storage_condition: val.storage_condition,
+                  location: val.location,
+                  manufacturer: val.manufacturer,
+                  received_date: val.received_date
+              });
+              // Focus first element
+              setTimeout(() => document.getElementById('stdNameInput')?.focus(), 100);
+          } else {
+              this.showModal.set(false); // Force close
+          }
       } catch (e: any) { 
           this.toast.show('Lỗi: ' + e.message, 'error'); 
       } finally {
