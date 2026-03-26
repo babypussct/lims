@@ -71,20 +71,29 @@ interface KanbanColumn {
         <!-- SECTION 1: KPI CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             <!-- Card 1: Pending Requests -->
-            <div (click)="auth.canViewSop() ? navTo('requests') : denyAccess()"
-                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-purple-100 dark:hover:border-purple-500/50">
-                <div class="flex justify-between items-start z-10">
+            <div (click)="auth.canViewSop() ? navTo('requests') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewSop()" [class.hover:-translate-y-1]="auth.canViewSop()" [class.hover:border-purple-100]="auth.canViewSop()" [class.dark:hover:border-purple-500]="auth.canViewSop()">
+                
+                @if(!auth.canViewSop()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()">
                     <div>
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
                         <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { ... } @else { {{state.requests().length}} }
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewSop() ? state.requests().length : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewSop()">
                         <i class="fa-solid fa-clipboard-list text-lg"></i>
                     </div>
                 </div>
-                <div class="z-10">
+                <div class="z-10" [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()">
                     <span class="text-xs font-bold" 
                           [class.text-emerald-500]="state.requests().length === 0" 
                           [class.text-fuchsia-500]="state.requests().length > 0">
@@ -94,20 +103,29 @@ interface KanbanColumn {
             </div>
 
             <!-- Card 2: Low Stock -->
-            <div (click)="auth.canViewInventory() ? navTo('inventory') : denyAccess()"
-                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-red-100 dark:hover:border-red-500/50">
-                <div class="flex justify-between items-start z-10">
+            <div (click)="auth.canViewInventory() ? navTo('inventory') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:-translate-y-1]="auth.canViewInventory()" [class.hover:border-red-100]="auth.canViewInventory()" [class.dark:hover:border-red-500]="auth.canViewInventory()">
+                
+                @if(!auth.canViewInventory()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
                     <div>
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
                         <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { ... } @else { {{lowStockItems().length}} }
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewInventory() ? lowStockItems().length : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewInventory()">
                         <i class="fa-solid fa-box-open text-lg"></i>
                     </div>
                 </div>
-                <div class="z-10">
+                <div class="z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
                     @if(lowStockItems().length > 0) {
                         <span class="text-xs font-bold text-red-500 dark:text-red-400">Mục dưới định mức</span>
                     } @else {
@@ -117,28 +135,46 @@ interface KanbanColumn {
             </div>
 
             <!-- Card 3: Today's Activity -->
-            <div (click)="auth.canViewReports() ? navTo('stats') : denyAccess()"
-                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-blue-100 dark:hover:border-blue-500/50">
-                <div class="flex justify-between items-start z-10">
+            <div (click)="auth.canViewReports() ? navTo('stats') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewReports()" [class.hover:-translate-y-1]="auth.canViewReports()" [class.hover:border-blue-100]="auth.canViewReports()" [class.dark:hover:border-blue-500]="auth.canViewReports()">
+                
+                @if(!auth.canViewReports()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
                     <div>
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
                         <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { ... } @else { {{todayActivityCount()}} }
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewReports() ? todayActivityCount() : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewReports()">
                         <i class="fa-solid fa-bolt text-lg"></i>
                     </div>
                 </div>
-                <div class="z-10">
+                <div class="z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
                     <span class="text-xs font-bold text-gray-400 dark:text-slate-500">Ghi nhận log hệ thống</span>
                 </div>
             </div>
 
             <!-- Card 4: Standards Priority -->
-            <div (click)="auth.canViewStandards() ? navTo('standards') : denyAccess()"
-                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 cursor-pointer transition-transform hover:-translate-y-1 overflow-hidden group border border-transparent dark:border-slate-700 hover:border-orange-100 dark:hover:border-orange-500/50">
-                <div class="flex justify-between items-start z-10">
+            <div (click)="auth.canViewStandards() ? navTo('standards') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewStandards()" [class.hover:border-orange-100]="auth.canViewStandards()" [class.dark:hover:border-orange-500]="auth.canViewStandards()">
+                
+                @if(!auth.canViewStandards()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
                     <div class="min-w-0 pr-2">
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
                         @if(priorityStandard(); as std) {
@@ -147,11 +183,11 @@ interface KanbanColumn {
                             <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An toàn</h4>
                         }
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewStandards()">
                         <i class="fa-solid fa-clock text-lg"></i>
                     </div>
                 </div>
-                <div class="z-10">
+                <div class="z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
                     @if(priorityStandard(); as std) {
                         <span class="text-xs font-bold" [ngClass]="{'text-red-500 dark:text-red-400': std.status === 'expired', 'text-orange-500 dark:text-orange-400': std.status === 'warning'}">
                             {{std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày'}}
@@ -167,72 +203,75 @@ interface KanbanColumn {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Left: Analytics (2/3) -->
             <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                    <div>
-                        <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
-                        <!-- Trend Indicator -->
-                        <div class="flex flex-col">
-                            <p class="text-sm font-bold flex items-center gap-1.5"
-                               [ngClass]="{
-                                   'text-emerald-500 dark:text-emerald-400': trendInfo().direction === 'up',
-                                   'text-red-500 dark:text-red-400': trendInfo().direction === 'down',
-                                   'text-gray-500 dark:text-slate-400': trendInfo().direction === 'neutral'
-                               }">
-                                <i class="fa-solid" [class]="trendInfo().icon"></i>
-                                @if(trendInfo().direction !== 'neutral') {
-                                    <span>{{trendInfo().direction === 'up' ? 'Tăng' : 'Giảm'}} {{trendInfo().percent}}%</span>
-                                } @else {
-                                    <span>Ổn định</span>
-                                }
-                                <span class="text-gray-500 dark:text-slate-400 font-medium text-xs">({{trendInfo().currentTotal}} so với {{trendInfo().prevTotal}} mẫu)</span>
-                            </p>
-                            <p class="text-gray-400 dark:text-slate-500 font-normal text-[11px] mt-0.5">
-                                so với {{trendInfo().label}}
-                            </p>
+                @if(!auth.canViewReports()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-4xl mb-3"></i>
+                        <span class="text-sm font-bold uppercase tracking-wider">Tính năng yêu cầu quyền truy cập Báo cáo</span>
+                        <span class="text-xs mt-1">Vui lòng liên hệ Quản trị viên</span>
+                    </div>
+                }
+
+                <div class="flex-1 flex flex-col" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()" [class.pointer-events-none]="!auth.canViewReports()">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div>
+                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
+                            <!-- Trend Indicator -->
+                            <div class="flex flex-col">
+                                <p class="text-sm font-bold flex items-center gap-1.5" [ngClass]="trendInfo().colorClass">
+                                    <i class="fa-solid" [class]="trendInfo().icon"></i>
+                                    <span>{{trendInfo().statusText}}</span>
+                                    <span class="text-xs ml-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 font-mono">
+                                        {{trendInfo().percentText}}
+                                    </span>
+                                </p>
+                                <p class="text-gray-400 dark:text-slate-500 font-normal text-[11px] mt-1">
+                                    TB {{trendInfo().currentAvg}} mẫu/ngày so với {{trendInfo().historyMean}} ({{trendInfo().historyDays}} ngày qua)
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Date Filter Component -->
+                        <app-date-range-filter 
+                            [initStart]="startDate()" 
+                            [initEnd]="endDate()" 
+                            (dateChange)="onDateRangeChange($event)">
+                        </app-date-range-filter>
+                    </div>
+
+                    <!-- KPIs Row -->
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
+                            <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
+                            <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">TB Mẫu/Mẻ</p>
+                            <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
                         </div>
                     </div>
-                    <!-- Date Filter Component -->
-                    <app-date-range-filter 
-                        [initStart]="startDate()" 
-                        [initEnd]="endDate()" 
-                        (dateChange)="onDateRangeChange($event)">
-                    </app-date-range-filter>
-                </div>
 
-                <!-- KPIs Row -->
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
-                        <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
-                    </div>
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
-                        <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
-                    </div>
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase">TB Mẫu/Mẻ</p>
-                        <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
-                    </div>
-                </div>
-
-                <!-- Charts Area -->
-                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[250px]">
-                    <div class="md:col-span-2 relative w-full h-full min-h-[200px] bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
-                        @if(isLoading()) {
-                            <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
-                        } @else {
-                            <canvas #activityChart class="w-full h-full"></canvas>
-                        }
-                    </div>
-                    <div class="relative w-full h-full min-h-[200px] flex flex-col items-center justify-center">
-                        <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full">Phân bổ SOP</h6>
-                        @if(isLoading()) {
-                            <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
-                        } @else {
-                            <div class="relative w-full h-full flex items-center justify-center">
-                                <canvas #doughnutChart class="max-w-[180px] max-h-[180px]"></canvas>
-                            </div>
-                        }
+                    <!-- Charts Area -->
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[250px]">
+                        <div class="md:col-span-2 relative w-full h-full min-h-[200px] bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
+                            @if(isLoading()) {
+                                <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
+                            } @else {
+                                <canvas #activityChart class="w-full h-full"></canvas>
+                            }
+                        </div>
+                        <div class="relative w-full h-full min-h-[200px] flex flex-col items-center justify-center">
+                            <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full">Phân bổ SOP</h6>
+                            @if(isLoading()) {
+                                <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
+                            } @else {
+                                <div class="relative w-full h-full flex items-center justify-center">
+                                    <canvas #doughnutChart class="max-w-[180px] max-h-[180px]"></canvas>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -277,14 +316,23 @@ interface KanbanColumn {
         </div>
 
         <!-- SECTION 3: SMART KANBAN -->
-        <div class="mb-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
-                <h6 class="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Bảng theo dõi SOP (Hoàn thành)
-                </h6>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div class="mb-6 relative">
+            @if(!auth.canViewSop()) {
+                <div class="absolute inset-0 bg-slate-50/60 dark:bg-slate-900/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 rounded-2xl">
+                    <i class="fa-solid fa-lock text-4xl mb-3"></i>
+                    <span class="text-sm font-bold uppercase tracking-wider">Tính năng yêu cầu quyền truy cập Vận hành SOP</span>
+                    <span class="text-xs mt-1">Vui lòng liên hệ Quản trị viên</span>
+                </div>
+            }
+
+            <div [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()" [class.pointer-events-none]="!auth.canViewSop()">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
+                    <h6 class="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Bảng theo dõi SOP (Hoàn thành)
+                    </h6>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 
                 @for (col of kanbanBoard(); track col.sopName) {
                     <div (click)="openSopDetails(col)" 
@@ -336,6 +384,7 @@ interface KanbanColumn {
                         </div>
                     }
                 }
+            </div>
             </div>
         </div>
 
@@ -458,70 +507,94 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const currentStart = new Date(this.startDate()); currentStart.setHours(0,0,0,0);
       const currentEnd = new Date(this.endDate()); currentEnd.setHours(23,59,59,999);
       
-      // Calculate diff days
-      const startForDiff = new Date(this.startDate()); startForDiff.setHours(0,0,0,0);
-      const endForDiff = new Date(this.endDate()); endForDiff.setHours(0,0,0,0);
-      const diffTime = Math.abs(endForDiff.getTime() - startForDiff.getTime());
+      const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      // Previous period
-      const prevEnd = new Date(currentStart); prevEnd.setDate(prevEnd.getDate() - 1); prevEnd.setHours(23,59,59,999);
-      const prevStart = new Date(prevEnd); prevStart.setDate(prevStart.getDate() - diffDays + 1); prevStart.setHours(0,0,0,0);
-
+      // Calculate current total
       let currentTotal = 0;
-      let prevTotal = 0;
-
       const tCurrStart = currentStart.getTime();
       const tCurrEnd = currentEnd.getTime();
-      const tPrevStart = prevStart.getTime();
-      const tPrevEnd = prevEnd.getTime();
 
       history.forEach(req => {
           const timestamp = this.parseRequestDate(req).getTime();
-          let count = 0;
-          if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-          else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-          else count = 1;
-
           if (timestamp >= tCurrStart && timestamp <= tCurrEnd) {
+              let count = 1;
+              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
               currentTotal += count;
-          } else if (timestamp >= tPrevStart && timestamp <= tPrevEnd) {
-              prevTotal += count;
           }
       });
 
-      let percent = 0;
-      let direction: 'up' | 'down' | 'neutral' = 'neutral';
+      const currentAvg = diffDays > 0 ? currentTotal / diffDays : currentTotal;
+
+      // Historical period (30 days prior to currentStart)
+      const historyDays = 30;
+      const historyEnd = new Date(currentStart); historyEnd.setDate(historyEnd.getDate() - 1); historyEnd.setHours(23,59,59,999);
+      const historyStart = new Date(historyEnd); historyStart.setDate(historyStart.getDate() - historyDays + 1); historyStart.setHours(0,0,0,0);
+
+      const tHistStart = historyStart.getTime();
+      const tHistEnd = historyEnd.getTime();
+
+      // Daily totals for history
+      const dailyTotals = new Array(historyDays).fill(0);
+      history.forEach(req => {
+          const timestamp = this.parseRequestDate(req).getTime();
+          if (timestamp >= tHistStart && timestamp <= tHistEnd) {
+              const dayIndex = Math.floor((timestamp - tHistStart) / (1000 * 60 * 60 * 24));
+              if (dayIndex >= 0 && dayIndex < historyDays) {
+                  let count = 1;
+                  if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+                  else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
+                  dailyTotals[dayIndex] += count;
+              }
+          }
+      });
+
+      // Calculate Mean and StdDev
+      const historyMean = dailyTotals.reduce((a, b) => a + b, 0) / historyDays;
+      const variance = dailyTotals.reduce((a, b) => a + Math.pow(b - historyMean, 2), 0) / historyDays;
+      const historyStdDev = Math.sqrt(variance);
+
+      // Z-Score and Status
+      const zScore = historyStdDev > 0 ? (currentAvg - historyMean) / historyStdDev : (currentAvg > historyMean ? 1.1 : (currentAvg < historyMean ? -1.1 : 0));
+      
+      let status: 'outstanding' | 'underperforming' | 'normal' = 'normal';
       let icon = 'fa-minus';
+      let colorClass = 'text-gray-500 dark:text-slate-400';
+      let statusText = 'Bình thường';
 
-      if (prevTotal === 0) {
-          if (currentTotal > 0) {
-              percent = 100;
-              direction = 'up';
-              icon = 'fa-arrow-trend-up';
-          }
+      if (zScore > 1) {
+          status = 'outstanding';
+          icon = 'fa-arrow-trend-up';
+          colorClass = 'text-emerald-500 dark:text-emerald-400';
+          statusText = 'Vượt trội';
+      } else if (zScore < -1) {
+          status = 'underperforming';
+          icon = 'fa-arrow-trend-down';
+          colorClass = 'text-red-500 dark:text-red-400';
+          statusText = 'Dưới mức';
+      }
+
+      // Percentage diff for Moving Average info
+      let percent = 0;
+      if (historyMean === 0) {
+          percent = currentAvg > 0 ? 100 : 0;
       } else {
-          percent = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
-          if (percent > 0) {
-              direction = 'up';
-              icon = 'fa-arrow-trend-up';
-          } else if (percent < 0) {
-              direction = 'down';
-              icon = 'fa-arrow-trend-down';
-              percent = Math.abs(percent);
-          }
+          percent = Math.round(((currentAvg - historyMean) / historyMean) * 100);
       }
+      
+      const percentText = percent > 0 ? `+${percent}%` : `${percent}%`;
 
-      let label = `kỳ trước (${diffDays} ngày)`;
-      if (diffDays === 1) {
-          label = 'hôm qua';
-      } else if (diffDays === 7) {
-          label = 'tuần trước';
-      } else if (diffDays === 30 || diffDays === 31) {
-          label = 'tháng trước';
-      }
-
-      return { direction, percent, icon, currentTotal, prevTotal, diffDays, label };
+      return { 
+          status, 
+          statusText,
+          icon, 
+          colorClass,
+          currentAvg: Math.round(currentAvg * 10) / 10, 
+          historyMean: Math.round(historyMean * 10) / 10, 
+          percentText,
+          historyDays
+      };
   });
 
   // KANBAN COMPUTED
@@ -709,21 +782,45 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
       
-      const startForDiff = new Date(this.startDate()); startForDiff.setHours(0,0,0,0);
-      const endForDiff = new Date(this.endDate()); endForDiff.setHours(0,0,0,0);
-      const diffTime = Math.abs(endForDiff.getTime() - startForDiff.getTime());
+      const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
+      let chartStart = new Date(start);
+      let chartEnd = new Date(end);
+      let chartDays = diffDays;
+
+      // If selected range is <= 7 days, force chart to show Monday-Sunday of that week
+      if (diffDays <= 7) {
+          const dayOfWeek = start.getDay(); // 0 is Sunday, 1 is Monday
+          const diffToMonday = start.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          chartStart = new Date(start.setDate(diffToMonday));
+          chartStart.setHours(0,0,0,0);
+          
+          chartEnd = new Date(chartStart);
+          chartEnd.setDate(chartStart.getDate() + 6);
+          chartEnd.setHours(23,59,59,999);
+          
+          chartDays = 7;
+      }
+      
       const labels = [];
-      const sampleData = new Array(diffDays).fill(0);
-      const runData = new Array(diffDays).fill(0);
-      const dailyDetails: Record<string, number>[] = new Array(diffDays).fill(null).map(() => ({}));
+      const sampleData = new Array(chartDays).fill(0);
+      const runData = new Array(chartDays).fill(0);
+      const dailyDetails: Record<string, number>[] = new Array(chartDays).fill(null).map(() => ({}));
       const dateMap = new Map<string, number>();
       
-      for (let i = 0; i < diffDays; i++) {
-          const d = new Date(start); d.setDate(d.getDate() + i);
-          const key = `${d.getDate()}/${d.getMonth() + 1}`;
-          labels.push(key); dateMap.set(key, i);
+      for (let i = 0; i < chartDays; i++) {
+          const d = new Date(chartStart); d.setDate(d.getDate() + i);
+          
+          // Format label: 'T2 15/3'
+          const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+          const dayName = days[d.getDay()];
+          const key = diffDays <= 7 ? `${dayName} ${d.getDate()}/${d.getMonth() + 1}` : `${d.getDate()}/${d.getMonth() + 1}`;
+          
+          labels.push(key); 
+          // Use a consistent key for mapping data
+          const mapKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          dateMap.set(mapKey, i);
       }
 
       const sopCounts = new Map<string, number>();
@@ -732,9 +829,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       history.forEach(req => {
           const d = this.parseRequestDate(req);
           
-          if (d >= start && d <= end) {
-              const key = `${d.getDate()}/${d.getMonth() + 1}`;
-              const idx = dateMap.get(key);
+          // Only count data within the chart's display range
+          if (d >= chartStart && d <= chartEnd) {
+              const mapKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+              const idx = dateMap.get(mapKey);
               if (idx !== undefined) {
                   runData[idx]++;
                   let samples = 0;
@@ -743,11 +841,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
                   else samples = 1;
                   sampleData[idx] += samples; 
                   
-                  // SOP Distribution
-                  const sopName = req.sopName || 'Unknown';
-                  sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
+                  // SOP Distribution (only for the actually selected range, not the whole week if they only selected 1 day)
+                  if (d >= start && d <= end) {
+                      const sopName = req.sopName || 'Unknown';
+                      sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
+                  }
                   
                   // Daily details
+                  const sopName = req.sopName || 'Unknown';
                   dailyDetails[idx][sopName] = (dailyDetails[idx][sopName] || 0) + samples;
               }
           }

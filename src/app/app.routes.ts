@@ -108,6 +108,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/traceability/traceability.component').then(m => m.TraceabilityComponent)
   },
   {
+    path: '403',
+    loadComponent: () => import('./features/auth/forbidden.component').then(m => m.ForbiddenComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }

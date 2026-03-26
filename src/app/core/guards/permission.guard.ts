@@ -26,14 +26,14 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   // 3. Check Role Requirement
   if (requiredRole && user.role !== requiredRole) {
     toast.show('Bạn không có quyền truy cập trang này.', 'error');
-    router.navigate(['/dashboard']);
+    router.navigate(['/403']);
     return false;
   }
 
   // 4. Check Specific Permission
   if (requiredPermission && !auth.hasPermission(requiredPermission)) {
     toast.show(`Yêu cầu quyền: ${requiredPermission}`, 'error');
-    router.navigate(['/dashboard']);
+    router.navigate(['/403']);
     return false;
   }
 
