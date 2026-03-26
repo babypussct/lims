@@ -130,7 +130,7 @@ export function sanitizeForFirebase<T>(obj: T): T {
   if (obj === null || obj === undefined) return obj;
   if (Array.isArray(obj)) return obj.map(item => sanitizeForFirebase(item)) as any;
   if (typeof obj === 'object' && obj.constructor === Object) {
-    const newObj: { [key: string]: any } = {};
+    const newObj: Record<string, any> = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = (obj as any)[key];
@@ -147,7 +147,7 @@ export function sanitizeForFirebase<T>(obj: T): T {
  * Priority 1: Real photo URL (from Google Auth).
  * Priority 2: Generated avatar (DiceBear) based on style.
  */
-export function getAvatarUrl(name: string | undefined | null, style: string = 'initials', photoUrl?: string | null): string {
+export function getAvatarUrl(name: string | undefined | null, style = 'initials', photoUrl?: string | null): string {
   // 1. If real photo exists, use it
   if (photoUrl && photoUrl.trim() !== '') {
       return photoUrl;

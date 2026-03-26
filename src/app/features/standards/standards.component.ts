@@ -217,11 +217,19 @@ import { Unsubscribe } from 'firebase/firestore';
                                      </td>
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                                          <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="getStandardStatus(std).class">{{getStandardStatus(std).label}}</span>
+                                         @if(std.status === 'IN_USE' && std.current_holder) {
+                                             <div class="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+                                                 <div class="font-bold">Người giữ:</div>
+                                                 <div class="truncate max-w-[100px] mx-auto" [title]="std.current_holder">{{std.current_holder}}</div>
+                                             </div>
+                                         }
                                      </td>
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col items-center gap-2">
                                            <div class="flex gap-1">
-                                               <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                               @if(canWeigh(std)) {
+                                                   <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                               }
                                                <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 shadow-md shadow-slate-200 dark:shadow-none transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
                                            </div>
                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -269,6 +277,9 @@ import { Unsubscribe } from 'firebase/firestore';
                                             <!-- Top: ID, Location & Checkbox -->
                                             <div class="flex justify-between items-start mb-3">
                                                 <div class="flex flex-wrap gap-1.5 items-start pr-2">
+                                                    <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap shadow-sm dark:shadow-none" [ngClass]="getStandardStatus(std).class">
+                                                        {{getStandardStatus(std).label}}
+                                                    </span>
                                                     @if(std.internal_id) {
                                                         <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-wider border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none whitespace-nowrap">
                                                             {{std.internal_id}}
@@ -327,6 +338,12 @@ import { Unsubscribe } from 'firebase/firestore';
                                                             <span class="font-bold">{{info.text}}</span>
                                                         </div>
                                                     }
+                                                    @if(std.status === 'IN_USE' && std.current_holder) {
+                                                        <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1 border bg-blue-50 text-blue-600 border-blue-200" title="Người đang giữ">
+                                                            <i class="fa-solid fa-user"></i>
+                                                            <span class="font-bold truncate max-w-[80px]">{{std.current_holder}}</span>
+                                                        </div>
+                                                    }
                                                 </div>
                                             </div>
 
@@ -349,9 +366,11 @@ import { Unsubscribe } from 'firebase/firestore';
                                                     <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
                                                         <i class="fa-solid fa-print text-xs"></i>
                                                     </button>
-                                                    <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
-                                                        <i class="fa-solid fa-weight-scale"></i> Cân
-                                                    </button>
+                                                    @if(canWeigh(std)) {
+                                                        <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
+                                                            <i class="fa-solid fa-weight-scale"></i> Cân
+                                                        </button>
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
@@ -1501,7 +1520,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   getStandardStatus(std: ReferenceStandard): { label: string, class: string } {
-      if (std.current_amount <= 0) return { label: 'Hết hàng', class: 'bg-slate-100 text-slate-500 border-slate-200' };
+      if (std.status === 'IN_USE') return { label: 'Đang dùng', class: 'bg-blue-50 text-blue-600 border-blue-200' };
+      if (std.status === 'DEPLETED' || std.current_amount <= 0) return { label: 'Hết hàng', class: 'bg-slate-100 text-slate-500 border-slate-200' };
       
       if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-slate-50 text-slate-500 border-slate-200' };
       
@@ -1512,13 +1532,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
       if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-orange-50 text-orange-600 border-orange-200' };
       
-      return { label: 'Đang sử dụng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+      return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
   }
 
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
+  }
+
+  canWeigh(std: ReferenceStandard): boolean {
+      if (std.status === 'DEPLETED' || std.current_amount <= 0) return false;
+      
+      if (std.status === 'IN_USE') {
+          return std.current_holder_uid === this.auth.currentUser()?.uid;
+      }
+      
+      return this.auth.canEditStandards();
   }
 
   openWeighModal(std: ReferenceStandard) { 
@@ -1724,7 +1754,17 @@ export class StandardsComponent implements OnInit, OnDestroy {
       
       this.isProcessing.set(true);
       try {
-          await this.stdService.recordUsage(std.id, { date: this.weighDate(), user: this.weighUser() || 'Unknown', amount_used: amount, unit: this.weighUnit(), purpose: 'Cân mẫu', timestamp: Date.now() });
+          // If the standard is linked to a request, log usage against it.
+          // The actual deduction happens in recordUsage.
+          await this.stdService.recordUsage(std.id, { 
+              date: this.weighDate(), 
+              user: this.weighUser() || 'Unknown', 
+              amount_used: amount, 
+              unit: this.weighUnit(), 
+              purpose: 'Cân mẫu', 
+              timestamp: Date.now() 
+          });
+          
           this.toast.show('Đã cập nhật!'); 
           this.showWeighModal.set(false); 
       } catch (e: any) { 

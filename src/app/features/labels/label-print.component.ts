@@ -337,7 +337,7 @@ interface LabelPage {
                                     @if (displayFormat() === 'qrcode_hybrid') {
                                         <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
                                             <label class="label-mini">GS1 Domain</label>
-                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://lims.example.com">
+                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://nafiqpm6.vercel.app">
                                         </div>
                                         <div class="col-span-2 mt-2">
                                             <label class="label-mini">Mã GTIN</label>
@@ -447,7 +447,7 @@ interface LabelPage {
                                     @if (displayFormat() === 'qrcode_hybrid') {
                                         <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
                                             <label class="label-mini">GS1 Domain</label>
-                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://lims.example.com">
+                                            <input type="text" [ngModel]="gs1Domain()" (ngModelChange)="gs1Domain.set($event)" class="input-mini w-full text-left px-2" placeholder="https://nafiqpm6.vercel.app">
                                         </div>
                                         <div class="col-span-2 mt-2">
                                             <label class="label-mini">Mã GTIN</label>
@@ -745,7 +745,7 @@ export class LabelPrintComponent implements AfterViewInit {
   showAdvanced = signal(false);
 
   // GS1 Config
-  gs1Domain = signal<string>('https://lims.example.com');
+  gs1Domain = signal<string>('https://nafiqpm6.vercel.app');
   gs1Gtin = signal<string>('08934567890128');
 
   // Brother Config
@@ -1229,7 +1229,9 @@ export class LabelPrintComponent implements AfterViewInit {
               if (format === 'qrcode_hybrid') {
                   const domain = this.gs1Domain().replace(/\/$/, '');
                   const gtin = this.gs1Gtin();
-                  qrText = `${domain}/01/${gtin}/21/${encodeURIComponent(text)}`;
+                  // We use the text as LIMS ID. We don't have lot/expiry here easily, 
+                  // but we can construct the basic URL.
+                  qrText = `${domain}/01/${gtin}?240=${encodeURIComponent(text)}`;
               }
               const qrcode = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
               const canvas = document.createElement('canvas');

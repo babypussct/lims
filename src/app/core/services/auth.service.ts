@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   INVENTORY_EDIT: 'inventory_edit',
   STANDARD_VIEW: 'standard_view',
   STANDARD_EDIT: 'standard_edit',
+  STANDARD_APPROVE: 'standard_approve', // New permission for approving requests
   RECIPE_VIEW: 'recipe_view',
   RECIPE_EDIT: 'recipe_edit',
   SOP_VIEW: 'sop_view',
@@ -111,7 +112,9 @@ export class AuthService {
     try {
         const snap = await getDoc(userRef);
         if (snap.exists()) {
-          this.currentUser.set(snap.data() as UserProfile);
+          const data = snap.data() as UserProfile;
+          data.uid = firebaseUser.uid; // Ensure uid is present
+          this.currentUser.set(data);
         } else {
           const newUser: UserProfile = {
             uid: firebaseUser.uid,
@@ -180,6 +183,7 @@ export class AuthService {
   }
 
   canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }
+  canApproveStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
   canEditInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_EDIT); }
   canViewInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_VIEW); }
   canEditSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_EDIT); }

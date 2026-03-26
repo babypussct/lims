@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Unsubscribe } from 'firebase/firestore';
 
-declare var QRious: any;
+declare let QRious: any;
 
 @Component({
   selector: 'app-login',

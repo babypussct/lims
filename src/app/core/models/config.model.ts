@@ -14,5 +14,5 @@ export interface PrintConfig {
 
 export interface SafetyConfig {
   defaultMargin: number;
-  rules: { [category: string]: number }; // e.g., "reagent": 10, "standard": 2
+  rules: Record<string, number>; // e.g., "reagent": 10, "standard": 2
 }

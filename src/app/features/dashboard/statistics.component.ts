@@ -712,7 +712,7 @@ export class StatisticsComponent {
           const map = new Map<string, {amount: number, unit: string, displayName: string}>();
           
           filteredHistory.forEach(req => {
-              let reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
+              const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
               req.items.forEach(item => {
                   const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
@@ -745,7 +745,7 @@ export class StatisticsComponent {
 
       } else if (type === 'daily' || type === 'monthly') {
           // PIVOT MODE (Daily or Monthly)
-          const pivotMap = new Map<string, { displayName: string, unit: string, totals: { [key: string]: number }, grandTotal: number }>();
+          const pivotMap = new Map<string, { displayName: string, unit: string, totals: Record<string, number>, grandTotal: number }>();
           const columnsSet = new Set<string>();
 
           filteredHistory.forEach(req => {
@@ -771,7 +771,7 @@ export class StatisticsComponent {
               }
               columnsSet.add(colKey);
 
-              let reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
+              const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
               req.items.forEach(item => {
                   const itemAmount = getCalculatedItemAmount(item, reqMargin);
                   if (!pivotMap.has(item.name)) {

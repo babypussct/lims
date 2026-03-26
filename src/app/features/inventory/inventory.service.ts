@@ -78,7 +78,7 @@ export class InventoryService {
     return results;
   }
 
-  async getLowStockItems(limitCount: number = 5): Promise<InventoryItem[]> {
+  async getLowStockItems(limitCount = 5): Promise<InventoryItem[]> {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
       const q = query(colRef, orderBy('stock', 'asc'), limit(limitCount * 4)); 
       
@@ -123,7 +123,7 @@ export class InventoryService {
     searchTerm: string
   ): Promise<InventoryPage> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
-    let constraints: QueryConstraint[] = [];
+    const constraints: QueryConstraint[] = [];
 
     if (searchTerm) {
       const term = searchTerm.trim();
@@ -187,7 +187,7 @@ export class InventoryService {
 
   // --- TRANSACTIONAL WRITE Operations ---
 
-  async upsertItem(itemData: InventoryItem, isNew: boolean = false, reason: string = '', oldStock: number = 0) {
+  async upsertItem(itemData: InventoryItem, isNew = false, reason = '', oldStock = 0) {
     // 1. NORMALIZE: Ensure Base Unit (ml, g)
     const item = normalizeInventoryItem(itemData);
     const currentUser = this.state.getCurrentUserName();
@@ -241,7 +241,7 @@ export class InventoryService {
     });
   }
 
-  async deleteItem(id: string, reason: string = '') {
+  async deleteItem(id: string, reason = '') {
     const currentUser = this.state.getCurrentUserName();
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
     const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
@@ -284,7 +284,7 @@ export class InventoryService {
     await finalBatch.commit();
   }
 
-  async updateStock(id: string, currentStock: number, adjustment: number, reason: string = '') {
+  async updateStock(id: string, currentStock: number, adjustment: number, reason = '') {
     const newStock = currentStock + adjustment;
     const currentUser = this.state.getCurrentUserName();
     
@@ -320,7 +320,7 @@ export class InventoryService {
     });
   }
 
-  async bulkZeroStock(ids: string[], reason: string = '') {
+  async bulkZeroStock(ids: string[], reason = '') {
     if (!ids || ids.length === 0) return;
     const currentUser = this.state.getCurrentUserName();
     const batch = writeBatch(this.fb.db);

@@ -15,6 +15,42 @@ export function parseGs1Data(code: string): Gs1Data {
     return result;
   }
 
+  // Check if it's a GS1 Digital Link URL
+  if (code.startsWith('http://') || code.startsWith('https://')) {
+    try {
+      const url = new URL(code);
+      const pathParts = url.pathname.split('/').filter(p => p);
+      
+      const ai01Index = pathParts.indexOf('01');
+      if (ai01Index !== -1 && ai01Index + 1 < pathParts.length) {
+        result.isGs1 = true;
+        result.gtin = pathParts[ai01Index + 1];
+        
+        for (let i = ai01Index + 2; i < pathParts.length - 1; i += 2) {
+          const ai = pathParts[i];
+          const value = decodeURIComponent(pathParts[i + 1]);
+          if (ai === '10') result.lotNumber = value;
+          // if (ai === '21') result.serialNumber = value;
+        }
+        
+        if (url.searchParams.has('10')) result.lotNumber = url.searchParams.get('10') || undefined;
+        if (url.searchParams.has('17')) {
+          const dateStr = url.searchParams.get('17');
+          if (dateStr && dateStr.length === 6) {
+            const year = parseInt(dateStr.substring(0, 2), 10) + 2000;
+            const month = dateStr.substring(2, 4);
+            const day = dateStr.substring(4, 6) === '00' ? '01' : dateStr.substring(4, 6);
+            result.expiryDate = `${year}-${month}-${day}`;
+          }
+        }
+        
+        return result;
+      }
+    } catch (e) {
+      // Fallback to normal parsing
+    }
+  }
+
   // Replace common FNC1 separators if present (ASCII 29)
   let cleanCode = code.replace(/\x1D/g, '{GS}');
   
@@ -93,38 +129,40 @@ export function parseGs1Data(code: string): Gs1Data {
 }
 
 /**
- * Generates a Hybrid GS1 string from LIMS inventory item data.
- * Includes AI 01 (GTIN), AI 17 (Expiry), AI 10 (Lot), and AI 240 (LIMS ID).
+ * Generates a GS1 Digital Link (URL) from LIMS inventory item data.
+ * Includes AI 01 (GTIN), AI 10 (Lot) in path, and AI 17 (Expiry), AI 240 (LIMS ID) in query.
  */
 export function generateHybridGs1Code(item: any): string {
-  let code = '';
-  
-  // 1. GTIN (AI 01) - 14 digits. If missing, use a placeholder.
+  const domain = 'https://nafiqpm6.vercel.app';
   const gtin = item.gtin ? String(item.gtin).padStart(14, '0') : '00000000000000';
-  code += `01${gtin}`;
   
-  // 2. Expiry (AI 17) - 6 digits YYMMDD
+  let url = `${domain}/01/${gtin}`;
+  
+  if (item.lotNumber) {
+    url += `/10/${encodeURIComponent(String(item.lotNumber).substring(0, 20))}`;
+  }
+  
+  const params = new URLSearchParams();
+  
   if (item.expiryDate) {
     const d = new Date(item.expiryDate);
     if (!isNaN(d.getTime())) {
       const yy = String(d.getFullYear()).slice(-2);
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
-      code += `17${yy}${mm}${dd}`;
+      params.append('17', `${yy}${mm}${dd}`);
     }
   }
   
-  // 3. Lot Number (AI 10) - up to 20 chars
-  if (item.lotNumber) {
-    const lot = String(item.lotNumber).substring(0, 20);
-    code += `10${lot}\x1D`; // Add FNC1 separator
-  }
-  
-  // 4. LIMS ID (AI 240) - up to 30 chars
   if (item.id) {
-    const id = String(item.id).substring(0, 30);
-    code += `240${id}`; // Last element doesn't need FNC1
+    params.append('240', String(item.id).substring(0, 30));
   }
   
-  return code;
+  const queryString = params.toString();
+  if (queryString) {
+    url += `?${queryString}`;
+  }
+  
+  return url;
 }
+

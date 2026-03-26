@@ -7,7 +7,7 @@ import { formatDate, formatNum, formatSampleList } from '../../shared/utils/util
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 
-declare var QRious: any;
+declare let QRious: any;
 
 @Component({
   selector: 'app-traceability',
@@ -201,7 +201,7 @@ export class TraceabilityComponent implements OnInit {
       try {
           // 1. Try Direct Log Lookup (Priority 1)
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
-          let snap = await getDoc(logRef);
+          const snap = await getDoc(logRef);
 
           if (snap.exists()) {
               this.handleLogData({ id: snap.id, ...snap.data() } as Log);
@@ -210,7 +210,7 @@ export class TraceabilityComponent implements OnInit {
 
           // 2. Try Lookup by Print Job ID (Legacy or linked) (Priority 2)
           const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
-          let jobSnap = await getDoc(jobRef);
+          const jobSnap = await getDoc(jobRef);
           
           if (jobSnap.exists()) {
               const jobData = jobSnap.data() as any;
@@ -229,7 +229,7 @@ export class TraceabilityComponent implements OnInit {
 
           // 3. Try Lookup by REQUEST ID (Dashboard links point here) (Priority 3)
           const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${id}`);
-          let reqSnap = await getDoc(reqRef);
+          const reqSnap = await getDoc(reqRef);
 
           if (reqSnap.exists()) {
               const reqData = reqSnap.data() as any;

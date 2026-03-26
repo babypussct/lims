@@ -17,7 +17,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
-    <div class="h-full flex flex-col fade-in relative pb-10">
+    <div class="flex flex-col flex-1 min-h-0 fade-in relative pb-10">
         
         <!-- Header Actions (No title, title is in tabs) -->
         <div class="flex justify-end mb-4 shrink-0">

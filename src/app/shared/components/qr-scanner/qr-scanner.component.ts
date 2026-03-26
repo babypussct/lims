@@ -1,8 +1,8 @@
 import { Component, output, OnDestroy, AfterViewInit, signal, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-declare var Html5Qrcode: any;
-declare var Html5QrcodeSupportedFormats: any;
+declare let Html5Qrcode: any;
+declare let Html5QrcodeSupportedFormats: any;
 
 @Component({
   selector: 'app-qr-scanner',

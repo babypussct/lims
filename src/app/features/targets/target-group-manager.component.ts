@@ -182,7 +182,7 @@ import { Router } from '@angular/router';
                             <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                             <input [ngModel]="librarySearchTerm()" (ngModelChange)="librarySearchTerm.set($event)" 
                                    class="w-full pl-8 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition" 
-                                   placeholder="Tìm kiếm..." autofocus>
+                                   placeholder="Tìm kiếm...">
                         </div>
                         <button (click)="selectAllLibraryFiltered()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold whitespace-nowrap transition">Chọn hết</button>
                     </div>

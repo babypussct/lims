@@ -2,10 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
-  updateDoc, setDoc, getDocs, deleteDoc, 
+  updateDoc, setDoc, getDocs, deleteDoc, getDoc,
   query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
 
@@ -292,9 +292,9 @@ export class StandardService {
           const stdDoc = await transaction.get(stdRef);
           if (!stdDoc.exists()) throw new Error("Standard does not exist!");
 
-          const stdData = stdDoc.data();
-          const currentAmount = stdData['current_amount'] || 0;
-          const stockUnit = stdData['unit'] || 'mg';
+          const stdData = stdDoc.data() as ReferenceStandard;
+          const currentAmount = stdData.current_amount || 0;
+          const stockUnit = stdData.unit || 'mg';
           const usageUnit = log.unit || stockUnit;
 
           const amountToDeduct = getStandardizedAmount(log.amount_used, usageUnit, stockUnit);
@@ -305,6 +305,21 @@ export class StandardService {
 
           transaction.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
           transaction.set(newLogRef, log);
+
+          // If the standard is currently linked to a request, update the request's usage logs
+          if (stdData.current_request_id) {
+              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${stdData.current_request_id}`);
+              const reqDoc = await transaction.get(reqRef);
+              if (reqDoc.exists()) {
+                  const reqData = reqDoc.data() as StandardRequest;
+                  const currentLogs = reqData.usageLogs || [];
+                  transaction.update(reqRef, {
+                      usageLogs: [...currentLogs, log],
+                      totalAmountUsed: (reqData.totalAmountUsed || 0) + amountToDeduct,
+                      updatedAt: Date.now()
+                  });
+              }
+          }
       });
   }
 
@@ -330,6 +345,143 @@ export class StandardService {
 
           transaction.delete(logRef);
           transaction.update(stdRef, { current_amount: currentStock + amountToRestore, lastUpdated: serverTimestamp() });
+
+          if (stdData['current_request_id']) {
+              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${stdData['current_request_id']}`);
+              const reqDoc = await transaction.get(reqRef);
+              if (reqDoc.exists()) {
+                  const reqData = reqDoc.data() as StandardRequest;
+                  const currentLogs = reqData.usageLogs || [];
+                  const updatedLogs = currentLogs.filter(l => l.id !== logId);
+                  transaction.update(reqRef, {
+                      usageLogs: updatedLogs,
+                      totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - amountToRestore),
+                      updatedAt: Date.now()
+                  });
+              }
+          }
+      });
+  }
+
+  // --- REQUEST WORKFLOW ---
+  async createRequest(request: StandardRequest) {
+      const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
+      request.id = reqRef.id;
+      request.createdAt = Date.now();
+      request.updatedAt = Date.now();
+      await setDoc(reqRef, request);
+  }
+
+  async updateRequestStatus(requestId: string, status: StandardRequestStatus, updates: Partial<StandardRequest> = {}) {
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+      await updateDoc(reqRef, { status, ...updates, updatedAt: Date.now() });
+  }
+
+  async dispenseStandard(requestId: string, standardId: string, approverId: string, approverName: string) {
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+
+      await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
+          const reqDoc = await transaction.get(reqRef);
+          
+          if (!stdDoc.exists()) throw new Error("Chuẩn không tồn tại!");
+          if (!reqDoc.exists()) throw new Error("Yêu cầu không tồn tại!");
+          
+          const stdData = stdDoc.data();
+          if (stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED') {
+              throw new Error("Chuẩn đang được sử dụng hoặc đã hết!");
+          }
+
+          const reqData = reqDoc.data() as StandardRequest;
+
+          transaction.update(stdRef, { 
+              status: 'IN_USE', 
+              current_holder: reqData.requestedByName,
+              current_holder_uid: reqData.requestedBy,
+              current_request_id: requestId,
+              lastUpdated: serverTimestamp() 
+          });
+
+          transaction.update(reqRef, { 
+              status: 'IN_PROGRESS',
+              approvedBy: approverId,
+              approvedByName: approverName,
+              approvalDate: Date.now(),
+              updatedAt: Date.now()
+          });
+      });
+  }
+
+  async returnStandard(requestId: string, standardId: string, receiverId: string, receiverName: string, isDepleted: boolean = false, amountUsed?: number, unit?: string) {
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+
+      await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
+          const reqDoc = await transaction.get(reqRef);
+          
+          if (!stdDoc.exists()) throw new Error("Chuẩn không tồn tại!");
+          if (!reqDoc.exists()) throw new Error("Yêu cầu không tồn tại!");
+
+          const stdData = stdDoc.data() as ReferenceStandard;
+          const reqData = reqDoc.data() as StandardRequest;
+
+          let newAmount = stdData.current_amount || 0;
+          const finalAmountUsed = amountUsed !== undefined ? amountUsed : (reqData.totalAmountUsed || 0);
+          const finalUnit = unit || stdData.unit || 'mg';
+
+          if (finalAmountUsed > 0) {
+              const stockUnit = stdData.unit || 'mg';
+              const amountToDeduct = getStandardizedAmount(finalAmountUsed, finalUnit, stockUnit);
+              if (amountToDeduct === null) throw new Error(`Không thể quy đổi từ ${finalUnit} sang ${stockUnit}`);
+              newAmount -= amountToDeduct;
+              if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
+          }
+
+          transaction.update(stdRef, { 
+              status: isDepleted ? 'DEPLETED' : 'AVAILABLE', 
+              current_amount: newAmount,
+              current_holder: null,
+              current_holder_uid: null,
+              current_request_id: null,
+              lastUpdated: serverTimestamp() 
+          });
+
+          transaction.update(reqRef, { 
+              status: 'COMPLETED',
+              totalAmountUsed: finalAmountUsed,
+              returnDate: Date.now(),
+              receivedBy: receiverId,
+              receivedByName: receiverName,
+              updatedAt: Date.now()
+          });
+      });
+
+      // Also record the usage log
+      const finalAmountUsed = amountUsed !== undefined ? amountUsed : ((await getDoc(reqRef)).data() as StandardRequest).totalAmountUsed || 0;
+      const finalUnit = unit || ((await getDoc(stdRef)).data() as ReferenceStandard).unit || 'mg';
+      if (finalAmountUsed > 0) {
+          const reqData = (await getDoc(reqRef)).data() as StandardRequest;
+          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
+          const newLogRef = doc(logsRef);
+          await setDoc(newLogRef, {
+              timestamp: Date.now(),
+              action: 'USED',
+              user_uid: reqData.requestedBy,
+              user_name: reqData.requestedByName,
+              amount_used: finalAmountUsed,
+              unit: finalUnit,
+              purpose: reqData.purpose || 'Sử dụng theo yêu cầu'
+          });
+      }
+  }
+
+  listenToRequests(callback: (requests: StandardRequest[]) => void) {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
+      const q = query(colRef, orderBy('createdAt', 'desc'), limit(100));
+      return onSnapshot(q, (snapshot) => {
+          callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest)));
       });
   }
 

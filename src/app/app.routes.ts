@@ -49,6 +49,12 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.STANDARD_VIEW }
   },
   {
+    path: 'standard-requests',
+    loadComponent: () => import('./features/standards/requests/standard-requests.component').then(m => m.StandardRequestsComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.STANDARD_VIEW }
+  },
+  {
     path: 'recipes',
     loadComponent: () => import('./features/recipes/recipe-manager.component').then(m => m.RecipeManagerComponent),
     canActivate: [permissionGuard],

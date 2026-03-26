@@ -83,7 +83,7 @@ export interface Sop {
   name: string;
   ref?: string;
   inputs: SopInput[];
-  variables: { [key: string]: string }; 
+  variables: Record<string, string>; 
   consumables: Consumable[];
   
   // New Feature: Targets (Analytes)

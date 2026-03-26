@@ -5,7 +5,7 @@ import { PrintJob } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
 import { formatDate, formatNum, formatSampleList } from '../../utils/utils';
 
-declare var QRious: any;
+declare let QRious: any;
 
 @Component({
   selector: 'app-print-layout',

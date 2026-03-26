@@ -17,7 +17,7 @@ const ChemHelper = {
   },
   max: Math.max,
   min: Math.min,
-  round: (num: number, decimals: number = 2) => {
+  round: (num: number, decimals = 2) => {
     const f = Math.pow(10, decimals);
     return Math.round(num * f) / f;
   }
@@ -45,14 +45,14 @@ export class CalculatorService {
   calculateSopNeeds(
       sop: Sop, 
       inputValues: Record<string, any>, 
-      safetyMargin: number = 0,
+      safetyMargin = 0,
       inventoryMap: Record<string, InventoryItem> = {},
       recipeMap: Record<string, Recipe> = {},
       safetyConfig?: SafetyConfig
   ): CalculatedItem[] {
     
     // 1. Prepare Context from Inputs
-    let ctx: Record<string, any> = { ...inputValues };
+    const ctx: Record<string, any> = { ...inputValues };
     sop.inputs.forEach(inp => {
       if (ctx[inp.var] === undefined) {
         ctx[inp.var] = inp.default;

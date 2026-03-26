@@ -113,7 +113,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                         @if(isEditingName() === block.id) {
                                             <input [ngModel]="block.name" (ngModelChange)="updateBlockName(i, $event)" 
                                                    (blur)="isEditingName.set(null)" (keyup.enter)="isEditingName.set(null)" (click)="$event.stopPropagation()"
-                                                   class="font-bold text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:border-teal-500 dark:focus:border-teal-400 text-slate-800 dark:text-slate-200" autofocus>
+                                                   class="font-bold text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:border-teal-500 dark:focus:border-teal-400 text-slate-800 dark:text-slate-200">
                                         } @else {
                                             <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2" (dblclick)="isEditingName.set(block.id)">
                                                 {{block.name}} <i class="fa-solid fa-pen text-[10px] text-slate-300 dark:text-slate-500 opacity-0 group-hover:opacity-100"></i>
@@ -745,7 +745,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                         <div>
                             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Số lượng thực nhập</label>
                             <div class="relative">
-                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition bg-white dark:bg-slate-900" placeholder="0" autofocus>
+                                <input type="number" [(ngModel)]="quickImportInput" class="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition bg-white dark:bg-slate-900" placeholder="0">
                                 <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400 dark:text-slate-500">{{quickImportState().unit}}</span>
                             </div>
                             <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">* Nhập trực tiếp theo đơn vị gốc ({{quickImportState().unit}})</p>
@@ -1250,7 +1250,7 @@ export class SmartBatchComponent {
               // We need to map over needs and update isMissing flags on a deep copy or in place if mutable
               // Since signals update is immutable, we map and return new structure if changes
               const updatedNeeds = needs.map(item => {
-                  let newItem = { ...item };
+                  const newItem = { ...item };
                   
                   if (newItem.isComposite) {
                       const newBreakdown = newItem.breakdown.map(sub => {
@@ -1408,8 +1408,8 @@ export class SmartBatchComponent {
       // Logic: Move specific AnalysisTasks. If Sample L01 is selected, and Target A is selected, move (L01, A).
       // Keep (L01, B) in old batch if B wasn't selected.
       
-      let tasksToMove: AnalysisTask[] = [];
-      let tasksToKeep: AnalysisTask[] = [];
+      const tasksToMove: AnalysisTask[] = [];
+      const tasksToKeep: AnalysisTask[] = [];
 
       if (sourceBatch.tasks) {
           sourceBatch.tasks.forEach(t => {

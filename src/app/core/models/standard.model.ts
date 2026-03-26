@@ -42,7 +42,52 @@ export interface ReferenceStandard {
   // Search Optimization
   search_key?: string; 
 
+  // Workflow Status
+  status?: 'AVAILABLE' | 'IN_USE' | 'DEPLETED';
+  current_holder?: string; // User ID or Name holding the standard
+  current_holder_uid?: string; // User ID holding the standard
+  current_request_id?: string; // ID of the active request
+
   lastUpdated?: any;
+}
+
+export type StandardRequestStatus = 'PENDING_APPROVAL' | 'IN_PROGRESS' | 'PENDING_RETURN' | 'PENDING_DEPLETION' | 'COMPLETED' | 'REJECTED';
+
+export interface StandardRequest {
+  id?: string;
+  standardId: string;
+  standardName: string;
+  lotNumber?: string;
+  
+  requestedBy: string; // userId
+  requestedByName: string;
+  requestDate: number; // timestamp
+  purpose: string;
+  expectedAmount?: number;
+  expectedReturnDate?: number; // timestamp
+  
+  status: StandardRequestStatus;
+  
+  // Approval/Dispense
+  approvedBy?: string;
+  approvedByName?: string;
+  approvalDate?: number;
+  rejectionReason?: string;
+  
+  // Return/Depletion
+  returnDate?: number;
+  receivedBy?: string;
+  receivedByName?: string;
+  
+  // Usage tracking
+  totalAmountUsed: number;
+  usageLogs?: UsageLog[];
+  
+  createdAt?: number;
+  updatedAt?: number;
+
+  // UI mapping
+  standardDetails?: ReferenceStandard;
 }
 
 export interface StandardsPage {

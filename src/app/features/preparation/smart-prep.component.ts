@@ -1084,7 +1084,7 @@ export class SmartPrepComponent {
           if (c1 === 0) return 0;
           
           // V1 = C2 * V2 / C1 (V1 will be in same unit as V2)
-          let v1 = (c2 * this.targetVol()) / c1; 
+          const v1 = (c2 * this.targetVol()) / c1; 
           
           // Auto convert to uL if < 1mL and unit is mL
           if (v1 < 1 && this.targetVolUnit() === 'ml') {
@@ -1101,7 +1101,7 @@ export class SmartPrepComponent {
           // V_spike = V_sample * (C_add / C_stock)
           // Note: V_sample might be mass (g). We assume 1g ~ 1mL for simple spiking logic if density not provided.
           // Or we just treat the 'targetVol' input as the base unit for the calculation.
-          let v1 = this.targetVol() * (cAdd / cStock);
+          const v1 = this.targetVol() * (cAdd / cStock);
           
           // Auto convert to uL if < 1mL
           const vUnit = this.targetVolUnit();
@@ -1122,7 +1122,7 @@ export class SmartPrepComponent {
           const c1 = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
           const c2 = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
           if (c1 === 0) return this.targetVolUnit();
-          let v1 = (c2 * this.targetVol()) / c1; 
+          const v1 = (c2 * this.targetVol()) / c1; 
           if (v1 < 1 && this.targetVolUnit() === 'ml') return 'ul';
           return this.targetVolUnit();
       }
@@ -1131,7 +1131,7 @@ export class SmartPrepComponent {
           const cStock = this.stockConc() * this.getFactor(this.concUnit(), 'conc'); 
           const cAdd = this.targetConc() * this.getFactor(this.targetConcUnit(), 'conc');
           if (cStock === 0) return this.targetVolUnit();
-          let v1 = this.targetVol() * (cAdd / cStock);
+          const v1 = this.targetVol() * (cAdd / cStock);
           const vUnit = this.targetVolUnit();
           if (v1 < 1 && (vUnit === 'ml' || vUnit === 'g')) return 'ul';
           return vUnit;
@@ -1183,7 +1183,7 @@ export class SmartPrepComponent {
           
           // Calculate solvent in original target unit
           const v1_in_target_unit = (C2 * V2) / C1;
-          let vSolvent = V2 - v1_in_target_unit;
+          const vSolvent = V2 - v1_in_target_unit;
           
           return { conc: C2_input, unit: vUnit, vStock: v1, vSolvent: vSolvent };
       });
@@ -1231,8 +1231,8 @@ export class SmartPrepComponent {
       if (mode === 'dilution') {
           const vTotal = this.targetVol();
           // If val is in uL but vTotal is in mL, need to convert for display
-          let vTotalDisplay = vTotal;
-          let vTotalUnit = this.targetVolUnit();
+          const vTotalDisplay = vTotal;
+          const vTotalUnit = this.targetVolUnit();
           
           return `Hút ${this.formatNum(val)} ${unit} dung dịch gốc. Định mức tới ${vTotalDisplay} ${vTotalUnit} bằng dung môi.`;
       }
