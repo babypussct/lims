@@ -233,7 +233,7 @@ export class StateService implements OnDestroy {
   // Omitted for brevity as no logic changed there
   
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
-      const itemsToDeduct: Map<string, number> = new Map();
+      const itemsToDeduct = new Map<string, number>();
       calculatedItems.forEach(item => {
         if (item.isComposite) {
           item.breakdown.forEach(sub => {

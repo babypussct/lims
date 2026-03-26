@@ -214,7 +214,7 @@ export class FirebaseService {
       { id: "formic_acid", name: "Formic Acid 98%", stock: 500, unit: "ml", category: "reagent", threshold: 50 }
     ];
     
-    let batch = writeBatch(this.db);
+    const batch = writeBatch(this.db);
     
     for(const item of inventory) {
         const ref = doc(this.db, `artifacts/${this.APP_ID}/inventory`, item.id);

@@ -685,7 +685,7 @@ import { Unsubscribe } from 'firebase/firestore';
                     <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 [color-scheme:light] dark:[color-scheme:dark]"></div>
                     <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
                     <div class="grid grid-cols-3 gap-2">
-                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 dark:border-indigo-800/50 bg-white dark:bg-slate-800 rounded-xl p-3 font-black text-2xl text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-center" placeholder="0.00" autofocus></div>
+                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 dark:border-indigo-800/50 bg-white dark:bg-slate-800 rounded-xl p-3 font-black text-2xl text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-center" placeholder="0.00"></div>
                         <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
                     </div>
                     @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-800/50 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
@@ -1245,7 +1245,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- HARDENED: Save ---
-  async saveStandard(keepOpen: boolean = false) {
+  async saveStandard(keepOpen = false) {
       if (this.isProcessing()) return;
       if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
       
