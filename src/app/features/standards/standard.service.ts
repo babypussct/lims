@@ -1,648 +1,654 @@
-
-import { Injectable, signal, computed, inject, effect, OnDestroy, Injector } from '@angular/core';
-import { FirebaseService } from './firebase.service';
-import { AuthService } from './auth.service';
+import { Injectable, inject } from '@angular/core';
+import { FirebaseService } from '../../core/services/firebase.service';
 import { 
-  collection, onSnapshot, doc, getDoc, runTransaction, 
-  addDoc, updateDoc, query, orderBy, limit, where, 
-  serverTimestamp, increment, setDoc, getDocs, deleteDoc, deleteField,
-  Unsubscribe, DocumentReference, writeBatch
+  doc, collection, writeBatch, serverTimestamp, 
+  updateDoc, setDoc, getDocs, deleteDoc, 
+  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
 } from 'firebase/firestore';
-import { ToastService } from './toast.service';
-import { ConfirmationService } from './confirmation.service';
-import { CalculatorService } from './calculator.service';
-
-// Import Models
-import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
-import { Sop, CalculatedItem } from '../models/sop.model';
-import { Request, RequestItem } from '../models/request.model';
-import { Log, PrintData } from '../models/log.model';
-import { PrintConfig, SafetyConfig } from '../models/config.model';
-import { sanitizeForFirebase } from '../../shared/utils/utils';
+import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
+import { ToastService } from '../../core/services/toast.service';
+import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
-export class StateService implements OnDestroy {
+export class StandardService {
   private fb = inject(FirebaseService);
-  private auth = inject(AuthService);
   private toast = inject(ToastService);
-  private confirmationService = inject(ConfirmationService);
-  private injector = inject(Injector);
 
-  private listeners: Unsubscribe[] = [];
-
-  // --- DATA SIGNALS ---
-  inventory = signal<InventoryItem[]>([]);
-  inventoryMap = computed(() => {
-      const map: Record<string, InventoryItem> = {};
-      this.inventory().forEach(i => map[i.id] = i);
-      return map;
-  });
-
-  sops = signal<Sop[]>([]); 
-  requests = signal<Request[]>([]); 
-  approvedRequests = signal<Request[]>([]);
-  logs = signal<Log[]>([]); 
-  printableLogs = signal<Log[]>([]); 
-  
-  stats = signal<any>({ totalSopsRun: 0, totalItemsUsed: 0 });
-  
-  printConfig = signal<PrintConfig>({
-    footerText: 'Cam kết sử dụng đúng mục đích.', showSignature: false
-  });
-
-  // NEW: Safety Configuration
-  safetyConfig = signal<SafetyConfig>({
-      defaultMargin: 10,
-      rules: {}
-  });
-
-  // NEW: Avatar Style Preference (Default: Initials for professional look)
-  avatarStyle = signal<string>('initials');
-
-  systemVersion = signal<string>('V1.0 FINAL');
-
-  selectedSop = signal<Sop | null>(null);
-  editingSop = signal<Sop | null>(null);
-  
-  cachedCalculatorState = signal<{ sopId: string, formValues: any } | null>(null);
-
-  currentUser = this.auth.currentUser;
-  isAdmin = computed(() => this.auth.currentUser()?.role === 'manager');
-  
-  isSystemHealthy = signal<boolean>(true);
-  permissionError = signal<boolean>(false);
-  
-  // UI STATE
-  sidebarOpen = signal<boolean>(false);
-  sidebarCollapsed = signal<boolean>(false);
-  
-  // --- FOCUS MODE (New Feature) ---
-  focusMode = signal<boolean>(false);
-
-  // --- DARK MODE ---
-  darkMode = signal<boolean>(false);
-
-  constructor() {
-    // Initialize Dark Mode from localStorage
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    this.darkMode.set(savedDarkMode);
-    this.applyDarkMode(savedDarkMode);
-
-    effect(() => {
-      const user = this.auth.currentUser();
-      if (user) {
-        this.initData();
-        this.checkSystemHealth();
-      } else {
-        this.cleanupListeners();
-      }
-    }, { allowSignalWrites: true }); 
+  // --- HELPER: SEARCH KEY GENERATOR ---
+  private generateSearchKey(std: ReferenceStandard): string {
+    const parts = [
+      std.name,
+      std.chemical_name,
+      std.internal_id,
+      std.cas_number,
+      std.product_code,
+      std.lot_number,
+      std.manufacturer,
+      std.id
+    ];
+    
+    return parts
+      .filter(p => p)
+      .join(' ')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
-  toggleSidebar() { this.sidebarOpen.update(v => !v); }
-  closeSidebar() { this.sidebarOpen.set(false); }
-  toggleSidebarCollapse() { this.sidebarCollapsed.update(v => !v); }
-  
-  // Toggle Focus Mode
-  toggleFocusMode() { this.focusMode.update(v => !v); }
+  // --- HELPER: ROBUST EXCEL DATE PARSER ---
+  private parseExcelDate(val: any): string {
+      if (val === null || val === undefined) return '';
+      
+      const strVal = val.toString().trim();
+      if (['-', '/', 'na', 'n/a', 'unknown', ''].includes(strVal.toLowerCase())) return '';
 
-  // Toggle Dark Mode
-  toggleDarkMode() {
-    this.darkMode.update(v => {
-      const newVal = !v;
-      localStorage.setItem('darkMode', String(newVal));
-      this.applyDarkMode(newVal);
-      return newVal;
+      // 1. Case Number (Excel Serial Date)
+      let serial = NaN;
+      if (typeof val === 'number') serial = val;
+      else if (/^\d+(\.\d+)?$/.test(strVal)) serial = parseFloat(strVal);
+
+      if (!isNaN(serial) && serial > 10000) {
+          const utcDays = Math.floor(serial - 25569);
+          const utcValue = utcDays * 86400 * 1000;
+          const dateInfo = new Date(utcValue);
+          dateInfo.setHours(dateInfo.getHours() + 12);
+          return dateInfo.toISOString().split('T')[0];
+      }
+
+      // 2. Case Text (dd/mm/yyyy)
+      const parts = strVal.split(/[\/\-\.]/);
+      
+      if (parts.length >= 3) {
+          const p1 = parts[0];
+          const p2 = parts[1];
+          const p3 = parts[2];
+
+          const day = p1.padStart(2, '0');
+          const month = p2.padStart(2, '0');
+          let year = p3;
+          
+          if (year.length === 2) year = '20' + year;
+          
+          const nDay = Number(day);
+          const nMonth = Number(month);
+          if (nDay > 31 || nMonth > 12 || nDay === 0 || nMonth === 0) return '';
+
+          return `${year}-${month}-${day}`; 
+      }
+
+      return ''; 
+  }
+
+  // --- HELPER: LOG PARSER ---
+  private parseLogContent(val: any, defaultDate: string): UsageLog | null {
+      if (!val) return null;
+      const str = val.toString().trim();
+      if (!str) return null;
+
+      const dateRegex = /(?:ng[àa]y|date)?\s*(?:pha\s*ch[ếe])?[:\-\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i;
+      const userRegex = /(?:ng[ưươ][ờoi]i|user)(?:\s*pha\s*ch[ếe])?\s*[:\-\s]*([^\d\n\r;]+)/i;
+      const amountRegex = /(?:lượng|kl|amount)(?:\s*(?:d[ùu]ng|c[âa]n|used))?[:\s-]*([\d\.,]+)/i;
+
+      const isNumberOnly = /^[0-9.,]+$/.test(str);
+
+      // CASE A: Detailed Text
+      if (!isNumberOnly && str.length > 5) {
+          const amountMatch = str.match(amountRegex);
+          const dateMatch = str.match(dateRegex);
+          const userMatch = str.match(userRegex);
+
+          let logAmount = 0;
+          if (amountMatch) {
+              logAmount = parseFloat(amountMatch[1].replace(',', '.'));
+          } else {
+              const parts = str.split(/\s+/);
+              for (const p of parts.reverse()) {
+                  const n = parseFloat(p.replace(',', '.'));
+                  if (!isNaN(n)) {
+                      logAmount = n;
+                      break;
+                  }
+              }
+          }
+
+          if (logAmount > 0) {
+              let logDate = defaultDate;
+              let logUser = 'Import Data';
+
+              if (dateMatch) {
+                  const rawDate = dateMatch[1];
+                  const parts = rawDate.split(/[\/\-\.]/);
+                  if (parts.length >= 3) {
+                      const d = parts[0].padStart(2, '0');
+                      const m = parts[1].padStart(2, '0');
+                      let y = parts[2];
+                      if (y.length === 2) y = '20' + y;
+                      logDate = `${y}-${m}-${d}`;
+                  }
+              }
+
+              if (userMatch) {
+                  logUser = userMatch[1].trim();
+                  const splitKeywords = ['lượng', 'kl', 'amount', 'ngày', 'date'];
+                  const lowerUser = logUser.toLowerCase();
+                  for(const k of splitKeywords) {
+                      const idx = lowerUser.indexOf(k);
+                      if (idx > 0) {
+                          logUser = logUser.substring(0, idx).trim();
+                          break; 
+                      }
+                  }
+                  logUser = logUser.replace(/[:\-]+$/, '').trim();
+              }
+
+              return {
+                  date: logDate,
+                  user: logUser,
+                  amount_used: logAmount,
+                  purpose: 'Import Log'
+              };
+          }
+      }
+
+      // CASE B: Number Only
+      const cleanNum = parseFloat(str.replace(',', '.'));
+      if (!isNaN(cleanNum) && cleanNum > 0) {
+           return {
+                date: defaultDate,
+                user: 'Import Data',
+                amount_used: cleanNum,
+                purpose: 'Import Log'
+            };
+      }
+
+      return null;
+  }
+
+  // --- READ Operations ---
+  
+  listenToAllStandards(callback: (items: ReferenceStandard[]) => void): Unsubscribe {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      const q = query(colRef, orderBy('received_date', 'desc')); 
+      
+      return onSnapshot(q, (snapshot) => {
+          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+          callback(items);
+      }, (error) => {
+          console.error("Error listening to standards:", error);
+          this.toast.show('Lỗi kết nối dữ liệu chuẩn.', 'error');
+      });
+  }
+
+  async getNearestExpiry(): Promise<ReferenceStandard | null> {
+      try {
+          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+          const q = query(colRef, where('expiry_date', '!=', ''), orderBy('expiry_date', 'asc'), limit(1));
+          const snapshot = await getDocs(q);
+          return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as ReferenceStandard;
+      } catch (e: any) { return null; }
+  }
+
+  async getStandardsPage(
+      pageSize: number, 
+      lastDoc: QueryDocumentSnapshot | null, 
+      searchTerm: string,
+      sortOption = 'received_desc'
+  ): Promise<StandardsPage> {
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+    const constraints: QueryConstraint[] = [];
+
+    if (searchTerm) {
+      const term = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      constraints.push(where('search_key', '>=', term));
+      constraints.push(where('search_key', '<=', term + '\uf8ff'));
+      constraints.push(orderBy('search_key'));
+    } else {
+      switch (sortOption) {
+          case 'name_asc': constraints.push(orderBy('name', 'asc')); break;
+          case 'name_desc': constraints.push(orderBy('name', 'desc')); break;
+          case 'received_desc': constraints.push(orderBy('received_date', 'desc')); break;
+          case 'expiry_asc': 
+              constraints.push(where('expiry_date', '!=', ''));
+              constraints.push(orderBy('expiry_date', 'asc')); 
+              break;
+          case 'expiry_desc':
+              constraints.push(where('expiry_date', '!=', ''));
+              constraints.push(orderBy('expiry_date', 'desc'));
+              break;
+          case 'updated_desc': constraints.push(orderBy('lastUpdated', 'desc')); break;
+          default: constraints.push(orderBy('received_date', 'desc')); break;
+      }
+    }
+
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+    constraints.push(limit(pageSize));
+
+    const q = query(colRef, ...constraints);
+    const snapshot = await getDocs(q);
+    
+    return {
+      items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard)),
+      lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  }
+
+  // --- WRITE Operations ---
+  async addStandard(std: ReferenceStandard) {
+      std.search_key = this.generateSearchKey(std);
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+      await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+  }
+
+  async updateStandard(std: ReferenceStandard) {
+      std.search_key = this.generateSearchKey(std);
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+      await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+  }
+
+  async deleteStandard(id: string) {
+      await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
+  }
+
+  async deleteSelectedStandards(ids: string[]) {
+      const BATCH_SIZE = 400;
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0;
+
+      for (const id of ids) {
+          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs`);
+          const logsSnapshot = await getDocs(logsRef);
+          
+          for (const logDoc of logsSnapshot.docs) {
+              batch.delete(logDoc.ref);
+              opCount++;
+              if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+          }
+
+          const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
+          batch.delete(stdRef);
+          opCount++;
+          if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+      }
+
+      if (opCount > 0) await batch.commit();
+  }
+
+  async getUsageHistory(stdId: string): Promise<UsageLog[]> {
+      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+      const q = query(logsRef, orderBy('timestamp', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
+  }
+
+  async recordUsage(stdId: string, log: UsageLog) {
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+      const newLogRef = doc(logsRef); 
+
+      await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
+          if (!stdDoc.exists()) throw new Error("Standard does not exist!");
+
+          const stdData = stdDoc.data();
+          const currentAmount = stdData['current_amount'] || 0;
+          const stockUnit = stdData['unit'] || 'mg';
+          const usageUnit = log.unit || stockUnit;
+
+          const amountToDeduct = getStandardizedAmount(log.amount_used, usageUnit, stockUnit);
+          if (amountToDeduct === null) throw new Error(`Không thể quy đổi từ ${usageUnit} sang ${stockUnit}`);
+
+          const newAmount = currentAmount - amountToDeduct;
+          if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
+
+          transaction.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
+          transaction.set(newLogRef, log);
+      });
+  }
+
+  async deleteUsageLog(stdId: string, logId: string) {
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+      const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
+
+      await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
+          const logDoc = await transaction.get(logRef);
+          if (!stdDoc.exists() || !logDoc.exists()) throw new Error("Document not found");
+
+          const stdData = stdDoc.data();
+          const logData = logDoc.data();
+          
+          const stockUnit = stdData['unit'];
+          const amountUsed = logData['amount_used'] || 0;
+          const unitUsed = logData['unit'] || stockUnit;
+          const currentStock = stdData['current_amount'] || 0;
+
+          const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
+          if (amountToRestore === null) throw new Error("Lỗi quy đổi đơn vị");
+
+          transaction.delete(logRef);
+          transaction.update(stdRef, { current_amount: currentStock + amountToRestore, lastUpdated: serverTimestamp() });
+      });
+  }
+
+  // --- EXCEL PARSER ---
+  async parseExcelData(file: File): Promise<ImportPreviewItem[]> {
+    const XLSX = await import('xlsx');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: false }); 
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+          if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
+
+          const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const results: ImportPreviewItem[] = [];
+
+          for (const rawRow of rawRows) {
+             const row: Record<string, any> = {};
+             Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
+
+             const rawName = row['tên chuẩn'] || '';
+             const nameParts = rawName.split(/[\n\r]+/);
+             const name = nameParts[0]?.trim();
+             const chemicalName = nameParts.length > 1 ? nameParts.slice(1).join(' ').trim() : (row['tên khác'] || row['tên hóa học'] || '').toString().trim();
+
+             if (!name) continue;
+
+             const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
+             
+             const rawPackText = (row['quy cách'] || '').toString().trim(); 
+             const rawAmount = row['khối lượng chai'];
+             
+             let initial = 0;
+             if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
+                 const val = parseFloat(rawAmount.toString().replace(',', '.'));
+                 if (!isNaN(val)) initial = val;
+             } else {
+                 initial = Number(row['khối lượng chai'] || 0);
+             }
+
+             let unit = 'mg';
+             const lowerPack = rawPackText.toLowerCase();
+             if (lowerPack.includes('ml') || lowerPack.includes('milliliter') || lowerPack.includes('lít')) unit = 'mL';
+             else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
+             else if (lowerPack.includes('kg')) unit = 'kg';
+             else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) unit = 'g';
+             else unit = 'mg';
+
+             let packSize = rawPackText;
+             const packHasNumber = /^[\d.,]+/.test(rawPackText);
+             if (!packHasNumber && initial > 0 && packSize) { packSize = `${initial} ${packSize}`; }
+             if (!packSize) { packSize = `${initial} ${unit}`; }
+
+             const internalId = (row['số nhận diện'] || '').toString().trim();
+             let current = initial;
+             const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
+             if (rawCurrentStr !== '') {
+                 const match = rawCurrentStr.match(/[\d\.]+/); 
+                 if (match && !isNaN(parseFloat(match[0]))) current = parseFloat(match[0]);
+             }
+
+             let location = '';
+             if (internalId && internalId.length > 0) {
+                 const firstChar = internalId.charAt(0).toUpperCase();
+                 if (firstChar.match(/[A-Z]/)) location = `Tủ ${firstChar}`;
+             }
+
+             const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
+             
+             const receivedDate = this.parseExcelDate(row['ngày nhận']);
+             const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
+
+             const standard: ReferenceStandard = {
+                 id, name, chemical_name: chemicalName,
+                 internal_id: internalId, location: location,
+                 pack_size: packSize, lot_number: lot,
+                 contract_ref: (row['hợp đồng dự toán'] || row['hợp đồng'] || '').toString().trim(),
+                 received_date: receivedDate, expiry_date: expiryDate,
+                 initial_amount: isNaN(initial) ? 0 : initial,
+                 current_amount: current, unit: unit,
+                 product_code: (row['product code'] || '').toString().trim(),
+                 manufacturer: (row['hãng'] || '').toString().trim(),
+                 cas_number: (row['cas number'] || '').toString().trim(),
+                 storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
+                 storage_status: 'Sẵn sàng', purity: '', 
+                 lastUpdated: null 
+             };
+             standard.search_key = this.generateSearchKey(standard);
+
+             const logs: any[] = [];
+             const addedLogs = new Set<string>();
+             const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
+             const keys = Object.keys(row);
+             
+             for (let i = 1; i <= 10; i++) { 
+                 const logKey = keys.find(k => k.includes(`lần`) && k.includes(`${i}`));
+                 if (logKey && row[logKey]) {
+                     const logData = this.parseLogContent(row[logKey], logDefaultDate);
+                     if (logData) {
+                         const logSignature = `${logData.date}_${logData.user}_${logData.amount_used}`;
+                         if (!addedLogs.has(logSignature)) {
+                             addedLogs.add(logSignature);
+                             logs.push({ ...logData, unit: unit, timestamp: new Date().getTime() + i });
+                         }
+                     }
+                 }
+             }
+
+             results.push({
+                 raw: { 'Ngày nhận (Gốc)': row['ngày nhận'], 'Hạn dùng (Gốc)': row['hạn sử dụng'] },
+                 parsed: standard, logs: logs, isValid: true
+             });
+          }
+          resolve(results);
+        } catch (err: any) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
     });
   }
 
-  private applyDarkMode(isDark: boolean) {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    }
-  }
+  async saveImportedData(data: ImportPreviewItem[]) {
+      if (!data || data.length === 0) return;
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0; 
+      const MAX_BATCH_SIZE = 400;
 
-  private cleanupListeners() {
-    this.listeners.forEach(unsub => unsub());
-    this.listeners = [];
-    this.sops.set([]);
-    this.inventory.set([]);
-    this.requests.set([]); this.approvedRequests.set([]); 
-    this.logs.set([]);
-    this.printableLogs.set([]);
-  }
+      for (const item of data) {
+          const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`);
+          batch.set(stdRef, { ...item.parsed, lastUpdated: serverTimestamp() });
+          opCount++;
 
-  ngOnDestroy() { this.cleanupListeners(); }
-
-  async initData() {
-    this.cleanupListeners();
-    this.permissionError.set(false);
-
-    const handleError = (source: string) => (error: any) => {
-      console.warn(`${source} listener error:`, error.message);
-      if (error.code === 'permission-denied') this.permissionError.set(true);
-    };
-
-    // 1. Inventory Listener
-    const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
-      const items: InventoryItem[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as InventoryItem));
-      this.inventory.set(items);
-    }, handleError('Inventory'));
-    this.listeners.push(invSub);
-
-    // 2. SOPs Listener
-    const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
-      const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
-      this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
-    }, handleError('SOPs'));
-    this.listeners.push(sopSub);
-
-    // 3. Requests Listeners
-    const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')), 
-        (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
-    this.listeners.push(reqSub);
-
-    const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'), limit(100));
-    const appSub = onSnapshot(approvedQuery, (s) => { 
-        const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.approvedRequests.set(items); 
-    }, handleError('Approved Requests'));
-    this.listeners.push(appSub);
-
-    // 4. Logs Listener
-    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(100));
-    const logSub = onSnapshot(logQuery, (s) => {
-        const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
-        this.logs.set(items);
-        this.printableLogs.set(items.filter(l => l.printable === true));
-    }, handleError('Logs'));
-    this.listeners.push(logSub);
-
-    // 5. Configs
-    const statSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'), (d) => { if (d.exists()) this.stats.set(d.data()); }, handleError('Stats'));
-    this.listeners.push(statSub);
-
-    const printConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print'), (d) => { if(d.exists()) this.printConfig.set(d.data() as PrintConfig); }, handleError('Config-Print'));
-    this.listeners.push(printConfigSub);
-
-    const safetyConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety'), (d) => { 
-        if(d.exists()) this.safetyConfig.set(d.data() as SafetyConfig); 
-    }, handleError('Config-Safety'));
-    this.listeners.push(safetyConfigSub);
-
-    const systemSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system'), (d) => { 
-        if(d.exists()) {
-            const data = d.data();
-            if (data['version']) this.systemVersion.set(data['version']);
-            if (data['avatarStyle']) this.avatarStyle.set(data['avatarStyle']); // Load Avatar Style
-        }
-    }, handleError('Config-System'));
-    this.listeners.push(systemSub);
-  }
-
-  async checkSystemHealth() { return true; }
-  
-  async savePrintConfig(config: PrintConfig) { 
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
-      await setDoc(ref, config, {merge: true});
-  }
-
-  async saveSafetyConfig(config: SafetyConfig) {
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
-      await setDoc(ref, config, {merge: true});
-  }
-
-  async saveSystemVersion(version: string) {
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
-      await setDoc(ref, { version }, {merge: true});
-  }
-
-  async saveAvatarStyle(style: string) {
-      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
-      await setDoc(ref, { avatarStyle: style }, {merge: true});
-  }
-  
-  public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
-
-  // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndPrint, approveRequest, revokeApproval, etc.)
-  // Omitted for brevity as no logic changed there
-  
-  private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
-      const itemsToDeduct: Map<string, number> = new Map();
-      calculatedItems.forEach(item => {
-        if (item.isComposite) {
-          item.breakdown.forEach(sub => {
-            const current = itemsToDeduct.get(sub.name) || 0;
-            itemsToDeduct.set(sub.name, current + sub.totalNeed);
-          });
-        } else {
-          const current = itemsToDeduct.get(item.name) || 0;
-          itemsToDeduct.set(item.name, current + item.stockNeed);
-        }
-      });
-      return Array.from(itemsToDeduct.entries()).map(([name, amount]) => ({ name, amount }));
-  }
-
-  private mapToRequestItems(calculatedItems: CalculatedItem[], invMap: Record<string, InventoryItem>): RequestItem[] {
-      const requestItems: RequestItem[] = [];
-      calculatedItems.forEach(item => {
-        if (item.isComposite) {
-          item.breakdown.forEach(sub => {
-             const displayName = invMap[sub.name]?.name || sub.name;
-             requestItems.push({ 
-                 name: sub.name, displayName, 
-                 amount: sub.totalNeed, displayAmount: sub.displayAmount, 
-                 baseAmount: sub.baseAmount,
-                 unit: sub.unit, stockUnit: sub.stockUnit 
-             });
-          });
-        } else {
-          const displayName = invMap[item.name]?.name || item.name;
-          requestItems.push({ 
-              name: item.name, displayName, 
-              amount: item.stockNeed, displayAmount: item.totalQty, 
-              baseAmount: item.baseAmount,
-              unit: item.unit, stockUnit: item.stockUnit 
-          });
-        }
-      });
-      return requestItems;
-  }
-
-  async submitRequest(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
-    try {
-      const requestItems = this.mapToRequestItems(calculatedItems, invMap);
-      
-      const reqData: any = {
-        sopId: sop.id, 
-        sopName: sop.name, 
-        items: requestItems, 
-        status: 'pending', 
-        timestamp: serverTimestamp(), 
-        user: this.getCurrentUserName(), 
-        inputs: formInputs, 
-        margin: formInputs.safetyMargin || 0,
-        analysisDate: formInputs.analysisDate || null 
-      };
-
-      if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
-      if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
-
-      await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), reqData);
-      this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
-    } catch (e: any) { this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error'); }
-  }
-  
-  async directApproveAndPrint(sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}): Promise<{logId: string, printJobId: string} | null> {
-    if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
-    
-    const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
-    const requestItems = this.mapToRequestItems(calculatedItems, invMap);
-
-    const reqRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'));
-    const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
-    
-    const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-    const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-
-    try {
-      await runTransaction(this.fb.db, async (transaction) => {
-        const invRefs = itemsToDeduct.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
-        const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
-
-        for (let i = 0; i < itemsToDeduct.length; i++) {
-          const item = itemsToDeduct[i];
-          const invSnap = invSnaps[i];
-          if (!invSnap.exists()) throw new Error(`Hóa chất "${item.name}" không tồn tại!`);
-          const currentStock = invSnap.data()['stock'] || 0;
-          if (currentStock < item.amount) throw new Error(`Kho không đủ "${item.name}". Tồn: ${currentStock}, Cần: ${item.amount}`);
-        }
-
-        for (let i = 0; i < itemsToDeduct.length; i++) {
-          transaction.update(invRefs[i], { stock: increment(-itemsToDeduct[i].amount) });
-        }
-
-        const reqData: any = {
-            sopId: sop.id, 
-            sopName: sop.name, 
-            items: requestItems, 
-            status: 'approved', 
-            timestamp: serverTimestamp(),
-            approvedAt: serverTimestamp(), 
-            user: this.getCurrentUserName(), 
-            inputs: formInputs, 
-            margin: formInputs.safetyMargin || 0,
-            analysisDate: formInputs.analysisDate || null
-        };
-        
-        if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
-        if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
-
-        transaction.set(reqRef, reqData);
-
-        const printData: PrintData = { 
-            sop, 
-            inputs: formInputs, 
-            margin: formInputs.safetyMargin || 0, 
-            items: calculatedItems,
-            analysisDate: formInputs.analysisDate,
-            requestId: reqRef.id
-        };
-        transaction.set(printJobRef, { 
-            ...sanitizeForFirebase(printData), 
-            createdAt: serverTimestamp(),
-            createdBy: this.getCurrentUserName()
-        });
-
-        transaction.set(logRef, {
-          action: 'DIRECT_APPROVE', 
-          details: `Duyệt trực tiếp SOP: ${sop.name}`, 
-          timestamp: serverTimestamp(), 
-          user: this.getCurrentUserName(),
-          printable: true, 
-          printJobId: printJobRef.id,
-          requestId: reqRef.id,
-          sopBasicInfo: { 
-              name: sop.name, 
-              category: sop.category,
-              ref: sop.ref 
-          }
-        });
-      });
-      this.toast.show('Duyệt thành công!', 'success');
-      return { logId: logRef.id, printJobId: printJobRef.id };
-
-    } catch (e: any) {
-      if (e.code === 'resource-exhausted') this.toast.show('Lỗi: Hết hạn mức Quota.', 'error');
-      else this.toast.show(e.message, 'error');
-      return null;
-    }
-  }
-
-  async approveRequest(req: Request) {
-    if (!this.auth.canApprove()) return;
-    if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
-
-    try {
-      await runTransaction(this.fb.db, async (transaction) => {
-        const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
-        const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
-        
-        for (let i = 0; i < req.items.length; i++) {
-          const item = req.items[i];
-          const invSnap = invSnaps[i];
-          if (!invSnap.exists()) throw new Error(`Hóa chất "${item.name}" không tồn tại!`);
-          const currentStock = invSnap.data()['stock'] || 0;
-          if (currentStock < item.amount) throw new Error(`Kho không đủ "${item.name}". Hiện có: ${currentStock}, Cần: ${item.amount}`);
-        }
-        for (let i = 0; i < req.items.length; i++) {
-           transaction.update(invRefs[i], { stock: increment(-req.items[i].amount) });
-        }
-        
-        const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'approved', approvedAt: serverTimestamp() });
-        
-        const sop = this.sops().find(s => s.id === req.sopId);
-        
-        const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-        
-        if (sop && req.inputs) {
-            const calcService = this.injector.get(CalculatorService);
-            
-            const calculatedItems = calcService.calculateSopNeeds(
-                sop, 
-                req.inputs, 
-                req.margin || 0,
-                this.inventoryMap(), 
-                {}, 
-                this.safetyConfig() 
-            ); 
-            
-            calculatedItems.forEach(ci => {
-                const ri = req.items.find(r => r.name === ci.name);
-                if(ri && ri.displayName) ci.displayName = ri.displayName;
-                
-                if(ci.isComposite) {
-                    ci.breakdown.forEach(sub => {
-                        const riSub = req.items.find(r => r.name === sub.name);
-                        if(riSub && riSub.displayName) sub.displayName = riSub.displayName;
-                    });
-                }
-            });
-
-            const extendedInputs = { ...req.inputs };
-            if(req.sampleList) extendedInputs.sampleList = req.sampleList;
-            if(req.targetIds) extendedInputs.targetIds = req.targetIds;
-
-            const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
-            const printData: PrintData = { 
-                sop, 
-                inputs: extendedInputs, 
-                margin: req.margin || 0, 
-                items: calculatedItems,
-                analysisDate: req.analysisDate,
-                requestId: req.id
-            };
-            transaction.set(printJobRef, { 
-                ...sanitizeForFirebase(printData),
-                createdAt: serverTimestamp(),
-                createdBy: this.getCurrentUserName()
-            });
-
-            transaction.set(logRef, {
-              action: 'APPROVE_REQUEST', 
-              details: `Duyệt yêu cầu: ${req.sopName}`, 
-              timestamp: serverTimestamp(), 
-              user: this.getCurrentUserName(),
-              printable: true,
-              printJobId: printJobRef.id,
-              requestId: req.id,
-              sopBasicInfo: { 
-                  name: sop.name, 
-                  category: sop.category,
-                  ref: sop.ref 
+          if (item.logs && item.logs.length > 0) {
+              for (const log of item.logs) {
+                  const logId = `log_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+                  const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}/logs/${logId}`);
+                  batch.set(logRef, log);
+                  opCount++;
               }
-            });
-        } else {
-            transaction.set(logRef, {
-              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
-            });
-        }
-      });
-      this.toast.show('Duyệt thành công!', 'success');
-    } catch (e: any) { this.toast.show(e.message, 'error'); }
-  }
-
-  async revokeApproval(req: Request) {
-    if (!this.auth.canApprove()) return;
-    if (!await this.confirmationService.confirm({ message: `HOÀN TÁC: Trả lại kho và hủy duyệt SOP "${req.sopName}"?`, confirmText: 'Hoàn tác', isDangerous: true })) return;
-
-    try {
-      await runTransaction(this.fb.db, async (transaction) => {
-        const invRefs: DocumentReference[] = []; const existingItems: RequestItem[] = [];
-        const readPromises = req.items.map(item => { const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name); return transaction.get(ref); });
-        const invSnaps = await Promise.all(readPromises);
-        for (let i = 0; i < invSnaps.length; i++) { if(invSnaps[i].exists()) { invRefs.push(invSnaps[i].ref); existingItems.push(req.items[i]); } }
-        for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount) }); }
-        
-        const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'pending', approvedAt: deleteField() });
-        
-        const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id });
-      });
-      this.toast.show('Đã hoàn tác!', 'info');
-    } catch (e: any) { this.toast.show(e.message, 'error'); }
-  }
-
-  async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
-    if (!this.auth.canApprove()) return;
-    if (!await this.confirmationService.confirm('Xác nhận lưu thay đổi và cập nhật kho?')) return;
-
-    try {
-      const oldItems = req.items;
-      const newItems = this.mapToRequestItems(calculatedItems, invMap);
-      
-      // Calculate inventory diff
-      const inventoryDiff: Record<string, number> = {};
-      
-      // Add back old items (positive diff)
-      oldItems.forEach(item => {
-          inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) + item.amount;
-      });
-      
-      // Subtract new items (negative diff)
-      const itemsToDeduct = this.getItemsToDeduct(calculatedItems);
-      itemsToDeduct.forEach(item => {
-          inventoryDiff[item.name] = (inventoryDiff[item.name] || 0) - item.amount;
-      });
-
-      // Round to avoid floating point issues
-      Object.keys(inventoryDiff).forEach(key => {
-          inventoryDiff[key] = Math.round(inventoryDiff[key] * 1000000) / 1000000;
-      });
-
-      await runTransaction(this.fb.db, async (transaction) => {
-        // 1. Check inventory for negative diffs
-        const invRefs: Record<string, DocumentReference> = {};
-        const invSnaps: Record<string, any> = {};
-        
-        for (const itemName of Object.keys(inventoryDiff)) {
-            const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemName);
-            invRefs[itemName] = ref;
-            invSnaps[itemName] = await transaction.get(ref);
-            
-            if (inventoryDiff[itemName] < 0) {
-                if (!invSnaps[itemName].exists()) throw new Error(`Hóa chất "${itemName}" không tồn tại!`);
-                const currentStock = invSnaps[itemName].data()['stock'] || 0;
-                if (currentStock < Math.abs(inventoryDiff[itemName])) {
-                    throw new Error(`Kho không đủ "${itemName}" để cập nhật. Hiện có: ${currentStock}, Cần thêm: ${Math.abs(inventoryDiff[itemName])}`);
-                }
-            }
-        }
-        
-        // 2. Update inventory
-        for (const itemName of Object.keys(inventoryDiff)) {
-            if (inventoryDiff[itemName] !== 0) {
-                transaction.set(invRefs[itemName], { stock: increment(inventoryDiff[itemName]) }, { merge: true });
-            }
-        }
-        
-        // 3. Update request document
-        const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        const reqData: any = {
-            items: newItems,
-            inputs: formInputs,
-            margin: formInputs.safetyMargin || 0,
-            analysisDate: formInputs.analysisDate || null,
-            updatedAt: serverTimestamp()
-        };
-        if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
-        else reqData.sampleList = deleteField();
-        
-        if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
-        else reqData.targetIds = deleteField();
-        
-        transaction.update(reqRef, reqData);
-        
-        // 4. Create a new log and print job for the update
-        const logId = `TRC-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-        
-        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
-        const printData: PrintData = { 
-            sop, 
-            inputs: formInputs, 
-            margin: formInputs.safetyMargin || 0, 
-            items: calculatedItems,
-            analysisDate: formInputs.analysisDate,
-            requestId: req.id
-        };
-        transaction.set(printJobRef, { 
-            ...sanitizeForFirebase(printData),
-            createdAt: serverTimestamp(),
-            createdBy: this.getCurrentUserName()
-        });
-
-        transaction.set(logRef, {
-          action: 'EDIT_REQUEST', 
-          details: `Chỉnh sửa phiếu: ${req.sopName}`, 
-          timestamp: serverTimestamp(), 
-          user: this.getCurrentUserName(),
-          printable: true,
-          printJobId: printJobRef.id,
-          requestId: req.id,
-          sopBasicInfo: { 
-              name: sop.name, 
-              category: sop.category,
-              ref: sop.ref 
           }
-        });
-      });
-      this.toast.show('Cập nhật phiếu thành công!', 'success');
-      return true;
-    } catch (e: any) { 
-        this.toast.show(e.message, 'error'); 
-        return false;
-    }
-  }
 
-  async rejectRequest(req: Request) {
-    if (!this.auth.canApprove()) return;
-    if (!await this.confirmationService.confirm({ message: 'Từ chối yêu cầu này?', confirmText: 'Từ chối', isDangerous: true, })) return;
-    try {
-      await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp() });
-      this.toast.show('Đã từ chối', 'info');
-    } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
-  }
-
-  async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
-      const batch = writeBatch(this.fb.db);
-      const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.delete(logRef);
-      if (printJobId) {
-          const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
-          batch.delete(jobRef);
+          if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
-      await batch.commit();
-      this.toast.show('Đã xóa phiếu in');
+      if (opCount > 0) await batch.commit();
   }
-  
-  async deleteSelectedPrintLogs(logs: Log[]) { 
-      const batch = writeBatch(this.fb.db);
-      logs.forEach(log => {
-          batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id));
-          if (log.printJobId) {
-              batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
+
+  // --- USAGE LOG EXCEL PARSER ---
+  async parseUsageLogExcelData(file: File): Promise<ImportUsageLogPreviewItem[]> {
+    const XLSX = await import('xlsx');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: false }); 
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+          if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
+
+          const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const results: ImportUsageLogPreviewItem[] = [];
+          
+          // Fetch all existing standards to match against
+          const existingStandards = await this.getAllStandardsForMatching();
+          const logsCache = new Map<string, UsageLog[]>(); // Cache logs per standard ID
+
+          for (const rawRow of rawRows) {
+             const row: Record<string, any> = {};
+             Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
+
+             const rawName = row['tên chuẩn'] || '';
+             const nameParts = rawName.split(/[\n\r]+/);
+             const name = nameParts[0]?.trim();
+
+             if (!name) continue;
+
+             const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
+             const internalId = (row['số nhận diện'] || '').toString().trim();
+             
+             // Match standard
+             let matchedStandard: ReferenceStandard | null = null;
+             if (internalId) {
+                 matchedStandard = existingStandards.find(s => s.internal_id === internalId) || null;
+             }
+             if (!matchedStandard && name && lot) {
+                 matchedStandard = existingStandards.find(s => s.name.toLowerCase() === name.toLowerCase() && s.lot_number === lot) || null;
+             }
+
+             // Parse Usage Log Data
+             const prepDateRaw = row['ngày pha chế'] || row['ngày sử dụng'] || '';
+             const preparer = (row['người pha chế'] || row['người sử dụng'] || '').toString().trim();
+             const amountUsedRaw = row['lượng dùng'] || row['khối lượng dùng'] || '';
+             
+             const prepDate = this.parseExcelDate(prepDateRaw);
+             let amountUsed = 0;
+             if (amountUsedRaw !== undefined && amountUsedRaw !== null && amountUsedRaw !== '') {
+                 const val = parseFloat(amountUsedRaw.toString().replace(',', '.'));
+                 if (!isNaN(val)) amountUsed = val;
+             }
+
+             let isValid = true;
+             let errorMessage = '';
+
+             if (!matchedStandard) {
+                 isValid = false;
+                 errorMessage = 'Không tìm thấy chất chuẩn tương ứng trong hệ thống.';
+             } else if (!prepDate) {
+                 isValid = false;
+                 errorMessage = 'Ngày pha chế không hợp lệ.';
+             } else if (!preparer) {
+                 isValid = false;
+                 errorMessage = 'Thiếu người pha chế.';
+             } else if (amountUsed <= 0) {
+                 isValid = false;
+                 errorMessage = 'Lượng dùng không hợp lệ.';
+             }
+
+             const log: UsageLog = {
+                 date: prepDate || new Date().toISOString().split('T')[0],
+                 user: preparer,
+                 amount_used: amountUsed,
+                 unit: matchedStandard ? matchedStandard.unit : 'mg', // Default to standard's unit
+                 timestamp: new Date().getTime()
+             };
+
+             let isDuplicate = false;
+             if (matchedStandard && isValid) {
+                 // Fetch existing logs for this standard to check for duplicates if not cached
+                 if (!logsCache.has(matchedStandard.id!)) {
+                     const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${matchedStandard.id}/logs`);
+                     const snapshot = await getDocs(logsRef);
+                     const logs = snapshot.docs.map(doc => doc.data() as UsageLog);
+                     logsCache.set(matchedStandard.id!, logs);
+                 }
+                 
+                 const existingLogs = logsCache.get(matchedStandard.id!) || [];
+                 const duplicate = existingLogs.find(l => l.date === log.date && l.user === log.user && l.amount_used === log.amount_used);
+                 
+                 if (duplicate) {
+                     isDuplicate = true;
+                     isValid = false;
+                     errorMessage = 'Nhật ký đã tồn tại.';
+                 } else {
+                     // Add to cache to detect duplicates within the same file
+                     existingLogs.push(log);
+                     logsCache.set(matchedStandard.id!, existingLogs);
+                 }
+             }
+
+             results.push({
+                 raw: { 'Tên': name, 'Lô': lot, 'Ngày': prepDateRaw, 'Người': preparer, 'Lượng': amountUsedRaw },
+                 standard: matchedStandard,
+                 log: log,
+                 isDuplicate: isDuplicate,
+                 isValid: isValid,
+                 errorMessage: errorMessage
+             });
           }
-      });
-      await batch.commit();
-      this.toast.show(`Đã xóa ${logs.length} phiếu`);
+          resolve(results);
+        } catch (err: any) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  private async getAllStandardsForMatching(): Promise<ReferenceStandard[]> {
+      const standardsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
+      const snapshot = await getDocs(standardsRef);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReferenceStandard));
+  }
+
+  async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]) {
+      if (!data || data.length === 0) return;
+      
+      const validItems = data.filter(item => item.isValid && !item.isDuplicate && item.standard);
+      if (validItems.length === 0) return;
+
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0;
+      const MAX_BATCH_SIZE = 400;
+
+      // Group logs by standard ID to calculate total amount to deduct
+      const logsByStandard = new Map<string, { standard: ReferenceStandard, logs: UsageLog[] }>();
+
+      for (const item of validItems) {
+          const stdId = item.standard!.id;
+          if (!logsByStandard.has(stdId)) {
+              logsByStandard.set(stdId, { standard: item.standard!, logs: [] });
+          }
+          logsByStandard.get(stdId)!.logs.push(item.log);
+      }
+
+      for (const [stdId, { standard, logs }] of logsByStandard.entries()) {
+          const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+          let totalAmountDeducted = 0;
+
+          for (const log of logs) {
+              const logsCollRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
+              const logRef = doc(logsCollRef);
+              batch.set(logRef, log);
+              opCount++;
+
+              // Calculate deduction based on unit
+              const deduction = getStandardizedAmount(log.amount_used, log.unit || 'mg', standard.unit);
+              if (deduction !== null) {
+                  totalAmountDeducted += deduction;
+              }
+          }
+
+          // Update standard's current amount
+          const newAmount = Math.max(0, standard.current_amount - totalAmountDeducted);
+          batch.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
+          opCount++;
+
+          if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
+      }
+
+      if (opCount > 0) await batch.commit();
   }
 }
