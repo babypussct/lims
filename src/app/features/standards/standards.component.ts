@@ -2097,9 +2097,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
           try {
               let updated = 0;
               const { getDocs, collection, doc, writeBatch } = await import('firebase/firestore');
-              const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+              const colRef = collection(this.firebaseService.db, 'artifacts', this.firebaseService.APP_ID, 'reference_standards');
               const snap = await getDocs(colRef);
-              let batch = writeBatch(this.fb.db);
+              let batch = writeBatch(this.firebaseService.db);
               
               for (const document of snap.docs) {
                   const data = document.data() as ReferenceStandard;
@@ -2119,7 +2119,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       updated++;
                       if (updated % 400 === 0) {
                           await batch.commit();
-                          batch = writeBatch(this.fb.db);
+                          batch = writeBatch(this.firebaseService.db);
                       }
                   }
               }

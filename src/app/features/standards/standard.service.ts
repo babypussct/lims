@@ -893,4 +893,20 @@ export class StandardService {
           callback(snapshot.size);
       });
   }
+
+  async completePurchaseRequest(reqId: string, stdId: string) {
+      const batch = writeBatch(this.fb.db);
+      
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests/${reqId}`);
+      batch.update(reqRef, { 
+          status: 'COMPLETED',
+          processedDate: Date.now()
+      });
+
+      // Reset restock_requested on standard
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+      batch.update(stdRef, { restock_requested: false, lastUpdated: serverTimestamp() });
+
+      await batch.commit();
+  }
 }
