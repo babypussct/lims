@@ -6,7 +6,7 @@ import {
   updateDoc, setDoc, getDocs, deleteDoc, getDoc,
   query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
 
@@ -305,7 +305,12 @@ export class StandardService {
           const newAmount = currentAmount - amountToDeduct;
           if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
 
-          transaction.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
+          const updateData: any = { current_amount: newAmount, lastUpdated: serverTimestamp() };
+          if (newAmount <= 0) {
+              updateData.status = 'DEPLETED';
+          }
+
+          transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
 
           // If the standard is currently linked to a request, update the request's usage logs
@@ -345,8 +350,14 @@ export class StandardService {
           const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
           if (amountToRestore === null) throw new Error("Lỗi quy đổi đơn vị");
 
+          const newStock = currentStock + amountToRestore;
+          const updateData: any = { current_amount: newStock, lastUpdated: serverTimestamp() };
+          if (stdData['status'] === 'DEPLETED' && newStock > 0) {
+              updateData.status = 'AVAILABLE';
+          }
+
           transaction.delete(logRef);
-          transaction.update(stdRef, { current_amount: currentStock + amountToRestore, lastUpdated: serverTimestamp() });
+          transaction.update(stdRef, updateData);
 
           if (stdData['current_request_id']) {
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${stdData['current_request_id']}`);
@@ -616,6 +627,7 @@ export class StandardService {
                  cas_number: (row['cas number'] || '').toString().trim(),
                  storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
                  storage_status: 'Sẵn sàng', purity: '', 
+                 status: current <= 0 ? 'DEPLETED' : 'AVAILABLE',
                  lastUpdated: null 
              };
              standard.search_key = this.generateSearchKey(standard);
@@ -841,12 +853,44 @@ export class StandardService {
 
           // Update standard's current amount
           const newAmount = Math.max(0, standard.current_amount - totalAmountDeducted);
-          batch.update(stdRef, { current_amount: newAmount, lastUpdated: serverTimestamp() });
+          const updateData: any = { current_amount: newAmount, lastUpdated: serverTimestamp() };
+          if (newAmount <= 0) {
+              updateData.status = 'DEPLETED';
+          }
+          batch.update(stdRef, updateData);
           opCount++;
 
           if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
 
       if (opCount > 0) await batch.commit();
+  }
+
+  // --- PURCHASE REQUESTS ---
+  async createPurchaseRequest(req: Partial<PurchaseRequest>) {
+      const id = doc(collection(this.fb.db, 'artifacts')).id; // Random ID
+      const newReq: PurchaseRequest = {
+          ...req,
+          id,
+          requestDate: Date.now(),
+          status: 'PENDING'
+      } as PurchaseRequest;
+
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests/${id}`);
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${req.standardId}`);
+
+      await runTransaction(this.fb.db, async (transaction) => {
+          transaction.set(reqRef, newReq);
+          transaction.update(stdRef, { restock_requested: true, lastUpdated: serverTimestamp() });
+      });
+      return id;
+  }
+
+  listenToPendingPurchaseRequests(callback: (count: number) => void): Unsubscribe {
+      const reqRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests`);
+      const q = query(reqRef, where('status', '==', 'PENDING'));
+      return onSnapshot(q, (snapshot) => {
+          callback(snapshot.size);
+      });
   }
 }

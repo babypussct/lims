@@ -48,7 +48,39 @@ export interface ReferenceStandard {
   current_holder_uid?: string; // User ID holding the standard
   current_request_id?: string; // ID of the active request
 
+  restock_requested?: boolean; // Flag if purchased has been requested
   lastUpdated?: any;
+}
+
+export type PurchaseRequestStatus = 'PENDING' | 'ORDERED' | 'COMPLETED' | 'REJECTED';
+
+export interface PurchaseRequest {
+  id: string;
+  standardId: string;    // ID chuẩn gốc đã hết
+  standardName: string;
+  manufacturer?: string; // Hãng hiện tại
+  product_code?: string;
+  lot_number?: string;
+  
+  requestedBy: string;   // UID nhân viên tạo
+  requestedByName: string;
+  requestDate: number;   // Timestamp
+  
+  priority: 'NORMAL' | 'HIGH';
+  expectedAmount: string; // Số lượng cần
+  
+  // Khảo sát thêm từ NV
+  preferred_manufacturer?: string; // Hãng cần mua
+  required_level?: string;         // Yêu cầu cấp độ (VD: ISO17034)
+  required_purity?: string;        // Yêu cầu độ tinh khiết (VD: > 99%)
+  
+  notes?: string;        // Lý do/Ghi chú thêm
+  
+  status: PurchaseRequestStatus;
+  
+  processedBy?: string;
+  processedByName?: string;
+  processedDate?: number;
 }
 
 export type StandardRequestStatus = 'PENDING_APPROVAL' | 'IN_PROGRESS' | 'PENDING_RETURN' | 'PENDING_DEPLETION' | 'COMPLETED' | 'REJECTED';
