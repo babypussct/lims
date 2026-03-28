@@ -180,7 +180,7 @@ export class InventoryService {
 
   async getStockCard(itemId: string): Promise<StockHistoryItem[]> {
       const ref = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemId, 'history');
-      const q = query(ref, orderBy('timestamp', 'desc'), limit(50));
+      const q = query(ref, orderBy('timestamp', 'desc'), limit(500));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StockHistoryItem));
   }

@@ -81,6 +81,7 @@ export interface StandardRequest {
   
   // Usage tracking
   totalAmountUsed: number;
+  reportedDepleted?: boolean;
   usageLogs?: UsageLog[];
   
   createdAt?: number;

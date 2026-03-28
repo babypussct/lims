@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
+import { AuthService } from '../../core/services/auth.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
   updateDoc, setDoc, getDocs, deleteDoc, getDoc,
@@ -12,6 +13,7 @@ import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
 @Injectable({ providedIn: 'root' })
 export class StandardService {
   private fb = inject(FirebaseService);
+  private auth = inject(AuthService);
   private toast = inject(ToastService);
 
   // --- HELPER: SEARCH KEY GENERATOR ---
@@ -363,23 +365,58 @@ export class StandardService {
       });
   }
 
+  // --- GLOBAL LOGGING ---
+  private async logGlobalActivity(action: string, details: string, targetId?: string) {
+      const logRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
+      await setDoc(logRef, {
+          id: logRef.id,
+          action,
+          details,
+          timestamp: serverTimestamp(),
+          user: this.auth.currentUser()?.displayName || 'Hệ thống',
+          targetId
+      });
+  }
+
   // --- REQUEST WORKFLOW ---
-  async createRequest(request: StandardRequest) {
+  async createRequest(request: StandardRequest, isAssign: boolean = false) {
       const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
       request.id = reqRef.id;
       request.createdAt = Date.now();
       request.updatedAt = Date.now();
       await setDoc(reqRef, request);
+      
+      if (isAssign) {
+          await this.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
+      } else {
+          await this.logGlobalActivity('REQUEST_STANDARD', `Yêu cầu chuẩn: ${request.standardName}`, request.id);
+      }
   }
 
   async updateRequestStatus(requestId: string, status: StandardRequestStatus, updates: Partial<StandardRequest> = {}) {
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
       await updateDoc(reqRef, { status, ...updates, updatedAt: Date.now() });
+      
+      const reqDoc = await getDoc(reqRef);
+      if (reqDoc.exists()) {
+          const reqData = reqDoc.data() as StandardRequest;
+          let action = 'UPDATE_STANDARD_REQUEST';
+          let details = `Cập nhật yêu cầu: ${reqData.standardName} -> ${status}`;
+          if (status === 'REJECTED') {
+              action = 'REJECT_STANDARD_REQUEST';
+              details = `Từ chối yêu cầu: ${reqData.standardName}`;
+          } else if (status === 'PENDING_RETURN') {
+              action = 'REPORT_RETURN_STANDARD';
+              details = `Báo cáo trả chuẩn: ${reqData.standardName}`;
+          }
+          await this.logGlobalActivity(action, details, requestId);
+      }
   }
 
-  async dispenseStandard(requestId: string, standardId: string, approverId: string, approverName: string) {
+  async dispenseStandard(requestId: string, standardId: string, approverId: string, approverName: string, isAssign: boolean = false) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+      let reqData: StandardRequest | null = null;
 
       await runTransaction(this.fb.db, async (transaction) => {
           const stdDoc = await transaction.get(stdRef);
@@ -393,7 +430,7 @@ export class StandardService {
               throw new Error("Chuẩn đang được sử dụng hoặc đã hết!");
           }
 
-          const reqData = reqDoc.data() as StandardRequest;
+          reqData = reqDoc.data() as StandardRequest;
 
           transaction.update(stdRef, { 
               status: 'IN_USE', 
@@ -411,11 +448,16 @@ export class StandardService {
               updatedAt: Date.now()
           });
       });
+
+      if (reqData && !isAssign) {
+          await this.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
+      }
   }
 
-  async returnStandard(requestId: string, standardId: string, receiverId: string, receiverName: string, isDepleted: boolean = false, amountUsed?: number, unit?: string) {
+  async returnStandard(requestId: string, standardId: string, receiverId: string, receiverName: string, isDepleted = false, amountUsed?: number, unit?: string) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+      let reqData: StandardRequest | null = null;
 
       await runTransaction(this.fb.db, async (transaction) => {
           const stdDoc = await transaction.get(stdRef);
@@ -425,7 +467,7 @@ export class StandardService {
           if (!reqDoc.exists()) throw new Error("Yêu cầu không tồn tại!");
 
           const stdData = stdDoc.data() as ReferenceStandard;
-          const reqData = reqDoc.data() as StandardRequest;
+          reqData = reqDoc.data() as StandardRequest;
 
           let newAmount = stdData.current_amount || 0;
           const finalAmountUsed = amountUsed !== undefined ? amountUsed : (reqData.totalAmountUsed || 0);
@@ -458,28 +500,32 @@ export class StandardService {
           });
       });
 
+      if (reqData) {
+          await this.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
+      }
+
       // Also record the usage log
       const finalAmountUsed = amountUsed !== undefined ? amountUsed : ((await getDoc(reqRef)).data() as StandardRequest).totalAmountUsed || 0;
       const finalUnit = unit || ((await getDoc(stdRef)).data() as ReferenceStandard).unit || 'mg';
-      if (finalAmountUsed > 0) {
-          const reqData = (await getDoc(reqRef)).data() as StandardRequest;
+      if (finalAmountUsed > 0 && reqData) {
+          const req = reqData as StandardRequest;
           const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
           const newLogRef = doc(logsRef);
           await setDoc(newLogRef, {
               timestamp: Date.now(),
               action: 'USED',
-              user_uid: reqData.requestedBy,
-              user_name: reqData.requestedByName,
+              user_uid: req.requestedBy,
+              user_name: req.requestedByName,
               amount_used: finalAmountUsed,
               unit: finalUnit,
-              purpose: reqData.purpose || 'Sử dụng theo yêu cầu'
+              purpose: req.purpose || 'Sử dụng theo yêu cầu'
           });
       }
   }
 
   listenToRequests(callback: (requests: StandardRequest[]) => void) {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-      const q = query(colRef, orderBy('createdAt', 'desc'), limit(100));
+      const q = query(colRef, orderBy('createdAt', 'desc'));
       return onSnapshot(q, (snapshot) => {
           callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest)));
       });

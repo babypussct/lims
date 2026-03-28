@@ -113,8 +113,13 @@ function removeAccents(str: string): string {
                                   <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                                      <div class="font-bold text-slate-700 dark:text-slate-300 text-sm mb-1">{{req.requestedByName}}</div>
                                      <div class="text-xs text-slate-500 dark:text-slate-400 italic">{{req.purpose}}</div>
-                                     @if(req.totalAmountUsed) {
-                                         <div class="mt-1 text-xs text-indigo-600 dark:text-indigo-400 font-bold">Đã dùng: {{req.totalAmountUsed}}</div>
+                                     @if(req.totalAmountUsed !== undefined && req.totalAmountUsed !== null) {
+                                         <div class="mt-1 text-xs text-indigo-600 dark:text-indigo-400 font-bold">Đã dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || 'mg'}}</div>
+                                     }
+                                     @if(req.reportedDepleted) {
+                                         <div class="mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800/50 px-1.5 py-0.5 rounded inline-block">
+                                             <i class="fa-solid fa-triangle-exclamation"></i> Báo cáo đã hết
+                                         </div>
                                      }
                                   </td>
                                   <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
@@ -300,30 +305,47 @@ function removeAccents(str: string): string {
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <div class="space-y-4">
-                        <p class="text-sm text-slate-600 dark:text-slate-400">Chuẩn: <strong>{{returnRequest()?.standardName}}</strong></p>
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lượng đã sử dụng ({{ returnRequest()?.standardDetails?.unit || 'mg' }}) <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 pr-12" placeholder="Nhập số lượng...">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ returnRequest()?.standardDetails?.unit || 'mg' }}</span>
+                    <div class="space-y-5">
+                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-base mb-2">{{returnRequest()?.standardName}}</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Số lô (Lot)</span>
+                                    <span class="font-medium text-slate-700 dark:text-slate-300">{{currentStandard()?.lot_number || returnRequest()?.standardDetails?.lot_number || 'N/A'}}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Lượng tồn hiện tại</span>
+                                    <span class="font-bold text-indigo-600 dark:text-indigo-400">{{currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-2 italic">Hệ thống sẽ tự động trừ lượng tồn kho của chuẩn này.</p>
                         </div>
-                        @if(isForceReturn()) {
-                            <div class="flex items-center gap-2 mt-4">
-                                <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600">
-                                <label for="isDepleted" class="text-sm font-medium text-slate-700 dark:text-slate-300">Đánh dấu chuẩn đã hết (Depleted)</label>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lượng đã sử dụng <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 pr-12" placeholder="Nhập số lượng..."
+                                [class.border-red-500]="returnAmount() !== null && returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0)">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg' }}</span>
+                                </div>
                             </div>
-                        }
+                            @if(returnAmount() !== null && returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0)) {
+                                <p class="text-xs text-red-500 mt-1 font-medium"><i class="fa-solid fa-triangle-exclamation"></i> Lượng sử dụng không được lớn hơn lượng tồn kho hiện tại.</p>
+                            } @else {
+                                <p class="text-xs text-slate-500 mt-2 italic">Hệ thống sẽ tự động trừ lượng tồn kho của chuẩn này.</p>
+                            }
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mt-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-100 dark:border-orange-800/30">
+                            <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500">
+                            <label for="isDepleted" class="text-sm font-bold text-orange-800 dark:text-orange-400 cursor-pointer">Đánh dấu chuẩn đã hết (Depleted)</label>
+                        </div>
                     </div>
                 </div>
 
                 <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
                     <button (click)="closeReturnModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
-                    <button (click)="confirmReturn()" [disabled]="returnAmount() === null || returnAmount()! < 0 || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                    <button (click)="confirmReturn()" [disabled]="returnAmount() === null || returnAmount()! < 0 || returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0) || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
                         @else { Xác nhận }
                     </button>
@@ -364,6 +386,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   isForceReturn = signal(false);
   returnIsDepleted = signal(false);
   
+  currentStandard = computed(() => {
+      const req = this.returnRequest();
+      if (!req) return null;
+      return this.allStandards().find(s => s.id === req.standardId) || null;
+  });
+
   // Multi-select state
   selectedStandardIds = signal<Set<string>>(new Set());
   standardSearchTerm = signal('');
@@ -598,7 +626,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               this.toast.show('Đã thu hồi chuẩn thành công', 'success');
           } else {
               // Employee report return
-              await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { totalAmountUsed: amount });
+              await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { 
+                  totalAmountUsed: amount,
+                  reportedDepleted: this.returnIsDepleted()
+              });
               this.toast.show('Đã báo cáo trả chuẩn', 'success');
           }
           this.closeReturnModal();
@@ -614,7 +645,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       const user = this.auth.currentUser();
       if (!user) return;
 
-      const message = isDepleted ? `Xác nhận nhận lại chuẩn ${req.standardName} và đánh dấu là ĐÃ HẾT?` : `Xác nhận nhận lại chuẩn ${req.standardName} (vẫn còn sử dụng được)?`;
+      let message = isDepleted ? `Xác nhận nhận lại chuẩn ${req.standardName} và đánh dấu là ĐÃ HẾT?` : `Xác nhận nhận lại chuẩn ${req.standardName} (vẫn còn sử dụng được)?`;
+      
+      if (!isDepleted && req.reportedDepleted) {
+          message = `Nhân viên đã báo cáo chuẩn này ĐÃ HẾT. Bạn có chắc chắn muốn nhận lại và đánh dấu là VẪN CÒN SỬ DỤNG ĐƯỢC?`;
+      } else if (isDepleted && req.reportedDepleted === false) {
+          message = `Nhân viên KHÔNG báo cáo chuẩn này đã hết. Bạn có chắc chắn muốn nhận lại và đánh dấu là ĐÃ HẾT?`;
+      }
 
       if (await this.confirmationService.confirm({ message, confirmText: 'Xác nhận nhận' })) {
           this.isProcessing.set(true);

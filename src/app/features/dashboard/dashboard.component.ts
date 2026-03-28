@@ -71,33 +71,33 @@ interface KanbanColumn {
         <!-- SECTION 1: KPI CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             <!-- Card 1: Pending Requests -->
-            <div (click)="auth.canViewSop() ? navTo('requests') : null"
+            <div (click)="handlePendingRequestsClick()"
                  class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
-                 [class.cursor-pointer]="auth.canViewSop()" [class.hover:-translate-y-1]="auth.canViewSop()" [class.hover:border-purple-100]="auth.canViewSop()" [class.dark:hover:border-purple-500]="auth.canViewSop()">
+                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewSop() || auth.canViewStandards()" [class.hover:border-purple-100]="auth.canViewSop() || auth.canViewStandards()" [class.dark:hover:border-purple-500]="auth.canViewSop() || auth.canViewStandards()">
                 
-                @if(!auth.canViewSop()) {
+                @if(!auth.canViewSop() && !auth.canViewStandards()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
                         <i class="fa-solid fa-lock text-2xl mb-1"></i>
                         <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
                     </div>
                 }
 
-                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()">
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
                     <div>
                         <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
                         <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
-                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewSop() ? state.requests().length : '--'}} }
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
                         </h4>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewSop()">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
                         <i class="fa-solid fa-clipboard-list text-lg"></i>
                     </div>
                 </div>
-                <div class="z-10" [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()">
+                <div class="z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
                     <span class="text-xs font-bold" 
-                          [class.text-emerald-500]="state.requests().length === 0" 
-                          [class.text-fuchsia-500]="state.requests().length > 0">
-                        {{state.requests().length > 0 ? '+ Cần xử lý ngay' : 'Đã hoàn thành'}}
+                          [class.text-emerald-500]="totalPendingRequests() === 0" 
+                          [class.text-fuchsia-500]="totalPendingRequests() > 0">
+                        {{totalPendingRequests() > 0 ? '+ Cần xử lý ngay' : 'Đã hoàn thành'}}
                     </span>
                 </div>
             </div>
@@ -285,9 +285,10 @@ interface KanbanColumn {
                             <div class="relative pl-6">
                                 <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
                                      [ngClass]="{
-                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE'),
+                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE') && !log.action.includes('STANDARD'),
                                          'bg-blue-500 dark:bg-blue-400': log.action.includes('STOCK'),
-                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK')
+                                         'bg-orange-500 dark:bg-orange-400': log.action.includes('STANDARD'),
+                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK') && !log.action.includes('STANDARD')
                                      }">
                                 </div>
                                 <div class="flex flex-col">
@@ -480,6 +481,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedSopDetails = signal<KanbanColumn | null>(null);
 
   // LIVE DATA COMPUTED
+  totalPendingRequests = computed(() => this.state.requests().length + this.state.standardRequests().length);
   recentLogs = computed(() => this.state.logs().slice(0, 6)); 
   todayActivityCount = computed(() => {
       const todayStr = new Date().toISOString().split('T')[0];
@@ -963,6 +965,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   navTo(path: string) { this.router.navigate(['/' + path]); }
   denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
+  handlePendingRequestsClick() {
+      if (!this.auth.canViewSop() && !this.auth.canViewStandards()) return;
+      
+      const pendingSop = this.state.requests().length;
+      const pendingStandard = this.state.standardRequests().length;
+
+      if (pendingSop === 0 && pendingStandard > 0 && this.auth.canViewStandards()) {
+          this.navTo('standard-requests');
+      } else if (this.auth.canViewSop()) {
+          this.navTo('requests');
+      } else if (this.auth.canViewStandards()) {
+          this.navTo('standard-requests');
+      }
+  }
+
   getTimeDiff(timestamp: any): string {
       if (!timestamp) return '';
       const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp);
@@ -973,8 +990,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   getLogActionText(action: string): string {
-      if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; if (action.includes('STOCK_IN')) return 'đã nhập kho';
-      if (action.includes('STOCK_OUT')) return 'đã xuất kho'; if (action.includes('CREATE')) return 'đã tạo mới';
-      if (action.includes('DELETE')) return 'đã xóa'; return 'đã cập nhật';
+      if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'đã yêu cầu mượn chuẩn';
+      if (action === 'APPROVE_STANDARD_REQUEST') return 'đã duyệt mượn chuẩn';
+      if (action === 'REJECT_STANDARD_REQUEST') return 'đã từ chối mượn chuẩn';
+      if (action === 'REPORT_RETURN_STANDARD') return 'đã báo cáo trả chuẩn';
+      if (action === 'RETURN_STANDARD') return 'đã nhận lại chuẩn';
+      if (action === 'ASSIGN_STANDARD') return 'đã gán chuẩn cho mượn';
+      
+      if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; 
+      if (action.includes('STOCK_IN')) return 'đã nhập kho';
+      if (action.includes('STOCK_OUT')) return 'đã xuất kho'; 
+      if (action.includes('CREATE')) return 'đã tạo mới';
+      if (action.includes('DELETE')) return 'đã xóa'; 
+      return 'đã cập nhật';
   }
 }

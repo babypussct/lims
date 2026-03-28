@@ -1,10 +1,8 @@
+
 [build]
-  # Lệnh build của Angular
-  command = "ng build"
-  # Đây là đường dẫn quan trọng mà Netlify đang báo lỗi
+  command = "npm run build"
   publish = "dist/lims-cloud-pro/browser"
 
-# Cấu hình Redirect để fix lỗi 404 khi F5 (Reload) trang trên Angular (SPA)
 [[redirects]]
   from = "/*"
   to = "/index.html"

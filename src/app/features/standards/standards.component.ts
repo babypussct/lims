@@ -7,13 +7,13 @@ import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
 
 @Component({
@@ -227,10 +227,18 @@ import { Unsubscribe } from 'firebase/firestore';
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col items-center gap-2">
                                            <div class="flex gap-1">
-                                               @if(canWeigh(std)) {
-                                                   <button (click)="openWeighModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Cân chuẩn"><i class="fa-solid fa-weight-scale text-xs"></i></button>
+                                               @if(canAssign(std)) {
+                                                   @if(auth.canEditStandards()) {
+                                                       <button (click)="openAssignModal(std, true)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95" title="Gán cho mượn"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
+                                                   } @else {
+                                                       <button (click)="openAssignModal(std, false)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Mượn chuẩn này"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
+                                                   }
+                                               } @else if (std.status === 'IN_USE' && (auth.canEditStandards() || std.current_holder_uid === auth.currentUser()?.uid)) {
+                                                   <button (click)="goToReturn(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition active:scale-95" title="Trả chuẩn"><i class="fa-solid fa-rotate-left text-xs"></i></button>
                                                }
-                                               <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 shadow-md shadow-slate-200 dark:shadow-none transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
+                                               @if(auth.canEditStandards()) {
+                                                   <button (click)="openPrintModal(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 shadow-md shadow-slate-200 dark:shadow-none transition active:scale-95" title="In nhãn"><i class="fa-solid fa-print text-xs"></i></button>
+                                               }
                                            </div>
                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                <button (click)="viewHistory(std)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700" title="Lịch sử"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i></button>
@@ -363,12 +371,24 @@ import { Unsubscribe } from 'firebase/firestore';
                                                     <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Lịch sử">
                                                         <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                                                     </button>
-                                                    <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
-                                                        <i class="fa-solid fa-print text-xs"></i>
-                                                    </button>
-                                                    @if(canWeigh(std)) {
-                                                        <button (click)="$event.stopPropagation(); openWeighModal(std)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95">
-                                                            <i class="fa-solid fa-weight-scale"></i> Cân
+                                                    @if(auth.canEditStandards()) {
+                                                        <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
+                                                            <i class="fa-solid fa-print text-xs"></i>
+                                                        </button>
+                                                    }
+                                                    @if(canAssign(std)) {
+                                                        @if(auth.canEditStandards()) {
+                                                            <button (click)="$event.stopPropagation(); openAssignModal(std, true)" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
+                                                                <i class="fa-solid fa-hand-holding-hand"></i> Gán
+                                                            </button>
+                                                        } @else {
+                                                            <button (click)="$event.stopPropagation(); openAssignModal(std, false)" class="w-auto px-3 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Mượn chuẩn này">
+                                                                <i class="fa-solid fa-hand-holding-hand"></i> Mượn
+                                                            </button>
+                                                        }
+                                                    } @else if (std.status === 'IN_USE' && (auth.canEditStandards() || std.current_holder_uid === auth.currentUser()?.uid)) {
+                                                        <button (click)="$event.stopPropagation(); goToReturn(std)" class="w-auto px-3 h-8 rounded-lg bg-rose-600 dark:bg-rose-500 text-white hover:bg-rose-700 dark:hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trả chuẩn">
+                                                            <i class="fa-solid fa-rotate-left"></i> Trả chuẩn
                                                         </button>
                                                     }
                                                 </div>
@@ -681,44 +701,41 @@ import { Unsubscribe } from 'firebase/firestore';
          </div>
       }
 
-      <!-- Weigh, History, COA Preview Modals... (No changes needed here) -->
-      @if (showWeighModal() && selectedStd()) {
+      <!-- History, COA Preview Modals... (No changes needed here) -->
+
+      @if (showAssignModal() && selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500 dark:bg-indigo-600"></div>
-                <h3 class="font-black text-xl text-slate-800 dark:text-slate-200 mb-1">Cân chuẩn</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">{{selectedStd()?.name}}</p>
-                
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3 flex flex-col justify-center">
-                        <span class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-1">Tồn kho hiện tại</span>
-                        <span class="font-mono font-black text-lg text-indigo-600 dark:text-indigo-400">{{formatNum(selectedStd()?.current_amount)}} <small>{{selectedStd()?.unit}}</small></span>
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl w-full max-w-md animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-inner border border-emerald-100 dark:border-emerald-800/50">
+                        <i class="fa-solid fa-hand-holding-hand"></i>
                     </div>
-                    <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex flex-col justify-center">
-                        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Độ tinh khiết (Purity)</span>
-                        <span class="font-mono font-black text-lg text-slate-700 dark:text-slate-300">{{selectedStd()?.purity || 'N/A'}}</span>
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{{ isAssignMode() ? 'Gán cho mượn' : 'Mượn chuẩn này' }}</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">{{selectedStd()?.name}}</p>
                     </div>
                 </div>
-
-                <div class="space-y-4">
-                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Ngày pha chế</label><input type="date" [(ngModel)]="weighDate" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 [color-scheme:light] dark:[color-scheme:dark]"></div>
-                    <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Người pha chế</label><input type="text" [(ngModel)]="weighUser" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50"></div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Lượng cân</label><input type="number" [(ngModel)]="weighAmount" class="w-full border-2 border-indigo-100 dark:border-indigo-800/50 bg-white dark:bg-slate-800 rounded-xl p-3 font-black text-2xl text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-center" placeholder="0.00"></div>
-                        <div><label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Đơn vị</label><select [(ngModel)]="weighUnit" class="w-full h-[54px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 rounded-xl px-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50">@for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}</select></div>
-                    </div>
-                    @if(weighUnit() !== selectedStd()?.unit) { <div class="text-[10px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-800/50 flex items-center gap-2"><i class="fa-solid fa-calculator"></i><span>Tự động quy đổi từ <b>{{weighUnit()}}</b> sang <b>{{selectedStd()?.unit}}</b>.</span></div> }
-                    @if(isWeighAmountInvalid()) {
-                        <div class="text-[10px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-800/50 flex items-center gap-2">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Lượng cân vượt quá tồn kho hiện tại!</span>
+                <div class="space-y-5">
+                    @if(isAssignMode()) {
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nhân viên <span class="text-red-500">*</span></label>
+                            <select [ngModel]="assignUserId()" (ngModelChange)="onAssignUserChange($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none appearance-none">
+                                <option value="">-- Chọn nhân viên --</option>
+                                @for (user of userList(); track user.uid) {
+                                    <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
+                                }
+                            </select>
                         </div>
                     }
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                        <textarea [ngModel]="assignPurpose()" (ngModelChange)="assignPurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none resize-none placeholder-slate-300 dark:placeholder-slate-600" placeholder="Nhập mục đích sử dụng..."></textarea>
+                    </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="showWeighModal.set(false)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="confirmWeigh()" [disabled]="weighAmount() <= 0 || isWeighAmountInvalid() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { Xác nhận }
+                    <button (click)="showAssignModal.set(false)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+                    <button (click)="confirmAssign()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-emerald-600 dark:bg-emerald-500 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-lg shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-check"></i> Xác nhận }
                     </button>
                 </div>
             </div>
@@ -1095,28 +1112,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   errorUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => !i.isValid && !i.isDuplicate).length);
 
   selectedStd = signal<ReferenceStandard | null>(null);
-  weighAmount = signal<number>(0);
-  weighUser = signal<string>('');
-  weighDate = signal<string>('');
-  weighUnit = signal<string>('mg');
-  
-  isWeighAmountInvalid = computed(() => {
-      const std = this.selectedStd();
-      const amount = this.weighAmount();
-      const unit = this.weighUnit();
-      if (!std || amount <= 0) return false;
-      
-      // Convert amount to std.unit if different
-      let amountInStdUnit = amount;
-      if (unit !== std.unit) {
-          if (unit === 'g' && std.unit === 'mg') amountInStdUnit = amount * 1000;
-          else if (unit === 'mg' && std.unit === 'g') amountInStdUnit = amount / 1000;
-          else if (unit === 'L' && std.unit === 'mL') amountInStdUnit = amount * 1000;
-          else if (unit === 'mL' && std.unit === 'L') amountInStdUnit = amount / 1000;
-      }
-      
-      return amountInStdUnit > std.current_amount;
-  });
 
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
@@ -1125,7 +1120,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
   showModal = signal(false);
   isEditing = signal(false);
   
-  showWeighModal = signal(false);
+  showAssignModal = signal(false);
+  isAssignMode = signal(true);
+  assignUserId = signal('');
+  assignUserName = signal('');
+  assignPurpose = signal('');
+  userList = signal<UserProfile[]>([]);
+  
   showPrintModal = signal(false);
   printPaperSize = signal<'22x12' | '35x22' | '50x30' | '70x50' | 'custom'>('35x22');
   printWidth = signal(35);
@@ -1535,31 +1536,100 @@ export class StandardsComponent implements OnInit, OnDestroy {
       return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
   }
 
+  canAssign(std: ReferenceStandard): boolean {
+      if (std.status === 'IN_USE') return false;
+      if (std.status === 'DEPLETED' || std.current_amount <= 0) return false;
+      return true;
+  }
+
   copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => this.toast.show('Đã copy: ' + text));
   }
 
-  canWeigh(std: ReferenceStandard): boolean {
-      if (std.status === 'DEPLETED' || std.current_amount <= 0) return false;
-      
-      if (std.status === 'IN_USE') {
-          return std.current_holder_uid === this.auth.currentUser()?.uid;
+  goToReturn(std: ReferenceStandard) {
+      if (!std.current_request_id) {
+          this.toast.show('Không tìm thấy yêu cầu mượn chuẩn này', 'error');
+          return;
       }
-      
-      return this.auth.canEditStandards();
+      this.toast.show('Chuyển đến trang Yêu cầu để trả chuẩn');
+      this.router.navigate(['/standard-requests']);
   }
 
-  openWeighModal(std: ReferenceStandard) { 
-      this.selectedStd.set(std); 
-      this.weighAmount.set(0); 
-      this.weighDate.set(new Date().toISOString().split('T')[0]); 
-      this.weighUser.set(this.state.currentUser()?.displayName || ''); 
-      this.weighUnit.set(std.unit); 
-      this.showWeighModal.set(true);
+  async openAssignModal(std: ReferenceStandard, isAssign = true) {
+      this.selectedStd.set(std);
+      this.isAssignMode.set(isAssign);
+      
+      if (isAssign) {
+          this.assignUserId.set('');
+          this.assignUserName.set('');
+      } else {
+          this.assignUserId.set(this.auth.currentUser()?.uid || '');
+          this.assignUserName.set(this.auth.currentUser()?.displayName || '');
+      }
+      
+      this.assignPurpose.set('');
+      this.showAssignModal.set(true);
+      
+      if (isAssign && this.userList().length === 0) {
+          try {
+              const users = await this.firebaseService.getAllUsers();
+              this.userList.set(users);
+          } catch (error) {
+              console.error('Error fetching users:', error);
+          }
+      }
   }
-  
+
+  onAssignUserChange(userId: string) {
+      this.assignUserId.set(userId);
+      const user = this.userList().find(u => u.uid === userId);
+      this.assignUserName.set(user ? user.displayName || '' : '');
+  }
+
+  async confirmAssign() {
+      const std = this.selectedStd();
+      const userId = this.assignUserId();
+      const userName = this.assignUserName();
+      const purpose = this.assignPurpose();
+      
+      if (!std || !userId || !userName || !purpose) {
+          this.toast.show('Vui lòng điền đầy đủ thông tin', 'error');
+          return;
+      }
+
+      this.isProcessing.set(true);
+      try {
+          const request: StandardRequest = {
+              standardId: std.id!,
+              standardName: std.name,
+              lotNumber: std.lot_number,
+              requestedBy: userId,
+              requestedByName: userName,
+              requestDate: Date.now(),
+              purpose: purpose,
+              status: 'PENDING_APPROVAL',
+              totalAmountUsed: 0
+          };
+
+          await this.stdService.createRequest(request, this.isAssignMode());
+          
+          if (this.isAssignMode()) {
+              await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
+              this.toast.show('Đã gán chuẩn thành công');
+          } else {
+              this.toast.show('Đã gửi yêu cầu mượn chuẩn');
+          }
+          
+          this.showAssignModal.set(false);
+      } catch (error: any) {
+          this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
   openPrintModal(std: ReferenceStandard) {
       this.selectedStd.set(std);
       this.showPrintModal.set(true);
@@ -1744,34 +1814,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       printWindow.document.write(html);
       printWindow.document.close();
       this.showPrintModal.set(false);
-  }
-
-  // --- HARDENED: Confirm Weigh ---
-  async confirmWeigh() {
-      if (this.isProcessing()) return;
-      const std = this.selectedStd(); const amount = this.weighAmount();
-      if (!std || amount <= 0) return;
-      
-      this.isProcessing.set(true);
-      try {
-          // If the standard is linked to a request, log usage against it.
-          // The actual deduction happens in recordUsage.
-          await this.stdService.recordUsage(std.id, { 
-              date: this.weighDate(), 
-              user: this.weighUser() || 'Unknown', 
-              amount_used: amount, 
-              unit: this.weighUnit(), 
-              purpose: 'Cân mẫu', 
-              timestamp: Date.now() 
-          });
-          
-          this.toast.show('Đã cập nhật!'); 
-          this.showWeighModal.set(false); 
-      } catch (e: any) { 
-          this.toast.show('Lỗi: ' + e.message, 'error'); 
-      } finally {
-          this.isProcessing.set(false);
-      }
   }
 
   async viewHistory(std: ReferenceStandard) { this.historyStd.set(std); this.loadingHistory.set(true); try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } finally { this.loadingHistory.set(false); } }

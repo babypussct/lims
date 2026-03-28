@@ -98,6 +98,11 @@ interface NxtReportItem {
                     [class]="activeTab() === 'sops' ? 'border-purple-600 dark:border-purple-500 text-purple-700 dark:text-purple-400' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'">
                     <i class="fa-solid fa-list-ol"></i> 4. Tần suất SOP
                 </button>
+                <button (click)="activeTab.set('standards')"
+                    class="pb-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap active:scale-95"
+                    [class]="activeTab() === 'standards' ? 'border-pink-600 dark:border-pink-500 text-pink-700 dark:text-pink-400' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'">
+                    <i class="fa-solid fa-vial"></i> 5. Mượn/Trả Chuẩn
+                </button>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-0 relative bg-white dark:bg-slate-800 custom-scrollbar">
@@ -123,11 +128,11 @@ interface NxtReportItem {
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border"
                                                 [ngClass]="{
                                                     'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800': log.action.includes('APPROVE'),
-                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800': log.action.includes('STOCK_IN') || log.action.includes('UPDATE') || log.action.includes('CREATE'),
-                                                    'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800': log.action.includes('STOCK_OUT'),
-                                                    'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800': log.action.includes('DELETE') || log.action.includes('REVOKE')
+                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800': log.action.includes('STOCK_IN') || log.action.includes('UPDATE') || log.action.includes('CREATE') || log.action.includes('RETURN_STANDARD'),
+                                                    'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800': log.action.includes('STOCK_OUT') || log.action.includes('REQUEST_STANDARD') || log.action.includes('ASSIGN_STANDARD'),
+                                                    'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800': log.action.includes('DELETE') || log.action.includes('REVOKE') || log.action.includes('REJECT')
                                                 }">
-                                                {{log.action}}
+                                                {{getLogActionText(log.action)}}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-slate-700 dark:text-slate-300 text-xs font-medium max-w-xs truncate" [title]="log.details">
@@ -323,6 +328,60 @@ interface NxtReportItem {
                             </tbody>
                         </table>
                     }
+
+                    <!-- TAB 5: STANDARD REQUESTS -->
+                    @if (activeTab() === 'standards') {
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-700">
+                                <tr>
+                                    <th class="px-6 py-3 font-bold">Ngày Yêu Cầu</th>
+                                    <th class="px-6 py-3 font-bold">Chuẩn Đối Chiếu</th>
+                                    <th class="px-6 py-3 font-bold">Người Yêu Cầu</th>
+                                    <th class="px-6 py-3 font-bold">Mục Đích</th>
+                                    <th class="px-6 py-3 font-bold">Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50 dark:divide-slate-700/50">
+                                @for (req of filteredStandardRequests(); track req.id) {
+                                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition group">
+                                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
+                                            {{formatDate(req.requestDate)}}
+                                        </td>
+                                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">
+                                            {{req.standardName}}
+                                            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Lô: {{req.lotNumber}}</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-2">
+                                                <img [src]="getAvatarUrl(req.requestedByName)" class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 object-cover">
+                                                <span class="text-slate-600 dark:text-slate-300 font-medium text-xs">{{req.requestedByName}}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600 dark:text-slate-400 text-xs max-w-xs truncate" [title]="req.purpose">
+                                            {{req.purpose}}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border"
+                                                [ngClass]="{
+                                                    'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50': req.status === 'PENDING_APPROVAL' || req.status === 'PENDING_RETURN',
+                                                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50': req.status === 'IN_PROGRESS',
+                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50': req.status === 'RETURNED',
+                                                    'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50': req.status === 'REJECTED'
+                                                }">
+                                                {{req.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' : 
+                                                  req.status === 'IN_PROGRESS' ? 'Đang mượn' : 
+                                                  req.status === 'PENDING_RETURN' ? 'Chờ trả' : 
+                                                  req.status === 'RETURNED' ? 'Đã trả' : 
+                                                  req.status === 'REJECTED' ? 'Từ chối' : req.status}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                } @empty {
+                                    <tr><td colspan="5" class="p-12 text-center text-slate-400 dark:text-slate-500 italic">Không có yêu cầu chuẩn nào trong khoảng thời gian này.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
                 </div>
             </div>
         </div>
@@ -431,7 +490,23 @@ export class StatisticsComponent {
   cleanName = cleanName;
   getAvatarUrl = getAvatarUrl;
   
-  activeTab = signal<'logs' | 'consumption' | 'sops' | 'nxt'>('logs');
+  getLogActionText(action: string): string {
+      if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'Yêu cầu mượn chuẩn';
+      if (action === 'APPROVE_STANDARD_REQUEST') return 'Duyệt mượn chuẩn';
+      if (action === 'REJECT_STANDARD_REQUEST') return 'Từ chối mượn chuẩn';
+      if (action === 'REPORT_RETURN_STANDARD') return 'Báo cáo trả chuẩn';
+      if (action === 'RETURN_STANDARD') return 'Nhận lại chuẩn';
+      if (action === 'ASSIGN_STANDARD') return 'Gán chuẩn cho mượn';
+      
+      if (action.includes('APPROVE')) return 'Duyệt yêu cầu'; 
+      if (action.includes('STOCK_IN')) return 'Nhập kho';
+      if (action.includes('STOCK_OUT')) return 'Xuất kho'; 
+      if (action.includes('CREATE')) return 'Tạo mới';
+      if (action.includes('DELETE')) return 'Xóa'; 
+      return 'Cập nhật';
+  }
+
+  activeTab = signal<'logs' | 'consumption' | 'sops' | 'nxt' | 'standards'>('logs');
   
   startDate = signal<string>(this.getFirstDayOfMonth());
   endDate = signal<string>(this.getToday());
@@ -854,6 +929,16 @@ export class StatisticsComponent {
           if (!inDate) return false;
           if (sopId === 'all') return true;
           return log.printData?.sop?.id === sopId;
+      });
+  });
+
+  filteredStandardRequests = computed(() => {
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+
+      return this.state.allStandardRequests().filter(req => {
+          const d = new Date(req.requestDate);
+          return d >= start && d <= end;
       });
   });
 

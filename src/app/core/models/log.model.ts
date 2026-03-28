@@ -36,6 +36,7 @@ export interface Log {
   // New Architecture (Split Data)
   printJobId?: string; // Reference to 'print_jobs' collection
   requestId?: string; // Reference to 'requests' collection
+  module?: string; // e.g. 'STANDARDS', 'SOP'
   sopBasicInfo?: {     // Lightweight info for list display
       name: string;
       category: string;

@@ -40,6 +40,8 @@ export class StateService implements OnDestroy {
 
   sops = signal<Sop[]>([]); 
   requests = signal<Request[]>([]); 
+  standardRequests = signal<any[]>([]); // Using any to avoid circular dependency if StandardRequest is not imported
+  allStandardRequests = signal<any[]>([]);
   approvedRequests = signal<Request[]>([]);
   logs = signal<Log[]>([]); 
   printableLogs = signal<Log[]>([]); 
@@ -133,7 +135,7 @@ export class StateService implements OnDestroy {
     this.listeners = [];
     this.sops.set([]);
     this.inventory.set([]);
-    this.requests.set([]); this.approvedRequests.set([]); 
+    this.requests.set([]); this.approvedRequests.set([]); this.standardRequests.set([]); this.allStandardRequests.set([]);
     this.logs.set([]);
     this.printableLogs.set([]);
   }
@@ -168,14 +170,22 @@ export class StateService implements OnDestroy {
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
 
-    const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'), limit(100));
+    const stdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']), orderBy('requestDate', 'desc')), 
+        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); }, handleError('Standard Requests'));
+    this.listeners.push(stdReqSub);
+
+    const allStdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), orderBy('requestDate', 'desc')), 
+        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.allStandardRequests.set(items); }, handleError('All Standard Requests'));
+    this.listeners.push(allStdReqSub);
+
+    const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'));
     const appSub = onSnapshot(approvedQuery, (s) => { 
         const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.approvedRequests.set(items); 
     }, handleError('Approved Requests'));
     this.listeners.push(appSub);
 
     // 4. Logs Listener
-    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(100));
+    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(500));
     const logSub = onSnapshot(logQuery, (s) => {
         const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
         this.logs.set(items);
@@ -625,24 +635,24 @@ export class StateService implements OnDestroy {
   async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
       const batch = writeBatch(this.fb.db);
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.delete(logRef);
+      batch.update(logRef, { printable: false });
       if (printJobId) {
           const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
           batch.delete(jobRef);
       }
       await batch.commit();
-      this.toast.show('Đã xóa phiếu in');
+      this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
   }
   
   async deleteSelectedPrintLogs(logs: Log[]) { 
       const batch = writeBatch(this.fb.db);
       logs.forEach(log => {
-          batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id));
+          batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false });
           if (log.printJobId) {
               batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
           }
       });
       await batch.commit();
-      this.toast.show(`Đã xóa ${logs.length} phiếu`);
+      this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
   }
 }
