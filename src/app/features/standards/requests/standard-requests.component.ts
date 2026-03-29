@@ -201,18 +201,18 @@ function removeAccents(str: string): string {
                         <div class="space-y-2">
                             @for(std of filteredAvailableStandards(); track std.id) {
                                 <div class="p-4 bg-white dark:bg-slate-900/50 border rounded-2xl transition-all cursor-pointer flex items-start gap-4 group"
-                                     [class.border-indigo-500]="selectedStandardIds().has(std.id)"
-                                     [class.bg-indigo-50]="selectedStandardIds().has(std.id)"
-                                     [class.dark:bg-indigo-900/20]="selectedStandardIds().has(std.id)"
-                                     [class.border-slate-100]="!selectedStandardIds().has(std.id)"
-                                     [class.dark:border-slate-800]="!selectedStandardIds().has(std.id)"
+                                     [ngClass]="{
+                                        'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20': selectedStandardIds().has(std.id),
+                                        'border-slate-100 dark:border-slate-800': !selectedStandardIds().has(std.id)
+                                     }"
                                      (click)="toggleStandardSelection(std.id)">
                                     
                                     <div class="mt-1">
                                         <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all"
-                                             [class.bg-indigo-600]="selectedStandardIds().has(std.id)"
-                                             [class.border-indigo-600]="selectedStandardIds().has(std.id)"
-                                             [class.border-slate-300]="!selectedStandardIds().has(std.id)">
+                                             [ngClass]="{
+                                                'bg-indigo-600 border-indigo-600': selectedStandardIds().has(std.id),
+                                                'border-slate-300': !selectedStandardIds().has(std.id)
+                                             }">
                                             @if(selectedStandardIds().has(std.id)) {
                                                 <i class="fa-solid fa-check text-[10px] text-white"></i>
                                             }
@@ -266,7 +266,7 @@ function removeAccents(str: string): string {
                                         <div class="text-lg font-black text-indigo-700 dark:text-indigo-300">{{selectedStandardIds().size}} chất chuẩn</div>
                                     </div>
                                 </div>
-                                <button type="button" (click)="selectedStandardIds.set(new Set())" [disabled]="selectedStandardIds().size === 0" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase underline decoration-2 underline-offset-4 disabled:opacity-30">Xóa tất cả</button>
+                                <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase underline decoration-2 underline-offset-4 disabled:opacity-30">Xóa tất cả</button>
                             </div>
 
                             <div class="space-y-4">
@@ -728,6 +728,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   // Multi-select state
   selectedStandardIds = signal<Set<string>>(new Set());
   standardSearchTerm = signal('');
+
+  clearSelection() {
+      this.selectedStandardIds.set(new Set());
+  }
   
   // Admin Purchase Requests
   showPurchaseRequestsAdminModal = signal(false);

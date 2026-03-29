@@ -1,0 +1,1445 @@
+
+> lims-cloud-pro@1.0.0 build
+> ng build
+
+Node.js version v25.2.1 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/previous-releases/.
+❯ Building...
+✔ Building...
+Application bundle generation failed. [4.640 seconds]
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:269:63:
+[37m      269 │ ...ton" (click)="[32mselectedStandardIds.set(new Set())[37m" [disabled]="...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:269:63:
+[37m      269 │ ...ton" (click)="[32mselectedStandardIds.set(new Set())[37m" [disabled]="...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'new' does not exist on type 'StandardRequestsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:269:87:
+[37m      269 │ ...ick)="selectedStandardIds.set([32mnew[37m Set())" [disabled]="selected...
+          ╵                                  [32m~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:269:111:
+[37m      269 │ ...)" [disabled]="[32mselectedStandardIds().size === 0[37m" class="text-[...
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:269:111:
+[37m      269 │ ...)" [disabled]="[32mselectedStandardIds().size === 0[37m" class="text-[...
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:279:71:
+[37m      279 │ ... (click)="[32mform.patchValue({purpose: 'Pha chuẩn định [37mkỳ'...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:279:71:
+[37m      279 │ ... (click)="[32mform.patchValue({purpose: 'Pha chuẩn định [37mkỳ'...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:280:71:
+[37m      280 │ ... (click)="[32mform.patchValue({purpose: 'Kiểm nghiệm m�[37m��u'})"...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:280:71:
+[37m      280 │ ... (click)="[32mform.patchValue({purpose: 'Kiểm nghiệm m�[37m��u'})"...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:298:45:
+[37m      298 │ ...        <button (click)="[32mcloseModal()[37m" class="px-6 py-3 text-s...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:298:45:
+[37m      298 │ ...        <button (click)="[32mcloseModal()[37m" class="px-6 py-3 text-s...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:299:45:
+[37m      299 │ ...       <button (click)="[32msubmitRequest()[37m" [disabled]="selectedS...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:299:45:
+[37m      299 │ ...       <button (click)="[32msubmitRequest()[37m" [disabled]="selectedS...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:299:74:
+[37m      299 │ ..." [disabled]="[32mselectedStandardIds().size === 0 || isProcessing()[37m"
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:299:74:
+[37m      299 │ ..." [disabled]="[32mselectedStandardIds().size === 0 || isProcessing()[37m"
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:301:36:
+[37m      301 │ ...                    @if([32misProcessing()[37m) { <i class="fa-solid f...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:301:36:
+[37m      301 │ ...                    @if([32misProcessing()[37m) { <i class="fa-solid f...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:313:11:
+[37m      313 │       @if ([32mshowApproveModal() && selectedRequest()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:313:11:
+[37m      313 │       @if ([32mshowApproveModal() && selectedRequest()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:322:120:
+[37m      322 │ ...tight mb-2 line-clamp-2">[32m{{selectedRequest()?.standardName}}[37m</h3>
+          ╵                             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:322:120:
+[37m      322 │ ...tight mb-2 line-clamp-2">[32m{{selectedRequest()?.standardName}}[37m</h3>
+          ╵                             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:328:97:
+[37m      328 │ ...:text-slate-200">[32m{{selectedRequest()?.lotNumber || 'N/A'}}[37m</span>
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:328:97:
+[37m      328 │ ...:text-slate-200">[32m{{selectedRequest()?.lotNumber || 'N/A'}}[37m</span>
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:330:30:
+[37m      330 │ ...           @if([32mselectedRequest()?.standardDetails?.expiry_date[37m) {
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:330:30:
+[37m      330 │ ...           @if([32mselectedRequest()?.standardDetails?.expiry_date[37m) {
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:333:101:
+[37m      333 │ ...late-200">[32m{{selectedRequest()?.standardDetails?.expiry_date | [37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:333:101:
+[37m      333 │ ...late-200">[32m{{selectedRequest()?.standardDetails?.expiry_date | [37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:338:79:
+[37m      338 │ ...rald-600">[32m{{selectedRequest()?.standardDetails?.current_amount[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:338:79:
+[37m      338 │ ...rald-600">[32m{{selectedRequest()?.standardDetails?.current_amount[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:340:30:
+[37m      340 │ ...           @if([32mselectedRequest()?.standardDetails?.internal_id[37m) {
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:340:30:
+[37m      340 │ ...           @if([32mselectedRequest()?.standardDetails?.internal_id[37m) {
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:343:81:
+[37m      343 │ ...late-500">[32m{{selectedRequest()?.standardDetails?.internal_id}}[37m<...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:343:81:
+[37m      343 │ ...late-500">[32m{{selectedRequest()?.standardDetails?.internal_id}}[37m<...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:352:54:
+[37m      352 │ ... mượn: <s[32mtrong>{{selectedRequest()?.requestedBy[37mName}}</strong>
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:352:54:
+[37m      352 │ ... mượn: <s[32mtrong>{{selectedRequest()?.requestedBy[37mName}}</strong>
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:362:43:
+[37m      362 │ ... <button (click)="[32mshowApproveModal.set(false)[37m" class="w-8 h-8 ...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:362:43:
+[37m      362 │ ... <button (click)="[32mshowApproveModal.set(false)[37m" class="w-8 h-8 ...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:369:64:
+[37m      369 │ ...pe="date" [ngModel]="[32mapproveExpectedDate()[37m" (ngModelChange)="a...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:369:64:
+[37m      369 │ ...pe="date" [ngModel]="[32mapproveExpectedDate()[37m" (ngModelChange)="a...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:369:104:
+[37m      369 │ ...ngModelChange)="[32mapproveExpectedDate.set($event)[37m" class="w-full...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:369:104:
+[37m      369 │ ...ngModelChange)="[32mapproveExpectedDate.set($event)[37m" class="w-full...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:374:70:
+[37m      374 │ ..."number" [ngModel]="[32mapproveExpectedAmount()[37m" (ngModelChange)="...
+          ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:374:70:
+[37m      374 │ ..."number" [ngModel]="[32mapproveExpectedAmount()[37m" (ngModelChange)="...
+          ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:374:112:
+[37m      374 │ ...gModelChange)="[32mapproveExpectedAmount.set($event)[37m" class="w-ful...
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:374:112:
+[37m      374 │ ...gModelChange)="[32mapproveExpectedAmount.set($event)[37m" class="w-ful...
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:375:127:
+[37m      375 │ ...xt-slate-400">[32m{{selectedRequest()?.standardDetails?.unit}}[37m</span>
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:375:127:
+[37m      375 │ ...xt-slate-400">[32m{{selectedRequest()?.standardDetails?.unit}}[37m</span>
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:382:51:
+[37m      382 │ ...  <textarea [ngModel]="[32mapprovePurpose()[37m" (ngModelChange)="appr...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:382:51:
+[37m      382 │ ...  <textarea [ngModel]="[32mapprovePurpose()[37m" (ngModelChange)="appr...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:382:86:
+[37m      382 │ ... (ngModelChange)="[32mapprovePurpose.set($event)[37m" rows="3" class="...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:382:86:
+[37m      382 │ ... (ngModelChange)="[32mapprovePurpose.set($event)[37m" rows="3" class="...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:387:43:
+[37m      387 │ ... <button (click)="[32mshowApproveModal.set(false)[37m" class="px-6 py-...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:387:43:
+[37m      387 │ ... <button (click)="[32mshowApproveModal.set(false)[37m" class="px-6 py-...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:388:43:
+[37m      388 │ ...      <button (click)="[32mconfirmApprove()[37m" [disabled]="!approveP...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:388:43:
+[37m      388 │ ...      <button (click)="[32mconfirmApprove()[37m" [disabled]="!approveP...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:388:73:
+[37m      388 │ ..." [disabled]="[32m!approvePurpose() || isProcessing()[37m" class="px-8...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:388:73:
+[37m      388 │ ..." [disabled]="[32m!approvePurpose() || isProcessing()[37m" class="px-8...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:389:34:
+[37m      389 │ ...                    @if([32misProcessing()[37m) { <i class="fa-solid f...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:389:34:
+[37m      389 │ ...                    @if([32misProcessing()[37m) { <i class="fa-solid f...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:399:11:
+[37m      399 │       @if ([32mshowRejectModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:399:11:
+[37m      399 │       @if ([32mshowRejectModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:406:37:
+[37m      406 │ ...     <button (click)="[32mcloseRejectModal()[37m" class="w-8 h-8 round...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:406:37:
+[37m      406 │ ...     <button (click)="[32mcloseRejectModal()[37m" class="w-8 h-8 round...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:412:65:
+[37m      412 │ ...êu cầu c�[32m��a <strong>{{selectedRequest()?.reque[37mstedByName}}...
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:412:65:
+[37m      412 │ ...êu cầu c�[32m��a <strong>{{selectedRequest()?.reque[37mstedByName}}...
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:412:131:
+[37m      412 │ ...strong> cho ch[32muẩn <strong>{{selectedRequest()?.[37mstandardName}...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:412:131:
+[37m      412 │ ...strong> cho ch[32muẩn <strong>{{selectedRequest()?.[37mstandardName}...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:417:45:
+[37m      417 │ ...   <textarea [ngModel]="[32mrejectReason()[37m" (ngModelChange)="rejec...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:417:45:
+[37m      417 │ ...   <textarea [ngModel]="[32mrejectReason()[37m" (ngModelChange)="rejec...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:417:78:
+[37m      417 │ ..." (ngModelChange)="[32mrejectReason.set($event)[37m" rows="3" class="w...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:417:78:
+[37m      417 │ ..." (ngModelChange)="[32mrejectReason.set($event)[37m" rows="3" class="w...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:421:41:
+[37m      421 │ ...     <button (click)="[32mcloseRejectModal()[37m" class="px-6 py-3 tex...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:421:41:
+[37m      421 │ ...     <button (click)="[32mcloseRejectModal()[37m" class="px-6 py-3 tex...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:422:41:
+[37m      422 │ ...       <button (click)="[32mconfirmReject()[37m" [disabled]="!rejectRe...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:422:41:
+[37m      422 │ ...       <button (click)="[32mconfirmReject()[37m" [disabled]="!rejectRe...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:422:70:
+[37m      422 │ ...isabled]="[32m!rejectReason().toString().trim() || isProcessing()[37m"...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:422:70:
+[37m      422 │ ...isabled]="[32m!rejectReason().toString().trim() || isProcessing()[37m"...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:432:11:
+[37m      432 │       @if ([32mshowReturnModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:432:11:
+[37m      432 │       @if ([32mshowReturnModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:438:24:
+[37m      438 │ ...          [32m{{ isForceReturn() ? 'Thu hồi chuẩn' : 'Hoàn tr[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:438:24:
+[37m      438 │ ...          [32m{{ isForceReturn() ? 'Thu hồi chuẩn' : 'Hoàn tr[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:440:37:
+[37m      440 │ ...     <button (click)="[32mcloseReturnModal()[37m" class="w-8 h-8 round...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:440:37:
+[37m      440 │ ...     <button (click)="[32mcloseReturnModal()[37m" class="w-8 h-8 round...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:445:101:
+[37m      445 │ ...te-100 leading-tight mb-2">[32m{{returnRequest()?.standardName}}[37m</h4>
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:445:101:
+[37m      445 │ ...te-100 leading-tight mb-2">[32m{{returnRequest()?.standardName}}[37m</h4>
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:448:69:
+[37m      448 │ ...digo-600">[32m{{currentStandard()?.current_amount || returnRequest[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:448:69:
+[37m      448 │ ...digo-600">[32m{{currentStandard()?.current_amount || returnRequest[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:455:60:
+[37m      455 │ ...ype="number" [ngModel]="[32mreturnAmount()[37m" (ngModelChange)="retur...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:455:60:
+[37m      455 │ ...ype="number" [ngModel]="[32mreturnAmount()[37m" (ngModelChange)="retur...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:455:93:
+[37m      455 │ ..." (ngModelChange)="[32mreturnAmount.set($event)[37m" class="w-full px-...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:455:93:
+[37m      455 │ ..." (ngModelChange)="[32mreturnAmount.set($event)[37m" class="w-full px-...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:456:117:
+[37m      456 │ ...late-400">[32m{{currentStandard()?.unit || returnRequest()?.standa[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:456:117:
+[37m      456 │ ...late-400">[32m{{currentStandard()?.unit || returnRequest()?.standa[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:461:74:
+[37m      461 │ ...sDepleted" [ngModel]="[32mreturnIsDepleted()[37m" (ngModelChange)="ret...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:461:74:
+[37m      461 │ ...sDepleted" [ngModel]="[32mreturnIsDepleted()[37m" (ngModelChange)="ret...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:461:111:
+[37m      461 │ ...(ngModelChange)="[32mreturnIsDepleted.set($event)[37m" class="w-5 h-5 ...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:461:111:
+[37m      461 │ ...(ngModelChange)="[32mreturnIsDepleted.set($event)[37m" class="w-5 h-5 ...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:466:41:
+[37m      466 │ ...     <button (click)="[32mcloseReturnModal()[37m" class="px-6 py-3 tex...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:466:41:
+[37m      466 │ ...     <button (click)="[32mcloseReturnModal()[37m" class="px-6 py-3 tex...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:467:41:
+[37m      467 │ ...       <button (click)="[32mconfirmReturn()[37m" [disabled]="returnAmo...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:467:41:
+[37m      467 │ ...       <button (click)="[32mconfirmReturn()[37m" [disabled]="returnAmo...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:467:70:
+[37m      467 │ ...disabled]="[32mreturnAmount() === null || isProcessing()[37m" class="p...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:467:70:
+[37m      467 │ ...disabled]="[32mreturnAmount() === null || isProcessing()[37m" class="p...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:477:11:
+[37m      477 │       @if ([32mshowLogUsageModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:477:11:
+[37m      477 │       @if ([32mshowLogUsageModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:484:37:
+[37m      484 │ ...    <button (click)="[32mcloseLogUsageModal()[37m" class="w-8 h-8 roun...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:484:37:
+[37m      484 │ ...    <button (click)="[32mcloseLogUsageModal()[37m" class="w-8 h-8 roun...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:491:60:
+[37m      491 │ ...pe="number" [ngModel]="[32mlogUsageAmount()[37m" (ngModelChange)="logU...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:491:60:
+[37m      491 │ ...pe="number" [ngModel]="[32mlogUsageAmount()[37m" (ngModelChange)="logU...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:491:95:
+[37m      491 │ ... (ngModelChange)="[32mlogUsageAmount.set($event)[37m" class="w-full px...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:491:95:
+[37m      491 │ ... (ngModelChange)="[32mlogUsageAmount.set($event)[37m" class="w-full px...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:492:117:
+[37m      492 │ ...xt-slate-400">[32m{{selectedRequest()?.standardDetails?.unit}}[37m</span>
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:492:117:
+[37m      492 │ ...xt-slate-400">[32m{{selectedRequest()?.standardDetails?.unit}}[37m</span>
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:498:45:
+[37m      498 │ ...  <textarea [ngModel]="[32mlogUsagePurpose()[37m" (ngModelChange)="log...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:498:45:
+[37m      498 │ ...  <textarea [ngModel]="[32mlogUsagePurpose()[37m" (ngModelChange)="log...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:498:81:
+[37m      498 │ ... (ngModelChange)="[32mlogUsagePurpose.set($event)[37m" rows="2" class=...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:498:81:
+[37m      498 │ ... (ngModelChange)="[32mlogUsagePurpose.set($event)[37m" rows="2" class=...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:502:41:
+[37m      502 │ ...    <button (click)="[32mcloseLogUsageModal()[37m" class="px-6 py-3 te...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:502:41:
+[37m      502 │ ...    <button (click)="[32mcloseLogUsageModal()[37m" class="px-6 py-3 te...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:503:41:
+[37m      503 │ ...      <button (click)="[32mconfirmLogUsage()[37m" [disabled]="!logUsag...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:503:41:
+[37m      503 │ ...      <button (click)="[32mconfirmLogUsage()[37m" [disabled]="!logUsag...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:503:72:
+[37m      503 │ ..." [disabled]="[32m!logUsageAmount() || isProcessing()[37m" class="px-8...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:503:72:
+[37m      503 │ ..." [disabled]="[32m!logUsageAmount() || isProcessing()[37m" class="px-8...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:512:11:
+[37m      512 │       @if ([32mshowAdminReceiveModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:512:11:
+[37m      512 │       @if ([32mshowAdminReceiveModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:519:37:
+[37m      519 │ ...  <button (click)="[32mcloseAdminReceiveModal()[37m" class="w-8 h-8 ro...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:519:37:
+[37m      519 │ ...  <button (click)="[32mcloseAdminReceiveModal()[37m" class="w-8 h-8 ro...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:526:77:
+[37m      526 │ ...digo-600">[32m{{adminReceiveRequest()?.totalAmountUsed}} {{adminRe[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:526:77:
+[37m      526 │ ...digo-600">[32m{{adminReceiveRequest()?.totalAmountUsed}} {{adminRe[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:530:69:
+[37m      530 │ ... [class]="[32madminReceiveRequest()?.reportedDepleted ? 'text-red-[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:530:69:
+[37m      530 │ ... [class]="[32madminReceiveRequest()?.reportedDepleted ? 'text-red-[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:531:32:
+[37m      531 │ ...          [32m{{ adminReceiveRequest()?.reportedDepleted ? 'Báo c[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:531:32:
+[37m      531 │ ...          [32m{{ adminReceiveRequest()?.reportedDepleted ? 'Báo c[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:539:60:
+[37m      539 │ ...="number" [ngModel]="[32madminReceiveAmount()[37m" (ngModelChange)="ad...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:539:60:
+[37m      539 │ ...="number" [ngModel]="[32madminReceiveAmount()[37m" (ngModelChange)="ad...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:539:99:
+[37m      539 │ ...ngModelChange)="[32madminReceiveAmount.set($event)[37m" class="w-full ...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:539:99:
+[37m      539 │ ...ngModelChange)="[32madminReceiveAmount.set($event)[37m" class="w-full ...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:540:117:
+[37m      540 │ ...late-400">[32m{{adminReceiveRequest()?.standardDetails?.unit}}[37m</span>
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:540:117:
+[37m      540 │ ...late-400">[32m{{adminReceiveRequest()?.standardDetails?.unit}}[37m</span>
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:545:79:
+[37m      545 │ ...pleted" [ngModel]="[32madminReceiveIsDepleted()[37m" (ngModelChange)="...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:545:79:
+[37m      545 │ ...pleted" [ngModel]="[32madminReceiveIsDepleted()[37m" (ngModelChange)="...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:545:122:
+[37m      545 │ ...ModelChange)="[32madminReceiveIsDepleted.set($event)[37m" class="w-5 h...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:545:122:
+[37m      545 │ ...ModelChange)="[32madminReceiveIsDepleted.set($event)[37m" class="w-5 h...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:549:24:
+[37m      549 │                     @if([32madminReceiveIsDepleted()[37m) {
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:549:24:
+[37m      549 │                     @if([32madminReceiveIsDepleted()[37m) {
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:552:49:
+[37m      552 │ ...tarea [ngModel]="[32madminReceiveDisposalReason()[37m" (ngModelChange)...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:552:49:
+[37m      552 │ ...tarea [ngModel]="[32madminReceiveDisposalReason()[37m" (ngModelChange)...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:552:96:
+[37m      552 │ ...delChange)="[32madminReceiveDisposalReason.set($event)[37m" rows="2" c...
+          ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:552:96:
+[37m      552 │ ...delChange)="[32madminReceiveDisposalReason.set($event)[37m" rows="2" c...
+          ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:557:41:
+[37m      557 │ ...  <button (click)="[32mcloseAdminReceiveModal()[37m" class="px-6 py-3 ...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:557:41:
+[37m      557 │ ...  <button (click)="[32mcloseAdminReceiveModal()[37m" class="px-6 py-3 ...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:558:41:
+[37m      558 │ ...    <button (click)="[32mconfirmAdminReceive()[37m" [disabled]="adminR...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:558:41:
+[37m      558 │ ...    <button (click)="[32mconfirmAdminReceive()[37m" [disabled]="adminR...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:558:76:
+[37m      558 │ ...isabled]="[32madminReceiveAmount() === null || (adminReceiveIsDepl[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:558:76:
+[37m      558 │ ...isabled]="[32madminReceiveAmount() === null || (adminReceiveIsDepl[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:568:11:
+[37m      568 │       @if ([32mshowPurchaseRequestsAdminModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:568:11:
+[37m      568 │       @if ([32mshowPurchaseRequestsAdminModal()[37m) {
+          ╵            [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:578:38:
+[37m      578 │ ...<button (click)="[32mcloseAdminPurchaseRequests()[37m" class="w-8 h-8 ...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:578:38:
+[37m      578 │ ...<button (click)="[32mcloseAdminPurchaseRequests()[37m" class="w-8 h-8 ...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:581:25:
+[37m      581 │                      @if([32mloadingAdminRequests()[37m) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:581:25:
+[37m      581 │                      @if([32mloadingAdminRequests()[37m) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:584:29:
+[37m      584 │                          @if([32madminPurchaseRequests().length === 0[37m) {
+          ╵                              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:584:29:
+[37m      584 │                          @if([32madminPurchaseRequests().length === 0[37m) {
+          ╵                              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:599:46:
+[37m      599 │ ...                 @for([32mr of adminPurchaseRequests()[37m; track r.id) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:599:46:
+[37m      599 │ ...                 @for([32mr of adminPurchaseRequests()[37m; track r.id) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:599:76:
+[37m      599 │ ...                 @for(r of adminPurchaseRequests(); [32mtrack r.id[37m) {
+          ╵                                                        [32m~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:599:76:
+[37m      599 │ ...                 @for(r of adminPurchaseRequests(); [32mtrack r.id[37m) {
+          ╵                                                        [32m~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:602:165:
+[37m      602 │ ... max-w-[200px]" [title]="[32mr.standardName[37m">{{r.standardName}}</div>
+          ╵                             [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:602:165:
+[37m      602 │ ... max-w-[200px]" [title]="[32mr.standardName[37m">{{r.standardName}}</div>
+          ╵                             [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:602:181:
+[37m      602 │ ... max-w-[200px]" [title]="r.standardName">[32m{{r.standardName}}[37m</div>
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:602:181:
+[37m      602 │ ... max-w-[200px]" [title]="r.standardName">[32m{{r.standardName}}[37m</div>
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:603:171:
+[37m      603 │ ...<i class="fa-solid fa-barcode mr-1"></i> [32m{{r.product_code}}[37m</div>
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:603:171:
+[37m      603 │ ...<i class="fa-solid fa-barcode mr-1"></i> [32m{{r.product_code}}[37m</div>
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:607:61:
+[37m      607 │ ...                                          @if([32mr.required_level[37m) {
+          ╵                                                  [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:607:61:
+[37m      607 │ ...                                          @if([32mr.required_level[37m) {
+          ╵                                                  [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:609:106:
+[37m      609 │ ...   <i class="fa-solid fa-shield-halved"></i> [32m{{r.required_level}}[37m
+          ╵                                                 [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:609:106:
+[37m      609 │ ...   <i class="fa-solid fa-shield-halved"></i> [32m{{r.required_level}}[37m
+          ╵                                                 [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:612:61:
+[37m      612 │ ...                                         @if([32mr.required_purity[37m) {
+          ╵                                                 [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:612:61:
+[37m      612 │ ...                                         @if([32mr.required_purity[37m) {
+          ╵                                                 [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:614:100:
+[37m      614 │ ...  <i class="fa-solid fa-droplet"></i> [32mĐTK: {{r.required_purity}}[37m
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:614:100:
+[37m      614 │ ...  <i class="fa-solid fa-droplet"></i> [32mĐTK: {{r.required_purity}}[37m
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:617:61:
+[37m      617 │ ...                                                   @if([32mr.notes[37m) {
+          ╵                                                           [32m~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:617:61:
+[37m      617 │ ...                                                   @if([32mr.notes[37m) {
+          ╵                                                           [32m~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:618:208:
+[37m      618 │ ...g-slate-50 dark:bg-slate-800/50 p-1.5 rounded" [title]="[32mr.notes[37m">
+          ╵                                                            [32m~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:618:208:
+[37m      618 │ ...g-slate-50 dark:bg-slate-800/50 p-1.5 rounded" [title]="[32mr.notes[37m">
+          ╵                                                            [32m~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:619:117:
+[37m      619 │ ... <i class="fa-regular fa-comment text-slate-400"></i> [32m{{r.notes}}[37m
+          ╵                                                          [32m~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:619:117:
+[37m      619 │ ... <i class="fa-regular fa-comment text-slate-400"></i> [32m{{r.notes}}[37m
+          ╵                                                          [32m~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:626:61:
+[37m      626 │ ...                                  @if([32mr.preferred_manufacturer[37m) {
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:626:61:
+[37m      626 │ ...                                  @if([32mr.preferred_manufacturer[37m) {
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:629:134:
+[37m      629 │ ...ark:text-slate-100 uppercase">[32m{{r.preferred_manufacturer}}[37m</span>
+          ╵                                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:629:134:
+[37m      629 │ ...ark:text-slate-100 uppercase">[32m{{r.preferred_manufacturer}}[37m</span>
+          ╵                                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:632:61:
+[37m      632 │ ...                                          @if([32mr.expectedAmount[37m) {
+          ╵                                                  [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:632:61:
+[37m      632 │ ...                                          @if([32mr.expectedAmount[37m) {
+          ╵                                                  [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:635:125:
+[37m      635 │ ...text-indigo-600 dark:text-indigo-400">[32m{{r.expectedAmount}}[37m</span>
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:635:125:
+[37m      635 │ ...text-indigo-600 dark:text-indigo-400">[32m{{r.expectedAmount}}[37m</span>
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:644:61:
+[37m      644 │ ...                                            [32m{{r.requestedByName}}[37m
+          ╵                                                [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:644:61:
+[37m      644 │ ...                                            [32m{{r.requestedByName}}[37m
+          ╵                                                [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:646:143:
+[37m      646 │ ...lock mr-1"></i> [32m{{r.requestDate | date:'dd/MM/yyyy HH:mm'}}[37m</div>
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:646:143:
+[37m      646 │ ...lock mr-1"></i> [32m{{r.requestDate | date:'dd/MM/yyyy HH:mm'}}[37m</div>
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:647:61:
+[37m      647 │ ...                                     @if([32mr.priority === 'HIGH'[37m) {
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:647:61:
+[37m      647 │ ...                                     @if([32mr.priority === 'HIGH'[37m) {
+          ╵                                             [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:655:70:
+[37m      655 │ ...button (click)="[32mmarkPurchaseRequestCompleted(r)[37m" [disabled]="i...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:655:70:
+[37m      655 │ ...button (click)="[32mmarkPurchaseRequestCompleted(r)[37m" [disabled]="i...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Missing expected ) at column 29 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:655:115:
+[37m      655 │ ...mpleted(r)" [disabled]="[32misProcessing()[37m" class="px-3 py-1.5 bg-...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Parser Error: Unexpected token ')' at column 33 in [selectedStandardIds.set(new Set())] in /Users/ongthanhdat/Library/CloudStorage/OneDrive-NafiquadBranch6/Documents/GitHub/lims/src/app/features/standards/requests/standard-requests.component.ts@268:63[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/standards/requests/standard-requests.component.ts:655:115:
+[37m      655 │ ...mpleted(r)" [disabled]="[32misProcessing()[37m" class="px-3 py-1.5 bg-...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
