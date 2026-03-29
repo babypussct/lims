@@ -52,12 +52,12 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
              <button (click)="fileInput.click()" class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import danh sách chuẩn">
                 <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
-             <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleFileSelect($event)">
+             <input #fileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleFileSelect($event)">
              
              <button (click)="usageLogFileInput.click()" class="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-lg border border-teal-200 dark:border-teal-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import nhật ký sử dụng">
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
-             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm" (change)="handleUsageLogFileSelect($event)">
+             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
            }
         </div>
       </div>
@@ -726,38 +726,98 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
 
       @if (showAssignModal() && selectedStd()) {
          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl w-full max-w-md animate-bounce-in border border-slate-100 dark:border-slate-800">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-inner border border-emerald-100 dark:border-emerald-800/50">
-                        <i class="fa-solid fa-hand-holding-hand"></i>
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <!-- Left: Standard Info Summary -->
+                <div class="hidden md:flex w-2/5 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
+                    <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
+                        <i class="fa-solid fa-vial"></i>
                     </div>
-                    <div>
-                        <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{{ isAssignMode() ? 'Gán cho mượn' : 'Mượn chuẩn này' }}</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">{{selectedStd()?.name}}</p>
-                    </div>
-                </div>
-                <div class="space-y-5">
-                    @if(isAssignMode()) {
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nhân viên <span class="text-red-500">*</span></label>
-                            <select [ngModel]="assignUserId()" (ngModelChange)="onAssignUserChange($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none appearance-none">
-                                <option value="">-- Chọn nhân viên --</option>
-                                @for (user of userList(); track user.uid) {
-                                    <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
-                                }
-                            </select>
+                    
+                    <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-2Line line-clamp-2">{{selectedStd()?.name}}</h3>
+                    <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-6">Thông tin chuẩn mượn</div>
+
+                    <div class="space-y-4">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Số Lô / Lot</span>
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{selectedStd()?.lot_number || 'N/A'}}</span>
                         </div>
-                    }
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
-                        <textarea [ngModel]="assignPurpose()" (ngModelChange)="assignPurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none resize-none placeholder-slate-300 dark:placeholder-slate-600" placeholder="Nhập mục đích sử dụng..."></textarea>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
+                            <span class="text-sm font-bold" [class]="getExpiryClass(selectedStd()?.expiry_date)">{{selectedStd()?.expiry_date || 'N/A'}}</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Lượng tồn kho</span>
+                            <span class="text-sm font-bold text-emerald-600">{{selectedStd()?.current_amount}} {{selectedStd()?.unit}}</span>
+                        </div>
+                        @if(selectedStd()?.internal_id) {
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
+                                <span class="text-sm font-bold text-slate-500">{{selectedStd()?.internal_id}}</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                            <p class="text-[10px] text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Vui lòng ghi lại nhật ký sử dụng sau khi pha xong để hệ thống trừ kho chính xác.
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <div class="flex justify-end gap-3 mt-8">
-                    <button (click)="showAssignModal.set(false)" class="px-5 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-                    <button (click)="confirmAssign()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-emerald-600 dark:bg-emerald-500 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-lg shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-check"></i> Xác nhận }
-                    </button>
+
+                <!-- Right: Borrow Form -->
+                <div class="flex-1 p-8 flex flex-col bg-white dark:bg-slate-900">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                            {{ isAssignMode() ? 'Gán cho nhân viên' : 'Mượn chuẩn sử dụng' }}
+                        </h3>
+                        <button (click)="showAssignModal.set(false)" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                    </div>
+
+                    <div class="flex-1 space-y-5 overflow-y-auto pr-2 custom-scrollbar">
+                        @if(isAssignMode()) {
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nhân viên tiếp nhận <span class="text-red-500">*</span></label>
+                                <select [ngModel]="assignUserId()" (ngModelChange)="onAssignUserChange($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none appearance-none">
+                                    <option value="">-- Chọn nhân viên --</option>
+                                    @for (user of userList(); track user.uid) {
+                                        <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
+                                <input type="date" [ngModel]="assignExpectedDate()" (ngModelChange)="assignExpectedDate.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng ({{selectedStd()?.unit}})</label>
+                                <input type="number" [ngModel]="assignExpectedAmount()" (ngModelChange)="assignExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                            <textarea [ngModel]="assignPurpose()" (ngModelChange)="assignPurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích sử dụng..."></textarea>
+                            
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <button (click)="assignPurpose.set('Pha chuẩn máy')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn máy</button>
+                                <button (click)="assignPurpose.set('Kiểm tra định kỳ')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm tra định kỳ</button>
+                                <button (click)="assignPurpose.set('Ngoại kiểm')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại kiểm</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button (click)="showAssignModal.set(false)" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
+                        <button (click)="confirmAssign()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
+                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-paper-plane text-xs"></i> Xác nhận mượn }
+                        </button>
+                    </div>
                 </div>
             </div>
          </div>
@@ -1188,6 +1248,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   assignUserId = signal('');
   assignUserName = signal('');
   assignPurpose = signal('');
+  assignExpectedDate = signal('');
+  assignExpectedAmount = signal<number | null>(null);
   userList = signal<UserProfile[]>([]);
   
   showPrintModal = signal(false);
@@ -1686,7 +1748,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.router.navigate(['/standard-requests']);
   }
 
-  async openAssignModal(std: ReferenceStandard, isAssign = true) {
+   async openAssignModal(std: ReferenceStandard, isAssign = true) {
+      if (this.isProcessing()) return;
       this.selectedStd.set(std);
       this.isAssignMode.set(isAssign);
       
@@ -1694,11 +1757,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.assignUserId.set('');
           this.assignUserName.set('');
       } else {
-          this.assignUserId.set(this.auth.currentUser()?.uid || '');
-          this.assignUserName.set(this.auth.currentUser()?.displayName || '');
+          const user = this.auth.currentUser();
+          this.assignUserId.set(user?.uid || '');
+          this.assignUserName.set(user?.displayName || user?.email || 'Unknown');
       }
       
       this.assignPurpose.set('');
+      this.assignExpectedDate.set('');
+      this.assignExpectedAmount.set(null);
       this.showAssignModal.set(true);
       
       if (isAssign && this.userList().length === 0) {
@@ -1721,10 +1787,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const std = this.selectedStd();
       const userId = this.assignUserId();
       const userName = this.assignUserName();
-      const purpose = this.assignPurpose();
+      const purpose = this.assignPurpose().trim();
+      const expectedDate = this.assignExpectedDate();
+      const expectedAmount = this.assignExpectedAmount();
       
-      if (!std || !userId || !userName || !purpose) {
-          this.toast.show('Vui lòng điền đầy đủ thông tin', 'error');
+      if (!std || !userId || !purpose) {
+          this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
           return;
       }
 
@@ -1738,17 +1806,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
               requestedByName: userName,
               requestDate: Date.now(),
               purpose: purpose,
+              expectedReturnDate: expectedDate ? new Date(expectedDate).getTime() : undefined,
+              expectedAmount: expectedAmount || 0,
               status: 'PENDING_APPROVAL',
               totalAmountUsed: 0
           };
 
+          // If it's "Assign Mode", it implies an admin is giving it to someone, 
+          // but we still follow the request workflow for tracking.
           await this.stdService.createRequest(request, this.isAssignMode());
           
           if (this.isAssignMode()) {
+              // Automatically dispense if assigning directly
               await this.stdService.dispenseStandard(request.id!, std.id!, this.auth.currentUser()?.uid || '', this.auth.currentUser()?.displayName || 'QTV', true);
-              this.toast.show('Đã gán chuẩn thành công');
+              this.toast.show('Đã gán chuẩn thành công', 'success');
           } else {
-              this.toast.show('Đã gửi yêu cầu mượn chuẩn');
+              this.toast.show('Đã gửi yêu cầu mượn chuẩn', 'success');
           }
           
           this.showAssignModal.set(false);

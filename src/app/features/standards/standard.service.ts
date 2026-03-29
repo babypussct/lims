@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
-import { generateSlug, getStandardizedAmount } from '../../shared/utils/utils';
+import { generateSlug, getStandardizedAmount, parseQuantityInput } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -52,10 +52,10 @@ export class StandardService {
       else if (/^\d+(\.\d+)?$/.test(strVal)) serial = parseFloat(strVal);
 
       if (!isNaN(serial) && serial > 10000) {
-          const utcDays = Math.floor(serial - 25569);
-          const utcValue = utcDays * 86400 * 1000;
-          const dateInfo = new Date(utcValue);
-          dateInfo.setHours(dateInfo.getHours() + 12);
+          // Excel serial date to JS Date
+          // 25569 is the offset between Excel (Dec 30, 1899) and Unix Epoch (Jan 1, 1970)
+          // We use UTC to avoid local timezone shifts during conversion
+          const dateInfo = new Date(Math.round((serial - 25569) * 86400 * 1000));
           return dateInfo.toISOString().split('T')[0];
       }
 
@@ -63,15 +63,20 @@ export class StandardService {
       const parts = strVal.split(/[\/\-\.]/);
       
       if (parts.length >= 3) {
-          const p1 = parts[0];
-          const p2 = parts[1];
-          const p3 = parts[2];
-
-          const day = p1.padStart(2, '0');
-          const month = p2.padStart(2, '0');
-          let year = p3;
+          let day, month, year;
           
-          if (year.length === 2) year = '20' + year;
+          if (parts[0].length === 4) {
+              // yyyy-mm-dd
+              year = parts[0];
+              month = parts[1].padStart(2, '0');
+              day = parts[2].padStart(2, '0');
+          } else {
+              // dd-mm-yyyy (default for VN)
+              day = parts[0].padStart(2, '0');
+              month = parts[1].padStart(2, '0');
+              year = parts[2];
+              if (year.length === 2) year = '20' + year;
+          }
           
           const nDay = Number(day);
           const nMonth = Number(month);
@@ -588,76 +593,89 @@ export class StandardService {
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const getValueByAlias = (row: any, aliases: string[]) => {
+            const keys = Object.keys(row);
+            const foundKey = keys.find(k => aliases.some(alias => k === alias || k.includes(alias)));
+            return foundKey ? row[foundKey] : undefined;
+          };
           const results: ImportPreviewItem[] = [];
 
           for (const rawRow of rawRows) {
              const row: Record<string, any> = {};
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
-             const rawName = row['tên chuẩn'] || '';
-             const nameParts = rawName.split(/[\n\r]+/);
+             const rawName = getValueByAlias(row, ['tên chuẩn', 'tên hóa học']) || '';
+             const nameParts = rawName.toString().split(/[\n\r]+/);
              const name = nameParts[0]?.trim();
-             const chemicalName = nameParts.length > 1 ? nameParts.slice(1).join(' ').trim() : (row['tên khác'] || row['tên hóa học'] || '').toString().trim();
-
+             
              if (!name) continue;
 
-             const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
-             
-             const rawPackText = (row['quy cách'] || '').toString().trim(); 
-             const rawAmount = row['khối lượng chai'];
+             const chemicalName = nameParts.length > 1 ? nameParts.slice(1).join(' ').trim() : (getValueByAlias(row, ['tên khác', 'tên hóa học']) || '').toString().trim();
+             const lot = (getValueByAlias(row, ['lot', 'số lô lot', 'lô']) || '').toString().trim();
+
+             const rawPackText = (getValueByAlias(row, ['quy cách', 'đóng gói']) || '').toString().trim(); 
+             const rawAmount = getValueByAlias(row, ['khối lượng chai', 'kl chai', 'khối lượng', 'lượng']);
              
              let initial = 0;
+             let unit = 'mg';
+
              if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '') {
-                 const val = parseFloat(rawAmount.toString().replace(',', '.'));
-                 if (!isNaN(val)) initial = val;
-             } else {
-                 initial = Number(row['khối lượng chai'] || 0);
+                 const parsed = parseQuantityInput(rawAmount.toString(), 'mg'); 
+                 if (parsed !== null) initial = parsed;
+                 
+                 // Try to detect unit from the string itself
+                 const unitMatch = rawAmount.toString().match(/[a-zA-Zµ]+/);
+                 if (unitMatch) unit = unitMatch[0];
              }
 
-             let unit = 'mg';
              const lowerPack = rawPackText.toLowerCase();
              if (lowerPack.includes('ml') || lowerPack.includes('milliliter') || lowerPack.includes('lít')) unit = 'mL';
              else if (lowerPack.includes('µg') || lowerPack.includes('ug') || lowerPack.includes('mcg')) unit = 'µg';
              else if (lowerPack.includes('kg')) unit = 'kg';
              else if (lowerPack.includes('g') && !lowerPack.includes('mg') && !lowerPack.includes('kg')) unit = 'g';
-             else unit = 'mg';
+             
+             // Fallback for numeric amounts if initial is still 0
+             if (initial === 0) {
+                 const fallbackVal = parseFloat((getValueByAlias(row, ['khối lượng chai', 'kl chai']) || '').toString().replace(',', '.'));
+                 if (!isNaN(fallbackVal)) initial = fallbackVal;
+             }
 
              let packSize = rawPackText;
              const packHasNumber = /^[\d.,]+/.test(rawPackText);
              if (!packHasNumber && initial > 0 && packSize) { packSize = `${initial} ${packSize}`; }
              if (!packSize) { packSize = `${initial} ${unit}`; }
 
-             const internalId = (row['số nhận diện'] || '').toString().trim();
+             const internalId = (getValueByAlias(row, ['số nhận diện', 'mã chuẩn', 'mã nhận diện']) || '').toString().trim();
              let current = initial;
-             const rawCurrentStr = (row['lượng còn lại'] || '').toString().trim();
+             const rawCurrentStr = (getValueByAlias(row, ['lượng còn lại', 'tồn kho', 'hiện tại']) || '').toString().trim();
              if (rawCurrentStr !== '') {
                  const match = rawCurrentStr.match(/[\d\.]+/); 
                  if (match && !isNaN(parseFloat(match[0]))) current = parseFloat(match[0]);
              }
 
-             let location = '';
-             if (internalId && internalId.length > 0) {
+             let location = (getValueByAlias(row, ['vị trí', 'nơi để', 'điều kiện bảo quản']) || '').toString().trim();
+             if (!location && internalId && internalId.length > 0) {
                  const firstChar = internalId.charAt(0).toUpperCase();
                  if (firstChar.match(/[A-Z]/)) location = `Tủ ${firstChar}`;
              }
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
              
-             const receivedDate = this.parseExcelDate(row['ngày nhận']);
-             const expiryDate = this.parseExcelDate(row['hạn sử dụng']);
+             const receivedDate = this.parseExcelDate(getValueByAlias(row, ['ngày nhận', 'ngày nhập']));
+             const expiryDate = this.parseExcelDate(getValueByAlias(row, ['hạn sử dụng', 'hạn dùng']));
 
              const standard: ReferenceStandard = {
                  id, name, chemical_name: chemicalName,
                  internal_id: internalId, location: location,
                  pack_size: packSize, lot_number: lot,
-                 contract_ref: (row['hợp đồng dự toán'] || row['hợp đồng'] || '').toString().trim(),
+                 contract_ref: (getValueByAlias(row, ['hợp đồng dự toán', 'hợp đồng', 'dự toán']) || '').toString().trim(),
                  received_date: receivedDate, expiry_date: expiryDate,
                  initial_amount: isNaN(initial) ? 0 : initial,
                  current_amount: current, unit: unit,
-                 product_code: (row['product code'] || '').toString().trim(),
-                 manufacturer: (row['hãng'] || '').toString().trim(),
-                 cas_number: (row['cas number'] || '').toString().trim(),
-                 storage_condition: (row['điều kiện bảo quản'] || '').toString().trim(),
+                 product_code: (getValueByAlias(row, ['product code', 'mã sản phẩm']) || '').toString().trim(),
+                 manufacturer: (getValueByAlias(row, ['hãng', 'nhà sản xuất']) || '').toString().trim(),
+                 cas_number: (getValueByAlias(row, ['cas number', 'số cas']) || '').toString().trim(),
+                 storage_condition: (getValueByAlias(row, ['điều kiện bảo quản', 'bảo quản']) || '').toString().trim(),
                  storage_status: 'Sẵn sàng', purity: '', 
                  status: current <= 0 ? 'DEPLETED' : 'AVAILABLE',
                  lastUpdated: null 
@@ -669,7 +687,7 @@ export class StandardService {
              const logDefaultDate = receivedDate || new Date().toISOString().split('T')[0];
              const keys = Object.keys(row);
              
-             for (let i = 1; i <= 10; i++) { 
+             for (let i = 1; i <= 20; i++) { 
                  const logKey = keys.find(k => k.includes(`lần`) && k.includes(`${i}`));
                  if (logKey && row[logKey]) {
                      const logData = this.parseLogContent(row[logKey], logDefaultDate);
@@ -684,7 +702,7 @@ export class StandardService {
              }
 
              results.push({
-                 raw: { 'Ngày nhận (Gốc)': row['ngày nhận'], 'Hạn dùng (Gốc)': row['hạn sử dụng'] },
+                 raw: { 'Ngày nhận (Gốc)': getValueByAlias(row, ['ngày nhận']), 'Hạn dùng (Gốc)': getValueByAlias(row, ['hạn sử dụng']) },
                  parsed: standard, logs: logs, isValid: true
              });
           }
@@ -734,24 +752,29 @@ export class StandardService {
           if (!rawRows || rawRows.length === 0) throw new Error('File rỗng');
 
           const normalizeKey = (key: string) => key.toString().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const getValueByAlias = (row: any, aliases: string[]) => {
+            const keys = Object.keys(row);
+            const foundKey = keys.find(k => aliases.some(alias => k === alias || k.includes(alias)));
+            return foundKey ? row[foundKey] : undefined;
+          };
           const results: ImportUsageLogPreviewItem[] = [];
           
           // Fetch all existing standards to match against
           const existingStandards = await this.getAllStandardsForMatching();
-          const logsCache = new Map<string, UsageLog[]>(); // Cache logs per standard ID
+          const logsCache = new Map<string, UsageLog[]>(); 
 
           for (const rawRow of rawRows) {
              const row: Record<string, any> = {};
              Object.keys(rawRow).forEach(k => row[normalizeKey(k)] = rawRow[k]);
 
-             const rawName = row['tên chuẩn'] || '';
-             const nameParts = rawName.split(/[\n\r]+/);
+             const rawName = getValueByAlias(row, ['tên chuẩn', 'tên chất', 'chuẩn']) || '';
+             const nameParts = rawName.toString().split(/[\n\r]+/);
              const name = nameParts[0]?.trim();
 
              if (!name) continue;
 
-             const lot = (row['lot'] || row['số lô lot'] || '').toString().trim();
-             const internalId = (row['số nhận diện'] || '').toString().trim();
+             const lot = (getValueByAlias(row, ['lot', 'số lô lot', 'lô']) || '').toString().trim();
+             const internalId = (getValueByAlias(row, ['số nhận diện', 'mã chuẩn', 'mã nhận diện']) || '').toString().trim();
              
              // Match standard
              let matchedStandard: ReferenceStandard | null = null;
@@ -763,16 +786,29 @@ export class StandardService {
              }
 
              // Parse Usage Log Data
-             const prepDateRaw = row['ngày pha chế'] || row['ngày sử dụng'] || '';
-             const preparer = (row['người pha chế'] || row['người sử dụng'] || '').toString().trim();
-             const amountUsedRaw = row['lượng dùng'] || row['khối lượng dùng'] || '';
+             const prepDateRaw = getValueByAlias(row, ['ngày pha chế', 'ngày sử dụng', 'ngày pha', 'date', 'ngày']);
+             const preparer = (getValueByAlias(row, ['người pha chế', 'người sử dụng', 'người pha', 'nhân viên', 'user', 'người']) || '').toString().trim();
+             const amountUsedRaw = getValueByAlias(row, ['lượng dùng', 'khối lượng dùng', 'lượng', 'khối lượng', 'kl dùng', 'lượng cân']);
+             const unitRaw = getValueByAlias(row, ['đơn vị', 'unit']) || '';
              
              const prepDate = this.parseExcelDate(prepDateRaw);
              let amountUsed = 0;
+             let usageUnit = matchedStandard ? matchedStandard.unit : 'mg';
+
              if (amountUsedRaw !== undefined && amountUsedRaw !== null && amountUsedRaw !== '') {
-                 const val = parseFloat(amountUsedRaw.toString().replace(',', '.'));
-                 if (!isNaN(val)) amountUsed = val;
+                 const targetUnit = matchedStandard ? matchedStandard.unit : 'mg';
+                 const parsed = parseQuantityInput(amountUsedRaw.toString(), targetUnit);
+                 if (parsed !== null) {
+                     amountUsed = parsed;
+                     const unitMatch = amountUsedRaw.toString().match(/[a-zA-Zµ]+/);
+                     if (unitMatch) usageUnit = unitMatch[0];
+                 } else {
+                     const val = parseFloat(amountUsedRaw.toString().replace(',', '.'));
+                     if (!isNaN(val)) amountUsed = val;
+                 }
              }
+             
+             if (unitRaw) usageUnit = unitRaw.toString().trim();
 
              let isValid = true;
              let errorMessage = '';
@@ -795,13 +831,13 @@ export class StandardService {
                  date: prepDate || new Date().toISOString().split('T')[0],
                  user: preparer,
                  amount_used: amountUsed,
-                 unit: matchedStandard ? matchedStandard.unit : 'mg', // Default to standard's unit
+                 unit: usageUnit,
+                 purpose: 'Import Log',
                  timestamp: new Date().getTime()
              };
 
              let isDuplicate = false;
              if (matchedStandard && isValid) {
-                 // Fetch existing logs for this standard to check for duplicates if not cached
                  if (!logsCache.has(matchedStandard.id!)) {
                      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${matchedStandard.id}/logs`);
                      const snapshot = await getDocs(logsRef);
@@ -817,7 +853,6 @@ export class StandardService {
                      isValid = false;
                      errorMessage = 'Nhật ký đã tồn tại.';
                  } else {
-                     // Add to cache to detect duplicates within the same file
                      existingLogs.push(log);
                      logsCache.set(matchedStandard.id!, existingLogs);
                  }
