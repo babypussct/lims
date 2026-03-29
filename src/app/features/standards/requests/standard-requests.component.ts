@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { StandardService } from '../standard.service';
-import { StandardRequest, StandardRequestStatus, ReferenceStandard } from '../../../core/models/standard.model';
+import { StandardRequest, StandardRequestStatus, ReferenceStandard, PurchaseRequest } from '../../../core/models/standard.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -32,6 +32,12 @@ function removeAccents(str: string): string {
         </div>
         
         <div class="flex gap-2 items-center">
+             @if (auth.canApproveStandards() && pendingPurchaseRequestsCount() > 0) {
+                 <button (click)="openAdminPurchaseRequests()" class="relative px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm shadow-amber-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 active:scale-95">
+                     <i class="fa-solid fa-bell animate-pulse"></i> Yêu cầu Mua sắm
+                     <span class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-[10px] shadow-sm">{{pendingPurchaseRequestsCount()}}</span>
+                 </button>
+             }
              <button (click)="openRequestModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Tạo Yêu cầu Mới
              </button>
@@ -353,6 +359,110 @@ function removeAccents(str: string): string {
             </div>
          </div>
       }
+      <!-- ADMIN PURCHASE REQUESTS MODAL -->
+      @if (showPurchaseRequestsAdminModal()) {
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+             <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center shrink-0">
+                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
+                         <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                             <i class="fa-solid fa-cart-shopping"></i>
+                         </div>
+                         Duyệt Yêu cầu Mua sắm (Hết chuẩn)
+                     </h3>
+                     <button (click)="closeAdminPurchaseRequests()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                 </div>
+                 <div class="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-slate-900">
+                     @if(loadingAdminRequests()) {
+                         <div class="py-12 flex justify-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i></div>
+                     } @else {
+                         @if(adminPurchaseRequests().length === 0) {
+                             <div class="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">Không có yêu cầu mua sắm nào chờ xử lý.</div>
+                         } @else {
+                             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
+                                 <table class="w-full text-left text-sm whitespace-nowrap">
+                                     <thead class="bg-slate-50 dark:bg-slate-800/80 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                         <tr>
+                                             <th class="px-4 py-3">Chuẩn đối chiếu</th>
+                                             <th class="px-4 py-3">Phân loại & Mục đích</th>
+                                             <th class="px-4 py-3">Yêu cầu mua sắm</th>
+                                             <th class="px-4 py-3">Người đề nghị</th>
+                                             <th class="px-4 py-3 text-center">Tác vụ</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                         @for(r of adminPurchaseRequests(); track r.id) {
+                                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                                 <td class="px-4 py-3 align-top">
+                                                     <div class="font-bold text-slate-800 dark:text-slate-200 whitespace-normal line-clamp-2 max-w-[200px]" [title]="r.standardName">{{r.standardName}}</div>
+                                                     <div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1"><i class="fa-solid fa-barcode mr-1"></i> {{r.product_code}}</div>
+                                                 </td>
+                                                 <td class="px-4 py-3 align-top">
+                                                     <div class="flex flex-col gap-1.5 text-[11px]">
+                                                         @if(r.required_level) {
+                                                            <div class="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded w-max">
+                                                                <i class="fa-solid fa-shield-halved"></i> {{r.required_level}}
+                                                            </div>
+                                                         }
+                                                         @if(r.required_purity) {
+                                                            <div class="flex items-center gap-1.5 font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/30 px-2 py-0.5 rounded w-max">
+                                                                <i class="fa-solid fa-droplet"></i> ĐTK: {{r.required_purity}}
+                                                            </div>
+                                                         }
+                                                         @if(r.notes) {
+                                                            <div class="text-slate-600 dark:text-slate-400 mt-1 max-w-[250px] whitespace-normal italic bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded" [title]="r.notes">
+                                                                <i class="fa-regular fa-comment text-slate-400"></i> {{r.notes}}
+                                                            </div>
+                                                         }
+                                                     </div>
+                                                 </td>
+                                                 <td class="px-4 py-3 align-top">
+                                                     <div class="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                                         @if(r.preferred_manufacturer) { 
+                                                            <div class="flex gap-2">
+                                                                <span class="w-16 text-slate-400 font-medium">Hãng CC:</span>
+                                                                <span class="font-black text-slate-800 dark:text-slate-100 uppercase">{{r.preferred_manufacturer}}</span>
+                                                            </div> 
+                                                         }
+                                                         @if(r.expectedAmount) { 
+                                                            <div class="flex gap-2">
+                                                                <span class="w-16 text-slate-400 font-medium">Lượng cần:</span>
+                                                                <span class="font-bold text-indigo-600 dark:text-indigo-400">{{r.expectedAmount}}</span>
+                                                            </div>
+                                                         }
+                                                     </div>
+                                                 </td>
+                                                 <td class="px-4 py-3 align-top">
+                                                     <div class="flex flex-col gap-1">
+                                                         <div class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                                             <div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] text-slate-500"><i class="fa-solid fa-user"></i></div>
+                                                             {{r.requestedByName}}
+                                                         </div>
+                                                         <div class="text-[11px] text-slate-500 ml-6"><i class="fa-regular fa-clock mr-1"></i> {{r.requestDate | date:'dd/MM/yyyy HH:mm'}}</div>
+                                                         @if(r.priority === 'HIGH') {
+                                                             <div class="ml-6 mt-1">
+                                                                 <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 uppercase tracking-widest"><i class="fa-solid fa-bolt mr-1"></i> GẤP</span>
+                                                             </div>
+                                                         }
+                                                     </div>
+                                                 </td>
+                                                 <td class="px-4 py-3 text-center align-top">
+                                                     <button (click)="markPurchaseRequestCompleted(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 active:scale-95 flex items-center gap-1.5 mx-auto">
+                                                         <i class="fa-solid fa-check"></i> Đã nhận hàng
+                                                     </button>
+                                                 </td>
+                                             </tr>
+                                         }
+                                     </tbody>
+                                 </table>
+                             </div>
+                         }
+                     }
+                 </div>
+             </div>
+         </div>
+      }
+
     </div>
   `
 })
@@ -395,6 +505,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   // Multi-select state
   selectedStandardIds = signal<Set<string>>(new Set());
   standardSearchTerm = signal('');
+  
+  // Admin Purchase Requests
+  showPurchaseRequestsAdminModal = signal(false);
+  loadingAdminRequests = signal(false);
+  adminPurchaseRequests = signal<PurchaseRequest[]>([]);
+  pendingPurchaseRequestsCount = signal(0);
+  private purchaseReqUnsub?: Unsubscribe;
   
   private unsubRequests: Unsubscribe | null = null;
   private unsubStandards: Unsubscribe | null = null;
@@ -466,11 +583,57 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
         // Only show standards that are available for new requests
         this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE' && s.status !== 'DEPLETED' && s.current_amount > 0));
     });
+    
+    // Listen to purchase requests for Admin
+    if (this.auth.canApproveStandards()) {
+        this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((reqs) => {
+            this.adminPurchaseRequests.set(reqs);
+            this.pendingPurchaseRequestsCount.set(reqs.length);
+            this.loadingAdminRequests.set(false);
+        });
+    }
   }
 
   ngOnDestroy() {
     if (this.unsubRequests) this.unsubRequests();
     if (this.unsubStandards) this.unsubStandards();
+    if (this.purchaseReqUnsub) this.purchaseReqUnsub();
+  }
+
+  // --- Purchase Requests Logic (Admin) ---
+  openAdminPurchaseRequests() {
+      if (!this.auth.canApproveStandards()) return;
+      this.loadingAdminRequests.set(true);
+      this.showPurchaseRequestsAdminModal.set(true);
+      setTimeout(() => this.loadingAdminRequests.set(false), 300);
+  }
+
+  closeAdminPurchaseRequests() {
+      this.showPurchaseRequestsAdminModal.set(false);
+  }
+
+  async markPurchaseRequestCompleted(req: PurchaseRequest) {
+      if (!req.id) return;
+      this.confirmationService.confirm({
+          message: `Xác nhận bạn đã MUA và NHẬN ĐƯỢC chuẩn "${req.standardName}"? Cần cập nhật số lượng tồn kho theo số liệu thực tế sau khi nhận.`,
+          confirmText: 'Đã nhận',
+          cancelText: 'Hủy'
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              try {
+                  const uid = this.auth.currentUser()?.uid || '';
+                  const uname = this.auth.currentUser()?.displayName || this.auth.currentUser()?.email || 'Admin';
+                  const reqId = req.id as string;
+                  await this.stdService.completePurchaseRequest(reqId, req.standardId, uid, uname);
+                  this.toast.show('Đã hoàn thành yêu cầu mua sắm. Vui lòng cập nhật số lượng tồn kho của chuẩn!', 'success');
+              } catch (e: any) {
+                  this.toast.show('Lỗi: ' + e.message, 'error');
+              } finally {
+                  this.isProcessing.set(false);
+              }
+          }
+      });
   }
 
   openRequestModal() {

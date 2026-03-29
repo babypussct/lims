@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -42,12 +42,7 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
            }
 
            @if(auth.canEditStandards()) {
-             @if(pendingPurchaseRequestsCount() > 0) {
-                 <button (click)="openPurchaseRequestsModal()" class="relative px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg border border-amber-200 dark:border-amber-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Yêu cầu mua sắm">
-                    <i class="fa-solid fa-cart-shopping"></i> Yêu cầu YCMP
-                    <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center animate-pulse border-2 border-white dark:border-slate-800">{{pendingPurchaseRequestsCount()}}</span>
-                 </button>
-             }
+
              <button (click)="openAddModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
@@ -1027,74 +1022,7 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
          </div>
       }
 
-      <!-- ADMIN PURCHASE REQUESTS MODAL -->
-      @if (showPurchaseRequestsAdminModal()) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-               <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-amber-50 dark:bg-amber-900/10 flex justify-between items-center shrink-0">
-                   <h3 class="font-black text-amber-800 dark:text-amber-500 text-lg flex items-center gap-2">
-                       <i class="fa-solid fa-cart-shopping"></i> Yêu Cầu Mua Sắm (Chờ duyệt: {{pendingPurchaseRequestsCount()}})
-                   </h3>
-                   <button (click)="closePurchaseRequestsAdminModal()" class="text-slate-400 hover:text-red-500 rounded-full w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition"><i class="fa-solid fa-times"></i></button>
-               </div>
-               
-               <div class="flex-1 overflow-auto p-0">
-                   <table class="w-full text-sm text-left">
-                       <thead class="bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase sticky top-0 shadow-sm border-b border-slate-200 dark:border-slate-700">
-                           <tr>
-                               <th class="px-6 py-4">Sản phẩm</th>
-                               <th class="px-4 py-4 w-28 text-center border-l border-slate-200 dark:border-slate-700">Mức độ</th>
-                               <th class="px-4 py-4 w-28 text-right border-l border-slate-200 dark:border-slate-700">Lượng Y/C</th>
-                               <th class="px-4 py-4 border-l border-slate-200 dark:border-slate-700">Yêu cầu thêm</th>
-                               <th class="px-4 py-4 w-40 border-l border-slate-200 dark:border-slate-700">Người Y/C</th>
-                               <th class="px-4 py-4 w-32 text-center border-l bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700">Tác vụ</th>
-                           </tr>
-                       </thead>
-                       <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            @if (loadingAdminRequests()) {
-                                <tr><td colspan="6" class="p-8 text-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>
-                            } @else {
-                                @for (req of adminPurchaseRequests(); track req.id) {
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-white dark:bg-slate-900 group">
-                                        <td class="px-6 py-4">
-                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-base" [title]="req.standardName">{{req.standardName}}</div>
-                                            <div class="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">Code: {{req.product_code || '---'}}</div>
-                                            @if(req.notes) { <div class="text-xs italic text-amber-700 dark:text-amber-500 mt-2 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 flex gap-1 rounded border border-amber-100 dark:border-amber-900/40 w-max max-w-[300px] truncate" [title]="req.notes"><i class="fa-solid fa-quote-left opacity-50 mt-0.5"></i> {{req.notes}}</div> }
-                                        </td>
-                                        <td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800/50 align-top">
-                                            @if(req.priority === 'HIGH') {
-                                                <span class="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[10px] font-bold uppercase rounded border border-red-200 dark:border-red-800/50 whitespace-nowrap"><i class="fa-solid fa-fire text-red-500 mr-1"></i> Khẩn cấp</span>
-                                            } @else {
-                                                <span class="px-2 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase rounded border border-slate-200 dark:border-slate-700 whitespace-nowrap">Bình thường</span>
-                                            }
-                                        </td>
-                                        <td class="px-4 py-4 text-right border-l border-slate-50 dark:border-slate-800/50 align-top font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{{req.expectedAmount}}</td>
-                                        <td class="px-4 py-4 border-l border-slate-50 dark:border-slate-800/50 align-top">
-                                            @if(req.preferred_manufacturer) { <div class="text-sm dark:text-slate-300"><span class="text-xs text-slate-500">Hãng:</span> <span class="font-bold">{{req.preferred_manufacturer}}</span></div> }
-                                            @if(req.required_level) { <div class="text-sm dark:text-slate-300 mt-1"><span class="text-xs text-slate-500">Cấp:</span> <span class="font-bold">{{req.required_level}}</span></div> }
-                                            @if(req.required_purity) { <div class="text-sm dark:text-slate-300 mt-1"><span class="text-xs text-slate-500">Purity:</span> <span class="font-bold">{{req.required_purity}}</span></div> }
-                                            @if(!req.preferred_manufacturer && !req.required_level && !req.required_purity) { <div class="text-slate-400 text-xs italic">---</div> }
-                                        </td>
-                                        <td class="px-4 py-4 border-l border-slate-50 dark:border-slate-800/50 align-top">
-                                            <div class="text-sm font-bold truncate max-w-[150px]" [title]="req.requestedByName"><i class="fa-regular fa-user text-slate-400 mr-1"></i>{{req.requestedByName}}</div>
-                                            <div class="text-[10px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</div>
-                                        </td>
-                                        <td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800/50 align-top">
-                                            <button (click)="markPurchaseRequestDone(req)" [disabled]="isProcessing()" class="w-full px-3 h-9 bg-emerald-500 border border-emerald-600 text-white hover:bg-emerald-600 dark:border-none rounded-lg transition font-bold text-xs disabled:opacity-50 shadow-md shadow-emerald-200 dark:shadow-none flex items-center justify-center gap-2" title="Xác nhận đã đặt mua hàng">
-                                                <i class="fa-solid fa-check-circle"></i> Xong
-                                            </button>
-                                        </td>
-                                    </tr>
-                                } @empty {
-                                    <tr><td colspan="6" class="p-16 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-3"><div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center opacity-50"><i class="fa-solid fa-box-open text-3xl"></i></div><div class="italic">Không có yêu cầu mua sắm nào cần xử lý.</div></td></tr>
-                                }
-                            }
-                       </tbody>
-                   </table>
-               </div>
-            </div>
-         </div>
-      }
+
     </div>
   `
 })
@@ -1126,16 +1054,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
   activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'low_stock'>('all');
   private snapshotUnsub?: Unsubscribe;
 
-  // --- Purchase Requests State ---
-  pendingPurchaseRequestsCount = signal(0);
-  private purchaseReqUnsub?: Unsubscribe;
+  // --- Purchase Requests State (Staff) ---
   showPurchaseRequestModal = signal(false);
   selectedPurchaseStd = signal<ReferenceStandard | null>(null);
 
-  showPurchaseRequestsAdminModal = signal(false);
-  loadingAdminRequests = signal(false);
-  adminPurchaseRequests = signal<any[]>([]);
-  private adminReqUnsub?: Unsubscribe;
+
 
   // Stats Computed
   stats = computed(() => {
@@ -1325,11 +1248,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.isLoading.set(false);
       });
 
-      if (this.auth.canEditStandards()) {
-          this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((count) => {
-              this.pendingPurchaseRequestsCount.set(count);
-          });
-      }
+
 
       // Auto-fill Location based on Storage Condition
       this.form.get('storage_condition')?.valueChanges.subscribe(val => {
@@ -1349,11 +1268,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
   ngOnDestroy() { 
       this.searchSubject.complete(); 
       if (this.snapshotUnsub) this.snapshotUnsub();
-      if (this.purchaseReqUnsub) this.purchaseReqUnsub();
-      this.searchSubject.complete();
   }
 
-  // --- Purchase Requests Logic ---
+  // --- Purchase Requests Logic (Staff) ---
   openPurchaseRequestModal(std: ReferenceStandard) {
       if (this.isProcessing()) return;
       this.selectedPurchaseStd.set(std);
@@ -1367,67 +1284,33 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   async submitPurchaseRequest() {
-      if (this.purchaseForm.invalid || !this.selectedPurchaseStd() || this.isProcessing()) return;
-      this.isProcessing.set(true);
+      if (this.purchaseForm.invalid || this.isProcessing()) return;
+      
+      const std = this.selectedPurchaseStd();
       const user = this.auth.currentUser();
+      
+      if (!std || !user) return;
+
+      this.isProcessing.set(true);
       try {
-          const req: any = {
-              standardId: this.selectedPurchaseStd()!.id,
-              standardName: this.selectedPurchaseStd()!.name,
-              manufacturer: this.selectedPurchaseStd()!.manufacturer || '',
-              product_code: this.selectedPurchaseStd()!.product_code || '',
-              lot_number: this.selectedPurchaseStd()!.lot_number || '',
-              requestedBy: user?.uid,
+          const req: PurchaseRequest = {
+              standardId: std.id,
+              standardName: std.name,
+              product_code: std.cas_number || std.internal_id || '',
+              requestDate: Date.now(),
+              status: 'PENDING',
+              requestedBy: user.uid,
               requestedByName: user?.displayName || user?.email || 'Unknown',
-              priority: this.purchaseForm.value.priority,
-              expectedAmount: this.purchaseForm.value.expectedAmount,
+              priority: this.purchaseForm.value.priority as any,
+              expectedAmount: this.purchaseForm.value.expectedAmount || '',
               preferred_manufacturer: this.purchaseForm.value.preferred_manufacturer || '',
               required_level: this.purchaseForm.value.required_level || '',
               required_purity: this.purchaseForm.value.required_purity || '',
               notes: this.purchaseForm.value.notes || ''
           };
           await this.stdService.createPurchaseRequest(req);
-          this.toast.show('Gửi yêu cầu mua sắm thành công!', 'success');
+          this.toast.show('Đã gửi yêu cầu mua sắm', 'success');
           this.closePurchaseRequestModal();
-      } catch (e: any) {
-          this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
-
-  openPurchaseRequestsModal() {
-      if (!this.auth.canEditStandards()) return;
-      this.showPurchaseRequestsAdminModal.set(true);
-      this.loadingAdminRequests.set(true);
-      // Listen to Pending requests
-      this.adminReqUnsub = onSnapshot(
-          query(collection(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/purchase_requests`), where('status', '==', 'PENDING')),
-          (snap) => {
-              const data: any[] = [];
-              snap.forEach(d => data.push({id: d.id, ...d.data()}));
-              data.sort((a,b) => b.requestDate - a.requestDate); // sort descending
-              this.adminPurchaseRequests.set(data);
-              this.loadingAdminRequests.set(false);
-          }
-      );
-  }
-
-  closePurchaseRequestsAdminModal() {
-      this.showPurchaseRequestsAdminModal.set(false);
-      if (this.adminReqUnsub) {
-          this.adminReqUnsub();
-      }
-  }
-
-  async markPurchaseRequestDone(req: any) {
-      if (this.isProcessing()) return;
-      if (!await this.confirmationService.confirm('Xác nhận đã xử lý/đặt hàng cho yêu cầu này?')) return;
-      
-      this.isProcessing.set(true);
-      try {
-          await this.stdService.completePurchaseRequest(req.id, req.standardId);
-          this.toast.show('Đã đóng yêu cầu mua sắm!', 'success');
       } catch (e: any) {
           this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {

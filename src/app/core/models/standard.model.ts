@@ -55,7 +55,7 @@ export interface ReferenceStandard {
 export type PurchaseRequestStatus = 'PENDING' | 'ORDERED' | 'COMPLETED' | 'REJECTED';
 
 export interface PurchaseRequest {
-  id: string;
+  id?: string;
   standardId: string;    // ID chuẩn gốc đã hết
   standardName: string;
   manufacturer?: string; // Hãng hiện tại

@@ -886,21 +886,27 @@ export class StandardService {
       return id;
   }
 
-  listenToPendingPurchaseRequests(callback: (count: number) => void): Unsubscribe {
+  listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
       const reqRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests`);
       const q = query(reqRef, where('status', '==', 'PENDING'));
       return onSnapshot(q, (snapshot) => {
-          callback(snapshot.size);
+          const reqs: PurchaseRequest[] = [];
+          snapshot.forEach(doc => {
+              reqs.push({ ...doc.data(), id: doc.id } as PurchaseRequest);
+          });
+          callback(reqs);
       });
   }
 
-  async completePurchaseRequest(reqId: string, stdId: string) {
+  async completePurchaseRequest(reqId: string, stdId: string, processedBy: string, processedByName: string) {
       const batch = writeBatch(this.fb.db);
       
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests/${reqId}`);
       batch.update(reqRef, { 
           status: 'COMPLETED',
-          processedDate: Date.now()
+          processedDate: Date.now(),
+          processedBy,
+          processedByName
       });
 
       // Reset restock_requested on standard
