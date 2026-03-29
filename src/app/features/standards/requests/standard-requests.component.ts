@@ -200,32 +200,66 @@ function removeAccents(str: string): string {
                     <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                         <div class="space-y-2">
                             @for(std of filteredAvailableStandards(); track std.id) {
-                                <div class="p-4 bg-white dark:bg-slate-900/50 border rounded-2xl transition-all cursor-pointer flex items-start gap-4 group"
+                                <div class="p-5 bg-white dark:bg-slate-900 border rounded-[2rem] transition-all cursor-pointer flex items-start gap-4 group relative overflow-hidden"
                                      [ngClass]="{
-                                        'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20': selectedStandardIds().has(std.id),
-                                        'border-slate-100 dark:border-slate-800': !selectedStandardIds().has(std.id)
+                                        'border-indigo-500 ring-2 ring-indigo-500/10 bg-indigo-50/30 dark:bg-indigo-900/10': selectedStandardIds().has(std.id),
+                                        'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none': !selectedStandardIds().has(std.id)
                                      }"
                                      (click)="toggleStandardSelection(std.id)">
                                     
-                                    <div class="mt-1">
-                                        <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all"
-                                             [ngClass]="{
-                                                'bg-indigo-600 border-indigo-600': selectedStandardIds().has(std.id),
-                                                'border-slate-300': !selectedStandardIds().has(std.id)
-                                             }">
-                                            @if(selectedStandardIds().has(std.id)) {
-                                                <i class="fa-solid fa-check text-[10px] text-white"></i>
-                                            }
+                                    <!-- Selection Indicator Overlay -->
+                                    @if(selectedStandardIds().has(std.id)) {
+                                        <div class="absolute top-0 right-0 w-12 h-12 flex items-center justify-center translate-x-3 -translate-y-3">
+                                            <div class="w-full h-full bg-indigo-600 rotate-45 transform"></div>
+                                            <i class="fa-solid fa-check text-white absolute top-1 right-2 text-xs"></i>
                                         </div>
+                                    }
+
+                                    <!-- Standard Icon/Letter -->
+                                    <div class="shrink-0 w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-indigo-600 shadow-sm transition-transform group-hover:scale-110">
+                                        <i class="fa-solid fa-flask-vial text-lg"></i>
                                     </div>
 
                                     <div class="flex-1 min-w-0">
-                                        <div class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 transition-colors">{{std.name}}</div>
-                                        <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-hashtag mr-1"></i> {{std.lot_number || 'N/A'}}</span>
-                                            <span class="text-[10px] font-bold text-emerald-600"><i class="fa-solid fa-box mr-1"></i> {{std.current_amount}} {{std.unit}}</span>
+                                        <div class="flex items-center justify-between gap-2 mb-1">
+                                            <div class="font-black text-sm text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 transition-colors" [title]="std.name">{{std.name}}</div>
                                             @if(std.internal_id) {
-                                                <span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-barcode mr-1"></i> {{std.internal_id}}</span>
+                                                <span class="shrink-0 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded uppercase border border-slate-200 dark:border-slate-700">{{std.internal_id}}</span>
+                                            }
+                                        </div>
+
+                                        <!-- Detail Grid -->
+                                        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+                                            <div class="flex items-center gap-1.5">
+                                                <i class="fa-solid fa-barcode text-[10px] text-slate-400 w-3"></i>
+                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate">Mã: {{std.product_code || 'N/A'}}</span>
+                                            </div>
+                                            <div class="flex items-center gap-1.5">
+                                                <i class="fa-solid fa-hashtag text-[10px] text-slate-400 w-3"></i>
+                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate">Lot: {{std.lot_number || 'N/A'}}</span>
+                                            </div>
+                                            <div class="flex items-center gap-1.5">
+                                                <i class="fa-solid fa-flask text-[10px] text-slate-400 w-3"></i>
+                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate">CAS: {{std.cas_number || 'N/A'}}</span>
+                                            </div>
+                                            <div class="flex items-center gap-1.5">
+                                                <i class="fa-solid fa-industry text-[10px] text-slate-400 w-3"></i>
+                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate">Hãng: {{std.manufacturer || 'N/A'}}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/50">
+                                            <div class="flex items-center gap-2">
+                                                <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/30">
+                                                    <i class="fa-solid fa-cube"></i> {{std.current_amount}} {{std.unit}}
+                                                </div>
+                                            </div>
+                                            @if(std.expiry_date) {
+                                                <div class="text-[10px] font-bold flex items-center gap-1" 
+                                                     [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : 'text-slate-400'">
+                                                    <i class="fa-regular fa-calendar-xmark"></i>
+                                                    {{std.expiry_date | date:'dd/MM/yyyy'}}
+                                                </div>
                                             }
                                         </div>
                                     </div>
