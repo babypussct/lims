@@ -524,14 +524,46 @@ export class StandardService {
           const newLogRef = doc(logsRef);
           await setDoc(newLogRef, {
               timestamp: Date.now(),
-              action: 'USED',
+              action: isDepleted ? 'DEPLETED' : 'USED',
               user_uid: req.requestedBy,
               user_name: req.requestedByName,
               amount_used: finalAmountUsed,
               unit: finalUnit,
-              purpose: req.purpose || 'Sử dụng theo yêu cầu'
+              purpose: req.disposalReason || req.purpose || 'Sử dụng theo yêu cầu'
           });
       }
+  }
+
+  async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+      
+      await runTransaction(this.fb.db, async (transaction) => {
+          const reqDoc = await transaction.get(reqRef);
+          if (!reqDoc.exists()) throw new Error("Yêu cầu không tồn tại!");
+          
+          const reqData = reqDoc.data() as StandardRequest;
+          const currentTotal = reqData.totalAmountUsed || 0;
+          
+          transaction.update(reqRef, {
+              totalAmountUsed: currentTotal + amount,
+              updatedAt: Date.now()
+          });
+      });
+
+      // Write usage log
+      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
+      const newLogRef = doc(logsRef);
+      await setDoc(newLogRef, {
+          timestamp: Date.now(),
+          action: 'USED',
+          user_uid: userId,
+          user_name: userName,
+          amount_used: amount,
+          unit: unit,
+          purpose: purpose || 'Báo cáo sử dụng'
+      });
+      
+      await this.logGlobalActivity('LOG_USAGE_STANDARD', `Khai báo sử dụng ${amount}${unit} chuẩn: ${standardId}`, requestId);
   }
 
   listenToRequests(callback: (requests: StandardRequest[]) => void) {

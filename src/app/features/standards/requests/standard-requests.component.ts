@@ -153,6 +153,7 @@ function removeAccents(str: string): string {
                                         }
                                         @if(req.status === 'IN_PROGRESS') {
                                             @if(req.requestedBy === auth.currentUser()?.uid) {
+                                                <button (click)="openLogUsageModal(req)" class="w-full px-2 py-1 rounded bg-teal-600 text-white text-[10px] font-bold hover:bg-teal-700 transition mb-1"><i class="fa-solid fa-pen-to-square mr-1"></i> Ghi nhận dùng</button>
                                                 <button (click)="openReturnModal(req, false)" class="w-full px-2 py-1 rounded bg-blue-600 text-white text-[10px] font-bold hover:bg-blue-700 transition">Báo cáo trả</button>
                                             }
                                             @if(auth.canApproveStandards()) {
@@ -160,8 +161,7 @@ function removeAccents(str: string): string {
                                             }
                                         }
                                         @if(req.status === 'PENDING_RETURN' && auth.canApproveStandards()) {
-                                            <button (click)="receiveStandard(req, false)" class="w-full px-2 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold hover:bg-indigo-700 transition">Nhận lại (Còn)</button>
-                                            <button (click)="receiveStandard(req, true)" class="w-full px-2 py-1 rounded bg-orange-600 text-white text-[10px] font-bold hover:bg-orange-700 transition mt-1">Nhận lại (Hết)</button>
+                                            <button (click)="openAdminReceiveModal(req)" class="w-full px-2 py-1.5 rounded bg-indigo-600 text-white text-[10px] font-bold hover:bg-indigo-700 transition"><i class="fa-solid fa-check-to-slot mr-1"></i> Tiếp nhận trả</button>
                                         }
                                      </div>
                                   </td>
@@ -248,6 +248,11 @@ function removeAccents(str: string): string {
                         <div>
                             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Mục đích sử dụng</label>
                             <textarea formControlName="purpose" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: Pha chuẩn mới (Mặc định nếu để trống)"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Ngày dự kiến trả (Không bắt buộc)</label>
+                            <input type="date" formControlName="expectedReturnDate" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </form>
                 </div>
@@ -359,6 +364,120 @@ function removeAccents(str: string): string {
             </div>
          </div>
       }
+
+      <!-- LOG USAGE MODAL -->
+      @if (showLogUsageModal()) {
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                
+                <div class="px-6 py-4 border-b border-slate-100 bg-teal-50 flex justify-between items-center shrink-0">
+                    <h3 class="font-black text-teal-600 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Ghi nhận lượng dùng
+                    </h3>
+                    <button (click)="closeLogUsageModal()" class="w-8 h-8 rounded-full bg-white border border-teal-200 flex items-center justify-center text-teal-400 hover:text-teal-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
+                    <div class="space-y-5">
+                        <p class="text-sm text-slate-600 dark:text-slate-400">Bạn đang ghi nhận lưu lượng chuẩn <strong>{{selectedRequest()?.standardName}}</strong> đã sử dụng cho đợt pha này.</p>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lượng đã sử dụng đợt này <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" min="0" step="any" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500 pr-12" placeholder="Nhập số lượng...">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ selectedRequest()?.standardDetails?.unit || 'mg' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Mục đích phụ (Tùy chọn)</label>
+                            <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500" placeholder="VD: Dùng cho mẫu ABC..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
+                    <button (click)="closeLogUsageModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
+                    <button (click)="confirmLogUsage()" [disabled]="logUsageAmount() === null || logUsageAmount()! <= 0 || isProcessing()" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
+                        @else { Ghi nhận }
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+      <!-- ADMIN RECEIVE RETURN MODAL -->
+      @if (showAdminReceiveModal()) {
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                
+                <div class="px-6 py-4 border-b border-slate-100 bg-indigo-50 flex justify-between items-center shrink-0">
+                    <h3 class="font-black text-indigo-700 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-check-to-slot"></i>
+                        Xác nhận tiếp nhận chuẩn
+                    </h3>
+                    <button (click)="closeAdminReceiveModal()" class="w-8 h-8 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
+                    <div class="space-y-5">
+                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-base mb-2">{{adminReceiveRequest()?.standardName}}</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Người mượn báo cáo đã dùng</span>
+                                    <span class="font-bold text-indigo-600 dark:text-indigo-400">{{adminReceiveRequest()?.totalAmountUsed || 0}} {{adminReceiveRequest()?.standardDetails?.unit || 'mg'}}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Báo cáo tình trạng</span>
+                                    @if(adminReceiveRequest()?.reportedDepleted) {
+                                        <span class="font-bold text-orange-600">Đã hết chuẩn</span>
+                                    } @else {
+                                        <span class="font-bold text-emerald-600">Vẫn còn sử dụng được</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Khối lượng thực tế trừ kho <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" min="0" step="any" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 pr-12" placeholder="Nhập số lượng thực tế...">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ adminReceiveRequest()?.standardDetails?.unit || 'mg' }}</span>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1 italic">Bạn có thể điều chỉnh lại con số này nếu kiểm tra khối lượng thực tế khác với báo cáo.</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mt-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-100 dark:border-orange-800/30">
+                            <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500">
+                            <label for="adminIsDepleted" class="text-sm font-bold text-orange-800 dark:text-orange-400 cursor-pointer">Xác nhận chuẩn ĐÃ HẾT (Depleted)</label>
+                        </div>
+
+                        @if(adminReceiveIsDepleted()) {
+                            <div class="fade-in">
+                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
+                                <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500" placeholder="Biên bản hủy, lý do..."></textarea>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
+                    <button (click)="closeAdminReceiveModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
+                    <button (click)="confirmAdminReceive()" [disabled]="adminReceiveAmount() === null || adminReceiveAmount()! < 0 || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
+                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
+                        @else { Hoàn tất tiếp nhận }
+                    </button>
+                </div>
+            </div>
+         </div>
+      }
+
       <!-- ADMIN PURCHASE REQUESTS MODAL -->
       @if (showPurchaseRequestsAdminModal()) {
          <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
@@ -495,6 +614,18 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   returnRequest = signal<StandardRequest | null>(null);
   isForceReturn = signal(false);
   returnIsDepleted = signal(false);
+
+  // Log Usage Modal (Dùng dần)
+  showLogUsageModal = signal(false);
+  logUsageAmount = signal<number | null>(null);
+  logUsagePurpose = signal('');
+
+  // Admin Receive Return Modal
+  showAdminReceiveModal = signal(false);
+  adminReceiveRequest = signal<StandardRequest | null>(null);
+  adminReceiveAmount = signal<number | null>(null);
+  adminReceiveIsDepleted = signal(false);
+  adminReceiveDisposalReason = signal('');
   
   currentStandard = computed(() => {
       const req = this.returnRequest();
@@ -517,7 +648,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   private unsubStandards: Unsubscribe | null = null;
 
   form: FormGroup = this.fb.group({
-    purpose: ['']
+    purpose: [''],
+    expectedReturnDate: ['']
   });
 
   filteredAvailableStandards = computed(() => {
@@ -675,6 +807,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
       const val = this.form.value;
       const purpose = val.purpose?.trim() || 'Pha chuẩn mới';
+      let expectedReturnDate: number | undefined;
+      if (val.expectedReturnDate) {
+          expectedReturnDate = new Date(val.expectedReturnDate).getTime();
+      }
       
       this.isProcessing.set(true);
       try {
@@ -693,7 +829,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   requestDate: Date.now(),
                   purpose: purpose,
                   status: 'PENDING_APPROVAL',
-                  totalAmountUsed: 0
+                  totalAmountUsed: 0,
+                  expectedReturnDate: expectedReturnDate
               };
               
               await this.stdService.createRequest(req);
@@ -763,7 +900,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   openReturnModal(req: StandardRequest, isForce: boolean) {
       this.returnRequest.set(req);
       this.isForceReturn.set(isForce);
-      this.returnAmount.set(null);
+      // Mặc định lấy tổng đã dùng nếu có
+      this.returnAmount.set(req.totalAmountUsed || null);
       this.returnIsDepleted.set(false);
       this.showReturnModal.set(true);
   }
@@ -773,6 +911,38 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.returnRequest.set(null);
       this.returnAmount.set(null);
       this.returnIsDepleted.set(false);
+  }
+
+  openLogUsageModal(req: StandardRequest) {
+      this.selectedRequest.set(req);
+      this.logUsageAmount.set(null);
+      this.logUsagePurpose.set('');
+      this.showLogUsageModal.set(true);
+  }
+
+  closeLogUsageModal() {
+      this.showLogUsageModal.set(false);
+      this.selectedRequest.set(null);
+      this.logUsageAmount.set(null);
+      this.logUsagePurpose.set('');
+  }
+
+  async confirmLogUsage() {
+      const req = this.selectedRequest();
+      const amount = this.logUsageAmount();
+      if (!req || !req.id || amount === null || amount <= 0) return;
+
+      this.isProcessing.set(true);
+      try {
+          const user = this.auth.currentUser();
+          await this.stdService.logUsageForRequest(req.id, req.standardId, amount, req.standardDetails?.unit || 'mg', this.logUsagePurpose().trim(), user?.uid || '', user?.displayName || user?.email || 'Unknown');
+          this.toast.show('Đã ghi nhận sử dụng (Dùng dần) thành công', 'success');
+          this.closeLogUsageModal();
+      } catch (error: any) {
+          this.toast.show('Lỗi: ' + error.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   async confirmReturn() {
@@ -803,29 +973,50 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       }
   }
 
-  async receiveStandard(req: StandardRequest, isDepleted: boolean) {
+  openAdminReceiveModal(req: StandardRequest) {
       if (!req.id) return;
+      this.adminReceiveRequest.set(req);
+      this.adminReceiveAmount.set(req.totalAmountUsed || 0);
+      this.adminReceiveIsDepleted.set(req.reportedDepleted || false);
+      this.adminReceiveDisposalReason.set(req.disposalReason || '');
+      this.showAdminReceiveModal.set(true);
+  }
+
+  closeAdminReceiveModal() {
+      this.showAdminReceiveModal.set(false);
+      this.adminReceiveRequest.set(null);
+      this.adminReceiveAmount.set(null);
+      this.adminReceiveIsDepleted.set(false);
+      this.adminReceiveDisposalReason.set('');
+  }
+
+  async confirmAdminReceive() {
+      const req = this.adminReceiveRequest();
+      if (!req || !req.id) return;
       const user = this.auth.currentUser();
       if (!user) return;
-
-      let message = isDepleted ? `Xác nhận nhận lại chuẩn ${req.standardName} và đánh dấu là ĐÃ HẾT?` : `Xác nhận nhận lại chuẩn ${req.standardName} (vẫn còn sử dụng được)?`;
       
-      if (!isDepleted && req.reportedDepleted) {
-          message = `Nhân viên đã báo cáo chuẩn này ĐÃ HẾT. Bạn có chắc chắn muốn nhận lại và đánh dấu là VẪN CÒN SỬ DỤNG ĐƯỢC?`;
-      } else if (isDepleted && req.reportedDepleted === false) {
-          message = `Nhân viên KHÔNG báo cáo chuẩn này đã hết. Bạn có chắc chắn muốn nhận lại và đánh dấu là ĐÃ HẾT?`;
+      const amount = this.adminReceiveAmount() || 0;
+      const isDepleted = this.adminReceiveIsDepleted();
+      const reason = this.adminReceiveDisposalReason().trim();
+
+      if (isDepleted && !reason) {
+          this.toast.show('Vui lòng nhập lý do hủy chuẩn (disposal reason)', 'error');
+          return;
       }
 
-      if (await this.confirmationService.confirm({ message, confirmText: 'Xác nhận nhận' })) {
-          this.isProcessing.set(true);
-          try {
-              await this.stdService.returnStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown', isDepleted);
-              this.toast.show('Đã nhận lại chuẩn', 'success');
-          } catch (e: any) {
-              this.toast.show('Lỗi: ' + e.message, 'error');
-          } finally {
-              this.isProcessing.set(false);
+      this.isProcessing.set(true);
+      try {
+          if (isDepleted) {
+              await this.stdService.updateRequestStatus(req.id, 'COMPLETED', { disposalReason: reason });
           }
+          await this.stdService.returnStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown', isDepleted, amount, req.standardDetails?.unit || 'mg');
+          this.toast.show('Đã nhận lại chuẩn thành công', 'success');
+          this.closeAdminReceiveModal();
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
       }
   }
 

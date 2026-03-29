@@ -108,6 +108,7 @@ export interface StandardRequest {
   
   // Return/Depletion
   returnDate?: number;
+  disposalReason?: string;
   receivedBy?: string;
   receivedByName?: string;
   
