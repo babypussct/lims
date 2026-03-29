@@ -175,128 +175,254 @@ function removeAccents(str: string): string {
           </div>
       </div>
 
-      <!-- REQUEST MODAL -->
+      <!-- REQUEST MODAL (Tạo yêu cầu mới) -->
       @if (showModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-5xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800 h-[85vh]">
                 
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-list text-indigo-600"></i>
-                        Tạo Yêu cầu Chuẩn
-                    </h3>
-                    <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
-                </div>
+                <!-- Left Column: Standards Selection -->
+                <div class="w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
+                    <div class="p-6 border-b border-slate-100 dark:border-slate-800">
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
+                            <i class="fa-solid fa-flask-vial text-indigo-600"></i>
+                            Chọn chuẩn đối chiếu
+                        </h3>
+                        
+                        <!-- Search Input -->
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="standardSearchTerm.set($event)" 
+                                   placeholder="Tìm theo tên, lot, cas, mã..." 
+                                   class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                        </div>
+                    </div>
 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <form [formGroup]="form" class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Chọn Chuẩn (Có thể chọn nhiều) <span class="text-red-500">*</span></label>
-                            
-                            <!-- Search Input -->
-                            <div class="relative mb-2">
-                                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="standardSearchTerm.set($event)" [ngModelOptions]="{standalone: true}" placeholder="Tìm theo tên, lot, cas, mã..." class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-
-                            <!-- Selected Count -->
-                            @if(selectedStandardIds().size > 0) {
-                                <div class="mb-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                                    Đã chọn: {{selectedStandardIds().size}} chuẩn
-                                </div>
-                            }
-
-                            <!-- Standards List -->
-                            <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
-                                @for(std of filteredAvailableStandards(); track std.id) {
-                                    <div class="p-3 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer flex items-start gap-3" (click)="toggleStandardSelection(std.id)">
-                                        <input type="checkbox" [checked]="selectedStandardIds().has(std.id)" class="mt-1 w-4 h-4 accent-indigo-600">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{{std.name}}</div>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                                                @if(std.internal_id) {
-                                                    <span title="Mã nội bộ"><i class="fa-solid fa-barcode w-3"></i> {{std.internal_id}}</span>
-                                                }
-                                                <span title="Lot Number"><i class="fa-solid fa-hashtag w-3"></i> {{std.lot_number || 'N/A'}}</span>
-                                                <span title="CAS"><i class="fa-solid fa-flask w-3"></i> {{std.cas_number || 'N/A'}}</span>
-                                                @if(std.manufacturer) {
-                                                    <span title="Hãng sản xuất"><i class="fa-solid fa-industry w-3"></i> {{std.manufacturer}}</span>
-                                                }
-                                                @if(std.expiry_date) {
-                                                    <span title="Hạn sử dụng" [class.text-red-500]="isExpired(std.expiry_date)"><i class="fa-regular fa-calendar-xmark w-3"></i> {{std.expiry_date | date:'dd/MM/yyyy'}}</span>
-                                                }
-                                                <span title="Tồn kho" class="font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-box w-3"></i> {{std.current_amount}} {{std.unit}}</span>
-                                                @if(std.location) {
-                                                    <span title="Vị trí"><i class="fa-solid fa-location-dot w-3"></i> {{std.location}}</span>
-                                                }
-                                            </div>
+                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div class="space-y-2">
+                            @for(std of filteredAvailableStandards(); track std.id) {
+                                <div class="p-4 bg-white dark:bg-slate-900/50 border rounded-2xl transition-all cursor-pointer flex items-start gap-4 group"
+                                     [class.border-indigo-500]="selectedStandardIds().has(std.id)"
+                                     [class.bg-indigo-50]="selectedStandardIds().has(std.id)"
+                                     [class.dark:bg-indigo-900/20]="selectedStandardIds().has(std.id)"
+                                     [class.border-slate-100]="!selectedStandardIds().has(std.id)"
+                                     [class.dark:border-slate-800]="!selectedStandardIds().has(std.id)"
+                                     (click)="toggleStandardSelection(std.id)">
+                                    
+                                    <div class="mt-1">
+                                        <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all"
+                                             [class.bg-indigo-600]="selectedStandardIds().has(std.id)"
+                                             [class.border-indigo-600]="selectedStandardIds().has(std.id)"
+                                             [class.border-slate-300]="!selectedStandardIds().has(std.id)">
+                                            @if(selectedStandardIds().has(std.id)) {
+                                                <i class="fa-solid fa-check text-[10px] text-white"></i>
+                                            }
                                         </div>
                                     </div>
-                                }
-                                @if(filteredAvailableStandards().length === 0) {
-                                    <div class="p-4 text-center text-sm text-slate-500 italic">
-                                        @if(!standardSearchTerm()) {
-                                            Vui lòng nhập từ khóa để tìm kiếm chuẩn.
-                                        } @else {
-                                            Không tìm thấy chuẩn phù hợp.
-                                        }
+
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 transition-colors">{{std.name}}</div>
+                                        <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-hashtag mr-1"></i> {{std.lot_number || 'N/A'}}</span>
+                                            <span class="text-[10px] font-bold text-emerald-600"><i class="fa-solid fa-box mr-1"></i> {{std.current_amount}} {{std.unit}}</span>
+                                            @if(std.internal_id) {
+                                                <span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-barcode mr-1"></i> {{std.internal_id}}</span>
+                                            }
+                                        </div>
                                     </div>
-                                }
-                            </div>
+                                </div>
+                            }
+                            @if(filteredAvailableStandards().length === 0) {
+                                <div class="py-12 text-center">
+                                    <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                                        <i class="fa-solid fa-layer-group text-2xl"></i>
+                                    </div>
+                                    <p class="text-slate-500 dark:text-slate-400 font-medium">Không tìm thấy chuẩn nào phù hợp</p>
+                                </div>
+                            }
                         </div>
-                        
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Mục đích sử dụng</label>
-                            <textarea formControlName="purpose" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="VD: Pha chuẩn mới (Mặc định nếu để trống)"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Ngày dự kiến trả (Không bắt buộc)</label>
-                            <input type="date" formControlName="expectedReturnDate" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                    </form>
+                    </div>
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="submitRequest()" [disabled]="selectedStandardIds().size === 0 || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang gửi... } 
-                        @else { Gửi Yêu cầu }
-                    </button>
+                <!-- Right Column: Form & Confirmation -->
+                <div class="flex-1 flex flex-col bg-white dark:bg-slate-900">
+                    <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
+                        <div>
+                            <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
+                            <p class="text-xs text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
+                        </div>
+                        <button (click)="closeModal()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                        <form [formGroup]="form" (ngSubmit)="submitRequest()" class="space-y-6">
+                            <!-- Selected Counter -->
+                            <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-600 shadow-sm">
+                                        <i class="fa-solid fa-check-double"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Đã chọn</div>
+                                        <div class="text-lg font-black text-indigo-700 dark:text-indigo-300">{{selectedStandardIds().size}} chất chuẩn</div>
+                                    </div>
+                                </div>
+                                <button type="button" (click)="selectedStandardIds.set(new Set())" [disabled]="selectedStandardIds().size === 0" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase underline decoration-2 underline-offset-4 disabled:opacity-30">Xóa tất cả</button>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                                    <textarea formControlName="purpose" rows="3" 
+                                              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" 
+                                              placeholder="VD: Pha chuẩn cho máy HPLC-MS/MS..."></textarea>
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn định kỳ</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm nghiệm mẫu</button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
+                                    <div class="relative group">
+                                        <i class="fa-regular fa-calendar absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                        <input type="date" formControlName="expectedReturnDate" 
+                                               class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                        <div class="flex justify-end gap-3">
+                            <button (click)="closeModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy bỏ</button>
+                            <button (click)="submitRequest()" [disabled]="selectedStandardIds().size === 0 || isProcessing()" 
+                                    class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
+                                @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
+                                @else { <i class="fa-solid fa-paper-plane text-xs"></i> Gửi yêu cầu }
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
          </div>
       }
 
+
+      <!-- APPROVE MODAL (Duyệt & Giao) -->
+      @if (showApproveModal() && selectedRequest()) {
+          <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+              <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                  <!-- Left: Standard Info Summary -->
+                  <div class="hidden md:flex w-2/5 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
+                      <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
+                          <i class="fa-solid fa-vial"></i>
+                      </div>
+                      
+                      <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-2 line-clamp-2">{{selectedRequest()?.standardName}}</h3>
+                      <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-6">Thông tin chuẩn bàn giao</div>
+  
+                      <div class="space-y-4">
+                          <div class="flex flex-col">
+                              <span class="text-[10px] font-bold text-slate-400 uppercase">Số Lô / Lot</span>
+                              <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{selectedRequest()?.lotNumber || 'N/A'}}</span>
+                          </div>
+                          @if(selectedRequest()?.standardDetails?.expiry_date) {
+                              <div class="flex flex-col">
+                                  <span class="text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
+                                  <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{selectedRequest()?.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
+                              </div>
+                          }
+                          <div class="flex flex-col">
+                              <span class="text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
+                              <span class="text-sm font-bold text-emerald-600">{{selectedRequest()?.standardDetails?.current_amount}} {{selectedRequest()?.standardDetails?.unit}}</span>
+                          </div>
+                          @if(selectedRequest()?.standardDetails?.internal_id) {
+                              <div class="flex flex-col">
+                                  <span class="text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
+                                  <span class="text-sm font-bold text-slate-500">{{selectedRequest()?.standardDetails?.internal_id}}</span>
+                              </div>
+                          }
+                      </div>
+  
+                      <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
+                          <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                              <p class="text-[10px] text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+                                  <i class="fa-solid fa-user-check mr-1"></i>
+                                  Người mượn: <strong>{{selectedRequest()?.requestedByName}}</strong>
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+  
+                  <!-- Right: Approve Form -->
+                  <div class="flex-1 p-8 flex flex-col bg-white dark:bg-slate-900">
+                      <div class="flex justify-between items-center mb-6">
+                          <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Duyệt & Giao chuẩn</h3>
+                          <button (click)="showApproveModal.set(false)" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
+                      </div>
+  
+                      <div class="flex-1 space-y-5">
+                          <div class="grid grid-cols-2 gap-4">
+                              <div>
+                                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
+                                  <input type="date" [ngModel]="approveExpectedDate()" (ngModelChange)="approveExpectedDate.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+                              </div>
+                              <div>
+                                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
+                                  <div class="relative">
+                                      <input type="number" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
+                                      <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{selectedRequest()?.standardDetails?.unit}}</span>
+                                  </div>
+                              </div>
+                          </div>
+  
+                          <div>
+                              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                              <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích bàn giao..."></textarea>
+                          </div>
+                      </div>
+  
+                      <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <button (click)="showApproveModal.set(false)" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
+                          <button (click)="confirmApprove()" [disabled]="!approvePurpose() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
+                              @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
+                              @else { <i class="fa-solid fa-check-circle text-xs"></i> Xác nhận & Giao }
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      }
+
       <!-- REJECT MODAL -->
       @if (showRejectModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 bg-red-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-red-600 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-ban"></i>
-                        Từ chối Yêu cầu
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-red-50/50 dark:bg-red-900/10">
+                    <h3 class="font-black text-red-600 dark:text-red-400 text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-ban"></i> Từ chối yêu cầu
                     </h3>
-                    <button (click)="closeRejectModal()" class="w-8 h-8 rounded-full bg-white border border-red-200 flex items-center justify-center text-red-400 hover:text-red-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="closeRejectModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-red-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <div class="space-y-4">
-                        <p class="text-sm text-slate-600 dark:text-slate-400">Bạn đang từ chối yêu cầu chuẩn <strong>{{selectedRequest()?.standardName}}</strong> của <strong>{{selectedRequest()?.requestedByName}}</strong>.</p>
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lý do từ chối <span class="text-red-500">*</span></label>
-                            <textarea [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" rows="3" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-red-500" placeholder="Nhập lý do..."></textarea>
-                        </div>
+                <div class="p-8 bg-white dark:bg-slate-900">
+                    <div class="mb-6">
+                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Bạn đang từ chối yêu cầu của <strong>{{selectedRequest()?.requestedByName}}</strong> cho chuẩn <strong>{{selectedRequest()?.standardName}}</strong>.
+                        </p>
                     </div>
-                </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do từ chối <span class="text-red-500">*</span></label>
+                        <textarea [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none resize-none" placeholder="Nhập lý do cụ thể..."></textarea>
+                    </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeRejectModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
-                    <button (click)="confirmReject()" [disabled]="!rejectReason().trim() || isProcessing()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                        @else { Xác nhận Từ chối }
-                    </button>
+                    <div class="flex justify-end gap-3 mt-8">
+                        <button (click)="closeRejectModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                        <button (click)="confirmReject()" [disabled]="!rejectReason().toString().trim() || isProcessing()" class="px-8 py-3 bg-red-600 text-white font-bold text-sm rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 dark:shadow-none transition disabled:opacity-50">
+                            Xác nhận từ chối
+                        </button>
+                    </div>
                 </div>
             </div>
          </div>
@@ -304,62 +430,44 @@ function removeAccents(str: string): string {
 
       <!-- RETURN MODAL -->
       @if (showReturnModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 bg-indigo-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-indigo-600 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-undo"></i>
-                        {{ isForceReturn() ? 'Thu hồi trực tiếp' : 'Báo cáo trả chuẩn' }}
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
+                    <h3 class="font-black text-indigo-600 dark:text-indigo-400 text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        {{ isForceReturn() ? 'Thu hồi chuẩn' : 'Hoàn trả chuẩn' }}
                     </h3>
-                    <button (click)="closeReturnModal()" class="w-8 h-8 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="closeReturnModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <div class="space-y-5">
-                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-base mb-2">{{returnRequest()?.standardName}}</h4>
-                            <div class="grid grid-cols-2 gap-3 text-sm">
-                                <div>
-                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Số lô (Lot)</span>
-                                    <span class="font-medium text-slate-700 dark:text-slate-300">{{currentStandard()?.lot_number || returnRequest()?.standardDetails?.lot_number || 'N/A'}}</span>
-                                </div>
-                                <div>
-                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Lượng tồn hiện tại</span>
-                                    <span class="font-bold text-indigo-600 dark:text-indigo-400">{{currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lượng đã sử dụng <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="number" min="0" step="any" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 pr-12" placeholder="Nhập số lượng..."
-                                [class.border-red-500]="returnAmount() !== null && returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0)">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg' }}</span>
-                                </div>
-                            </div>
-                            @if(returnAmount() !== null && returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0)) {
-                                <p class="text-xs text-red-500 mt-1 font-medium"><i class="fa-solid fa-triangle-exclamation"></i> Lượng sử dụng không được lớn hơn lượng tồn kho hiện tại.</p>
-                            } @else {
-                                <p class="text-xs text-slate-500 mt-2 italic">Hệ thống sẽ tự động trừ lượng tồn kho của chuẩn này.</p>
-                            }
-                        </div>
-                        
-                        <div class="flex items-center gap-2 mt-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-100 dark:border-orange-800/30">
-                            <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500">
-                            <label for="isDepleted" class="text-sm font-bold text-orange-800 dark:text-orange-400 cursor-pointer">Đánh dấu chuẩn đã hết (Depleted)</label>
+                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
+                    <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30">
+                        <h4 class="font-black text-slate-800 dark:text-slate-100 leading-tight mb-2">{{returnRequest()?.standardName}}</h4>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
+                            <span class="font-black text-indigo-600">{{currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeReturnModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
-                    <button (click)="confirmReturn()" [disabled]="returnAmount() === null || returnAmount()! < 0 || returnAmount()! > (currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0) || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                        @else { Xác nhận }
-                    </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
+                        <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
+                        <label for="isDepleted" class="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-4 pt-4">
+                        <button (click)="closeReturnModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                        <button (click)="confirmReturn()" [disabled]="returnAmount() === null || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                            Xác nhận trả
+                        </button>
+                    </div>
                 </div>
             </div>
          </div>
@@ -367,112 +475,90 @@ function removeAccents(str: string): string {
 
       <!-- LOG USAGE MODAL -->
       @if (showLogUsageModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 bg-teal-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-teal-600 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        Ghi nhận lượng dùng
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-teal-50/50 dark:bg-teal-900/10">
+                    <h3 class="font-black text-teal-600 dark:text-teal-400 text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-vial-circle-check"></i> Ghi nhận đợt dùng
                     </h3>
-                    <button (click)="closeLogUsageModal()" class="w-8 h-8 rounded-full bg-white border border-teal-200 flex items-center justify-center text-teal-400 hover:text-teal-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="closeLogUsageModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-teal-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <div class="space-y-5">
-                        <p class="text-sm text-slate-600 dark:text-slate-400">Bạn đang ghi nhận lưu lượng chuẩn <strong>{{selectedRequest()?.standardName}}</strong> đã sử dụng cho đợt pha này.</p>
-                        
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lượng đã sử dụng đợt này <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="number" min="0" step="any" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500 pr-12" placeholder="Nhập số lượng...">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ selectedRequest()?.standardDetails?.unit || 'mg' }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Mục đích phụ (Tùy chọn)</label>
-                            <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500" placeholder="VD: Dùng cho mẫu ABC..."></textarea>
+                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Khối lượng đợt này <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="number" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{selectedRequest()?.standardDetails?.unit}}</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeLogUsageModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
-                    <button (click)="confirmLogUsage()" [disabled]="logUsageAmount() === null || logUsageAmount()! <= 0 || isProcessing()" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                        @else { Ghi nhận }
-                    </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ghi chú đợt dùng</label>
+                        <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 transition-all outline-none resize-none" placeholder="VD: Dùng cho mẫu phân tích lô X..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button (click)="closeLogUsageModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                        <button (click)="confirmLogUsage()" [disabled]="!logUsageAmount() || isProcessing()" class="px-8 py-3 bg-teal-600 text-white font-bold text-sm rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
+                            Lưu nhật ký dùng
+                        </button>
+                    </div>
                 </div>
             </div>
          </div>
       }
       <!-- ADMIN RECEIVE RETURN MODAL -->
       @if (showAdminReceiveModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 bg-indigo-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-indigo-700 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-check-to-slot"></i>
-                        Xác nhận tiếp nhận chuẩn
+         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
+                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
+                    <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check"></i> Xác nhận nhập kho trả
                     </h3>
-                    <button (click)="closeAdminReceiveModal()" class="w-8 h-8 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
+                    <button (click)="closeAdminReceiveModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <div class="space-y-5">
-                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-base mb-2">{{adminReceiveRequest()?.standardName}}</h4>
-                            <div class="grid grid-cols-2 gap-3 text-sm">
-                                <div>
-                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Người mượn báo cáo đã dùng</span>
-                                    <span class="font-bold text-indigo-600 dark:text-indigo-400">{{adminReceiveRequest()?.totalAmountUsed || 0}} {{adminReceiveRequest()?.standardDetails?.unit || 'mg'}}</span>
-                                </div>
-                                <div>
-                                    <span class="text-slate-500 dark:text-slate-400 block text-xs">Báo cáo tình trạng</span>
-                                    @if(adminReceiveRequest()?.reportedDepleted) {
-                                        <span class="font-bold text-orange-600">Đã hết chuẩn</span>
-                                    } @else {
-                                        <span class="font-bold text-emerald-600">Vẫn còn sử dụng được</span>
-                                    }
-                                </div>
-                            </div>
+                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
+                    <div class="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">NV báo cáo dùng</span>
+                            <span class="text-xl font-black text-indigo-600">{{adminReceiveRequest()?.totalAmountUsed}} {{adminReceiveRequest()?.standardDetails?.unit}}</span>
                         </div>
-
-                        <div>
-                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Khối lượng thực tế trừ kho <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="number" min="0" step="any" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 pr-12" placeholder="Nhập số lượng thực tế...">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <span class="text-slate-500 dark:text-slate-400 text-sm font-bold">{{ adminReceiveRequest()?.standardDetails?.unit || 'mg' }}</span>
-                                </div>
-                            </div>
-                            <p class="text-[11px] text-slate-500 mt-1 italic">Bạn có thể điều chỉnh lại con số này nếu kiểm tra khối lượng thực tế khác với báo cáo.</p>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
+                            <span class="text-sm font-bold" [class]="adminReceiveRequest()?.reportedDepleted ? 'text-red-500' : 'text-emerald-500'">
+                                {{ adminReceiveRequest()?.reportedDepleted ? 'Báo cáo đã hết' : 'Vẫn còn chuẩn' }}
+                            </span>
                         </div>
-                        
-                        <div class="flex items-center gap-2 mt-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-100 dark:border-orange-800/30">
-                            <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500">
-                            <label for="adminIsDepleted" class="text-sm font-bold text-orange-800 dark:text-orange-400 cursor-pointer">Xác nhận chuẩn ĐÃ HẾT (Depleted)</label>
-                        </div>
-
-                        @if(adminReceiveIsDepleted()) {
-                            <div class="fade-in">
-                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
-                                <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500" placeholder="Biên bản hủy, lý do..."></textarea>
-                            </div>
-                        }
                     </div>
-                </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeAdminReceiveModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy</button>
-                    <button (click)="confirmAdminReceive()" [disabled]="adminReceiveAmount() === null || adminReceiveAmount()! < 0 || isProcessing()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                        @else { Hoàn tất tiếp nhận }
-                    </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="number" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{adminReceiveRequest()?.standardDetails?.unit}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
+                        <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
+                        <label for="adminIsDepleted" class="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
+                    </div>
+
+                    @if(adminReceiveIsDepleted()) {
+                        <div class="fade-in">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
+                            <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 outline-none resize-none" placeholder="Nhập lý do như: Hết hạn, hỏng, hoặc dùng hết..."></textarea>
+                        </div>
+                    }
+
+                    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
+                        <button (click)="closeAdminReceiveModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                        <button (click)="confirmAdminReceive()" [disabled]="adminReceiveAmount() === null || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                            Hoàn tất tiếp nhận
+                        </button>
+                    </div>
                 </div>
             </div>
          </div>
@@ -605,8 +691,14 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   showModal = signal(false);
   
   showRejectModal = signal(false);
-  rejectReason = signal('');
+  rejectReason = signal<string>('');
   selectedRequest = signal<StandardRequest | null>(null);
+  
+  // Approve Modal (Duyệt & Giao)
+  showApproveModal = signal(false);
+  approveExpectedDate = signal<string>('');
+  approveExpectedAmount = signal<number | null>(null);
+  approvePurpose = signal<string>('');
   
   // Return Modal
   showReturnModal = signal(false);
@@ -847,19 +939,54 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   async approveRequest(req: StandardRequest) {
       if (!req.id) return;
+      this.selectedRequest.set(req);
+      
+      // Pre-fill from request
+      this.approvePurpose.set(req.purpose || '');
+      this.approveExpectedAmount.set(req.expectedAmount || null);
+      if (req.expectedReturnDate) {
+          const date = new Date(req.expectedReturnDate);
+          this.approveExpectedDate.set(date.toISOString().split('T')[0]);
+      } else {
+          this.approveExpectedDate.set('');
+      }
+      
+      this.showApproveModal.set(true);
+  }
+
+  async confirmApprove() {
+      const req = this.selectedRequest();
+      if (!req || !req.id) return;
       const user = this.auth.currentUser();
       if (!user) return;
 
-      if (await this.confirmationService.confirm({ message: `Duyệt và giao chuẩn ${req.standardName} cho ${req.requestedByName}?`, confirmText: 'Duyệt & Giao' })) {
-          this.isProcessing.set(true);
-          try {
-              await this.stdService.dispenseStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown');
-              this.toast.show('Đã duyệt và giao chuẩn', 'success');
-          } catch (e: any) {
-              this.toast.show('Lỗi: ' + e.message, 'error');
-          } finally {
-              this.isProcessing.set(false);
+      this.isProcessing.set(true);
+      try {
+          // Update expected date if changed
+          let updatedExpectedDate = req.expectedReturnDate;
+          if (this.approveExpectedDate()) {
+              updatedExpectedDate = new Date(this.approveExpectedDate()).getTime();
           }
+
+          // Dispense
+          await this.stdService.dispenseStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown');
+          
+          // If purpose or date changed, update it too
+          if (this.approvePurpose() !== req.purpose || updatedExpectedDate !== req.expectedReturnDate || this.approveExpectedAmount() !== req.expectedAmount) {
+              await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', {
+                  purpose: this.approvePurpose(),
+                  expectedReturnDate: updatedExpectedDate,
+                  expectedAmount: this.approveExpectedAmount() || undefined
+              });
+          }
+
+          this.toast.show('Đã duyệt và giao chuẩn thành công', 'success');
+          this.showApproveModal.set(false);
+          this.selectedRequest.set(null);
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
       }
   }
 
