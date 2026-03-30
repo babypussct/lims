@@ -19,159 +19,277 @@ function removeAccents(str: string): string {
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
-    <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
-      <!-- Header -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0 bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
+    <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 custom-scrollbar overflow-y-auto overflow-x-hidden">
+      <!-- Header Area -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 px-2 mt-2">
         <div>
-            <h2 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none">
-                    <i class="fa-solid fa-clipboard-list text-xs"></i>
+            <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none transition-transform hover:scale-110">
+                    <i class="fa-solid fa-clipboard-list text-lg"></i>
                 </div>
                 Quản lý Yêu cầu Chuẩn
-            </h2>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 ml-1">Theo dõi, cấp phát và thu hồi chuẩn đối chiếu</p>
         </div>
         
-        <div class="flex gap-2 items-center">
+        <div class="flex gap-3 items-center">
              @if (auth.canApproveStandards() && pendingPurchaseRequestsCount() > 0) {
-                 <button (click)="openAdminPurchaseRequests()" class="relative px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm shadow-amber-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 active:scale-95">
-                     <i class="fa-solid fa-bell animate-pulse"></i> Yêu cầu Mua sắm
-                     <span class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full text-[10px] shadow-sm">{{pendingPurchaseRequestsCount()}}</span>
+                 <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
+                     <i class="fa-solid fa-cart-shopping animate-bounce"></i> Yêu cầu Mua sắm
+                     <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
                  </button>
              }
-             <button (click)="openRequestModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
-                <i class="fa-solid fa-plus"></i> Tạo Yêu cầu Mới
+             <button (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
+                <i class="fa-solid fa-plus-circle text-sm group-hover:rotate-90 transition-transform"></i> Tạo Yêu cầu Mới
              </button>
         </div>
       </div>
 
-      <!-- Main Content -->
-      <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
-          
-          <!-- Filters -->
-          <div class="p-2 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-2 bg-slate-50/30 dark:bg-slate-800/50">
-             <div class="flex flex-col md:flex-row gap-2">
-                 <div class="relative flex-1 group">
-                    <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors"></i>
-                    <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
-                           class="w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500"
-                           placeholder="Tìm kiếm yêu cầu...">
-                 </div>
-                 
-                 <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
-                     <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i> Trạng thái:</span>
-                     <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" 
-                             class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
-                         <option value="ALL" class="dark:bg-slate-800">Tất cả</option>
-                         <option value="PENDING_APPROVAL" class="dark:bg-slate-800">Chờ duyệt</option>
-                         <option value="IN_PROGRESS" class="dark:bg-slate-800">Đang sử dụng</option>
-                         <option value="PENDING_RETURN" class="dark:bg-slate-800">Chờ trả</option>
-                         <option value="COMPLETED" class="dark:bg-slate-800">Đã hoàn thành</option>
-                         <option value="REJECTED" class="dark:bg-slate-800">Đã từ chối</option>
-                     </select>
-                 </div>
-             </div>
+      <!-- Dashboard Stats (Hero) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-2">
+          <!-- Pending Approval -->
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+              </div>
+              <div>
+                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Chờ Duyệt</div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{pendingApprovalCount()}}</div>
+              </div>
           </div>
 
-          <!-- Content Body -->
-          <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30 dark:bg-slate-900/50">
-              <div class="min-w-[1000px]"> 
-                  <table class="w-full text-sm text-left relative border-collapse">
-                     <thead class="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none h-12 tracking-wide">
-                        <tr>
-                           <th class="px-4 py-3 w-[20%]">Chuẩn đối chiếu</th>
-                           <th class="px-4 py-3 w-[20%]">Người yêu cầu & Mục đích</th>
-                           <th class="px-4 py-3 w-[15%]">Thời gian</th>
-                           <th class="px-4 py-3 w-[15%] text-center">Trạng thái</th>
-                           <th class="px-4 py-3 w-[20%] text-center">Người duyệt/nhận</th>
-                           <th class="px-4 py-3 w-[10%] text-center">Tác vụ</th>
-                        </tr>
-                     </thead>
-                     <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
-                        @if (isLoading()) {
-                             <tr><td colspan="6" class="p-8 text-center"><i class="fa-solid fa-spinner fa-spin text-indigo-500 text-2xl"></i></td></tr>
-                        } @else {
-                            @for (req of filteredRequests(); track req.id) {
-                               <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition group">
-                                  <td class="px-4 py-3 align-top">
-                                     <div class="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">{{req.standardName}}</div>
-                                     <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-col gap-1">
-                                         @if(req.standardDetails?.internal_id) {
-                                             <span title="Mã nội bộ"><i class="fa-solid fa-barcode w-3"></i> {{req.standardDetails?.internal_id}}</span>
-                                         }
-                                         <span title="Lot Number"><i class="fa-solid fa-hashtag w-3"></i> {{req.lotNumber || 'N/A'}}</span>
-                                         @if(req.standardDetails?.cas_number) {
-                                             <span title="CAS"><i class="fa-solid fa-flask w-3"></i> {{req.standardDetails?.cas_number}}</span>
-                                         }
-                                         @if(req.standardDetails?.manufacturer) {
-                                             <span title="Hãng sản xuất"><i class="fa-solid fa-industry w-3"></i> {{req.standardDetails?.manufacturer}}</span>
-                                         }
-                                         @if(req.standardDetails?.expiry_date) {
-                                             <span title="Hạn sử dụng" [class.text-red-500]="isExpired(req.standardDetails?.expiry_date)"><i class="fa-regular fa-calendar-xmark w-3"></i> {{req.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
-                                         }
-                                         @if(req.standardDetails?.current_amount !== undefined) {
-                                             <span title="Tồn kho" class="font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-box w-3"></i> {{req.standardDetails?.current_amount}} {{req.standardDetails?.unit}}</span>
-                                         }
-                                         @if(req.standardDetails?.location) {
-                                             <span title="Vị trí"><i class="fa-solid fa-location-dot w-3"></i> {{req.standardDetails?.location}}</span>
-                                         }
-                                     </div>
-                                  </td>
-                                  <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
-                                     <div class="font-bold text-slate-700 dark:text-slate-300 text-sm mb-1">{{req.requestedByName}}</div>
-                                     <div class="text-xs text-slate-500 dark:text-slate-400 italic">{{req.purpose}}</div>
-                                     @if(req.totalAmountUsed !== undefined && req.totalAmountUsed !== null) {
-                                         <div class="mt-1 text-xs text-indigo-600 dark:text-indigo-400 font-bold">Đã dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || 'mg'}}</div>
-                                     }
-                                     @if(req.reportedDepleted) {
-                                         <div class="mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800/50 px-1.5 py-0.5 rounded inline-block">
-                                             <i class="fa-solid fa-triangle-exclamation"></i> Báo cáo đã hết
-                                         </div>
-                                     }
-                                  </td>
-                                  <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
-                                     <div class="text-xs text-slate-600 dark:text-slate-400 mb-1"><span class="font-bold">Yêu cầu:</span> {{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</div>
-                                     @if(req.expectedReturnDate) {
-                                        <div class="text-xs text-slate-600 dark:text-slate-400"><span class="font-bold">Dự kiến trả:</span> {{req.expectedReturnDate | date:'dd/MM/yyyy'}}</div>
-                                     }
-                                  </td>
-                                  <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
-                                      <span class="inline-block px-2 py-1 rounded-md text-[10px] font-bold uppercase border tracking-wide whitespace-nowrap" [ngClass]="getStatusClass(req.status)">{{getStatusLabel(req.status)}}</span>
-                                  </td>
-                                  <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
-                                     @if(req.approvedByName) {
-                                        <div class="text-xs text-emerald-600 dark:text-emerald-400 mb-1"><span class="font-bold">Duyệt:</span> {{req.approvedByName}}</div>
-                                     }
-                                     @if(req.receivedByName) {
-                                        <div class="text-xs text-blue-600 dark:text-blue-400"><span class="font-bold">Nhận:</span> {{req.receivedByName}}</div>
-                                     }
-                                  </td>
-                                  <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
-                                     <div class="flex flex-col items-center gap-2">
-                                        @if(req.status === 'PENDING_APPROVAL' && auth.canApproveStandards()) {
-                                            <button (click)="approveRequest(req)" class="w-full px-2 py-1 rounded bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700 transition">Duyệt & Giao</button>
-                                            <button (click)="openRejectModal(req)" class="w-full px-2 py-1 rounded bg-red-100 text-red-600 text-[10px] font-bold hover:bg-red-200 transition">Từ chối</button>
-                                        }
-                                        @if(req.status === 'IN_PROGRESS') {
-                                            @if(req.requestedBy === auth.currentUser()?.uid) {
-                                                <button (click)="openLogUsageModal(req)" class="w-full px-2 py-1 rounded bg-teal-600 text-white text-[10px] font-bold hover:bg-teal-700 transition mb-1"><i class="fa-solid fa-pen-to-square mr-1"></i> Ghi nhận dùng</button>
-                                                <button (click)="openReturnModal(req, false)" class="w-full px-2 py-1 rounded bg-blue-600 text-white text-[10px] font-bold hover:bg-blue-700 transition">Báo cáo trả</button>
-                                            }
-                                            @if(auth.canApproveStandards()) {
-                                                <button (click)="openReturnModal(req, true)" class="w-full px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition mt-1">Thu hồi trực tiếp</button>
-                                            }
-                                        }
-                                        @if(req.status === 'PENDING_RETURN' && auth.canApproveStandards()) {
-                                            <button (click)="openAdminReceiveModal(req)" class="w-full px-2 py-1.5 rounded bg-indigo-600 text-white text-[10px] font-bold hover:bg-indigo-700 transition"><i class="fa-solid fa-check-to-slot mr-1"></i> Tiếp nhận trả</button>
-                                        }
-                                     </div>
-                                  </td>
-                               </tr>
-                            } 
-                            @if (filteredRequests().length === 0) { <tr><td colspan="6" class="p-16 text-center text-slate-400 dark:text-slate-500 italic">Không có yêu cầu nào.</td></tr> }
-                        }
-                     </tbody>
-                  </table>
+          <!-- In Use -->
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-emerald-500/5 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-flask-vial"></i>
               </div>
+              <div>
+                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Đang Mượn</div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{inProgressCount()}}</div>
+              </div>
+          </div>
+
+          <!-- Overdue -->
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-rose-500/5 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-calendar-circle-exclamation"></i>
+              </div>
+              <div>
+                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap text-nowrap">Quá Hạn Trả</div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100" [class.text-rose-500]="overdueCount() > 0">{{overdueCount()}}</div>
+              </div>
+          </div>
+
+          <!-- Near Depleted -->
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-amber-500/5 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-droplet-slash"></i>
+              </div>
+              <div>
+                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Sắp Hết/Hạn</div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100" [class.text-amber-500]="nearDepletionCount() > 0">{{nearDepletionCount()}}</div>
+              </div>
+          </div>
+      </div>
+
+      <!-- Main Section: List & Filter -->
+      <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-[500px]">
+          
+          <!-- Modern Tab Filters & Search -->
+          <div class="p-4 border-b border-slate-50 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md sticky top-0 z-40">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <!-- Segmented Tabs -->
+                  <div class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
+                      <button (click)="statusFilter.set('ALL')" 
+                              [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
+                          Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-[10px] opacity-70">{{statusCounts().ALL}}</span>
+                      </button>
+                      <button (click)="statusFilter.set('PENDING_APPROVAL')" 
+                              [class]="statusFilter() === 'PENDING_APPROVAL' ? 'bg-white dark:bg-slate-800 shadow-sm text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
+                          Chờ duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-[10px] opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
+                      </button>
+                      <button (click)="statusFilter.set('IN_PROGRESS')" 
+                              [class]="statusFilter() === 'IN_PROGRESS' ? 'bg-white dark:bg-slate-800 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
+                          Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-[10px] opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
+                      </button>
+                      <button (click)="statusFilter.set('PENDING_RETURN')" 
+                              [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
+                          Chờ trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-[10px] opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
+                      </button>
+                      <button (click)="statusFilter.set('COMPLETED')" 
+                              [class]="statusFilter() === 'COMPLETED' ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
+                          Hoàn thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-[10px] opacity-70">{{statusCounts().COMPLETED}}</span>
+                      </button>
+                  </div>
+
+                  <!-- Search -->
+                  <div class="relative min-w-[300px]">
+                      <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
+                             class="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-900/50 border border-transparent rounded-2xl text-[13px] font-bold text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all placeholder-slate-400"
+                             placeholder="Tìm tên chuẩn, người mượn, số lô...">
+                  </div>
+              </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="flex-1 overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left border-separate border-spacing-0">
+                  <thead class="bg-white dark:bg-slate-800 sticky top-0 z-30">
+                      <tr>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Thông tin chuẩn đối chiếu</th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Người mượn & Hoạt động</th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Mốc thời gian</th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Trạng thái</th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Xác nhận</th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Thao tác</th>
+                      </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+                      @if (isLoading()) {
+                          @for(i of [1,2,3,4,5]; track i) {
+                              <tr class="animate-pulse">
+                                  <td colspan="6" class="px-6 py-4"><div class="h-12 bg-slate-50 dark:bg-slate-800/50 rounded-2xl w-full"></div></td>
+                              </tr>
+                          }
+                      } @else {
+                          @for (req of filteredRequests(); track req.id) {
+                              <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                                  <td class="px-6 py-5">
+                                      <div class="flex items-start gap-3">
+                                          <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/50 dark:border-indigo-800/30">
+                                              <i class="fa-solid fa-vial-circle-check text-sm font-bold"></i>
+                                          </div>
+                                          <div>
+                                              <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1">{{req.standardName}}</div>
+                                              <div class="flex flex-wrap gap-1.5 items-center">
+                                                  @if(req.standardDetails?.internal_id) {
+                                                      <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-fingerprint mr-1"></i>{{req.standardDetails?.internal_id}}</span>
+                                                  }
+                                                  @if(req.lotNumber) {
+                                                      <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded border border-blue-100 dark:border-blue-800/30"><i class="fa-solid fa-barcode mr-1"></i>LOT: {{req.lotNumber}}</span>
+                                                  }
+                                                  @if(req.standardDetails?.cas_number) {
+                                                      <span class="px-1.5 py-0.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 text-[9px] font-black rounded border border-teal-100 dark:border-teal-800/30"><i class="fa-solid fa-flask mr-1"></i>{{req.standardDetails?.cas_number}}</span>
+                                                  }
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-5">
+                                      <div class="flex items-start gap-3">
+                                          <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 uppercase font-black text-[10px] shrink-0 border border-placeholder">
+                                              {{req.requestedByName.charAt(0)}}
+                                          </div>
+                                          <div>
+                                              <div class="font-black text-slate-700 dark:text-slate-300 text-xs mb-0.5">{{req.requestedByName}}</div>
+                                              <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium italic line-clamp-1 max-w-[200px]" [title]="req.purpose">{{req.purpose}}</div>
+                                              @if(req.totalAmountUsed) {
+                                                  <div class="mt-2 flex items-center gap-2">
+                                                      <div class="flex-1 h-1 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden w-24">
+                                                          <div class="h-full bg-indigo-500 rounded-full" [style.width.%]="(req.totalAmountUsed / (req.expectedAmount || 1)) * 100"></div>
+                                                      </div>
+                                                      <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400 whitespace-nowrap">Đã dùng: {{req.totalAmountUsed}}</span>
+                                                  </div>
+                                              }
+                                          </div>
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-5">
+                                      <div class="space-y-1.5">
+                                          <div class="flex items-center gap-2 text-[10px]">
+                                              <span class="w-12 text-slate-400 dark:text-slate-500 font-black uppercase">Yêu cầu:</span>
+                                              <span class="text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</span>
+                                          </div>
+                                          @if(req.expectedReturnDate) {
+                                              <div class="flex items-center gap-2 text-[10px]">
+                                                  <span class="w-12 text-slate-400 dark:text-slate-500 font-black uppercase">Dự kiến:</span>
+                                                  <span class="font-bold whitespace-nowrap" [class.text-rose-500]="req.status === 'IN_PROGRESS' && req.expectedReturnDate < Date.now()">
+                                                      {{req.expectedReturnDate | date:'dd/MM/yyyy'}}
+                                                  </span>
+                                              </div>
+                                          }
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-5 text-center">
+                                      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border shadow-sm" [ngClass]="getStatusClass(req.status)">
+                                          <i [class]="getStatusIcon(req.status)"></i>
+                                          {{getStatusLabel(req.status)}}
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-5 text-center">
+                                      <div class="flex flex-col gap-1 items-center">
+                                          @if(req.approvedByName) {
+                                              <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black rounded-lg border border-emerald-100/50 dark:border-emerald-800/30 whitespace-nowrap">
+                                                  <i class="fa-solid fa-stamp mr-1"></i>Duyệt: {{req.approvedByName}}
+                                              </div>
+                                          }
+                                          @if(req.receivedByName) {
+                                              <div class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded-lg border border-blue-100/50 dark:border-blue-800/30 whitespace-nowrap">
+                                                  <i class="fa-solid fa-check-double mr-1"></i>Nhận: {{req.receivedByName}}
+                                              </div>
+                                          }
+                                          @if(!req.approvedByName && !req.receivedByName) {
+                                              <span class="text-[10px] text-slate-300 dark:text-slate-600 font-black italic">Trống</span>
+                                          }
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-5 text-center">
+                                      <!-- Quick Actions -->
+                                      <div class="flex items-center justify-center gap-1">
+                                          @if(req.status === 'PENDING_APPROVAL' && auth.canApproveStandards()) {
+                                              <button (click)="approveRequest(req)" 
+                                                      class="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20 active:scale-90" 
+                                                      title="Duyệt & Giao"><i class="fa-solid fa-check"></i></button>
+                                              <button (click)="openRejectModal(req)" 
+                                                      class="p-2 bg-rose-100 text-rose-600 rounded-xl hover:bg-rose-200 transition active:scale-90" 
+                                                      title="Từ chối"><i class="fa-solid fa-times"></i></button>
+                                          }
+                                          @if(req.status === 'IN_PROGRESS') {
+                                              @if(req.requestedBy === auth.currentUser()?.uid) {
+                                                  <button (click)="openLogUsageModal(req)" 
+                                                          class="p-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition shadow-lg shadow-teal-500/20 active:scale-90" 
+                                                          title="Ghi nhận dùng"><i class="fa-solid fa-pen-nib"></i></button>
+                                                  <button (click)="openReturnModal(req, false)" 
+                                                          class="p-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition shadow-lg shadow-amber-500/20 active:scale-90 ml-1" 
+                                                          title="Báo cáo trả"><i class="fa-solid fa-reply"></i></button>
+                                              }
+                                              @if(auth.canApproveStandards()) {
+                                                  <button (click)="openReturnModal(req, true)" 
+                                                          class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition active:scale-90 ml-1" 
+                                                          title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand"></i></button>
+                                              }
+                                          }
+                                          @if(req.status === 'PENDING_RETURN' && auth.canApproveStandards()) {
+                                              <button (click)="openAdminReceiveModal(req)" 
+                                                      class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-[10px] font-black" 
+                                                      title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
+                                          }
+                                          @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
+                                              <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default"><i class="fa-solid fa-lock"></i></button>
+                                          }
+                                      </div>
+                                  </td>
+                              </tr>
+                          } 
+                          @if (filteredRequests().length === 0) { 
+                              <tr>
+                                  <td colspan="6" class="px-6 py-24 text-center">
+                                      <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-slate-200 dark:text-slate-800 border-2 border-dashed border-slate-100 dark:border-slate-800">
+                                          <i class="fa-solid fa-box-open text-3xl"></i>
+                                      </div>
+                                      <p class="text-slate-400 dark:text-slate-500 font-black uppercase text-[11px] tracking-[0.2em]">Không tìm thấy yêu cầu nào</p>
+                                  </td>
+                              </tr> 
+                          }
+                      }
+                  </tbody>
+              </table>
           </div>
       </div>
 
@@ -823,28 +941,82 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     const currentUser = this.auth.currentUser();
     const isAdmin = this.auth.canApproveStandards();
 
-    // Filter for non-admins to only see their own requests
+    // Filter for non-admins to only see their own requests (for the main list)
+    let displayReqs = [...reqs];
     if (!isAdmin && currentUser) {
-        reqs = reqs.filter(r => r.requestedBy === currentUser.uid);
+        displayReqs = displayReqs.filter(r => r.requestedBy === currentUser.uid);
     }
 
     if (status !== 'ALL') {
-        reqs = reqs.filter(r => r.status === status);
+        displayReqs = displayReqs.filter(r => r.status === status);
     }
 
     if (term) {
-        reqs = reqs.filter(r => 
+        displayReqs = displayReqs.filter(r => 
             removeAccents(r.standardName.toLowerCase()).includes(term) || 
             removeAccents(r.requestedByName.toLowerCase()).includes(term) ||
             (r.lotNumber && removeAccents(r.lotNumber.toLowerCase()).includes(term))
         );
     }
     
-    return reqs.map(r => ({
+    return displayReqs.map(r => ({
         ...r,
         standardDetails: stdsMap.get(r.standardId)
     }));
   });
+
+  // Dashboard Stats
+  pendingApprovalCount = computed(() => this.requests().filter(r => r.status === 'PENDING_APPROVAL').length);
+  inProgressCount = computed(() => this.requests().filter(r => r.status === 'IN_PROGRESS').length);
+  overdueCount = computed(() => {
+      const now = Date.now();
+      return this.requests().filter(r => 
+          r.status === 'IN_PROGRESS' && 
+          r.expectedReturnDate && 
+          r.expectedReturnDate < now
+      ).length;
+  });
+  nearDepletionCount = computed(() => {
+      const standards = this.allStandards();
+      return standards.filter(s => 
+          s.status !== 'DEPLETED' && 
+          s.current_amount > 0 && 
+          s.current_amount <= (s.initial_amount * 0.1) // Define "Near Depleted" as < 10%
+      ).length;
+  });
+
+  // Status Counts for Tabs (Admin views all, Users view theirs)
+  statusCounts = computed(() => {
+      const reqs = this.requests();
+      const currentUser = this.auth.currentUser();
+      const isAdmin = this.auth.canApproveStandards();
+      
+      const filtered = isAdmin ? reqs : reqs.filter(r => r.requestedBy === currentUser?.uid);
+      
+      return {
+          ALL: filtered.length,
+          PENDING_APPROVAL: filtered.filter(r => r.status === 'PENDING_APPROVAL').length,
+          IN_PROGRESS: filtered.filter(r => r.status === 'IN_PROGRESS').length,
+          PENDING_RETURN: filtered.filter(r => r.status === 'PENDING_RETURN').length,
+          COMPLETED: filtered.filter(r => r.status === 'COMPLETED').length,
+          REJECTED: filtered.filter(r => r.status === 'REJECTED').length
+      };
+  });
+
+  getStatusIcon(status: StandardRequestStatus): string {
+      switch (status) {
+          case 'PENDING_APPROVAL': return 'fa-solid fa-clock-rotate-left';
+          case 'IN_PROGRESS': return 'fa-solid fa-flask-vial';
+          case 'PENDING_RETURN': return 'fa-solid fa-reply-all';
+          case 'PENDING_DEPLETION': return 'fa-solid fa-droplet-slash';
+          case 'COMPLETED': return 'fa-solid fa-check-double';
+          case 'REJECTED': return 'fa-solid fa-circle-xmark';
+          default: return 'fa-solid fa-circle-question';
+      }
+  }
+
+  // Helper for template
+  protected readonly Date = Date;
 
   ngOnInit() {
     this.unsubRequests = this.stdService.listenToRequests((reqs) => {
