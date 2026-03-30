@@ -46,9 +46,6 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
              <button (click)="openAddModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
-             <button (click)="fixMissingStatuses()" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg border border-rose-200 dark:border-rose-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Fix trạng thái DB">
-                <i class="fa-solid fa-wrench"></i> Fix DB Status
-             </button>
              <button (click)="fileInput.click()" class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import danh sách chuẩn">
                 <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
@@ -203,8 +200,8 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
                                         </div>
                                      </td>
                                      <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
-                                        <div class="flex items-baseline justify-between mb-1"><span class="text-lg font-black text-indigo-600 dark:text-indigo-400 leading-none">{{formatNum(std.current_amount)}}</span><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-1">{{std.unit}}</span></div>
-                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden relative"><div class="h-full rounded-full transition-all duration-500" [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)" [class.bg-indigo-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2" [class.bg-red-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2"></div></div>
+                                        <div class="flex items-baseline justify-between mb-1"><span class="text-lg font-black text-emerald-600 dark:text-emerald-400 leading-none">{{formatNum(std.current_amount)}}</span><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-1">{{std.unit}}</span></div>
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden relative"><div class="h-full rounded-full transition-all duration-500" [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)" [class.bg-emerald-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2" [class.bg-rose-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2"></div></div>
                                         <div class="flex flex-col gap-1 mt-1">
                                             @for (info of getStorageInfo(std.storage_condition); track $index) { <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span></div> }
                                         </div>
@@ -1705,19 +1702,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   getStandardStatus(std: ReferenceStandard): { label: string, class: string } {
-      if (std.status === 'IN_USE') return { label: 'Đang dùng', class: 'bg-blue-50 text-blue-600 border-blue-200' };
-      if (std.status === 'DEPLETED' || std.current_amount <= 0) return { label: 'Sử dụng hết', class: 'bg-slate-100 text-slate-500 border-slate-200' };
+      if (std.status === 'IN_USE') return { label: 'Đang dùng', class: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50' };
+      if (std.status === 'DEPLETED' || std.current_amount <= 0) return { label: 'Sử dụng hết', class: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' };
       
-      if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-slate-50 text-slate-500 border-slate-200' };
+      if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
       
       const exp = new Date(std.expiry_date);
       const today = new Date();
-      if (exp < today) return { label: 'Hết hạn SD', class: 'bg-red-50 text-red-600 border-red-200' };
+      today.setHours(0, 0, 0, 0);
+
+      if (exp < today) return { label: 'Hết hạn SD', class: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' };
       
       const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
-      if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-orange-50 text-orange-600 border-orange-200' };
+      if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
       
-      return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+      if ((std.current_amount / (std.initial_amount || 1)) <= 0.2) return { label: 'Sắp hết hàng', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
+
+      return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' };
   }
 
   canAssign(std: ReferenceStandard): boolean {
@@ -2018,9 +2019,17 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showPrintModal.set(false);
   }
 
-  async viewHistory(std: ReferenceStandard) { this.historyStd.set(std); this.loadingHistory.set(true); try { const logs = await this.stdService.getUsageHistory(std.id); this.historyLogs.set(logs); } finally { this.loadingHistory.set(false); } }
-  
-  // --- HARDENED: Delete Log ---
+  async viewHistory(std: ReferenceStandard) { 
+      this.historyStd.set(std); 
+      this.loadingHistory.set(true); 
+      try { 
+          const logs = await this.stdService.getUsageHistory(std.id); 
+          this.historyLogs.set(logs); 
+      } finally { 
+          this.loadingHistory.set(false); 
+      } 
+  }
+
   async deleteLog(log: UsageLog) {
       if (this.isProcessing()) return;
       if (!this.historyStd() || !log.id) return;
@@ -2040,52 +2049,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   openCoaPreview(url: string, event: Event) {
-      event.stopPropagation(); if (!url) return; this.previewRawUrl.set(url);
+      event.stopPropagation(); 
+      if (!url) return; 
+      this.previewRawUrl.set(url);
       const cleanUrl = url.split('?')[0].toLowerCase();
       const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
-      if (isImage) { this.previewType.set('image'); this.previewImgUrl.set(url); } else { this.previewType.set('iframe'); this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); }
-  }
-  closeCoaPreview() { this.previewUrl.set(null); this.previewImgUrl.set(''); }
-
-  async fixMissingStatuses() {
-      if (confirm('Bạn có chắc chắn muốn quét toàn bộ DB và fix trạng thái (DEPLETED/AVAILABLE) bị thiếu không? Quá trình này không thể hoàn tác.')) {
-          this.toast.show('Đang tiến hành fix schema data...');
-          try {
-              let updated = 0;
-              const { getDocs, collection, doc, writeBatch } = await import('firebase/firestore');
-              const colRef = collection(this.firebaseService.db, 'artifacts', this.firebaseService.APP_ID, 'reference_standards');
-              const snap = await getDocs(colRef);
-              let batch = writeBatch(this.firebaseService.db);
-              
-              for (const document of snap.docs) {
-                  const data = document.data() as ReferenceStandard;
-                  let shouldFix = false;
-                  let targetStatus = data.status;
-                  
-                  if (!data.status) {
-                      shouldFix = true;
-                      targetStatus = (data.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE';
-                  } else if (data.status === 'AVAILABLE' && (data.current_amount || 0) <= 0) {
-                      shouldFix = true;
-                      targetStatus = 'DEPLETED';
-                  }
-
-                  if (shouldFix) {
-                      batch.update(document.ref, { status: targetStatus });
-                      updated++;
-                      if (updated % 400 === 0) {
-                          await batch.commit();
-                          batch = writeBatch(this.firebaseService.db);
-                      }
-                  }
-              }
-              if (updated % 400 !== 0) {
-                  await batch.commit();
-              }
-              this.toast.show(`Hoàn thành! Đã fix ${updated} chuẩn đối chiếu.`, 'success');
-          } catch (e: any) {
-              this.toast.show('Lỗi fix: ' + e.message, 'error');
-          }
+      if (isImage) { 
+          this.previewType.set('image'); 
+          this.previewImgUrl.set(url); 
+      } else { 
+          this.previewType.set('iframe'); 
+          this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); 
       }
+  }
+
+  closeCoaPreview() { 
+      this.previewUrl.set(null); 
+      this.previewImgUrl.set(''); 
   }
 }

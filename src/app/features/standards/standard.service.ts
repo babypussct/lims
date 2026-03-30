@@ -315,6 +315,10 @@ export class StandardService {
               updateData.status = 'DEPLETED';
           }
 
+          log.id = newLogRef.id;
+          if (!log.timestamp) log.timestamp = Date.now();
+          if (!log.date) log.date = new Date().toISOString();
+
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
 
@@ -497,6 +501,18 @@ export class StandardService {
               if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
           }
 
+          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
+          const newLogRef = doc(logsRef);
+          const log: UsageLog = {
+              id: newLogRef.id,
+              timestamp: Date.now(),
+              date: new Date().toISOString(),
+              user: receiverName,
+              amount_used: finalAmountUsed,
+              unit: finalUnit,
+              purpose: reqData.disposalReason || reqData.purpose || 'Sử dụng theo yêu cầu'
+          };
+
           transaction.update(stdRef, { 
               status: isDepleted ? 'DEPLETED' : 'AVAILABLE', 
               current_amount: newAmount,
@@ -506,69 +522,137 @@ export class StandardService {
               lastUpdated: serverTimestamp() 
           });
 
+          const currentLogs = reqData.usageLogs || [];
           transaction.update(reqRef, { 
               status: 'COMPLETED',
               totalAmountUsed: finalAmountUsed,
+              usageLogs: [...currentLogs, log],
               returnDate: Date.now(),
               receivedBy: receiverId,
               receivedByName: receiverName,
               updatedAt: Date.now()
           });
+
+          if (finalAmountUsed > 0) {
+              transaction.set(newLogRef, log);
+          }
       });
 
       if (reqData) {
           await this.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
       }
-
-      // Also record the usage log
-      const finalAmountUsed = amountUsed !== undefined ? amountUsed : ((await getDoc(reqRef)).data() as StandardRequest).totalAmountUsed || 0;
-      const finalUnit = unit || ((await getDoc(stdRef)).data() as ReferenceStandard).unit || 'mg';
-      if (finalAmountUsed > 0 && reqData) {
-          const req = reqData as StandardRequest;
-          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
-          const newLogRef = doc(logsRef);
-          await setDoc(newLogRef, {
-              timestamp: Date.now(),
-              action: isDepleted ? 'DEPLETED' : 'USED',
-              user_uid: req.requestedBy,
-              user_name: req.requestedByName,
-              amount_used: finalAmountUsed,
-              unit: finalUnit,
-              purpose: req.disposalReason || req.purpose || 'Sử dụng theo yêu cầu'
-          });
-      }
   }
 
   async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
+      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
+      const newLogRef = doc(logsRef);
       
       await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
           const reqDoc = await transaction.get(reqRef);
+          if (!stdDoc.exists()) throw new Error("Chuẩn không tồn tại!");
           if (!reqDoc.exists()) throw new Error("Yêu cầu không tồn tại!");
           
+          const stdData = stdDoc.data() as ReferenceStandard;
           const reqData = reqDoc.data() as StandardRequest;
-          const currentTotal = reqData.totalAmountUsed || 0;
           
+          const stockUnit = stdData.unit || 'mg';
+          const amountToDeduct = getStandardizedAmount(amount, unit, stockUnit);
+          if (amountToDeduct === null) throw new Error(`Không thể quy đổi đơn vị`);
+          
+          const newAmount = (stdData.current_amount || 0) - amountToDeduct;
+          if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
+
+          const log: UsageLog = {
+              id: newLogRef.id,
+              timestamp: Date.now(),
+              date: new Date().toISOString(),
+              user: userName,
+              amount_used: amount,
+              unit: unit,
+              purpose: purpose || 'Báo cáo sử dụng'
+          };
+
+          transaction.set(newLogRef, log);
+          
+          transaction.update(stdRef, {
+              current_amount: newAmount,
+              status: newAmount <= 0 ? 'DEPLETED' : stdData.status,
+              lastUpdated: serverTimestamp()
+          });
+
+          const currentLogs = reqData.usageLogs || [];
           transaction.update(reqRef, {
-              totalAmountUsed: currentTotal + amount,
+              totalAmountUsed: (reqData.totalAmountUsed || 0) + amountToDeduct,
+              usageLogs: [...currentLogs, log],
               updatedAt: Date.now()
           });
       });
-
-      // Write usage log
-      const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
-      const newLogRef = doc(logsRef);
-      await setDoc(newLogRef, {
-          timestamp: Date.now(),
-          action: 'USED',
-          user_uid: userId,
-          user_name: userName,
-          amount_used: amount,
-          unit: unit,
-          purpose: purpose || 'Báo cáo sử dụng'
-      });
       
       await this.logGlobalActivity('LOG_USAGE_STANDARD', `Khai báo sử dụng ${amount}${unit} chuẩn: ${standardId}`, requestId);
+  }
+
+  async hardDeleteRequest(request: StandardRequest) {
+      const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${request.id}`);
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
+      
+      await runTransaction(this.fb.db, async (transaction) => {
+          const stdDoc = await transaction.get(stdRef);
+          // Standard might have been deleted, but we only proceed if it exists
+          
+          if (stdDoc.exists()) {
+              const stdData = stdDoc.data() as ReferenceStandard;
+              const stockUnit = stdData.unit || 'mg';
+              
+              let newAmount = stdData.current_amount || 0;
+              let updates: any = { lastUpdated: serverTimestamp() };
+
+              // 1. Revert quantity
+              if (request.totalAmountUsed > 0) {
+                  // We need the same units as when it was deducted. 
+                  // In COMPLETED requests, totalAmountUsed is already in the standard's base unit?
+                  // Actually, usageLogs contains the raw amounts. Let's sum them up to be safe.
+                  let amountToRestore = 0;
+                  (request.usageLogs || []).forEach(log => {
+                      const standardized = getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);
+                      if (standardized !== null) amountToRestore += standardized;
+                  });
+
+                  if (amountToRestore > 0) {
+                      newAmount += amountToRestore;
+                      updates.current_amount = newAmount;
+                      if (stdData.status === 'DEPLETED' && newAmount > 0) {
+                          updates.status = 'AVAILABLE';
+                      }
+                  }
+              }
+
+              // 2. Revert status if it was active
+              if (stdData.current_request_id === request.id) {
+                  updates.status = 'AVAILABLE';
+                  updates.current_holder = null;
+                  updates.current_holder_uid = null;
+                  updates.current_request_id = null;
+              }
+
+              transaction.update(stdRef, updates);
+
+              // 3. Delete usage logs from subcollection
+              (request.usageLogs || []).forEach(log => {
+                  if (log.id) {
+                      const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}/logs/${log.id}`);
+                      transaction.delete(logRef);
+                  }
+              });
+          }
+
+          // 4. Delete the request
+          transaction.delete(reqRef);
+      });
+
+      await this.logGlobalActivity('HARD_DELETE_REQUEST', `Xóa hoàn toàn lịch sử yêu cầu: ${request.standardName} (Người yêu cầu: ${request.requestedByName})`, request.id);
   }
 
   listenToRequests(callback: (requests: StandardRequest[]) => void) {

@@ -80,14 +80,14 @@ function removeAccents(str: string): string {
               </div>
           </div>
 
-          <!-- Near Depleted -->
-          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-amber-500/5 transition-all">
-              <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
-                  <i class="fa-solid fa-droplet-slash"></i>
+          <!-- Total Requests -->
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-slate-500/5 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-list-check"></i>
               </div>
               <div>
-                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Sắp Hết/Hạn</div>
-                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100" [class.text-amber-500]="nearDepletionCount() > 0">{{nearDepletionCount()}}</div>
+                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Tổng yêu cầu</div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{statusCounts().ALL}}</div>
               </div>
           </div>
       </div>
@@ -161,26 +161,50 @@ function removeAccents(str: string): string {
                           @for (req of filteredRequests(); track req.id) {
                               <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
                                   <td class="px-6 py-5">
-                                      <div class="flex items-start gap-3">
-                                          <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/50 dark:border-indigo-800/30">
-                                              <i class="fa-solid fa-vial-circle-check text-sm font-bold"></i>
-                                          </div>
-                                          <div>
-                                              <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1">{{req.standardName}}</div>
-                                              <div class="flex flex-wrap gap-1.5 items-center">
-                                                  @if(req.standardDetails?.internal_id) {
-                                                      <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-fingerprint mr-1"></i>{{req.standardDetails?.internal_id}}</span>
-                                                  }
-                                                  @if(req.lotNumber) {
-                                                      <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded border border-blue-100 dark:border-blue-800/30"><i class="fa-solid fa-barcode mr-1"></i>LOT: {{req.lotNumber}}</span>
-                                                  }
-                                                  @if(req.standardDetails?.cas_number) {
-                                                      <span class="px-1.5 py-0.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 text-[9px] font-black rounded border border-teal-100 dark:border-teal-800/30"><i class="fa-solid fa-flask mr-1"></i>{{req.standardDetails?.cas_number}}</span>
-                                                  }
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </td>
+                                       <div class="flex flex-col gap-3">
+                                           <div class="flex items-start gap-3">
+                                               <div class="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                   <i class="fa-solid fa-vial-circle-check text-sm font-bold"></i>
+                                               </div>
+                                               <div>
+                                                   <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1">{{req.standardName}}</div>
+                                                   <div class="flex items-center gap-2">
+                                                        <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black rounded-lg border border-indigo-100/50 dark:border-indigo-800/30">
+                                                            {{req.standardDetails?.internal_id}}
+                                                        </span>
+                                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 line-clamp-1 italic max-w-[150px]">
+                                                            {{req.standardDetails?.manufacturer}}
+                                                        </span>
+                                                   </div>
+                                               </div>
+                                           </div>
+                                           
+                                           <!-- Standard Meta Grid (Rich Identity) -->
+                                           <div class="grid grid-cols-2 gap-2 mt-1">
+                                                <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
+                                                    <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số Lô (LOT)</span>
+                                                    <span class="text-[11px] font-black text-blue-600 dark:text-blue-400 truncate">{{req.lotNumber || 'N/A'}}</span>
+                                                </div>
+                                                <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
+                                                    <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">CAS Number</span>
+                                                    <span class="text-[11px] font-black text-teal-600 dark:text-teal-400 truncate">{{req.standardDetails?.cas_number || 'N/A'}}</span>
+                                                </div>
+                                                <div class="px-2.5 py-1.5 rounded-xl border flex flex-col gap-0.5" 
+                                                     [class]="isOverdue(req.standardDetails?.expiry_date) ? 'bg-rose-50/50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30' : 'bg-slate-50/50 border-slate-100 dark:bg-slate-900/30 dark:border-slate-800/50'">
+                                                    <span class="text-[8px] font-black uppercase tracking-widest" [class.text-rose-500]="isOverdue(req.standardDetails?.expiry_date)" [class.text-slate-400]="!isOverdue(req.standardDetails?.expiry_date)">Hạn dùng (EXP)</span>
+                                                    <span class="text-[11px] font-black" [class.text-rose-600]="isOverdue(req.standardDetails?.expiry_date)" [class.text-slate-700]="!isOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
+                                                </div>
+                                                <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
+                                                    <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tồn kho / Vị trí</span>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <span class="text-[11px] font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
+                                                        <span class="text-[11px] text-slate-400">•</span>
+                                                        <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[60px]">{{req.standardDetails?.location || '?'}}</span>
+                                                    </div>
+                                                </div>
+                                           </div>
+                                       </div>
+                                   </td>
                                   <td class="px-6 py-5">
                                       <div class="flex items-start gap-3">
                                           <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 uppercase font-black text-[10px] shrink-0 border border-placeholder">
@@ -271,7 +295,14 @@ function removeAccents(str: string): string {
                                                       title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
                                           }
                                           @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
-                                              <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default"><i class="fa-solid fa-lock"></i></button>
+                                               <div class="flex items-center gap-1">
+                                                   <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default" title="Đã khóa"><i class="fa-solid fa-lock"></i></button>
+                                                   @if(auth.canApproveStandards()) {
+                                                       <button (click)="hardDeleteHistory(req)" 
+                                                               class="p-2 text-rose-300 hover:text-rose-600 bg-rose-50/50 dark:bg-rose-900/20 rounded-xl transition active:scale-90" 
+                                                               title="Xóa lịch sử & Hoàn tác"><i class="fa-solid fa-trash-can"></i></button>
+                                                   }
+                                               </div>
                                           }
                                       </div>
                                   </td>
@@ -618,7 +649,7 @@ function removeAccents(str: string): string {
                     
                     <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
                         <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                        <label for="isDepleted" class="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
+                        <label for="isDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-4 pt-4">
@@ -702,7 +733,7 @@ function removeAccents(str: string): string {
                     
                     <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
                         <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                        <label for="adminIsDepleted" class="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
+                        <label for="adminIsDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
                     </div>
 
                     @if(adminReceiveIsDepleted()) {
@@ -976,14 +1007,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           r.expectedReturnDate < now
       ).length;
   });
-  nearDepletionCount = computed(() => {
-      const standards = this.allStandards();
-      return standards.filter(s => 
-          s.status !== 'DEPLETED' && 
-          s.current_amount > 0 && 
-          s.current_amount <= (s.initial_amount * 0.1) // Define "Near Depleted" as < 10%
-      ).length;
-  });
 
   // Status Counts for Tabs (Admin views all, Users view theirs)
   statusCounts = computed(() => {
@@ -1003,12 +1026,22 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       };
   });
 
+  getStatusClass(status: StandardRequestStatus): string {
+      switch (status) {
+          case 'PENDING_APPROVAL': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+          case 'IN_PROGRESS': return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+          case 'PENDING_RETURN': return 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800';
+          case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
+          case 'REJECTED': return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800';
+          default: return 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
+      }
+  }
+
   getStatusIcon(status: StandardRequestStatus): string {
       switch (status) {
-          case 'PENDING_APPROVAL': return 'fa-solid fa-clock-rotate-left';
+          case 'PENDING_APPROVAL': return 'fa-solid fa-hourglass-start';
           case 'IN_PROGRESS': return 'fa-solid fa-flask-vial';
           case 'PENDING_RETURN': return 'fa-solid fa-reply-all';
-          case 'PENDING_DEPLETION': return 'fa-solid fa-droplet-slash';
           case 'COMPLETED': return 'fa-solid fa-check-double';
           case 'REJECTED': return 'fa-solid fa-circle-xmark';
           default: return 'fa-solid fa-circle-question';
@@ -1155,10 +1188,30 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           this.toast.show(`Đã gửi ${selectedIds.length} yêu cầu thành công`, 'success');
           this.closeModal();
       } catch (e: any) {
-          this.toast.show('Lỗi: ' + e.message, 'error');
+          this.toast.show('Lỗi: ' + (e.message || e), 'error');
       } finally {
           this.isProcessing.set(false);
       }
+  }
+
+  async hardDeleteHistory(req: StandardRequest) {
+      this.confirmationService.confirm({
+          message: `XÁC NHẬN XÓA VĨNH VIỄN lịch sử này? Thao tác này sẽ HOÀN TÁC (Revert) số lượng tồn kho và trạng thái của chuẩn "${req.standardName}" về thời điểm trước khi thực hiện yêu cầu này. Hành động này không thể khôi phục!`,
+          confirmText: 'Xác nhận xóa',
+          cancelText: 'Hủy'
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              try {
+                  await this.stdService.hardDeleteRequest(req);
+                  this.toast.show('Đã xóa vĩnh viễn lịch sử và hoàn tác dữ liệu thành công', 'success');
+              } catch (e: any) {
+                  this.toast.show('Lỗi khi xóa: ' + (e.message || e), 'error');
+              } finally {
+                  this.isProcessing.set(false);
+              }
+          }
+      });
   }
 
   async approveRequest(req: StandardRequest) {
@@ -1376,22 +1429,9 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           case 'PENDING_APPROVAL': return 'Chờ duyệt';
           case 'IN_PROGRESS': return 'Đang sử dụng';
           case 'PENDING_RETURN': return 'Chờ trả';
-          case 'PENDING_DEPLETION': return 'Chờ hủy';
           case 'COMPLETED': return 'Hoàn thành';
           case 'REJECTED': return 'Từ chối';
           default: return status;
-      }
-  }
-
-  getStatusClass(status: StandardRequestStatus): string {
-      switch(status) {
-          case 'PENDING_APPROVAL': return 'bg-amber-50 text-amber-600 border-amber-200';
-          case 'IN_PROGRESS': return 'bg-blue-50 text-blue-600 border-blue-200';
-          case 'PENDING_RETURN': return 'bg-purple-50 text-purple-600 border-purple-200';
-          case 'PENDING_DEPLETION': return 'bg-orange-50 text-orange-600 border-orange-200';
-          case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
-          case 'REJECTED': return 'bg-red-50 text-red-600 border-red-200';
-          default: return 'bg-slate-50 text-slate-600 border-slate-200';
       }
   }
 }
