@@ -45,52 +45,6 @@ function removeAccents(str: string): string {
         </div>
       </div>
 
-      <!-- Dashboard Stats (Hero) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-2">
-          <!-- Pending Approval -->
-          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
-              <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
-              </div>
-              <div>
-                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Chờ Duyệt</div>
-                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{pendingApprovalCount()}}</div>
-              </div>
-          </div>
-
-          <!-- In Use -->
-          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-emerald-500/5 transition-all">
-              <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
-                  <i class="fa-solid fa-flask-vial"></i>
-              </div>
-              <div>
-                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Đang Mượn</div>
-                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{inProgressCount()}}</div>
-              </div>
-          </div>
-
-          <!-- Overdue -->
-          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-rose-500/5 transition-all">
-              <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
-                  <i class="fa-solid fa-calendar-circle-exclamation"></i>
-              </div>
-              <div>
-                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap text-nowrap">Quá Hạn Trả</div>
-                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100" [class.text-rose-500]="overdueCount() > 0">{{overdueCount()}}</div>
-              </div>
-          </div>
-
-          <!-- Total Requests -->
-          <div class="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 group hover:shadow-xl hover:shadow-slate-500/5 transition-all">
-              <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
-                  <i class="fa-solid fa-list-check"></i>
-              </div>
-              <div>
-                  <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1 text-nowrap">Tổng yêu cầu</div>
-                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{statusCounts().ALL}}</div>
-              </div>
-          </div>
-      </div>
 
       <!-- Main Section: List & Filter -->
       <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-[500px]">
