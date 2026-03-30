@@ -247,16 +247,19 @@ export class StandardService {
       std.search_key = this.generateSearchKey(std);
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+      await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
   }
 
   async updateStandard(std: ReferenceStandard) {
       std.search_key = this.generateSearchKey(std);
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
+      await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
   }
 
-  async deleteStandard(id: string) {
+  async deleteStandard(id: string, name: string = '') {
       await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
+      await this.logGlobalActivity('DELETE_STANDARD', `Xóa chuẩn: ${name || id}`, id);
   }
 
   async deleteSelectedStandards(ids: string[]) {
@@ -600,7 +603,6 @@ export class StandardService {
       
       await runTransaction(this.fb.db, async (transaction) => {
           const stdDoc = await transaction.get(stdRef);
-          // Standard might have been deleted, but we only proceed if it exists
           
           if (stdDoc.exists()) {
               const stdData = stdDoc.data() as ReferenceStandard;
@@ -611,9 +613,6 @@ export class StandardService {
 
               // 1. Revert quantity
               if (request.totalAmountUsed > 0) {
-                  // We need the same units as when it was deducted. 
-                  // In COMPLETED requests, totalAmountUsed is already in the standard's base unit?
-                  // Actually, usageLogs contains the raw amounts. Let's sum them up to be safe.
                   let amountToRestore = 0;
                   (request.usageLogs || []).forEach(log => {
                       const standardized = getStandardizedAmount(log.amount_used, log.unit || stockUnit, stockUnit);

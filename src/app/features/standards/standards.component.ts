@@ -59,37 +59,6 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
         </div>
       </div>
 
-      <!-- Dashboard Widgets -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
-          <div (click)="activeWidgetFilter.set('all')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'all' ? 'border-indigo-400 dark:border-indigo-500 shadow-sm ring-1 ring-indigo-50 dark:ring-indigo-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs"><i class="fa-solid fa-boxes-stacked"></i></div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tất cả chuẩn</div>
-              </div>
-              <span class="text-lg font-black text-slate-800 dark:text-slate-100">{{stats().total}}</span>
-          </div>
-          <div (click)="activeWidgetFilter.set('low_stock')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'low_stock' ? 'border-amber-400 dark:border-amber-500 shadow-sm ring-1 ring-amber-50 dark:ring-amber-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs"><i class="fa-solid fa-battery-quarter"></i></div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hàng</div>
-              </div>
-              <span class="text-lg font-black text-amber-600 dark:text-amber-400">{{stats().lowStock}}</span>
-          </div>
-          <div (click)="activeWidgetFilter.set('expiring_soon')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'expiring_soon' ? 'border-orange-400 dark:border-orange-500 shadow-sm ring-1 ring-orange-50 dark:ring-orange-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs"><i class="fa-solid fa-hourglass-half"></i></div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sắp hết hạn (<30d)</div>
-              </div>
-              <span class="text-lg font-black text-orange-600 dark:text-orange-400">{{stats().expiringSoon}}</span>
-          </div>
-          <div (click)="activeWidgetFilter.set('expired')" class="bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none flex items-center justify-between" [class]="activeWidgetFilter() === 'expired' ? 'border-red-400 dark:border-red-500 shadow-sm ring-1 ring-red-50 dark:ring-red-500/20' : 'border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none'">
-              <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-ban"></i></div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Đã hết hạn</div>
-              </div>
-              <span class="text-lg font-black text-red-600 dark:text-red-400">{{stats().expired}}</span>
-          </div>
-      </div>
 
       <!-- Main Content -->
       <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">

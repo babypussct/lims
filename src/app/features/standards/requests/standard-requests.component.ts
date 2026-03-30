@@ -304,19 +304,24 @@ function removeAccents(str: string): string {
                         @if (standardSearchTerm().length > 0) {
                             <div class="space-y-2">
                                 @for(std of filteredAvailableStandards(); track std.id) {
-                                    <div class="p-5 border rounded-[2rem] transition-all flex items-start gap-4 group relative overflow-hidden"
+                                    <div class="p-5 border rounded-[2rem] transition-all duration-300 flex items-start gap-4 group relative overflow-hidden"
                                          [ngClass]="{
-                                            'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-400 ring-4 ring-indigo-500/20 shadow-lg shadow-indigo-500/20 z-10 scale-[1.02]': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'bg-indigo-600 dark:bg-indigo-500 border-indigo-400 dark:border-indigo-300 ring-8 ring-indigo-500/10 shadow-2xl shadow-indigo-500/30 z-10 scale-[1.02]': selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
                                             'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900': isDepleted(std)
                                          }"
                                          (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
                                         
+                                        <!-- Animated Selection Background -->
+                                        @if(selectedStandardIds().has(std.id)) {
+                                            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-500 dark:from-indigo-500 dark:via-indigo-500 dark:to-indigo-400 opacity-100 animate-fade-in"></div>
+                                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+                                        }
+
                                         <!-- Selection Indicator Overlay -->
                                         @if(selectedStandardIds().has(std.id)) {
-                                            <div class="absolute top-0 right-0 w-16 h-16 flex items-center justify-center translate-x-4 -translate-y-4">
-                                                <div class="w-full h-full bg-white dark:bg-slate-100 rotate-45 transform shadow-lg"></div>
-                                                <i class="fa-solid fa-check text-indigo-600 absolute top-2 right-4 text-sm font-black"></i>
+                                            <div class="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-100 rounded-full shadow-lg animate-scale-in z-20">
+                                                <i class="fa-solid fa-check text-indigo-600 text-[10px] font-black"></i>
                                             </div>
                                         }
 

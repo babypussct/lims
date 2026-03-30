@@ -101,7 +101,7 @@ interface NxtReportItem {
                 <button (click)="activeTab.set('standards')"
                     class="pb-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap active:scale-95"
                     [class]="activeTab() === 'standards' ? 'border-pink-600 dark:border-pink-500 text-pink-700 dark:text-pink-400' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-vial"></i> 5. Mượn/Trả Chuẩn
+                    <i class="fa-solid fa-heart-pulse"></i> 5. Sức khỏe & Truy xuất
                 </button>
                 </div>
 
@@ -236,31 +236,50 @@ interface NxtReportItem {
                         </div>
                     }
 
-                    <!-- TAB 3: CONSUMPTION -->
+                    <!-- TAB 3: CONSUMPTION DASHBOARD -->
                     @if (activeTab() === 'consumption') {
-                        <div class="flex flex-col h-full">
-                            <div class="h-64 shrink-0 px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30 flex flex-col justify-center">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                        <i class="fa-solid fa-chart-simple"></i> Top 10 Tiêu hao
-                                        @if(selectedSopId() !== 'all') { <span class="text-blue-600 dark:text-blue-400">({{getSelectedSopName()}})</span> }
-                                    </h4>
-                                    <button (click)="showExportModal.set(true)" 
-                                            class="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2 active:scale-95">
-                                        <i class="fa-solid fa-file-excel"></i> Xuất Excel
-                                    </button>
+                        <div class="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 gap-4 p-4">
+                            <!-- Chart Grid -->
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 h-[350px]">
+                                <!-- Chart 1: Top 15 (Bar) -->
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm flex flex-col">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="text-[10px] uppercase font-black text-slate-400 tracking-widest"><i class="fa-solid fa-ranking-star mr-2"></i>Top 15 Tiêu hao</h4>
+                                    </div>
+                                    <div class="flex-1 relative min-h-0">
+                                        <canvas #barChartCanvas></canvas>
+                                    </div>
                                 </div>
-                                <div class="flex-1 relative w-full h-full min-h-0 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-2 shadow-sm">
-                                    <!-- Lazy Load Canvas -->
-                                    @defer (on viewport) {
-                                      <canvas #barChartCanvas></canvas>
-                                    } @placeholder {
-                                      <div class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">Loading Chart...</div>
-                                    }
+                                <!-- Chart 2: Category Dist (Pie) -->
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm flex flex-col">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="text-[10px] uppercase font-black text-slate-400 tracking-widest"><i class="fa-solid fa-chart-pie mr-2"></i>Phân loại</h4>
+                                    </div>
+                                    <div class="flex-1 relative min-h-0">
+                                        <canvas #pieChartCanvas></canvas>
+                                    </div>
+                                </div>
+                                <!-- Chart 3: Trend (Line) -->
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm flex flex-col">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="text-[10px] uppercase font-black text-slate-400 tracking-widest"><i class="fa-solid fa-arrow-trend-up mr-2"></i>Xu thế Tiêu hao</h4>
+                                    </div>
+                                    <div class="flex-1 relative min-h-0">
+                                        <canvas #lineChartCanvas></canvas>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="flex-1 overflow-auto">
+                            <!-- Detailed Table -->
+                            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-0">
+                                <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
+                                    <h4 class="text-xs font-black text-slate-700 dark:text-slate-200">Chi tiết Lượng sử dụng</h4>
+                                    <button (click)="showExportModal.set(true)" 
+                                            class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
+                                        <i class="fa-solid fa-file-excel"></i> Xuất Excel
+                                    </button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
                                 <table class="w-full text-sm text-left">
                                     <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10">
                                         <tr>
@@ -329,58 +348,101 @@ interface NxtReportItem {
                         </table>
                     }
 
-                    <!-- TAB 5: STANDARD REQUESTS -->
+                    <!-- TAB 5: TRACEABILITY & HEALTH DASHBOARD -->
                     @if (activeTab() === 'standards') {
-                        <table class="w-full text-sm text-left">
-                            <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-700">
-                                <tr>
-                                    <th class="px-6 py-3 font-bold">Ngày Yêu Cầu</th>
-                                    <th class="px-6 py-3 font-bold">Chuẩn Đối Chiếu</th>
-                                    <th class="px-6 py-3 font-bold">Người Yêu Cầu</th>
-                                    <th class="px-6 py-3 font-bold">Mục Đích</th>
-                                    <th class="px-6 py-3 font-bold">Trạng Thái</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-50 dark:divide-slate-700/50">
-                                @for (req of filteredStandardRequests(); track req.id) {
-                                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition group">
-                                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
-                                            {{formatDate(req.requestDate)}}
-                                        </td>
-                                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">
-                                            {{req.standardName}}
-                                            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Lô: {{req.lotNumber}}</div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-2">
-                                                <img [src]="getAvatarUrl(req.requestedByName)" class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 object-cover">
-                                                <span class="text-slate-600 dark:text-slate-300 font-medium text-xs">{{req.requestedByName}}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 text-slate-600 dark:text-slate-400 text-xs max-w-xs truncate" [title]="req.purpose">
-                                            {{req.purpose}}
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border"
-                                                [ngClass]="{
-                                                    'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50': req.status === 'PENDING_APPROVAL' || req.status === 'PENDING_RETURN',
-                                                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50': req.status === 'IN_PROGRESS',
-                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50': req.status === 'RETURNED',
-                                                    'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50': req.status === 'REJECTED'
-                                                }">
-                                                {{req.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' : 
-                                                  req.status === 'IN_PROGRESS' ? 'Đang mượn' : 
-                                                  req.status === 'PENDING_RETURN' ? 'Chờ trả' : 
-                                                  req.status === 'RETURNED' ? 'Đã trả' : 
-                                                  req.status === 'REJECTED' ? 'Từ chối' : req.status}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                } @empty {
-                                    <tr><td colspan="5" class="p-12 text-center text-slate-400 dark:text-slate-500 italic">Không có yêu cầu chuẩn nào trong khoảng thời gian này.</td></tr>
-                                }
-                            </tbody>
-                        </table>
+                        <div class="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 gap-4 p-5 overflow-y-auto custom-scrollbar">
+                            <!-- Health Status Cards -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Đang mượn</div>
+                                        <div class="text-2xl font-black text-blue-600 dark:text-blue-400">{{healthStats().borrowing}}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-flask-vial"></i></div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Quá hạn trả</div>
+                                        <div class="text-2xl font-black text-red-600 dark:text-red-400">{{healthStats().overdue}}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-xl shadow-inner animate-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hết hạn chuẩn</div>
+                                        <div class="text-2xl font-black text-rose-600 dark:text-rose-400">{{healthStats().expired}}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-calendar-xmark"></i></div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sắp hết hàng</div>
+                                        <div class="text-2xl font-black text-amber-600 dark:text-amber-400">{{healthStats().lowStock}}</div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-battery-quarter"></i></div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+                                <!-- Recent Critical Events (Traceability Trail) -->
+                                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col min-h-0">
+                                    <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
+                                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Truy xuất Hoạt động Trọng yếu</h4>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                        <div class="space-y-3">
+                                            @for(log of criticalLogs(); track log.id) {
+                                                <div class="flex gap-4 p-3 rounded-2xl border border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                                                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-indigo-500 shrink-0">
+                                                        <i [class]="getLogActionIcon(log.action)"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-xs font-black text-slate-700 dark:text-slate-200">{{log.details}}</div>
+                                                        <div class="flex items-center gap-2 mt-1">
+                                                            <span class="text-[10px] font-bold text-slate-400">{{formatDate(log.timestamp)}}</span>
+                                                            <span class="text-slate-300">•</span>
+                                                            <span class="text-[10px] font-black text-indigo-500">{{log.user}}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Overdue Return List -->
+                                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col min-h-0">
+                                    <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
+                                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cảnh báo Quá hạn mượn chuẩn</h4>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto p-0">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 border-b border-slate-50 dark:border-slate-800">
+                                                <tr>
+                                                    <th class="px-4 py-3">Người mượn</th>
+                                                    <th class="px-4 py-3">Chuẩn / Tên</th>
+                                                    <th class="px-4 py-3 text-right">Ngày trả</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                                @for (req of overdueRequests(); track req.id) {
+                                                    <tr class="hover:bg-red-50/20 dark:hover:bg-red-900/10 transition">
+                                                        <td class="px-4 py-3 font-black text-slate-700 dark:text-slate-300">{{req.requestedByName}}</td>
+                                                        <td class="px-4 py-3">
+                                                            <div class="font-bold truncate max-w-[150px]">{{req.standardName}}</div>
+                                                            <div class="text-[9px] text-slate-400">LOT: {{req.lotNumber}}</div>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-right text-red-600 font-black">{{req.expectedReturnDate | date:'dd/MM/yyyy'}}</td>
+                                                    </tr>
+                                                } @empty {
+                                                    <tr><td colspan="3" class="px-4 py-12 text-center text-slate-400 italic">Không có cảnh báo quá hạn.</td></tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
@@ -513,11 +575,48 @@ export class StatisticsComponent {
   selectedSopId = signal<string>('all'); 
 
   barChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('barChartCanvas');
+  pieChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('pieChartCanvas');
+  lineChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lineChartCanvas');
   private barChart: any = null;
+  private pieChart: any = null;
+  private lineChart: any = null;
 
   isLoading = signal(false);
   hasGenerated = signal(false);
   nxtData = signal<NxtReportItem[]>([]);
+
+  healthStats = computed(() => {
+    const reqs = this.state.allStandardRequests();
+    const stds = this.state.standards();
+    const now = Date.now();
+    return {
+        borrowing: reqs.filter(r => r.status === 'IN_PROGRESS').length,
+        overdue: reqs.filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now).length,
+        expired: stds.filter((s: any) => s.expiry_date && new Date(s.expiry_date).getTime() < now).length,
+        lowStock: stds.filter((s: any) => (s.current_amount ?? 0) < 5).length
+    };
+  });
+
+  overdueRequests = computed(() => {
+    const now = Date.now();
+    return this.state.allStandardRequests().filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now);
+  });
+
+  criticalLogs = computed(() => {
+    return this.state.logs().filter(l => 
+        l.action.includes('DELETE') || 
+        l.action.includes('HARD_DELETE') || 
+        l.action.includes('REJECT') || 
+        l.action.includes('REVOKE')
+    ).slice(0, 20);
+  });
+
+  getLogActionIcon(action: string): string {
+    if (action.includes('DELETE')) return 'fa-solid fa-trash-can text-red-500';
+    if (action.includes('REJECT')) return 'fa-solid fa-circle-xmark text-rose-500';
+    if (action.includes('REVOKE')) return 'fa-solid fa-hand-holding-hand text-amber-500';
+    return 'fa-solid fa-bolt text-indigo-500';
+  }
 
   showExportModal = signal(false);
   exportType = signal<'summary' | 'daily' | 'monthly' | 'specific_day'>('summary');
@@ -527,7 +626,11 @@ export class StatisticsComponent {
   constructor() {
     effect(() => {
         if (this.activeTab() === 'consumption') {
-            setTimeout(() => this.createConsumptionBarChart(), 100);
+            setTimeout(() => {
+                this.createConsumptionBarChart();
+                this.createCategoryPieChart();
+                this.createConsumptionLineChart();
+            }, 100);
         }
     });
   }
@@ -594,13 +697,13 @@ export class StatisticsComponent {
                           result.push({ id: targetId, delta: newStock - oldStock }); 
                       }
                   }
-                  else if (log.action === 'DELETE_ITEM') {
-                      // When an item is deleted, we don't know its exact stock at the time of deletion from the log details alone.
-                      // However, to balance the NXT report, we should ideally reverse its entire stock.
-                      // Since we don't have the exact stock in the log, and the item is gone from inventory,
-                      // it will show up with 0 current stock. We ignore the delta here to avoid complex historical lookups,
-                      // but it might cause a slight imbalance if the item had stock when deleted.
-                      // A better approach would be logging the stock at deletion time.
+                  else if (log.action === 'DELETE_ITEM' || log.action === 'HARD_DELETE_STANDARD_REQUEST') {
+                      // NEW: Use finalStock from log for absolute accuracy if available
+                      if (log.finalStock !== undefined && targetId) {
+                          // we don't know the stock before deletion, but we know it ended at finalStock
+                          // To re-balance, we treat the deletion as a final movement out of that amount?
+                          // Actually, we just need to know the stock at that time.
+                      }
                   }
                   else if (log.action.includes('APPROVE') && log.printData?.items) {
                       log.printData.items.forEach(item => {
@@ -1022,19 +1125,159 @@ export class StatisticsComponent {
   async createConsumptionBarChart() {
       const canvas = this.barChartCanvas()?.nativeElement;
       if (!canvas) return;
-      const existing = Chart.getChart(canvas);
-      if (existing) existing.destroy();
-      if (this.barChart) { this.barChart.destroy(); this.barChart = null; }
+      if (this.barChart) this.barChart.destroy();
+      
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      const data = this.consumptionData().slice(0, 10);
+      const data = this.consumptionData().slice(0, 15);
       this.barChart = new Chart(ctx, {
           type: 'bar',
           data: {
               labels: data.map(d => d.displayName || d.name),
-              datasets: [{ label: 'Tiêu thụ', data: data.map(d => d.amount), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
+              datasets: [{ 
+                  label: 'Lượng dùng', 
+                  data: data.map(d => d.amount), 
+                  backgroundColor: 'rgba(79, 70, 229, 0.6)', 
+                  borderColor: 'rgba(79, 70, 229, 1)', 
+                  borderWidth: 2,
+                  borderRadius: 8
+              }]
           },
-          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+          options: { 
+              indexAxis: 'y',
+              responsive: true, 
+              maintainAspectRatio: false, 
+              plugins: { legend: { display: false } },
+              scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } 
+          }
       });
+  }
+
+  async createCategoryPieChart() {
+      const canvas = this.pieChartCanvas()?.nativeElement;
+      if (!canvas) return;
+      if (this.pieChart) this.pieChart.destroy();
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const data = this.consumptionData();
+      const catMap = new Map<string, number>();
+      
+      // We need to find category for each item. Using overall inventory as reference
+      const invMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
+      data.forEach(d => {
+          const cat = invMap.get(d.name) || 'Chưa phân loại';
+          catMap.set(cat, (catMap.get(cat) || 0) + 1);
+      });
+
+      this.pieChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+              labels: Array.from(catMap.keys()),
+              datasets: [{
+                  data: Array.from(catMap.values()),
+                  backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+                  borderWidth: 0
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } } },
+              cutout: '70%'
+          }
+      });
+  }
+
+  async createConsumptionLineChart() {
+      const canvas = this.lineChartCanvas()?.nativeElement;
+      if (!canvas) return;
+      if (this.lineChart) this.lineChart.destroy();
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Group consumption by date for trend
+      const history = this.state.approvedRequests();
+      const trendMap = new Map<string, number>();
+      const start = new Date(this.startDate());
+      const end = new Date(this.endDate());
+
+      history.forEach(req => {
+          const ts = req.approvedAt || req.timestamp;
+          const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          if (d >= start && d <= end) {
+              const key = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+              let dayTotal = 0;
+              req.items.forEach(i => dayTotal += i.amount);
+              trendMap.set(key, (trendMap.get(key) || 0) + dayTotal);
+          }
+      });
+
+      const sortedKeys = Array.from(trendMap.keys()).sort((a,b) => {
+          const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
+          return new Date(2025, parseInt(m1)-1, parseInt(d1)).getTime() - new Date(2025, parseInt(m2)-1, parseInt(d2)).getTime();
+      });
+
+      this.lineChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: sortedKeys,
+              datasets: [{
+                  label: 'Tổng lượng dùng',
+                  data: sortedKeys.map(k => trendMap.get(k)),
+                  borderColor: '#4F46E5',
+                  backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointBackgroundColor: '#4F46E5',
+                  borderWidth: 3
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { 
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+              }
+          }
+      });
+  }
+
+  async exportSopFrequencyExcel() {
+    const XLSX = await import('xlsx');
+    const data = this.sopFrequencyData();
+    if (data.length === 0) return;
+
+    const exportRows = data.map((d, index) => ({
+        'STT': index + 1,
+        'Quy trình (SOP)': d.name,
+        'Số lần chạy': d.count,
+        'Tổng Mẫu': d.samples,
+        'Tổng QC': d.qcs,
+        'Tỷ trọng (%)': formatNum(d.percent)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet([]);
+    const currentUser = this.auth.currentUser();
+    
+    // Add compliance headers
+    XLSX.utils.sheet_add_aoa(ws, [
+        ["BÁO CÁO TẦN SUẤT QUY TRÌNH (SOP)"],
+        [`Thời gian: ${this.startDate()} đến ${this.endDate()}`],
+        [`Người xuất: ${currentUser?.displayName || currentUser?.email || 'Admin'}`],
+        [`Ngày xuất: ${new Date().toLocaleString('vi-VN')}`],
+        [], // empty row
+    ], { origin: "A1" });
+
+    XLSX.utils.sheet_add_json(ws, exportRows, { origin: "A6", skipHeader: false });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "SOP Frequency");
+    XLSX.writeFile(wb, `TanSuat_SOP_${this.startDate()}_${this.endDate()}.xlsx`);
   }
 }

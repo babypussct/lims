@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { StateService } from '../../core/services/state.service';
 import { 
-  doc, setDoc, updateDoc, deleteDoc, 
+  doc, setDoc, updateDoc, deleteDoc, getDoc,
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
   QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer
@@ -246,12 +246,19 @@ export class InventoryService {
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
     const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
     
-    // Sub-collection cleanup (Batch)
+    // 1. Fetch current stock for NXT trace before deletion
+    let finalStock = 0;
+    try {
+        const docSnap = await getDoc(invRef);
+        if (docSnap.exists()) {
+            finalStock = docSnap.data()['stock'] || 0;
+        }
+    } catch (e) { console.warn("Failed to get stock before delete", e); }
+
+    // 2. Sub-collection cleanup (Batch)
     const historyRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history');
-    
     const historySnapshot = await getDocs(historyRef);
     
-    // Chunk history deletions to avoid 500 limit per batch
     const chunks: any[][] = [];
     let currentChunk: any[] = [];
     historySnapshot.forEach(doc => {
@@ -269,12 +276,13 @@ export class InventoryService {
         await batch.commit();
     }
     
+    // 3. Final Deletion and Global Log
     const finalBatch = writeBatch(this.fb.db);
     finalBatch.delete(invRef);
     
     finalBatch.set(globalLogRef, {
         action: 'DELETE_ITEM',
-        details: `Xóa hóa chất: ${id}`,
+        details: `Xóa hóa chất: ${id} (Tồn cuối: ${finalStock})`,
         timestamp: serverTimestamp(),
         user: currentUser,
         targetId: id,

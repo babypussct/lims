@@ -37,6 +37,7 @@ export interface Log {
   printJobId?: string; // Reference to 'print_jobs' collection
   requestId?: string; // Reference to 'requests' collection
   module?: string; // e.g. 'STANDARDS', 'SOP'
+  finalStock?: number; // Captured snapshot for deletions
   sopBasicInfo?: {     // Lightweight info for list display
       name: string;
       category: string;

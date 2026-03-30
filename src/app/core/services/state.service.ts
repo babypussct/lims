@@ -40,7 +40,8 @@ export class StateService implements OnDestroy {
 
   sops = signal<Sop[]>([]); 
   requests = signal<Request[]>([]); 
-  standardRequests = signal<any[]>([]); // Using any to avoid circular dependency if StandardRequest is not imported
+  standards = signal<any[]>([]);
+  standardRequests = signal<any[]>([]); 
   allStandardRequests = signal<any[]>([]);
   approvedRequests = signal<Request[]>([]);
   logs = signal<Log[]>([]); 
@@ -135,6 +136,7 @@ export class StateService implements OnDestroy {
     this.listeners = [];
     this.sops.set([]);
     this.inventory.set([]);
+    this.standards.set([]);
     this.requests.set([]); this.approvedRequests.set([]); this.standardRequests.set([]); this.allStandardRequests.set([]);
     this.logs.set([]);
     this.printableLogs.set([]);
@@ -169,6 +171,10 @@ export class StateService implements OnDestroy {
     const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')), 
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
+
+    const stdsSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standards'), orderBy('name', 'asc')), 
+        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standards.set(items); }, handleError('Standards'));
+    this.listeners.push(stdsSub);
 
     const stdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']), orderBy('requestDate', 'desc')), 
         (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); }, handleError('Standard Requests'));
