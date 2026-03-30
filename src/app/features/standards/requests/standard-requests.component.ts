@@ -200,12 +200,13 @@ function removeAccents(str: string): string {
                     <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                         <div class="space-y-2">
                             @for(std of filteredAvailableStandards(); track std.id) {
-                                <div class="p-5 bg-white dark:bg-slate-900 border rounded-[2rem] transition-all cursor-pointer flex items-start gap-4 group relative overflow-hidden"
+                                <div class="p-5 bg-white dark:bg-slate-900 border rounded-[2rem] transition-all flex items-start gap-4 group relative overflow-hidden"
                                      [ngClass]="{
-                                        'border-indigo-500 ring-2 ring-indigo-500/10 bg-indigo-50/30 dark:bg-indigo-900/10': selectedStandardIds().has(std.id),
-                                        'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none': !selectedStandardIds().has(std.id)
+                                        'border-indigo-500 ring-2 ring-indigo-500/10 bg-indigo-50/30 dark:bg-indigo-900/10': selectedStandardIds().has(std.id) && !isDepleted(std),
+                                        'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none cursor-pointer': !selectedStandardIds().has(std.id) && !isDepleted(std),
+                                        'opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-not-allowed border-slate-100 dark:border-slate-800': isDepleted(std)
                                      }"
-                                     (click)="toggleStandardSelection(std.id)">
+                                     (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
                                     
                                     <!-- Selection Indicator Overlay -->
                                     @if(selectedStandardIds().has(std.id)) {
@@ -250,9 +251,15 @@ function removeAccents(str: string): string {
 
                                         <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/50">
                                             <div class="flex items-center gap-2">
-                                                <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/30">
-                                                    <i class="fa-solid fa-cube"></i> {{std.current_amount}} {{std.unit}}
-                                                </div>
+                                                @if(isDepleted(std)) {
+                                                    <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                                                        <i class="fa-solid fa-ban text-red-400"></i> Sử dụng hết
+                                                    </div>
+                                                } @else {
+                                                    <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/30">
+                                                        <i class="fa-solid fa-cube"></i> {{std.current_amount}} {{std.unit}}
+                                                    </div>
+                                                }
                                             </div>
                                             @if(std.expiry_date) {
                                                 <div class="text-[10px] font-bold flex items-center gap-1" 
@@ -782,24 +789,30 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     expectedReturnDate: ['']
   });
 
+  isDepleted(std: ReferenceStandard): boolean {
+      return std.status === 'DEPLETED' || (std.current_amount ?? 0) <= 0;
+  }
+
   filteredAvailableStandards = computed(() => {
       const term = removeAccents(this.standardSearchTerm().toLowerCase());
       let stds = this.availableStandards();
       
-      if (!term) {
-          return stds.filter(s => this.selectedStandardIds().has(s.id));
-      }
-
       if (term) {
           stds = stds.filter(s => 
               removeAccents(s.name.toLowerCase()).includes(term) || 
               (s.lot_number && removeAccents(s.lot_number.toLowerCase()).includes(term)) ||
               (s.cas_number && removeAccents(s.cas_number.toLowerCase()).includes(term)) ||
               (s.internal_id && removeAccents(s.internal_id.toLowerCase()).includes(term)) ||
-              (s.manufacturer && removeAccents(s.manufacturer.toLowerCase()).includes(term))
+              (s.manufacturer && removeAccents(s.manufacturer.toLowerCase()).includes(term)) ||
+              (s.product_code && removeAccents(s.product_code.toLowerCase()).includes(term))
           );
       }
-      return stds;
+      // Sort: available first, depleted at bottom
+      return stds.sort((a, b) => {
+          const aD = a.status === 'DEPLETED' || (a.current_amount ?? 0) <= 0 ? 1 : 0;
+          const bD = b.status === 'DEPLETED' || (b.current_amount ?? 0) <= 0 ? 1 : 0;
+          return aD - bD;
+      });
   });
 
   filteredRequests = computed(() => {
@@ -843,7 +856,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     this.unsubStandards = this.stdService.listenToAllStandards((stds: ReferenceStandard[]) => {
         this.allStandards.set(stds);
         // Only show standards that are available for new requests
-        this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE' && s.status !== 'DEPLETED' && s.current_amount > 0));
+        // Show all non-IN_USE standards; depleted ones are shown with visual indicator
+        this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE'));
     });
     
     // Listen to purchase requests for Admin
