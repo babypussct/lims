@@ -1145,6 +1145,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       return date.getTime() < Date.now();
   }
 
+  isOverdue(expiryDate: string | undefined): boolean {
+      return this.isExpired(expiryDate);
+  }
+
   async submitRequest() {
       if (this.selectedStandardIds().size === 0 || this.isProcessing()) return;
       
