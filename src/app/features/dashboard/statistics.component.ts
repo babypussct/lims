@@ -274,18 +274,18 @@ interface NxtReportItem {
                                         <canvas #lineChartCanvas></canvas>
                                     </div>
                                 </div>
-                            </div>
+                            </div> <!-- Close Grid (Line 249) -->
                             
                             <!-- Detailed Table -->
-                            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-0">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col shrink-0">
                                 <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
                                     <h4 class="text-xs font-black text-slate-700 dark:text-slate-200">Chi tiết Lượng sử dụng</h4>
-                                    <button (click)="showExportModal.set(true)" 
+                                    <button (click)="exportConsumptionExcel()" 
                                             class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
-                                        <i class="fa-solid fa-file-excel"></i> Xuất Excel
+                                        <i class="fa-solid fa-file-excel"></i> Xuất Dữ liệu này
                                     </button>
                                 </div>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                                <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left">
                                     <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10">
                                         <tr>
@@ -315,15 +315,26 @@ interface NxtReportItem {
                                         }
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
-                    </div>
-                }
+                                </div> <!-- Close horizontal scroll (Line 288) -->
+                            </div> <!-- Close Table container (Line 280) -->
+                        </div> <!-- Close Tab container (Line 247) -->
+                    }
 
                     <!-- TAB 4: SOP FREQUENCY -->
                     @if (activeTab() === 'sops') {
-                        <table class="w-full text-sm text-left">
-                            <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-700">
+                        <div class="flex flex-col h-full">
+                            <div class="p-4 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <i class="fa-solid fa-list-ol"></i> Thống kê Tần suất Quy trình
+                                </h3>
+                                <button (click)="exportSopFrequencyExcel()" [disabled]="sopFrequencyData().length === 0"
+                                        class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
+                                    <i class="fa-solid fa-file-excel"></i> Xuất Excel
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/80 dark:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-700">
                                 <tr>
                                     <th class="px-6 py-3">Quy trình (SOP)</th>
                                     <th class="px-6 py-3 text-center">Số lần chạy (Runs)</th>
@@ -351,42 +362,32 @@ interface NxtReportItem {
                                 } @empty {
                                     <tr><td colspan="5" class="p-12 text-center text-slate-400 dark:text-slate-500 italic">Chưa chạy quy trình nào trong thời gian này.</td></tr>
                                 }
-                            </tbody>
-                        </table>
+                                </table>
+                            </div>
+                        </div>
                     }
 
                     <!-- TAB 5: TRACEABILITY & HEALTH DASHBOARD -->
                     @if (activeTab() === 'standards') {
                         <div class="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 gap-4 p-5 overflow-y-auto custom-scrollbar">
                             <!-- Health Status Cards -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                            <!-- Health Status Cards -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0">
+                                <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
                                     <div>
-                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Đang mượn</div>
-                                        <div class="text-2xl font-black text-blue-600 dark:text-blue-400">{{healthStats().borrowing}}</div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Đang mượn / Sử dụng</div>
+                                        <div class="text-3xl font-black text-blue-600 dark:text-blue-400">{{healthStats().borrowing}}</div>
+                                        <p class="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tight">Chuẩn đang lưu động ngoài kho</p>
                                     </div>
-                                    <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-flask-vial"></i></div>
+                                    <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-3xl shadow-inner"><i class="fa-solid fa-flask-vial"></i></div>
                                 </div>
-                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
                                     <div>
-                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Quá hạn trả</div>
-                                        <div class="text-2xl font-black text-red-600 dark:text-red-400">{{healthStats().overdue}}</div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cảnh báo Quá hạn trả</div>
+                                        <div class="text-3xl font-black text-red-600 dark:text-red-400">{{healthStats().overdue}}</div>
+                                        <p class="text-[10px] text-red-500 font-bold mt-1 uppercase tracking-tight">Cần thu hồi ngay lập tức</p>
                                     </div>
-                                    <div class="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-xl shadow-inner animate-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                                </div>
-                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                                    <div>
-                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hết hạn chuẩn</div>
-                                        <div class="text-2xl font-black text-rose-600 dark:text-rose-400">{{healthStats().expired}}</div>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-calendar-xmark"></i></div>
-                                </div>
-                                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                                    <div>
-                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sắp hết hàng</div>
-                                        <div class="text-2xl font-black text-amber-600 dark:text-amber-400">{{healthStats().lowStock}}</div>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-battery-quarter"></i></div>
+                                    <div class="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-3xl shadow-inner animate-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
                                 </div>
                             </div>
 
@@ -791,7 +792,12 @@ export class StatisticsComponent {
 
   constructor() {
     effect(() => {
-        if (this.activeTab() === 'consumption') {
+        const active = this.activeTab();
+        const consData = this.consumptionData();
+        const inv = this.state.inventory();
+        const stds = this.state.standards();
+
+        if (active === 'consumption') {
             setTimeout(() => {
                 this.createConsumptionBarChart();
                 this.createCategoryPieChart();
@@ -1324,14 +1330,15 @@ export class StatisticsComponent {
                       }
                   }
               },
+              layout: { padding: { left: 40, right: 20 } },
               scales: { 
                   x: { grid: { display: false }, beginAtZero: true }, 
                   y: { 
                       grid: { display: false },
                       ticks: {
-                          callback: function(value: any, index: number) {
+                          callback: function(value: any) {
                               const label = this.getLabelForValue(value);
-                              return label.length > 20 ? label.substring(0, 17) + '...' : label;
+                              return (label && label.length > 30) ? label.substring(0, 27) + '...' : label;
                           },
                           font: { size: 10, weight: 'bold' }
                       }
@@ -1354,7 +1361,7 @@ export class StatisticsComponent {
       
       // Combine Inventory and Standards categories
       const invMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
-      const stdMap = new Map(this.state.standards().map(s => [s.name, s.category]));
+      const stdMap = new Map(this.state.standards().map(s => [s.name, 'Chuẩn đối chiếu']));
       
       data.forEach(d => {
           const cat = invMap.get(d.name) || stdMap.get(d.name) || 'Chưa phân loại';
