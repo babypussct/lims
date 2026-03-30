@@ -101,11 +101,17 @@ interface NxtReportItem {
                 <button (click)="activeTab.set('standards')"
                     class="pb-3 text-xs font-bold border-b-2 transition flex items-center gap-2 uppercase tracking-wide whitespace-nowrap active:scale-95"
                     [class]="activeTab() === 'standards' ? 'border-pink-600 dark:border-pink-500 text-pink-700 dark:text-pink-400' : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'">
-                    <i class="fa-solid fa-heart-pulse"></i> 5. Sức khỏe & Truy xuất
-                </button>
+                        <i class="fa-solid fa-heart-pulse"></i> 5. Sức khỏe & Truy xuất
+                    </button>
+                    <div class="ml-auto pr-6 flex items-center gap-2">
+                         <button (click)="openGlobalExport()" 
+                                 class="px-4 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-file-export"></i> Xuất Báo cáo Tổng hợp
+                        </button>
+                    </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-0 relative bg-white dark:bg-slate-800 custom-scrollbar">
+                <div class="flex-1 overflow-y-auto p-0 relative bg-white dark:bg-slate-800 custom-scrollbar h-full">
                     
                     <!-- TAB 1: LOGS -->
                     @if (activeTab() === 'logs') {
@@ -238,9 +244,9 @@ interface NxtReportItem {
 
                     <!-- TAB 3: CONSUMPTION DASHBOARD -->
                     @if (activeTab() === 'consumption') {
-                        <div class="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 gap-4 p-4">
+                        <div class="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 gap-4 p-5 overflow-y-auto custom-scrollbar">
                             <!-- Chart Grid -->
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 h-[350px]">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 h-[300px]">
                                 <!-- Chart 1: Top 15 (Bar) -->
                                 <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm flex flex-col">
                                     <div class="flex justify-between items-center mb-4">
@@ -542,6 +548,81 @@ interface NxtReportItem {
             </div>
         </div>
     }
+
+    <!-- GLOBAL EXPORT MODAL -->
+    @if (showGlobalExportModal()) {
+        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700">
+                <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-900/10">
+                    <div>
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-lg">
+                            <i class="fa-solid fa-file-export text-indigo-600"></i> Xuất Báo cáo Tổng hợp
+                        </h3>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Thời gian: {{startDate()}} -> {{endDate()}}</p>
+                    </div>
+                    <button (click)="showGlobalExportModal.set(false)" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="p-8 space-y-6">
+                    <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">Chọn các loại dữ liệu bạn muốn xuất vào bộ báo cáo:</p>
+                    
+                    <div class="grid grid-cols-1 gap-3">
+                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
+                               [class]="exportInventory() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
+                            <input type="checkbox" [ngModel]="exportInventory()" (ngModelChange)="exportInventory.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
+                            <div class="flex-1">
+                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">1. Báo cáo Nhập - Xuất - Tồn (NXT)</div>
+                                <div class="text-[11px] text-slate-500">Dữ liệu biến động kho chi tiết từng mặt hàng.</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
+                               [class]="exportConsumption() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
+                            <input type="checkbox" [ngModel]="exportConsumption()" (ngModelChange)="exportConsumption.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
+                            <div class="flex-1">
+                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">2. Dữ liệu Tiêu hao Hóa chất</div>
+                                <div class="text-[11px] text-slate-500">Tổng hợp lượng dùng dựa trên phiếu đã duyệt.</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
+                               [class]="exportSop() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
+                            <input type="checkbox" [ngModel]="exportSop()" (ngModelChange)="exportSop.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
+                            <div class="flex-1">
+                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">3. Tần suất Quy trình (SOP)</div>
+                                <div class="text-[11px] text-slate-500">Thống kê số lần chạy, mẫu và QC của từng SOP.</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
+                               [class]="exportLogs() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
+                            <input type="checkbox" [ngModel]="exportLogs()" (ngModelChange)="exportLogs.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
+                            <div class="flex-1">
+                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">4. Nhật ký Hoạt động (Audit Log)</div>
+                                <div class="text-[11px] text-slate-500">Danh sách toàn bộ thao tác trong khoảng thời gian.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
+                    <button (click)="showGlobalExportModal.set(false)" class="px-5 py-2.5 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Đóng</button>
+                    <button (click)="runGlobalExport()" 
+                            [disabled]="isLoading() || (!exportInventory() && !exportConsumption() && !exportSop() && !exportLogs())"
+                            class="px-8 py-2.5 rounded-2xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
+                        @if (isLoading()) {
+                            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        } @else {
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        } 
+                        Bắt đầu Xuất File
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
   `
 })
 export class StatisticsComponent {
@@ -585,6 +666,90 @@ export class StatisticsComponent {
   isLoading = signal(false);
   hasGenerated = signal(false);
   nxtData = signal<NxtReportItem[]>([]);
+
+  showGlobalExportModal = signal(false);
+  exportInventory = signal(true);
+  exportConsumption = signal(true);
+  exportSop = signal(true);
+  exportLogs = signal(false);
+
+  openGlobalExport() {
+      this.showGlobalExportModal.set(true);
+  }
+
+  async runGlobalExport() {
+      this.isLoading.set(true);
+      try {
+          const XLSX = await import('xlsx');
+          const wb = XLSX.utils.book_new();
+          const start = this.startDate();
+          const end = this.endDate();
+          const currentUser = this.auth.currentUser();
+          const exportInfo = [
+            ["BÁO CÁO TỔNG HỢP HỆ THỐNG LIMS"],
+            [`Thời gian: ${start} đến ${end}`],
+            [`Người xuất: ${currentUser?.displayName || currentUser?.email || 'Admin'}`],
+            [`Ngày xuất: ${new Date().toLocaleString('vi-VN')}`],
+            []
+          ];
+
+          // 1. NXT
+          if (this.exportInventory()) {
+              await this.generateNxtReport();
+              const nxtData = this.nxtData().map((row: any, index: number) => ({
+                'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
+                'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
+              }));
+              const ws = XLSX.utils.json_to_sheet([]);
+              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO NHẬP - XUẤT - TỒN (KHO)"]], { origin: "A1" });
+              XLSX.utils.sheet_add_json(ws, nxtData, { origin: "A7", skipHeader: false });
+              XLSX.utils.book_append_sheet(wb, ws, "NXT");
+          }
+
+          // 2. Consumption
+          if (this.exportConsumption()) {
+              const cons = this.consumptionData();
+              const consData = cons.map((row, index) => ({
+                'STT': index + 1, 'Mã': row.name, 'Tên Hóa chất/Vật tư': row.displayName, 'Tổng Tiêu Hao': row.amount, 'ĐVT': row.unit
+              }));
+              const ws = XLSX.utils.json_to_sheet([]);
+              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["DỮ LIỆU TIÊU HAO HÓA CHẤT"]], { origin: "A1" });
+              XLSX.utils.sheet_add_json(ws, consData, { origin: "A7", skipHeader: false });
+              XLSX.utils.book_append_sheet(wb, ws, "Consumption");
+          }
+
+          // 3. SOP
+          if (this.exportSop()) {
+              const sops = this.sopFrequencyData();
+              const sopRows = sops.map((d, index) => ({
+                'STT': index + 1, 'Quy trình (SOP)': d.name, 'Số lần chạy': d.count, 'Tổng Mẫu': d.samples, 'Tổng QC': d.qcs, 'Tỷ trọng (%)': formatNum(d.percent)
+              }));
+              const ws = XLSX.utils.json_to_sheet([]);
+              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO TẦN SUẤT QUY TRÌNH (SOP)"]], { origin: "A1" });
+              XLSX.utils.sheet_add_json(ws, sopRows, { origin: "A7", skipHeader: false });
+              XLSX.utils.book_append_sheet(wb, ws, "SOP Frequency");
+          }
+
+          // 4. Logs
+          if (this.exportLogs()) {
+              const logs = this.filteredLogs();
+              const logRows = logs.map((l, index) => ({
+                'STT': index + 1, 'Thời gian': formatDate(l.timestamp), 'Hoạt động': this.getLogActionText(l.action), 'Chi tiết': l.details, 'Người thực hiện': l.user
+              }));
+              const ws = XLSX.utils.json_to_sheet([]);
+              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["NHẬT KÝ HOẠT ĐỘNG CHI TIẾT"]], { origin: "A1" });
+              XLSX.utils.sheet_add_json(ws, logRows, { origin: "A7", skipHeader: false });
+              XLSX.utils.book_append_sheet(wb, ws, "Audit Logs");
+          }
+
+          XLSX.writeFile(wb, `BaoCao_TongHop_${start}_den_${end}.xlsx`);
+          this.showGlobalExportModal.set(false);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          this.isLoading.set(false);
+      }
+  }
 
   healthStats = computed(() => {
     const reqs = this.state.allStandardRequests();
@@ -640,7 +805,7 @@ export class StatisticsComponent {
   onDateRangeChange(range: { start: string, end: string, label: string }) {
       this.startDate.set(range.start);
       this.endDate.set(range.end);
-      // No need to set 'range type' anymore, the component handles the label
+      this.hasGenerated.set(false); // Force recalculation if date changes
   }
 
   private getToday(): string { return new Date().toISOString().split('T')[0]; }
@@ -660,13 +825,16 @@ export class StatisticsComponent {
       this.isLoading.set(true);
       this.nxtData.set([]);
       
-      const start = new Date(this.startDate());
-      const end = new Date(this.endDate());
+      const startRaw = this.startDate();
+      const endRaw = this.endDate();
+      const start = new Date(startRaw);
+      const end = new Date(endRaw);
       const endTime = new Date(end); endTime.setHours(23,59,59,999);
       const sopId = this.selectedSopId();
       
       try {
           const inventory = await this.invService.getAllInventory();
+          const start = new Date(startRaw); start.setHours(0,0,0,0);
           const today = new Date();
           const logs = await this.invService.getLogsByDateRange(start, today);
           
@@ -1148,8 +1316,27 @@ export class StatisticsComponent {
               indexAxis: 'y',
               responsive: true, 
               maintainAspectRatio: false, 
-              plugins: { legend: { display: false } },
-              scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } 
+              plugins: { 
+                  legend: { display: false },
+                  tooltip: {
+                      callbacks: {
+                          label: (context: any) => `Lượng dùng: ${formatNum(context.raw)}`
+                      }
+                  }
+              },
+              scales: { 
+                  x: { grid: { display: false }, beginAtZero: true }, 
+                  y: { 
+                      grid: { display: false },
+                      ticks: {
+                          callback: function(value: any, index: number) {
+                              const label = this.getLabelForValue(value);
+                              return label.length > 20 ? label.substring(0, 17) + '...' : label;
+                          },
+                          font: { size: 10, weight: 'bold' }
+                      }
+                  } 
+              } 
           }
       });
   }
@@ -1165,10 +1352,12 @@ export class StatisticsComponent {
       const data = this.consumptionData();
       const catMap = new Map<string, number>();
       
-      // We need to find category for each item. Using overall inventory as reference
+      // Combine Inventory and Standards categories
       const invMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
+      const stdMap = new Map(this.state.standards().map(s => [s.name, s.category]));
+      
       data.forEach(d => {
-          const cat = invMap.get(d.name) || 'Chưa phân loại';
+          const cat = invMap.get(d.name) || stdMap.get(d.name) || 'Chưa phân loại';
           catMap.set(cat, (catMap.get(cat) || 0) + 1);
       });
 
