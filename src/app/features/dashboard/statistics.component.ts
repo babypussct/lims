@@ -311,7 +311,8 @@ interface NxtReportItem {
                                 </table>
                             </div>
                         </div>
-                    }
+                    </div>
+                }
 
                     <!-- TAB 4: SOP FREQUENCY -->
                     @if (activeTab() === 'sops') {
