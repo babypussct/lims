@@ -1706,12 +1706,20 @@ export class StatisticsComponent {
       const data = this.consumptionData();
       const catMap = new Map<string, number>();
       
-      // Combine Inventory and Standards categories
-      const invMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
-      const stdMap = new Map(this.state.standards().map(s => [s.name, 'Chuẩn đối chiếu']));
+      // Build lookup maps by both ID and name for robust matching
+      // consumptionData uses item.name which is the Firestore document ID (item ID)
+      const invByIdMap = new Map(this.state.inventory().map(i => [i.id, i.category]));
+      const invByNameMap = new Map(this.state.inventory().map(i => [i.name, i.category]));
+      const stdByIdMap = new Map(this.state.standards().map((s: any) => [s.id, 'Chuẩn đối chiếu']));
+      const stdByNameMap = new Map(this.state.standards().map((s: any) => [s.name, 'Chuẩn đối chiếu']));
       
       data.forEach(d => {
-          let cat = invMap.get(d.name) || stdMap.get(d.name) || 'Chưa phân loại';
+          // Priority: lookup by ID first (most reliable), then by display name as fallback
+          let cat = invByIdMap.get(d.name) 
+                 || invByNameMap.get(d.displayName) 
+                 || stdByIdMap.get(d.name) 
+                 || stdByNameMap.get(d.displayName) 
+                 || 'Chưa phân loại';
           if (this.state.categoriesMap().has(cat)) {
               cat = this.state.categoriesMap().get(cat)!;
           }
