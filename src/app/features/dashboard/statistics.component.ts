@@ -1294,11 +1294,19 @@ export class StatisticsComponent {
           await new Promise(r => setTimeout(r, 300));
 
           XLSX.writeFile(wb, `BaoCao_TongHop_${start}_den_${end}.xlsx`);
+          this.isExporting.set(false);
 
       } catch (e) {
           console.error(e);
           this.isExporting.set(false);
+          alert('Đã xảy ra lỗi trong quá trình cấu trúc Báo cáo Excel. Vui lòng F5 và kiểm tra Logs.');
       }
+  }
+
+  // Handle native input event for specific day
+  onSpecificDayChange(event: Event) {
+      const val = parseInt((event.target as HTMLInputElement).value, 10);
+      if (!isNaN(val)) this.specificDay.set(val);
   }
 
 
