@@ -581,26 +581,30 @@ interface NxtReportItem {
                                 <div class="px-4 pb-4 space-y-2 border-t border-orange-100 dark:border-orange-900/30 bg-white/50 dark:bg-slate-800/50">
                                     <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-3 pb-1">Chế độ xuất</div>
                                     <div class="grid grid-cols-2 gap-2">
-                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
-                                               [class]="exportType() === 'summary' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="summary" [checked]="exportType() === 'summary'" (change)="exportType.set('summary'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                        <div (click)="exportType.set('summary'); activePreset.set(null)" class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                             [class]="exportType() === 'summary' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            @if (exportType() === 'summary') { <i class="fa-solid fa-circle-dot text-orange-600 text-sm"></i> }
+                                            @else { <i class="fa-regular fa-circle text-slate-400 text-sm group-hover:text-orange-400"></i> }
                                             <span><i class="fa-solid fa-sigma mr-1"></i>Tổng hợp</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
-                                               [class]="exportType() === 'daily' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="daily" [checked]="exportType() === 'daily'" (change)="exportType.set('daily'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                        </div>
+                                        <div (click)="exportType.set('daily'); activePreset.set(null)" class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                             [class]="exportType() === 'daily' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            @if (exportType() === 'daily') { <i class="fa-solid fa-circle-dot text-orange-600 text-sm"></i> }
+                                            @else { <i class="fa-regular fa-circle text-slate-400 text-sm group-hover:text-orange-400"></i> }
                                             <span><i class="fa-solid fa-calendar-day mr-1"></i>Theo ngày</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
-                                               [class]="exportType() === 'monthly' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="monthly" [checked]="exportType() === 'monthly'" (change)="exportType.set('monthly'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                        </div>
+                                        <div (click)="exportType.set('monthly'); activePreset.set(null)" class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                             [class]="exportType() === 'monthly' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            @if (exportType() === 'monthly') { <i class="fa-solid fa-circle-dot text-orange-600 text-sm"></i> }
+                                            @else { <i class="fa-regular fa-circle text-slate-400 text-sm group-hover:text-orange-400"></i> }
                                             <span><i class="fa-solid fa-calendar-week mr-1"></i>Theo tháng</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
-                                               [class]="exportType() === 'specific_day' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="specific_day" [checked]="exportType() === 'specific_day'" (change)="exportType.set('specific_day'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                        </div>
+                                        <div (click)="exportType.set('specific_day'); activePreset.set(null)" class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                             [class]="exportType() === 'specific_day' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            @if (exportType() === 'specific_day') { <i class="fa-solid fa-circle-dot text-orange-600 text-sm"></i> }
+                                            @else { <i class="fa-regular fa-circle text-slate-400 text-sm group-hover:text-orange-400"></i> }
                                             <span><i class="fa-solid fa-crosshairs mr-1"></i>Ngày cụ thể</span>
-                                        </label>
+                                        </div>
                                     </div>
                                     @if (exportType() === 'specific_day') {
                                         <div class="flex items-center gap-2 mt-1">
@@ -610,24 +614,30 @@ interface NxtReportItem {
                                         </div>
                                     }
                                     <div class="pt-1">
-                                        <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
-                                               [class]="excludeMargin() ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700 hover:border-amber-300'">
-                                            <input type="checkbox" [checked]="excludeMargin()" (change)="excludeMargin.set(!excludeMargin()); activePreset.set(null)" class="w-3.5 h-3.5 text-amber-600 rounded">
+                                        <div (click)="excludeMargin.set(!excludeMargin()); activePreset.set(null)" class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition group"
+                                             [class]="excludeMargin() ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700'">
+                                            <div class="w-4 h-4 rounded border flex items-center justify-center transition shrink-0"
+                                                 [class]="excludeMargin() ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 group-hover:border-amber-400'">
+                                                @if (excludeMargin()) { <i class="fa-solid fa-check text-[10px]"></i> }
+                                            </div>
                                             <div>
                                                 <div class="text-xs font-bold" [class]="excludeMargin() ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'">Bỏ qua Hao hụt (Safety Margin)</div>
                                                 <div class="text-[10px] text-slate-400">Xuất số liệu gốc, không cộng thêm phần hao hụt</div>
                                             </div>
-                                        </label>
+                                        </div>
                                     </div>
                                     <div class="pt-1">
-                                        <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
-                                               [class]="exportPerSop() ? 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800' : 'border-slate-200 dark:border-slate-700 hover:border-violet-300'">
-                                            <input type="checkbox" [checked]="exportPerSop()" (change)="exportPerSop.set(!exportPerSop()); activePreset.set(null)" class="w-3.5 h-3.5 text-violet-600 rounded">
+                                        <div (click)="exportPerSop.set(!exportPerSop()); activePreset.set(null)" class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition group"
+                                             [class]="exportPerSop() ? 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800' : 'border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-700'">
+                                            <div class="w-4 h-4 rounded border flex items-center justify-center transition shrink-0"
+                                                 [class]="exportPerSop() ? 'bg-violet-500 border-violet-500 text-white' : 'border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 group-hover:border-violet-400'">
+                                                @if (exportPerSop()) { <i class="fa-solid fa-check text-[10px]"></i> }
+                                            </div>
                                             <div>
                                                 <div class="text-xs font-bold" [class]="exportPerSop() ? 'text-violet-700 dark:text-violet-400' : 'text-slate-600 dark:text-slate-300'">Tách riêng theo từng SOP</div>
                                                 <div class="text-[10px] text-slate-400">Mỗi SOP = 1 sheet riêng biệt trong file Excel</div>
                                             </div>
-                                        </label>
+                                        </div>
                                     </div>
                                 </div>
                             }
