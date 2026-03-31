@@ -99,19 +99,64 @@ export class DateRangeFilterComponent {
   initEnd = input<string>('');
   dateChange = output<{ start: string, end: string, label: string }>();
 
-  // State - Changed default to 'today'
+  // State
   startDate = signal('');
   endDate = signal('');
   activePreset = signal<DateRangePreset>('today');
   currentLabel = signal('Hôm nay');
   isOpen = signal(false);
 
+  private hasEmittedInit = false;
+
   constructor() {
-      // Init from inputs if provided
+      // On first run: set dates from inputs, detect which preset they match,
+      // then emit immediately so the parent is always in sync from the start.
       effect(() => {
-          if(this.initStart()) this.startDate.set(this.initStart());
-          if(this.initEnd()) this.endDate.set(this.initEnd());
+          const s = this.initStart();
+          const e = this.initEnd();
+          if (!s || !e) return;
+
+          this.startDate.set(s);
+          this.endDate.set(e);
+
+          // Detect preset from supplied dates so the label is accurate
+          const detectedPreset = this.detectPreset(s, e);
+          this.activePreset.set(detectedPreset.preset);
+          this.currentLabel.set(detectedPreset.label);
+
+          // Emit once so the parent's signals are immediately correct
+          if (!this.hasEmittedInit) {
+              this.hasEmittedInit = true;
+              // Use setTimeout to emit AFTER Angular has finished the current change-detection cycle
+              setTimeout(() => this.emitChange(), 0);
+          }
       }, { allowSignalWrites: true });
+  }
+
+  /** Inspect a start/end date pair and return the matching preset + label */
+  private detectPreset(start: string, end: string): { preset: DateRangePreset, label: string } {
+      const toStr = (d: Date) => {
+          const offset = d.getTimezoneOffset();
+          const local = new Date(d.getTime() - (offset * 60 * 1000));
+          return local.toISOString().split('T')[0];
+      };
+      const today = new Date();
+      const todayStr = toStr(today);
+
+      const yd = new Date(today); yd.setDate(today.getDate() - 1);
+      const yesterdayStr = toStr(yd);
+
+      const monthStart = toStr(new Date(today.getFullYear(), today.getMonth(), 1));
+      const lastMonthStart = toStr(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+      const lastMonthEnd = toStr(new Date(today.getFullYear(), today.getMonth(), 0));
+      const yearStart = toStr(new Date(today.getFullYear(), 0, 1));
+
+      if (start === todayStr && end === todayStr) return { preset: 'today', label: 'Hôm nay' };
+      if (start === yesterdayStr && end === yesterdayStr) return { preset: 'yesterday', label: 'Hôm qua' };
+      if (start === monthStart && end === todayStr) return { preset: 'this_month', label: 'Tháng này' };
+      if (start === lastMonthStart && end === lastMonthEnd) return { preset: 'last_month', label: 'Tháng trước' };
+      if (start === yearStart && end === todayStr) return { preset: 'this_year', label: 'Năm nay' };
+      return { preset: 'custom', label: 'Tùy chỉnh' };
   }
 
   toggleDropdown(e: Event) {

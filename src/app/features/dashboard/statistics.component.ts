@@ -1381,8 +1381,14 @@ export class StatisticsComponent {
       this.hasGenerated.set(false); // Force recalculation if date changes
   }
 
-  private getToday(): string { return new Date().toISOString().split('T')[0]; }
-  private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
+  private toLocalDateStr(d: Date): string {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+  }
+  private getToday(): string { return this.toLocalDateStr(new Date()); }
+  private getFirstDayOfMonth(): string { const d = new Date(); return this.toLocalDateStr(new Date(d.getFullYear(), d.getMonth(), 1)); }
   
   getUnitClass(unit: string): string { return (unit.includes('ml') || unit.includes('l')) ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'; }
 
