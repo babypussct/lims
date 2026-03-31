@@ -1398,26 +1398,30 @@ export class StatisticsComponent {
       this.isLoading.set(true);
       this.nxtData.set([]);
       
+      // Snapshot all filter values at the start to avoid race conditions
+      // if the user changes a filter while the async operation is running.
       const startRaw = this.startDate();
       const endRaw = this.endDate();
+      const sopId = this.selectedSopId();
+
       // Use local timezone perfectly without shifting 
       const start = new Date(startRaw + 'T00:00:00');
       const end = new Date(endRaw + 'T23:59:59.999');
-      const endTime = end;
-      const sopId = this.selectedSopId();
+      const startTime = start.getTime();
+      const endTime = end.getTime();
       
       try {
           const inventory = await this.invService.getAllInventory();
-          // Fetch logs from 'start' locally up to the EXACT end of TODAY! 
-          // So we don't miss anything that happened today if end date is today.
+
+          // Bug Fix: Fetch logs from 'start' up to 'today' (not just 'end') so we can
+          // correctly calculate futureNetChange (movements AFTER the period end).
+          // We need logs beyond 'end' to subtract from current stock to get end-of-period stock.
           const maxNow = new Date(); maxNow.setHours(23,59,59,999);
           const logs = await this.invService.getLogsByDateRange(start, maxNow);
           
           if (sopId === 'all') {
               const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
               inventory.forEach(item => movements.set(item.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 }));
-
-              const endFilterTime = endTime.getTime();
 
               logs.forEach(log => {
                   const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
@@ -1442,11 +1446,9 @@ export class StatisticsComponent {
                       }
                   }
                   else if (log.action === 'DELETE_ITEM' || log.action === 'HARD_DELETE_STANDARD_REQUEST') {
-                      // NEW: Use finalStock from log for absolute accuracy if available
+                      // finalStock can be used for absolute accuracy when available
                       if (log.finalStock !== undefined && targetId) {
-                          // we don't know the stock before deletion, but we know it ended at finalStock
-                          // To re-balance, we treat the deletion as a final movement out of that amount?
-                          // Actually, we just need to know the stock at that time.
+                          // Stock was reduced to zero by deletion; handled via stock delta if logged
                       }
                   }
                   else if (log.action.includes('APPROVE') && log.printData?.items) {
@@ -1463,9 +1465,11 @@ export class StatisticsComponent {
                       if (!movements.has(change.id)) movements.set(change.id, { inPeriodImport: 0, inPeriodExport: 0, futureNetChange: 0 });
                       const entry = movements.get(change.id)!;
                       
-                      if (logTime > endFilterTime) {
+                      if (logTime > endTime) {
+                          // Movements AFTER the period: used to back-calculate end-of-period stock
                           entry.futureNetChange += change.delta;
                       } else {
+                          // Movements WITHIN the period (start <= logTime <= end)
                           if (change.delta > 0) entry.inPeriodImport += change.delta;
                           else entry.inPeriodExport += Math.abs(change.delta);
                       }
@@ -1499,11 +1503,13 @@ export class StatisticsComponent {
               this.nxtData.set(report.sort((a,b) => a.name.localeCompare(b.name)));
 
           } else {
+              // --- SOP-specific export detail mode ---
               const consumptionMap = new Map<string, number>();
               logs.forEach(log => {
                   const logTime = (log.timestamp as any).toDate ? (log.timestamp as any).toDate().getTime() : new Date(log.timestamp).getTime();
                   
-                  if (logTime <= endTime.getTime()) {
+                  // Bug Fix: filter by BOTH start and end date (was only checking <= end)
+                  if (logTime >= startTime && logTime <= endTime) {
                       if (log.action.includes('APPROVE') && log.printData?.sop?.id === sopId && log.printData?.items) {
                           log.printData.items.forEach(item => {
                               if (item.isComposite && item.breakdown) {
