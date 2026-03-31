@@ -15,6 +15,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { GoogleDriveService } from '../../core/services/google-drive.service';
 
 @Component({
   selector: 'app-standards',
@@ -510,12 +511,16 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
-                                    <button type="button" (click)="uploadInput.click()" [disabled]="isUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50">
+                                    <button type="button" (click)="uploadInput.click()" [disabled]="isUploading() || isDriveUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50" title="Upload lên Firebase Storage">
                                         @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
                                     </button>
                                     <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                    <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
+                                        @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
+                                    </button>
+                                    <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
                                 </div>
-                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic">Hỗ trợ link Google Drive (tự động chuyển sang chế độ preview).</p>
+                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic"><i class="fa-brands fa-google-drive mr-0.5"></i> Nút Drive: upload tự động lên Google Drive, đặt tên theo chuẩn, gán link preview. <span class="text-blue-500 dark:text-blue-400">15GB free!</span></p>
                             </div>
                         </div>
 
@@ -1076,10 +1081,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   router = inject(Router);
   private fb: FormBuilder = inject(FormBuilder);
+  private googleDriveService = inject(GoogleDriveService);
   Math = Math;
   
   isLoading = signal(true);
   isUploading = signal(false);
+  isDriveUploading = signal(false);
   isImporting = signal(false);
   isProcessing = signal(false); // Hardened UX State
 
@@ -1589,6 +1596,32 @@ export class StandardsComponent implements OnInit, OnDestroy {
       } finally { 
           this.isUploading.set(false);
           event.target.value = ''; // CRITICAL: Reset input to allow re-upload
+      }
+  }
+
+  // --- Google Drive Upload ---
+  async uploadCoaToDrive(event: any) {
+      if (this.isDriveUploading()) return;
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.isDriveUploading.set(true);
+      try {
+          // Auto-generate filename from form data
+          const stdName = this.form.value.name || 'Unknown';
+          const lotNum = this.form.value.lot_number || 'NoLot';
+          const fileName = GoogleDriveService.generateFileName(stdName, lotNum, file.name);
+
+          this.toast.show(`Đang upload "${fileName}" lên Google Drive...`);
+          const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+          this.form.patchValue({ certificate_ref: previewUrl });
+          this.toast.show(`Upload Drive thành công! File: ${fileName}`);
+      } catch (e: any) {
+          console.error('Drive upload error:', e);
+          this.toast.show('Upload Drive lỗi: ' + (e.message || 'Không xác định'), 'error');
+      } finally {
+          this.isDriveUploading.set(false);
+          event.target.value = ''; // Reset input to allow re-upload
       }
   }
 
