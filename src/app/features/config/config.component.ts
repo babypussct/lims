@@ -7,7 +7,7 @@ import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService, PERMISSIONS, UserProfile } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
-import { HealthCheckItem } from '../../core/models/config.model';
+import { HealthCheckItem, CategoryItem } from '../../core/models/config.model';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { SopService } from '../sop/services/sop.service';
@@ -68,6 +68,35 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                                     <span class="flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Bộ Chỉ tiêu (Groups)</span>
                                     <i class="fa-solid fa-arrow-right opacity-50 group-hover:opacity-100 transition-opacity"></i>
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- 1.5. CATEGORIES CONFIG -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i class="fa-solid fa-tags"></i></div>
+                                    Phân loại (Categories)
+                                </h3>
+                                <button (click)="saveCategories()" class="text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm dark:shadow-none">Lưu</button>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Danh sách (Mã : Tên hiển thị)</span>
+                                    <button (click)="addCategory()" class="text-[9px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-2 py-1 rounded font-bold transition">+ Thêm</button>
+                                </div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2 italic">Cảnh báo: Nếu đổi mã ID, dữ liệu cũ sẽ không bị mất dữ liệu nhưng cần cập nhật hàng loạt để hiển thị đúng nhóm (Khuyên dùng: Chỉ sửa Label).</div>
+                                
+                                <div class="space-y-2 border border-slate-100 dark:border-slate-700/50 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/20">
+                                    @for (cat of categoriesLocal(); track $index) {
+                                        <div class="flex gap-2 items-center group">
+                                            <input [(ngModel)]="cat.id" class="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition" placeholder="ID (VD: reagent)">
+                                            <input [(ngModel)]="cat.name" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition" placeholder="Tên hiển thị (VD: Hóa chất)">
+                                            <button (click)="removeCategory($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -233,14 +262,12 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                                         @for (rule of safetyRulesLocal(); track $index) {
                                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
                                                 <td class="px-4 py-2">
-                                                    <input [(ngModel)]="rule.category" list="catOptions" class="w-full bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-600 focus:border-orange-300 dark:focus:border-orange-500 rounded px-2 py-1 outline-none text-xs font-bold text-slate-700 dark:text-slate-300" placeholder="VD: reagent, standard...">
-                                                    <datalist id="catOptions">
-                                                        <option value="reagent">Hóa chất (reagent)</option>
-                                                        <option value="standard">Chất chuẩn (standard)</option>
-                                                        <option value="solvent">Dung môi (solvent)</option>
-                                                        <option value="consumable">Vật tư (consumable)</option>
-                                                        <option value="kit">Kit xét nghiệm (kit)</option>
-                                                    </datalist>
+                                                    <select [(ngModel)]="rule.category" class="w-full bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-600 focus:border-orange-300 dark:focus:border-orange-500 rounded px-2 py-1 outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer text-center md:text-left transition">
+                                                        <option value="" disabled selected>Chọn phân loại</option>
+                                                        @for(cat of state.categories(); track cat.id) {
+                                                            <option [value]="cat.id">{{cat.name}} ({{cat.id}})</option>
+                                                        }
+                                                    </select>
                                                 </td>
                                                 <td class="px-4 py-2 text-center">
                                                     <div class="relative mx-auto w-20">
@@ -491,6 +518,9 @@ export class ConfigComponent implements OnInit {
   safetyConfigLocal = { defaultMargin: 10, rules: {} as Record<string, number> };
   safetyRulesLocal = signal<{category: string, margin: number}[]>([]);
 
+  // Categories State
+  categoriesLocal = signal<CategoryItem[]>([]);
+
   userList = signal<UserProfile[]>([]);
   availablePermissions = [
       { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
@@ -540,6 +570,9 @@ service cloud.firestore {
               rules: { ...sVal.rules } 
           };
           this.safetyRulesLocal.set(Object.entries(sVal.rules).map(([category, margin]) => ({ category, margin })));
+
+          // Initialize Categories clone
+          this.categoriesLocal.set(JSON.parse(JSON.stringify(this.state.categories())));
       }
   }
 
@@ -642,4 +675,23 @@ service cloud.firestore {
       this.state.saveSafetyConfig(config);
       this.toast.show('Đã lưu cấu hình định mức.');
   }
+
+  // --- CATEGORIES CONFIG METHODS ---
+  addCategory() { this.categoriesLocal.update(c => [...c, { id: '', name: '' }]); }
+  removeCategory(index: number) { this.categoriesLocal.update(c => c.filter((_, i) => i !== index)); }
+  async saveCategories() {
+      // Validate empty rules
+      const valid = this.categoriesLocal().filter(c => c.id && c.id.trim() && c.name && c.name.trim());
+      if (valid.length === 0) {
+          this.toast.show('Phải có ít nhất 1 phân loại hợp lệ.', 'error');
+          return;
+      }
+      try {
+          await this.state.saveCategoriesConfig(valid);
+          this.toast.show('Đã lưu danh mục Phân loại!');
+      } catch (e) {
+          this.toast.show('Lỗi khi lưu phân loại.', 'error');
+      }
+  }
+
 }

@@ -17,7 +17,7 @@ import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
 import { Sop, CalculatedItem } from '../models/sop.model';
 import { Request, RequestItem } from '../models/request.model';
 import { Log, PrintData } from '../models/log.model';
-import { PrintConfig, SafetyConfig } from '../models/config.model';
+import { PrintConfig, SafetyConfig, CategoryItem } from '../models/config.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
@@ -57,6 +57,21 @@ export class StateService implements OnDestroy {
   safetyConfig = signal<SafetyConfig>({
       defaultMargin: 10,
       rules: {}
+  });
+
+  // NEW: Categories
+  categories = signal<CategoryItem[]>([
+      { id: 'reagent', name: 'Hóa chất (General)' },
+      { id: 'solvent', name: 'Dung môi (Solvent)' },
+      { id: 'standard', name: 'Chất chuẩn (Standard)' },
+      { id: 'consumable', name: 'Vật tư (Consumable)' },
+      { id: 'kit', name: 'Kit xét nghiệm' }
+  ]);
+  
+  categoriesMap = computed(() => {
+    const map = new Map<string, string>();
+    this.categories().forEach(c => map.set(c.id, c.name));
+    return map;
   });
 
   // NEW: Avatar Style Preference (Default: Initials for professional look)
@@ -211,6 +226,13 @@ export class StateService implements OnDestroy {
     }, handleError('Config-Safety'));
     this.listeners.push(safetyConfigSub);
 
+    const categoriesSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories'), (d) => {
+        if(d.exists() && d.data()?.['items']) {
+            this.categories.set(d.data()?.['items'] as CategoryItem[]);
+        }
+    }, handleError('Config-Categories'));
+    this.listeners.push(categoriesSub);
+
     const systemSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system'), (d) => { 
         if(d.exists()) {
             const data = d.data();
@@ -231,6 +253,11 @@ export class StateService implements OnDestroy {
   async saveSafetyConfig(config: SafetyConfig) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
       await setDoc(ref, config, {merge: true});
+  }
+
+  async saveCategoriesConfig(items: CategoryItem[]) {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
+      await setDoc(ref, { items }, { merge: true });
   }
 
   async saveSystemVersion(version: string) {

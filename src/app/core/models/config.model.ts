@@ -16,3 +16,8 @@ export interface SafetyConfig {
   defaultMargin: number;
   rules: Record<string, number>; // e.g., "reagent": 10, "standard": 2
 }
+
+export interface CategoryItem {
+  id: string;
+  name: string;
+}

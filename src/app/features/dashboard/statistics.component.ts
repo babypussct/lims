@@ -1711,7 +1711,10 @@ export class StatisticsComponent {
       const stdMap = new Map(this.state.standards().map(s => [s.name, 'Chuẩn đối chiếu']));
       
       data.forEach(d => {
-          const cat = invMap.get(d.name) || stdMap.get(d.name) || 'Chưa phân loại';
+          let cat = invMap.get(d.name) || stdMap.get(d.name) || 'Chưa phân loại';
+          if (this.state.categoriesMap().has(cat)) {
+              cat = this.state.categoriesMap().get(cat)!;
+          }
           catMap.set(cat, (catMap.get(cat) || 0) + 1);
       });
 
