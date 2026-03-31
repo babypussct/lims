@@ -105,8 +105,8 @@ interface NxtReportItem {
                     </button>
                     <div class="ml-auto pr-6 flex items-center gap-2">
                          <button (click)="openGlobalExport()" 
-                                 class="px-4 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
-                            <i class="fa-solid fa-file-export"></i> Xuất Báo cáo Tổng hợp
+                                 class="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2 group">
+                            <i class="fa-solid fa-file-export group-hover:rotate-12 transition-transform"></i> Xuất Báo cáo Tổng hợp
                         </button>
                     </div>
                 </div>
@@ -179,10 +179,6 @@ interface NxtReportItem {
                                     <button (click)="generateNxtReport()" [disabled]="isLoading()" 
                                             class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-50 active:scale-95">
                                         <i class="fa-solid fa-calculator" [class.fa-spin]="isLoading()"></i> Tính Toán
-                                    </button>
-                                    <button (click)="exportNxtExcel()" [disabled]="nxtData().length === 0"
-                                            class="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-50 active:scale-95">
-                                        <i class="fa-solid fa-file-excel"></i> Xuất Excel
                                     </button>
                                 </div>
                             </div>
@@ -280,10 +276,6 @@ interface NxtReportItem {
                             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col shrink-0">
                                 <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
                                     <h4 class="text-xs font-black text-slate-700 dark:text-slate-200">Chi tiết Lượng sử dụng</h4>
-                                    <button (click)="exportConsumptionExcel()" 
-                                            class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
-                                        <i class="fa-solid fa-file-excel"></i> Xuất Dữ liệu này
-                                    </button>
                                 </div>
                                 <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left">
@@ -327,10 +319,7 @@ interface NxtReportItem {
                                 <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <i class="fa-solid fa-list-ol"></i> Thống kê Tần suất Quy trình
                                 </h3>
-                                <button (click)="exportSopFrequencyExcel()" [disabled]="sopFrequencyData().length === 0"
-                                        class="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
-                                    <i class="fa-solid fa-file-excel"></i> Xuất Excel
-                                </button>
+
                             </div>
                             <div class="flex-1 overflow-y-auto custom-scrollbar">
                                 <table class="w-full text-sm text-left">
@@ -456,85 +445,7 @@ interface NxtReportItem {
             </div>
         </div>
 
-        <!-- EXPORT MODAL -->
-        @if (showExportModal()) {
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
-                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                        <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-file-export text-emerald-500"></i> Tùy chọn Xuất Dữ liệu
-                        </h3>
-                        <button (click)="showExportModal.set(false)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        <div class="space-y-3">
-                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'summary'}">
-                                <input type="radio" name="exportType" value="summary" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
-                                <div>
-                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Tổng hợp (Mặc định)</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">Tổng lượng tiêu hao trong khoảng thời gian đã chọn.</div>
-                                </div>
-                            </label>
-                            
-                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'daily'}">
-                                <input type="radio" name="exportType" value="daily" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
-                                <div>
-                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng ngày</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">Chi tiết lượng dùng mỗi ngày (Cột là các ngày).</div>
-                                </div>
-                            </label>
 
-                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'monthly'}">
-                                <input type="radio" name="exportType" value="monthly" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
-                                <div>
-                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Phân bổ theo từng tháng</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">Chi tiết lượng dùng mỗi tháng (Cột là các tháng).</div>
-                                </div>
-                            </label>
-
-                            <label class="flex flex-col gap-2 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [ngClass]="{'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800': exportType() === 'specific_day'}">
-                                <div class="flex items-center gap-3">
-                                    <input type="radio" name="exportType" value="specific_day" [ngModel]="exportType()" (ngModelChange)="exportType.set($event)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
-                                    <div>
-                                        <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Lọc theo ngày cụ thể trong tháng</div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400">Chỉ tính tổng các ngày được chọn (VD: Ngày 1 hàng tháng).</div>
-                                    </div>
-                                </div>
-                                @if (exportType() === 'specific_day') {
-                                    <div class="ml-7 mt-2 flex items-center gap-2 animate-slide-up">
-                                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Chọn ngày:</span>
-                                        <input type="number" min="1" max="31" [ngModel]="specificDay()" (ngModelChange)="specificDay.set($event)" class="w-16 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-sm text-center outline-none focus:border-emerald-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-                                    </div>
-                                }
-                            </label>
-                            
-                            <hr class="border-slate-200 dark:border-slate-700 my-2">
-                            
-                            <label class="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-                                   [ngClass]="{'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800': excludeMargin()}">
-                                <input type="checkbox" [ngModel]="excludeMargin()" (ngModelChange)="excludeMargin.set($event)" class="w-4 h-4 text-amber-600 focus:ring-amber-500 rounded">
-                                <div>
-                                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Bỏ qua Quy định Hao hụt (Safety Margin)</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">Xuất số liệu gốc theo SOP, không cộng thêm phần hao hụt.</div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
-                        <button (click)="showExportModal.set(false)" class="px-4 py-2 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Hủy</button>
-                        <button (click)="exportConsumptionExcel()" class="px-6 py-2 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center gap-2">
-                            <i class="fa-solid fa-download"></i> Tải xuống
-                        </button>
-                    </div>
-                </div>
-            </div>
-        }
     } @else {
         <div class="h-full flex items-center justify-center fade-in">
             <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-red-100 dark:border-red-900/30 max-w-md text-center">
@@ -552,74 +463,283 @@ interface NxtReportItem {
 
     <!-- GLOBAL EXPORT MODAL -->
     @if (showGlobalExportModal()) {
-        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700">
-                <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-900/10">
+        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" (click)="$event.target === $event.currentTarget && !isExporting() && showGlobalExportModal.set(false)">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
+                
+                <!-- Header -->
+                <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/10 dark:to-purple-900/10 shrink-0">
                     <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-lg">
-                            <i class="fa-solid fa-file-export text-indigo-600"></i> Xuất Báo cáo Tổng hợp
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-lg">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-300/30">
+                                <i class="fa-solid fa-file-export text-sm"></i>
+                            </div>
+                            Xuất Báo cáo Tổng hợp
                         </h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Thời gian: {{startDate()}} -> {{endDate()}}</p>
+                        <div class="flex items-center gap-2 mt-1 ml-[46px]">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{{startDate()}} → {{endDate()}}</span>
+                            @if (selectedSopId() !== 'all') {
+                                <span class="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-bold">SOP: {{getSelectedSopName()}}</span>
+                            }
+                        </div>
                     </div>
-                    <button (click)="showGlobalExportModal.set(false)" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
+                    <button (click)="showGlobalExportModal.set(false)" [disabled]="isExporting()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
                 
-                <div class="p-8 space-y-6">
-                    <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">Chọn các loại dữ liệu bạn muốn xuất vào bộ báo cáo:</p>
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
                     
-                    <div class="grid grid-cols-1 gap-3">
-                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
-                               [class]="exportInventory() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
-                            <input type="checkbox" [ngModel]="exportInventory()" (ngModelChange)="exportInventory.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
-                            <div class="flex-1">
-                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">1. Báo cáo Nhập - Xuất - Tồn (NXT)</div>
-                                <div class="text-[11px] text-slate-500">Dữ liệu biến động kho chi tiết từng mặt hàng.</div>
-                            </div>
-                        </label>
+                    <!-- Quick Presets -->
+                    @if (!isExporting()) {
+                    <div class="px-5 pt-5 pb-3">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-bolt mr-1"></i> Mẫu nhanh</div>
+                        <div class="flex flex-wrap gap-2">
+                            <button (click)="applyPreset('monthly')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
+                                    [class]="activePreset() === 'monthly' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
+                                <i class="fa-solid fa-calendar-days mr-1"></i> Báo cáo Tháng
+                            </button>
+                            <button (click)="applyPreset('detailed')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
+                                    [class]="activePreset() === 'detailed' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
+                                <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Phân tích Chi tiết
+                            </button>
+                            <button (click)="applyPreset('accounting')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
+                                    [class]="activePreset() === 'accounting' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
+                                <i class="fa-solid fa-receipt mr-1"></i> Kế toán / Mua hàng
+                            </button>
+                            <button (click)="applyPreset('all')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
+                                    [class]="activePreset() === 'all' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
+                                <i class="fa-solid fa-layer-group mr-1"></i> Tất cả
+                            </button>
+                        </div>
+                    </div>
+                    }
 
-                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
-                               [class]="exportConsumption() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
-                            <input type="checkbox" [ngModel]="exportConsumption()" (ngModelChange)="exportConsumption.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
-                            <div class="flex-1">
-                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">2. Dữ liệu Tiêu hao Hóa chất</div>
-                                <div class="text-[11px] text-slate-500">Tổng hợp lượng dùng dựa trên phiếu đã duyệt.</div>
-                            </div>
-                        </label>
+                    <!-- Report Sections -->
+                    <div class="px-5 pb-5 space-y-2">
+                        @if (!isExporting()) {
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-2"><i class="fa-solid fa-list-check mr-1"></i> Chọn nội dung</div>
+                        } @else {
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-2"><i class="fa-solid fa-gear fa-spin mr-1"></i> Đang xuất...</div>
+                        }
 
-                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
-                               [class]="exportSop() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
-                            <input type="checkbox" [ngModel]="exportSop()" (ngModelChange)="exportSop.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
-                            <div class="flex-1">
-                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">3. Tần suất Quy trình (SOP)</div>
-                                <div class="text-[11px] text-slate-500">Thống kê số lần chạy, mẫu và QC của từng SOP.</div>
-                            </div>
-                        </label>
+                        <!-- 1. NXT -->
+                        <div class="border rounded-2xl overflow-hidden transition-all" 
+                             [class]="exportInventory() ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10' : 'border-slate-100 dark:border-slate-700'">
+                            <button (click)="!isExporting() && exportInventory.set(!exportInventory()); activePreset.set(null)" [disabled]="isExporting()"
+                                    class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition disabled:cursor-default">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                                     [class]="exportInventory() ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                                    <i [class]="exportInventory() ? 'fa-solid fa-check' : 'fa-solid fa-boxes-packing'"></i>
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <div class="text-sm font-black" [class]="exportInventory() ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'">1. Báo cáo Nhập - Xuất - Tồn (NXT)</div>
+                                    <div class="text-[11px] text-slate-500">Biến động kho chi tiết từng mặt hàng</div>
+                                </div>
+                                @if (exportInventory()) {
+                                    <span class="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">{{nxtData().length || state.inventory().length}} items</span>
+                                }
+                                @if (isExporting()) {
+                                    @if (exportProgress().nxt === 'done') { <i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i> }
+                                    @else if (exportProgress().nxt === 'working') { <span class="w-5 h-5 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></span> }
+                                    @else { <i class="fa-regular fa-circle text-slate-300"></i> }
+                                }
+                            </button>
+                        </div>
 
-                        <label class="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition group"
-                               [class]="exportLogs() ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-300'">
-                            <input type="checkbox" [ngModel]="exportLogs()" (ngModelChange)="exportLogs.set($event)" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500">
-                            <div class="flex-1">
-                                <div class="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition">4. Nhật ký Hoạt động (Audit Log)</div>
-                                <div class="text-[11px] text-slate-500">Danh sách toàn bộ thao tác trong khoảng thời gian.</div>
+                        <!-- 2. Consumption -->
+                        <div class="border rounded-2xl overflow-hidden transition-all"
+                             [class]="exportConsumption() ? 'border-orange-200 dark:border-orange-800 bg-orange-50/30 dark:bg-orange-900/10' : 'border-slate-100 dark:border-slate-700'">
+                            <button (click)="!isExporting() && toggleConsumption()" [disabled]="isExporting()"
+                                    class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition disabled:cursor-default">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                                     [class]="exportConsumption() ? 'bg-orange-500 text-white shadow-orange-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                                    <i [class]="exportConsumption() ? 'fa-solid fa-check' : 'fa-solid fa-flask'"></i>
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <div class="text-sm font-black" [class]="exportConsumption() ? 'text-orange-700 dark:text-orange-400' : 'text-slate-600 dark:text-slate-300'">2. Dữ liệu Tiêu hao Hóa chất</div>
+                                    <div class="text-[11px] text-slate-500">Tổng hợp lượng dùng dựa trên phiếu đã duyệt</div>
+                                </div>
+                                @if (exportConsumption()) {
+                                    <span class="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">{{consumptionData().length}} items</span>
+                                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform" [class.rotate-180]="showConsumptionOptions()"></i>
+                                }
+                                @if (isExporting()) {
+                                    @if (exportProgress().consumption === 'done') { <i class="fa-solid fa-circle-check text-orange-500 text-lg"></i> }
+                                    @else if (exportProgress().consumption === 'working') { <span class="w-5 h-5 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin"></span> }
+                                    @else { <i class="fa-regular fa-circle text-slate-300"></i> }
+                                }
+                            </button>
+                            <!-- Consumption Sub-options (Accordion) -->
+                            @if (exportConsumption() && showConsumptionOptions() && !isExporting()) {
+                                <div class="px-4 pb-4 space-y-2 border-t border-orange-100 dark:border-orange-900/30 bg-white/50 dark:bg-slate-800/50">
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-3 pb-1">Chế độ xuất</div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                               [class]="exportType() === 'summary' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            <input type="radio" name="exportTypeG" value="summary" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <span><i class="fa-solid fa-sigma mr-1"></i>Tổng hợp</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                               [class]="exportType() === 'daily' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            <input type="radio" name="exportTypeG" value="daily" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <span><i class="fa-solid fa-calendar-day mr-1"></i>Theo ngày</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                               [class]="exportType() === 'monthly' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            <input type="radio" name="exportTypeG" value="monthly" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <span><i class="fa-solid fa-calendar-week mr-1"></i>Theo tháng</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
+                                               [class]="exportType() === 'specific_day' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
+                                            <input type="radio" name="exportTypeG" value="specific_day" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <span><i class="fa-solid fa-crosshairs mr-1"></i>Ngày cụ thể</span>
+                                        </label>
+                                    </div>
+                                    @if (exportType() === 'specific_day') {
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-[11px] font-bold text-slate-500">Lọc ngày:</span>
+                                            <input type="number" min="1" max="31" [ngModel]="specificDay()" (ngModelChange)="specificDay.set($event)" class="w-14 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-center outline-none focus:border-orange-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+                                            <span class="text-[10px] text-slate-400">hàng tháng</span>
+                                        </div>
+                                    }
+                                    <div class="pt-1">
+                                        <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
+                                               [class]="excludeMargin() ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700 hover:border-amber-300'">
+                                            <input type="checkbox" [ngModel]="excludeMargin()" (ngModelChange)="excludeMargin.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-amber-600 rounded">
+                                            <div>
+                                                <div class="text-xs font-bold" [class]="excludeMargin() ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'">Bỏ qua Hao hụt (Safety Margin)</div>
+                                                <div class="text-[10px] text-slate-400">Xuất số liệu gốc, không cộng thêm phần hao hụt</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="pt-1">
+                                        <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
+                                               [class]="exportPerSop() ? 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800' : 'border-slate-200 dark:border-slate-700 hover:border-violet-300'">
+                                            <input type="checkbox" [ngModel]="exportPerSop()" (ngModelChange)="exportPerSop.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-violet-600 rounded">
+                                            <div>
+                                                <div class="text-xs font-bold" [class]="exportPerSop() ? 'text-violet-700 dark:text-violet-400' : 'text-slate-600 dark:text-slate-300'">Tách riêng theo từng SOP</div>
+                                                <div class="text-[10px] text-slate-400">Mỗi SOP = 1 sheet riêng biệt trong file Excel</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- 3. SOP Frequency -->
+                        <div class="border rounded-2xl overflow-hidden transition-all"
+                             [class]="exportSop() ? 'border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10' : 'border-slate-100 dark:border-slate-700'">
+                            <button (click)="!isExporting() && exportSop.set(!exportSop()); activePreset.set(null)" [disabled]="isExporting()"
+                                    class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition disabled:cursor-default">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                                     [class]="exportSop() ? 'bg-purple-500 text-white shadow-purple-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                                    <i [class]="exportSop() ? 'fa-solid fa-check' : 'fa-solid fa-list-ol'"></i>
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <div class="text-sm font-black" [class]="exportSop() ? 'text-purple-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-300'">3. Tần suất Quy trình (SOP)</div>
+                                    <div class="text-[11px] text-slate-500">Thống kê số lần chạy, mẫu và QC</div>
+                                </div>
+                                @if (exportSop()) {
+                                    <span class="text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{{sopFrequencyData().length}} SOPs</span>
+                                }
+                                @if (isExporting()) {
+                                    @if (exportProgress().sop === 'done') { <i class="fa-solid fa-circle-check text-purple-500 text-lg"></i> }
+                                    @else if (exportProgress().sop === 'working') { <span class="w-5 h-5 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></span> }
+                                    @else { <i class="fa-regular fa-circle text-slate-300"></i> }
+                                }
+                            </button>
+                        </div>
+
+                        <!-- 4. Audit Logs -->
+                        <div class="border rounded-2xl overflow-hidden transition-all"
+                             [class]="exportLogs() ? 'border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-900/10' : 'border-slate-100 dark:border-slate-700'">
+                            <button (click)="!isExporting() && exportLogs.set(!exportLogs()); activePreset.set(null)" [disabled]="isExporting()"
+                                    class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition disabled:cursor-default">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                                     [class]="exportLogs() ? 'bg-blue-500 text-white shadow-blue-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                                    <i [class]="exportLogs() ? 'fa-solid fa-check' : 'fa-solid fa-clock-rotate-left'"></i>
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <div class="text-sm font-black" [class]="exportLogs() ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'">4. Nhật ký Hoạt động (Audit Log)</div>
+                                    <div class="text-[11px] text-slate-500">Toàn bộ thao tác trong khoảng thời gian</div>
+                                </div>
+                                @if (exportLogs()) {
+                                    <span class="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{{filteredLogs().length}} entries</span>
+                                }
+                                @if (isExporting()) {
+                                    @if (exportProgress().logs === 'done') { <i class="fa-solid fa-circle-check text-blue-500 text-lg"></i> }
+                                    @else if (exportProgress().logs === 'working') { <span class="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></span> }
+                                    @else { <i class="fa-regular fa-circle text-slate-300"></i> }
+                                }
+                            </button>
+                        </div>
+
+                        <!-- 5. Standards Health -->
+                        <div class="border rounded-2xl overflow-hidden transition-all"
+                             [class]="exportStandards() ? 'border-pink-200 dark:border-pink-800 bg-pink-50/30 dark:bg-pink-900/10' : 'border-slate-100 dark:border-slate-700'">
+                            <button (click)="!isExporting() && exportStandards.set(!exportStandards()); activePreset.set(null)" [disabled]="isExporting()"
+                                    class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition disabled:cursor-default">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                                     [class]="exportStandards() ? 'bg-pink-500 text-white shadow-pink-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                                    <i [class]="exportStandards() ? 'fa-solid fa-check' : 'fa-solid fa-heart-pulse'"></i>
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <div class="text-sm font-black" [class]="exportStandards() ? 'text-pink-700 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'">5. Sức khỏe & Truy xuất Chuẩn</div>
+                                    <div class="text-[11px] text-slate-500">Chuẩn đang mượn, quá hạn, hết hạn</div>
+                                </div>
+                                @if (exportStandards()) {
+                                    <span class="text-[10px] font-bold bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full">{{healthStats().borrowing + healthStats().overdue}} records</span>
+                                }
+                                @if (isExporting()) {
+                                    @if (exportProgress().standards === 'done') { <i class="fa-solid fa-circle-check text-pink-500 text-lg"></i> }
+                                    @else if (exportProgress().standards === 'working') { <span class="w-5 h-5 border-2 border-pink-200 border-t-pink-600 rounded-full animate-spin"></span> }
+                                    @else { <i class="fa-regular fa-circle text-slate-300"></i> }
+                                }
+                            </button>
+                        </div>
+
+                        <!-- Cover sheet info -->
+                        @if (!isExporting()) {
+                            <div class="flex items-center gap-2 px-4 py-2 mt-1">
+                                <i class="fa-solid fa-file-lines text-slate-300 text-xs"></i>
+                                <span class="text-[10px] text-slate-400 font-medium">Sheet "Trang bìa" với KPIs tóm tắt sẽ tự động được thêm vào file</span>
                             </div>
-                        </label>
+                        }
+
+                        <!-- Progress complete -->
+                        @if (isExporting() && exportProgress().cover === 'done') {
+                            <div class="mt-2 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-lg shadow-emerald-200">
+                                    <i class="fa-solid fa-check-double"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-black text-emerald-700 dark:text-emerald-400">Hoàn tất! File đã được tải xuống.</div>
+                                    <div class="text-[11px] text-emerald-600 dark:text-emerald-500">Kiểm tra thư mục Downloads của bạn.</div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
 
-                <div class="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
-                    <button (click)="showGlobalExportModal.set(false)" class="px-5 py-2.5 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Đóng</button>
-                    <button (click)="runGlobalExport()" 
-                            [disabled]="isLoading() || (!exportInventory() && !exportConsumption() && !exportSop() && !exportLogs())"
-                            class="px-8 py-2.5 rounded-2xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
-                        @if (isLoading()) {
-                            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        } @else {
-                            <i class="fa-solid fa-cloud-arrow-down"></i>
-                        } 
-                        Bắt đầu Xuất File
-                    </button>
+                <!-- Footer -->
+                <div class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 flex gap-3 justify-between items-center shrink-0">
+                    <div class="text-[10px] text-slate-400 font-medium">
+                        @if (!isExporting()) {
+                            {{getSelectedSheetsCount()}} sheet(s) sẽ được xuất
+                        }
+                    </div>
+                    <div class="flex gap-3">
+                        <button (click)="showGlobalExportModal.set(false)" [disabled]="isExporting()" class="px-5 py-2.5 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
+                        @if (!isExporting() || exportProgress().cover === 'done') {
+                            <button (click)="runGlobalExport()" 
+                                    [disabled]="isExporting() || getSelectedSheetsCount() === 0"
+                                    class="px-8 py-2.5 rounded-2xl font-black text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-indigo-200/50 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                @if (exportProgress().cover === 'done') { Xuất lại } @else { Bắt đầu Xuất File }
+                            </button>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -673,84 +793,508 @@ export class StatisticsComponent {
   exportConsumption = signal(true);
   exportSop = signal(true);
   exportLogs = signal(false);
+  exportStandards = signal(false);
+  exportPerSop = signal(false);
+  showConsumptionOptions = signal(true);
+  isExporting = signal(false);
+  activePreset = signal<string | null>(null);
+  exportProgress = signal<{nxt: string, consumption: string, sop: string, logs: string, standards: string, cover: string}>({
+    nxt: 'pending', consumption: 'pending', sop: 'pending', logs: 'pending', standards: 'pending', cover: 'pending'
+  });
+
+  toggleConsumption() {
+      if (this.exportConsumption()) {
+          // If already on and options showing, toggle off
+          if (this.showConsumptionOptions()) {
+              this.exportConsumption.set(false);
+              this.showConsumptionOptions.set(true);
+          } else {
+              this.showConsumptionOptions.set(true);
+          }
+      } else {
+          this.exportConsumption.set(true);
+          this.showConsumptionOptions.set(true);
+      }
+      this.activePreset.set(null);
+  }
+
+  getSelectedSheetsCount(): number {
+      let count = 0;
+      if (this.exportInventory()) count++;
+      if (this.exportConsumption()) count++;
+      if (this.exportSop()) count++;
+      if (this.exportLogs()) count++;
+      if (this.exportStandards()) count++;
+      count++; // Cover sheet always included
+      return count;
+  }
+
+  applyPreset(preset: string) {
+      this.activePreset.set(preset);
+      switch(preset) {
+          case 'monthly':
+              this.exportInventory.set(true);
+              this.exportConsumption.set(true);
+              this.exportSop.set(true);
+              this.exportLogs.set(false);
+              this.exportStandards.set(false);
+              this.exportPerSop.set(false);
+              this.exportType.set('summary');
+              this.excludeMargin.set(false);
+              break;
+          case 'detailed':
+              this.exportInventory.set(true);
+              this.exportConsumption.set(true);
+              this.exportSop.set(true);
+              this.exportLogs.set(true);
+              this.exportStandards.set(true);
+              this.exportPerSop.set(false);
+              this.exportType.set('daily');
+              this.excludeMargin.set(false);
+              break;
+          case 'accounting':
+              this.exportInventory.set(false);
+              this.exportConsumption.set(true);
+              this.exportSop.set(false);
+              this.exportLogs.set(false);
+              this.exportStandards.set(false);
+              this.exportPerSop.set(false);
+              this.exportType.set('summary');
+              this.excludeMargin.set(true);
+              break;
+          case 'all':
+              this.exportInventory.set(true);
+              this.exportConsumption.set(true);
+              this.exportSop.set(true);
+              this.exportLogs.set(true);
+              this.exportStandards.set(true);
+              this.exportPerSop.set(true);
+              this.exportType.set('daily');
+              this.excludeMargin.set(false);
+              break;
+      }
+  }
 
   openGlobalExport() {
+      this.isExporting.set(false);
+      this.exportProgress.set({ nxt: 'pending', consumption: 'pending', sop: 'pending', logs: 'pending', standards: 'pending', cover: 'pending' });
       this.showGlobalExportModal.set(true);
   }
 
+  // --- Professional Excel Formatting Helper ---
+  private formatSheet(ws: any, XLSX: any, headerRowIndex: number, dataLength: number, colWidths: number[]) {
+      // Set column widths
+      ws['!cols'] = colWidths.map(w => ({ wch: w }));
+      // Set row heights for header area
+      ws['!rows'] = [];
+      for (let i = 0; i < headerRowIndex; i++) {
+          ws['!rows'].push({ hpx: i === 0 ? 28 : 18 });
+      }
+      // Merge title cell across columns
+      if (!ws['!merges']) ws['!merges'] = [];
+      const maxCol = colWidths.length - 1;
+      ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: Math.min(maxCol, 5) } });
+  }
+
   async runGlobalExport() {
-      this.isLoading.set(true);
+      this.isExporting.set(true);
+      this.exportProgress.set({ nxt: 'pending', consumption: 'pending', sop: 'pending', logs: 'pending', standards: 'pending', cover: 'pending' });
+      
+      // Small delay to let Angular render the initial exporting state
+      await new Promise(r => setTimeout(r, 100));
+      
       try {
           const XLSX = await import('xlsx');
           const wb = XLSX.utils.book_new();
           const start = this.startDate();
           const end = this.endDate();
           const currentUser = this.auth.currentUser();
+          const sopId = this.selectedSopId();
+          
           const exportInfo = [
             ["BÁO CÁO TỔNG HỢP HỆ THỐNG LIMS"],
             [`Thời gian: ${start} đến ${end}`],
             [`Người xuất: ${currentUser?.displayName || currentUser?.email || 'Admin'}`],
             [`Ngày xuất: ${new Date().toLocaleString('vi-VN')}`],
+            [`SOP: ${sopId === 'all' ? 'Tất cả quy trình' : this.getSelectedSopName()}`],
             []
           ];
 
-          // 1. NXT
+          const sheetsAdded: string[] = [];
+
+          // ===== 1. NXT =====
           if (this.exportInventory()) {
+              this.exportProgress.update(p => ({ ...p, nxt: 'working' }));
+              await new Promise(r => setTimeout(r, 50));
+              
               await this.generateNxtReport();
-              const nxtData = this.nxtData().map((row: any, index: number) => ({
-                'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
-                'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
-              }));
-              const ws = XLSX.utils.json_to_sheet([]);
-              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO NHẬP - XUẤT - TỒN (KHO)"]], { origin: "A1" });
-              XLSX.utils.sheet_add_json(ws, nxtData, { origin: "A7", skipHeader: false });
-              XLSX.utils.book_append_sheet(wb, ws, "NXT");
+              const nxtRows = this.nxtData();
+              
+              if (sopId === 'all') {
+                  const data = nxtRows.map((row: any, index: number) => ({
+                    'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
+                    'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
+                  }));
+                  const ws = XLSX.utils.json_to_sheet([]);
+                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO NHẬP - XUẤT - TỒN (KHO)"]], { origin: "A1" });
+                  XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
+                  this.formatSheet(ws, XLSX, 8, data.length, [6, 20, 35, 10, 18, 14, 14, 14, 14]);
+                  XLSX.utils.book_append_sheet(wb, ws, "NXT");
+                  sheetsAdded.push("NXT");
+              } else {
+                  const data = nxtRows.map((row: any, index: number) => ({
+                    'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit,
+                    'Tổng Lượng Xuất': row.exportQty
+                  }));
+                  const ws = XLSX.utils.json_to_sheet([]);
+                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`CHI TIẾT XUẤT KHO - ${this.getSelectedSopName()}`]], { origin: "A1" });
+                  XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
+                  this.formatSheet(ws, XLSX, 8, data.length, [6, 20, 35, 10, 16]);
+                  XLSX.utils.book_append_sheet(wb, ws, "Xuất SOP");
+                  sheetsAdded.push("Xuất SOP");
+              }
+              this.exportProgress.update(p => ({ ...p, nxt: 'done' }));
+              await new Promise(r => setTimeout(r, 200));
           }
 
-          // 2. Consumption
+          // ===== 2. CONSUMPTION (Full logic from exportConsumptionExcel) =====
           if (this.exportConsumption()) {
-              const cons = this.consumptionData();
-              const consData = cons.map((row, index) => ({
-                'STT': index + 1, 'Mã': row.name, 'Tên Hóa chất/Vật tư': row.displayName, 'Tổng Tiêu Hao': row.amount, 'ĐVT': row.unit
-              }));
-              const ws = XLSX.utils.json_to_sheet([]);
-              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["DỮ LIỆU TIÊU HAO HÓA CHẤT"]], { origin: "A1" });
-              XLSX.utils.sheet_add_json(ws, consData, { origin: "A7", skipHeader: false });
-              XLSX.utils.book_append_sheet(wb, ws, "Consumption");
+              this.exportProgress.update(p => ({ ...p, consumption: 'working' }));
+              await new Promise(r => setTimeout(r, 50));
+              
+              const history = this.state.approvedRequests();
+              const startD = new Date(start); startD.setHours(0,0,0,0);
+              const endD = new Date(end); endD.setHours(23,59,59,999);
+              const type = this.exportType();
+              const specDay = this.specificDay();
+              const useBaseAmount = this.excludeMargin();
+              const safetyConfig = this.state.safetyConfig();
+              const inventoryMap = new Map(this.state.inventory().map((i: any) => [i.name, i]));
+
+              const getCalculatedItemAmount = (item: any, reqMargin: number) => {
+                  if (!useBaseAmount) return item.amount;
+                  if (item.baseAmount !== undefined) return item.baseAmount;
+                  if (reqMargin > 0) {
+                      return item.amount / (1 + reqMargin / 100);
+                  } else if (reqMargin < 0) {
+                      const invItem: any = inventoryMap.get(item.name);
+                      let appliedMargin = 10;
+                      if (safetyConfig && invItem && invItem.category && safetyConfig.rules[invItem.category] !== undefined) {
+                          appliedMargin = safetyConfig.rules[invItem.category];
+                      } else if (safetyConfig && safetyConfig.defaultMargin !== undefined) {
+                          appliedMargin = safetyConfig.defaultMargin;
+                      }
+                      return item.amount / (1 + appliedMargin / 100);
+                  }
+                  return item.amount;
+              };
+
+              // Filter requests
+              const filteredHistory = history.filter((req: any) => {
+                  let d: Date;
+                  if (req.analysisDate) {
+                      const parts = req.analysisDate.split('-');
+                      d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+                  } else {
+                      const ts = req.approvedAt || req.timestamp;
+                      d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+                  }
+                  if (d < startD || d > endD) return false;
+                  if (sopId !== 'all' && req.sopId !== sopId) return false;
+                  if (type === 'specific_day' && d.getDate() !== specDay) return false;
+                  return true;
+              });
+
+              // Build consumption data based on type
+              if (type === 'summary' || type === 'specific_day') {
+                  const map = new Map<string, {amount: number, unit: string, displayName: string}>();
+                  filteredHistory.forEach((req: any) => {
+                      const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
+                      req.items.forEach((item: any) => {
+                          const itemAmount = getCalculatedItemAmount(item, reqMargin);
+                          const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
+                          map.set(item.name, { amount: current.amount + itemAmount, unit: current.unit, displayName: item.displayName || current.displayName || item.name });
+                      });
+                  });
+                  const sortedData = Array.from(map.entries())
+                      .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
+                      .sort((a,b) => b.amount - a.amount);
+                  const data = sortedData.map((row, i) => ({
+                      'STT': i + 1, 'Mã Hóa chất/Vật tư': row.name, 'Tên Hóa chất/Vật tư': row.displayName,
+                      'Tổng Tiêu Hao': parseFloat(row.amount.toFixed(3)), 'ĐVT': row.unit
+                  }));
+                  const sheetTitle = type === 'specific_day' ? `TIÊU HAO - LỌC NGÀY ${specDay}` : "DỮ LIỆU TIÊU HAO HÓA CHẤT (TỔNG HỢP)";
+                  const ws = XLSX.utils.json_to_sheet([]);
+                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [sheetTitle]], { origin: "A1" });
+                  XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
+                  this.formatSheet(ws, XLSX, 8, data.length, [6, 22, 35, 16, 10]);
+                  XLSX.utils.book_append_sheet(wb, ws, type === 'specific_day' ? `Ngay_${specDay}` : "TieuHao_TongHop");
+                  sheetsAdded.push("Tiêu hao");
+
+              } else if (type === 'daily' || type === 'monthly') {
+                  const pivotMap = new Map<string, { displayName: string, unit: string, totals: Record<string, number>, grandTotal: number }>();
+                  const columnsSet = new Set<string>();
+
+                  filteredHistory.forEach((req: any) => {
+                      let d: Date;
+                      if (req.analysisDate) {
+                          const parts = req.analysisDate.split('-');
+                          d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+                      } else {
+                          const ts = req.approvedAt || req.timestamp;
+                          d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+                      }
+                      let colKey = '';
+                      if (type === 'daily') {
+                          colKey = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+                      } else {
+                          colKey = `T${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                      }
+                      columnsSet.add(colKey);
+                      const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
+                      req.items.forEach((item: any) => {
+                          const itemAmount = getCalculatedItemAmount(item, reqMargin);
+                          if (!pivotMap.has(item.name)) {
+                              pivotMap.set(item.name, { displayName: item.displayName || item.name, unit: item.stockUnit || item.unit, totals: {}, grandTotal: 0 });
+                          }
+                          const record = pivotMap.get(item.name)!;
+                          record.totals[colKey] = (record.totals[colKey] || 0) + itemAmount;
+                          record.grandTotal += itemAmount;
+                      });
+                  });
+
+                  const sortedColumns = Array.from(columnsSet).sort((a, b) => {
+                      if (type === 'daily') {
+                          const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
+                          if (m1 !== m2) return parseInt(m1) - parseInt(m2);
+                          return parseInt(d1) - parseInt(d2);
+                      } else {
+                          const [m1, y1] = a.replace('T', '').split('/'); const [m2, y2] = b.replace('T', '').split('/');
+                          if (y1 !== y2) return parseInt(y1) - parseInt(y2);
+                          return parseInt(m1) - parseInt(m2);
+                      }
+                  });
+
+                  const sortedRows = Array.from(pivotMap.entries()).sort((a, b) => b[1].grandTotal - a[1].grandTotal);
+                  const data = sortedRows.map(([id, val], i) => {
+                      const rowObj: any = { 'STT': i + 1, 'Mã': id, 'Tên': val.displayName, 'ĐVT': val.unit, 'Tổng Cộng': parseFloat(val.grandTotal.toFixed(3)) };
+                      sortedColumns.forEach(col => { rowObj[col] = parseFloat((val.totals[col] || 0).toFixed(3)); });
+                      return rowObj;
+                  });
+
+                  const sheetName = type === 'daily' ? 'TheoNgay' : 'TheoThang';
+                  const ws = XLSX.utils.json_to_sheet([]);
+                  const title = type === 'daily' ? "TIÊU HAO PHÂN BỔ THEO NGÀY" : "TIÊU HAO PHÂN BỔ THEO THÁNG";
+                  XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [title]], { origin: "A1" });
+                  XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
+                  const colWidths = [6, 18, 30, 8, 14, ...sortedColumns.map(() => 12)];
+                  this.formatSheet(ws, XLSX, 8, data.length, colWidths);
+                  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                  sheetsAdded.push(sheetName);
+              }
+
+              // Per-SOP breakdown sheets
+              if (this.exportPerSop() && sopId === 'all') {
+                  const sopMap = new Map<string, { sopName: string, items: Map<string, {amount: number, unit: string, displayName: string}> }>();
+                  filteredHistory.forEach((req: any) => {
+                      const sName = req.sopName || req.sopId || 'Unknown';
+                      if (!sopMap.has(sName)) sopMap.set(sName, { sopName: sName, items: new Map() });
+                      const sopEntry = sopMap.get(sName)!;
+                      const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
+                      req.items.forEach((item: any) => {
+                          const itemAmount = getCalculatedItemAmount(item, reqMargin);
+                          const cur = sopEntry.items.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
+                          sopEntry.items.set(item.name, { amount: cur.amount + itemAmount, unit: cur.unit, displayName: item.displayName || cur.displayName });
+                      });
+                  });
+
+                  sopMap.forEach((sopData, sopName) => {
+                      const sorted = Array.from(sopData.items.entries())
+                          .map(([id, val]) => ({ name: id, ...val }))
+                          .sort((a, b) => b.amount - a.amount);
+                      const data = sorted.map((r, i) => ({
+                          'STT': i + 1, 'Mã': r.name, 'Tên': r.displayName, 'Lượng dùng': parseFloat(r.amount.toFixed(3)), 'ĐVT': r.unit
+                      }));
+                      if (data.length > 0) {
+                          const ws = XLSX.utils.json_to_sheet([]);
+                          XLSX.utils.sheet_add_aoa(ws, [...exportInfo, [`TIÊU HAO - ${sopName}`]], { origin: "A1" });
+                          XLSX.utils.sheet_add_json(ws, data, { origin: "A8", skipHeader: false });
+                          this.formatSheet(ws, XLSX, 8, data.length, [6, 22, 35, 14, 10]);
+                          // Sanitize sheet name (max 31 chars, no special chars)
+                          const safeName = sopName.replace(/[\\\/\?\*\[\]]/g, '').substring(0, 28);
+                          XLSX.utils.book_append_sheet(wb, ws, `SOP_${safeName}`);
+                          sheetsAdded.push(`SOP_${safeName}`);
+                      }
+                  });
+              }
+
+              this.exportProgress.update(p => ({ ...p, consumption: 'done' }));
+              await new Promise(r => setTimeout(r, 200));
           }
 
-          // 3. SOP
+          // ===== 3. SOP Frequency =====
           if (this.exportSop()) {
+              this.exportProgress.update(p => ({ ...p, sop: 'working' }));
+              await new Promise(r => setTimeout(r, 50));
+              
               const sops = this.sopFrequencyData();
-              const sopRows = sops.map((d, index) => ({
+              const sopRows = sops.map((d: any, index: number) => ({
                 'STT': index + 1, 'Quy trình (SOP)': d.name, 'Số lần chạy': d.count, 'Tổng Mẫu': d.samples, 'Tổng QC': d.qcs, 'Tỷ trọng (%)': formatNum(d.percent)
               }));
               const ws = XLSX.utils.json_to_sheet([]);
               XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["BÁO CÁO TẦN SUẤT QUY TRÌNH (SOP)"]], { origin: "A1" });
-              XLSX.utils.sheet_add_json(ws, sopRows, { origin: "A7", skipHeader: false });
+              XLSX.utils.sheet_add_json(ws, sopRows, { origin: "A8", skipHeader: false });
+              this.formatSheet(ws, XLSX, 8, sopRows.length, [6, 35, 14, 12, 12, 14]);
               XLSX.utils.book_append_sheet(wb, ws, "SOP Frequency");
+              sheetsAdded.push("SOP Frequency");
+              
+              this.exportProgress.update(p => ({ ...p, sop: 'done' }));
+              await new Promise(r => setTimeout(r, 200));
           }
 
-          // 4. Logs
+          // ===== 4. Audit Logs =====
           if (this.exportLogs()) {
+              this.exportProgress.update(p => ({ ...p, logs: 'working' }));
+              await new Promise(r => setTimeout(r, 50));
+              
               const logs = this.filteredLogs();
-              const logRows = logs.map((l, index) => ({
+              const logRows = logs.map((l: any, index: number) => ({
                 'STT': index + 1, 'Thời gian': formatDate(l.timestamp), 'Hoạt động': this.getLogActionText(l.action), 'Chi tiết': l.details, 'Người thực hiện': l.user
               }));
               const ws = XLSX.utils.json_to_sheet([]);
               XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["NHẬT KÝ HOẠT ĐỘNG CHI TIẾT"]], { origin: "A1" });
-              XLSX.utils.sheet_add_json(ws, logRows, { origin: "A7", skipHeader: false });
+              XLSX.utils.sheet_add_json(ws, logRows, { origin: "A8", skipHeader: false });
+              this.formatSheet(ws, XLSX, 8, logRows.length, [6, 22, 20, 50, 20]);
               XLSX.utils.book_append_sheet(wb, ws, "Audit Logs");
+              sheetsAdded.push("Audit Logs");
+              
+              this.exportProgress.update(p => ({ ...p, logs: 'done' }));
+              await new Promise(r => setTimeout(r, 200));
           }
 
+          // ===== 5. Standards Health =====
+          if (this.exportStandards()) {
+              this.exportProgress.update(p => ({ ...p, standards: 'working' }));
+              await new Promise(r => setTimeout(r, 50));
+              
+              const ws = XLSX.utils.json_to_sheet([]);
+              XLSX.utils.sheet_add_aoa(ws, [...exportInfo, ["SỨC KHỎE & TRUY XUẤT CHUẨN ĐỐI CHIẾU"]], { origin: "A1" });
+              
+              // Section A: Summary
+              const stats = this.healthStats();
+              XLSX.utils.sheet_add_aoa(ws, [
+                  ["TỔNG QUAN"],
+                  ["Đang mượn / Sử dụng:", stats.borrowing],
+                  ["Quá hạn trả:", stats.overdue],
+                  ["Chuẩn hết hạn:", stats.expired],
+                  ["Tồn kho thấp:", stats.lowStock],
+                  []
+              ], { origin: "A8" });
+
+              // Section B: Overdue detail
+              const overdue = this.overdueRequests();
+              if (overdue.length > 0) {
+                  const startRow = 15;
+                  XLSX.utils.sheet_add_aoa(ws, [["DANH SÁCH QUÁ HẠN MỰA CHUẨN"]], { origin: `A${startRow}` });
+                  const overdueData = overdue.map((r: any, i: number) => ({
+                      'STT': i + 1, 'Người mượn': r.requestedByName, 'Tên chuẩn': r.standardName,
+                      'LOT': r.lotNumber, 'Hạn trả': r.expectedReturnDate ? new Date(r.expectedReturnDate).toLocaleDateString('vi-VN') : '',
+                      'Trạng thái': 'QUÁ HẠN'
+                  }));
+                  XLSX.utils.sheet_add_json(ws, overdueData, { origin: `A${startRow + 1}`, skipHeader: false });
+              }
+
+              // Section C: All borrowed
+              const borrowed = this.state.allStandardRequests().filter((r: any) => r.status === 'IN_PROGRESS');
+              if (borrowed.length > 0) {
+                  const startRow = 15 + (overdue.length > 0 ? overdue.length + 3 : 0);
+                  XLSX.utils.sheet_add_aoa(ws, [["DANH SÁCH ĐANG MƯỢN"]], { origin: `A${startRow}` });
+                  const borrowedData = borrowed.map((r: any, i: number) => ({
+                      'STT': i + 1, 'Người mượn': r.requestedByName, 'Tên chuẩn': r.standardName,
+                      'LOT': r.lotNumber, 'Ngày mượn': r.requestDate ? new Date(r.requestDate).toLocaleDateString('vi-VN') : '',
+                      'Hạn trả': r.expectedReturnDate ? new Date(r.expectedReturnDate).toLocaleDateString('vi-VN') : ''
+                  }));
+                  XLSX.utils.sheet_add_json(ws, borrowedData, { origin: `A${startRow + 1}`, skipHeader: false });
+              }
+
+              this.formatSheet(ws, XLSX, 8, 20, [6, 22, 30, 18, 16, 16]);
+              XLSX.utils.book_append_sheet(wb, ws, "Standards");
+              sheetsAdded.push("Standards");
+              
+              this.exportProgress.update(p => ({ ...p, standards: 'done' }));
+              await new Promise(r => setTimeout(r, 200));
+          }
+
+          // ===== COVER SHEET (Always first) =====
+          {
+              const coverWs = XLSX.utils.aoa_to_sheet([]);
+              const approvedCount = this.state.approvedRequests().filter((req: any) => {
+                  let d: Date;
+                  if (req.analysisDate) {
+                      const parts = req.analysisDate.split('-');
+                      d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+                  } else {
+                      const ts = req.approvedAt || req.timestamp;
+                      d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+                  }
+                  const s = new Date(start); s.setHours(0,0,0,0);
+                  const e = new Date(end); e.setHours(23,59,59,999);
+                  return d >= s && d <= e;
+              }).length;
+
+              const topSop = this.sopFrequencyData()[0];
+              const stats = this.healthStats();
+
+              XLSX.utils.sheet_add_aoa(coverWs, [
+                  ["BÁO CÁO TỔNG HỢP HỆ THỐNG LIMS"],
+                  [],
+                  ["Đơn vị:", "Phòng thí nghiệm"],
+                  ["Khoảng thời gian:", `${start}  đến  ${end}`],
+                  ["SOP:", sopId === 'all' ? 'Tất cả quy trình' : this.getSelectedSopName()],
+                  ["Người xuất báo cáo:", currentUser?.displayName || currentUser?.email || 'Admin'],
+                  ["Ngày giờ xuất:", new Date().toLocaleString('vi-VN')],
+                  [],
+                  ["═══════════════════════════════════════════"],
+                  ["CHỈ SỐ TỔNG QUAN (KPIs)"],
+                  ["═══════════════════════════════════════════"],
+                  [],
+                  ["Tổng phiếu đã duyệt:", approvedCount],
+                  ["Tổng mặt hàng tiêu hao:", this.consumptionData().length],
+                  ["SOP chạy nhiều nhất:", topSop ? `${topSop.name} (${topSop.count} lần)` : 'N/A'],
+                  ["Chuẩn đang mượn:", stats.borrowing],
+                  ["Chuẩn quá hạn:", stats.overdue],
+                  ["Chuẩn hết hạn:", stats.expired],
+                  [],
+                  ["═══════════════════════════════════════════"],
+                  ["MỤC LỤC SHEETS"],
+                  ["═══════════════════════════════════════════"],
+                  [],
+                  ...sheetsAdded.map((name, i) => [`${i + 1}. ${name}`])
+              ], { origin: "A1" });
+
+              this.formatSheet(coverWs, XLSX, 1, 25, [28, 40]);
+              // Insert cover as first sheet
+              XLSX.utils.book_append_sheet(wb, coverWs, "Trang Bìa");
+              // Move cover to first position
+              const sheetNames = wb.SheetNames;
+              const coverIdx = sheetNames.indexOf("Trang Bìa");
+              if (coverIdx > 0) {
+                  sheetNames.splice(coverIdx, 1);
+                  sheetNames.unshift("Trang Bìa");
+              }
+          }
+
+          this.exportProgress.update(p => ({ ...p, cover: 'done' }));
+          await new Promise(r => setTimeout(r, 300));
+
           XLSX.writeFile(wb, `BaoCao_TongHop_${start}_den_${end}.xlsx`);
-          this.showGlobalExportModal.set(false);
+
       } catch (e) {
           console.error(e);
-      } finally {
-          this.isLoading.set(false);
+          this.isExporting.set(false);
       }
   }
+
 
   healthStats = computed(() => {
     const reqs = this.state.allStandardRequests();
@@ -785,7 +1329,6 @@ export class StatisticsComponent {
     return 'fa-solid fa-bolt text-indigo-500';
   }
 
-  showExportModal = signal(false);
   exportType = signal<'summary' | 'daily' | 'monthly' | 'specific_day'>('summary');
   specificDay = signal<number>(1);
   excludeMargin = signal<boolean>(false);
@@ -973,228 +1516,6 @@ export class StatisticsComponent {
       } catch (e) { console.error(e); } finally { this.isLoading.set(false); }
   }
 
-  async exportNxtExcel() {
-      const XLSX = await import('xlsx');
-      let data: any[] = [];
-      let sheetName = 'Report';
-      let fileName = '';
-
-      if (this.selectedSopId() === 'all') {
-          data = this.nxtData().map((row, index) => ({
-              'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit, 'Phân Loại': row.category,
-              'Tồn Đầu': row.startStock, 'Nhập Trong Kỳ': row.importQty, 'Xuất Trong Kỳ': row.exportQty, 'Tồn Cuối': row.endStock
-          }));
-          sheetName = 'Báo cáo NXT';
-          fileName = `BaoCao_NXT_${this.startDate()}_${this.endDate()}.xlsx`;
-      } else {
-          data = this.nxtData().map((row, index) => ({
-              'STT': index + 1, 'Mã ID': row.id, 'Tên Hàng': row.name, 'ĐVT': row.unit,
-              'Tổng Lượng Xuất': row.exportQty
-          }));
-          sheetName = 'Chi tiết Xuất SOP';
-          fileName = `ChiTiet_SOP_${this.selectedSopId()}_${this.startDate()}.xlsx`;
-      }
-
-      const ws: any = XLSX.utils.json_to_sheet(data);
-      const wb: any = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      XLSX.writeFile(wb, fileName);
-  }
-
-  async exportConsumptionExcel() {
-      const XLSX = await import('xlsx');
-      const history = this.state.approvedRequests();
-      
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-      const sopId = this.selectedSopId();
-      const type = this.exportType();
-      const specDay = this.specificDay();
-
-      // 1. Filter raw data based on Date Range and SOP
-      const filteredHistory = history.filter(req => {
-          let d: Date;
-          if (req.analysisDate) {
-              const parts = req.analysisDate.split('-');
-              d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-          } else {
-              const ts = req.approvedAt || req.timestamp;
-              d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-          }
-
-          if (d < start || d > end) return false;
-          if (sopId !== 'all' && req.sopId !== sopId) return false;
-          
-          // Additional filter for 'specific_day'
-          if (type === 'specific_day' && d.getDate() !== specDay) return false;
-          
-          return true;
-      });
-
-      // 2. Process data based on export type
-      let data: any[] = [];
-      let sheetName = 'TieuHao';
-      let fileName = `TieuHao_${this.startDate()}_${this.endDate()}.xlsx`;
-      
-      const useBaseAmount = this.excludeMargin();
-      const safetyConfig = this.state.safetyConfig();
-      const inventoryMap = new Map(this.state.inventory().map(i => [i.name, i]));
-
-      const getCalculatedItemAmount = (item: any, reqMargin: number) => {
-          if (!useBaseAmount) return item.amount;
-          if (item.baseAmount !== undefined) return item.baseAmount;
-          
-          // Fallback for old data
-          if (reqMargin > 0) {
-              return item.amount / (1 + reqMargin / 100);
-          } else if (reqMargin < 0) {
-              const invItem = inventoryMap.get(item.name);
-              let appliedMargin = 10;
-              if (safetyConfig && invItem && invItem.category && safetyConfig.rules[invItem.category] !== undefined) {
-                  appliedMargin = safetyConfig.rules[invItem.category];
-              } else if (safetyConfig && safetyConfig.defaultMargin !== undefined) {
-                  appliedMargin = safetyConfig.defaultMargin;
-              }
-              return item.amount / (1 + appliedMargin / 100);
-          }
-          return item.amount;
-      };
-
-      if (type === 'summary' || type === 'specific_day') {
-          // SUMMARY MODE (or Specific Day Summary)
-          const map = new Map<string, {amount: number, unit: string, displayName: string}>();
-          
-          filteredHistory.forEach(req => {
-              const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
-              req.items.forEach(item => {
-                  const itemAmount = getCalculatedItemAmount(item, reqMargin);
-                  const current = map.get(item.name) || { amount: 0, unit: item.stockUnit || item.unit, displayName: item.displayName || item.name };
-                  map.set(item.name, { 
-                      amount: current.amount + itemAmount, 
-                      unit: current.unit,
-                      displayName: item.displayName || current.displayName || item.name
-                  });
-              });
-          });
-
-          const sortedData = Array.from(map.entries())
-              .map(([id, val]) => ({ name: id, displayName: val.displayName, amount: val.amount, unit: val.unit }))
-              .sort((a,b) => b.amount - a.amount);
-
-          data = sortedData.map((row, index) => ({
-              'STT': index + 1,
-              'Mã Hóa chất/Vật tư': row.name,
-              'Tên Hóa chất/Vật tư': row.displayName,
-              'Tổng Tiêu Hao': row.amount,
-              'ĐVT': row.unit
-          }));
-
-          if (type === 'specific_day') {
-              sheetName = `Ngay_${specDay}`;
-              fileName = `TieuHao_Ngay${specDay}_${this.startDate()}_${this.endDate()}.xlsx`;
-          } else {
-              sheetName = 'TongHop';
-          }
-
-      } else if (type === 'daily' || type === 'monthly') {
-          // PIVOT MODE (Daily or Monthly)
-          const pivotMap = new Map<string, { displayName: string, unit: string, totals: Record<string, number>, grandTotal: number }>();
-          const columnsSet = new Set<string>();
-
-          filteredHistory.forEach(req => {
-              let d: Date;
-              if (req.analysisDate) {
-                  const parts = req.analysisDate.split('-');
-                  d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-              } else {
-                  const ts = req.approvedAt || req.timestamp;
-                  d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-              }
-
-              // Format column key based on type
-              let colKey = '';
-              if (type === 'daily') {
-                  const day = d.getDate().toString().padStart(2, '0');
-                  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-                  colKey = `${day}/${month}`;
-              } else {
-                  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-                  const year = d.getFullYear();
-                  colKey = `T${month}/${year}`;
-              }
-              columnsSet.add(colKey);
-
-              const reqMargin: number = req.margin !== undefined ? req.margin : (req.inputs?.safetyMargin !== undefined ? req.inputs.safetyMargin : -1);
-              req.items.forEach(item => {
-                  const itemAmount = getCalculatedItemAmount(item, reqMargin);
-                  if (!pivotMap.has(item.name)) {
-                      pivotMap.set(item.name, { 
-                          displayName: item.displayName || item.name, 
-                          unit: item.stockUnit || item.unit, 
-                          totals: {}, 
-                          grandTotal: 0 
-                      });
-                  }
-                  
-                  const record = pivotMap.get(item.name)!;
-                  record.totals[colKey] = (record.totals[colKey] || 0) + itemAmount;
-                  record.grandTotal += itemAmount;
-              });
-          });
-
-          // Sort columns chronologically (assuming format DD/MM or TMM/YYYY allows simple string sort for same year, 
-          // but for robustness, we should sort by actual date. For simplicity here, we sort the Set as array)
-          // A better sort for DD/MM and TMM/YYYY:
-          const sortedColumns = Array.from(columnsSet).sort((a, b) => {
-              if (type === 'daily') {
-                  const [d1, m1] = a.split('/'); const [d2, m2] = b.split('/');
-                  if (m1 !== m2) return parseInt(m1) - parseInt(m2);
-                  return parseInt(d1) - parseInt(d2);
-              } else {
-                  const [m1, y1] = a.replace('T', '').split('/'); const [m2, y2] = b.replace('T', '').split('/');
-                  if (y1 !== y2) return parseInt(y1) - parseInt(y2);
-                  return parseInt(m1) - parseInt(m2);
-              }
-          });
-
-          // Build final data array
-          const sortedRows = Array.from(pivotMap.entries()).sort((a, b) => b[1].grandTotal - a[1].grandTotal);
-          
-          data = sortedRows.map(([id, val], index) => {
-              const rowObj: any = {
-                  'STT': index + 1,
-                  'Mã Hóa chất/Vật tư': id,
-                  'Tên Hóa chất/Vật tư': val.displayName,
-                  'ĐVT': val.unit,
-                  'Tổng Cộng': val.grandTotal
-              };
-              
-              // Add dynamic columns
-              sortedColumns.forEach(col => {
-                  rowObj[col] = val.totals[col] || 0;
-              });
-              
-              return rowObj;
-          });
-
-          sheetName = type === 'daily' ? 'TheoNgay' : 'TheoThang';
-          fileName = `TieuHao_${sheetName}_${this.startDate()}_${this.endDate()}.xlsx`;
-      }
-
-      if (data.length === 0) {
-          alert('Không có dữ liệu tiêu hao trong khoảng thời gian và điều kiện lọc này.');
-          this.showExportModal.set(false);
-          return;
-      }
-
-      // 3. Generate Excel File
-      const ws: any = XLSX.utils.json_to_sheet(data);
-      const wb: any = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      XLSX.writeFile(wb, fileName);
-      
-      this.showExportModal.set(false);
-  }
 
   filteredLogs = computed(() => {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
@@ -1443,38 +1764,5 @@ export class StatisticsComponent {
               }
           }
       });
-  }
-
-  async exportSopFrequencyExcel() {
-    const XLSX = await import('xlsx');
-    const data = this.sopFrequencyData();
-    if (data.length === 0) return;
-
-    const exportRows = data.map((d, index) => ({
-        'STT': index + 1,
-        'Quy trình (SOP)': d.name,
-        'Số lần chạy': d.count,
-        'Tổng Mẫu': d.samples,
-        'Tổng QC': d.qcs,
-        'Tỷ trọng (%)': formatNum(d.percent)
-    }));
-
-    const ws = XLSX.utils.json_to_sheet([]);
-    const currentUser = this.auth.currentUser();
-    
-    // Add compliance headers
-    XLSX.utils.sheet_add_aoa(ws, [
-        ["BÁO CÁO TẦN SUẤT QUY TRÌNH (SOP)"],
-        [`Thời gian: ${this.startDate()} đến ${this.endDate()}`],
-        [`Người xuất: ${currentUser?.displayName || currentUser?.email || 'Admin'}`],
-        [`Ngày xuất: ${new Date().toLocaleString('vi-VN')}`],
-        [], // empty row
-    ], { origin: "A1" });
-
-    XLSX.utils.sheet_add_json(ws, exportRows, { origin: "A6", skipHeader: false });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "SOP Frequency");
-    XLSX.writeFile(wb, `TanSuat_SOP_${this.startDate()}_${this.endDate()}.xlsx`);
   }
 }
