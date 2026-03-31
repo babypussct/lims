@@ -61,12 +61,18 @@ interface NxtReportItem {
                         </div>
                     </div>
 
-                    <!-- REPLACED: Date Range Filter Component -->
+                    <!-- Date Range Filter Component -->
                     <app-date-range-filter 
                         [initStart]="startDate()" 
                         [initEnd]="endDate()"
                         (dateChange)="onDateRangeChange($event)">
                     </app-date-range-filter>
+
+                    <!-- Global Export Button (Moved here) -->
+                    <button (click)="openGlobalExport()" 
+                            class="h-[42px] px-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded-xl text-xs font-black uppercase tracking-wider transition shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2 group">
+                        <i class="fa-solid fa-file-export group-hover:rotate-12 transition-transform"></i> Xuất Báo cáo
+                    </button>
 
                 </div>
             </div>
@@ -104,10 +110,7 @@ interface NxtReportItem {
                         <i class="fa-solid fa-heart-pulse"></i> 5. Sức khỏe & Truy xuất
                     </button>
                     <div class="ml-auto pr-6 flex items-center gap-2">
-                         <button (click)="openGlobalExport()" 
-                                 class="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center gap-2 group">
-                            <i class="fa-solid fa-file-export group-hover:rotate-12 transition-transform"></i> Xuất Báo cáo Tổng hợp
-                        </button>
+                         <!-- Export button moved to filter header -->
                     </div>
                 </div>
 
@@ -493,23 +496,26 @@ interface NxtReportItem {
                     <!-- Quick Presets -->
                     @if (!isExporting()) {
                     <div class="px-5 pt-5 pb-3">
-                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-bolt mr-1"></i> Mẫu nhanh</div>
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-bolt mr-1"></i> Gợi ý Mẫu Khung Báo Cáo</div>
                         <div class="flex flex-wrap gap-2">
                             <button (click)="applyPreset('monthly')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
-                                    [class]="activePreset() === 'monthly' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
-                                <i class="fa-solid fa-calendar-days mr-1"></i> Báo cáo Tháng
+                                    [class]="activePreset() === 'monthly' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'"
+                                    title="Chỉ tính toán và tóm tắt theo tháng">
+                                <i class="fa-solid fa-calendar-days mr-1"></i> Báo cáo Kế hoạch (NXT + TH)
                             </button>
                             <button (click)="applyPreset('detailed')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
-                                    [class]="activePreset() === 'detailed' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
-                                <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Phân tích Chi tiết
+                                    [class]="activePreset() === 'detailed' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'"
+                                    title="Tách bạch dữ liệu theo ngày và từng SOP để phân tích hiệu năng">
+                                <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Phân tích Dữ liệu Chi tiết
                             </button>
                             <button (click)="applyPreset('accounting')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
-                                    [class]="activePreset() === 'accounting' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
-                                <i class="fa-solid fa-receipt mr-1"></i> Kế toán / Mua hàng
+                                    [class]="activePreset() === 'accounting' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'"
+                                    title="Số liệu thuần thiết, loại trừ mọi mốc hao hụt">
+                                <i class="fa-solid fa-receipt mr-1"></i> Chuẩn Kế toán / Mua hàng
                             </button>
                             <button (click)="applyPreset('all')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
                                     [class]="activePreset() === 'all' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-300'">
-                                <i class="fa-solid fa-layer-group mr-1"></i> Tất cả
+                                <i class="fa-solid fa-layer-group mr-1"></i> Xuất Tất Cả
                             </button>
                         </div>
                     </div>
@@ -577,36 +583,36 @@ interface NxtReportItem {
                                     <div class="grid grid-cols-2 gap-2">
                                         <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
                                                [class]="exportType() === 'summary' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="summary" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <input type="radio" name="exportTypeG" value="summary" [checked]="exportType() === 'summary'" (change)="exportType.set('summary'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
                                             <span><i class="fa-solid fa-sigma mr-1"></i>Tổng hợp</span>
                                         </label>
                                         <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
                                                [class]="exportType() === 'daily' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="daily" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <input type="radio" name="exportTypeG" value="daily" [checked]="exportType() === 'daily'" (change)="exportType.set('daily'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
                                             <span><i class="fa-solid fa-calendar-day mr-1"></i>Theo ngày</span>
                                         </label>
                                         <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
                                                [class]="exportType() === 'monthly' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="monthly" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <input type="radio" name="exportTypeG" value="monthly" [checked]="exportType() === 'monthly'" (change)="exportType.set('monthly'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
                                             <span><i class="fa-solid fa-calendar-week mr-1"></i>Theo tháng</span>
                                         </label>
                                         <label class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer transition text-xs font-bold"
                                                [class]="exportType() === 'specific_day' ? 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'">
-                                            <input type="radio" name="exportTypeG" value="specific_day" [ngModel]="exportType()" (ngModelChange)="exportType.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
+                                            <input type="radio" name="exportTypeG" value="specific_day" [checked]="exportType() === 'specific_day'" (change)="exportType.set('specific_day'); activePreset.set(null)" class="w-3.5 h-3.5 text-orange-600">
                                             <span><i class="fa-solid fa-crosshairs mr-1"></i>Ngày cụ thể</span>
                                         </label>
                                     </div>
                                     @if (exportType() === 'specific_day') {
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="text-[11px] font-bold text-slate-500">Lọc ngày:</span>
-                                            <input type="number" min="1" max="31" [ngModel]="specificDay()" (ngModelChange)="specificDay.set($event)" class="w-14 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-center outline-none focus:border-orange-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+                                            <input type="number" min="1" max="31" [value]="specificDay() || 1" (input)="onSpecificDayChange($event)" class="w-14 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-center outline-none focus:border-orange-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
                                             <span class="text-[10px] text-slate-400">hàng tháng</span>
                                         </div>
                                     }
                                     <div class="pt-1">
                                         <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
                                                [class]="excludeMargin() ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700 hover:border-amber-300'">
-                                            <input type="checkbox" [ngModel]="excludeMargin()" (ngModelChange)="excludeMargin.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-amber-600 rounded">
+                                            <input type="checkbox" [checked]="excludeMargin()" (change)="excludeMargin.set(!excludeMargin()); activePreset.set(null)" class="w-3.5 h-3.5 text-amber-600 rounded">
                                             <div>
                                                 <div class="text-xs font-bold" [class]="excludeMargin() ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'">Bỏ qua Hao hụt (Safety Margin)</div>
                                                 <div class="text-[10px] text-slate-400">Xuất số liệu gốc, không cộng thêm phần hao hụt</div>
@@ -616,7 +622,7 @@ interface NxtReportItem {
                                     <div class="pt-1">
                                         <label class="flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition"
                                                [class]="exportPerSop() ? 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800' : 'border-slate-200 dark:border-slate-700 hover:border-violet-300'">
-                                            <input type="checkbox" [ngModel]="exportPerSop()" (ngModelChange)="exportPerSop.set($event); activePreset.set(null)" class="w-3.5 h-3.5 text-violet-600 rounded">
+                                            <input type="checkbox" [checked]="exportPerSop()" (change)="exportPerSop.set(!exportPerSop()); activePreset.set(null)" class="w-3.5 h-3.5 text-violet-600 rounded">
                                             <div>
                                                 <div class="text-xs font-bold" [class]="exportPerSop() ? 'text-violet-700 dark:text-violet-400' : 'text-slate-600 dark:text-slate-300'">Tách riêng theo từng SOP</div>
                                                 <div class="text-[10px] text-slate-400">Mỗi SOP = 1 sheet riêng biệt trong file Excel</div>
@@ -1376,16 +1382,18 @@ export class StatisticsComponent {
       
       const startRaw = this.startDate();
       const endRaw = this.endDate();
-      const start = new Date(startRaw);
-      const end = new Date(endRaw);
-      const endTime = new Date(end); endTime.setHours(23,59,59,999);
+      // Use local timezone perfectly without shifting 
+      const start = new Date(startRaw + 'T00:00:00');
+      const end = new Date(endRaw + 'T23:59:59.999');
+      const endTime = end;
       const sopId = this.selectedSopId();
       
       try {
           const inventory = await this.invService.getAllInventory();
-          const start = new Date(startRaw); start.setHours(0,0,0,0);
-          const today = new Date();
-          const logs = await this.invService.getLogsByDateRange(start, today);
+          // Fetch logs from 'start' locally up to the EXACT end of TODAY! 
+          // So we don't miss anything that happened today if end date is today.
+          const maxNow = new Date(); maxNow.setHours(23,59,59,999);
+          const logs = await this.invService.getLogsByDateRange(start, maxNow);
           
           if (sopId === 'all') {
               const movements = new Map<string, { inPeriodImport: number, inPeriodExport: number, futureNetChange: number }>();
