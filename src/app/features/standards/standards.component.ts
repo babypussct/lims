@@ -174,6 +174,12 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
                                         <div class="flex flex-col gap-1 mt-1">
                                             @for (info of getStorageInfo(std.storage_condition); track $index) { <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1.5 border w-fit" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span></div> }
                                         </div>
+                                        @if(std.received_date) {
+                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1">
+                                                <i class="fa-solid fa-calendar-check text-[9px] text-blue-400 dark:text-blue-500"></i>
+                                                <span class="font-medium">Nhận: <b class="text-slate-700 dark:text-slate-300">{{std.received_date | date:'dd/MM/yyyy'}}</b></span>
+                                            </div>
+                                        }
                                      </td>
                                      <td class="px-4 py-3 align-top border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col gap-0.5 mb-2">
@@ -316,7 +322,7 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
                                                 </div>
                                                 
                                                 <!-- Storage Badges -->
-                                                <div class="flex flex-wrap gap-1 mb-4 min-h-[22px]">
+                                                <div class="flex flex-wrap gap-1 mb-2 min-h-[22px]">
                                                     @for (info of getStorageInfo(std.storage_condition); track $index) {
                                                         <div class="px-1.5 py-0.5 rounded text-[9px] flex items-center gap-1 border" [ngClass]="[info.bg, info.border, info.color]">
                                                             <i class="fa-solid" [ngClass]="info.icon"></i>
@@ -330,6 +336,12 @@ import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/fire
                                                         </div>
                                                     }
                                                 </div>
+                                                @if(std.received_date) {
+                                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1">
+                                                        <i class="fa-solid fa-calendar-check text-[9px] text-blue-400 dark:text-blue-500"></i>
+                                                        <span class="font-medium">Nhận: <b class="text-slate-700 dark:text-slate-300">{{std.received_date | date:'dd/MM/yyyy'}}</b></span>
+                                                    </div>
+                                                }
                                             </div>
 
                                             <!-- Footer Actions -->
