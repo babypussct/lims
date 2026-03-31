@@ -4,6 +4,8 @@ import { environment } from '../../../environments/environment';
 // Declare global Google Identity Services type
 declare const google: any;
 
+const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
+
 @Injectable({ providedIn: 'root' })
 export class GoogleDriveService {
   private tokenClient: any = null;
@@ -11,6 +13,7 @@ export class GoogleDriveService {
   private tokenExpiry: number = 0;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private scriptLoaded = false;
 
   isReady = signal(false);
 
@@ -23,43 +26,113 @@ export class GoogleDriveService {
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = this._initialize();
-    return this.initPromise;
+    try {
+      await this.initPromise;
+    } catch (e) {
+      // Reset so user can retry
+      this.initPromise = null;
+      throw e;
+    }
   }
 
   private async _initialize(): Promise<void> {
-    await this.waitForGis();
+    await this.loadGisScript();
+
+    const config = (environment as any).googleDrive;
+    if (!config?.clientId) {
+      throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
+    }
 
     this.tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: (environment as any).googleDrive.clientId,
+      client_id: config.clientId,
       scope: 'https://www.googleapis.com/auth/drive.file',
       callback: () => {} // Dynamically set per request
     });
 
     this.initialized = true;
     this.isReady.set(true);
+    console.log('[GoogleDrive] Initialized successfully.');
   }
 
   /**
-   * Wait for the GIS <script> to finish loading.
+   * Dynamically load the Google Identity Services script.
+   * Uses onload/onerror for reliable detection instead of polling.
    */
-  private waitForGis(): Promise<void> {
+  private loadGisScript(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (typeof google !== 'undefined' && google?.accounts?.oauth2) {
+      // Already loaded?
+      if (this.scriptLoaded && typeof google !== 'undefined' && google?.accounts?.oauth2) {
         resolve();
         return;
       }
-      let attempts = 0;
-      const interval = setInterval(() => {
-        if (typeof google !== 'undefined' && google?.accounts?.oauth2) {
-          clearInterval(interval);
-          resolve();
-        }
-        if (++attempts > 100) { // 20 seconds max
-          clearInterval(interval);
-          reject(new Error('Google Identity Services không tải được. Kiểm tra kết nối Internet.'));
-        }
-      }, 200);
+
+      // Check if script tag already exists (e.g., from index.html)
+      const existing = document.querySelector(`script[src="${GIS_SCRIPT_URL}"]`);
+      if (existing) {
+        // Script tag exists but may not have finished loading
+        this.waitForGoogleGlobal(resolve, reject);
+        return;
+      }
+
+      // Dynamically inject the script
+      const script = document.createElement('script');
+      script.src = GIS_SCRIPT_URL;
+      script.async = true;
+      script.defer = true;
+
+      script.onload = () => {
+        console.log('[GoogleDrive] GIS script loaded.');
+        this.waitForGoogleGlobal(resolve, reject);
+      };
+
+      script.onerror = () => {
+        reject(new Error(
+          'Không thể tải Google Identity Services.\n' +
+          '→ Kiểm tra kết nối Internet.\n' +
+          '→ Tắt AdBlock/AdGuard nếu đang bật.\n' +
+          '→ Thử mở trực tiếp: ' + GIS_SCRIPT_URL
+        ));
+      };
+
+      document.head.appendChild(script);
     });
+  }
+
+  /**
+   * Wait for the `google.accounts.oauth2` global to become available
+   * after the script has loaded.
+   */
+  private waitForGoogleGlobal(
+    resolve: () => void,
+    reject: (err: Error) => void
+  ): void {
+    // Immediate check
+    if (typeof google !== 'undefined' && google?.accounts?.oauth2) {
+      this.scriptLoaded = true;
+      resolve();
+      return;
+    }
+
+    // Poll with timeout (script loaded but global not ready yet)
+    let attempts = 0;
+    const maxAttempts = 150; // 30 seconds max
+    const interval = setInterval(() => {
+      attempts++;
+      if (typeof google !== 'undefined' && google?.accounts?.oauth2) {
+        clearInterval(interval);
+        this.scriptLoaded = true;
+        resolve();
+        return;
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        reject(new Error(
+          'Google Identity Services tải xong nhưng không khởi tạo được (timeout 30s).\n' +
+          '→ Thử refresh trang (Ctrl+Shift+R).\n' +
+          '→ Kiểm tra Console (F12) có lỗi nào không.'
+        ));
+      }
+    }, 200);
   }
 
   /**
@@ -67,35 +140,57 @@ export class GoogleDriveService {
    * Shows consent/login popup if needed.
    */
   private requestAccessToken(): Promise<string> {
-    // Reuse valid token
+    // Reuse valid cached token
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return Promise.resolve(this.accessToken);
     }
 
     return new Promise((resolve, reject) => {
+      // Set up timeout for the entire auth flow
+      const timeout = setTimeout(() => {
+        reject(new Error('Đăng nhập Google quá thời gian (60s). Hãy thử lại.'));
+      }, 60000);
+
       this.tokenClient.callback = (response: any) => {
+        clearTimeout(timeout);
         if (response.error) {
-          reject(new Error(`Google Auth lỗi: ${response.error}`));
+          if (response.error === 'access_denied') {
+            reject(new Error('Bạn đã từ chối quyền truy cập Google Drive. Hãy thử lại và nhấn "Allow".'));
+          } else {
+            reject(new Error(`Google Auth lỗi: ${response.error_description || response.error}`));
+          }
           return;
         }
         this.accessToken = response.access_token;
         // Token valid for ~3600s, cache with 5-min buffer
-        this.tokenExpiry = Date.now() + (response.expires_in - 300) * 1000;
+        this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+        console.log('[GoogleDrive] Access token obtained.');
         resolve(response.access_token);
       };
 
       this.tokenClient.error_callback = (error: any) => {
-        reject(new Error(`Đăng nhập Google bị hủy hoặc lỗi: ${error?.type || 'unknown'}`));
+        clearTimeout(timeout);
+        if (error?.type === 'popup_closed') {
+          reject(new Error('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.'));
+        } else if (error?.type === 'popup_failed_to_open') {
+          reject(new Error(
+            'Không thể mở popup đăng nhập Google.\n' +
+            '→ Kiểm tra trình duyệt có chặn popup không.\n' +
+            '→ Cho phép popup từ trang này.'
+          ));
+        } else {
+          reject(new Error(`Đăng nhập Google lỗi: ${error?.type || error?.message || 'Không xác định'}`));
+        }
       };
 
-      // prompt: '' → shows account chooser first time, silent after
+      // prompt: '' → shows account chooser first time, silent refresh after
       this.tokenClient.requestAccessToken({ prompt: '' });
     });
   }
 
   /**
    * Upload a file to Google Drive, set sharing, return preview URL.
-   * 
+   *
    * @param file - The File object to upload
    * @param fileName - Desired filename on Drive (e.g., "CoA_Sulfadiazine_BCBW123.pdf")
    * @returns Preview URL: https://drive.google.com/file/d/{id}/preview
@@ -104,70 +199,76 @@ export class GoogleDriveService {
     await this.ensureInitialized();
     const token = await this.requestAccessToken();
 
-    // ── Step 1: Multipart upload to Drive ──
+    const fileId = await this.uploadToDrive(file, fileName, token);
+
+    // Set permission (non-fatal if fails)
+    await this.setPublicPermission(fileId, token);
+
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+
+  /**
+   * Upload file to Google Drive via multipart upload.
+   * Handles token expiry with one retry.
+   */
+  private async uploadToDrive(file: File, fileName: string, token: string): Promise<string> {
+    const config = (environment as any).googleDrive;
     const metadata = {
       name: fileName,
-      parents: [(environment as any).googleDrive.folderId]
+      parents: [config.folderId]
     };
 
-    const form = new FormData();
-    form.append(
-      'metadata',
-      new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-    );
-    form.append('file', file);
+    const doUpload = async (authToken: string): Promise<string> => {
+      const form = new FormData();
+      form.append(
+        'metadata',
+        new Blob([JSON.stringify(metadata)], { type: 'application/json' })
+      );
+      form.append('file', file);
 
-    const uploadRes = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form
+      const res = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` },
+          body: form
+        }
+      );
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const errMsg = errBody?.error?.message || `HTTP ${res.status}`;
+
+        if (res.status === 401) {
+          throw { code: 401, message: errMsg };
+        }
+        if (res.status === 403) {
+          throw new Error(
+            `Không có quyền upload vào thư mục Drive.\n` +
+            `→ Kiểm tra thư mục LIMS_CoA_Files đã share "Editor" cho email bạn chưa.\n` +
+            `→ Chi tiết: ${errMsg}`
+          );
+        }
+        throw new Error(`Upload Drive thất bại: ${errMsg}`);
       }
-    );
 
-    if (!uploadRes.ok) {
-      // Token expired mid-session? Clear and retry ONCE
-      if (uploadRes.status === 401) {
+      const data = await res.json();
+      return data.id;
+    };
+
+    try {
+      return await doUpload(token);
+    } catch (e: any) {
+      // Token expired? Re-authenticate and retry ONCE
+      if (e?.code === 401) {
+        console.warn('[GoogleDrive] Token expired, re-authenticating...');
         this.accessToken = '';
         this.tokenExpiry = 0;
         const newToken = await this.requestAccessToken();
-        // Retry upload with new token
-        const retryForm = new FormData();
-        retryForm.append(
-          'metadata',
-          new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-        );
-        retryForm.append('file', file);
-        const retryRes = await fetch(
-          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
-          {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${newToken}` },
-            body: retryForm
-          }
-        );
-        if (!retryRes.ok) {
-          const err = await retryRes.json().catch(() => ({}));
-          throw new Error(err?.error?.message || `Upload thất bại (${retryRes.status})`);
-        }
-        const retryData = await retryRes.json();
-        await this.setPublicPermission(retryData.id, newToken);
-        return `https://drive.google.com/file/d/${retryData.id}/preview`;
+        return await doUpload(newToken);
       }
-
-      const err = await uploadRes.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `Upload thất bại (${uploadRes.status})`);
+      throw e;
     }
-
-    const fileData = await uploadRes.json();
-    const fileId = fileData.id;
-
-    // ── Step 2: Set "anyone with link can view" ──
-    await this.setPublicPermission(fileId, token);
-
-    // ── Step 3: Return preview URL ──
-    return `https://drive.google.com/file/d/${fileId}/preview`;
   }
 
   /**
@@ -175,7 +276,7 @@ export class GoogleDriveService {
    */
   private async setPublicPermission(fileId: string, token: string): Promise<void> {
     try {
-      await fetch(
+      const res = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
         {
           method: 'POST',
@@ -186,9 +287,13 @@ export class GoogleDriveService {
           body: JSON.stringify({ role: 'reader', type: 'anyone' })
         }
       );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.warn('[GoogleDrive] Set permission warning:', err?.error?.message || res.status);
+      }
     } catch (e) {
-      // Non-fatal: file uploaded but may not be publicly viewable
-      console.warn('Không thể set quyền public cho file. File đã upload nhưng có thể không xem được qua link.', e);
+      // Non-fatal: file uploaded but may not be publicly viewable via link
+      console.warn('[GoogleDrive] Could not set public permission:', e);
     }
   }
 
