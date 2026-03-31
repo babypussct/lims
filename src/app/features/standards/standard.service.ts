@@ -257,6 +257,11 @@ export class StandardService {
       await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
   }
 
+  async quickUpdateField(stdId: string, fields: Record<string, any>) {
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+      await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
+  }
+
   async deleteStandard(id: string, name: string = '') {
       await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
       await this.logGlobalActivity('DELETE_STANDARD', `Xóa chuẩn: ${name || id}`, id);

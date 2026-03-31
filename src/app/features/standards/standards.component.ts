@@ -189,6 +189,9 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                         </div>
                                         <div class="flex flex-col gap-1.5">
                                             @if(std.certificate_ref) { <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
+                                            @else { <button (click)="triggerQuickDriveUpload(std, $event)" [disabled]="quickUploadStdId() === std.id" class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition w-fit" title="Upload CoA nhanh qua Google Drive">
+                                                @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin"></i> Đang upload... } @else { <i class="fa-brands fa-google-drive"></i> Upload CoA }
+                                            </button> }
                                             @if(std.contract_ref) { <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
                                         </div>
                                      </td>
@@ -357,6 +360,10 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                                         <button (click)="$event.stopPropagation(); openCoaPreview(std.certificate_ref, $event)" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition flex items-center justify-center" title="Xem CoA">
                                                             <i class="fa-solid fa-file-pdf text-xs"></i>
                                                         </button>
+                                                    } @else {
+                                                        <button (click)="$event.stopPropagation(); triggerQuickDriveUpload(std, $event)" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Upload CoA qua Google Drive">
+                                                            @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin text-xs"></i> } @else { <i class="fa-brands fa-google-drive text-xs"></i> }
+                                                        </button>
                                                     }
                                                     <button (click)="$event.stopPropagation(); viewHistory(std)" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Lịch sử">
                                                         <i class="fa-solid fa-clock-rotate-left text-xs"></i>
@@ -402,6 +409,9 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                  </div>
              }
              
+             <!-- Hidden input for quick Drive upload from list/grid -->
+             <input id="quickDriveInput" #quickDriveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
+
              @if (hasMore() && !isLoading()) {
                 <div class="text-center p-4">
                     <button (click)="loadMore()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
@@ -1087,6 +1097,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isUploading = signal(false);
   isDriveUploading = signal(false);
+  quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
+  private quickUploadStd: ReferenceStandard | null = null;
   isImporting = signal(false);
   isProcessing = signal(false); // Hardened UX State
 
@@ -1622,6 +1634,54 @@ export class StandardsComponent implements OnInit, OnDestroy {
       } finally {
           this.isDriveUploading.set(false);
           event.target.value = ''; // Reset input to allow re-upload
+      }
+  }
+
+  // --- Quick Drive Upload (from list/grid view) ---
+  triggerQuickDriveUpload(std: ReferenceStandard, event: Event) {
+      event.stopPropagation();
+      this.quickUploadStd = std;
+      // Find and click the hidden file input
+      const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+      if (!input) {
+          // Fallback: try by ref
+          const inputs = document.querySelectorAll('input[type="file"][accept]');
+          const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
+          if (driveInput && driveInput.classList.contains('hidden')) {
+              driveInput.click();
+              return;
+          }
+          this.toast.show('Không tìm thấy input upload', 'error');
+          return;
+      }
+      input.click();
+  }
+
+  async handleQuickDriveUpload(event: any) {
+      const file = event.target.files[0];
+      const std = this.quickUploadStd;
+      if (!file || !std) {
+          event.target.value = '';
+          return;
+      }
+
+      this.quickUploadStdId.set(std.id);
+      try {
+          const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
+          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+
+          const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+
+          // Update Firestore directly (partial update)
+          await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
+          this.toast.show(`Upload CoA thành công! ${fileName}`);
+      } catch (e: any) {
+          console.error('Quick Drive upload error:', e);
+          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+      } finally {
+          this.quickUploadStdId.set('');
+          this.quickUploadStd = null;
+          event.target.value = '';
       }
   }
 
