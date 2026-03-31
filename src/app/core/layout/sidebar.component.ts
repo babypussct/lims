@@ -15,7 +15,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
   imports: [CommonModule, FormsModule],
   template: `
     <aside class="fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-soft-xl z-50 flex flex-col transition-all duration-300 ease-in-out"
-           [class.w-64]="!state.sidebarCollapsed()"
+           [class.w-56]="!state.sidebarCollapsed()"
            [class.w-20]="state.sidebarCollapsed()"
            [class.-translate-x-full]="!state.sidebarOpen()"
            [class.md:translate-x-0]="true"

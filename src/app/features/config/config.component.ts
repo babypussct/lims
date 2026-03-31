@@ -523,17 +523,18 @@ export class ConfigComponent implements OnInit {
 
   userList = signal<UserProfile[]>([]);
   availablePermissions = [
-      { val: PERMISSIONS.INVENTORY_VIEW, label: 'Xem Kho' },
-      { val: PERMISSIONS.INVENTORY_EDIT, label: 'Sửa Kho (Thêm/Xóa/Sửa)' },
-      { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
-      { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa Chuẩn' },
-      { val: PERMISSIONS.RECIPE_VIEW, label: 'Xem Công thức' },
-      { val: PERMISSIONS.RECIPE_EDIT, label: 'Sửa Công thức (Library)' },
-      { val: PERMISSIONS.SOP_VIEW, label: 'Xem SOP' },
-      { val: PERMISSIONS.SOP_EDIT, label: 'Sửa SOP (Editor)' },
-      { val: PERMISSIONS.SOP_APPROVE, label: 'Duyệt (Approve)' },
-      { val: PERMISSIONS.REPORT_VIEW, label: 'Xem Báo cáo' },
-      { val: PERMISSIONS.USER_MANAGE, label: 'Quản trị (Admin)' },
+      { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
+      { val: PERMISSIONS.INVENTORY_EDIT,  label: 'Sửa Kho (Thêm/Xóa/Sửa)' },
+      { val: PERMISSIONS.BATCH_RUN,       label: 'Chạy Batch & Pha Chế' }, // Thao tác tiêu hao kho thực tế
+      { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem Chuẩn' },
+      { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa Chuẩn' },
+      { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem Công thức' },
+      { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa Công thức (Library)' },
+      { val: PERMISSIONS.SOP_VIEW,        label: 'Xem SOP' },
+      { val: PERMISSIONS.SOP_EDIT,        label: 'Sửa SOP (Editor)' },
+      { val: PERMISSIONS.SOP_APPROVE,     label: 'Duyệt (Approve)' },
+      { val: PERMISSIONS.REPORT_VIEW,     label: 'Xem Báo cáo' },
+      { val: PERMISSIONS.USER_MANAGE,     label: 'Quản trị (Admin)' },
   ];
   
   objectKeys = Object.keys;

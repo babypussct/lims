@@ -92,7 +92,9 @@ export class StateService implements OnDestroy {
   
   // UI STATE
   sidebarOpen = signal<boolean>(false);
-  sidebarCollapsed = signal<boolean>(false);
+  sidebarCollapsed = signal<boolean>(
+    localStorage.getItem('sidebar_collapsed') !== 'false' // Mặc định: collapsed (trừ khi user đã mở trước đó)
+  );
   
   // --- FOCUS MODE (New Feature) ---
   focusMode = signal<boolean>(false);
@@ -119,7 +121,13 @@ export class StateService implements OnDestroy {
 
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
   closeSidebar() { this.sidebarOpen.set(false); }
-  toggleSidebarCollapse() { this.sidebarCollapsed.update(v => !v); }
+  toggleSidebarCollapse() {
+    this.sidebarCollapsed.update(v => {
+      const next = !v;
+      localStorage.setItem('sidebar_collapsed', String(next));
+      return next;
+    });
+  }
   
   // Toggle Focus Mode
   toggleFocusMode() { this.focusMode.update(v => !v); }

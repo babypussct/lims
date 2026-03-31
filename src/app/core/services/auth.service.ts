@@ -19,12 +19,13 @@ export const PERMISSIONS = {
   INVENTORY_EDIT: 'inventory_edit',
   STANDARD_VIEW: 'standard_view',
   STANDARD_EDIT: 'standard_edit',
-  STANDARD_APPROVE: 'standard_approve', // New permission for approving requests
+  STANDARD_APPROVE: 'standard_approve', // Phê duyệt yêu cầu chuẩn
   RECIPE_VIEW: 'recipe_view',
   RECIPE_EDIT: 'recipe_edit',
   SOP_VIEW: 'sop_view',
   SOP_EDIT: 'sop_edit',
   SOP_APPROVE: 'sop_approve',
+  BATCH_RUN: 'batch_run',  // Chạy Smart Batch & Trạm Pha Chế (thao tác tiêu hao kho)
   REPORT_VIEW: 'report_view',
   USER_MANAGE: 'user_manage'
 };
@@ -194,4 +195,6 @@ export class AuthService {
   canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
   canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }
+  /** Chạy Smart Batch hoặc Trạm Pha Chế (thao tác tiêu hao kho thực tế) */
+  canRunBatch(): boolean { return this.hasPermission(PERMISSIONS.BATCH_RUN); }
 }

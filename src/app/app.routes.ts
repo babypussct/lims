@@ -28,13 +28,13 @@ export const routes: Routes = [
     path: 'smart-batch',
     loadComponent: () => import('./features/batch/smart-batch.component').then(m => m.SmartBatchComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.SOP_VIEW }
+    data: { permission: PERMISSIONS.BATCH_RUN } // Chạy mẻ = thao tác tiêu hao kho, không chỉ là xem
   },
   {
     path: 'prep',
     loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.INVENTORY_VIEW }
+    data: { permission: PERMISSIONS.BATCH_RUN } // Pha chế = tiêu hao kho thực tế
   },
   {
     path: 'inventory',
@@ -63,14 +63,14 @@ export const routes: Routes = [
   {
     path: 'target-groups',
     loadComponent: () => import('./features/targets/target-group-manager.component').then(m => m.TargetGroupManagerComponent),
-    canActivate: [permissionGuard], // Config areas usually need higher permissons, keeping loose for now or strictly Edit
-    data: { permission: PERMISSIONS.SOP_EDIT } 
+    canActivate: [permissionGuard],
+    data: { role: 'manager' } // Cấu hình hệ thống — chỉ manager
   },
   {
     path: 'master-targets', 
     loadComponent: () => import('./features/targets/master-target-manager.component').then(m => m.MasterTargetManagerComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.SOP_EDIT }
+    data: { role: 'manager' } // Cấu hình hệ thống — chỉ manager
   },
   {
     path: 'requests',
@@ -92,7 +92,9 @@ export const routes: Routes = [
   },
   {
     path: 'labels',
-    loadComponent: () => import('./features/labels/label-print.component').then(m => m.LabelPrintComponent)
+    loadComponent: () => import('./features/labels/label-print.component').then(m => m.LabelPrintComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.INVENTORY_VIEW } // In nhãn = cần quyền xem kho
   },
   {
     path: 'editor',
