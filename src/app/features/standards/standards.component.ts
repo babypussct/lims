@@ -1323,9 +1323,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
           if (!val) return;
           const lower = val.toLowerCase();
           let loc = '';
-          if (lower.includes('rt') || lower.includes('thường')) loc = 'Tủ A';
+          if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) loc = 'Tủ A';
           else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) loc = 'Tủ B';
-          else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) loc = 'Tủ C';
+          else if (lower.includes('rt') || lower.includes('thường')) loc = 'Tủ C';
           
           if (loc && this.form.get('location')?.value !== loc) {
               this.form.patchValue({ location: loc });
@@ -1452,9 +1452,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
           for (const item of items) {
               const lower = (item.storage_condition || '').toLowerCase();
               let newLoc = item.location || '';
-              if (lower.includes('rt') || lower.includes('thường')) newLoc = 'Tủ A';
+              if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) newLoc = 'Tủ A';
               else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) newLoc = 'Tủ B';
-              else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) newLoc = 'Tủ C';
+              else if (lower.includes('rt') || lower.includes('thường')) newLoc = 'Tủ C';
               
               if (newLoc && newLoc !== item.location) {
                   await this.stdService.quickUpdateField(item.id!, { location: newLoc });

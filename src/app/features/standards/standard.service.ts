@@ -746,9 +746,9 @@ export class StandardService {
              
              if (!location && storageCondition) {
                  const lower = storageCondition.toLowerCase();
-                 if (lower.includes('rt') || lower.includes('thường')) location = 'Tủ A';
+                 if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) location = 'Tủ A';
                  else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) location = 'Tủ B';
-                 else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) location = 'Tủ C';
+                 else if (lower.includes('rt') || lower.includes('thường')) location = 'Tủ C';
              }
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
