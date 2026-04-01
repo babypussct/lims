@@ -502,31 +502,45 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                 <!-- Right: Summary & Action -->
                 <div class="w-full lg:w-1/3 flex flex-col gap-4 h-fit sticky top-4">
                     <!-- Stock Summary -->
-                    @if (missingStockSummary().length > 0) {
-                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-2xl p-5 shadow-sm animate-slide-up">
-                            <h4 class="font-bold text-red-800 dark:text-red-300 text-sm mb-3 flex items-center gap-2">
-                                <i class="fa-solid fa-cart-shopping"></i> Dự trù Mua sắm
+                    @if (totalStockSummary().length > 0) {
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm animate-slide-up">
+                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-flask text-teal-500"></i> Tổng Lượng Cần Dùng
                             </h4>
-                            <div class="overflow-hidden rounded-xl border border-red-100 dark:border-red-800">
+                            <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
                                 <table class="w-full text-xs text-left">
-                                    <thead class="bg-red-100/50 dark:bg-red-900/30 text-red-800 dark:text-red-300 uppercase font-bold">
-                                        <tr><th class="px-3 py-2">Hóa chất</th><th class="px-3 py-2 text-right">Thiếu hụt</th><th class="px-2 w-10"></th></tr>
+                                    <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-700">
+                                        <tr><th class="px-3 py-2">Hóa chất</th><th class="px-3 py-2 text-right">Lượng cần</th><th class="px-2 w-10"></th></tr>
                                     </thead>
-                                    <tbody class="bg-white dark:bg-slate-800 divide-y divide-red-50 dark:divide-red-900/20">
-                                        @for (item of missingStockSummary(); track item.name) {
-                                            <tr>
-                                                <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-300 break-words whitespace-normal">{{item.name}}</td>
-                                                <td class="px-3 py-2 text-right font-bold text-red-600 dark:text-red-400 font-mono">-{{formatNum(item.missing)}} {{item.unit}}</td>
+                                    <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-50 dark:divide-slate-700/50">
+                                        @for (item of totalStockSummary(); track item.name) {
+                                            <tr [ngClass]="{'bg-red-50/50 dark:bg-red-900/10': item.isMissing}">
+                                                <td class="px-3 py-2 font-medium break-words whitespace-normal" [ngClass]="item.isMissing ? 'text-red-700 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'">
+                                                    {{item.name}}
+                                                    @if(item.isMissing) {
+                                                        <div class="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> Thiếu: {{formatNum(item.missing)}} {{item.unit}}</div>
+                                                    }
+                                                </td>
+                                                <td class="px-3 py-2 text-right font-bold font-mono" [ngClass]="item.isMissing ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'">
+                                                    {{formatNum(item.needed)}} <span class="text-[9px] text-slate-400 font-normal">{{item.unit}}</span>
+                                                </td>
                                                 <td class="px-2 py-1 text-center">
-                                                    <button (click)="openQuickImport(item)" class="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập nhanh">
-                                                        <i class="fa-solid fa-plus-circle"></i>
-                                                    </button>
+                                                    @if(item.isMissing) {
+                                                        <button (click)="openQuickImport(item)" class="text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 w-6 h-6 rounded flex items-center justify-center transition" title="Nhập bổ sung">
+                                                            <i class="fa-solid fa-bolt"></i>
+                                                        </button>
+                                                    }
                                                 </td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    } @else {
+                        <div class="p-5 text-center text-sm font-medium text-slate-400 italic bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl animate-fade-in">
+                            <i class="fa-solid fa-leaf text-2xl mb-2 text-slate-300 dark:text-slate-600"></i><br>
+                            Không có hóa chất nào bị tiêu hao.
                         </div>
                     }
                 </div>
@@ -869,7 +883,7 @@ export class SmartBatchComponent {
   
   hasCriticalMissing = computed(() => this.batches().some(b => b.status === 'missing_stock'));
   
-  missingStockSummary = computed(() => { 
+  totalStockSummary = computed(() => { 
       const summary = new Map<string, any>(); 
       const ledger: Record<string, number> = {}; 
       Object.values(this.state.inventoryMap()).forEach((i: InventoryItem) => ledger[i.id] = i.stock); 
@@ -880,22 +894,34 @@ export class SmartBatchComponent {
                       const current = ledger[sub.name] || 0; 
                       const remaining = current - sub.totalNeed; 
                       ledger[sub.name] = remaining; 
-                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, missing: 0, currentStock: current }); } 
+                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                      summary.get(sub.name).needed += sub.totalNeed;
                   } 
               } else { 
                   const current = ledger[item.name] || 0; 
                   const remaining = current - item.stockNeed; 
                   ledger[item.name] = remaining; 
-                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, missing: 0, currentStock: current }); } 
+                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                  summary.get(item.name).needed += item.stockNeed;
               } 
           } 
       } 
       const result: any[] = []; 
       summary.forEach((val, key) => { 
           const finalBalance = ledger[key]; 
-          if (finalBalance < 0) { val.missing = Math.abs(finalBalance); result.push(val); } 
+          if (finalBalance < 0) { 
+              val.missing = Math.abs(finalBalance); 
+              val.isMissing = true;
+          } else {
+              val.isMissing = false;
+          }
+          result.push(val); 
       }); 
-      return result.sort((a,b) => b.missing - a.missing); 
+      return result.sort((a,b) => {
+          if (a.isMissing && !b.isMissing) return -1;
+          if (!a.isMissing && b.isMissing) return 1;
+          return a.name.localeCompare(b.name);
+      }); 
   });
 
   // --- COMPUTED: COVERAGE STATUS BAR (Global Safety Net) ---
