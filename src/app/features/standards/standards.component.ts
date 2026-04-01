@@ -1442,6 +1442,33 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
   }
 
+  async migrateOldLocations() {
+      if (!confirm('Bạn có chắc muốn chạy script chuyển đổi vị trí Tủ A/B/C dựa trên điều kiện bảo quản cho toàn bộ lượng chuẩn hiện tại?')) return;
+      
+      this.isProcessing.set(true);
+      try {
+          const items = this.allStandards();
+          let count = 0;
+          for (const item of items) {
+              const lower = (item.storage_condition || '').toLowerCase();
+              let newLoc = item.location || '';
+              if (lower.includes('rt') || lower.includes('thường')) newLoc = 'Tủ A';
+              else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) newLoc = 'Tủ B';
+              else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) newLoc = 'Tủ C';
+              
+              if (newLoc && newLoc !== item.location) {
+                  await this.stdService.quickUpdateField(item.id!, { location: newLoc });
+                  count++;
+              }
+          }
+          this.toast.show(`Đã rà soát và chuyển đổi vị trí thành công cho ${count} chuẩn.`, 'success');
+      } catch (err: any) {
+          this.toast.show('Lỗi cập nhật: ' + err.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
   sanitizeDriveLink(event: any) {
       const val = event.target.value;
       if (!val) return;
