@@ -138,23 +138,6 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 <!-- Block Body -->
                                 @if(!block.isCollapsed) {
                                     <div class="p-4 flex flex-col gap-4">
-                                        <!-- New: Force SOP option -->
-                                        <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap"><i class="fa-solid fa-link text-indigo-500 mr-1"></i> Chỉ định SOP:</label>
-                                            <select [ngModel]="block.forcedSopId || ''" (ngModelChange)="updateBlockForcedSop(i, $event)"
-                                                    class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 transition cursor-pointer">
-                                                <option value="">-- Tự động ghép nối (Bỏ qua) --</option>
-                                                @for(sop of activeSops(); track sop.id) {
-                                                    <option [value]="sop.id">{{sop.name}}</option>
-                                                }
-                                            </select>
-                                            @if(block.forcedSopId) {
-                                                <span class="text-[10px] text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-1 rounded font-bold border border-teal-100 dark:border-teal-800 flex items-center gap-1 shrink-0">
-                                                    <i class="fa-solid fa-lock"></i> Khóa SOP & Chỉ tiêu
-                                                </span>
-                                            }
-                                        </div>
-
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <!-- Sample Input -->
                                         <div>
@@ -170,8 +153,8 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                         </div>
 
                                         <!-- Target Selector -->
-                                        <div class="flex flex-col h-40" [class.opacity-50]="block.forcedSopId" [class.pointer-events-none]="block.forcedSopId">
-                                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm @if(block.forcedSopId) { <span class="normal-case font-normal italic ml-1">(Bị khóa theo SOP)</span> }</label>
+                                        <div class="flex flex-col h-40">
+                                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm</label>
                                             <div class="flex gap-2 mb-2">
                                                 <div class="relative flex-1">
                                                     <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
@@ -209,6 +192,37 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- NEW: Eligible SOP Display (Bottom of Block Body) -->
+                                    <div class="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3">
+                                        <label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase mb-2 flex items-center justify-between">
+                                            <span><i class="fa-solid fa-code-branch mr-1"></i> Gợi ý Quy trình (SOP)</span>
+                                            @if(block.forcedSopId) {
+                                                <button (click)="updateBlockForcedSop(i, undefined)" class="text-xs text-red-500 hover:text-red-600 capitalize font-medium transition cursor-pointer">Bỏ chỉ định</button>
+                                            }
+                                        </label>
+                                        
+                                        @if(block.selectedTargets.size === 0) {
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 italic font-medium">Vui lòng chọn ít nhất 1 chỉ tiêu để xem các quy trình phù hợp.</p>
+                                        } @else if (getEligibleSops(block).length === 0) {
+                                            <p class="text-[11px] text-orange-600 dark:text-orange-400 italic font-medium">Không có SOP đơn lẻ nào bao phủ toàn bộ mục tiêu. Nhóm sẽ tự động phân tách mẻ ở Bước 2.</p>
+                                        } @else {
+                                            <div class="flex flex-wrap gap-2">
+                                                @for(sop of getEligibleSops(block); track sop.id) {
+                                                    <button (click)="updateBlockForcedSop(i, sop.id)"
+                                                            class="text-xs px-3 py-1.5 rounded-lg border transition font-bold flex items-center gap-1.5 cursor-pointer"
+                                                            [class]="block.forcedSopId === sop.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-md transform scale-105' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500'">
+                                                        @if(block.forcedSopId === sop.id) { <i class="fa-solid fa-check"></i> }
+                                                        {{sop.name}}
+                                                    </button>
+                                                }
+                                            </div>
+                                            @if(!block.forcedSopId) {
+                                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2 italic">* Nếu không chỉ định cứng, hệ thống sẽ tự động ghép tối ưu nhất ở Bước 2.</p>
+                                            }
+                                        }
+                                    </div>
+
                                     </div>
                                 }
                             </div>
@@ -997,23 +1011,21 @@ export class SmartBatchComponent {
   updateBlockName(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], name: val }; return n; }); }
   updateBlockSamples(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], rawSamples: val }; return n; }); }
   updateBlockSearch(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], targetSearch: val }; return n; }); }
-  updateBlockForcedSop(index: number, sopId: string) {
+  updateBlockForcedSop(index: number, sopId: string | undefined) {
       this.blocks.update(b => {
           const n = [...b]; 
-          const block = n[index];
-          if (sopId) {
-              const sop = this.state.sops().find(s => s.id === sopId);
-              if (sop && sop.targets) {
-                  const newTargets = new Set<string>();
-                  sop.targets.forEach(t => newTargets.add(t.id));
-                  n[index] = { ...block, forcedSopId: sopId, selectedTargets: newTargets };
-              } else {
-                  n[index] = { ...block, forcedSopId: sopId };
-              }
-          } else {
-              n[index] = { ...block, forcedSopId: undefined, selectedTargets: new Set() };
-          }
+          n[index] = { ...n[index], forcedSopId: sopId };
           return n;
+      });
+  }
+
+  getEligibleSops(block: JobBlock): Sop[] {
+      if (block.selectedTargets.size === 0) return [];
+      const requiredTargets = Array.from(block.selectedTargets);
+      return this.activeSops().filter(sop => {
+          if (!sop.targets) return false;
+          const sopTargetIds = new Set(sop.targets.map(t => t.id));
+          return requiredTargets.every(reqId => sopTargetIds.has(reqId));
       });
   }
   
@@ -1030,7 +1042,8 @@ export class SmartBatchComponent {
       this.blocks.update(b => {
           const n = [...b]; const set = new Set(n[index].selectedTargets);
           if (set.has(targetId)) set.delete(targetId); else set.add(targetId);
-          n[index] = { ...n[index], selectedTargets: set }; return n;
+          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined }; // Reset forced SOP on change
+          return n;
       });
   }
   selectAllTargets(index: number) {
@@ -1038,11 +1051,11 @@ export class SmartBatchComponent {
           const n = [...b]; const filtered = this.getFilteredTargets(n[index]);
           const set = new Set(n[index].selectedTargets);
           filtered.forEach(t => set.add(t.uniqueKey));
-          n[index] = { ...n[index], selectedTargets: set }; return n;
+          n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined }; return n;
       });
   }
   deselectAllTargets(index: number) {
-      this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set() }; return n; });
+      this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set(), forcedSopId: undefined }; return n; });
   }
 
   // --- GROUP MODAL ---
@@ -1059,7 +1072,7 @@ export class SmartBatchComponent {
           this.blocks.update(b => {
               const n = [...b]; const set = new Set(n[idx].selectedTargets);
               g.targets.forEach(t => set.add(t.id));
-              n[idx] = { ...n[idx], selectedTargets: set }; return n;
+              n[idx] = { ...n[idx], selectedTargets: set, forcedSopId: undefined }; return n;
           });
           this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu.`, 'success');
       }
@@ -1094,12 +1107,19 @@ export class SmartBatchComponent {
                       const blockSamples = new Set(samples);
                       const blockTargetIds = new Set(block.selectedTargets);
                       const batchTargets = (forcedSop.targets || []).filter(t => blockTargetIds.has(t.id));
+                      const validSopTargets = new Set(batchTargets.map(t => t.id));
                       
                       const blockTasks: AnalysisTask[] = [];
                       for (const sample of samples) {
                           for (const targetId of block.selectedTargets) {
                               const tName = this.allAvailableTargets().find(t => t.id === targetId)?.name || targetId;
-                              blockTasks.push({ sample, targetId, targetName: tName, covered: true });
+                              // Only mark 'covered: true' if the SOP ACTUALLY supports it
+                              const isCovered = validSopTargets.has(targetId);
+                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered });
+                              // If not covered, we still add it to allTasks so greedy algorithm can handle it
+                              if (!isCovered) {
+                                  allTasks.push({ sample, targetId, targetName: tName, covered: false });
+                              }
                           }
                       }
                       
