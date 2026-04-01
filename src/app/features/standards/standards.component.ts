@@ -1179,22 +1179,17 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
       // 2. SEARCH FILTER
       if (term) {
-          const normalize = (s: string | undefined) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-          const normTerm = normalize(term);
+          const normalize = (s: any) => s ? String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+          const searchTerms = term.split('+').map(t => normalize(t.trim())).filter(t => t.length > 0);
           
           data = data.filter(item => {
-              // Check ALL searchable fields substring
-              const searchStr = `
-                  ${normalize(item.name)} 
-                  ${normalize(item.internal_id)} 
-                  ${normalize(item.lot_number)} 
-                  ${normalize(item.product_code)} 
-                  ${normalize(item.cas_number)} 
-                  ${normalize(item.chemical_name)}
-                  ${normalize(item.location)}
-                  ${normalize(item.manufacturer)}
-              `;
-              return searchStr.includes(normTerm);
+              // Cover ALL information of the standard by concatenating all values
+              const searchStr = Object.values(item)
+                  .filter(val => val !== null && val !== undefined && typeof val !== 'object')
+                  .map(val => normalize(val))
+                  .join(' ');
+                  
+              return searchTerms.every(t => searchStr.includes(t));
           });
       }
 

@@ -928,18 +928,20 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   filteredAvailableStandards = computed(() => {
-      const term = removeAccents(this.standardSearchTerm().toLowerCase());
+      const rawTerm = this.standardSearchTerm();
       let stds = this.availableStandards();
       
-      if (term) {
-          stds = stds.filter(s => 
-              removeAccents(s.name.toLowerCase()).includes(term) || 
-              (s.lot_number && removeAccents(s.lot_number.toLowerCase()).includes(term)) ||
-              (s.cas_number && removeAccents(s.cas_number.toLowerCase()).includes(term)) ||
-              (s.internal_id && removeAccents(s.internal_id.toLowerCase()).includes(term)) ||
-              (s.manufacturer && removeAccents(s.manufacturer.toLowerCase()).includes(term)) ||
-              (s.product_code && removeAccents(s.product_code.toLowerCase()).includes(term))
-          );
+      if (rawTerm) {
+          const searchTerms = rawTerm.split('+').map(t => removeAccents(t.trim().toLowerCase())).filter(t => t.length > 0);
+          
+          stds = stds.filter(s => {
+              const searchStr = Object.values(s)
+                  .filter(val => val !== null && val !== undefined && typeof val !== 'object')
+                  .map(val => removeAccents(String(val).toLowerCase()))
+                  .join(' ');
+              
+              return searchTerms.every(t => searchStr.includes(t));
+          });
       }
       // Sort: available first, depleted at bottom
       return stds.sort((a, b) => {
