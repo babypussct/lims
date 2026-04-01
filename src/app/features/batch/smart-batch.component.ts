@@ -25,6 +25,7 @@ interface JobBlock {
     selectedTargets: Set<string>;
     targetSearch: string;
     isCollapsed: boolean;
+    forcedSopId?: string;
 }
 
 interface AnalysisTask {
@@ -136,8 +137,26 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
 
                                 <!-- Block Body -->
                                 @if(!block.isCollapsed) {
-                                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <!-- Sample Input -->
+                                    <div class="p-4 flex flex-col gap-4">
+                                        <!-- New: Force SOP option -->
+                                        <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap"><i class="fa-solid fa-link text-indigo-500 mr-1"></i> Chỉ định SOP:</label>
+                                            <select [ngModel]="block.forcedSopId || ''" (ngModelChange)="updateBlockForcedSop(i, $event)"
+                                                    class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 transition cursor-pointer">
+                                                <option value="">-- Tự động ghép nối (Bỏ qua) --</option>
+                                                @for(sop of activeSops(); track sop.id) {
+                                                    <option [value]="sop.id">{{sop.name}}</option>
+                                                }
+                                            </select>
+                                            @if(block.forcedSopId) {
+                                                <span class="text-[10px] text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-1 rounded font-bold border border-teal-100 dark:border-teal-800 flex items-center gap-1 shrink-0">
+                                                    <i class="fa-solid fa-lock"></i> Khóa SOP & Chỉ tiêu
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <!-- Sample Input -->
                                         <div>
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Danh sách mẫu</label>
@@ -151,8 +170,8 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                         </div>
 
                                         <!-- Target Selector -->
-                                        <div class="flex flex-col h-40">
-                                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm</label>
+                                        <div class="flex flex-col h-40" [class.opacity-50]="block.forcedSopId" [class.pointer-events-none]="block.forcedSopId">
+                                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Chỉ tiêu kiểm nghiệm @if(block.forcedSopId) { <span class="normal-case font-normal italic ml-1">(Bị khóa theo SOP)</span> }</label>
                                             <div class="flex gap-2 mb-2">
                                                 <div class="relative flex-1">
                                                     <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
@@ -189,6 +208,7 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                 }
                                             </div>
                                         </div>
+                                    </div>
                                     </div>
                                 }
                             </div>
@@ -786,7 +806,7 @@ export class SmartBatchComponent {
   formatSampleList = formatSampleList;
 
   step = signal<number>(1);
-  blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false } ]);
+  blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined } ]);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
   isProcessing = signal(false);
@@ -826,6 +846,7 @@ export class SmartBatchComponent {
   quickImportInput = 0;
 
   // --- COMPUTED: GENERAL ---
+  activeSops = computed(() => this.state.sops().filter(s => !s.isArchived));
   allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.id && t.name) { targets.set(t.id, { id: t.id, name: t.name, uniqueKey: t.id }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
   
   totalUniqueSamples = computed(() => { const allSamples = new Set<string>(); this.blocks().forEach(b => { const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s); samples.forEach(s => allSamples.add(s)); }); return allSamples.size; });
@@ -962,7 +983,7 @@ export class SmartBatchComponent {
 
   // ... Block management helpers ...
   addBlock() {
-      this.blocks.update(b => [...b, { id: Date.now(), name: `Nhóm Mẫu #${b.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false }]);
+      this.blocks.update(b => [...b, { id: Date.now(), name: `Nhóm Mẫu #${b.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined }]);
   }
   removeBlock(index: number) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
   duplicateBlock(index: number) {
@@ -976,6 +997,25 @@ export class SmartBatchComponent {
   updateBlockName(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], name: val }; return n; }); }
   updateBlockSamples(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], rawSamples: val }; return n; }); }
   updateBlockSearch(index: number, val: string) { this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], targetSearch: val }; return n; }); }
+  updateBlockForcedSop(index: number, sopId: string) {
+      this.blocks.update(b => {
+          const n = [...b]; 
+          const block = n[index];
+          if (sopId) {
+              const sop = this.state.sops().find(s => s.id === sopId);
+              if (sop && sop.targets) {
+                  const newTargets = new Set<string>();
+                  sop.targets.forEach(t => newTargets.add(t.id));
+                  n[index] = { ...block, forcedSopId: sopId, selectedTargets: newTargets };
+              } else {
+                  n[index] = { ...block, forcedSopId: sopId };
+              }
+          } else {
+              n[index] = { ...block, forcedSopId: undefined, selectedTargets: new Set() };
+          }
+          return n;
+      });
+  }
   
   countSamples(raw: string): number { return raw.split('\n').filter(s => s.trim()).length; }
   
@@ -1041,12 +1081,56 @@ export class SmartBatchComponent {
           const batches: ProposedBatch[] = [];
           const sops = this.state.sops().filter(s => !s.isArchived);
 
-          // 2. Flatten User Request -> "Analysis Tasks"
+          // 2. Flatten User Request & Handle Forced SOPs
           const allTasks: AnalysisTask[] = [];
           
           for (const block of this.blocks()) {
               const samples = block.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
               if (samples.length === 0 || block.selectedTargets.size === 0) continue;
+              
+              if (block.forcedSopId) {
+                  const forcedSop = sops.find(s => s.id === block.forcedSopId);
+                  if (forcedSop) {
+                      const blockSamples = new Set(samples);
+                      const blockTargetIds = new Set(block.selectedTargets);
+                      const batchTargets = (forcedSop.targets || []).filter(t => blockTargetIds.has(t.id));
+                      
+                      const blockTasks: AnalysisTask[] = [];
+                      for (const sample of samples) {
+                          for (const targetId of block.selectedTargets) {
+                              const tName = this.allAvailableTargets().find(t => t.id === targetId)?.name || targetId;
+                              blockTasks.push({ sample, targetId, targetName: tName, covered: true });
+                          }
+                      }
+                      
+                      const inputs: Record<string, any> = {};
+                      forcedSop.inputs.forEach(i => inputs[i.var] = i.default);
+                      inputs['n_sample'] = blockSamples.size;
+
+                      const needs = this.calculator.calculateSopNeeds(
+                          forcedSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
+                      );
+
+                      const batchId = `batch_${Date.now()}_${batches.length}`;
+                      batches.push({
+                          id: batchId,
+                          name: forcedSop.name + ' (Chỉ định)',
+                          sop: forcedSop,
+                          targets: batchTargets,
+                          samples: blockSamples,
+                          sampleCount: blockSamples.size,
+                          tasks: blockTasks,
+                          inputValues: inputs,
+                          safetyMargin: -1,
+                          resourceImpact: needs,
+                          status: 'ready',
+                          tags: ['Forced-SOP'],
+                          isExpanded: false
+                      });
+                      
+                      continue; // Skip adding to allTasks for greedy
+                  }
+              }
               
               for (const sample of samples) {
                   for (const targetId of block.selectedTargets) {
@@ -1061,7 +1145,7 @@ export class SmartBatchComponent {
               }
           }
 
-          // 3. Greedy Loop with Weighted Scoring
+          // 3. Greedy Loop with Weighted Scoring (Only on unforced tasks)
           let remainingTasks = allTasks.filter(t => !t.covered);
           let iterationLimit = 0;
           const MAX_ITERATIONS = 50;
@@ -1635,11 +1719,11 @@ export class SmartBatchComponent {
                   }
               }
               
-              if (jobs.length > 0) {
+                  if (jobs.length > 0) {
                   this.printService.openPreview(jobs);
                   this.toast.show('Hoàn tất! Đang mở xem trước.', 'success');
                   this.reset();
-                  this.blocks.set([{ id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false }]);
+                  this.blocks.set([{ id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined }]);
               }
           } catch (e: any) {
               this.toast.show('Lỗi xử lý: ' + e.message, 'error');
