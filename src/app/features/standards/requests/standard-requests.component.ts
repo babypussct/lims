@@ -937,7 +937,14 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           stds = stds.filter(s => {
               const searchStr = Object.values(s)
                   .filter(val => val !== null && val !== undefined && typeof val !== 'object')
-                  .map(val => removeAccents(String(val).toLowerCase()))
+                  .map(val => {
+                      let str = String(val);
+                      if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
+                          const parts = val.split('T')[0].split('-');
+                          if (parts.length === 3) str += ` ${parts[2]}/${parts[1]}/${parts[0]}`;
+                      }
+                      return removeAccents(str.toLowerCase());
+                  })
                   .join(' ');
               
               return searchTerms.every(t => searchStr.includes(t));

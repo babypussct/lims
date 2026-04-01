@@ -1184,9 +1184,17 @@ export class StandardsComponent implements OnInit, OnDestroy {
           
           data = data.filter(item => {
               // Cover ALL information of the standard by concatenating all values
+              // Additionally, format YYYY-MM-DD dates as DD/MM/YYYY so user can search exactly what they see
               const searchStr = Object.values(item)
                   .filter(val => val !== null && val !== undefined && typeof val !== 'object')
-                  .map(val => normalize(val))
+                  .map(val => {
+                      let str = String(val);
+                      if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
+                          const parts = val.split('T')[0].split('-');
+                          if (parts.length === 3) str += ` ${parts[2]}/${parts[1]}/${parts[0]}`;
+                      }
+                      return normalize(str);
+                  })
                   .join(' ');
                   
               return searchTerms.every(t => searchStr.includes(t));
