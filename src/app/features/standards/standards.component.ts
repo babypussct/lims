@@ -56,6 +56,10 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
+             
+             <button (click)="migrateOldLocations()" class="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded-lg border border-orange-200 dark:border-orange-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Sửa dữ liệu: Chuyển vị trí cũ sang hệ thống Tủ A/B/C">
+                <i class="fa-solid fa-wrench"></i> Fix Vị Trí
+             </button>
            }
         </div>
       </div>

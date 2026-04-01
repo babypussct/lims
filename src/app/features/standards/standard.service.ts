@@ -741,10 +741,14 @@ export class StandardService {
                  if (match && !isNaN(parseFloat(match[0]))) current = parseFloat(match[0]);
              }
 
-             let location = (getValueByAlias(row, ['vị trí', 'nơi để', 'điều kiện bảo quản']) || '').toString().trim();
-             if (!location && internalId && internalId.length > 0) {
-                 const firstChar = internalId.charAt(0).toUpperCase();
-                 if (firstChar.match(/[A-Z]/)) location = `Tủ ${firstChar}`;
+             let location = (getValueByAlias(row, ['vị trí', 'nơi để']) || '').toString().trim();
+             const storageCondition = (getValueByAlias(row, ['điều kiện bảo quản', 'bảo quản']) || '').toString().trim();
+             
+             if (!location && storageCondition) {
+                 const lower = storageCondition.toLowerCase();
+                 if (lower.includes('rt') || lower.includes('thường')) location = 'Tủ A';
+                 else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) location = 'Tủ B';
+                 else if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) location = 'Tủ C';
              }
 
              const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
@@ -763,7 +767,7 @@ export class StandardService {
                  product_code: (getValueByAlias(row, ['product code', 'mã sản phẩm']) || '').toString().trim(),
                  manufacturer: (getValueByAlias(row, ['hãng', 'nhà sản xuất']) || '').toString().trim(),
                  cas_number: (getValueByAlias(row, ['cas number', 'số cas']) || '').toString().trim(),
-                 storage_condition: (getValueByAlias(row, ['điều kiện bảo quản', 'bảo quản']) || '').toString().trim(),
+                 storage_condition: storageCondition,
                  storage_status: 'Sẵn sàng', purity: '', 
                  status: current <= 0 ? 'DEPLETED' : 'AVAILABLE',
                  lastUpdated: null 
