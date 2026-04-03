@@ -306,39 +306,31 @@ function removeAccents(str: string): string {
                                 @for(std of filteredAvailableStandards(); track std.id) {
                                     <div class="p-5 border rounded-[2rem] transition-all duration-300 flex items-start gap-4 group relative overflow-hidden"
                                          [ngClass]="{
-                                            'bg-indigo-600 dark:bg-indigo-500 border-indigo-400 dark:border-indigo-300 ring-8 ring-indigo-500/10 shadow-2xl shadow-indigo-500/30 z-10 scale-[1.02]': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900': isDepleted(std)
+                                            'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_2px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_2px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
                                          }"
                                          (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
-                                        
-                                        <!-- Animated Selection Background -->
-                                        @if(selectedStandardIds().has(std.id)) {
-                                            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-500 dark:from-indigo-500 dark:via-indigo-500 dark:to-indigo-400 opacity-100 animate-fade-in"></div>
-                                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
-                                        }
 
                                         <!-- Selection Indicator Overlay -->
                                         @if(selectedStandardIds().has(std.id)) {
-                                            <div class="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-100 rounded-full shadow-lg animate-scale-in z-20">
-                                                <i class="fa-solid fa-check text-indigo-600 text-[10px] font-black"></i>
+                                            <div class="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-md animate-bounce-in z-20">
+                                                <i class="fa-solid fa-check text-[10px] font-black"></i>
                                             </div>
                                         }
 
                                         <!-- Standard Icon/Letter -->
-                                        <div class="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300"
-                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-white/20 text-white border border-white/30 rotate-12 scale-110' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-600 group-hover:scale-110'">
+                                        <div class="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
+                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-110' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-600 group-hover:scale-110'">
                                             <i class="fa-solid fa-flask-vial text-lg"></i>
                                         </div>
 
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center justify-between gap-2 mb-1">
-                                                <div class="font-black text-sm truncate transition-colors" 
-                                                     [ngClass]="selectedStandardIds().has(std.id) ? 'text-white' : 'text-slate-800 dark:text-slate-100 group-hover:text-indigo-600'"
+                                        <div class="flex-1 min-w-0 relative z-10">
+                                            <div class="flex items-center justify-between gap-2 mb-1 pr-6">
+                                                <div class="font-black text-sm truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600" 
                                                      [title]="std.name">{{std.name}}</div>
                                                 @if(std.internal_id) {
-                                                    <span class="shrink-0 px-2 py-0.5 text-[9px] font-black rounded uppercase border transition-colors"
-                                                          [ngClass]="selectedStandardIds().has(std.id) ? 'bg-white/20 text-white border-white/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'">
+                                                    <span class="shrink-0 px-2 py-0.5 text-[9px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm">
                                                         {{std.internal_id}}
                                                     </span>
                                                 }
@@ -347,45 +339,38 @@ function removeAccents(str: string): string {
                                             <!-- Detail Grid -->
                                             <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
                                                 <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-barcode text-[10px] w-3" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-100' : 'text-slate-400'"></i>
-                                                    <span class="text-[10px] font-bold truncate" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-50' : 'text-slate-500 dark:text-slate-400'">Mã: {{std.product_code || 'N/A'}}</span>
+                                                    <i class="fa-solid fa-barcode text-[10px] w-3 text-slate-400"></i>
+                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Mã: {{std.product_code || 'N/A'}}</span>
                                                 </div>
                                                 <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-hashtag text-[10px] w-3" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-100' : 'text-slate-400'"></i>
-                                                    <span class="text-[10px] font-bold truncate" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-50' : 'text-slate-500 dark:text-slate-400'">Lot: {{std.lot_number || 'N/A'}}</span>
+                                                    <i class="fa-solid fa-hashtag text-[10px] w-3 text-slate-400"></i>
+                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Lot: {{std.lot_number || 'N/A'}}</span>
                                                 </div>
                                                 <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-flask text-[10px] w-3" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-100' : 'text-slate-400'"></i>
-                                                    <span class="text-[10px] font-bold truncate" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-50' : 'text-slate-500 dark:text-slate-400'">CAS: {{std.cas_number || 'N/A'}}</span>
+                                                    <i class="fa-solid fa-flask text-[10px] w-3 text-slate-400"></i>
+                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">CAS: {{std.cas_number || 'N/A'}}</span>
                                                 </div>
                                                 <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-industry text-[10px] w-3" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-100' : 'text-slate-400'"></i>
-                                                    <span class="text-[10px] font-bold truncate" [class]="selectedStandardIds().has(std.id) ? 'text-indigo-50' : 'text-slate-500 dark:text-slate-400'">Hãng: {{std.manufacturer || 'N/A'}}</span>
+                                                    <i class="fa-solid fa-industry text-[10px] w-3 text-slate-400"></i>
+                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Hãng: {{std.manufacturer || 'N/A'}}</span>
                                                 </div>
                                             </div>
 
-                                            <div class="flex items-center justify-between mt-3 pt-3 border-t transition-colors"
-                                                 [ngClass]="selectedStandardIds().has(std.id) ? 'border-white/20' : 'border-slate-50 dark:border-slate-800/50'">
+                                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                                 <div class="flex items-center gap-2">
                                                     @if(isDepleted(std)) {
                                                         <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
                                                             <i class="fa-solid fa-ban text-red-400"></i> Sử dụng hết
                                                         </div>
                                                     } @else {
-                                                        <div class="px-2 py-0.5 text-[10px] font-black rounded flex items-center gap-1 border transition-colors"
-                                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-white/20 text-white border-white/30' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/30'">
+                                                        <div class="px-2 py-0.5 text-[10px] font-black rounded flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/30 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
                                                             <i class="fa-solid fa-cube"></i> {{std.current_amount}} {{std.unit}}
                                                         </div>
                                                     }
                                                 </div>
                                                 @if(std.expiry_date) {
-                                                    <div class="text-[10px] font-bold flex items-center gap-1 transition-colors" 
-                                                         [ngClass]="{
-                                                            'text-indigo-100': selectedStandardIds().has(std.id) && !isExpired(std.expiry_date),
-                                                            'text-red-100 font-black': selectedStandardIds().has(std.id) && isExpired(std.expiry_date),
-                                                            'text-red-500': !selectedStandardIds().has(std.id) && isExpired(std.expiry_date),
-                                                            'text-slate-400': !selectedStandardIds().has(std.id) && !isExpired(std.expiry_date)
-                                                         }">
+                                                    <div class="text-[10px] font-bold flex items-center gap-1" 
+                                                         [ngClass]="isExpired(std.expiry_date) ? 'text-red-500 font-black' : 'text-slate-400'">
                                                         <i class="fa-regular fa-calendar-xmark"></i>
                                                         {{std.expiry_date | date:'dd/MM/yyyy'}}
                                                     </div>
