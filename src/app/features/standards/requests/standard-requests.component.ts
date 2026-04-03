@@ -1229,6 +1229,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           let updatedExpectedDate = req.expectedReturnDate;
           if (this.approveExpectedDate()) {
               updatedExpectedDate = new Date(this.approveExpectedDate()).getTime();
+          } else if (this.approveExpectedDate() === '') {
+              updatedExpectedDate = undefined;
           }
 
           // Dispense
@@ -1236,11 +1238,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           
           // If purpose or date changed, update it too
           if (this.approvePurpose() !== req.purpose || updatedExpectedDate !== req.expectedReturnDate || this.approveExpectedAmount() !== req.expectedAmount) {
-              await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', {
+              const updates: any = {
                   purpose: this.approvePurpose(),
-                  expectedReturnDate: updatedExpectedDate,
-                  expectedAmount: this.approveExpectedAmount() || undefined
-              });
+                  expectedReturnDate: updatedExpectedDate ?? null,
+                  expectedAmount: this.approveExpectedAmount() ?? null
+              };
+              
+              await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', updates);
           }
 
           this.toast.show('Đã duyệt và giao chuẩn thành công', 'success');
