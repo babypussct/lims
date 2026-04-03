@@ -298,6 +298,19 @@ export class StandardService {
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
   }
 
+  // --- NEW: Global Usage Logs ---
+  listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
+      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
+      const q = query(colRef, orderBy('timestamp', 'desc')); 
+      
+      return onSnapshot(q, (snapshot) => {
+          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
+          callback(items);
+      }, (error) => {
+          console.error("Error listening to global usage logs:", error);
+      });
+  }
+
   async recordUsage(stdId: string, log: UsageLog) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
@@ -326,9 +339,19 @@ export class StandardService {
           log.id = newLogRef.id;
           if (!log.timestamp) log.timestamp = Date.now();
           if (!log.date) log.date = new Date().toISOString();
+          
+          log.standardId = stdData.id;
+          log.standardName = stdData.name;
+          log.lotNumber = stdData.lot_number;
+          log.cas_number = stdData.cas_number;
+          log.internalId = stdData.internal_id;
+          log.manufacturer = stdData.manufacturer;
 
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
+          
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          transaction.set(globalLogRef, log);
 
           // If the standard is currently linked to a request, update the request's usage logs
           if (stdData.current_request_id) {
@@ -375,6 +398,8 @@ export class StandardService {
 
           transaction.delete(logRef);
           transaction.update(stdRef, updateData);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+          transaction.delete(globalLogRef);
 
           if (stdData['current_request_id']) {
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${stdData['current_request_id']}`);
@@ -518,7 +543,13 @@ export class StandardService {
               user: receiverName,
               amount_used: finalAmountUsed,
               unit: finalUnit,
-              purpose: reqData.disposalReason || reqData.purpose || 'Sử dụng theo yêu cầu'
+              purpose: reqData.disposalReason || reqData.purpose || 'Sử dụng theo yêu cầu',
+              standardId: stdData.id,
+              standardName: stdData.name,
+              lotNumber: stdData.lot_number,
+              cas_number: stdData.cas_number,
+              internalId: stdData.internal_id,
+              manufacturer: stdData.manufacturer
           };
 
           transaction.update(stdRef, { 
@@ -543,6 +574,8 @@ export class StandardService {
 
           if (finalAmountUsed > 0) {
               transaction.set(newLogRef, log);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+              transaction.set(globalLogRef, log);
           }
       });
 
@@ -580,10 +613,18 @@ export class StandardService {
               user: userName,
               amount_used: amount,
               unit: unit,
-              purpose: purpose || 'Báo cáo sử dụng'
+              purpose: purpose || 'Báo cáo sử dụng',
+              standardId: stdData.id,
+              standardName: stdData.name,
+              lotNumber: stdData.lot_number,
+              cas_number: stdData.cas_number,
+              internalId: stdData.internal_id,
+              manufacturer: stdData.manufacturer
           };
 
           transaction.set(newLogRef, log);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          transaction.set(globalLogRef, log);
           
           transaction.update(stdRef, {
               current_amount: newAmount,

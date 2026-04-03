@@ -8,6 +8,14 @@ export interface UsageLog {
   unit?: string; // e.g. mg, ul
   purpose?: string; 
   timestamp?: number;
+  
+  // Extended Tracking (Added for global usage logs)
+  standardId?: string;
+  standardName?: string;
+  lotNumber?: string;
+  cas_number?: string;
+  internalId?: string;
+  manufacturer?: string;
 }
 
 export interface ReferenceStandard {
