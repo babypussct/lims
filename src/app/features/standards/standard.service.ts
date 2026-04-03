@@ -370,7 +370,7 @@ export class StandardService {
       });
   }
 
-  async deleteUsageLog(stdId: string, logId: string) {
+  async deleteUsageLog(stdId: string, logId: string, requestId?: string) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
 
@@ -393,7 +393,7 @@ export class StandardService {
           const newStock = currentStock + amountToRestore;
           const updateData: any = { current_amount: newStock, lastUpdated: serverTimestamp() };
           if (stdData['status'] === 'DEPLETED' && newStock > 0) {
-              updateData.status = 'AVAILABLE';
+              updateData.status = 'IN_USE';
           }
 
           transaction.delete(logRef);
@@ -401,8 +401,9 @@ export class StandardService {
           const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
           transaction.delete(globalLogRef);
 
-          if (stdData['current_request_id']) {
-              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${stdData['current_request_id']}`);
+          const effectiveRequestId = requestId || stdData['current_request_id'];
+          if (effectiveRequestId) {
+              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${effectiveRequestId}`);
               const reqDoc = await transaction.get(reqRef);
               if (reqDoc.exists()) {
                   const reqData = reqDoc.data() as StandardRequest;
@@ -416,6 +417,8 @@ export class StandardService {
               }
           }
       });
+      
+      await this.logGlobalActivity('DELETE_USAGE_LOG', `Xóa dòng nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
   }
 
   // --- GLOBAL LOGGING ---
@@ -684,11 +687,14 @@ export class StandardService {
 
               transaction.update(stdRef, updates);
 
-              // 3. Delete usage logs from subcollection
+              // 3. Delete usage logs from subcollection and global collection
               (request.usageLogs || []).forEach(log => {
                   if (log.id) {
                       const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}/logs/${log.id}`);
                       transaction.delete(logRef);
+                      
+                      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+                      transaction.delete(globalLogRef);
                   }
               });
           }
@@ -699,6 +705,8 @@ export class StandardService {
 
       await this.logGlobalActivity('HARD_DELETE_REQUEST', `Xóa hoàn toàn lịch sử yêu cầu: ${request.standardName} (Người yêu cầu: ${request.requestedByName})`, request.id);
   }
+
+
 
   listenToRequests(callback: (requests: StandardRequest[]) => void) {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');

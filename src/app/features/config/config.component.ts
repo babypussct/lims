@@ -599,7 +599,9 @@ export class ConfigComponent implements OnInit {
       perms: [
         { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
         { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin Chuẩn' },
-        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' }
+        { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký Chuẩn' },
+        { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xoá Yêu cầu/Nhật ký chuẩn' }
       ]
     },
     {
@@ -637,6 +639,8 @@ export class ConfigComponent implements OnInit {
       { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem Chuẩn' },
       { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa thông tin Chuẩn' },
       { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt & Giao nhận Chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem Báo cáo/Nhật ký Chuẩn' },
+      { val: PERMISSIONS.STANDARD_LOG_DELETE,label: 'Xoá Yêu cầu/Nhật ký chuẩn' },
       { val: PERMISSIONS.RECIPE_VIEW,     label: 'Xem Công thức' },
       { val: PERMISSIONS.RECIPE_EDIT,     label: 'Sửa Công thức (Library)' },
       { val: PERMISSIONS.SOP_VIEW,        label: 'Xem SOP' },

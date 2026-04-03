@@ -248,15 +248,11 @@ function removeAccents(str: string): string {
                                                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-[10px] font-black" 
                                                       title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
                                           }
-                                          @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
-                                               <div class="flex items-center gap-1">
-                                                   <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default" title="Đã khóa"><i class="fa-solid fa-lock"></i></button>
-                                                   @if(auth.canApproveStandards()) {
-                                                       <button (click)="hardDeleteHistory(req)" 
-                                                               class="p-2 text-rose-300 hover:text-rose-600 bg-rose-50/50 dark:bg-rose-900/20 rounded-xl transition active:scale-90" 
-                                                               title="Xóa lịch sử & Hoàn tác"><i class="fa-solid fa-trash-can"></i></button>
-                                                   }
-                                               </div>
+                                          }
+                                          @if(auth.isAdmin() || auth.canDeleteStandardLogs()) {
+                                              <button (click)="hardDeleteHistory(req)" 
+                                                      class="p-2 text-rose-300 hover:text-rose-600 bg-rose-50/50 dark:bg-rose-900/20 rounded-xl transition active:scale-90 ml-1" 
+                                                      title="Xóa yêu cầu & Hoàn tác tồn kho"><i class="fa-solid fa-trash-can"></i></button>
                                           }
                                       </div>
                                   </td>
@@ -1180,9 +1176,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   async hardDeleteHistory(req: StandardRequest) {
       this.confirmationService.confirm({
-          message: `XÁC NHẬN XÓA VĨNH VIỄN lịch sử này? Thao tác này sẽ HOÀN TÁC (Revert) số lượng tồn kho và trạng thái của chuẩn "${req.standardName}" về thời điểm trước khi thực hiện yêu cầu này. Hành động này không thể khôi phục!`,
-          confirmText: 'Xác nhận xóa',
-          cancelText: 'Hủy'
+          message: `XÓA YÊU CẦU: Thao tác này sẽ dọn dẹp các bản ghi nhật ký tự động và HOÀN TÁC dư lượng của chuẩn "${req.standardName}". Dữ liệu bị xóa không thể khôi phục!`,
+          confirmText: 'Đồng ý xóa & Fallback',
+          cancelText: 'Hủy',
+          isDangerous: true
       }).then(async (confirmed) => {
           if (confirmed) {
               this.isProcessing.set(true);

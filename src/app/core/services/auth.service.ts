@@ -20,6 +20,8 @@ export const PERMISSIONS = {
   STANDARD_VIEW: 'standard_view',
   STANDARD_EDIT: 'standard_edit',
   STANDARD_APPROVE: 'standard_approve', // Phê duyệt yêu cầu chuẩn
+  STANDARD_LOG_VIEW: 'standard_log_view', // Xem nhật ký dùng toàn hệ thống
+  STANDARD_LOG_DELETE: 'standard_log_delete', // Xóa nhật ký / yêu cầu mượn chuẩn
   RECIPE_VIEW: 'recipe_view',
   RECIPE_EDIT: 'recipe_edit',
   SOP_VIEW: 'sop_view',
@@ -185,6 +187,8 @@ export class AuthService {
 
   canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }
   canApproveStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
+  canViewStandardLogs(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_LOG_VIEW); }
+  canDeleteStandardLogs(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_LOG_DELETE); }
   canEditInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_EDIT); }
   canViewInventory(): boolean { return this.hasPermission(PERMISSIONS.INVENTORY_VIEW); }
   canEditSop(): boolean { return this.hasPermission(PERMISSIONS.SOP_EDIT); }

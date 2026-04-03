@@ -58,7 +58,7 @@ export const routes: Routes = [
     path: 'standard-usage',
     loadComponent: () => import('./features/standards/usage/standard-usage.component').then(m => m.StandardUsageComponent),
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.STANDARD_VIEW }
+    data: { permission: PERMISSIONS.STANDARD_LOG_VIEW }
   },
   {
     path: 'recipes',

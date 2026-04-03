@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { StandardService } from '../standard.service';
 import { UsageLog } from '../../../core/models/standard.model';
 import { Unsubscribe } from 'firebase/firestore';
+import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 
 @Component({
   selector: 'app-standard-usage',
@@ -69,13 +72,14 @@ import { Unsubscribe } from 'firebase/firestore';
                           <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">Thông tin chuẩn</th>
                           <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 text-right">Lượng tiêu hao</th>
                           <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">Mục đích</th>
+                          <th class="px-6 py-4 text-center w-16 border-b border-slate-100 dark:border-slate-700"></th>
                       </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100/50 dark:divide-slate-800/50">
                       @if (isLoading()) {
                           @for(i of [1,2,3,4,5,6]; track i) {
                               <tr class="animate-pulse">
-                                  <td colspan="4" class="px-6 py-4"><div class="h-10 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl w-full"></div></td>
+                                  <td colspan="5" class="px-6 py-4"><div class="h-10 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl w-full"></div></td>
                               </tr>
                           }
                       } @else {
@@ -120,11 +124,18 @@ import { Unsubscribe } from 'firebase/firestore';
                                           {{log.purpose || 'Không ghi chú'}}
                                       </span>
                                   </td>
+                                  <td class="px-6 py-4 text-center">
+                                      @if (auth.isAdmin() || auth.canDeleteStandardLogs()) {
+                                          <button (click)="deleteUsage(log)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 dark:hover:text-rose-400 transition" title="Xóa & Fallback Volume">
+                                              <i class="fa-solid fa-trash text-[10px]"></i>
+                                          </button>
+                                      }
+                                  </td>
                               </tr>
                           }
                           @if (filteredLogs().length === 0) {
                               <tr>
-                                  <td colspan="4" class="px-6 py-16 text-center">
+                                  <td colspan="5" class="px-6 py-16 text-center">
                                       <div class="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300 dark:text-slate-600">
                                           <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
                                       </div>
@@ -143,6 +154,10 @@ import { Unsubscribe } from 'firebase/firestore';
 export class StandardUsageComponent implements OnInit, OnDestroy {
   stdService = inject(StandardService);
   datePipe = inject(DatePipe);
+  auth = inject(AuthService);
+  toast = inject(ToastService);
+  confirmService = inject(ConfirmationService);
+
 
   logs = signal<UsageLog[]>([]);
   isLoading = signal(true);
@@ -193,6 +208,27 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
       if (this.sub) this.sub();
+  }
+
+  async deleteUsage(log: UsageLog) {
+      if (!log.standardId || !log.id) {
+          this.toast.show('Dữ liệu log không hợp lệ để xóa.', 'error');
+          return;
+      }
+      
+      const conf = await this.confirmService.confirm({
+          message: `Dữ liệu thể tích <span class="text-rose-500 font-bold">${log.amount_used} ${log.unit || ''}</span> sẽ được cộng dồn (rollback) trả lại cho chuẩn vào kho. Bạn có chắc chắn xóa lịch sử sử dụng này không?`,
+          confirmText: 'Đồng ý & Xóa',
+          isDangerous: true
+      });
+      if (!conf) return;
+      
+      try {
+          await this.stdService.deleteUsageLog(log.standardId, log.id);
+          this.toast.show('Xóa thành công và hoàn trả thể tích tồn kho!', 'success');
+      } catch (err: any) {
+          this.toast.show(`Lỗi: ${err.message}`, 'error');
+      }
   }
 
   clearFilters() {

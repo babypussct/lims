@@ -263,22 +263,24 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 }
              </div>
 
-             <div (click)="navigateTo('standard-usage')" 
-                  class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent relative"
-                  [class]="isActive('/standard-usage') ? 'bg-slate-50 dark:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/30'"
-                  [title]="state.sidebarCollapsed() ? 'Nhật ký dùng chuẩn' : ''">
-                @if(isActive('/standard-usage')) {
-                    <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fuchsia-600 dark:bg-fuchsia-500 rounded-r-full"></div>
-                }
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 relative"
-                     [class.mx-auto]="state.sidebarCollapsed()"
-                     [class]="isActive('/standard-usage') ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400'">
-                   <i class="fa-solid fa-clock-rotate-left text-xs"></i>
-                </div>
-                @if (!state.sidebarCollapsed()) {
-                    <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/standard-usage') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'">Nhật ký dùng chuẩn</span>
-                }
-             </div>
+             @if(auth.canViewStandardLogs()) {
+                 <div (click)="navigateTo('standard-usage')" 
+                      class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent relative"
+                      [class]="isActive('/standard-usage') ? 'bg-slate-50 dark:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/30'"
+                      [title]="state.sidebarCollapsed() ? 'Nhật ký dùng chuẩn' : ''">
+                    @if(isActive('/standard-usage')) {
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fuchsia-600 dark:bg-fuchsia-500 rounded-r-full"></div>
+                    }
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 relative"
+                         [class.mx-auto]="state.sidebarCollapsed()"
+                         [class]="isActive('/standard-usage') ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400'">
+                       <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                    </div>
+                    @if (!state.sidebarCollapsed()) {
+                        <span class="text-sm font-bold ml-3 fade-in" [class]="isActive('/standard-usage') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'">Nhật ký dùng chuẩn</span>
+                    }
+                 </div>
+             }
          }
       </div>
 
