@@ -47,6 +47,9 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
              <button (click)="openAddModal()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Thêm mới
              </button>
+             <button (click)="autoZeroAllSdhet()" class="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded-lg border border-orange-200 dark:border-orange-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Tự động kiểm kho tất cả chuẩn SDHET">
+                <i class="fa-solid fa-box-open"></i> Dọn kho SDHET
+             </button>
              <button (click)="fileInput.click()" class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg border border-emerald-200 dark:border-emerald-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import danh sách chuẩn">
                 <i class="fa-solid fa-file-excel"></i> Import Chuẩn
              </button>
@@ -1446,6 +1449,38 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
   }
 
+  async autoZeroAllSdhet() {
+      const targets = this.allStandards().filter(s => (s.id === 'SDHET' || s.internal_id === 'SDHET') && s.current_amount > 0);
+      if (targets.length === 0) {
+          this.toast.show('Không có chuẩn SDHET nào cần trừ kho.', 'info');
+          return;
+      }
+
+      this.isProcessing.set(true);
+      try {
+          for (const std of targets) {
+              if (await this.confirmationService.confirm({ message: `Bạn có muốn tự động xuất toàn bộ tồn kho (${std.current_amount} ${std.unit}) của chuẩn [${std.name} - Lô: ${std.lot_number || 'N/A'}] với lý do KIỂM KHO?`, confirmText: 'Trừ kho', cancelText: 'Bỏ qua' })) {
+                  const log: UsageLog = {
+                      id: '',
+                      date: new Date().toISOString().split('T')[0],
+                      timestamp: Date.now(),
+                      user: 'HỆ THỐNG',
+                      amount_used: std.current_amount,
+                      unit: std.unit || 'mg',
+                      purpose: 'KIỂM KHO'
+                  };
+                  await this.stdService.recordUsage(std.id!, log);
+                  this.toast.show(`Đã trừ kho: ${std.name}`, 'success');
+              }
+          }
+          this.toast.show('Đã duyệt xong danh sách SDHET.', 'success');
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
   async autoZeroStock(std: ReferenceStandard) {
       if (this.isProcessing() || std.current_amount <= 0) return;
       if (await this.confirmationService.confirm({ message: `Bạn có chắc chắn muốn xuất toàn bộ lượng tồn kho còn lại (${std.current_amount} ${std.unit}) của chuẩn này với lý do KIỂM KHO?`, confirmText: 'Xác nhận trừ kho' })) {
@@ -1489,15 +1524,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
       
       const val = this.form.value;
 
-      // Validate Internal ID uniqueness
-      if (val.internal_id) {
+      // Validate Internal ID uniqueness (Warning only, do not block)
+      if (val.internal_id && val.internal_id !== 'SDHET') {
           const existing = this.allStandards().find(s => 
               s.internal_id?.toLowerCase() === val.internal_id?.toLowerCase() && 
               s.id !== this.form.get('id')?.value
           );
           if (existing) {
-              this.toast.show(`Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}"! Vui lòng chọn mã khác.`, 'error');
-              return;
+              this.toast.show(`Cảnh báo: Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}".`, 'warning');
+              // Proceeding anyway because blocking breaks updates for reused internal_ids
           }
       }
 
