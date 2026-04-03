@@ -57,8 +57,8 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
              
-             <button (click)="migrateOldLocations()" class="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded-lg border border-orange-200 dark:border-orange-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Sửa dữ liệu: Chuyển vị trí cũ sang hệ thống Tủ A/B/C">
-                <i class="fa-solid fa-wrench"></i> Fix Vị Trí
+             <button (click)="deleteAllStandards()" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg border border-rose-200 dark:border-rose-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Dọn sạch toàn bộ kho chất chuẩn">
+                <i class="fa-solid fa-bomb"></i> Xóa Tất Cả
              </button>
            }
         </div>
@@ -1442,30 +1442,23 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
   }
 
-  async migrateOldLocations() {
-      if (!confirm('Bạn có chắc muốn chạy script chuyển đổi vị trí Tủ A/B/C dựa trên điều kiện bảo quản cho toàn bộ lượng chuẩn hiện tại?')) return;
-      
-      this.isProcessing.set(true);
-      try {
-          const items = this.allStandards();
-          let count = 0;
-          for (const item of items) {
-              const lower = (item.storage_condition || '').toLowerCase();
-              let newLoc = item.location || '';
-              if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) newLoc = 'Tủ A';
-              else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) newLoc = 'Tủ B';
-              else if (lower.includes('rt') || lower.includes('thường')) newLoc = 'Tủ C';
-              
-              if (newLoc && newLoc !== item.location) {
-                  await this.stdService.quickUpdateField(item.id!, { location: newLoc });
-                  count++;
-              }
+  async deleteAllStandards() {
+      const ids = this.allStandards().map(s => s.id!);
+      if (ids.length === 0) {
+          this.toast.show('Không có dữ liệu để xóa.', 'error');
+          return;
+      }
+      if (await this.confirmationService.confirm({ message: `CẢNH BÁO NGUY HIỂM: Bạn có chắc muốn XÓA TOÀN BỘ ${ids.length} chất chuẩn và mọi lịch sử liên quan? Thao tác này KHÔNG THỂ PHỤC HỒI!`, confirmText: 'Xác nhận Xóa Toàn bộ', isDangerous: true })) {
+          this.isProcessing.set(true);
+          try { 
+              await this.stdService.deleteSelectedStandards(ids); 
+              this.toast.show(`Đã dọn sạch ${ids.length} mục.`, 'success'); 
+              this.selectedIds.set(new Set());
+          } catch(e: any) { 
+              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+          } finally {
+              this.isProcessing.set(false);
           }
-          this.toast.show(`Đã rà soát và chuyển đổi vị trí thành công cho ${count} chuẩn.`, 'success');
-      } catch (err: any) {
-          this.toast.show('Lỗi cập nhật: ' + err.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
       }
   }
 

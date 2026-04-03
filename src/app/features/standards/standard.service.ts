@@ -751,7 +751,11 @@ export class StandardService {
                  else if (lower.includes('rt') || lower.includes('thường')) location = 'Tủ C';
              }
 
-             const id = generateSlug(name + '_' + (lot || Math.random().toString().substr(2, 5)));
+             let idStr = name;
+             if (lot) idStr += '_' + lot;
+             if (internalId) idStr += '_' + internalId;
+             if (!lot && !internalId) idStr += '_' + Math.random().toString().substr(2, 5);
+             const id = generateSlug(idStr);
              
              const receivedDate = this.parseExcelDate(getValueByAlias(row, ['ngày nhận', 'ngày nhập']));
              const expiryDate = this.parseExcelDate(getValueByAlias(row, ['hạn sử dụng', 'hạn dùng']));
