@@ -56,10 +56,6 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
-             
-             <button (click)="deleteAllStandards()" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg border border-rose-200 dark:border-rose-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Dọn sạch toàn bộ kho chất chuẩn">
-                <i class="fa-solid fa-bomb"></i> Xóa Tất Cả
-             </button>
            }
         </div>
       </div>
@@ -211,6 +207,9 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                      <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                                         <div class="flex flex-col items-center gap-2">
                                            <div class="flex gap-1">
+                                               @if (std.id === 'SDHET' || std.internal_id === 'SDHET') {
+                                                   <button (click)="autoZeroStock(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-600 dark:bg-orange-500 text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-md shadow-orange-200 dark:shadow-none transition active:scale-95" title="Trừ kho (Kiểm kho)"><i class="fa-solid fa-box-open text-xs"></i></button>
+                                               }
                                                @if(canAssign(std)) {
                                                    @if(auth.canEditStandards()) {
                                                        <button (click)="openAssignModal(std, true)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95" title="Gán cho mượn"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
@@ -375,6 +374,11 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                                     @if(auth.canEditStandards()) {
                                                         <button (click)="$event.stopPropagation(); openPrintModal(std)" class="w-8 h-8 rounded-lg bg-slate-800 dark:bg-slate-700 text-white border border-slate-700 dark:border-slate-600 hover:bg-slate-900 dark:hover:bg-slate-600 transition flex items-center justify-center" title="In nhãn">
                                                             <i class="fa-solid fa-print text-xs"></i>
+                                                        </button>
+                                                    }
+                                                    @if (std.id === 'SDHET' || std.internal_id === 'SDHET') {
+                                                        <button (click)="$event.stopPropagation(); autoZeroStock(std)" class="w-auto px-3 h-8 rounded-lg bg-orange-600 dark:bg-orange-500 text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-md shadow-orange-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trừ kho (Kiểm kho)">
+                                                            <i class="fa-solid fa-box-open"></i> Trừ kho
                                                         </button>
                                                     }
                                                     @if(canAssign(std)) {
@@ -1442,20 +1446,24 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
   }
 
-  async deleteAllStandards() {
-      const ids = this.allStandards().map(s => s.id!);
-      if (ids.length === 0) {
-          this.toast.show('Không có dữ liệu để xóa.', 'error');
-          return;
-      }
-      if (await this.confirmationService.confirm({ message: `CẢNH BÁO NGUY HIỂM: Bạn có chắc muốn XÓA TOÀN BỘ ${ids.length} chất chuẩn và mọi lịch sử liên quan? Thao tác này KHÔNG THỂ PHỤC HỒI!`, confirmText: 'Xác nhận Xóa Toàn bộ', isDangerous: true })) {
+  async autoZeroStock(std: ReferenceStandard) {
+      if (this.isProcessing() || std.current_amount <= 0) return;
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc chắn muốn xuất toàn bộ lượng tồn kho còn lại (${std.current_amount} ${std.unit}) của chuẩn này với lý do KIỂM KHO?`, confirmText: 'Xác nhận trừ kho' })) {
           this.isProcessing.set(true);
-          try { 
-              await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`Đã dọn sạch ${ids.length} mục.`, 'success'); 
-              this.selectedIds.set(new Set());
-          } catch(e: any) { 
-              this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
+          try {
+              const log: UsageLog = {
+                  id: '',
+                  date: new Date().toISOString().split('T')[0],
+                  timestamp: Date.now(),
+                  user: 'HỆ THỐNG',
+                  amount_used: std.current_amount,
+                  unit: std.unit || 'mg',
+                  purpose: 'KIỂM KHO'
+              };
+              await this.stdService.recordUsage(std.id!, log);
+              this.toast.show('Đã trừ kho thành công', 'success');
+          } catch(e: any) {
+              this.toast.show('Lỗi trừ kho: ' + e.message, 'error');
           } finally {
               this.isProcessing.set(false);
           }
