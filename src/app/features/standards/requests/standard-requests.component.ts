@@ -1164,9 +1164,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   totalAmountUsed: 0
               };
               
-              if (expectedReturnDate) {
-                  req.expectedReturnDate = expectedReturnDate;
-              }
+              req.expectedReturnDate = expectedReturnDate ?? null;
               
               await this.stdService.createRequest(req);
           }

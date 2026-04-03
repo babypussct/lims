@@ -1955,7 +1955,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               requestedByName: userName,
               requestDate: Date.now(),
               purpose: purpose,
-              expectedReturnDate: expectedDate ? new Date(expectedDate).getTime() : undefined,
+              expectedReturnDate: expectedDate ? new Date(expectedDate).getTime() : null,
               expectedAmount: expectedAmount || 0,
               status: 'PENDING_APPROVAL',
               totalAmountUsed: 0
