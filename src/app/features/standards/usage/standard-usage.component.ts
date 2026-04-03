@@ -125,7 +125,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
                                       </span>
                                   </td>
                                   <td class="px-6 py-4 text-center">
-                                      @if (auth.isAdmin() || auth.canDeleteStandardLogs()) {
+                                      @if (auth.canDeleteStandardLogs()) {
                                           <button (click)="deleteUsage(log)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 dark:hover:text-rose-400 transition" title="Xóa & Fallback Volume">
                                               <i class="fa-solid fa-trash text-[10px]"></i>
                                           </button>

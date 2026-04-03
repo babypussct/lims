@@ -248,8 +248,10 @@ function removeAccents(str: string): string {
                                                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-[10px] font-black" 
                                                       title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
                                           }
+                                          @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
+                                              <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default" title="Đã khóa"><i class="fa-solid fa-lock"></i></button>
                                           }
-                                          @if(auth.isAdmin() || auth.canDeleteStandardLogs()) {
+                                          @if(auth.canDeleteStandardLogs()) {
                                               <button (click)="hardDeleteHistory(req)" 
                                                       class="p-2 text-rose-300 hover:text-rose-600 bg-rose-50/50 dark:bg-rose-900/20 rounded-xl transition active:scale-90 ml-1" 
                                                       title="Xóa yêu cầu & Hoàn tác tồn kho"><i class="fa-solid fa-trash-can"></i></button>
