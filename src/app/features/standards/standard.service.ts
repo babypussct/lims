@@ -374,48 +374,55 @@ export class StandardService {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs/${logId}`);
 
+      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+
       await runTransaction(this.fb.db, async (transaction) => {
           const stdDoc = await transaction.get(stdRef);
           const logDoc = await transaction.get(logRef);
-          if (!stdDoc.exists() || !logDoc.exists()) throw new Error("Document not found");
-
-          const stdData = stdDoc.data();
-          const logData = logDoc.data();
+          const globalLogDoc = await transaction.get(globalLogRef);
           
-          const stockUnit = stdData['unit'];
-          const amountUsed = logData['amount_used'] || 0;
-          const unitUsed = logData['unit'] || stockUnit;
-          const currentStock = stdData['current_amount'] || 0;
+          if (!logDoc.exists() && !globalLogDoc.exists()) {
+              throw new Error("Không tìm thấy dữ liệu nhật ký trên hệ thống.");
+          }
 
-          const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
-          if (amountToRestore === null) throw new Error("Lỗi quy đổi đơn vị");
+          const logData = logDoc.exists() ? logDoc.data() : globalLogDoc.data();
+          
+          if (stdDoc.exists()) {
+              const stdData = stdDoc.data();
+              const stockUnit = stdData['unit'] || 'mg';
+              const amountUsed = logData?.['amount_used'] || 0;
+              const unitUsed = logData?.['unit'] || stockUnit;
+              const currentStock = stdData['current_amount'] || 0;
 
-          const newStock = currentStock + amountToRestore;
-          const updateData: any = { current_amount: newStock, lastUpdated: serverTimestamp() };
-          if (stdData['status'] === 'DEPLETED' && newStock > 0) {
-              updateData.status = 'IN_USE';
+              const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
+              if (amountToRestore !== null) {
+                  const newStock = currentStock + amountToRestore;
+                  const updateData: any = { current_amount: newStock, lastUpdated: serverTimestamp() };
+                  if (stdData['status'] === 'DEPLETED' && newStock > 0) {
+                      updateData.status = 'IN_USE';
+                  }
+                  transaction.update(stdRef, updateData);
+              }
+
+              const effectiveRequestId = requestId || stdData['current_request_id'];
+              if (effectiveRequestId) {
+                  const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${effectiveRequestId}`);
+                  const reqDoc = await transaction.get(reqRef);
+                  if (reqDoc.exists()) {
+                      const reqData = reqDoc.data() as StandardRequest;
+                      const currentLogs = reqData.usageLogs || [];
+                      const updatedLogs = currentLogs.filter(l => l.id !== logId);
+                      transaction.update(reqRef, {
+                          usageLogs: updatedLogs,
+                          totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - (amountToRestore || 0)),
+                          updatedAt: Date.now()
+                      });
+                  }
+              }
           }
 
           transaction.delete(logRef);
-          transaction.update(stdRef, updateData);
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
           transaction.delete(globalLogRef);
-
-          const effectiveRequestId = requestId || stdData['current_request_id'];
-          if (effectiveRequestId) {
-              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${effectiveRequestId}`);
-              const reqDoc = await transaction.get(reqRef);
-              if (reqDoc.exists()) {
-                  const reqData = reqDoc.data() as StandardRequest;
-                  const currentLogs = reqData.usageLogs || [];
-                  const updatedLogs = currentLogs.filter(l => l.id !== logId);
-                  transaction.update(reqRef, {
-                      usageLogs: updatedLogs,
-                      totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - amountToRestore),
-                      updatedAt: Date.now()
-                  });
-              }
-          }
       });
       
       await this.logGlobalActivity('DELETE_USAGE_LOG', `Xóa dòng nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
