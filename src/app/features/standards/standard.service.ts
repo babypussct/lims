@@ -687,6 +687,7 @@ export class StandardService {
             return foundKey ? row[foundKey] : undefined;
           };
           const results: ImportPreviewItem[] = [];
+          const seenIds = new Map<string, number>();
 
           for (const rawRow of rawRows) {
              const row: Record<string, any> = {};
@@ -755,7 +756,15 @@ export class StandardService {
              if (lot) idStr += '_' + lot;
              if (internalId) idStr += '_' + internalId;
              if (!lot && !internalId) idStr += '_' + Math.random().toString().substr(2, 5);
-             const id = generateSlug(idStr);
+             let id = generateSlug(idStr);
+             
+             if (seenIds.has(id)) {
+                 const count = seenIds.get(id)! + 1;
+                 seenIds.set(id, count);
+                 id = `${id}_${count}`;
+             } else {
+                 seenIds.set(id, 1);
+             }
              
              const receivedDate = this.parseExcelDate(getValueByAlias(row, ['ngày nhận', 'ngày nhập']));
              const expiryDate = this.parseExcelDate(getValueByAlias(row, ['hạn sử dụng', 'hạn dùng']));

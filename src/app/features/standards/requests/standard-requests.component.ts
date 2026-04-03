@@ -1176,9 +1176,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   requestDate: Date.now(),
                   purpose: purpose,
                   status: 'PENDING_APPROVAL',
-                  totalAmountUsed: 0,
-                  expectedReturnDate: expectedReturnDate
+                  totalAmountUsed: 0
               };
+              
+              if (expectedReturnDate) {
+                  req.expectedReturnDate = expectedReturnDate;
+              }
               
               await this.stdService.createRequest(req);
           }
