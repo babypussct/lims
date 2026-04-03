@@ -874,8 +874,20 @@ export class StandardService {
               for (const log of item.logs) {
                   const logId = `log_${Date.now()}_${Math.floor(Math.random()*1000)}`;
                   const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}/logs/${logId}`);
+                  log.id = logId;
+                  log.standardId = item.parsed.id;
+                  log.standardName = item.parsed.name;
+                  log.lotNumber = item.parsed.lot_number;
+                  log.cas_number = item.parsed.cas_number;
+                  log.internalId = item.parsed.internal_id;
+                  log.manufacturer = item.parsed.manufacturer;
+                  
                   batch.set(logRef, log);
-                  opCount++;
+                  
+                  const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+                  batch.set(globalLogRef, log);
+                  
+                  opCount += 2;
               }
           }
 
@@ -979,7 +991,13 @@ export class StandardService {
                  amount_used: amountUsed,
                  unit: usageUnit,
                  purpose: 'Import Log',
-                 timestamp: new Date().getTime()
+                 timestamp: new Date().getTime(),
+                 standardId: matchedStandard ? matchedStandard.id : undefined,
+                 standardName: matchedStandard ? matchedStandard.name : undefined,
+                 lotNumber: matchedStandard ? matchedStandard.lot_number : undefined,
+                 cas_number: matchedStandard ? matchedStandard.cas_number : undefined,
+                 internalId: matchedStandard ? matchedStandard.internal_id : undefined,
+                 manufacturer: matchedStandard ? matchedStandard.manufacturer : undefined
              };
 
              let isDuplicate = false;
@@ -1054,8 +1072,11 @@ export class StandardService {
           for (const log of logs) {
               const logsCollRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
               const logRef = doc(logsCollRef);
+              log.id = logRef.id;
               batch.set(logRef, log);
-              opCount++;
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);
+              batch.set(globalLogRef, log);
+              opCount += 2;
 
               // Calculate deduction based on unit
               const deduction = getStandardizedAmount(log.amount_used, log.unit || 'mg', standard.unit);

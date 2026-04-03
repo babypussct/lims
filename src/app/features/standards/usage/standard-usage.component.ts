@@ -224,7 +224,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, 'NhatKySuDung');
           
-          XLSX.writeFile(wb, \`Nhat_Ky_Chuan_\${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx\`);
+          XLSX.writeFile(wb, `Nhat_Ky_Chuan_${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx`);
       } catch (err) {
           console.error('Lỗi khi xuất Excel:', err);
       }
