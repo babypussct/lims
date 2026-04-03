@@ -192,7 +192,7 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                         </div>
                                         <div class="flex flex-col gap-1.5">
                                             @if(std.certificate_ref) { <button (click)="openCoaPreview(std.certificate_ref, $event)" class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition w-fit"><i class="fa-solid fa-file-pdf"></i> CoA</button> }
-                                            @else { <button (click)="triggerQuickDriveUpload(std, $event)" [disabled]="quickUploadStdId() === std.id" class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition w-fit" title="Upload CoA nhanh qua Google Drive">
+                                            @else if(auth.currentUser()?.role === 'manager') { <button (click)="triggerQuickDriveUpload(std, $event)" [disabled]="quickUploadStdId() === std.id" class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition w-fit" title="Upload CoA nhanh qua Google Drive">
                                                 @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin"></i> Đang upload... } @else { <i class="fa-brands fa-google-drive"></i> Upload CoA }
                                             </button> }
                                             @if(std.contract_ref) { <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[120px] flex items-center gap-1" title="Hợp đồng"><i class="fa-solid fa-file-contract"></i> {{std.contract_ref}}</div> }
@@ -366,7 +366,7 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                                         <button (click)="$event.stopPropagation(); openCoaPreview(std.certificate_ref, $event)" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition flex items-center justify-center" title="Xem CoA">
                                                             <i class="fa-solid fa-file-pdf text-xs"></i>
                                                         </button>
-                                                    } @else {
+                                                    } @else if(auth.currentUser()?.role === 'manager') {
                                                         <button (click)="$event.stopPropagation(); triggerQuickDriveUpload(std, $event)" [disabled]="quickUploadStdId() === std.id" class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition flex items-center justify-center" title="Upload CoA qua Google Drive">
                                                             @if(quickUploadStdId() === std.id) { <i class="fa-solid fa-spinner fa-spin text-xs"></i> } @else { <i class="fa-brands fa-google-drive text-xs"></i> }
                                                         </button>
@@ -532,14 +532,16 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
                                 <div class="flex gap-2">
                                     <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
-                                    <button type="button" (click)="uploadInput.click()" [disabled]="isUploading() || isDriveUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50" title="Upload lên Firebase Storage">
-                                        @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
-                                    </button>
-                                    <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
-                                    <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
-                                        @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
-                                    </button>
-                                    <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
+                                    @if(auth.currentUser()?.role === 'manager') {
+                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading() || isDriveUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50" title="Upload lên Firebase Storage">
+                                            @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
+                                        </button>
+                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
+                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
+                                            @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
+                                        </button>
+                                        <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
+                                    }
                                 </div>
                                 <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic"><i class="fa-brands fa-google-drive mr-0.5"></i> Nút Drive: upload tự động lên Google Drive, đặt tên theo chuẩn, gán link preview. <span class="text-blue-500 dark:text-blue-400">15GB free!</span></p>
                             </div>
@@ -1531,7 +1533,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
               s.id !== this.form.get('id')?.value
           );
           if (existing) {
-              this.toast.show(`Cảnh báo: Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}".`, 'warning');
+              this.toast.show(`Cảnh báo: Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}".`, 'info');
               // Proceeding anyway because blocking breaks updates for reused internal_ids
           }
       }
