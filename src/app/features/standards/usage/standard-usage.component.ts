@@ -217,7 +217,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       }
       
       const conf = await this.confirmService.confirm({
-          message: `Dữ liệu thể tích <span class="text-rose-500 font-bold">${log.amount_used} ${log.unit || ''}</span> sẽ được cộng dồn (rollback) trả lại cho chuẩn vào kho. Bạn có chắc chắn xóa lịch sử sử dụng này không?`,
+          message: `Dữ liệu thể tích "${log.amount_used} ${log.unit || ''}" sẽ được cộng dồn (rollback) trả lại vào kho. Bạn có chắc chắn xóa lịch sử sử dụng này không?`,
           confirmText: 'Đồng ý & Xóa',
           isDangerous: true
       });
