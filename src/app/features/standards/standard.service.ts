@@ -187,8 +187,9 @@ export class StandardService {
   
   listenToAllStandards(callback: (items: ReferenceStandard[]) => void): Unsubscribe {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      // OPTIMIZED: added limit(200) to prevent unbounded snapshot reads
-      const q = query(colRef, orderBy('received_date', 'desc'), limit(200)); 
+      // NOTE: NO limit() here — standards.component.ts needs ALL standards for client-side search.
+      // reference_standards is bounded by lab size (typically < 500), so unbounded listen is safe.
+      const q = query(colRef, orderBy('received_date', 'desc')); 
       
       return onSnapshot(q, (snapshot) => {
           const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
