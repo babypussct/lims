@@ -17,10 +17,17 @@ import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/firestore';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 
+import { StandardsFormModalComponent } from './components/standards-form-modal.component';
+import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
+import { StandardsImportDataModalComponent, StandardsImportUsageModalComponent } from './components/standards-import-modal.component';
+import { StandardsHistoryModalComponent } from './components/standards-history-modal.component';
+import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
+import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
+
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent],
   template: `
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
       <!-- Header -->
@@ -433,300 +440,14 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
           </div>
       </div>
 
-      <!-- ADD/EDIT MODAL (3 TABS) -->
-      @if (showModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <!-- Modal Header -->
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-flask-vial text-indigo-600"></i>
-                        {{ isEditing() ? 'Cập nhật Chuẩn' : 'Thêm Chuẩn Mới' }}
-                    </h3>
-                    <button (click)="closeModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <!-- Tabs Header (Removed) -->
-                
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-slate-900">
-                    <form [formGroup]="form" class="space-y-8">
-                        
-                        <!-- SECTION 1: GENERAL INFO -->
-                        <div class="space-y-4 fade-in">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">1. Thông tin chung</h4>
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên Chuẩn <span class="text-red-500 dark:text-red-400">*</span></label>
-                                <input id="stdNameInput" formControlName="name" (input)="onNameChange($event)" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: Sulfadiazine Standard">
-                            </div>
-                            <!-- NEW: Chemical Name Field -->
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Tên hóa học / Tên khác</label>
-                                <input formControlName="chemical_name" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50 italic" placeholder="VD: N-(2-pyrimidinyl)benzenesulfonamide">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã sản phẩm (Code)</label><input formControlName="product_code" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số CAS</label><input formControlName="cas_number" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hãng sản xuất</label><input formControlName="manufacturer" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hàm lượng (Purity)</label><input formControlName="purity" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800" placeholder="VD: 99.5%"></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Quy cách (Pack Size)</label><input formControlName="pack_size" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: 10mg"></div>
-                                <div><label class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Số Lô (Lot No.)</label><input formControlName="lot_number" class="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/50 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-500/50" placeholder="VD: BCBW1234"></div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: STOCK & STORAGE -->
-                        <div class="space-y-4 fade-in">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">2. Kho & Bảo quản</h4>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Điều kiện bảo quản</label>
-                                    <input formControlName="storage_condition" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="VD: FT, CT, RT...">
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Vị trí (Location)</label>
-                                    <input formControlName="location" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Tự động từ ĐK bảo quản (VD: Tủ A)">
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Mã Quản lý (Internal ID)</label>
-                                <input formControlName="internal_id" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm font-bold font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 uppercase" placeholder="VD: AA01">
-                            </div>
-                            
-                            <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 grid grid-cols-3 gap-4">
-                                <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
-                                <div><label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-indigo-600 dark:text-indigo-400 outline-none text-lg"></div>
-                                <div>
-                                    <label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 uppercase block mb-1">Đơn vị</label>
-                                    <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
-                                        @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 3: DOCS & EXPIRY -->
-                        <div class="space-y-4 fade-in pb-4">
-                            <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wide">3. Hồ sơ & Hạn dùng</h4>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày nhận (Received)</label>
-                                    <input type="date" formControlName="received_date" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]">
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-bold text-red-400 dark:text-red-500 uppercase block mb-1">Hạn sử dụng (Expiry)</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="date" formControlName="expiry_date" class="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-2 text-sm font-bold text-red-600 dark:text-red-400 outline-none focus:border-red-500 dark:focus:border-red-500 [color-scheme:light] dark:[color-scheme:dark]" (keydown.enter)="saveStandard(false)">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Ngày mở nắp</label><input type="date" formControlName="date_opened" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Số Hợp đồng / Dự án</label><input formControlName="contract_ref" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500"></div>
-                            </div>
-                            
-                            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">COA File (Link/Upload)</label>
-                                <div class="flex gap-2">
-                                    <input formControlName="certificate_ref" (input)="sanitizeDriveLink($event)" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400 underline outline-none focus:border-indigo-500 dark:focus:border-indigo-500" placeholder="Paste URL here..." (keydown.enter)="saveStandard(false)">
-                                    @if(auth.currentUser()?.role === 'manager') {
-                                        <button type="button" (click)="uploadInput.click()" [disabled]="isUploading() || isDriveUploading()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50" title="Upload lên Firebase Storage">
-                                            @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
-                                        </button>
-                                        <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
-                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
-                                            @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
-                                        </button>
-                                        <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
-                                    }
-                                </div>
-                                <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 italic"><i class="fa-brands fa-google-drive mr-0.5"></i> Nút Drive: upload tự động lên Google Drive, đặt tên theo chuẩn, gán link preview. <span class="text-blue-500 dark:text-blue-400">15GB free!</span></p>
-                            </div>
-                        </div>
-
-                    </form>
-                </div>
-
-                <!-- Footer Actions -->
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="closeModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    @if(!isEditing()) {
-                        <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
-                            @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                            @else { <i class="fa-solid fa-plus"></i> Lưu & Thêm tiếp }
-                        </button>
-                    }
-                    <button (click)="saveStandard(false)" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
-                        @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
-                        @else { {{ isEditing() ? 'Lưu Thay Đổi' : 'Tạo Mới' }} }
-                    </button>
-                </div>
-            </div>
-         </div>
-      }
+      <!-- ADD/EDIT MODAL -->
+      <app-standards-form-modal [isOpen]="showModal()" [std]="isEditing() ? selectedStd() : null" [allStandards]="allStandards()" (closeModal)="closeModal()"></app-standards-form-modal>
 
       <!-- IMPORT PREVIEW MODAL -->
-      @if (importPreviewData().length > 0) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-file-import text-emerald-600 dark:text-emerald-500"></i> Xác nhận Import
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra kỹ ngày tháng trước khi lưu.</p>
-                    </div>
-                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="flex-1 overflow-auto custom-scrollbar p-6">
-                    <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg p-3 flex gap-3 text-sm text-yellow-800 dark:text-yellow-500">
-                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                        <div>
-                            <span class="font-bold">Lưu ý ngày tháng:</span> Hệ thống đang ép kiểu ngày tháng theo định dạng <b>dd/mm/yyyy</b> (Việt Nam).<br>
-                            Ví dụ: Chuỗi <b>05/10/2024</b> sẽ được hiểu là ngày <b>5 tháng 10</b>. Hãy kiểm tra cột "Kết quả (Hệ thống hiểu)" bên dưới.
-                        </div>
-                    </div>
-
-                    <table class="w-full text-xs text-left border-collapse border border-slate-200 dark:border-slate-700">
-                        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase sticky top-0">
-                            <tr>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Tên Chuẩn</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Lô (Lot)</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 w-32">Ngày nhận (Gốc)</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 w-32">Kết quả (Hệ thống hiểu)</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Hạn dùng (Parsed)</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-slate-700 dark:text-slate-300">
-                            @for (item of importPreviewData().slice(0, 10); track $index) {
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 break-words" [title]="item.parsed.name">{{item.parsed.name}}</td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.parsed.lot_number}}</td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono bg-red-50/30 dark:bg-red-900/10">{{item.raw['Ngày nhận (Gốc)']}}</td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-900/10">
-                                        {{item.parsed.received_date ? (item.parsed.received_date | date:'dd/MM/yyyy') : '---'}}
-                                    </td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">
-                                        {{item.parsed.expiry_date ? (item.parsed.expiry_date | date:'dd/MM/yyyy') : '---'}}
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    @if(importPreviewData().length > 10) {
-                        <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-2 italic">... và {{importPreviewData().length - 10}} dòng khác.</p>
-                    }
-                </div>
-
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-                    <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                    <button (click)="confirmImport()" [disabled]="isImporting()" class="px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                        @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                        @else { <i class="fa-solid fa-check"></i> Xác nhận Import }
-                    </button>
-                </div>
-            </div>
-         </div>
-      }
+      <app-standards-import-data-modal [data]="importPreviewData()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmImport()"></app-standards-import-data-modal>
 
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
-      @if (importUsageLogPreviewData().length > 0) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
-                
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-book-open text-teal-600 dark:text-teal-500"></i> Xác nhận Import Nhật ký
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Vui lòng kiểm tra dữ liệu trước khi lưu. Các dòng lỗi hoặc trùng lặp sẽ bị bỏ qua.</p>
-                    </div>
-                    <button (click)="cancelImport()" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition active:scale-95"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="flex-1 overflow-auto p-6 bg-white dark:bg-slate-900">
-                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-500 p-4 rounded-xl text-sm flex items-start gap-3">
-                        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500 dark:text-amber-400"></i>
-                        <div>
-                            <strong>Lưu ý quan trọng:</strong>
-                            <ul class="list-disc pl-5 mt-1 space-y-1 text-amber-700/80 dark:text-amber-400/80">
-                                <li>Hệ thống sẽ tự động tìm kiếm chất chuẩn dựa trên <strong>Số nhận diện</strong> hoặc <strong>Tên + Số lô</strong>.</li>
-                                <li>Nếu nhật ký (cùng ngày, người pha, lượng dùng) đã tồn tại, dòng đó sẽ bị bỏ qua (trùng lặp).</li>
-                                <li>Lượng dùng sẽ được tự động trừ vào tồn kho hiện tại của chất chuẩn.</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <table class="w-full text-sm text-left mt-4">
-                        <thead>
-                            <tr class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-800">
-                                <th class="p-2 border border-slate-200 dark:border-slate-700 w-10 text-center">STT</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Chất chuẩn (Excel)</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Ngày pha</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Người pha</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700 text-right">Lượng dùng</th>
-                                <th class="p-2 border border-slate-200 dark:border-slate-700">Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-slate-700 dark:text-slate-300">
-                            @for (item of importUsageLogPreviewData().slice(0, 15); track $index) {
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50" [ngClass]="{'bg-red-50 dark:bg-red-900/10': !item.isValid, 'bg-amber-50 dark:bg-amber-900/10': item.isDuplicate}">
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 text-center text-slate-400 dark:text-slate-500">{{$index + 1}}</td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700">
-                                        <div class="font-bold text-slate-700 dark:text-slate-200 break-words" [title]="item.raw['Tên']">{{item.raw['Tên']}}</div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">Lô: {{item.raw['Lô']}}</div>
-                                        @if(item.standard) {
-                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle"></i> Map: {{item.standard.internal_id || 'OK'}}</div>
-                                        }
-                                    </td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">{{item.raw['Ngày']}} <br> <span class="text-xs text-slate-400 dark:text-slate-500">{{item.log.date | date:'dd/MM/yyyy'}}</span></td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700">{{item.raw['Người']}}</td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700 text-right font-mono font-bold">
-                                        {{item.raw['Lượng']}}
-                                        @if(item.standard) { <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{item.standard.unit}}</span> }
-                                    </td>
-                                    <td class="p-2 border border-slate-200 dark:border-slate-700">
-                                        @if(item.isValid && !item.isDuplicate) {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded text-xs font-bold"><i class="fa-solid fa-check"></i> Hợp lệ</span>
-                                        } @else if (item.isDuplicate) {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-bold" title="Nhật ký này đã có trong hệ thống"><i class="fa-solid fa-copy"></i> Trùng lặp</span>
-                                        } @else {
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-bold" [title]="item.errorMessage"><i class="fa-solid fa-xmark"></i> Lỗi</span>
-                                            <div class="text-[10px] text-red-500 dark:text-red-400 mt-1">{{item.errorMessage}}</div>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    @if(importUsageLogPreviewData().length > 15) {
-                        <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-2 italic">... và {{importUsageLogPreviewData().length - 15}} dòng khác.</p>
-                    }
-                </div>
-
-                <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                    <div class="text-sm font-bold text-slate-600 dark:text-slate-400">
-                        Tổng: {{importUsageLogPreviewData().length}} | 
-                        <span class="text-emerald-600 dark:text-emerald-400">Hợp lệ: {{validUsageLogsCount()}}</span> | 
-                        <span class="text-amber-600 dark:text-amber-400">Trùng: {{duplicateUsageLogsCount()}}</span> | 
-                        <span class="text-red-500 dark:text-red-400">Lỗi: {{errorUsageLogsCount()}}</span>
-                    </div>
-                    <div class="flex gap-3">
-                        <button (click)="cancelImport()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy bỏ</button>
-                        <button (click)="confirmUsageLogImport()" [disabled]="isImporting() || validUsageLogsCount() === 0" class="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2">
-                            @if(isImporting()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... }
-                            @else { <i class="fa-solid fa-check"></i> Import Hợp lệ }
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
+      <app-standards-import-usage-modal [data]="importUsageLogPreviewData()" [validCount]="validUsageLogsCount()" [duplicateCount]="duplicateUsageLogsCount()" [errorCount]="errorUsageLogsCount()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmUsageLogImport()"></app-standards-import-usage-modal>
 
       <!-- History, COA Preview Modals... (No changes needed here) -->
 
@@ -831,264 +552,16 @@ import { GoogleDriveService } from '../../core/services/google-drive.service';
          </div>
       }
 
-      @if (showPrintModal()) {
-         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-4xl flex overflow-hidden animate-bounce-in max-h-[90vh]">
-                <!-- Left: Settings -->
-                <div class="w-1/2 p-8 border-r border-slate-100 dark:border-slate-800 overflow-y-auto custom-scrollbar flex flex-col">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                            <i class="fa-solid fa-print"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight">In Nhãn Chuẩn</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words" [title]="selectedStd()?.name">{{selectedStd()?.name}}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-6 flex-1">
-                        <!-- Template Selection -->
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mẫu nhãn</label>
-                            <div class="grid grid-cols-3 gap-2">
-                                <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'standard'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Tiêu chuẩn</div>
-                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Thông tin cơ bản</div>
-                                </button>
-                                <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'detailed'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Chi tiết</div>
-                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Đầy đủ thông tin</div>
-                                </button>
-                                <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30': printTemplate() === 'qr'}" class="p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">Mã QR</div>
-                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Kèm mã QR code</div>
-                                </button>
-                            </div>
-                        </div>
+      <!-- PRINT MODAL -->
+      <app-standards-print-modal [isOpen]="showPrintModal()" [std]="selectedStd()" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
 
-                        <!-- Dimensions -->
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Kích thước nhãn</label>
-                            <select [ngModel]="printPaperSize()" (ngModelChange)="onPaperSizeChange($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition mb-3">
-                                <option value="22x12">22 x 12 mm (Tem nhỏ)</option>
-                                <option value="35x22">35 x 22 mm (Tem chuẩn)</option>
-                                <option value="50x30">50 x 30 mm (Tem trung)</option>
-                                <option value="70x50">70 x 50 mm (Tem lớn)</option>
-                                <option value="custom">Tùy chỉnh...</option>
-                            </select>
-                            
-                            @if (printPaperSize() === 'custom') {
-                                <div class="grid grid-cols-3 gap-3">
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Rộng (mm)</label>
-                                        <input type="number" [ngModel]="printWidth()" (ngModelChange)="printWidth.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cao (mm)</label>
-                                        <input type="number" [ngModel]="printHeight()" (ngModelChange)="printHeight.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cỡ chữ (pt)</label>
-                                        <input type="number" [ngModel]="printFontSize()" (ngModelChange)="printFontSize.set($event)" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
-                                    </div>
-                                </div>
-                            }
-                        </div>
+      <!-- HISTORY MODAL -->
+      <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
 
-                        <!-- Fields to Include -->
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Thông tin hiển thị</label>
-                            <div class="grid grid-cols-2 gap-y-3 gap-x-4">
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeName()" (ngModelChange)="printIncludeName.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Tên chuẩn</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeLot()" (ngModelChange)="printIncludeLot.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Số Lot</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludePurity()" (ngModelChange)="printIncludePurity.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Độ tinh khiết</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeOpened()" (ngModelChange)="printIncludeOpened.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Ngày mở</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeExpiry()" (ngModelChange)="printIncludeExpiry.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Hạn sử dụng</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeStorage()" (ngModelChange)="printIncludeStorage.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Bảo quản</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeManufacturer()" (ngModelChange)="printIncludeManufacturer.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Nhà SX</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" [ngModel]="printIncludeCas()" (ngModelChange)="printIncludeCas.set($event)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600">
-                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 transition">Số CAS</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Copies -->
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số bản in</label>
-                            <div class="flex items-center gap-2 w-32">
-                                <button (click)="printCopies.set(Math.max(1, printCopies() - 1))" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition"><i class="fa-solid fa-minus text-xs"></i></button>
-                                <input type="number" [ngModel]="printCopies()" (ngModelChange)="printCopies.set($event)" min="1" class="flex-1 w-full text-center border-none bg-transparent font-bold text-slate-800 dark:text-slate-200 focus:ring-0 p-0">
-                                <button (click)="printCopies.set(printCopies() + 1)" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition"><i class="fa-solid fa-plus text-xs"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        <button (click)="showPrintModal.set(false)" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-                        <button (click)="printLabel()" class="px-8 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg shadow-indigo-200 dark:shadow-none transition flex items-center gap-2">
-                            <i class="fa-solid fa-print"></i> In {{printCopies()}} nhãn
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Right: Preview -->
-                <div class="w-1/2 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col items-center justify-center relative">
-                    <div class="absolute top-4 left-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-eye"></i> Xem trước
-                    </div>
-                    
-                    <!-- Preview Container (Scaled to fit) -->
-                    <div class="bg-white shadow-sm border border-slate-200 flex flex-col justify-center text-black overflow-hidden relative"
-                         [style.width.mm]="printWidth()"
-                         [style.height.mm]="printHeight()"
-                         [style.padding.mm]="2"
-                         [style.transform]="'scale(' + getPreviewScale() + ')'"
-                         style="transform-origin: center center; transition: all 0.3s ease;">
-                         
-                         <div [style.font-size.pt]="printFontSize()" style="line-height: 1.2; width: 100%; height: 100%;">
-                            @if (printTemplate() === 'qr') {
-                                <div style="display: flex; height: 100%; gap: 4px;">
-                                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
-                                        @if (printIncludeName()) { <div style="font-weight: bold; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [style.font-size.pt]="printFontSize() + 2">{{selectedStd()?.name}}</div> }
-                                        @if (printIncludeLot()) { <div style="display: flex; justify-content: space-between; margin-bottom: 1px;"><span>Lot: <span style="font-weight: bold;">{{selectedStd()?.lot_number || 'N/A'}}</span></span></div> }
-                                        @if (printIncludePurity()) { <div style="display: flex; justify-content: space-between; margin-bottom: 1px;"><span>Pur: <span style="font-weight: bold;">{{selectedStd()?.purity || 'N/A'}}</span></span></div> }
-                                        @if (printIncludeExpiry()) { <div style="display: flex; justify-content: space-between; margin-bottom: 1px;"><span>Exp: <span style="font-weight: bold;">{{selectedStd()?.expiry_date ? (selectedStd()?.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</span></span></div> }
-                                    </div>
-                                    <div style="width: 30%; display: flex; align-items: center; justify-content: center;">
-                                        <img [src]="getQrCodeUrl(selectedStd())" style="width: 100%; height: auto; max-height: 100%;" />
-                                    </div>
-                                </div>
-                            } @else {
-                                <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden;">
-                                    @if (printIncludeName()) { <div style="font-weight: bold; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [style.font-size.pt]="printFontSize() + 2">{{selectedStd()?.name}}</div> }
-                                    
-                                    @if (printTemplate() === 'detailed') {
-                                        @if (printIncludeCas() || printIncludeManufacturer()) {
-                                            <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                                                @if(printIncludeCas()) { <span>CAS: <span style="font-weight: bold;">{{selectedStd()?.cas_number || 'N/A'}}</span></span> }
-                                                @if(printIncludeManufacturer()) { <span>Mfr: <span style="font-weight: bold;">{{selectedStd()?.manufacturer || 'N/A'}}</span></span> }
-                                            </div>
-                                        }
-                                    }
-
-                                    @if (printIncludeLot() || printIncludePurity()) {
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                                            @if(printIncludeLot()) { <span>Lot: <span style="font-weight: bold;">{{selectedStd()?.lot_number || 'N/A'}}</span></span> }
-                                            @if(printIncludePurity()) { <span>Pur: <span style="font-weight: bold;">{{selectedStd()?.purity || 'N/A'}}</span></span> }
-                                        </div>
-                                    }
-                                    
-                                    @if (printIncludeOpened() || printIncludeExpiry()) {
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                                            @if(printIncludeOpened()) { <span>Opn: <span style="font-weight: bold;">{{selectedStd()?.date_opened ? (selectedStd()?.date_opened | date:'dd/MM/yy') : '__/__/__'}}</span></span> }
-                                            @if(printIncludeExpiry()) { <span>Exp: <span style="font-weight: bold;">{{selectedStd()?.expiry_date ? (selectedStd()?.expiry_date | date:'dd/MM/yy') : 'N/A'}}</span></span> }
-                                        </div>
-                                    }
-
-                                    @if (printIncludeStorage()) {
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                                            <span>Store: <span style="font-weight: bold;">{{selectedStd()?.storage_condition || 'N/A'}}</span></span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                         </div>
-                    </div>
-                    
-                    <div class="mt-6 text-[10px] text-slate-400 dark:text-slate-500 text-center max-w-[250px]">
-                        Bản xem trước mang tính tương đối. Kết quả in thực tế phụ thuộc vào máy in và trình duyệt.
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
-
-      @if (historyStd()) {
-         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh]">
-               <div class="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                  <div><h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg">Lịch sử sử dụng</h3><p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{historyStd()?.name}}</p></div>
-                  <button (click)="historyStd.set(null)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition"><i class="fa-solid fa-times text-xl"></i></button>
-               </div>
-               <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                  <table class="w-full text-sm text-left"><thead class="bg-slate-50 dark:bg-slate-800/50 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase sticky top-0 border-b border-slate-100 dark:border-slate-800 shadow-sm"><tr><th class="px-6 py-4 w-32">Thời gian</th><th class="px-6 py-4">Người thực hiện</th><th class="px-6 py-4">Mục đích</th><th class="px-6 py-4 text-right w-32">Lượng dùng</th>@if(state.isAdmin()){<th class="px-6 py-4 text-center w-24">Tác vụ</th>}</tr></thead><tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                        @if (loadingHistory()) { <tr><td colspan="5" class="p-8 text-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr> } @else {
-                            @for (log of historyLogs(); track log.id) { <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group"> <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">{{ log.date | date:'dd/MM/yyyy' }}</td><td class="px-6 py-4"><div class="font-bold text-slate-700 dark:text-slate-300 text-xs">{{ log.user }}</div></td><td class="px-6 py-4"><div class="text-slate-600 dark:text-slate-400 text-xs italic line-clamp-2" [title]="log.purpose || ''">{{ log.purpose || 'N/A' }}</div></td><td class="px-6 py-4 text-right"><span class="font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[9px] text-slate-500 dark:text-slate-400">{{log.unit || historyStd()?.unit}}</span></span></td>@if(state.isAdmin()){<td class="px-6 py-4 text-center"><button (click)="deleteLog(log)" [disabled]="isProcessing()" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 disabled:opacity-50"><i class="fa-solid fa-trash"></i></button></td>}</tr> } @empty { <tr><td colspan="5" class="p-8 text-center text-slate-400 dark:text-slate-500 italic">Chưa có dữ liệu.</td></tr> }
-                        }
-                  </tbody></table>
-               </div>
-            </div>
-         </div>
-      }
-
-      <!-- COA PREVIEW -->
-      @if (previewUrl() || previewImgUrl()) {
-          <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in" (click)="closeCoaPreview()">
-              <div class="relative w-full max-w-7xl h-[85vh] bg-white dark:bg-slate-900 rounded-lg shadow-2xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
-                  <div class="bg-slate-900 dark:bg-slate-950 text-white p-3 flex justify-between items-center shrink-0"><span class="text-sm font-bold pl-2"><i class="fa-solid fa-file-pdf mr-2"></i> Preview Certificate of Analysis</span><div class="flex gap-3"><a [href]="previewRawUrl()" target="_blank" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition">Mở Tab mới</a><button (click)="closeCoaPreview()" class="text-white hover:text-red-400 transition"><i class="fa-solid fa-times text-lg"></i></button></div></div>
-                  <div class="flex-1 bg-slate-100 dark:bg-slate-800 relative">
-                      @if(previewType() === 'image') { <div class="w-full h-full flex items-center justify-center overflow-auto"><img [src]="previewImgUrl()" class="max-w-full max-h-full object-contain shadow-lg"></div> } 
-                      @else { <iframe [src]="previewUrl()" class="w-full h-full border-none"></iframe> }
-                  </div>
-              </div>
-          </div>
-      }
+      <!-- COA PREVIEW MODAL -->
+      <app-standards-coa-modal [previewUrl]="previewUrl()" [previewImgUrl]="previewImgUrl()" [previewType]="previewType()" [previewRawUrl]="previewRawUrl()" (closeModal)="closeCoaPreview()"></app-standards-coa-modal>
       <!-- PURCHASE REQUEST MODAL -->
-      @if (showPurchaseRequestModal()) {
-         <div class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up border border-amber-100 dark:border-amber-900/40">
-               <div class="px-6 py-4 border-b border-amber-100 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 flex justify-between items-center">
-                   <h3 class="font-black text-amber-800 dark:text-amber-500 text-lg flex items-center gap-2"><i class="fa-solid fa-cart-plus"></i> Đề nghị mua sắm</h3>
-                   <button (click)="closePurchaseRequestModal()" class="text-slate-400 hover:text-red-500 rounded-full w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition"><i class="fa-solid fa-times"></i></button>
-               </div>
-               <form [formGroup]="purchaseForm" (ngSubmit)="submitPurchaseRequest()" class="p-6 flex flex-col gap-4">
-                   <div class="text-sm border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-r text-amber-800 dark:text-amber-200">
-                       Xin cấp mới: <span class="font-black truncate max-w-full block" [title]="selectedPurchaseStd()?.name">{{selectedPurchaseStd()?.name}}</span>
-                       Code: <span class="font-mono font-bold">{{selectedPurchaseStd()?.product_code || 'N/A'}}</span>
-                   </div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Mức độ ưu tiên *</label><select formControlName="priority" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white"><option value="NORMAL">Bình thường</option><option value="HIGH">Khẩn cấp</option></select></div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Số lượng dự kiến cần *</label><input type="text" formControlName="expectedAmount" placeholder="VD: 2 chai 10mg" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white"></div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Hãng cần mua</label><input type="text" formControlName="preferred_manufacturer" placeholder="VD: Sigma Aldrich" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white"></div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Cấp độ chuẩn (VD: ISO 17034)</label><input type="text" formControlName="required_level" placeholder="ISO 17034 / CRM / SRM..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white"></div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Độ tinh khiết yêu cầu</label><input type="text" formControlName="required_purity" placeholder="VD: >= 99%" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white"></div>
-                   
-                   <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Ghi chú / Lý do mua</label><textarea formControlName="notes" rows="2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 dark:text-white" placeholder="Mục đích sử dụng..."></textarea></div>
-                   
-                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                       <button type="button" (click)="closePurchaseRequestModal()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl font-bold text-sm transition">Hủy</button>
-                       <button type="submit" [disabled]="purchaseForm.invalid || isProcessing()" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50 flex items-center gap-2"><i class="fa-solid fa-paper-plane text-xs"></i> Gửi yêu cầu</button>
-                   </div>
-               </form>
-            </div>
-         </div>
-      }
+      <app-standards-purchase-modal [isOpen]="showPurchaseRequestModal()" [selectedStd]="selectedPurchaseStd()" (closeModal)="closePurchaseRequestModal()"></app-standards-purchase-modal>
 
 
     </div>
@@ -1108,8 +581,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   Math = Math;
   
   isLoading = signal(true);
-  isUploading = signal(false);
-  isDriveUploading = signal(false);
   quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
   private quickUploadStd: ReferenceStandard | null = null;
   isImporting = signal(false);
@@ -1268,44 +739,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
   userList = signal<UserProfile[]>([]);
   
   showPrintModal = signal(false);
-  printPaperSize = signal<'22x12' | '35x22' | '50x30' | '70x50' | 'custom'>('35x22');
-  printWidth = signal(35);
-  printHeight = signal(22);
-  printFontSize = signal(8);
-  printTemplate = signal<'standard' | 'detailed' | 'qr'>('standard');
-  printCopies = signal<number>(1);
-  printIncludeName = signal<boolean>(true);
-  printIncludeLot = signal<boolean>(true);
-  printIncludePurity = signal<boolean>(true);
-  printIncludeOpened = signal<boolean>(true);
-  printIncludeExpiry = signal<boolean>(true);
-  printIncludeStorage = signal<boolean>(false);
-  printIncludeManufacturer = signal<boolean>(false);
-  printIncludeCas = signal<boolean>(false);
-  
+    
   previewUrl = signal<SafeResourceUrl | null>(null);
   previewImgUrl = signal<string>('');
   previewType = signal<'iframe' | 'image'>('iframe');
   previewRawUrl = signal<string>('');
 
-  form = this.fb.group({
-      id: [''], name: ['', Validators.required], chemical_name: [''],
-      product_code: [''], cas_number: [''], purity: [''], manufacturer: [''], pack_size: [''], lot_number: [''], 
-      internal_id: [''], location: [''], storage_condition: [''],
-      initial_amount: [0, [Validators.required, Validators.min(0)]],
-      current_amount: [0, [Validators.required, Validators.min(0)]],
-      unit: ['mg', Validators.required],
-      expiry_date: [''], received_date: [''], date_opened: [''], contract_ref: [''], certificate_ref: ['']
-  });
 
-  purchaseForm = this.fb.group({
-      priority: ['NORMAL', Validators.required],
-      expectedAmount: ['', Validators.required],
-      preferred_manufacturer: [''],
-      required_level: [''],
-      required_purity: [''],
-      notes: ['']
-  });
 
   formatNum = formatNum;
 
@@ -1324,22 +764,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.allStandards.set(items);
           this.isLoading.set(false);
       });
-
-
-
-      // Auto-fill Location based on Storage Condition
-      this.form.get('storage_condition')?.valueChanges.subscribe(val => {
-          if (!val) return;
-          const lower = val.toLowerCase();
-          let loc = '';
-          if (lower.includes('ft') || lower.includes('đông') || lower.includes('-20')) loc = 'Tủ A';
-          else if (lower.includes('ct') || lower.includes('mát') || lower.includes('2-8')) loc = 'Tủ B';
-          else if (lower.includes('rt') || lower.includes('thường')) loc = 'Tủ C';
-          
-          if (loc && this.form.get('location')?.value !== loc) {
-              this.form.patchValue({ location: loc });
-          }
-      });
   }
 
   ngOnDestroy() { 
@@ -1351,7 +775,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   openPurchaseRequestModal(std: ReferenceStandard) {
       if (this.isProcessing()) return;
       this.selectedPurchaseStd.set(std);
-      this.purchaseForm.reset({ priority: 'NORMAL' });
       this.showPurchaseRequestModal.set(true);
   }
 
@@ -1360,40 +783,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.selectedPurchaseStd.set(null);
   }
 
-  async submitPurchaseRequest() {
-      if (this.purchaseForm.invalid || this.isProcessing()) return;
-      
-      const std = this.selectedPurchaseStd();
-      const user = this.auth.currentUser();
-      
-      if (!std || !user) return;
-
-      this.isProcessing.set(true);
-      try {
-          const req: PurchaseRequest = {
-              standardId: std.id,
-              standardName: std.name,
-              product_code: std.cas_number || std.internal_id || '',
-              requestDate: Date.now(),
-              status: 'PENDING',
-              requestedBy: user.uid,
-              requestedByName: user?.displayName || user?.email || 'Unknown',
-              priority: this.purchaseForm.value.priority as any,
-              expectedAmount: this.purchaseForm.value.expectedAmount || '',
-              preferred_manufacturer: this.purchaseForm.value.preferred_manufacturer || '',
-              required_level: this.purchaseForm.value.required_level || '',
-              required_purity: this.purchaseForm.value.required_purity || '',
-              notes: this.purchaseForm.value.notes || ''
-          };
-          await this.stdService.createPurchaseRequest(req);
-          this.toast.show('Đã gửi yêu cầu mua sắm', 'success');
-          this.closePurchaseRequestModal();
-      } catch (e: any) {
-          this.toast.show('Lỗi: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
 
   onInternalIdChange(event: any) {
       // Logic removed as per user request (Internal ID is manual, Location is based on Storage Condition)
@@ -1428,16 +817,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   openAddModal() { 
       this.isEditing.set(false); 
-      this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
+      this.selectedStd.set(null);
       this.showModal.set(true); 
-      setTimeout(() => document.getElementById('stdNameInput')?.focus(), 100);
   }
   
   openEditModal(std: ReferenceStandard) { 
       if (!this.auth.canEditStandards()) return; 
+      this.selectedStd.set(std);
       this.isEditing.set(true); 
-      this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
-      this.form.patchValue(std as any); 
       this.showModal.set(true); 
   }
   
@@ -1447,9 +834,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       }
   }
   
-  onNameChange(event: any) { 
-      if (!this.isEditing()) { const lot = this.form.get('lot_number')?.value || ''; this.form.patchValue({ id: generateSlug(event.target.value + '_' + (lot || Date.now().toString())) }); } 
-  }
 
   async autoZeroAllSdhet() {
       const targets = this.allStandards().filter(s => (s.id === 'SDHET' || s.internal_id === 'SDHET') && s.current_amount > 0);
@@ -1504,78 +888,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           } finally {
               this.isProcessing.set(false);
           }
-      }
-  }
-
-  sanitizeDriveLink(event: any) {
-      const val = event.target.value;
-      if (!val) return;
-
-      // Auto-fix Google Drive links (robust)
-      if (val.includes('drive.google.com') && val.includes('/view')) {
-          const newVal = val.replace('/view', '/preview');
-          // Use emitEvent: false to prevent circular triggers
-          this.form.patchValue({ certificate_ref: newVal }, { emitEvent: false });
-      }
-  }
-
-  // --- HARDENED: Save ---
-  async saveStandard(keepOpen = false) {
-      if (this.isProcessing()) return;
-      if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
-      
-      const val = this.form.value;
-
-      // Validate Internal ID uniqueness (Warning only, do not block)
-      if (val.internal_id && val.internal_id !== 'SDHET') {
-          const existing = this.allStandards().find(s => 
-              s.internal_id?.toLowerCase() === val.internal_id?.toLowerCase() && 
-              s.id !== this.form.get('id')?.value
-          );
-          if (existing) {
-              this.toast.show(`Cảnh báo: Mã quản lý ${val.internal_id} đã tồn tại ở chuẩn "${existing.name}".`, 'info');
-              // Proceeding anyway because blocking breaks updates for reused internal_ids
-          }
-      }
-
-      this.isProcessing.set(true);
-      try {
-          // Auto-sync current_amount with initial_amount if current is 0 and initial > 0 (for new items)
-          if (!this.isEditing() && (val.initial_amount || 0) > 0 && (val.current_amount || 0) === 0) {
-              val.current_amount = val.initial_amount;
-          }
-
-          if (!val.id) val.id = generateSlug(val.name + '_' + Date.now());
-          const std: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
-      
-          if (this.isEditing()) {
-              await this.stdService.updateStandard(std);
-              this.toast.show('Cập nhật chuẩn thành công!', 'success');
-          } else {
-              await this.stdService.addStandard(std);
-              this.toast.show('Thêm chuẩn mới thành công!', 'success');
-          }
-          
-          if (keepOpen && !this.isEditing()) {
-              // Reset form but keep some useful defaults for the next item
-              this.form.reset({
-                  initial_amount: 0,
-                  current_amount: 0,
-                  unit: val.unit || 'mg',
-                  storage_condition: val.storage_condition,
-                  location: val.location,
-                  manufacturer: val.manufacturer,
-                  received_date: val.received_date
-              });
-              // Focus first element
-              setTimeout(() => document.getElementById('stdNameInput')?.focus(), 100);
-          } else {
-              this.showModal.set(false); // Force close
-          }
-      } catch (e: any) { 
-          this.toast.show('Lỗi: ' + e.message, 'error'); 
-      } finally {
-          this.isProcessing.set(false);
       }
   }
 
@@ -1663,49 +975,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.toast.show('Lỗi lưu import nhật ký: ' + e.message, 'error');
       } finally {
           this.isImporting.set(false);
-      }
-  }
-
-  async uploadCoaFile(event: any) {
-      if (this.isUploading()) return;
-      const file = event.target.files[0];
-      if (!file) return;
-      this.isUploading.set(true);
-      try {
-          const url = await this.firebaseService.uploadFile('coa', file);
-          this.form.patchValue({ certificate_ref: url });
-          this.toast.show('Upload COA thành công!');
-      } catch (e: any) { 
-          this.toast.show('Upload lỗi: ' + (e.message || 'Unknown'), 'error'); 
-      } finally { 
-          this.isUploading.set(false);
-          event.target.value = ''; // CRITICAL: Reset input to allow re-upload
-      }
-  }
-
-  // --- Google Drive Upload ---
-  async uploadCoaToDrive(event: any) {
-      if (this.isDriveUploading()) return;
-      const file = event.target.files[0];
-      if (!file) return;
-
-      this.isDriveUploading.set(true);
-      try {
-          // Auto-generate filename from form data
-          const stdName = this.form.value.name || 'Unknown';
-          const lotNum = this.form.value.lot_number || 'NoLot';
-          const fileName = GoogleDriveService.generateFileName(stdName, lotNum, file.name);
-
-          this.toast.show(`Đang upload "${fileName}" lên Google Drive...`);
-          const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
-          this.form.patchValue({ certificate_ref: previewUrl });
-          this.toast.show(`Upload Drive thành công! File: ${fileName}`);
-      } catch (e: any) {
-          console.error('Drive upload error:', e);
-          this.toast.show('Upload Drive lỗi: ' + (e.message || 'Không xác định'), 'error');
-      } finally {
-          this.isDriveUploading.set(false);
-          event.target.value = ''; // Reset input to allow re-upload
       }
   }
 
@@ -1986,186 +1255,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showPrintModal.set(true);
   }
 
-  onPaperSizeChange(size: string) {
-      this.printPaperSize.set(size as any);
-      switch(size) {
-          case '22x12': this.printWidth.set(22); this.printHeight.set(12); this.printFontSize.set(6); break;
-          case '35x22': this.printWidth.set(35); this.printHeight.set(22); this.printFontSize.set(8); break;
-          case '50x30': this.printWidth.set(50); this.printHeight.set(30); this.printFontSize.set(10); break;
-          case '70x50': this.printWidth.set(70); this.printHeight.set(50); this.printFontSize.set(12); break;
-      }
-  }
 
-  onTemplateChange(template: 'standard' | 'detailed' | 'qr') {
-      this.printTemplate.set(template);
-      if (template === 'detailed') {
-          this.printIncludeCas.set(true);
-          this.printIncludeManufacturer.set(true);
-          this.printIncludeStorage.set(true);
-      } else if (template === 'standard') {
-          this.printIncludeCas.set(false);
-          this.printIncludeManufacturer.set(false);
-          this.printIncludeStorage.set(false);
-      }
-  }
+
+
 
   getQrCodeUrl(std: ReferenceStandard | null): string {
       if (!std) return '';
       return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(std.internal_id || std.id)}`;
   }
 
-  getPreviewScale(): number {
-      const width = this.printWidth();
-      const height = this.printHeight();
-      // Assuming preview area is roughly 300x300px
-      // 1mm is approx 3.78px
-      const widthPx = width * 3.78;
-      const heightPx = height * 3.78;
-      const maxDim = Math.max(widthPx, heightPx);
-      if (maxDim > 280) {
-          return 280 / maxDim;
-      }
-      return 1;
-  }
 
-  printLabel() {
-      const std = this.selectedStd();
-      if (!std) return;
-      
-      const width = this.printWidth();
-      const height = this.printHeight();
-      const fontSize = this.printFontSize();
-      const copies = this.printCopies();
-      const template = this.printTemplate();
-      
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-          this.toast.show('Vui lòng cho phép popup để in nhãn', 'error');
-          return;
-      }
-      
-      // Generate label content based on selected fields
-      const generateLabelContent = () => {
-          let content = '';
-          if (template === 'qr') {
-              content += `
-                  <div style="display: flex; height: 100%; gap: 4px;">
-                      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
-                          ${this.printIncludeName() ? `<div class="title">${std.name}</div>` : ''}
-                          ${this.printIncludeLot() ? `<div class="row"><span>Lot: <span class="bold">${std.lot_number || 'N/A'}</span></span></div>` : ''}
-                          ${this.printIncludePurity() ? `<div class="row"><span>Pur: <span class="bold">${std.purity || 'N/A'}</span></span></div>` : ''}
-                          ${this.printIncludeExpiry() ? `<div class="row"><span>Exp: <span class="bold">${std.expiry_date ? new Date(std.expiry_date).toLocaleDateString('vi-VN') : 'N/A'}</span></span></div>` : ''}
-                      </div>
-                      <div style="width: 30%; display: flex; align-items: center; justify-content: center;">
-                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(std.internal_id || std.id)}" style="width: 100%; height: auto; max-height: 100%;" />
-                      </div>
-                  </div>
-              `;
-          } else {
-              content += `<div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden;">`;
-              if (this.printIncludeName()) {
-                  content += `<div class="title">${std.name}</div>`;
-              }
-              
-              if (template === 'detailed') {
-                  if (this.printIncludeCas() || this.printIncludeManufacturer()) {
-                      content += `<div class="row">`;
-                      if (this.printIncludeCas()) content += `<span>CAS: <span class="bold">${std.cas_number || 'N/A'}</span></span>`;
-                      if (this.printIncludeManufacturer()) content += `<span>Mfr: <span class="bold">${std.manufacturer || 'N/A'}</span></span>`;
-                      content += `</div>`;
-                  }
-              }
 
-              if (this.printIncludeLot() || this.printIncludePurity()) {
-                  content += `<div class="row">`;
-                  if (this.printIncludeLot()) content += `<span>Lot: <span class="bold">${std.lot_number || 'N/A'}</span></span>`;
-                  if (this.printIncludePurity()) content += `<span>Pur: <span class="bold">${std.purity || 'N/A'}</span></span>`;
-                  content += `</div>`;
-              }
-              
-              if (this.printIncludeOpened() || this.printIncludeExpiry()) {
-                  content += `<div class="row">`;
-                  if (this.printIncludeOpened()) content += `<span>Opn: <span class="bold">${std.date_opened ? new Date(std.date_opened).toLocaleDateString('vi-VN') : '__/__/__'}</span></span>`;
-                  if (this.printIncludeExpiry()) content += `<span>Exp: <span class="bold">${std.expiry_date ? new Date(std.expiry_date).toLocaleDateString('vi-VN') : 'N/A'}</span></span>`;
-                  content += `</div>`;
-              }
 
-              if (this.printIncludeStorage()) {
-                  content += `<div class="row"><span>Store: <span class="bold">${std.storage_condition || 'N/A'}</span></span></div>`;
-              }
-              content += `</div>`;
-          }
-          return content;
-      };
-
-      const labelHtml = `
-          <div class="label-container">
-              <div class="label-content">
-                  ${generateLabelContent()}
-              </div>
-          </div>
-      `;
-
-      let allLabelsHtml = '';
-      for (let i = 0; i < copies; i++) {
-          allLabelsHtml += labelHtml;
-      }
-
-      const html = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>Print Label</title>
-              <style>
-                  @page { size: ${width}mm ${height}mm; margin: 0; }
-                  body { 
-                      margin: 0; 
-                      padding: 0;
-                      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                  }
-                  .label-container {
-                      width: ${width}mm; 
-                      height: ${height}mm; 
-                      padding: 2mm;
-                      box-sizing: border-box;
-                      page-break-after: always;
-                      display: flex;
-                      flex-direction: column;
-                      justify-content: center;
-                  }
-                  .label-container:last-child {
-                      page-break-after: auto;
-                  }
-                  .label-content {
-                      font-size: ${fontSize}pt;
-                      line-height: 1.2;
-                      width: 100%;
-                      height: 100%;
-                  }
-                  .title { font-weight: bold; font-size: ${fontSize + 2}pt; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                  .row { display: flex; justify-content: space-between; margin-bottom: 1px; }
-                  .bold { font-weight: bold; }
-              </style>
-          </head>
-          <body>
-              ${allLabelsHtml}
-              <script>
-                  window.onload = () => { 
-                      setTimeout(() => {
-                          window.print(); 
-                          window.close(); 
-                      }, 500); // Wait for QR code image to load
-                  }
-              </script>
-          </body>
-          </html>
-      `;
-      
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      this.showPrintModal.set(false);
-  }
 
   async viewHistory(std: ReferenceStandard) { 
       this.historyStd.set(std); 
