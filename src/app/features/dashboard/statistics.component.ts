@@ -1358,11 +1358,14 @@ export class StatisticsComponent {
   excludeMargin = signal<boolean>(false);
 
   constructor() {
+    // Load on-demand (listeners removed for Spark Free optimization)
+    this.state.loadAllStandardRequests();
+    this.state.loadReferenceStandards(); // populates state.standards() for healthStats & pie chart
+
     effect(() => {
         const active = this.activeTab();
         const consData = this.consumptionData();
         const inv = this.state.inventory();
-        const stds = this.state.standards();
 
         if (active === 'consumption') {
             setTimeout(() => {

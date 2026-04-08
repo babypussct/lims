@@ -16,6 +16,16 @@ export class StandardService {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
 
+  // ─── In-memory cache cho getAllStandardsForMatching (TTL 5 phút) ───
+  private _stdMatchCache: ReferenceStandard[] | null = null;
+  private _stdMatchCacheTime = 0;
+  private readonly STD_CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
+  /** Gọi sau mọi add/update/delete standard để buộc fetch lại từ Firebase */
+  invalidateStandardsCache(): void {
+    this._stdMatchCache = null;
+  }
+
   // --- HELPER: SEARCH KEY GENERATOR ---
   private generateSearchKey(std: ReferenceStandard): string {
     const parts = [
@@ -177,7 +187,8 @@ export class StandardService {
   
   listenToAllStandards(callback: (items: ReferenceStandard[]) => void): Unsubscribe {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      const q = query(colRef, orderBy('received_date', 'desc')); 
+      // OPTIMIZED: added limit(200) to prevent unbounded snapshot reads
+      const q = query(colRef, orderBy('received_date', 'desc'), limit(200)); 
       
       return onSnapshot(q, (snapshot) => {
           const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
@@ -301,7 +312,8 @@ export class StandardService {
   // --- NEW: Global Usage Logs ---
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
       const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
-      const q = query(colRef, orderBy('timestamp', 'desc')); 
+      // OPTIMIZED: added limit(100) to prevent unbounded snapshot reads
+      const q = query(colRef, orderBy('timestamp', 'desc'), limit(100)); 
       
       return onSnapshot(q, (snapshot) => {
           const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
@@ -1054,9 +1066,16 @@ export class StandardService {
   }
 
   private async getAllStandardsForMatching(): Promise<ReferenceStandard[]> {
+      const now = Date.now();
+      // Return from cache if still fresh (avoid repeated full collection reads during import)
+      if (this._stdMatchCache && (now - this._stdMatchCacheTime) < this.STD_CACHE_TTL) {
+          return this._stdMatchCache;
+      }
       const standardsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
       const snapshot = await getDocs(standardsRef);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReferenceStandard));
+      this._stdMatchCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReferenceStandard));
+      this._stdMatchCacheTime = now;
+      return this._stdMatchCache!;
   }
 
   async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]) {

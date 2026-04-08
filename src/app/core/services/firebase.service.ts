@@ -3,7 +3,9 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { 
   getFirestore, Firestore, collection, getDocs, query, limit, 
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
-  persistentLocalCache, persistentMultipleTabManager, updateDoc 
+  persistentLocalCache, persistentMultipleTabManager, updateDoc,
+  getCountFromServer, where, orderBy, writeBatch as batchWrite,
+  Timestamp
 } from 'firebase/firestore';
 import { 
   getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
@@ -116,7 +118,7 @@ export class FirebaseService {
       await updateDoc(ref, { role, permissions });
   }
 
-  // --- Storage Estimation ---
+  // --- Storage Estimation --- OPTIMIZED: uses getCountFromServer (1 read/collection)
   async getStorageEstimate(): Promise<{ totalDocs: number, estimatedSizeKB: number, details: any }> {
     const collections = [
         'inventory', 
@@ -131,34 +133,39 @@ export class FirebaseService {
     ];
     
     let totalDocs = 0;
-    let totalSize = 0;
     const details: any = {};
 
     for (const col of collections) {
       try {
         const colRef = collection(this.db, `artifacts/${this.APP_ID}/${col}`);
-        const snapshot = await getDocs(colRef);
-        let colSize = 0;
-        
-        snapshot.forEach(doc => {
-           const data = doc.data();
-           colSize += JSON.stringify(data).length + doc.id.length;
-        });
-
-        details[col] = { count: snapshot.size, sizeKB: parseFloat((colSize / 1024).toFixed(2)) };
-        totalDocs += snapshot.size;
-        totalSize += colSize;
+        // getCountFromServer: costs only 1 read regardless of collection size
+        const countSnap = await getCountFromServer(colRef);
+        const count = countSnap.data().count;
+        details[col] = { count, sizeKB: parseFloat((count * 1.2).toFixed(2)) }; // ~1.2KB/doc estimate
+        totalDocs += count;
       } catch(e) {
-        // Just mark as 0 if access denied or empty
         details[col] = { count: 0, sizeKB: 0 };
       }
     }
 
     return {
       totalDocs,
-      estimatedSizeKB: parseFloat((totalSize / 1024).toFixed(2)),
+      estimatedSizeKB: parseFloat((totalDocs * 1.2).toFixed(2)),
       details
     };
+  }
+
+  // --- Log Cleanup Utility (run manually from Admin panel, once/month) ---
+  async cleanupOldLogs(daysOld = 180): Promise<number> {
+    const cutoff = Timestamp.fromDate(new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000));
+    const logsRef = collection(this.db, `artifacts/${this.APP_ID}/logs`);
+    const q = query(logsRef, where('timestamp', '<', cutoff), limit(400));
+    const snap = await getDocs(q);
+    if (snap.empty) return 0;
+    const batch = writeBatch(this.db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    return snap.size;
   }
 
   // --- Backup & Restore ---

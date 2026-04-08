@@ -6,7 +6,7 @@ import {
   collection, onSnapshot, doc, getDoc, runTransaction, 
   addDoc, updateDoc, query, orderBy, limit, where, 
   serverTimestamp, increment, setDoc, getDocs, deleteDoc, deleteField,
-  Unsubscribe, DocumentReference, writeBatch
+  Unsubscribe, DocumentReference, writeBatch, QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
@@ -112,7 +112,7 @@ export class StateService implements OnDestroy {
       const user = this.auth.currentUser();
       if (user) {
         this.initData();
-        this.checkSystemHealth();
+        // checkSystemHealth() removed from auto-call — call manually from Admin panel
       } else {
         this.cleanupListeners();
       }
@@ -195,17 +195,15 @@ export class StateService implements OnDestroy {
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
 
-    const stdsSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standards'), orderBy('name', 'asc')), 
-        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standards.set(items); }, handleError('Standards'));
-    this.listeners.push(stdsSub);
+    // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
+    // statistics.component.ts uses loadAllStandardRequests() on-demand instead
 
     const stdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']), orderBy('requestDate', 'desc')), 
         (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); }, handleError('Standard Requests'));
     this.listeners.push(stdReqSub);
 
-    const allStdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), orderBy('requestDate', 'desc')), 
-        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.allStandardRequests.set(items); }, handleError('All Standard Requests'));
-    this.listeners.push(allStdReqSub);
+    // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()
+    // Call it from statistics.component.ts / standard-requests page as needed
 
     const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'));
     const appSub = onSnapshot(approvedQuery, (s) => { 
@@ -213,8 +211,8 @@ export class StateService implements OnDestroy {
     }, handleError('Approved Requests'));
     this.listeners.push(appSub);
 
-    // 4. Logs Listener
-    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(500));
+    // 4. Logs Listener — OPTIMIZED: limit 500 → 50
+    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(50));
     const logSub = onSnapshot(logQuery, (s) => {
         const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
         this.logs.set(items);
@@ -222,60 +220,126 @@ export class StateService implements OnDestroy {
     }, handleError('Logs'));
     this.listeners.push(logSub);
 
-    // 5. Configs
-    const statSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'), (d) => { if (d.exists()) this.stats.set(d.data()); }, handleError('Stats'));
-    this.listeners.push(statSub);
+    // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
+    try {
+        const statSnap = await getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'));
+        if (statSnap.exists()) this.stats.set(statSnap.data());
+    } catch (e) { console.warn('Stats load error:', e); }
 
-    const printConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print'), (d) => { if(d.exists()) this.printConfig.set(d.data() as PrintConfig); }, handleError('Config-Print'));
-    this.listeners.push(printConfigSub);
+    // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
+    await this.loadConfig();
+  }
 
-    const safetyConfigSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety'), (d) => { 
-        if(d.exists()) this.safetyConfig.set(d.data() as SafetyConfig); 
-    }, handleError('Config-Safety'));
-    this.listeners.push(safetyConfigSub);
+  // ─── CONFIG: Load once (no realtime needed, config changes rarely) ───────────
+  private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
+  private readonly CONFIG_CACHE_TS_KEY = 'lims_cfg_cache_ts';
+  private readonly CONFIG_CACHE_TTL = 60 * 60 * 1000; // 1 giờ
 
-    const categoriesSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories'), (d) => {
-        if(d.exists() && d.data()?.['items']) {
-            this.categories.set(d.data()?.['items'] as CategoryItem[]);
-        }
-    }, handleError('Config-Categories'));
-    this.listeners.push(categoriesSub);
+  async loadConfig(): Promise<void> {
+    // Instant: apply from localStorage cache first (0 reads)
+    this._applyConfigFromCache();
 
-    const systemSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system'), (d) => { 
-        if(d.exists()) {
-            const data = d.data();
-            if (data['version']) this.systemVersion.set(data['version']);
-            if (data['avatarStyle']) this.avatarStyle.set(data['avatarStyle']); // Load Avatar Style
-        }
-    }, handleError('Config-System'));
-    this.listeners.push(systemSub);
+    // Background: fetch Firebase to keep fresh
+    try {
+      const base = `artifacts/${this.fb.APP_ID}/config`;
+      const [printSnap, safetySnap, catSnap, sysSnap] = await Promise.all([
+        getDoc(doc(this.fb.db, base, 'print')),
+        getDoc(doc(this.fb.db, base, 'safety')),
+        getDoc(doc(this.fb.db, base, 'categories')),
+        getDoc(doc(this.fb.db, base, 'system')),
+      ]);
+
+      if (printSnap.exists())  this.printConfig.set(printSnap.data() as PrintConfig);
+      if (safetySnap.exists()) this.safetyConfig.set(safetySnap.data() as SafetyConfig);
+      if (catSnap.exists() && catSnap.data()?.['items']) {
+        this.categories.set(catSnap.data()!['items'] as CategoryItem[]);
+      }
+      if (sysSnap.exists()) {
+        const d = sysSnap.data()!;
+        if (d['version'])     this.systemVersion.set(d['version']);
+        if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
+      }
+
+      // Persist to localStorage for next session
+      const cache = {
+        print:      printSnap.exists()  ? printSnap.data()  : null,
+        safety:     safetySnap.exists() ? safetySnap.data() : null,
+        categories: catSnap.exists()    ? catSnap.data()    : null,
+        system:     sysSnap.exists()    ? sysSnap.data()    : null,
+      };
+      localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(cache));
+      localStorage.setItem(this.CONFIG_CACHE_TS_KEY, Date.now().toString());
+    } catch (e) { console.warn('Config load error:', e); }
+  }
+
+  private _applyConfigFromCache(): void {
+    try {
+      const raw = localStorage.getItem(this.CONFIG_CACHE_KEY);
+      const ts  = localStorage.getItem(this.CONFIG_CACHE_TS_KEY);
+      if (!raw || !ts) return;
+      if (Date.now() - parseInt(ts) > this.CONFIG_CACHE_TTL) return;
+      const cache = JSON.parse(raw);
+      if (cache.print)                this.printConfig.set(cache.print as PrintConfig);
+      if (cache.safety)               this.safetyConfig.set(cache.safety as SafetyConfig);
+      if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
+      if (cache.system?.['version'])   this.systemVersion.set(cache.system['version']);
+      if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
+    } catch (_) { /* ignore stale/corrupt cache */ }
+  }
+
+  // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
+  async loadAllStandardRequests(): Promise<void> {
+    try {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
+      const q = query(colRef, orderBy('requestDate', 'desc'), limit(300));
+      const snap = await getDocs(q);
+      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.warn('loadAllStandardRequests error:', e); }
+  }
+
+  // ─── standards (reference_standards): Load on-demand for Statistics ───────────
+  // Replaces the removed realtime listener on the legacy 'standards' collection.
+  // Populates state.standards() signal so statistics.component.ts works unchanged.
+  async loadReferenceStandards(): Promise<void> {
+    try {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      const q = query(colRef, orderBy('received_date', 'desc'), limit(300));
+      const snap = await getDocs(q);
+      this.standards.set(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.warn('loadReferenceStandards error:', e); }
   }
 
   async checkSystemHealth() { return true; }
-  
+
+  // Config save helpers — each refreshes the local cache after writing
   async savePrintConfig(config: PrintConfig) { 
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
       await setDoc(ref, config, {merge: true});
+      await this.loadConfig();
   }
 
   async saveSafetyConfig(config: SafetyConfig) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
       await setDoc(ref, config, {merge: true});
+      await this.loadConfig();
   }
 
   async saveCategoriesConfig(items: CategoryItem[]) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
       await setDoc(ref, { items }, { merge: true });
+      await this.loadConfig();
   }
 
   async saveSystemVersion(version: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { version }, {merge: true});
+      await this.loadConfig();
   }
 
   async saveAvatarStyle(style: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { avatarStyle: style }, {merge: true});
+      await this.loadConfig();
   }
   
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
