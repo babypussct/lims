@@ -210,7 +210,7 @@ export class CalculatorService {
 
         return { 
           ...item, displayName, baseQty, appliedMargin, totalQty, stockNeed, stockUnit, isComposite: false, breakdown: [],
-          displayWarning, validationError, isMissing, baseAmount: baseStockNeed
+          displayWarning, validationError, isMissing, baseAmount: baseStockNeed, ghsWarnings: stockItem?.ghsWarnings || []
         } as CalculatedItem;
       }
 
@@ -304,13 +304,14 @@ export class CalculatorService {
           name: ing.name, displayName: ingDisplayName, unit: ing.unit, amountPerUnit: ing.amount,
           baseAmount: ingBaseNeed, appliedMargin: ingMargin, 
           totalNeed: ingTotalNeed, displayAmount: amountPerBatch,
-          stockUnit: ingStockUnit, displayWarning: ingWarning, isMissing: ingIsMissing
+          stockUnit: ingStockUnit, displayWarning: ingWarning, isMissing: ingIsMissing,
+          ghsWarnings: ingStockItem?.ghsWarnings || []
         };
       });
 
       return {
         ...item, displayName, baseQty, appliedMargin, totalQty, stockNeed, stockUnit, isComposite: true, breakdown,
-        displayWarning, validationError, isMissing: false 
+        displayWarning, validationError, isMissing: false, ghsWarnings: stockItem?.ghsWarnings || []
       } as CalculatedItem;
 
     }).filter(i => i !== null) as CalculatedItem[];

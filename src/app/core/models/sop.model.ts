@@ -112,6 +112,7 @@ export interface CalculatedIngredient {
   stockUnit: string;
   displayWarning?: string;
   isMissing?: boolean; // Flag if not found in inventory
+  ghsWarnings?: string[];
 }
 
 export interface CalculatedItem extends Consumable {
@@ -130,6 +131,7 @@ export interface CalculatedItem extends Consumable {
   displayWarning?: string;
   validationError?: string;
   isMissing?: boolean; // Flag if simple item not found in inventory
+  ghsWarnings?: string[];
 }
 
 export interface CapacityResult {

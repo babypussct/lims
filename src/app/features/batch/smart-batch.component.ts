@@ -15,6 +15,7 @@ import { PrintService, PrintJob } from '../../core/services/print.service';
 import { formatNum, generateSlug, formatSampleList } from '../../shared/utils/utils';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
+import { GHS_DICTIONARY } from '../../core/services/pubchem.service';
 
 // --- DATA MODELS ---
 
@@ -517,6 +518,13 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                             <tr [ngClass]="{'bg-red-50/50 dark:bg-red-900/10': item.isMissing}">
                                                 <td class="px-3 py-2 font-medium break-words whitespace-normal" [ngClass]="item.isMissing ? 'text-red-700 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'">
                                                     {{item.name}}
+                                                    @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                                        <div class="flex gap-0.5 mt-1 opacity-70">
+                                                            @for(ghs of item.ghsWarnings; track ghs) {
+                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                            }
+                                                        </div>
+                                                    }
                                                     @if(item.isMissing) {
                                                         <div class="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> Thiếu: {{formatNum(item.missing)}} {{item.unit}}</div>
                                                     }
@@ -833,6 +841,7 @@ export class SmartBatchComponent {
   formatNum = formatNum;
   formatSampleList = formatSampleList;
 
+  get GHS_DICT() { return GHS_DICTIONARY; }
   step = signal<number>(1);
   blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined } ]);
   batches = signal<ProposedBatch[]>([]);
@@ -894,14 +903,16 @@ export class SmartBatchComponent {
                       const current = ledger[sub.name] || 0; 
                       const remaining = current - sub.totalNeed; 
                       ledger[sub.name] = remaining; 
-                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                      const invItem = this.state.inventoryMap()[sub.name];
+                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, needed: 0, missing: 0, currentStock: current, ghsWarnings: invItem?.ghsWarnings || [] }); } 
                       summary.get(sub.name).needed += sub.totalNeed;
                   } 
               } else { 
                   const current = ledger[item.name] || 0; 
                   const remaining = current - item.stockNeed; 
                   ledger[item.name] = remaining; 
-                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                  const invItem = this.state.inventoryMap()[item.name];
+                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, needed: 0, missing: 0, currentStock: current, ghsWarnings: invItem?.ghsWarnings || [] }); } 
                   summary.get(item.name).needed += item.stockNeed;
               } 
           } 

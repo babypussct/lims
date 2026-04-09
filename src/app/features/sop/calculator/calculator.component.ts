@@ -21,6 +21,7 @@ import { startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
+import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
 
 @Component({
   selector: 'app-calculator',
@@ -273,6 +274,13 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                           {{resolveName(item)}}
                                       </span>
                                       <div class="flex flex-wrap gap-1 mt-1">
+                                          @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                              <div class="flex gap-0.5 opacity-70">
+                                                  @for(ghs of item.ghsWarnings; track ghs) {
+                                                      <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                  }
+                                              </div>
+                                          }
                                           @if(item.isMissing) { 
                                               <span class="text-[10px] font-bold text-red-600 dark:text-red-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-red-200 dark:border-red-800/50"><i class="fa-solid fa-circle-xmark"></i> Không có trong kho</span> 
                                           }
@@ -307,6 +315,13 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                                     <div class="flex justify-between items-center text-xs border-b border-slate-50 dark:border-slate-700/50 last:border-0 pb-1" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-medium" [ngClass]="{'text-slate-600 dark:text-slate-300': !sub.isMissing}">{{resolveName(sub)}}</span>
+                                                            @if(sub.ghsWarnings && sub.ghsWarnings.length > 0) {
+                                                                <div class="flex gap-0.5 opacity-70">
+                                                                    @for(ghs of sub.ghsWarnings; track ghs) {
+                                                                        <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [title]="GHS_DICT[ghs].label" />
+                                                                    }
+                                                                </div>
+                                                            }
                                                             @if(sub.isMissing) { <i class="fa-solid fa-circle-exclamation text-[10px]" title="Không tìm thấy trong kho"></i> }
                                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 italic">({{sub.amountPerUnit}} / {{item.unit}})</span>
                                                         </div>
@@ -431,6 +446,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
 })
 export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
+  get GHS_DICT() { return GHS_DICTIONARY; }
   
   // ... imports and basic setup identical to previous ...
   private fb: FormBuilder = inject(FormBuilder);
