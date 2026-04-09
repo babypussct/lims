@@ -230,18 +230,29 @@ export class StateService implements OnDestroy {
     await this.loadConfig();
   }
 
-  // ─── CONFIG: Load once (no realtime needed, config changes rarely) ───────────
+  // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
   private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
-  private readonly CONFIG_CACHE_TS_KEY = 'lims_cfg_cache_ts';
-  private readonly CONFIG_CACHE_TTL = 60 * 60 * 1000; // 1 giờ
+  private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
 
   async loadConfig(): Promise<void> {
     // Instant: apply from localStorage cache first (0 reads)
-    this._applyConfigFromCache();
+    const hasCache = this._applyConfigFromCache();
 
-    // Background: fetch Firebase to keep fresh
+    // Background: fetch only '_metadata' to check if we need to download everything
     try {
       const base = `artifacts/${this.fb.APP_ID}/config`;
+      const metaSnap = await getDoc(doc(this.fb.db, base, '_metadata'));
+      
+      const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
+      const localVersion = Number(localStorage.getItem(this.CONFIG_VERSION_KEY) || 0);
+
+      // Nếu có cache và server chưa cập nhật gì mới => Dừng lại, dùng toàn bộ local cache!
+      // (Tiết kiệm 4 lượt Reads mỗi lần bật app)
+      if (hasCache && serverVersion > 0 && localVersion >= serverVersion) {
+          return; 
+      }
+
+      // Nếu không có cache, hoặc Server báo có phiên bản cấu hình mới => Tải lại toàn bộ
       const [printSnap, safetySnap, catSnap, sysSnap] = await Promise.all([
         getDoc(doc(this.fb.db, base, 'print')),
         getDoc(doc(this.fb.db, base, 'safety')),
@@ -260,7 +271,7 @@ export class StateService implements OnDestroy {
         if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
       }
 
-      // Persist to localStorage for next session
+      // Lưu lại vào trình duyệt cho lần sau
       const cache = {
         print:      printSnap.exists()  ? printSnap.data()  : null,
         safety:     safetySnap.exists() ? safetySnap.data() : null,
@@ -268,23 +279,22 @@ export class StateService implements OnDestroy {
         system:     sysSnap.exists()    ? sysSnap.data()    : null,
       };
       localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(cache));
-      localStorage.setItem(this.CONFIG_CACHE_TS_KEY, Date.now().toString());
+      localStorage.setItem(this.CONFIG_VERSION_KEY, serverVersion.toString());
     } catch (e) { console.warn('Config load error:', e); }
   }
 
-  private _applyConfigFromCache(): void {
+  private _applyConfigFromCache(): boolean {
     try {
       const raw = localStorage.getItem(this.CONFIG_CACHE_KEY);
-      const ts  = localStorage.getItem(this.CONFIG_CACHE_TS_KEY);
-      if (!raw || !ts) return;
-      if (Date.now() - parseInt(ts) > this.CONFIG_CACHE_TTL) return;
+      if (!raw) return false;
       const cache = JSON.parse(raw);
       if (cache.print)                this.printConfig.set(cache.print as PrintConfig);
       if (cache.safety)               this.safetyConfig.set(cache.safety as SafetyConfig);
       if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
       if (cache.system?.['version'])   this.systemVersion.set(cache.system['version']);
       if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
-    } catch (_) { /* ignore stale/corrupt cache */ }
+      return true;
+    } catch (_) { return false; /* ignore stale/corrupt cache */ }
   }
 
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
@@ -312,33 +322,43 @@ export class StateService implements OnDestroy {
   async checkSystemHealth() { return true; }
 
   // Config save helpers — each refreshes the local cache after writing
+  private async updateConfigMetadata() {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', '_metadata');
+      await setDoc(ref, { lastUpdated: Date.now() }, { merge: true });
+  }
+
   async savePrintConfig(config: PrintConfig) { 
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
       await setDoc(ref, config, {merge: true});
+      await this.updateConfigMetadata();
       await this.loadConfig();
   }
 
   async saveSafetyConfig(config: SafetyConfig) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
       await setDoc(ref, config, {merge: true});
+      await this.updateConfigMetadata();
       await this.loadConfig();
   }
 
   async saveCategoriesConfig(items: CategoryItem[]) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
       await setDoc(ref, { items }, { merge: true });
+      await this.updateConfigMetadata();
       await this.loadConfig();
   }
 
   async saveSystemVersion(version: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { version }, {merge: true});
+      await this.updateConfigMetadata();
       await this.loadConfig();
   }
 
   async saveAvatarStyle(style: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { avatarStyle: style }, {merge: true});
+      await this.updateConfigMetadata();
       await this.loadConfig();
   }
   
