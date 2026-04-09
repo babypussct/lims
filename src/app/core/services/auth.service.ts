@@ -50,14 +50,16 @@ export class AuthService {
 
   currentUser = signal<UserProfile | null>(null);
   isAuthReady = signal<boolean>(false);
+  private userUnsub: any = null;
 
   constructor() {
     this.auth = getAuth(this.fb.app);
     
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
-        await this.syncUser(firebaseUser);
+        this.syncUser(firebaseUser);
       } else {
+        if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
@@ -110,33 +112,39 @@ export class AuthService {
     await signOut(this.auth);
   }
 
-  private async syncUser(firebaseUser: User) {
+  private syncUser(firebaseUser: User) {
+    if (this.userUnsub) { this.userUnsub(); }
     const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
-    try {
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data() as UserProfile;
-          data.uid = firebaseUser.uid; // Ensure uid is present
-          this.currentUser.set(data);
-        } else {
-          const newUser: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || 'User',
-            role: 'pending',
-            permissions: [],
-            photoURL: firebaseUser.photoURL || '',
-            createdAt: serverTimestamp()
-          };
-          await setDoc(userRef, newUser);
-          this.currentUser.set(newUser);
+    
+    this.userUnsub = onSnapshot(userRef, async (snap) => {
+        try {
+            if (snap.exists()) {
+              const data = snap.data() as UserProfile;
+              data.uid = firebaseUser.uid; // Ensure uid is present
+              this.currentUser.set(data);
+            } else {
+              const newUser: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || 'User',
+                role: 'pending',
+                permissions: [],
+                photoURL: firebaseUser.photoURL || '',
+                createdAt: serverTimestamp()
+              };
+              await setDoc(userRef, newUser);
+              this.currentUser.set(newUser);
+            }
+        } catch (e) {
+            console.error("Error processing user sync:", e);
+        } finally {
+            this.isAuthReady.set(true);
         }
-    } catch (e) {
-        console.error("Error syncing user:", e);
+    }, (error) => {
+        console.error("Error listening to user:", error);
         this.currentUser.set(null);
-    } finally {
         this.isAuthReady.set(true);
-    }
+    });
   }
 
   // --- QR LOGIN HANDSHAKE METHODS ---
