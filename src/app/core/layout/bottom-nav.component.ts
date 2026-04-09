@@ -72,12 +72,12 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             </div>
 
             <!-- Grid Menu -->
-            <div class="p-4 grid grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div class="p-4 grid grid-cols-4 gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 
                 <!-- 1. Smart Prep -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/prep')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-purple-100 dark:border-purple-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-purple-100 dark:border-purple-800/30">
                             <i class="fa-solid fa-flask-vial"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Pha Chế</span>
@@ -87,7 +87,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 2. SOP Library / Calculator -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/calculator')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100 dark:border-blue-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-blue-100 dark:border-blue-800/30">
                             <i class="fa-solid fa-play pl-0.5"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Vận hành</span>
@@ -97,7 +97,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 3. Requests -->
                 @if(auth.canViewSop()) {
                     <button (click)="navTo('/requests')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100 dark:border-orange-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-orange-100 dark:border-orange-800/30">
                             <i class="fa-solid fa-clipboard-list"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Duyệt</span>
@@ -107,17 +107,37 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 4. Standards -->
                 @if(auth.canViewStandards()) {
                     <button (click)="navTo('/standards')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100 dark:border-indigo-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100 dark:border-indigo-800/30">
                             <i class="fa-solid fa-vial-circle-check"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Chuẩn</span>
                     </button>
                 }
 
+                <!-- 4b. Standard Requests -->
+                @if(auth.canViewStandards()) {
+                    <button (click)="navTo('/standard-requests')" class="flex flex-col items-center gap-1 group">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-indigo-100 dark:border-indigo-800/30">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">YC Chuẩn</span>
+                    </button>
+                }
+
+                <!-- 4c. Standard Usage Log -->
+                @if(auth.canViewStandardLogs()) {
+                    <button (click)="navTo('/standard-usage')" class="flex flex-col items-center gap-1 group">
+                        <div class="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-violet-100 dark:border-violet-800/30">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">NK Chuẩn</span>
+                    </button>
+                }
+
                 <!-- 5. Recipes -->
                 @if(auth.canViewRecipes()) {
                     <button (click)="navTo('/recipes')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-pink-100 dark:border-pink-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-pink-100 dark:border-pink-800/30">
                             <i class="fa-solid fa-scroll"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Công thức</span>
@@ -127,7 +147,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 6. Labels (Synced with Sidebar Inventory->Labels) -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/labels')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
                             <i class="fa-solid fa-tag"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">In Tem</span>
@@ -137,7 +157,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 7. Reports -->
                 @if(auth.canViewReports()) {
                     <button (click)="navTo('/stats')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-emerald-100 dark:border-emerald-800/30">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-emerald-100 dark:border-emerald-800/30">
                             <i class="fa-solid fa-chart-pie"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Báo cáo</span>
@@ -147,16 +167,24 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                 <!-- 8. Config (Shortcut) -->
                 @if(auth.canManageSystem()) {
                     <button (click)="navTo('/config')" class="flex flex-col items-center gap-1 group">
-                        <div class="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-gray-200 dark:border-slate-600">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-gray-200 dark:border-slate-600">
                             <i class="fa-solid fa-gears"></i>
                         </div>
                         <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Cấu hình</span>
                     </button>
                 }
 
+                <!-- 8b. Traceability -->
+                <button (click)="navTo('/traceability')" class="flex flex-col items-center gap-1 group">
+                    <div class="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-cyan-100 dark:border-cyan-800/30">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Truy xuất</span>
+                </button>
+
                 <!-- Dark Mode Toggle -->
                 <button (click)="toggleDarkMode()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
                         <i class="fa-solid" [class.fa-moon]="!state.darkMode()" [class.fa-sun]="state.darkMode()"></i>
                     </div>
                     <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">{{ state.darkMode() ? 'Sáng' : 'Tối' }}</span>
@@ -164,7 +192,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
 
                 <!-- 9. INSTALL APP -->
                 <button (click)="toggleInstallGuide()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700 dark:border-slate-600">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700 dark:border-slate-600">
                         <i class="fa-brands fa-apple"></i>
                     </div>
                     <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Cài App</span>
@@ -172,7 +200,7 @@ import { getAvatarUrl } from '../../shared/utils/utils';
 
                 <!-- 10. Logout -->
                 <button (click)="auth.logout()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700/50 text-red-500 dark:text-red-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700/50 text-red-500 dark:text-red-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20">
                         <i class="fa-solid fa-power-off"></i>
                     </div>
                     <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Thoát</span>
@@ -183,51 +211,58 @@ import { getAvatarUrl } from '../../shared/utils/utils';
     }
 
     <!-- MAIN BOTTOM BAR -->
-    <div class="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-none z-[40] md:hidden pb-safe">
-      <div class="flex items-center justify-around h-16 px-1 relative">
+    <div class="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-[0_-4px_24px_-6px_rgba(0,0,0,0.12)] dark:shadow-none z-[40] md:hidden pb-safe">
+      <div class="flex items-center justify-around h-[72px] px-2 relative">
         
         <!-- 1. Dashboard (Always) -->
-        <button (click)="navTo('/dashboard')" class="flex flex-col items-center justify-center w-14 gap-1 group">
-          <i class="fa-solid fa-house text-lg transition-all duration-300" 
-             [class]="isActive('/dashboard') ? 'text-blue-600 dark:text-blue-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
+        <button (click)="navTo('/dashboard')" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+               [class]="isActive('/dashboard') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+            <i class="fa-solid fa-house text-base transition-transform duration-200" [class.-translate-y-0.5]="isActive('/dashboard')"></i>
+          </div>
           <span class="text-[9px] font-bold transition-colors" 
                 [class]="isActive('/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">Home</span>
         </button>
 
         <!-- 2. Inventory (Checked) -->
         @if(auth.canViewInventory()) {
-            <button (click)="navTo('/inventory')" class="flex flex-col items-center justify-center w-14 gap-1 group">
-            <i class="fa-solid fa-boxes-stacked text-lg transition-all duration-300" 
-                [class]="isActive('/inventory') ? 'text-blue-600 dark:text-blue-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
-            <span class="text-[9px] font-bold transition-colors" 
+            <button (click)="navTo('/inventory')" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                   [class]="isActive('/inventory') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+                <i class="fa-solid fa-boxes-stacked text-base transition-transform duration-200" [class.-translate-y-0.5]="isActive('/inventory')"></i>
+              </div>
+              <span class="text-[9px] font-bold transition-colors" 
                     [class]="isActive('/inventory') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">Kho</span>
             </button>
         }
 
         <!-- 3. SCAN (Center - Always) -->
-        <div class="relative -top-6">
+        <div class="relative -top-5">
+            <div class="absolute -inset-1 bg-gradient-to-b from-white/80 to-transparent dark:from-slate-900/80 rounded-full"></div>
             <button (click)="qrService.startScan()" 
-                    class="w-14 h-14 rounded-full bg-slate-900 dark:bg-slate-700 text-white shadow-lg shadow-slate-400 dark:shadow-none flex items-center justify-center transform active:scale-90 transition-all border-4 border-gray-50 dark:border-slate-900 group">
-                <i class="fa-solid fa-qrcode text-xl group-hover:scale-110 transition-transform"></i>
+                    class="relative w-[60px] h-[60px] rounded-full bg-gradient-to-br from-slate-800 to-slate-950 dark:from-slate-600 dark:to-slate-800 text-white shadow-xl shadow-slate-400/40 dark:shadow-none flex items-center justify-center active:scale-90 transition-all border-[3px] border-white dark:border-slate-900 group">
+                <i class="fa-solid fa-qrcode text-xl group-active:scale-110 transition-transform"></i>
             </button>
+            <span class="block text-center text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-1">Quét</span>
         </div>
 
         <!-- 4. Smart Batch (Checked) -->
         @if(auth.canViewSop()) {
-            <button (click)="navTo('/smart-batch')" class="flex flex-col items-center justify-center w-14 gap-1 group">
-            <i class="fa-solid fa-wand-magic-sparkles text-lg transition-all duration-300" 
-                [class]="isActive('/smart-batch') ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'"></i>
-            <span class="text-[9px] font-bold transition-colors" 
+            <button (click)="navTo('/smart-batch')" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                   [class]="isActive('/smart-batch') ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+                <i class="fa-solid fa-wand-magic-sparkles text-base transition-transform duration-200" [class.-translate-y-0.5]="isActive('/smart-batch')"></i>
+              </div>
+              <span class="text-[9px] font-bold transition-colors" 
                     [class]="isActive('/smart-batch') ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'">Chạy Mẻ</span>
             </button>
         }
 
         <!-- 5. MORE MENU (Always) -->
-        <button (click)="toggleMenu()" class="flex flex-col items-center justify-center w-14 gap-1 group">
-          <div class="relative transition-all duration-300" [class]="showMenu() ? '-translate-y-1 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'">
-             <i class="fa-solid" [class]="showMenu() ? 'fa-xmark text-xl' : 'fa-grid-2 text-lg'"></i>
-             <!-- Use fa-grid-2 or fa-bars -->
-             @if(!showMenu()) { <i class="fa-solid fa-bars text-lg"></i> }
+        <button (click)="toggleMenu()" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+               [class]="showMenu() ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+            <i class="fa-solid text-base transition-transform duration-200" [class]="showMenu() ? 'fa-xmark' : 'fa-bars'"></i>
           </div>
           <span class="text-[9px] font-bold transition-colors" 
                 [class]="showMenu() ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'">{{ showMenu() ? 'Đóng' : 'Thêm' }}</span>
