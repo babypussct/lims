@@ -108,7 +108,7 @@ import { PrintService } from './core/services/print.service';
                   
                   <!-- Main Content -->
                   <main class="flex-1 flex flex-col relative h-full transition-all duration-300 ease-in-out overflow-hidden"
-                        [class.md:ml-56]="!state.sidebarCollapsed() && !state.focusMode()" 
+                        [class.md:ml-64]="!state.sidebarCollapsed() && !state.focusMode()" 
                         [class.md:ml-20]="state.sidebarCollapsed() && !state.focusMode()"
                         [class.p-0]="state.focusMode()">
                      
