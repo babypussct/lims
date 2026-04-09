@@ -205,8 +205,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   expandedGroups = signal<Record<string, boolean>>({
     'overview': true,
     'operation': true,
-    'storage': true,
-    'system': true
+    'storage': true
   });
 
   private onlineListener: any;
@@ -243,13 +242,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
         { name: 'Chuẩn Đối chiếu', icon: 'fa-vial-circle-check', path: 'standards', activeMatch: ['/standards'], hidden: !this.auth.canViewStandards() },
         { name: 'Yêu cầu Chuẩn', icon: 'fa-clipboard-check', path: 'standard-requests', activeMatch: ['/standard-requests'], hidden: !this.auth.canViewStandards() },
         { name: 'Nhật ký dùng chuẩn', icon: 'fa-clock-rotate-left', path: 'standard-usage', activeMatch: ['/standard-usage'], hidden: !this.auth.canViewStandardLogs() }
-      ]
-    },
-    {
-      id: 'system',
-      title: 'Hệ thống',
-      items: [
-        { name: 'Truy xuất nguồn gốc', icon: 'fa-magnifying-glass-location', path: 'traceability', activeMatch: ['/traceability'] }
       ]
     }
   ]);

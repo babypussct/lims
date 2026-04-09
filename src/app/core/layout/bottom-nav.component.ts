@@ -174,14 +174,6 @@ import { getAvatarUrl } from '../../shared/utils/utils';
                     </button>
                 }
 
-                <!-- 8b. Traceability -->
-                <button (click)="navTo('/traceability')" class="flex flex-col items-center gap-1 group">
-                    <div class="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-cyan-100 dark:border-cyan-800/30">
-                        <i class="fa-solid fa-magnifying-glass-location"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Truy xuất</span>
-                </button>
-
                 <!-- Dark Mode Toggle -->
                 <button (click)="toggleDarkMode()" class="flex flex-col items-center gap-1 group">
                     <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-200 dark:border-slate-600">
