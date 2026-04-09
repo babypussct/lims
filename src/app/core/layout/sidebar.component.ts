@@ -69,53 +69,62 @@ export interface MenuGroup {
       <hr class="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent border-none mx-4 mb-2 md:hidden" />
 
       <!-- 3. Modules Menu -->
-      <div class="px-3 py-2 shrink-0 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+      <div class="px-3 py-3 shrink-0 flex-1 overflow-y-auto custom-scrollbar">
          
          @for (group of menuGroups(); track group.id) {
              <!-- Group Header (Accordion Toggle) -->
              @if (!state.sidebarCollapsed()) {
                  <div (click)="toggleGroup(group.id)" 
-                      class="px-3 pt-4 pb-2 flex justify-between items-center cursor-pointer group/header hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors mt-2">
-                     <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider fade-in group-hover/header:text-slate-600 dark:group-hover/header:text-slate-300 transition-colors">
-                         {{ group.title }}
-                     </span>
-                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300"
+                      class="px-3 pt-5 pb-2 flex justify-between items-center cursor-pointer group/header hover:bg-slate-100/80 dark:hover:bg-slate-800/60 rounded-xl transition-all duration-200 mt-1 select-none">
+                     <div class="flex items-center gap-2">
+                         <div class="w-1.5 h-1.5 rounded-full bg-fuchsia-400/60 dark:bg-fuchsia-500/40"></div>
+                         <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest fade-in group-hover/header:text-fuchsia-600 dark:group-hover/header:text-fuchsia-400 transition-colors">
+                             {{ group.title }}
+                         </span>
+                     </div>
+                     <i class="fa-solid fa-chevron-down text-[9px] text-slate-300 dark:text-slate-600 group-hover/header:text-fuchsia-500 transition-all duration-300"
                         [class.-rotate-90]="!expandedGroups()[group.id]"></i>
                  </div>
              } @else {
-                 <div class="h-4 border-t border-slate-100 dark:border-slate-800 mx-3 mt-4"></div>
+                 <div class="mx-3 mt-5 mb-2 flex justify-center">
+                     <div class="w-6 h-[2px] rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                 </div>
              }
 
              <!-- Group Items -->
-             <div class="space-y-1 transition-all duration-300 overflow-hidden"
-                  [ngClass]="(!state.sidebarCollapsed() && !expandedGroups()[group.id]) ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'">
+             <div class="space-y-1.5 transition-all duration-300 overflow-hidden mt-1"
+                  [ngClass]="(!state.sidebarCollapsed() && !expandedGroups()[group.id]) ? 'max-h-0 opacity-0 mt-0' : 'max-h-[1000px] opacity-100'">
                  @for (item of group.items; track item.path) {
                      @if(!item.hidden) {
                          <div (click)="navigateTo(item.path)" 
-                              class="group flex items-center px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-95 border border-transparent relative"
-                              [ngClass]="isActive(item.activeMatch) ? 'bg-slate-50 dark:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/30'"
+                              class="group flex items-center px-3 py-3.5 rounded-xl cursor-pointer transition-all duration-200 ease-in-out active:scale-[0.97] relative select-none"
+                              [ngClass]="isActive(item.activeMatch) 
+                                ? 'bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200/60 dark:border-fuchsia-800/30 shadow-sm' 
+                                : 'border border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:border-slate-200/50 dark:hover:border-slate-700/50 hover:shadow-sm'"
                               [title]="state.sidebarCollapsed() ? item.name : ''">
                             
                             @if(isActive(item.activeMatch)) {
-                                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fuchsia-600 dark:bg-fuchsia-500 rounded-r-full"></div>
+                                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-fuchsia-500 dark:bg-fuchsia-400 rounded-r-full shadow-sm shadow-fuchsia-300 dark:shadow-none"></div>
                             }
                             
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 relative"
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 relative"
                                  [class.mx-auto]="state.sidebarCollapsed()"
-                                 [ngClass]="isActive(item.activeMatch) ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm dark:shadow-none' : 'bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400'">
+                                 [ngClass]="isActive(item.activeMatch) 
+                                   ? 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm' 
+                                   : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 group-hover:shadow-sm group-hover:scale-110'">
                                <i class="fa-solid {{item.icon}} text-xs"></i>
                                @if(item.hasBadge && state.sidebarCollapsed() && requestsCount() > 0) {
-                                   <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+                                   <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
                                }
                             </div>
                             
                             @if (!state.sidebarCollapsed()) {
                                 <div class="flex-1 flex justify-between items-center ml-3 fade-in">
-                                    <span class="text-sm font-bold" [ngClass]="isActive(item.activeMatch) ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'">
+                                    <span class="text-[13px] font-semibold transition-colors duration-200" [ngClass]="isActive(item.activeMatch) ? 'text-fuchsia-700 dark:text-fuchsia-300 font-bold' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'">
                                         {{item.name}}
                                     </span>
                                     @if(item.hasBadge && requestsCount() > 0) {
-                                        <span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">{{requestsCount()}}</span>
+                                        <span class="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">{{requestsCount()}}</span>
                                     }
                                 </div>
                             }
