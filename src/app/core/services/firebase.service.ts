@@ -200,6 +200,52 @@ export class FirebaseService {
     return deletedCount;
   }
 
+  async restoreArchivedData(collectionName: 'logs' | 'requests', items: any[]): Promise<number> {
+    if (!items || items.length === 0) return 0;
+    
+    const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
+    
+    let opCount = 0;
+    let totalRestored = 0;
+    const MAX_BATCH = 400; 
+    let batch = writeBatch(this.db);
+
+    const commitBatch = async () => {
+        if (opCount > 0) {
+            await batch.commit();
+            totalRestored += opCount;
+            batch = writeBatch(this.db);
+            opCount = 0;
+        }
+    };
+
+    for (const item of items) {
+        const id = item.id;
+        let ref;
+        if (id) {
+            ref = doc(colRef, id);
+            delete item.id; 
+        } else {
+            ref = doc(colRef);
+        }
+        
+        // Reconstruct timestamp
+        if (item.timestamp && typeof item.timestamp === 'string') {
+            item.timestamp = Timestamp.fromDate(new Date(item.timestamp));
+        }
+
+        batch.set(ref, item, { merge: true });
+        opCount++;
+        
+        if (opCount >= MAX_BATCH) {
+            await commitBatch();
+        }
+    }
+
+    await commitBatch();
+    return totalRestored;
+  }
+
   // --- Backup & Restore ---
   async exportData(): Promise<any> {
     const sopsSnap = await getDocs(collection(this.db, `artifacts/${this.APP_ID}/sops`));

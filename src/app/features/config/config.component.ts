@@ -210,14 +210,20 @@ import * as XLSX from 'xlsx';
 
                         <!-- 6. DATA ARCHIVER -->
                         <div class="bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-900/30 p-6 flex flex-col gap-4">
-                            <div>
-                                <h3 class="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 text-base">
-                                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center">
-                                        <i class="fa-solid fa-boxes-packing"></i>
-                                    </div>
-                                    Kho Lưu trữ & Dọn rác
-                                </h3>
-                                <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1">Xuất dữ liệu cũ ra Excel và xóa khỏi Firebase để bảo vệ 1GB dung lượng.</p>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 text-base">
+                                        <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center">
+                                            <i class="fa-solid fa-boxes-packing"></i>
+                                        </div>
+                                        Kho Lưu trữ & Phục hồi
+                                    </h3>
+                                    <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1">Xuất dữ liệu cũ ra Excel và xóa khỏi Firebase để bảo vệ 1GB dung lượng.</p>
+                                </div>
+                                <label class="text-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                                    <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> Nạp lại Excel
+                                    <input type="file" class="hidden" accept=".xlsx" (change)="importArchiverData($event)">
+                                </label>
                             </div>
                             
                             <div class="flex items-center gap-2">
@@ -245,6 +251,10 @@ import * as XLSX from 'xlsx';
                             } @else if(archiverStatus() === 'deleting') {
                                 <button disabled class="w-full py-2 bg-red-300 dark:bg-red-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
                                     <i class="fa-solid fa-spinner fa-spin"></i> Đang dọn dẹp hệ thống...
+                                </button>
+                            } @else if(archiverStatus() === 'restoring') {
+                                <button disabled class="w-full py-2 bg-blue-300 dark:bg-blue-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang nạp lại dữ liệu...
                                 </button>
                             } @else if(archiverStatus() === 'ready_to_delete') {
                                 <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-rose-200 dark:border-rose-900/50 text-center">
@@ -631,7 +641,7 @@ export class ConfigComponent implements OnInit {
 
   // Archiver State
   archiverDays = signal<number>(180);
-  archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting'>('idle');
+  archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
   archiverData = signal<{logs: any[], requests: any[]}>({logs: [], requests: []});
 
   permissionGroups = [
@@ -945,5 +955,70 @@ service cloud.firestore {
       this.toast.show('Lỗi khi xóa dữ liệu.', 'error');
       this.archiverStatus.set('ready_to_delete');
     }
+  }
+
+  async importArchiverData(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!await this.confirmationService.confirm({
+        message: `Bạn chuẩn bị khôi phục lại dữ liệu từ File Excel: ${file.name}. Quá trình này sẽ nạp lại các bản ghi cũ lên hệ thống (có thể tốn thời gian). Bạn chắc chắn chứ?`,
+        confirmText: 'Bắt đầu Nạp'
+    })) {
+        event.target.value = '';
+        return;
+    }
+
+    this.archiverStatus.set('restoring');
+
+    const reader = new FileReader();
+    reader.onload = async (e: any) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            let logsToRestore: any[] = [];
+            let reqsToRestore: any[] = [];
+
+            if (workbook.SheetNames.includes('Logs')) {
+                const ws = workbook.Sheets['Logs'];
+                logsToRestore = XLSX.utils.sheet_to_json(ws);
+            }
+            if (workbook.SheetNames.includes('Requests')) {
+                const ws = workbook.Sheets['Requests'];
+                reqsToRestore = XLSX.utils.sheet_to_json(ws);
+            }
+
+            if (logsToRestore.length === 0 && reqsToRestore.length === 0) {
+                this.toast.show('Không tìm thấy dữ liệu hợp lệ trong file Excel.', 'error');
+                this.archiverStatus.set('idle');
+                return;
+            }
+
+            let restoredCount = 0;
+            if (logsToRestore.length > 0) {
+                restoredCount += await this.fb.restoreArchivedData('logs', logsToRestore);
+            }
+            if (reqsToRestore.length > 0) {
+                restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
+            }
+
+            this.toast.show(`Thành công! Đã nạp lại ${restoredCount} bản ghi vào hệ thống.`, 'success');
+            this.archiverStatus.set('idle');
+            this.loadUsage();
+
+        } catch (err) {
+            this.toast.show('Lỗi định dạng File Excel.', 'error');
+            this.archiverStatus.set('idle');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.onerror = () => {
+        this.toast.show('Không thể đọc file.', 'error');
+        this.archiverStatus.set('idle');
+        event.target.value = '';
+    }
+    reader.readAsArrayBuffer(file);
   }
 }
