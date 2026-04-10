@@ -570,17 +570,24 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 <ul class="space-y-1.5 text-[11px] text-orange-700 dark:text-orange-300 font-medium">
                                     @for(code of aggregateGHSWarnings(); track code) {
                                         @if(!code.startsWith('GHS')) {
-                                            <li class="flex items-start gap-1.5">
+                                            <li class="flex items-start gap-1.5 text-orange-800 dark:text-orange-200">
                                                 <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
                                                 <span class="break-words whitespace-normal">{{code}}</span>
                                             </li>
                                         }
                                     }
-                                    <!-- Fallback Precautions if no H/P codes found but GHS icons exist -->
-                                    <li class="flex items-start gap-1.5">
-                                        <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
-                                        <span>Bắt buộc sử dụng găng tay và kính bảo hộ với các mẫu này.</span>
-                                    </li>
+                                    
+                                    <!-- Generic Precautionary Statements associated with the GHS modules -->
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(code.startsWith('GHS')) {
+                                            @for(rule of GHS_DICT[code].precautions; track rule) {
+                                                <li class="flex items-start gap-1.5 opacity-80">
+                                                    <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                    <span class="break-words whitespace-normal"><span class="font-bold opacity-70">Precaution:</span> {{rule}}</span>
+                                                </li>
+                                            }
+                                        }
+                                    }
                                 </ul>
                             </div>
                         }
