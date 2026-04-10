@@ -584,7 +584,6 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 </ul>
                             </div>
                         }
-                    </div>
                     } @else {
                         <div class="p-5 text-center text-sm font-medium text-slate-400 italic bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl animate-fade-in">
                             <i class="fa-solid fa-leaf text-2xl mb-2 text-slate-300 dark:text-slate-600"></i><br>
