@@ -343,6 +343,30 @@ import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
                      </tbody>
                    </table>
                 </div>
+                
+                <!-- Safety Pre-Flight Briefing -->
+                @if(aggregateGHSWarnings().length > 0) {
+                    <div class="mt-4 bg-orange-50 dark:bg-orange-900/10 border-l-4 border-orange-500 p-4 rounded-r-xl">
+                        <h4 class="font-bold text-orange-800 dark:text-orange-300 text-sm flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-shield-virus"></i> Hướng Dẫn An Toàn Trước Pha Chế
+                        </h4>
+                        <div class="space-y-3">
+                            @for(ghs of aggregateGHSWarnings(); track ghs) {
+                                <div class="flex gap-3 items-start">
+                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-8 h-8 flex-shrink-0" [title]="GHS_DICT[ghs].label"/>
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{GHS_DICT[ghs].label}}</div>
+                                        <ul class="list-disc ml-4 text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                            @for(rule of GHS_DICT[ghs].precautions; track rule) {
+                                                <li>{{rule}}</li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         </div>
       } 
@@ -508,6 +532,25 @@ export class CalculatorComponent implements OnDestroy {
   form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
   private formValueSub?: Subscription;
   calculatedItems = signal<CalculatedItem[]>([]);
+  aggregateGHSWarnings = computed(() => {
+     const items = this.calculatedItems();
+     const warnings = new Set<string>();
+     
+     const addWarnings = (item: any) => {
+         if (item.ghsWarnings) {
+             item.ghsWarnings.forEach((w: string) => warnings.add(w));
+         }
+     };
+
+     for (const item of items) {
+         if (item.isComposite && item.breakdown) {
+             item.breakdown.forEach((sub: any) => addWarnings(sub));
+         } else {
+             addWarnings(item);
+         }
+     }
+     return Array.from(warnings).sort();
+  });
   safetyMargin = signal<number>(10);
   formatNum = formatNum;
   formatDate = formatDate;

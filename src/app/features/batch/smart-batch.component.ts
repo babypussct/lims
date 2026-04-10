@@ -935,6 +935,17 @@ export class SmartBatchComponent {
       }); 
   });
 
+  aggregateGHSWarnings = computed(() => {
+     const summary = this.totalStockSummary();
+     const warnings = new Set<string>();
+     summary.forEach(item => {
+         if (item.ghsWarnings) {
+             item.ghsWarnings.forEach((w: string) => warnings.add(w));
+         }
+     });
+     return Array.from(warnings).sort();
+  });
+
   // --- COMPUTED: COVERAGE STATUS BAR (Global Safety Net) ---
   coverageMetrics = computed(() => {
       // 1. Calculate Needs from Blocks (Input)

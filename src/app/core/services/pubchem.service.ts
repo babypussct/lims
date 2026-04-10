@@ -1,15 +1,51 @@
 import { Injectable } from '@angular/core';
 
-export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string}> = {
-    'GHS01': { label: 'Explosive (Dễ Nổ)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/GHS-pictogram-explos.svg' },
-    'GHS02': { label: 'Flammable (Dễ Cháy)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/GHS-pictogram-flamme.svg' },
-    'GHS03': { label: 'Oxidizing (Chất Oxy hóa)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/GHS-pictogram-rondflam.svg' },
-    'GHS04': { label: 'Compressed Gas (Khí nén)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/GHS-pictogram-bottle.svg' },
-    'GHS05': { label: 'Corrosive (Ăn Mòn)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a1/GHS-pictogram-acid.svg' },
-    'GHS06': { label: 'Toxic (Cấp Độc tính 1-3)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/58/GHS-pictogram-skull.svg' },
-    'GHS07': { label: 'Harmful (Độc tính - Kích ứng)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/GHS-pictogram-exclam.svg' },
-    'GHS08': { label: 'Health Hazard (Nguy hiểm Đa tạng)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/21/GHS-pictogram-silhouette.svg' },
-    'GHS09': { label: 'Environmental Hazard (Độc Môi trường)', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/GHS-pictogram-pollu.svg' }
+export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, precautions: string[]}> = {
+    'GHS01': { 
+        label: 'Explosive (Dễ Nổ)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/GHS-pictogram-explos.svg',
+        precautions: ['Tránh xa nguồn nhiệt, tia lửa, ngọn lửa trần.', 'Không để bị sốc vật lý hoặc ma sát mạnh.']
+    },
+    'GHS02': { 
+        label: 'Flammable (Dễ Cháy)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/GHS-pictogram-flamme.svg',
+        precautions: ['Tránh xa nguồn nhiệt, bề mặt nóng, ngọn lửa trần. Không hút thuốc.', 'Nối đất bình chứa và thiết bị tiếp nhận.', 'Sử dụng dụng cụ không phát sinh tia lửa.']
+    },
+    'GHS03': { 
+        label: 'Oxidizing (Chất Oxy hóa)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/GHS-pictogram-rondflam.svg',
+        precautions: ['Để xa quần áo và các vật liệu dễ cháy.', 'Không trộn lẫn với chất dễ bắt cháy.']
+    },
+    'GHS04': { 
+        label: 'Compressed Gas (Khí nén)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/GHS-pictogram-bottle.svg',
+        precautions: ['Bảo vệ tránh ánh nắng mặt trời.', 'Bảo quản nơi thông thoáng.']
+    },
+    'GHS05': { 
+        label: 'Corrosive (Ăn Mòn)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a1/GHS-pictogram-acid.svg',
+        precautions: ['Tránh hít hơi sương, không để dính vào mắt, da, quần áo.', 'Bắt buộc mang kính bảo hộ chống hóa chất, găng tay cao su/nitrile.']
+    },
+    'GHS06': { 
+        label: 'Toxic (Cấp Độc tính 1-3)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/58/GHS-pictogram-skull.svg',
+        precautions: ['KHÔNG được nuốt, hít, hoặc để chạm vào da.', 'Bắt buộc thao tác trong tủ hút khí độc.', 'Rửa tay thật kỹ sau khi xử lý.']
+    },
+    'GHS07': { 
+        label: 'Harmful (Được tính - Kích ứng)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/GHS-pictogram-exclam.svg',
+        precautions: ['Tránh hít phải khói, bụi, hơi, bụi sương.', 'Chỉ sử dụng ngoài trời hoặc nơi thông thoáng.', 'Mang thiết bị bảo hộ cá nhân cần thiết.']
+    },
+    'GHS08': { 
+        label: 'Health Hazard (Nguy hiểm Đa tạng)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/21/GHS-pictogram-silhouette.svg',
+        precautions: ['Đọc kỹ hướng dẫn an toàn trước khi sử dụng.', 'Không tiếp xúc trước khi đã hiểu mọi biện pháp an toàn.']
+    },
+    'GHS09': { 
+        label: 'Environmental Hazard (Độc Môi trường)', 
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/GHS-pictogram-pollu.svg',
+        precautions: ['Tránh thải trực tiếp ra môi trường.', 'Thu gom vật liệu tràn đổ đúng quy định an toàn hóa chất.']
+    }
 };
 
 @Injectable({ providedIn: 'root' })
