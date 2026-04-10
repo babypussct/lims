@@ -2,22 +2,22 @@ import { Injectable } from '@angular/core';
 
 export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, precautions: string[]}> = {
     'GHS01': { 
-        label: 'Explosive (Dễ Nổ)', 
+        label: 'Explosive (Chất nổ)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/GHS-pictogram-explos.svg',
         precautions: ['Tránh xa nguồn nhiệt, tia lửa, ngọn lửa trần.', 'Không để bị sốc vật lý hoặc ma sát mạnh.']
     },
     'GHS02': { 
-        label: 'Flammable (Dễ Cháy)', 
+        label: 'Flammable (Dễ cháy)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/GHS-pictogram-flamme.svg',
         precautions: ['Tránh xa nguồn nhiệt, bề mặt nóng, ngọn lửa trần. Không hút thuốc.', 'Nối đất bình chứa và thiết bị tiếp nhận.', 'Sử dụng dụng cụ không phát sinh tia lửa.']
     },
     'GHS03': { 
-        label: 'Oxidizing (Chất Oxy hóa)', 
+        label: 'Oxidizing (Chất oxy hóa)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/GHS-pictogram-rondflam.svg',
         precautions: ['Để xa quần áo và các vật liệu dễ cháy.', 'Không trộn lẫn với chất dễ bắt cháy.']
     },
     'GHS04': { 
-        label: 'Compressed Gas (Khí nén)', 
+        label: 'Compressed Gas (Khí nén/Khí hóa lỏng)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/GHS-pictogram-bottle.svg',
         precautions: ['Bảo vệ tránh ánh nắng mặt trời.', 'Bảo quản nơi thông thoáng.']
     },
@@ -27,22 +27,22 @@ export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, pre
         precautions: ['Tránh hít hơi sương, không để dính vào mắt, da, quần áo.', 'Bắt buộc mang kính bảo hộ chống hóa chất, găng tay cao su/nitrile.']
     },
     'GHS06': { 
-        label: 'Toxic (Cấp Độc tính 1-3)', 
+        label: 'Toxic (Độc tính cấp)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/58/GHS-pictogram-skull.svg',
         precautions: ['KHÔNG được nuốt, hít, hoặc để chạm vào da.', 'Bắt buộc thao tác trong tủ hút khí độc.', 'Rửa tay thật kỹ sau khi xử lý.']
     },
     'GHS07': { 
-        label: 'Harmful (Được tính - Kích ứng)', 
+        label: 'Harmful/Irritant (Báo động/Nguy hại sức khoẻ)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/GHS-pictogram-exclam.svg',
         precautions: ['Tránh hít phải khói, bụi, hơi, bụi sương.', 'Chỉ sử dụng ngoài trời hoặc nơi thông thoáng.', 'Mang thiết bị bảo hộ cá nhân cần thiết.']
     },
     'GHS08': { 
-        label: 'Health Hazard (Nguy hiểm Đa tạng)', 
+        label: 'Health Hazard (Nguy hiểm sức khỏe)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/21/GHS-pictogram-silhouette.svg',
         precautions: ['Đọc kỹ hướng dẫn an toàn trước khi sử dụng.', 'Không tiếp xúc trước khi đã hiểu mọi biện pháp an toàn.']
     },
     'GHS09': { 
-        label: 'Environmental Hazard (Độc Môi trường)', 
+        label: 'Environmental Hazard (Nguy hại môi trường)', 
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/GHS-pictogram-pollu.svg',
         precautions: ['Tránh thải trực tiếp ra môi trường.', 'Thu gom vật liệu tràn đổ đúng quy định an toàn hóa chất.']
     }
@@ -74,9 +74,17 @@ export class PubchemService {
         // Cây cấu trúc JSon của PugView rất phức tạp, ta dùng đệ quy tìm cạn Text
         const extractGhsRecursive = (obj: any) => {
             if (typeof obj === 'string') {
-                const match = obj.match(/GHS0[1-9]/g);
-                if (match) {
-                    match.forEach(m => foundGHS.add(m));
+                // Lấy GHS Icons
+                const matchIcon = obj.match(/GHS0[1-9]/g);
+                if (matchIcon) {
+                    matchIcon.forEach(m => foundGHS.add(m));
+                }
+                
+                // Lấy Mã H (Hazard Statements) và P (Precautionary)
+                // Format PubChem: "H317: May cause an allergic skin reaction [Warning...]"
+                const matchHP = obj.match(/^(?:H|P)[0-9]{3}.+?(?=\[|$)/g);
+                if (matchHP) {
+                    matchHP.forEach(m => foundGHS.add(m.trim().replace(/\s*\([^)]*\)\s*:/, ':'))); // remove (99.8%) etc.
                 }
             } else if (Array.isArray(obj)) {
                 obj.forEach(o => extractGhsRecursive(o));

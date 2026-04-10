@@ -521,7 +521,9 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                     @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                                         <div class="flex gap-0.5 mt-1 opacity-70">
                                                             @for(ghs of item.ghsWarnings; track ghs) {
-                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                                @if(ghs.startsWith('GHS')) {
+                                                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                                }
                                                             }
                                                         </div>
                                                     }
@@ -545,6 +547,44 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Safety Pre-Flight Briefing -->
+                        @if (aggregateGHSWarnings().length > 0) {
+                            <div class="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-lg p-4 shadow-sm animate-slide-up mt-2">
+                                <h4 class="font-bold text-orange-800 dark:text-orange-400 text-xs mb-2 uppercase flex items-center gap-2">
+                                    <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Hướng dẫn An toàn Trước Pha chế
+                                </h4>
+                                
+                                <!-- GHS Icons -->
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(code.startsWith('GHS')) {
+                                            <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800">
+                                                <img [src]="GHS_DICT[code].iconUrl" class="w-6 h-6" [title]="GHS_DICT[code].label"/>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                
+                                <!-- Safety Checklist (H/P codes + Custom) -->
+                                <ul class="space-y-1.5 text-[11px] text-orange-700 dark:text-orange-300 font-medium">
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(!code.startsWith('GHS')) {
+                                            <li class="flex items-start gap-1.5">
+                                                <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                <span class="break-words whitespace-normal">{{code}}</span>
+                                            </li>
+                                        }
+                                    }
+                                    <!-- Fallback Precautions if no H/P codes found but GHS icons exist -->
+                                    <li class="flex items-start gap-1.5">
+                                        <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                        <span>Bắt buộc sử dụng găng tay và kính bảo hộ với các mẫu này.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                    </div>
                     } @else {
                         <div class="p-5 text-center text-sm font-medium text-slate-400 italic bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl animate-fade-in">
                             <i class="fa-solid fa-leaf text-2xl mb-2 text-slate-300 dark:text-slate-600"></i><br>

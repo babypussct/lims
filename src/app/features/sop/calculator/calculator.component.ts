@@ -277,7 +277,9 @@ import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
                                           @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                               <div class="flex gap-0.5 opacity-70">
                                                   @for(ghs of item.ghsWarnings; track ghs) {
-                                                      <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                      @if(ghs.startsWith('GHS')) {
+                                                          <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                      }
                                                   }
                                               </div>
                                           }
@@ -318,7 +320,9 @@ import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
                                                             @if(sub.ghsWarnings && sub.ghsWarnings.length > 0) {
                                                                 <div class="flex gap-0.5 opacity-70">
                                                                     @for(ghs of sub.ghsWarnings; track ghs) {
-                                                                        <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [title]="GHS_DICT[ghs].label" />
+                                                                        @if(ghs.startsWith('GHS')) {
+                                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [title]="GHS_DICT[ghs].label" />
+                                                                        }
                                                                     }
                                                                 </div>
                                                             }
@@ -350,20 +354,42 @@ import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
                         <h4 class="font-bold text-orange-800 dark:text-orange-300 text-sm flex items-center gap-2 mb-2">
                             <i class="fa-solid fa-shield-virus"></i> Hướng Dẫn An Toàn Trước Pha Chế
                         </h4>
-                        <div class="space-y-3">
-                            @for(ghs of aggregateGHSWarnings(); track ghs) {
-                                <div class="flex gap-3 items-start">
-                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-8 h-8 flex-shrink-0" [title]="GHS_DICT[ghs].label"/>
-                                    <div>
-                                        <div class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{GHS_DICT[ghs].label}}</div>
-                                        <ul class="list-disc ml-4 text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                            @for(rule of GHS_DICT[ghs].precautions; track rule) {
-                                                <li>{{rule}}</li>
-                                            }
-                                        </ul>
+                        
+                        <!-- GHS Icons -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @for(code of aggregateGHSWarnings(); track code) {
+                                @if(code.startsWith('GHS')) {
+                                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800 group relative">
+                                        <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 flex-shrink-0" [title]="GHS_DICT[code].label"/>
+                                        <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">{{GHS_DICT[code].label}}</div>
                                     </div>
-                                </div>
+                                }
                             }
+                        </div>
+                        
+                        <!-- Safety Checklist -->
+                        <div class="space-y-3">
+                            <ul class="space-y-1.5 text-xs text-orange-700 dark:text-orange-300 font-medium">
+                                @for(code of aggregateGHSWarnings(); track code) {
+                                    @if(!code.startsWith('GHS')) {
+                                        <li class="flex items-start gap-1.5">
+                                            <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                            <span class="break-words whitespace-normal">{{code}}</span>
+                                        </li>
+                                    }
+                                }
+                                <!-- Generic rules associated with the GHS modules -->
+                                @for(code of aggregateGHSWarnings(); track code) {
+                                    @if(code.startsWith('GHS')) {
+                                        @for(rule of GHS_DICT[code].precautions; track rule) {
+                                            <li class="flex items-start gap-1.5 opacity-80">
+                                                <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                <span class="break-words whitespace-normal">{{rule}}</span>
+                                            </li>
+                                        }
+                                    }
+                                }
+                            </ul>
                         </div>
                     </div>
                 }
