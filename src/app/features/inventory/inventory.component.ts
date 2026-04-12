@@ -483,9 +483,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
   activeTab = signal<'list' | 'capacity' | 'labels'>('list');
   
   // Data & Pagination (Client-side filtering for instant UX)
-  allItems = signal<InventoryItem[]>([]);
+  allItems = this.state.inventory; 
   displayLimit = signal(20);
-  isInitialLoading = signal(true); 
+  isInitialLoading = computed(() => this.allItems().length === 0); 
   isProcessing = signal(false); 
 
   filteredItems = computed(() => {
@@ -587,19 +587,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-      // Initial Load
-      setTimeout(() => {
-          this.refreshData().then(() => {
-              // Check query params for GS1 auto-fill
-              this.route.queryParams.subscribe(params => {
-                  if (params['action'] === 'scan_gs1') {
-                      this.handleGs1Scan(params);
-                  } else if (params['search']) {
-                      this.searchTerm.set(params['search']);
-                  }
-              });
-          });
-      }, 100); 
+      // Check query params for GS1 auto-fill
+      this.route.queryParams.subscribe(params => {
+          if (params['action'] === 'scan_gs1') {
+              this.handleGs1Scan(params);
+          } else if (params['search']) {
+              this.searchTerm.set(params['search']);
+          }
+      });
   }
 
   ngOnDestroy() { this.searchSubject.complete(); }
@@ -708,18 +703,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   // Data Loading
   async refreshData() {
-      this.isInitialLoading.set(true);
-      try {
-          const data = await this.inventoryService.getAllInventory();
-          this.allItems.set(data);
-          this.displayLimit.set(20);
-          this.selectedIds.set(new Set());
-      } catch (e) {
-          console.error("Error loading inventory", e);
-          this.toast.show('Lỗi tải dữ liệu kho', 'error');
-      } finally {
-          this.isInitialLoading.set(false);
-      }
+      // No-op: Data is automatically synchronized via StateService reactive cache.
+      this.displayLimit.set(20);
+      this.selectedIds.set(new Set());
   }
 
   loadMore() {
