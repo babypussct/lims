@@ -5,7 +5,7 @@ import {
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
   persistentLocalCache, persistentMultipleTabManager, updateDoc,
   getCountFromServer, where, orderBy, writeBatch as batchWrite,
-  Timestamp
+  Timestamp, serverTimestamp
 } from 'firebase/firestore';
 import { 
   getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
@@ -228,6 +228,25 @@ export class FirebaseService {
         batch.set(ref, { ...item, lastUpdated: new Date() });
     }
     
+    
     await batch.commit();
+  }
+
+  // --- Metadata Caching Strategy ---
+  async updateMetadata(moduleKey: string) {
+    const metaRef = doc(this.db, `artifacts/${this.APP_ID}/system/metadata`);
+    try {
+        await setDoc(metaRef, { [moduleKey]: Date.now() }, { merge: true });
+    } catch (e) {
+        console.warn(`Failed to update metadata for ${moduleKey}`, e);
+    }
+  }
+
+  // Use this for batch operations so they can be merged into a single atomic commit
+  getMetadataUpdateOp(moduleKey: string) {
+    return {
+        ref: doc(this.db, `artifacts/${this.APP_ID}/system/metadata`),
+        data: { [moduleKey]: Date.now() }
+    };
   }
 }

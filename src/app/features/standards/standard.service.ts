@@ -260,6 +260,7 @@ export class StandardService {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
       await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
+      await this.fb.updateMetadata('standards');
   }
 
   async updateStandard(std: ReferenceStandard) {
@@ -267,16 +268,19 @@ export class StandardService {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
       await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
+      await this.fb.updateMetadata('standards');
   }
 
   async quickUpdateField(stdId: string, fields: Record<string, any>) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
+      await this.fb.updateMetadata('standards');
   }
 
   async deleteStandard(id: string, name: string = '') {
       await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
       await this.logGlobalActivity('DELETE_STANDARD', `Xóa chuẩn: ${name || id}`, id);
+      await this.fb.updateMetadata('standards');
   }
 
   async deleteSelectedStandards(ids: string[]) {
@@ -301,6 +305,7 @@ export class StandardService {
       }
 
       if (opCount > 0) await batch.commit();
+      await this.fb.updateMetadata('standards');
   }
 
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {

@@ -52,6 +52,7 @@ export class SopService {
       console.warn("SOP Save Transaction Failed (handled in UI):", e);
       throw e;
     }
+    await this.firebaseService.updateMetadata('sops');
   }
 
   // Soft Delete (Preferred)
@@ -62,12 +63,14 @@ export class SopService {
           isArchived: true,
           archivedAt: serverTimestamp()
       });
+      await this.firebaseService.updateMetadata('sops');
   }
 
   // Hard Delete (Admin only)
   async deleteSop(id: string): Promise<void> {
     const appId = this.firebaseService.APP_ID;
     await deleteDoc(doc(this.firebaseService.db, `artifacts/${appId}/sops/${id}`));
+    await this.firebaseService.updateMetadata('sops');
   }
 
   async getSopHistory(id: string): Promise<Sop[]> {
@@ -130,7 +133,10 @@ export class SopService {
           }
       });
 
-      if (updatedCount > 0) await batch.commit();
+      if (updatedCount > 0) {
+          await batch.commit();
+          await this.firebaseService.updateMetadata('sops');
+      }
       return updatedCount;
   }
 }

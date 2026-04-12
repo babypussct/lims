@@ -30,6 +30,7 @@ export class MasterTargetService {
   async save(item: MasterAnalyte): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${item.id}`);
     await setDoc(ref, { ...item, lastUpdated: serverTimestamp() });
+    await this.fb.updateMetadata('master_analytes');
   }
 
   // NEW: Batch Save for Import
@@ -56,10 +57,12 @@ export class MasterTargetService {
     if (opCount > 0) {
         await currentBatch.commit();
     }
+    await this.fb.updateMetadata('master_analytes');
   }
 
   async delete(id: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${id}`);
     await deleteDoc(ref);
+    await this.fb.updateMetadata('master_analytes');
   }
 }

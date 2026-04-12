@@ -239,6 +239,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    await this.fb.updateMetadata('inventory');
   }
 
   async deleteItem(id: string, reason = '') {
@@ -290,6 +291,7 @@ export class InventoryService {
     });
 
     await finalBatch.commit();
+    await this.fb.updateMetadata('inventory');
   }
 
   async updateStock(id: string, currentStock: number, adjustment: number, reason = '') {
@@ -326,6 +328,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    await this.fb.updateMetadata('inventory');
   }
 
   async bulkZeroStock(ids: string[], reason = '') {
@@ -358,5 +361,6 @@ export class InventoryService {
     });
 
     await batch.commit();
+    await this.fb.updateMetadata('inventory');
   }
 }
