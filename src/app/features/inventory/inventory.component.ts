@@ -128,7 +128,9 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                             @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                                 <div class="flex gap-1 mt-1">
                                                     @for(ghs of item.ghsWarnings; track ghs) {
-                                                        <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                        @if(GHS_DICT[ghs]) {
+                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                        }
                                                     }
                                                 </div>
                                             }
@@ -190,7 +192,9 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                                 @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                                     <div class="flex gap-0.5 opacity-60">
                                                         @for(ghs of item.ghsWarnings; track ghs) {
-                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                            @if(GHS_DICT[ghs]) {
+                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                            }
                                                         }
                                                     </div>
                                                 }
@@ -390,8 +394,8 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                        <div (click)="toggleGhs(code)" 
                                             class="cursor-pointer border rounded-lg p-1.5 flex flex-col items-center text-center transition active:scale-95 bg-white dark:bg-slate-800 opacity-60 hover:opacity-100"
                                             [class]="form.get('ghsWarnings')?.value?.includes(code) ? '!border-red-500 ring-1 ring-red-200 dark:ring-red-900/50 !opacity-100 shadow-sm bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'">
-                                           <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
-                                           <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code].label">{{GHS_DICT[code].label}}</span>
+                                           <img [src]="GHS_DICT[code]?.iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
+                                           <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code]?.label">{{GHS_DICT[code]?.label}}</span>
                                        </div>
                                    }
                                </div>
