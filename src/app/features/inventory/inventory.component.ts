@@ -399,6 +399,27 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                        </div>
                                    }
                                </div>
+                               
+                               @if(form.get('hazardStatements')?.value?.length || form.get('precautionaryStatements')?.value?.length) {
+                                   <div class="mt-3 space-y-2 max-h-40 overflow-y-auto custom-scrollbar text-[10px] p-2 bg-white dark:bg-slate-800 rounded border border-yellow-200 dark:border-yellow-800/30">
+                                       @if(form.get('hazardStatements')?.value?.length) {
+                                           <div>
+                                               <strong class="text-red-600 dark:text-red-400">Cảnh báo Nguy hiểm (H):</strong>
+                                               <ul class="list-disc pl-4 text-slate-600 dark:text-slate-400 mt-1">
+                                                   @for(h of form.get('hazardStatements')?.value; track h) { <li>{{h}}</li> }
+                                               </ul>
+                                           </div>
+                                       }
+                                       @if(form.get('precautionaryStatements')?.value?.length) {
+                                           <div class="mt-2 text-blue-600 dark:text-blue-400">
+                                               <strong>Phòng ngừa (P):</strong>
+                                               <ul class="list-disc pl-4 text-slate-600 dark:text-slate-400 mt-1">
+                                                   @for(p of form.get('precautionaryStatements')?.value; track p) { <li>{{p}}</li> }
+                                               </ul>
+                                           </div>
+                                       }
+                                   </div>
+                               }
                            </div>
 
                            <div class="grid grid-cols-2 gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
@@ -575,7 +596,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
     expiryDate: [''],
     casNumber: [''],
     englishName: [''],
-    ghsWarnings: [[] as string[]]
+    ghsWarnings: [[] as string[]],
+    hazardStatements: [[] as string[]],
+    precautionaryStatements: [[] as string[]]
   });
   
   unitOptions = UNIT_OPTIONS;
@@ -740,7 +763,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     else { 
         this.isEditing.set(false); 
         this.oldStock.set(0);
-        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới', ghsWarnings: [] }); 
+        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới', ghsWarnings: [], hazardStatements: [], precautionaryStatements: [] }); 
         this.form.controls.id.enable(); 
     }
   }
@@ -764,10 +787,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
       
       this.isFetchingGhs.set(true);
       try {
-          const warnings = await this.pubchem.fetchGHS(query);
-          if (warnings.length > 0) {
-              this.form.patchValue({ ghsWarnings: warnings });
-              this.toast.show(`Thành công! Tìm thấy ${warnings.length} thẻ phân loại GHS từ PubChem.`, 'success');
+          const result = await this.pubchem.fetchGHS(query);
+          if (result && (result.pictograms.length > 0 || result.hazardStatements.length > 0 || result.precautionaryStatements.length > 0)) {
+              this.form.patchValue({ 
+                  ghsWarnings: result.pictograms,
+                  hazardStatements: result.hazardStatements,
+                  precautionaryStatements: result.precautionaryStatements
+              });
+              this.toast.show(`Thành công! Tìm thấy ${result.pictograms.length} GHS, ${result.hazardStatements.length} H-statements từ PubChem.`, 'success');
           } else {
               this.toast.show('PubChem không có thẻ GHS cho hóa chất này.', 'info');
           }
