@@ -18,6 +18,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { AuthService } from '../../core/services/auth.service';
 import { LabelPrintComponent } from '../labels/label-print.component';
+import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.service';
 
 @Component({
   selector: 'app-inventory',
@@ -124,6 +125,13 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                         <div>
                                             <h6 class="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight line-clamp-2">{{item.name}}</h6>
                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-50 dark:bg-slate-900/50 px-1.5 rounded border border-slate-100 dark:border-slate-700/50">{{item.id}}</span>
+                                            @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                                <div class="flex gap-1 mt-1">
+                                                    @for(ghs of item.ghsWarnings; track ghs) {
+                                                        <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                    }
+                                                </div>
+                                            }
                                         </div>
                                     </div>
                                     @if(item.stock <= (item.threshold || 5)) {
@@ -177,7 +185,16 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                         </div>
                                         <div class="flex flex-col min-w-0 flex-1">
                                             <h6 class="mb-0 text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight truncate">{{item.name || item.id}}</h6>
-                                            <span class="text-[9px] text-slate-400 dark:text-slate-500 font-mono">{{item.id}}</span>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span class="text-[9px] text-slate-400 dark:text-slate-500 font-mono">{{item.id}}</span>
+                                                @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                                    <div class="flex gap-0.5 opacity-60">
+                                                        @for(ghs of item.ghsWarnings; track ghs) {
+                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -344,6 +361,42 @@ import { LabelPrintComponent } from '../labels/label-print.component';
                                </div>
                            </div>
 
+                           <!-- English Name & CAS -->
+                           <div class="grid grid-cols-2 gap-4">
+                               <div>
+                                   <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Tên Tiếng Anh</label>
+                                   <input formControlName="englishName" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm dark:shadow-none" placeholder="VD: Methanol">
+                               </div>
+                               <div>
+                                   <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Mã CAS Number</label>
+                                   <input formControlName="casNumber" class="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs outline-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm dark:shadow-none" placeholder="VD: 67-56-1">
+                               </div>
+                           </div>
+                           
+                           <!-- GHS PubChem Auto-fetch -->
+                           <div class="bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-xl border border-yellow-200 dark:border-yellow-800/30 space-y-3">
+                               <div class="flex justify-between items-center">
+                                   <label class="text-[10px] font-bold text-yellow-800 dark:text-yellow-500 uppercase flex items-center gap-2">
+                                       <i class="fa-solid fa-shield-virus"></i> Cảnh báo Hóa học
+                                   </label>
+                                   <button type="button" (click)="fetchPubChem()" [disabled]="isFetchingGhs()" class="text-[10px] bg-yellow-400 dark:bg-yellow-600/50 hover:bg-yellow-500 text-yellow-900 dark:text-yellow-100 px-3 py-1.5 rounded-lg border border-yellow-500 dark:border-none font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50">
+                                       @if(isFetchingGhs()) { <i class="fa-solid fa-spinner fa-spin"></i> Tra cứu... } 
+                                       @else { <i class="fa-solid fa-bolt text-red-600 dark:text-red-400"></i> Auto GHS }
+                                   </button>
+                               </div>
+                               
+                               <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                   @for(code of ghsKeys; track code) {
+                                       <div (click)="toggleGhs(code)" 
+                                            class="cursor-pointer border rounded-lg p-1.5 flex flex-col items-center text-center transition active:scale-95 bg-white dark:bg-slate-800 opacity-60 hover:opacity-100"
+                                            [class]="form.get('ghsWarnings')?.value?.includes(code) ? '!border-red-500 ring-1 ring-red-200 dark:ring-red-900/50 !opacity-100 shadow-sm bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'">
+                                           <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
+                                           <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code].label">{{GHS_DICT[code].label}}</span>
+                                       </div>
+                                   }
+                               </div>
+                           </div>
+
                            <div class="grid grid-cols-2 gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
                                <div>
                                    <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Tồn kho</label>
@@ -419,6 +472,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   inventoryService = inject(InventoryService);
   recipeService = inject(RecipeService); // Inject RecipeService
   auth = inject(AuthService); 
+  pubchem = inject(PubchemService);
   toast = inject(ToastService);
   calcService = inject(CalculatorService);
   confirmationService = inject(ConfirmationService);
@@ -514,10 +568,16 @@ export class InventoryComponent implements OnInit, OnDestroy {
     reason: ['', Validators.required],
     gtin: [''],
     lotNumber: [''],
-    expiryDate: ['']
+    expiryDate: [''],
+    casNumber: [''],
+    englishName: [''],
+    ghsWarnings: [[] as string[]]
   });
   
   unitOptions = UNIT_OPTIONS;
+  isFetchingGhs = signal(false);
+  get GHS_DICT() { return GHS_DICTIONARY; }
+  get ghsKeys() { return Object.keys(GHS_DICTIONARY); }
 
   constructor() {
       this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(term => { 
@@ -690,7 +750,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     else { 
         this.isEditing.set(false); 
         this.oldStock.set(0);
-        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới' }); 
+        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới', ghsWarnings: [] }); 
         this.form.controls.id.enable(); 
     }
   }
@@ -700,6 +760,42 @@ export class InventoryComponent implements OnInit, OnDestroy {
       }
   }
   onNameChange(e: any) { if(!this.isEditing()) this.form.patchValue({ id: generateSlug(e.target.value) }); }
+  
+  // --- Pubchem Integration ---
+  async fetchPubChem() {
+      const cas = this.form.get('casNumber')?.value;
+      const engName = this.form.get('englishName')?.value;
+      const query = cas || engName;
+      
+      if (!query) {
+          this.toast.show('Vui lòng nhập Tên Tiếng Anh hoặc mã CAS để tự động bắt GHS.', 'error');
+          return;
+      }
+      
+      this.isFetchingGhs.set(true);
+      try {
+          const warnings = await this.pubchem.fetchGHS(query);
+          if (warnings.length > 0) {
+              this.form.patchValue({ ghsWarnings: warnings });
+              this.toast.show(`Thành công! Tìm thấy ${warnings.length} thẻ phân loại GHS từ PubChem.`, 'success');
+          } else {
+              this.toast.show('PubChem không có thẻ GHS cho hóa chất này.', 'info');
+          }
+      } catch (e) {
+          this.toast.show('Lỗi kết nối PubChem.', 'error');
+      } finally {
+          this.isFetchingGhs.set(false);
+      }
+  }
+
+  toggleGhs(code: string) {
+      const current = this.form.get('ghsWarnings')?.value as string[] || [];
+      if (current.includes(code)) {
+          this.form.patchValue({ ghsWarnings: current.filter(c => c !== code) });
+      } else {
+          this.form.patchValue({ ghsWarnings: [...current, code] });
+      }
+  }
   
   // --- HARDENED UX: Save Item ---
   async save() {

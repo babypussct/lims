@@ -11,7 +11,6 @@ import {
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
-import { CacheService } from './cache.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -28,7 +27,6 @@ export class StateService implements OnDestroy {
   private toast = inject(ToastService);
   private confirmationService = inject(ConfirmationService);
   private injector = inject(Injector);
-  private cache = inject(CacheService);
 
   private listeners: Unsubscribe[] = [];
 
@@ -178,45 +176,21 @@ export class StateService implements OnDestroy {
       if (error.code === 'permission-denied') this.permissionError.set(true);
     };
 
-    // --- NEW: Metadata Listener for Caching ---
-    const metaSub = onSnapshot(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'system', 'metadata'), async (snap) => {
-        const metadata = snap.exists() ? snap.data() : {};
-        let localMeta = await this.cache.getItem<any>('system_metadata');
-        if (!localMeta) localMeta = {};
+    // 1. Inventory Listener
+    const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
+      const items: InventoryItem[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as InventoryItem));
+      this.inventory.set(items);
+    }, handleError('Inventory'));
+    this.listeners.push(invSub);
 
-        // 1. SOPs
-        if (metadata['sops'] > (localMeta['sops'] || 0) || !localMeta['sops']) {
-            await this.fetchAndCache('sops');
-            localMeta['sops'] = metadata['sops'] || Date.now();
-        } else if (this.sops().length === 0) {
-            const cachedSops = await this.cache.getItem<Sop[]>('sops_data');
-            if (cachedSops) this.sops.set(cachedSops);
-            else await this.fetchAndCache('sops');
-        }
+    // 2. SOPs Listener
+    const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
+      const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
+      this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
+    }, handleError('SOPs'));
+    this.listeners.push(sopSub);
 
-        // 2. Inventory
-        if (metadata['inventory'] > (localMeta['inventory'] || 0) || !localMeta['inventory']) {
-            await this.fetchAndCache('inventory');
-            localMeta['inventory'] = metadata['inventory'] || Date.now();
-        } else if (this.inventory().length === 0) {
-            const cachedInv = await this.cache.getItem<InventoryItem[]>('inventory_data');
-            if (cachedInv) this.inventory.set(cachedInv);
-            else await this.fetchAndCache('inventory');
-        }
-
-        // 3. Config
-        if (metadata['config'] > (localMeta['config'] || 0) || !localMeta['config']) {
-            await this.loadConfig(true); 
-            localMeta['config'] = metadata['config'] || Date.now();
-        } else {
-            await this.loadConfig(false);
-        }
-
-        await this.cache.setItem('system_metadata', localMeta);
-    }, handleError('Metadata'));
-    this.listeners.push(metaSub);
-
-    // 3. Requests Listeners (Still realtime as they are dynamic and small)
+    // 3. Requests Listeners
     const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')), 
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
     this.listeners.push(reqSub);
@@ -252,41 +226,33 @@ export class StateService implements OnDestroy {
         if (statSnap.exists()) this.stats.set(statSnap.data());
     } catch (e) { console.warn('Stats load error:', e); }
 
-    // (Config is now managed by Metadata Listener)
+    // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
+    await this.loadConfig();
   }
 
-  // ─── UTILS: Fetch and Cache ────────────────────────────────────────────────
-  private async fetchAndCache(module: string) {
-    try {
-        const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, module);
-        const snap = await getDocs(colRef);
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
-        if (module === 'sops') {
-            const sortedItems = (items as Sop[]).sort((a, b) => a.name.localeCompare(b.name));
-            this.sops.set(sortedItems);
-            await this.cache.setItem('sops_data', sortedItems);
-        } else if (module === 'inventory') {
-            this.inventory.set(items as InventoryItem[]);
-            await this.cache.setItem('inventory_data', items);
-        }
-    } catch (e) {
-        console.warn(`Error fetching ${module} for cache`, e);
-    }
-  }
+  // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
+  private readonly CONFIG_CACHE_KEY = 'lims_cfg_cache';
+  private readonly CONFIG_VERSION_KEY = 'lims_cfg_version';
 
-  // ─── CONFIG: Load once (Managed by Metadata Cache) ───────────
-  private readonly CONFIG_CACHE_KEY = 'lims_cfg_data';
+  async loadConfig(): Promise<void> {
+    // Instant: apply from localStorage cache first (0 reads)
+    const hasCache = this._applyConfigFromCache();
 
-  async loadConfig(force: boolean = true): Promise<void> {
-    if (!force) {
-        await this._applyConfigFromCache();
-        return;
-    }
-
-    // Fetch Firebase to keep fresh
+    // Background: fetch only '_metadata' to check if we need to download everything
     try {
       const base = `artifacts/${this.fb.APP_ID}/config`;
+      const metaSnap = await getDoc(doc(this.fb.db, base, '_metadata'));
+      
+      const serverVersion = metaSnap.exists() ? metaSnap.data()['lastUpdated'] || 0 : 0;
+      const localVersion = Number(localStorage.getItem(this.CONFIG_VERSION_KEY) || 0);
+
+      // Nếu có cache và server chưa cập nhật gì mới => Dừng lại, dùng toàn bộ local cache!
+      // (Tiết kiệm 4 lượt Reads mỗi lần bật app)
+      if (hasCache && serverVersion > 0 && localVersion >= serverVersion) {
+          return; 
+      }
+
+      // Nếu không có cache, hoặc Server báo có phiên bản cấu hình mới => Tải lại toàn bộ
       const [printSnap, safetySnap, catSnap, sysSnap] = await Promise.all([
         getDoc(doc(this.fb.db, base, 'print')),
         getDoc(doc(this.fb.db, base, 'safety')),
@@ -305,28 +271,30 @@ export class StateService implements OnDestroy {
         if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
       }
 
-      // Persist to IDB cache
-      const cacheData = {
+      // Lưu lại vào trình duyệt cho lần sau
+      const cache = {
         print:      printSnap.exists()  ? printSnap.data()  : null,
         safety:     safetySnap.exists() ? safetySnap.data() : null,
         categories: catSnap.exists()    ? catSnap.data()    : null,
         system:     sysSnap.exists()    ? sysSnap.data()    : null,
       };
-      await this.cache.setItem(this.CONFIG_CACHE_KEY, cacheData);
+      localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(cache));
+      localStorage.setItem(this.CONFIG_VERSION_KEY, serverVersion.toString());
     } catch (e) { console.warn('Config load error:', e); }
   }
 
-  private async _applyConfigFromCache(): Promise<void> {
+  private _applyConfigFromCache(): boolean {
     try {
-      const cache = await this.cache.getItem<any>(this.CONFIG_CACHE_KEY);
-      if (!cache) return;
-      
+      const raw = localStorage.getItem(this.CONFIG_CACHE_KEY);
+      if (!raw) return false;
+      const cache = JSON.parse(raw);
       if (cache.print)                this.printConfig.set(cache.print as PrintConfig);
       if (cache.safety)               this.safetyConfig.set(cache.safety as SafetyConfig);
       if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
       if (cache.system?.['version'])   this.systemVersion.set(cache.system['version']);
       if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
-    } catch (_) { /* ignore stale/corrupt cache */ }
+      return true;
+    } catch (_) { return false; /* ignore stale/corrupt cache */ }
   }
 
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
@@ -354,34 +322,44 @@ export class StateService implements OnDestroy {
   async checkSystemHealth() { return true; }
 
   // Config save helpers — each refreshes the local cache after writing
+  private async updateConfigMetadata() {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', '_metadata');
+      await setDoc(ref, { lastUpdated: Date.now() }, { merge: true });
+  }
+
   async savePrintConfig(config: PrintConfig) { 
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'print');
       await setDoc(ref, config, {merge: true});
-      await this.fb.updateMetadata('config');
+      await this.updateConfigMetadata();
+      await this.loadConfig();
   }
 
   async saveSafetyConfig(config: SafetyConfig) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'safety');
       await setDoc(ref, config, {merge: true});
-      await this.fb.updateMetadata('config');
+      await this.updateConfigMetadata();
+      await this.loadConfig();
   }
 
   async saveCategoriesConfig(items: CategoryItem[]) {
-      const ref = doc(this.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'categories');
       await setDoc(ref, { items }, { merge: true });
-      await this.fb.updateMetadata('config');
+      await this.updateConfigMetadata();
+      await this.loadConfig();
   }
 
   async saveSystemVersion(version: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { version }, {merge: true});
-      await this.fb.updateMetadata('config');
+      await this.updateConfigMetadata();
+      await this.loadConfig();
   }
 
   async saveAvatarStyle(style: string) {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
       await setDoc(ref, { avatarStyle: style }, {merge: true});
-      await this.fb.updateMetadata('config');
+      await this.updateConfigMetadata();
+      await this.loadConfig();
   }
   
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }

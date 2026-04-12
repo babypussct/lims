@@ -21,6 +21,7 @@ import { startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
+import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
 
 @Component({
   selector: 'app-calculator',
@@ -273,6 +274,15 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                           {{resolveName(item)}}
                                       </span>
                                       <div class="flex flex-wrap gap-1 mt-1">
+                                          @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                              <div class="flex gap-0.5 opacity-70">
+                                                  @for(ghs of item.ghsWarnings; track ghs) {
+                                                      @if(ghs.startsWith('GHS')) {
+                                                          <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                      }
+                                                  }
+                                              </div>
+                                          }
                                           @if(item.isMissing) { 
                                               <span class="text-[10px] font-bold text-red-600 dark:text-red-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-red-200 dark:border-red-800/50"><i class="fa-solid fa-circle-xmark"></i> Không có trong kho</span> 
                                           }
@@ -307,6 +317,15 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                                                     <div class="flex justify-between items-center text-xs border-b border-slate-50 dark:border-slate-700/50 last:border-0 pb-1" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
                                                         <div class="flex items-center gap-2">
                                                             <span class="font-medium" [ngClass]="{'text-slate-600 dark:text-slate-300': !sub.isMissing}">{{resolveName(sub)}}</span>
+                                                            @if(sub.ghsWarnings && sub.ghsWarnings.length > 0) {
+                                                                <div class="flex gap-0.5 opacity-70">
+                                                                    @for(ghs of sub.ghsWarnings; track ghs) {
+                                                                        @if(ghs.startsWith('GHS')) {
+                                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-2.5 h-2.5" [title]="GHS_DICT[ghs].label" />
+                                                                        }
+                                                                    }
+                                                                </div>
+                                                            }
                                                             @if(sub.isMissing) { <i class="fa-solid fa-circle-exclamation text-[10px]" title="Không tìm thấy trong kho"></i> }
                                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 italic">({{sub.amountPerUnit}} / {{item.unit}})</span>
                                                         </div>
@@ -328,6 +347,52 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
                      </tbody>
                    </table>
                 </div>
+                
+                <!-- Safety Pre-Flight Briefing -->
+                @if(aggregateGHSWarnings().length > 0) {
+                    <div class="mt-4 bg-orange-50 dark:bg-orange-900/10 border-l-4 border-orange-500 p-4 rounded-r-xl">
+                        <h4 class="font-bold text-orange-800 dark:text-orange-300 text-sm flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-shield-virus"></i> Hướng Dẫn An Toàn Trước Pha Chế
+                        </h4>
+                        
+                        <!-- GHS Icons -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @for(code of aggregateGHSWarnings(); track code) {
+                                @if(code.startsWith('GHS')) {
+                                    <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800 group relative">
+                                        <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 flex-shrink-0" [title]="GHS_DICT[code].label"/>
+                                        <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">{{GHS_DICT[code].label}}</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        
+                        <!-- Safety Checklist -->
+                        <div class="space-y-3">
+                            <ul class="space-y-1.5 text-xs text-orange-700 dark:text-orange-300 font-medium">
+                                @for(code of aggregateGHSWarnings(); track code) {
+                                    @if(!code.startsWith('GHS')) {
+                                        <li class="flex items-start gap-1.5">
+                                            <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                            <span class="break-words whitespace-normal">{{code}}</span>
+                                        </li>
+                                    }
+                                }
+                                <!-- Generic rules associated with the GHS modules -->
+                                @for(code of aggregateGHSWarnings(); track code) {
+                                    @if(code.startsWith('GHS')) {
+                                        @for(rule of GHS_DICT[code].precautions; track rule) {
+                                            <li class="flex items-start gap-1.5 opacity-80">
+                                                <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                <span class="break-words whitespace-normal">{{rule}}</span>
+                                            </li>
+                                        }
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
       } 
@@ -431,6 +496,7 @@ import { QuickGenerateSampleModalComponent } from '../../../shared/components/qu
 })
 export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
+  get GHS_DICT() { return GHS_DICTIONARY; }
   
   // ... imports and basic setup identical to previous ...
   private fb: FormBuilder = inject(FormBuilder);
@@ -492,6 +558,25 @@ export class CalculatorComponent implements OnDestroy {
   form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
   private formValueSub?: Subscription;
   calculatedItems = signal<CalculatedItem[]>([]);
+  aggregateGHSWarnings = computed(() => {
+     const items = this.calculatedItems();
+     const warnings = new Set<string>();
+     
+     const addWarnings = (item: any) => {
+         if (item.ghsWarnings) {
+             item.ghsWarnings.forEach((w: string) => warnings.add(w));
+         }
+     };
+
+     for (const item of items) {
+         if (item.isComposite && item.breakdown) {
+             item.breakdown.forEach((sub: any) => addWarnings(sub));
+         } else {
+             addWarnings(item);
+         }
+     }
+     return Array.from(warnings).sort();
+  });
   safetyMargin = signal<number>(10);
   formatNum = formatNum;
   formatDate = formatDate;

@@ -12,6 +12,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { SopService } from '../sop/services/sop.service';
 import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-config',
@@ -205,6 +206,69 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp, deleteField } fr
                                     <div class="text-sm font-black text-slate-800 dark:text-slate-100">{{stat.totalDocs}}</div>
                                 </div>
                             }
+                        </div>
+
+                        <!-- 6. DATA ARCHIVER -->
+                        <div class="bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-900/30 p-6 flex flex-col gap-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 text-base">
+                                        <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center">
+                                            <i class="fa-solid fa-boxes-packing"></i>
+                                        </div>
+                                        Kho Lưu trữ & Phục hồi
+                                    </h3>
+                                    <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1">Xuất dữ liệu cũ ra Excel và xóa khỏi Firebase để bảo vệ 1GB dung lượng.</p>
+                                </div>
+                                <label class="text-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                                    <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i> Nạp lại Excel
+                                    <input type="file" class="hidden" accept=".xlsx" (change)="importArchiverData($event)">
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Dọn bản ghi cũ hơn:</span>
+                                <select [(ngModel)]="archiverDays" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold outline-none cursor-pointer">
+                                    <option [value]="90">3 Tháng (90 ngày)</option>
+                                    <option [value]="180">6 Tháng (180 ngày)</option>
+                                    <option [value]="365">1 Năm (365 ngày)</option>
+                                    <option [value]="730">2 Năm (730 ngày)</option>
+                                </select>
+                            </div>
+
+                            @if(archiverStatus() === 'idle') {
+                                <button (click)="fetchArchiverData()" class="w-full py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-file-excel text-green-400"></i> Bắt đầu Trích xuất
+                                </button>
+                            } @else if(archiverStatus() === 'fetching') {
+                                <button disabled class="w-full py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                </button>
+                            } @else if(archiverStatus() === 'exporting') {
+                                <button disabled class="w-full py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tạo file Excel...
+                                </button>
+                            } @else if(archiverStatus() === 'deleting') {
+                                <button disabled class="w-full py-2 bg-red-300 dark:bg-red-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang dọn dẹp hệ thống...
+                                </button>
+                            } @else if(archiverStatus() === 'restoring') {
+                                <button disabled class="w-full py-2 bg-blue-300 dark:bg-blue-900/50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-wait">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang nạp lại dữ liệu...
+                                </button>
+                            } @else if(archiverStatus() === 'ready_to_delete') {
+                                <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-rose-200 dark:border-rose-900/50 text-center">
+                                    <p class="text-xs font-bold text-green-600 dark:text-green-400 mb-2">Đã lưu file Excel thành công!</p>
+                                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Sẵn sàng dọn dẹp {{archiverData().logs.length + archiverData().requests.length}} bản ghi.</p>
+                                    <div class="flex gap-2">
+                                        <button (click)="cancelArchiver()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">Hủy</button>
+                                        <button (click)="confirmDeleteArchiver()" class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-trash-can"></i> Xóa Vĩnh viễn
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+
                         </div>
 
                     </div>
@@ -575,6 +639,11 @@ export class ConfigComponent implements OnInit {
   userList = signal<UserProfile[]>([]);
   selectedUserForPerms = signal<UserProfile | null>(null);
 
+  // Archiver State
+  archiverDays = signal<number>(180);
+  archiverStatus = signal<'idle' | 'fetching' | 'exporting' | 'ready_to_delete' | 'deleting' | 'restoring'>('idle');
+  archiverData = signal<{logs: any[], requests: any[]}>({logs: [], requests: []});
+
   permissionGroups = [
     {
       name: 'Quản lý Kho & Hóa chất',
@@ -795,21 +864,161 @@ service cloud.firestore {
   }
 
   // --- CATEGORIES CONFIG METHODS ---
+  // --- CATEGORIES CONFIG METHODS ---
   addCategory() { this.categoriesLocal.update(c => [...c, { id: '', name: '' }]); }
   removeCategory(index: number) { this.categoriesLocal.update(c => c.filter((_, i) => i !== index)); }
   async saveCategories() {
-      // Validate empty rules
-      const valid = this.categoriesLocal().filter(c => c.id && c.id.trim() && c.name && c.name.trim());
-      if (valid.length === 0) {
-          this.toast.show('Phải có ít nhất 1 phân loại hợp lệ.', 'error');
+      const validCategories = this.categoriesLocal().filter(c => c.id && c.id.trim() && c.name && c.name.trim());
+      if (validCategories.length === 0) {
+          this.toast.show('Phân loại không được để trống hoàn toàn.', 'error');
           return;
       }
-      try {
-          await this.state.saveCategoriesConfig(valid);
-          this.toast.show('Đã lưu danh mục Phân loại!');
-      } catch (e) {
-          this.toast.show('Lỗi khi lưu phân loại.', 'error');
-      }
+      await this.state.saveCategoriesConfig(validCategories);
+      this.toast.show('Đã cập nhật danh mục phân loại.', 'success');
   }
 
+  // --- DATA ARCHIVER METHODS ---
+  async fetchArchiverData() {
+    this.archiverStatus.set('fetching');
+    try {
+      const logs = await this.fb.fetchOldData('logs', this.archiverDays());
+      const requests = await this.fb.fetchOldData('requests', this.archiverDays());
+      
+      this.archiverData.set({logs, requests});
+      
+      if (logs.length === 0 && requests.length === 0) {
+        this.toast.show('Không có dữ liệu cũ nào được tìm thấy.', 'info');
+        this.archiverStatus.set('idle');
+        return;
+      }
+      
+      this.exportArchiverToExcel(logs, requests);
+      
+    } catch (e) {
+      this.toast.show('Lỗi khi tải dữ liệu cũ.', 'error');
+      this.archiverStatus.set('idle');
+    }
+  }
+
+  private exportArchiverToExcel(logs: any[], requests: any[]) {
+    this.archiverStatus.set('exporting');
+    try {
+      const wb = XLSX.utils.book_new();
+      if (logs.length > 0) {
+        const wsLogs = XLSX.utils.json_to_sheet(logs);
+        XLSX.utils.book_append_sheet(wb, wsLogs, "Logs");
+      }
+      if (requests.length > 0) {
+        const wsReqs = XLSX.utils.json_to_sheet(requests);
+        XLSX.utils.book_append_sheet(wb, wsReqs, "Requests");
+      }
+      
+      const fileName = `LIMS_Archive_${this.archiverDays()}days_${new Date().getTime()}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      this.archiverStatus.set('ready_to_delete');
+    } catch (e) {
+      this.toast.show('Lỗi khi tạo file Excel.', 'error');
+      this.archiverStatus.set('idle');
+    }
+  }
+
+  cancelArchiver() {
+      this.archiverStatus.set('idle');
+      this.archiverData.set({logs: [], requests: []});
+  }
+
+  async confirmDeleteArchiver() {
+    const data = this.archiverData();
+    if (data.logs.length === 0 && data.requests.length === 0) return;
+    
+    const count = data.logs.length + data.requests.length;
+    if (!await this.confirmationService.confirm({
+      message: `CẢNH BÁO: Tác vụ này sẽ XÓA VĨNH VIỄN ${count} bản ghi cũ khỏi Firebase. Bạn CHẮC CHẮN MÌNH ĐÃ TẢI LƯU TRỮ CHƯA?`,
+      confirmText: 'XÓA THẬT KỸ',
+      isDangerous: true
+    })) return;
+
+    this.archiverStatus.set('deleting');
+    try {
+      if (data.logs.length > 0) {
+        await this.fb.deleteDocsInBatch('logs', data.logs.map(d => d.id));
+      }
+      if (data.requests.length > 0) {
+        await this.fb.deleteDocsInBatch('requests', data.requests.map(d => d.id));
+      }
+      this.toast.show(`Thành công! Đã dọn dẹp ${count} bản ghi cũ rác.`, 'success');
+      this.archiverStatus.set('idle');
+      this.archiverData.set({logs: [], requests: []});
+      this.loadUsage(); // Cập nhật lại số liệu
+    } catch (e) {
+      this.toast.show('Lỗi khi xóa dữ liệu.', 'error');
+      this.archiverStatus.set('ready_to_delete');
+    }
+  }
+
+  async importArchiverData(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!await this.confirmationService.confirm({
+        message: `Bạn chuẩn bị khôi phục lại dữ liệu từ File Excel: ${file.name}. Quá trình này sẽ nạp lại các bản ghi cũ lên hệ thống (có thể tốn thời gian). Bạn chắc chắn chứ?`,
+        confirmText: 'Bắt đầu Nạp'
+    })) {
+        event.target.value = '';
+        return;
+    }
+
+    this.archiverStatus.set('restoring');
+
+    const reader = new FileReader();
+    reader.onload = async (e: any) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            let logsToRestore: any[] = [];
+            let reqsToRestore: any[] = [];
+
+            if (workbook.SheetNames.includes('Logs')) {
+                const ws = workbook.Sheets['Logs'];
+                logsToRestore = XLSX.utils.sheet_to_json(ws);
+            }
+            if (workbook.SheetNames.includes('Requests')) {
+                const ws = workbook.Sheets['Requests'];
+                reqsToRestore = XLSX.utils.sheet_to_json(ws);
+            }
+
+            if (logsToRestore.length === 0 && reqsToRestore.length === 0) {
+                this.toast.show('Không tìm thấy dữ liệu hợp lệ trong file Excel.', 'error');
+                this.archiverStatus.set('idle');
+                return;
+            }
+
+            let restoredCount = 0;
+            if (logsToRestore.length > 0) {
+                restoredCount += await this.fb.restoreArchivedData('logs', logsToRestore);
+            }
+            if (reqsToRestore.length > 0) {
+                restoredCount += await this.fb.restoreArchivedData('requests', reqsToRestore);
+            }
+
+            this.toast.show(`Thành công! Đã nạp lại ${restoredCount} bản ghi vào hệ thống.`, 'success');
+            this.archiverStatus.set('idle');
+            this.loadUsage();
+
+        } catch (err) {
+            this.toast.show('Lỗi định dạng File Excel.', 'error');
+            this.archiverStatus.set('idle');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.onerror = () => {
+        this.toast.show('Không thể đọc file.', 'error');
+        this.archiverStatus.set('idle');
+        event.target.value = '';
+    }
+    reader.readAsArrayBuffer(file);
+  }
 }

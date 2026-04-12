@@ -12,6 +12,9 @@ export interface InventoryItem {
   gtin?: string;
   lotNumber?: string;
   expiryDate?: string;
+  casNumber?: string;
+  englishName?: string;
+  ghsWarnings?: string[]; // Arrays of GHS codes e.g. 'GHS02', 'GHS06'
   lastUpdated?: any;
   notes?: string;
 }

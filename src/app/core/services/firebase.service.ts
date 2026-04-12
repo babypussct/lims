@@ -155,17 +155,95 @@ export class FirebaseService {
     };
   }
 
-  // --- Log Cleanup Utility (run manually from Admin panel, once/month) ---
-  async cleanupOldLogs(daysOld = 180): Promise<number> {
-    const cutoff = Timestamp.fromDate(new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000));
-    const logsRef = collection(this.db, `artifacts/${this.APP_ID}/logs`);
-    const q = query(logsRef, where('timestamp', '<', cutoff), limit(400));
+  // --- Data Archiver (Logs & Requests) ---
+  async fetchOldData(collectionName: 'logs' | 'requests', daysOld: number): Promise<any[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    const cutoff = Timestamp.fromDate(cutoffDate);
+    
+    const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
+    const q = query(colRef, where('timestamp', '<', cutoff), limit(10000));
+    
     const snap = await getDocs(q);
-    if (snap.empty) return 0;
-    const batch = writeBatch(this.db);
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    return snap.size;
+    
+    return snap.docs.map(d => {
+        const data = d.data();
+        // Convert timestamp to readable string for Export
+        if (data['timestamp'] && data['timestamp'].toDate) {
+            data['timestamp'] = data['timestamp'].toDate().toISOString();
+        }
+        return { id: d.id, ...data };
+    });
+  }
+
+  async deleteDocsInBatch(collectionName: 'logs' | 'requests', docIds: string[]): Promise<number> {
+    if (!docIds || docIds.length === 0) return 0;
+    
+    const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
+    
+    // Spark plan: Max 20k writes. We delete in chunks of 400.
+    const chunks = [];
+    for (let i = 0; i < docIds.length; i += 400) {
+      chunks.push(docIds.slice(i, i + 400));
+    }
+    
+    let deletedCount = 0;
+    for (const chunk of chunks) {
+      const batch = writeBatch(this.db);
+      chunk.forEach(id => {
+        batch.delete(doc(colRef, id));
+      });
+      await batch.commit();
+      deletedCount += chunk.length;
+    }
+    
+    return deletedCount;
+  }
+
+  async restoreArchivedData(collectionName: 'logs' | 'requests', items: any[]): Promise<number> {
+    if (!items || items.length === 0) return 0;
+    
+    const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
+    
+    let opCount = 0;
+    let totalRestored = 0;
+    const MAX_BATCH = 400; 
+    let batch = writeBatch(this.db);
+
+    const commitBatch = async () => {
+        if (opCount > 0) {
+            await batch.commit();
+            totalRestored += opCount;
+            batch = writeBatch(this.db);
+            opCount = 0;
+        }
+    };
+
+    for (const item of items) {
+        const id = item.id;
+        let ref;
+        if (id) {
+            ref = doc(colRef, id);
+            delete item.id; 
+        } else {
+            ref = doc(colRef);
+        }
+        
+        // Reconstruct timestamp
+        if (item.timestamp && typeof item.timestamp === 'string') {
+            item.timestamp = Timestamp.fromDate(new Date(item.timestamp));
+        }
+
+        batch.set(ref, item, { merge: true });
+        opCount++;
+        
+        if (opCount >= MAX_BATCH) {
+            await commitBatch();
+        }
+    }
+
+    await commitBatch();
+    return totalRestored;
   }
 
   // --- Backup & Restore ---

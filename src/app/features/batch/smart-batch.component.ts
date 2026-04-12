@@ -15,6 +15,7 @@ import { PrintService, PrintJob } from '../../core/services/print.service';
 import { formatNum, generateSlug, formatSampleList } from '../../shared/utils/utils';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { Recipe } from '../../core/models/recipe.model';
+import { GHS_DICTIONARY } from '../../core/services/pubchem.service';
 
 // --- DATA MODELS ---
 
@@ -517,6 +518,15 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                             <tr [ngClass]="{'bg-red-50/50 dark:bg-red-900/10': item.isMissing}">
                                                 <td class="px-3 py-2 font-medium break-words whitespace-normal" [ngClass]="item.isMissing ? 'text-red-700 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'">
                                                     {{item.name}}
+                                                    @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
+                                                        <div class="flex gap-0.5 mt-1 opacity-70">
+                                                            @for(ghs of item.ghsWarnings; track ghs) {
+                                                                @if(ghs.startsWith('GHS')) {
+                                                                    <img [src]="GHS_DICT[ghs].iconUrl" class="w-3.5 h-3.5" [title]="GHS_DICT[ghs].label" />
+                                                                }
+                                                            }
+                                                        </div>
+                                                    }
                                                     @if(item.isMissing) {
                                                         <div class="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> Thiếu: {{formatNum(item.missing)}} {{item.unit}}</div>
                                                     }
@@ -537,6 +547,50 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Safety Pre-Flight Briefing -->
+                        @if (aggregateGHSWarnings().length > 0) {
+                            <div class="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-lg p-4 shadow-sm animate-slide-up mt-2">
+                                <h4 class="font-bold text-orange-800 dark:text-orange-400 text-xs mb-2 uppercase flex items-center gap-2">
+                                    <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Hướng dẫn An toàn Trước Pha chế
+                                </h4>
+                                
+                                <!-- GHS Icons -->
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(code.startsWith('GHS')) {
+                                            <div class="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-orange-100 dark:border-orange-800">
+                                                <img [src]="GHS_DICT[code].iconUrl" class="w-6 h-6" [title]="GHS_DICT[code].label"/>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                
+                                <!-- Safety Checklist (H/P codes + Custom) -->
+                                <ul class="space-y-1.5 text-[11px] text-orange-700 dark:text-orange-300 font-medium">
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(!code.startsWith('GHS')) {
+                                            <li class="flex items-start gap-1.5 text-orange-800 dark:text-orange-200">
+                                                <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                <span class="break-words whitespace-normal">{{code}}</span>
+                                            </li>
+                                        }
+                                    }
+                                    
+                                    <!-- Generic Precautionary Statements associated with the GHS modules -->
+                                    @for(code of aggregateGHSWarnings(); track code) {
+                                        @if(code.startsWith('GHS')) {
+                                            @for(rule of GHS_DICT[code].precautions; track rule) {
+                                                <li class="flex items-start gap-1.5 opacity-80">
+                                                    <i class="fa-solid fa-circle text-[4px] mt-1.5 opacity-50"></i>
+                                                    <span class="break-words whitespace-normal"><span class="font-bold opacity-70">Precaution:</span> {{rule}}</span>
+                                                </li>
+                                            }
+                                        }
+                                    }
+                                </ul>
+                            </div>
+                        }
                     } @else {
                         <div class="p-5 text-center text-sm font-medium text-slate-400 italic bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl animate-fade-in">
                             <i class="fa-solid fa-leaf text-2xl mb-2 text-slate-300 dark:text-slate-600"></i><br>
@@ -833,6 +887,7 @@ export class SmartBatchComponent {
   formatNum = formatNum;
   formatSampleList = formatSampleList;
 
+  get GHS_DICT() { return GHS_DICTIONARY; }
   step = signal<number>(1);
   blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined } ]);
   batches = signal<ProposedBatch[]>([]);
@@ -894,14 +949,16 @@ export class SmartBatchComponent {
                       const current = ledger[sub.name] || 0; 
                       const remaining = current - sub.totalNeed; 
                       ledger[sub.name] = remaining; 
-                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                      const invItem = this.state.inventoryMap()[sub.name];
+                      if (!summary.has(sub.name)) { summary.set(sub.name, { id: sub.name, name: sub.displayName || sub.name, unit: sub.stockUnit, needed: 0, missing: 0, currentStock: current, ghsWarnings: invItem?.ghsWarnings || [] }); } 
                       summary.get(sub.name).needed += sub.totalNeed;
                   } 
               } else { 
                   const current = ledger[item.name] || 0; 
                   const remaining = current - item.stockNeed; 
                   ledger[item.name] = remaining; 
-                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, needed: 0, missing: 0, currentStock: current }); } 
+                  const invItem = this.state.inventoryMap()[item.name];
+                  if (!summary.has(item.name)) { summary.set(item.name, { id: item.name, name: item.displayName || item.name, unit: item.stockUnit, needed: 0, missing: 0, currentStock: current, ghsWarnings: invItem?.ghsWarnings || [] }); } 
                   summary.get(item.name).needed += item.stockNeed;
               } 
           } 
@@ -922,6 +979,17 @@ export class SmartBatchComponent {
           if (!a.isMissing && b.isMissing) return 1;
           return a.name.localeCompare(b.name);
       }); 
+  });
+
+  aggregateGHSWarnings = computed(() => {
+     const summary = this.totalStockSummary();
+     const warnings = new Set<string>();
+     summary.forEach(item => {
+         if (item.ghsWarnings) {
+             item.ghsWarnings.forEach((w: string) => warnings.add(w));
+         }
+     });
+     return Array.from(warnings).sort();
   });
 
   // --- COMPUTED: COVERAGE STATUS BAR (Global Safety Net) ---
