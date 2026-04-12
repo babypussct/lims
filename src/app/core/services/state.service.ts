@@ -178,7 +178,14 @@ export class StateService implements OnDestroy {
 
     // 1. Inventory Listener
     const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
-      const items: InventoryItem[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as InventoryItem));
+      const items: InventoryItem[] = []; 
+      s.forEach(d => {
+          const data = d.data();
+          // Lọc rác Soft Delete ra khỏi State Memory
+          if (data['_isDeleted'] !== true) {
+              items.push({ id: d.id, ...data } as InventoryItem);
+          }
+      });
       this.inventory.set(items);
     }, handleError('Inventory'));
     this.listeners.push(invSub);
@@ -228,6 +235,24 @@ export class StateService implements OnDestroy {
 
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
     await this.loadConfig();
+
+    // 7. System Force Reload Listener (Delta Sync Architecture)
+    const sysMetaSub = onSnapshot(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system/metadata`), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const forceTime = data['force_clear_cache_time'] || 0;
+            const localTime = Number(localStorage.getItem('lims_cache_purge_time') || 0);
+
+            if (forceTime > localTime) {
+                localStorage.setItem('lims_cache_purge_time', forceTime.toString());
+                this.toast.show('Quản trị viên vừa làm sạch Hệ thống. Đang kết nối lại sau 2 giây...', 'info');
+                setTimeout(() => {
+                    this.fb.purgeSystemCache();
+                }, 2000);
+            }
+        }
+    }, handleError('System Metadata'));
+    this.listeners.push(sysMetaSub);
   }
 
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────

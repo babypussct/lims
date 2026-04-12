@@ -5,7 +5,7 @@ import {
   doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
   persistentLocalCache, persistentMultipleTabManager, updateDoc,
   getCountFromServer, where, orderBy, writeBatch as batchWrite,
-  Timestamp, serverTimestamp
+  Timestamp, serverTimestamp, clearIndexedDbPersistence, terminate
 } from 'firebase/firestore';
 import { 
   getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
@@ -326,5 +326,28 @@ export class FirebaseService {
         ref: doc(this.db, `artifacts/${this.APP_ID}/system/metadata`),
         data: { [moduleKey]: Date.now() }
     };
+  }
+
+  // --- ADMIN CACHE PURGING ---
+  async adminForceSyncCache() {
+      const metaRef = doc(this.db, `artifacts/${this.APP_ID}/system/metadata`);
+      try {
+          await setDoc(metaRef, { force_clear_cache_time: Date.now() }, { merge: true });
+      } catch (e) {
+          console.error("Failed to broadcast force sync", e);
+      }
+  }
+
+  async purgeSystemCache() {
+      try {
+          if (this.db) {
+              await terminate(this.db);
+              await clearIndexedDbPersistence(this.db);
+          }
+          window.location.reload();
+      } catch (e) {
+          console.error("Failed to purge system cache", e);
+          window.location.reload(); 
+      }
   }
 }

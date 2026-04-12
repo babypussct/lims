@@ -4,7 +4,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
   updateDoc, setDoc, getDocs, deleteDoc, getDoc,
-  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe
+  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe, deleteField
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -192,7 +192,13 @@ export class StandardService {
       const q = query(colRef, orderBy('received_date', 'desc')); 
       
       return onSnapshot(q, (snapshot) => {
-          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+          const items: ReferenceStandard[] = [];
+          snapshot.docs.forEach(d => {
+              const data = d.data();
+              if (data['_isDeleted'] !== true) {
+                  items.push({ id: d.id, ...data } as ReferenceStandard);
+              }
+          });
           callback(items);
       }, (error) => {
           console.error("Error listening to standards:", error);
@@ -278,9 +284,13 @@ export class StandardService {
   }
 
   async deleteStandard(id: string, name: string = '') {
-      await deleteDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`));
-      await this.logGlobalActivity('DELETE_STANDARD', `Xóa chuẩn: ${name || id}`, id);
-      await this.fb.updateMetadata('standards');
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
+      await updateDoc(ref, {
+          _isDeleted: true,
+          status: 'DELETED',
+          lastUpdated: serverTimestamp()
+      });
+      await this.logGlobalActivity('SOFT_DELETE_STANDARD', `Đưa chuẩn vào thùng rác: ${name || id}`, id);
   }
 
   async deleteSelectedStandards(ids: string[]) {
@@ -289,23 +299,28 @@ export class StandardService {
       let opCount = 0;
 
       for (const id of ids) {
-          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}/logs`);
-          const logsSnapshot = await getDocs(logsRef);
-          
-          for (const logDoc of logsSnapshot.docs) {
-              batch.delete(logDoc.ref);
-              opCount++;
-              if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
-          }
-
           const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-          batch.delete(stdRef);
+          batch.update(stdRef, {
+              _isDeleted: true,
+              status: 'DELETED',
+              lastUpdated: serverTimestamp()
+          });
           opCount++;
           if (opCount >= BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
 
       if (opCount > 0) await batch.commit();
-      await this.fb.updateMetadata('standards');
+      await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
+  }
+
+  async restoreStandard(id: string, name: string = '') {
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
+      await updateDoc(ref, {
+          _isDeleted: deleteField(),
+          status: 'ACTIVE',
+          lastUpdated: serverTimestamp()
+      });
+      await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
   }
 
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
