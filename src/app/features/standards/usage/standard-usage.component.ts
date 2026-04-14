@@ -62,6 +62,14 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
           </button>
       </div>
 
+      <!-- [NEW-7] Cảnh báo giới hạn 100 bản ghi -->
+      @if (logs().length >= 100) {
+          <div class="mx-2 px-5 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-center gap-3 text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0">
+              <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+              <span>Đang hiển thị <strong>100 nhật ký gần nhất</strong>. Dùng bộ lọc ngày để tìm dữ liệu cũ hơn. Xuất Excel cũng chỉ xuất 100 dòng này.</span>
+          </div>
+      }
+
       <!-- Data Table -->
       <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden flex-1">
           <div class="flex-1 overflow-x-auto custom-scrollbar">
@@ -224,7 +232,9 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       if (!conf) return;
       
       try {
-          await this.stdService.deleteUsageLog(log.standardId, log.id);
+          // [NEW-4] Truyền log.requestId để deleteUsageLog cập nhật đúng request
+          // kể cả khi chuẩn đã được trả về (current_request_id đã bị xóa bởi deleteField)
+          await this.stdService.deleteUsageLog(log.standardId, log.id, log.requestId);
           this.toast.show('Xóa thành công và hoàn trả thể tích tồn kho!', 'success');
       } catch (err: any) {
           this.toast.show(`Lỗi: ${err.message}`, 'error');
