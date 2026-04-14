@@ -7,6 +7,8 @@ import {
   signOut, 
   onAuthStateChanged, 
   GoogleAuthProvider,
+  setPersistence,
+  browserSessionPersistence,
   type User,
   type Auth
 } from 'firebase/auth';
@@ -55,14 +57,17 @@ export class AuthService {
   constructor() {
     this.auth = getAuth(this.fb.app);
     
-    onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
-        this.syncUser(firebaseUser);
-      } else {
-        if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-        this.currentUser.set(null);
-        this.isAuthReady.set(true);
-      }
+    // Config session persistence
+    setPersistence(this.auth, browserSessionPersistence).then(() => {
+        onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
+          if (firebaseUser) {
+            this.syncUser(firebaseUser);
+          } else {
+            if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+            this.currentUser.set(null);
+            this.isAuthReady.set(true);
+          }
+        });
     });
   }
 
