@@ -14,7 +14,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
-import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/firestore';
+// firebase/firestore types not needed directly — delta sync handled by StandardService
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
@@ -595,7 +595,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   allStandards = signal<ReferenceStandard[]>([]); // Holds ALL data from Firebase stream
   displayLimit = signal<number>(50); // Virtual scroll limit
   activeWidgetFilter = signal<'all' | 'expired' | 'expiring_soon' | 'low_stock'>('all');
-  private snapshotUnsub?: Unsubscribe;
+  /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
+  private unregisterLiveListener?: () => void;
 
   // --- Purchase Requests State (Staff) ---
   showPurchaseRequestModal = signal(false);
@@ -757,18 +758,28 @@ export class StandardsComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnInit() { 
+  ngOnInit() {
       this.isLoading.set(true);
-      // Setup Real-time Listener (Load All)
-      this.snapshotUnsub = this.stdService.listenToAllStandards((items) => {
+
+      // Pha 1: Delta Load — apply localStorage ngay + sync delta (chỉ doc thay đổi)
+      this.stdService.loadStandardsWithDeltaSync().then(items => {
           this.allStandards.set(items);
           this.isLoading.set(false);
+      }).catch(() => {
+          this.isLoading.set(false);
+      });
+
+      // Pha 2: Live Listener Singleton — real-time, 0 reads lần đầu, chỉ fire khi có đổi
+      this.unregisterLiveListener = this.stdService.startRealtimeDeltaListener(() => {
+          const mem = this.stdService['_memStandards'];
+          if (mem) this.allStandards.set([...mem]);
       });
   }
 
-  ngOnDestroy() { 
-      this.searchSubject.complete(); 
-      if (this.snapshotUnsub) this.snapshotUnsub();
+  ngOnDestroy() {
+      this.searchSubject.complete();
+      // Chỉ remove callback khỏi singleton listener — KHÔNG dừng listener
+      if (this.unregisterLiveListener) this.unregisterLiveListener();
   }
 
   // --- Purchase Requests Logic (Staff) ---
@@ -828,9 +839,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showModal.set(true); 
   }
   
-  closeModal() { 
+  closeModal() {
       if (!this.isProcessing()) {
-          this.showModal.set(false); 
+          this.showModal.set(false);
+          // Live listener sẽ tự cập nhật nếu có write xảy ra trước đó
       }
   }
   
@@ -900,7 +912,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
       if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa vĩnh viễn ${ids.length} chuẩn đã chọn và TẤT CẢ lịch sử của chúng?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
-              await this.stdService.deleteSelectedStandards(ids); 
+              await this.stdService.deleteSelectedStandards(ids);
+              // invalidateLocalStandardsCache() đã được gọi trong service
+              // Live listener sẽ tự xóa các docs khỏi UI
               this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); 
               this.selectedIds.set(new Set());
           } catch(e: any) { 
@@ -955,6 +969,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.isImporting.set(true);
       try {
           await this.stdService.saveImportedData(this.importPreviewData());
+          // invalidateLocalStandardsCache() đã được gọi trong saveImportedData()
+          // Mầu được live listener tự cập nhật vào allStandards signal
           this.toast.show('Import thành công!', 'success');
           this.importPreviewData.set([]);
       } catch (e: any) {

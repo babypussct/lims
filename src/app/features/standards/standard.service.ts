@@ -1,10 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService } from '../../core/services/auth.service';
 import { 
   doc, collection, writeBatch, serverTimestamp, 
   updateDoc, setDoc, getDocs, deleteDoc, getDoc,
-  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe, deleteField, increment
+  query, orderBy, runTransaction, limit, startAfter, where, QueryDocumentSnapshot, QueryConstraint, onSnapshot, Unsubscribe, deleteField, increment, Timestamp
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -16,15 +16,242 @@ export class StandardService {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
 
-  // ─── In-memory cache cho getAllStandardsForMatching (TTL 5 phút) ───
-  private _stdMatchCache: ReferenceStandard[] | null = null;
-  private _stdMatchCacheTime = 0;
-  private readonly STD_CACHE_TTL = 5 * 60 * 1000; // 5 phút
+  // ─── Delta Sync Cache ───────────────────────────────────────────────────────
+  // localStorage keys
+  private readonly STD_CACHE_KEY       = 'lims_std_list_cache';
+  private readonly STD_SYNC_SECONDS_KEY = 'lims_std_sync_seconds';
 
-  /** Gọi sau mọi add/update/delete standard để buộc fetch lại từ Firebase */
-  invalidateStandardsCache(): void {
-    this._stdMatchCache = null;
+  // L1: In-memory (0 reads, mất khi F5)
+  private _memStandards: ReferenceStandard[] | null = null;
+
+  // Live listener singleton (onSnapshot where lastUpdated > NOW)
+  private _liveUnsub?: Unsubscribe;
+  private _liveCallbacks: Array<() => void> = [];
+
+  constructor() {
+    // Tự động dọn dẹp khi user logout — dừng live listener, xóa in-memory
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (!user) {
+        this._cleanupOnLogout();
+      }
+    });
   }
+
+  // ─── Cleanup khi logout ─────────────────────────────────────────────────────
+  private _cleanupOnLogout(): void {
+    // 1. Dừng live listener
+    if (this._liveUnsub) {
+      this._liveUnsub();
+      this._liveUnsub = undefined;
+    }
+    this._liveCallbacks = [];
+    // 2. Xóa in-memory cache (force re-validate sau login tiếp theo)
+    this._memStandards = null;
+    // localStorage GIỮ lại để làm fallback offline / tiết kiệm reads lần login tiếp
+  }
+
+  // ─── DELTA SYNC: Load (Pha 1) ──────────────────────────────────────────────
+  /**
+   * Load standards với chiến lược 3 lớp:
+   *   L1: _memStandards (in-memory) → 0 reads, mất khi F5
+   *   L2: localStorage              → 0 reads, sống qua F5
+   *   L3: getDocs(where lastUpdated > lastSyncTime) → chỉ đọc docs THAY ĐỔI
+   *
+   * Cold start (localStorage trống): getDocs all → N reads (bắt buộc, 1 lần duy nhất)
+   * F5 không đổi: apply L2 + delta empty = 0 reads thêm
+   * F5 có K doc đổi: apply L2 + delta K docs = K reads
+   * Navigate: L1 hit = 0 reads
+   */
+  async loadStandardsWithDeltaSync(): Promise<ReferenceStandard[]> {
+    // L1: In-memory (navigate đi/về trong session = 0 reads)
+    if (this._memStandards !== null) {
+      return this._memStandards;
+    }
+
+    // L2: localStorage (0 reads, apply ngay để UI hiển thị tức thì)
+    const localItems = this._loadStdFromCache();
+    const lastSyncSec = Number(localStorage.getItem(this.STD_SYNC_SECONDS_KEY) || 0);
+
+    if (!localItems || lastSyncSec === 0) {
+      // COLD START: chưa có cache, fetch toàn bộ
+      return await this._fetchAllAndCache();
+    }
+
+    // WARM START: apply cache ngay vào memory
+    this._memStandards = localItems;
+
+    // Background: delta query — chỉ đọc docs thay đổi sau lần sync cuối
+    try {
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      const deltaSnap = await getDocs(query(
+        colRef,
+        where('lastUpdated', '>', Timestamp.fromMillis(lastSyncSec * 1000))
+      ));
+
+      if (!deltaSnap.empty) {
+        // Có K docs thay đổi — chỉ đọc K docs này
+        const changed: ReferenceStandard[] = [];
+        const deletedIds: string[] = [];
+
+        deltaSnap.docs.forEach(d => {
+          const data = d.data();
+          if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
+            deletedIds.push(d.id);
+          } else {
+            changed.push({ id: d.id, ...data } as ReferenceStandard);
+          }
+        });
+
+        this._mergeAndSave(changed, deletedIds);
+      }
+      // deltaSnap.empty = không có gì thay đổi → 0 reads thêm ✓
+    } catch (e) {
+      // Lỗi network: dùng L2 cache làm fallback (offline mode)
+      console.warn('[StandardService] Delta sync error, using cached data:', e);
+    }
+
+    return this._memStandards!;
+  }
+
+  // ─── DELTA SYNC: Live Listener Singleton (Pha 2) ───────────────────────────
+  /**
+   * Singleton live listener dùng onSnapshot(where lastUpdated > NOW).
+   * - Lần đầu emit = EMPTY (0 reads, không có doc nào > NOW)
+   * - Khi doc thay đổi: fire với chỉ doc đó → 1 read → merge vào cache → notify UI
+   * - Singleton: chỉ tạo 1 lần/session, chia sẻ cho mọi component
+   *
+   * Trả về hàm REMOVE CALLBACK (không phải unsubscribe listener).
+   */
+  startRealtimeDeltaListener(cb: () => void): () => void {
+    this._liveCallbacks.push(cb);
+
+    if (!this._liveUnsub) {
+      // Chỉ lắng nghe docs thay đổi TỪ THỜI ĐIỂM NÀY → 0 reads lần đầu
+      const startTime = Timestamp.now();
+      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+      const q = query(colRef, where('lastUpdated', '>', startTime));
+
+      this._liveUnsub = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) return;
+
+        const changed: ReferenceStandard[] = [];
+        const deletedIds: string[] = [];
+
+        snapshot.docChanges().forEach(change => {
+          const data = change.doc.data();
+          if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
+            deletedIds.push(change.doc.id);
+          } else {
+            changed.push({ id: change.doc.id, ...data } as ReferenceStandard);
+          }
+        });
+
+        this._mergeAndSave(changed, deletedIds);
+        // Notify tất cả components đã đăng ký
+        this._liveCallbacks.forEach(fn => fn());
+
+      }, (err) => {
+        // Lỗi permission (logout hoặc token hết hạn) → tự dọn dẹp
+        console.warn('[StandardService] Live listener error:', err.code);
+        if (err.code === 'permission-denied' || err.code === 'unauthenticated') {
+          if (this._liveUnsub) { this._liveUnsub(); this._liveUnsub = undefined; }
+          this._liveCallbacks = [];
+        }
+      });
+    }
+
+    // Trả về hàm remove callback (KHÔNG hủy listener)
+    return () => {
+      this._liveCallbacks = this._liveCallbacks.filter(fn => fn !== cb);
+    };
+  }
+
+  // ─── INVALIDATE CACHE ───────────────────────────────────────────────────────
+  /**
+   * Gọi sau mọi write operation.
+   * Xóa L1 in-memory + xóa STD_SYNC_SECONDS_KEY để buộc delta re-fetch.
+   * GIỮ lại localStorage data để fallback offline.
+   */
+  invalidateLocalStandardsCache(): void {
+    this._memStandards = null;
+    localStorage.removeItem(this.STD_SYNC_SECONDS_KEY);
+  }
+
+  /** @deprecated Dùng invalidateLocalStandardsCache() */
+  invalidateStandardsCache(): void {
+    this.invalidateLocalStandardsCache();
+  }
+
+  // ─── Private Helpers ────────────────────────────────────────────────────────
+  /** Merge K changed docs + deleted ids vào _memStandards và lưu vào localStorage */
+  private _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
+    if (!this._memStandards) return;
+
+    // Xóa các doc bị soft-delete
+    let items = this._memStandards.filter(i => !deletedIds.includes(i.id));
+
+    // Thêm/cập nhật các doc thay đổi
+    changed.forEach(newDoc => {
+      const idx = items.findIndex(i => i.id === newDoc.id);
+      if (idx >= 0) {
+        items[idx] = newDoc;   // Update existing
+      } else {
+        items.unshift(newDoc); // Add new (đầu danh sách — mới nhất)
+      }
+    });
+
+    this._memStandards = items;
+    this._saveStdToCache(items);
+  }
+
+  /** Fetch toàn bộ collection (chỉ chạy lần đầu tiên — cold start) */
+  private async _fetchAllAndCache(): Promise<ReferenceStandard[]> {
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+    const snap = await getDocs(query(colRef, orderBy('received_date', 'desc')));
+    const items: ReferenceStandard[] = snap.docs
+      .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
+      .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard));
+    this._saveStdToCache(items);
+    this._memStandards = items;
+    return items;
+  }
+
+  /** Load từ localStorage (0 Firebase reads) */
+  private _loadStdFromCache(): ReferenceStandard[] | null {
+    try {
+      const raw = localStorage.getItem(this.STD_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as ReferenceStandard[]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Lưu vào localStorage.
+   * lastSyncSeconds = max(lastUpdated.seconds) của tất cả items trong cache.
+   * Nếu localStorage đầy (QuotaExceededError) → im lặng, không crash.
+   */
+  private _saveStdToCache(items: ReferenceStandard[]): void {
+    try {
+      localStorage.setItem(this.STD_CACHE_KEY, JSON.stringify(items));
+      // Tính max lastUpdated.seconds làm cursor cho delta query lần sau
+      const maxSec = items.reduce((max, i) => {
+        const sec = (i.lastUpdated as any)?.seconds ?? 0;
+        return sec > max ? sec : max;
+      }, 0);
+      if (maxSec > 0) {
+        localStorage.setItem(this.STD_SYNC_SECONDS_KEY, maxSec.toString());
+      }
+    } catch (e: any) {
+      // localStorage đầy hoặc private browsing — graceful degrade
+      console.warn('[StandardService] Cache write failed:', e?.name);
+      try { localStorage.removeItem(this.STD_CACHE_KEY); } catch {}
+    }
+  }
+
+  // ─── Legacy in-memory cache (dùng cho getAllStandardsForMatching) ────────────
+  // Không cần nữa — dùng _memStandards thay thế
 
   // --- HELPER: SEARCH KEY GENERATOR ---
   private generateSearchKey(std: ReferenceStandard): string {
@@ -267,6 +494,7 @@ export class StandardService {
       await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
       await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
       await this.fb.updateMetadata('standards');
+      this.invalidateLocalStandardsCache(); // Live listener sẽ tự merge doc mới
   }
 
   async updateStandard(std: ReferenceStandard) {
@@ -275,12 +503,14 @@ export class StandardService {
       await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
       await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
       await this.fb.updateMetadata('standards');
+      this.invalidateLocalStandardsCache();
   }
 
   async quickUpdateField(stdId: string, fields: Record<string, any>) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
       await this.fb.updateMetadata('standards');
+      this.invalidateLocalStandardsCache();
   }
 
   async deleteStandard(id: string, name: string = '') {
@@ -291,6 +521,7 @@ export class StandardService {
           lastUpdated: serverTimestamp()
       });
       await this.logGlobalActivity('SOFT_DELETE_STANDARD', `Đưa chuẩn vào thùng rác: ${name || id}`, id);
+      this.invalidateLocalStandardsCache();
   }
 
   async deleteSelectedStandards(ids: string[]) {
@@ -311,6 +542,7 @@ export class StandardService {
 
       if (opCount > 0) await batch.commit();
       await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
+      this.invalidateLocalStandardsCache();
   }
 
   async restoreStandard(id: string, name: string = '') {
@@ -321,6 +553,7 @@ export class StandardService {
           lastUpdated: serverTimestamp()
       });
       await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
+      this.invalidateLocalStandardsCache();
   }
 
   async getUsageHistory(stdId: string): Promise<UsageLog[]> {
@@ -549,6 +782,8 @@ export class StandardService {
       if (reqData && !isAssign) {
           await this.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
       }
+      // lastUpdated được serverTimestamp() trong transaction → live listener tự bắt
+      this.invalidateLocalStandardsCache();
   }
 
   async returnStandard(
@@ -655,6 +890,8 @@ export class StandardService {
       if (reqData) {
           await this.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
       }
+      // lastUpdated được serverTimestamp() trong transaction → live listener tự bắt
+      this.invalidateLocalStandardsCache();
   }
 
   async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {
@@ -984,6 +1221,8 @@ export class StandardService {
           if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
       }
       if (opCount > 0) await batch.commit();
+      await this.fb.updateMetadata('standards');
+      this.invalidateLocalStandardsCache();
   }
 
   // --- USAGE LOG EXCEL PARSER ---
@@ -1129,16 +1368,12 @@ export class StandardService {
   }
 
   private async getAllStandardsForMatching(): Promise<ReferenceStandard[]> {
-      const now = Date.now();
-      // Return from cache if still fresh (avoid repeated full collection reads during import)
-      if (this._stdMatchCache && (now - this._stdMatchCacheTime) < this.STD_CACHE_TTL) {
-          return this._stdMatchCache;
+      // Tận dụng _memStandards nếu đã có (0 reads)
+      if (this._memStandards !== null && this._memStandards.length > 0) {
+          return this._memStandards;
       }
-      const standardsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
-      const snapshot = await getDocs(standardsRef);
-      this._stdMatchCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReferenceStandard));
-      this._stdMatchCacheTime = now;
-      return this._stdMatchCache!;
+      // Fallback: gọi delta sync để load (cold start)
+      return await this.loadStandardsWithDeltaSync();
   }
 
   async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]) {

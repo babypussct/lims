@@ -932,7 +932,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   private purchaseReqUnsub?: Unsubscribe;
   
   private unsubRequests: Unsubscribe | null = null;
-  private unsubStandards: Unsubscribe | null = null;
+  /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
+  private unregisterLiveListener?: () => void;
 
   form: FormGroup = this.fb.group({
     purpose: [''],
@@ -1062,20 +1063,28 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   protected readonly Date = Date;
 
   ngOnInit() {
+    // Requests listener (bounded query limit 300, giữ nguyên)
     this.unsubRequests = this.stdService.listenToRequests((reqs) => {
         this.requests.set(reqs);
         this.isLoading.set(false);
     });
-    
-    // Listen to all standards for the dropdown and details mapping
-    this.unsubStandards = this.stdService.listenToAllStandards((stds: ReferenceStandard[]) => {
+
+    // Pha 1: Delta Load — apply localStorage ngay + sync chỉ docs thay đổi
+    this.stdService.loadStandardsWithDeltaSync().then((stds: ReferenceStandard[]) => {
         this.allStandards.set(stds);
-        // Only show standards that are available for new requests
-        // Show all non-IN_USE standards; depleted ones are shown with visual indicator
         this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE'));
     });
-    
-    // Listen to purchase requests for Admin
+
+    // Pha 2: Live Listener Singleton — chia sẻ với StandardsComponent nếu đã mở
+    this.unregisterLiveListener = this.stdService.startRealtimeDeltaListener(() => {
+        const mem = this.stdService['_memStandards'];
+        if (mem) {
+            this.allStandards.set([...mem]);
+            this.availableStandards.set(mem.filter((s: ReferenceStandard) => s.status !== 'IN_USE'));
+        }
+    });
+
+    // Admin: lắng nghe purchase requests (bounded by where status==PENDING)
     if (this.auth.canApproveStandards()) {
         this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((reqs) => {
             this.adminPurchaseRequests.set(reqs);
@@ -1087,7 +1096,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.unsubRequests) this.unsubRequests();
-    if (this.unsubStandards) this.unsubStandards();
+    // Chỉ remove callback khỏi singleton listener — KHÔNG dừng listener
+    if (this.unregisterLiveListener) this.unregisterLiveListener();
     if (this.purchaseReqUnsub) this.purchaseReqUnsub();
   }
 
