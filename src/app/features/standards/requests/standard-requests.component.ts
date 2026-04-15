@@ -1192,7 +1192,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'].includes(r.status)
               );
               if (hasActiveRequest) {
-                  this.toast.show(`"​${std.name}" đã có yêu cầu của bạn đang hoạt động, bỏ qua.`, 'warning');
+                  this.toast.show(`"​${std.name}" đã có yêu cầu của bạn đang hoạt động, bỏ qua.`, 'info');
                   skippedCount++;
                   continue;
               }
@@ -1218,7 +1218,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           if (createdCount > 0) {
               this.toast.show(`Đã gửi ${createdCount} yêu cầu thành công${skippedCount > 0 ? ` (bỏ qua ${skippedCount} trùng lặp)` : ''}`, 'success');
           } else if (skippedCount > 0) {
-              this.toast.show('Tất cả chuẩn đã chọn đều đã có yêu cầu đang hoạt động.', 'warning');
+              this.toast.show('Tất cả chuẩn đã chọn đều đã có yêu cầu đang hoạt động.', 'info');
           }
           this.closeModal();
       } catch (e: any) {

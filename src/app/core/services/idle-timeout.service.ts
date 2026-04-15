@@ -71,7 +71,7 @@ export class IdleTimeoutService {
     // Check if user is actually somewhat logged in before showing message
     if (this.auth.currentUser()) {
         this.auth.logout().then(() => {
-            this.toast.error('Phiên đăng nhập đã hết hạn do hệ thống bị bỏ trống', 'Thông báo bảo mật');
+            this.toast.show('Phiên đăng nhập đã hết hạn do hệ thống bị bỏ trống', 'error');
         });
     }
   }
