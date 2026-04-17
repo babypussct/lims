@@ -84,11 +84,9 @@ import { AuthService } from '../../../../core/services/auth.service';
                                         <div class="font-black text-slate-700 dark:text-slate-300 text-xs mb-0.5">{{req.requestedByName}}</div>
                                         <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium italic line-clamp-1 max-w-[200px]" [title]="req.purpose">{{req.purpose}}</div>
                                         @if(req.totalAmountUsed) {
-                                            <div class="mt-2 flex items-center gap-2">
-                                                <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden w-24">
-                                                    <div class="h-full bg-rose-500 rounded-full" [style.width.%]="(req.totalAmountUsed / (req.expectedAmount || 1)) * 100"></div>
-                                                </div>
-                                                <span class="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-lg border border-rose-100 dark:border-rose-900/30 whitespace-nowrap shadow-sm">Đã dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
+                                            <div class="mt-2 flex items-center gap-2 bg-rose-50/80 dark:bg-rose-900/10 px-2.5 py-1.5 rounded-xl border border-rose-100/50 dark:border-rose-900/30 w-fit min-w-[120px] shadow-sm justify-between">
+                                                <span class="text-[9px] font-black text-rose-500/80 dark:text-rose-400/80 uppercase tracking-widest"><i class="fa-solid fa-droplet mr-1.5"></i>Tổng đã dùng</span>
+                                                <span class="text-xs font-black text-rose-600 dark:text-rose-400">{{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
                                             </div>
                                         }
                                     </div>

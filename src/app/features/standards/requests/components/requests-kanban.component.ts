@@ -148,11 +148,9 @@ import { AuthService } from '../../../../core/services/auth.service';
 
         <!-- Amount Used Bar (If any) -->
         @if(req.totalAmountUsed) {
-          <div class="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/10 p-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30 mt-1">
-              <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div class="h-full bg-rose-500 rounded-full" [style.width.%]="(req.totalAmountUsed / (req.expectedAmount || 1)) * 100"></div>
-              </div>
-              <span class="text-[10px] font-black text-rose-600 dark:text-rose-400 whitespace-nowrap px-1">Dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
+          <div class="flex items-center justify-between gap-2 bg-rose-50/80 dark:bg-rose-900/10 px-3 py-2 rounded-xl border border-rose-100/80 dark:border-rose-900/40 mt-1 shadow-sm">
+              <span class="text-[10px] font-black tracking-widest text-rose-500/80 dark:text-rose-400/80 uppercase"><i class="fa-solid fa-droplet mr-1.5"></i>Tổng đã dùng</span>
+              <span class="text-xs font-black text-rose-600 dark:text-rose-400">{{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
           </div>
         }
 
