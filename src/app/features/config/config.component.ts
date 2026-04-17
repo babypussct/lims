@@ -935,7 +935,13 @@ service cloud.firestore {
                   const idx = perms.indexOf(p);
                   if (idx > -1) perms.splice(idx, 1);
                   else perms.push(p);
-                  return { ...user, permissions: perms };
+                  
+                  const updatedUser = { ...user, permissions: perms };
+                  // CRITICAL: Ensure the modal UI gets the new reference immediately!
+                  if (this.selectedUserForPerms()?.uid === u.uid) {
+                      this.selectedUserForPerms.set(updatedUser);
+                  }
+                  return updatedUser;
               }
               return user;
           })

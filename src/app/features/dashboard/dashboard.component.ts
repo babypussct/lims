@@ -736,7 +736,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getAvatar(name: string | undefined | null): string {
-      const photoUrl = name ? this.userPhotoMap()[name] : undefined;
+      let photoUrl = name ? this.userPhotoMap()[name] : undefined;
+      if (name === this.auth.currentUser()?.displayName && this.auth.currentUser()?.photoURL) {
+          photoUrl = this.auth.currentUser()?.photoURL;
+      }
       return this.getAvatarUrl(name, this.state.avatarStyle(), photoUrl);
   }
 
