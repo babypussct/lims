@@ -301,49 +301,58 @@ function removeAccents(str: string): string {
                     <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                         @if (standardSearchTerm().length > 0) {
                             <div class="space-y-2">
-                                        <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
-                                             [ngClass]="{
-                                                'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                                'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
-                                                'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
-                                             }"
-                                             (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
+                                @for(std of filteredAvailableStandards(); track std.id) {
+                                    <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
+                                         [ngClass]="{
+                                            'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
+                                            'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
+                                         }"
+                                         (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
 
-                                            <!-- Selection Indicator Overlay -->
-                                            @if(selectedStandardIds().has(std.id)) {
-                                                <div class="absolute top-3 right-3 w-5 h-5 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-sm animate-bounce-in z-20">
-                                                    <i class="fa-solid fa-check text-[9px] font-black"></i>
-                                                </div>
-                                            }
+                                        <!-- Selection Indicator Overlay -->
+                                        @if(selectedStandardIds().has(std.id)) {
+                                            <div class="absolute top-3 right-3 w-5 h-5 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-sm animate-bounce-in z-20">
+                                                <i class="fa-solid fa-check text-[9px] font-black"></i>
+                                            </div>
+                                        }
 
-                                            <!-- Standard Icon/Letter -->
-                                            <div class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
-                                                 [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-105' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-500 group-hover:scale-105 group-hover:text-indigo-600'">
-                                                <i class="fa-solid fa-flask-vial text-sm"></i>
+                                        <!-- Standard Icon/Letter -->
+                                        <div class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
+                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-105' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-500 group-hover:scale-105 group-hover:text-indigo-600'">
+                                            <i class="fa-solid fa-flask-vial text-sm"></i>
+                                        </div>
+
+                                        <div class="flex-1 min-w-0 relative z-10">
+                                            <div class="flex items-center justify-between gap-1 mb-1 pr-6">
+                                                <div class="font-black text-[13px] truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
+                                                     [title]="std.name">{{std.name}}</div>
+                                                @if(std.internal_id) {
+                                                    <span class="shrink-0 px-1.5 py-0.5 text-[8px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
+                                                        {{std.internal_id}}
+                                                    </span>
+                                                }
                                             </div>
 
-                                            <div class="flex-1 min-w-0 relative z-10">
-                                                <div class="flex items-center justify-between gap-1 mb-1 pr-6">
-                                                    <div class="font-black text-[13px] truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
-                                                         [title]="std.name">{{std.name}}</div>
-                                                    @if(std.internal_id) {
-                                                        <span class="shrink-0 px-1.5 py-0.5 text-[8px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
-                                                            {{std.internal_id}}
-                                                        </span>
-                                                    }
+                                            <!-- Detail Grid: Compact with all info -->
+                                            <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+                                                <div class="flex items-center gap-1 truncate" [title]="std.product_code || 'N/A'">
+                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Mã:</span>
+                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
                                                 </div>
-
-                                                <!-- Detail Grid: More compact -->
-                                                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
-                                                    <div class="flex items-center gap-1 truncate" [title]="std.product_code || 'N/A'">
-                                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Mã:</span>
-                                                        <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
-                                                    </div>
-                                                    <div class="flex items-center gap-1 truncate" [title]="std.lot_number || 'N/A'">
-                                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lot:</span>
-                                                        <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.lot_number || 'N/A'}}</span>
-                                                    </div>
+                                                <div class="flex items-center gap-1 truncate" [title]="std.lot_number || 'N/A'">
+                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lot:</span>
+                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.lot_number || 'N/A'}}</span>
                                                 </div>
+                                                <div class="flex items-center gap-1 truncate" [title]="std.cas_number || 'N/A'">
+                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">CAS:</span>
+                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.cas_number || 'N/A'}}</span>
+                                                </div>
+                                                <div class="flex items-center gap-1 truncate" [title]="std.manufacturer || 'N/A'">
+                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Hãng:</span>
+                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.manufacturer || 'N/A'}}</span>
+                                                </div>
+                                            </div>
 
                                                 <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
                                                     <div class="flex items-center gap-2">
@@ -367,6 +376,7 @@ function removeAccents(str: string): string {
                                                 </div>
                                             </div>
                                         </div>
+                                }
                                 @if(filteredAvailableStandards().length === 0) {
                                     <div class="py-12 text-center">
                                         <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
