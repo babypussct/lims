@@ -148,12 +148,12 @@ function removeAccents(str: string): string {
                                                     <span class="text-[8px] font-black uppercase tracking-widest" [class.text-rose-500]="isOverdue(req.standardDetails?.expiry_date)" [class.text-slate-400]="!isOverdue(req.standardDetails?.expiry_date)">Hạn dùng (EXP)</span>
                                                     <span class="text-[11px] font-black" [class.text-rose-600]="isOverdue(req.standardDetails?.expiry_date)" [class.text-slate-700]="!isOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
                                                 </div>
-                                                <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
+                                                <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-1">
                                                     <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tồn kho / Vị trí</span>
-                                                    <div class="flex items-start gap-1.5">
-                                                        <span class="text-[11px] font-black text-slate-700 dark:text-slate-300 whitespace-nowrap">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
-                                                        <span class="text-[11px] text-slate-400 whitespace-nowrap">•</span>
-                                                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 line-clamp-2" [title]="req.standardDetails?.location || '?'">{{req.standardDetails?.location || '?'}}</span>
+                                                    <div class="text-[11px] leading-snug">
+                                                        <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
+                                                        <span class="text-slate-400 mx-1">•</span>
+                                                        <span class="font-bold text-slate-600 dark:text-slate-400 break-words">{{req.standardDetails?.location || '?'}}</span>
                                                     </div>
                                                 </div>
                                            </div>
@@ -168,11 +168,11 @@ function removeAccents(str: string): string {
                                               <div class="font-black text-slate-700 dark:text-slate-300 text-xs mb-0.5">{{req.requestedByName}}</div>
                                               <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium italic line-clamp-1 max-w-[200px]" [title]="req.purpose">{{req.purpose}}</div>
                                               @if(req.totalAmountUsed) {
-                                                  <div class="mt-2.5 flex items-center gap-2 bg-rose-50 dark:bg-rose-900/10 p-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
-                                                      <div class="flex-1 h-1.5 bg-rose-200 dark:bg-rose-950 rounded-full overflow-hidden">
+                                                  <div class="mt-2 flex items-center gap-2">
+                                                      <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden w-24">
                                                           <div class="h-full bg-rose-500 rounded-full" [style.width.%]="(req.totalAmountUsed / (req.expectedAmount || 1)) * 100"></div>
                                                       </div>
-                                                      <span class="text-[11px] font-black text-rose-600 dark:text-rose-400 whitespace-nowrap px-1">Đã dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
+                                                      <span class="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-lg border border-rose-100 dark:border-rose-900/30 whitespace-nowrap shadow-sm">Đã dùng: {{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
                                                   </div>
                                               }
                                           </div>
