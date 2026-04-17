@@ -127,9 +127,9 @@ import { IdleTimeoutService } from './core/services/idle-timeout.service';
                             </div>
                          }
   
-                         <!-- Page component is injected here. Global CSS (styles.css) makes it fill this container. -->
-                         <!-- pb-20 on mobile creates clearance above bottom nav without affecting h calc. -->
-                         <div class="flex-1 min-h-0 overflow-hidden pb-20 md:pb-6">
+                         <!-- Wrapper scrolls for simple pages (dashboard, config).
+                              Storage pages (standards, inventory) fill 100% and scroll internally. -->
+                         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-6">
                              <router-outlet></router-outlet>
                          </div>
                      </div>

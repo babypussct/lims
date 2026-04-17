@@ -5,10 +5,10 @@
 */
 
 /* 
-  Critical layout fix: router-outlet is rendered as an inline element by default.
-  Making it display:none (hidden placeholder) keeps it out of layout flow.
-  The actual component injected AFTER router-outlet gets flex + h-full so it
-  fills the parent container which has flex-1 min-h-0.
+  Layout fix: router-outlet is an inline element by default — hide it from flow.
+  The component injected after it gets min-height:100% so it fills the viewport.
+  - Simple pages (dashboard, config): content grows beyond 100% → outer wrapper scrolls.
+  - Storage pages (standards, inventory): fill exactly 100%, internal regions scroll.
 */
 router-outlet {
   display: none;
@@ -17,7 +17,5 @@ router-outlet {
 router-outlet + * {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0%;
-  min-height: 0;
-  overflow: hidden;
+  min-height: 100%;
 }
