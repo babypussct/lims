@@ -26,81 +26,84 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
             </button>
         </div>
 
-        <div class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-xl">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-slate-50 dark:bg-slate-900/50 text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">
-                    <tr>
-                        <th class="px-6 py-4">Người dùng</th>
-                        <th class="px-6 py-4 w-32">Vai trò (Role)</th>
-                        <th class="px-6 py-4">Quyền hạn (Detailed Permissions)</th>
-                        <th class="px-6 py-4 text-center w-24">Lưu</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
-                    @for (u of userList(); track u.uid) {
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                            <td class="px-6 py-4 align-top">
-                                <div class="flex items-center gap-3">
-                                    <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600" alt="Avatar">
-                                    <div>
-                                        <div class="font-bold text-slate-700 dark:text-slate-300">{{u.displayName}}</div>
-                                        <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">{{u.email}}</div>
-                                        <div class="text-[10px] text-slate-300 dark:text-slate-600 font-mono mt-1 flex items-center gap-1 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400" (click)="copyUid(u.uid)" title="Copy UID">
-                                            <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
-                                        </div>
-                                    </div>
+        <div class="bg-slate-50 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-700/50 rounded-xl overflow-hidden">
+            <!-- Desktop Header -->
+            <div class="hidden md:grid grid-cols-12 gap-4 bg-slate-100/80 dark:bg-slate-900/50 px-6 py-4 text-xs text-slate-500 dark:text-slate-400 uppercase font-bold border-b border-slate-200 dark:border-slate-700">
+                <div class="col-span-4">Người dùng</div>
+                <div class="col-span-3">Vai trò (Role)</div>
+                <div class="col-span-4">Quyền hạn (Permissions)</div>
+                <div class="col-span-1 text-center">Lưu</div>
+            </div>
+            
+            <div class="flex flex-col md:divide-y md:divide-slate-200 dark:md:divide-slate-700/50 bg-slate-50/50 md:bg-transparent dark:bg-slate-900/20 md:dark:bg-transparent p-3 md:p-0 gap-3 md:gap-0">
+                @for (u of userList(); track u.uid) {
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 p-4 md:px-6 md:py-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition items-start bg-white md:bg-transparent shadow-sm md:shadow-none rounded-xl md:rounded-none border border-slate-200 dark:border-slate-700 md:border-none">
+                        
+                        <!-- Col 1: User Info -->
+                        <div class="col-span-1 md:col-span-4 flex items-center gap-4">
+                            <img [src]="getAvatarUrl(u.displayName, state.avatarStyle(), u.photoURL)" class="w-10 h-10 md:w-8 md:h-8 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0" alt="Avatar">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-700 dark:text-slate-300 truncate text-sm md:text-base">{{u.displayName}}</div>
+                                <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">{{u.email}}</div>
+                                <div class="text-[10px] text-slate-300 dark:text-slate-600 font-mono mt-1 flex items-center gap-1 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400 w-fit" (click)="copyUid(u.uid)" title="Copy UID">
+                                    <i class="fa-regular fa-copy"></i> {{u.uid.substring(0,8)}}...
                                 </div>
-                            </td>
-                            <td class="px-6 py-4 align-top">
-                                <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
-                                        class="w-full text-xs border border-slate-300 dark:border-slate-600 rounded-lg p-2 font-bold outline-none focus:border-indigo-500 dark:focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-slate-300"
-                                        [class.text-orange-500]="u.role === 'pending'"
-                                        [class.dark:text-orange-400]="u.role === 'pending'">
-                                    <option value="manager">Manager</option>
-                                    <option value="staff">Staff</option>
-                                    <option value="viewer">Viewer</option>
-                                    <option value="pending">Pending (Chờ duyệt)</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 align-top">
-                                @if(u.role === 'manager') {
-                                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-lg text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
-                                        <i class="fa-solid fa-check-double"></i> Tài khoản Manager có toàn quyền hệ thống.
+                            </div>
+                        </div>
+                        
+                        <!-- Col 2: Role -->
+                        <div class="col-span-1 md:col-span-3">
+                            <label class="md:hidden text-[10px] uppercase font-bold text-slate-400 mb-1.5 block">Vai trò tài khoản</label>
+                            <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
+                                    class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 md:p-2 font-bold outline-none focus:border-indigo-500 dark:focus:border-indigo-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-300 transition"
+                                    [class.text-orange-600]="u.role === 'pending'"
+                                    [class.dark:text-orange-400]="u.role === 'pending'">
+                                <option value="manager">Manager</option>
+                                <option value="staff">Staff</option>
+                                <option value="viewer">Viewer</option>
+                                <option value="pending">Pending (Chờ duyệt)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Col 3: Permissions -->
+                        <div class="col-span-1 md:col-span-4">
+                            <label class="md:hidden text-[10px] uppercase font-bold text-slate-400 mb-1.5 block">Phân quyền</label>
+                            @if(u.role === 'manager') {
+                                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-lg text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+                                    <i class="fa-solid fa-check-double shrink-0"></i> <span>Tài khoản Manager có toàn quyền.</span>
+                                </div>
+                            } @else if(u.role === 'viewer') {
+                                <div class="p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg text-blue-700 dark:text-blue-400 text-xs font-bold flex items-center gap-2">
+                                    <i class="fa-solid fa-eye shrink-0"></i> <span>Tài khoản Viewer chỉ xem.</span>
+                                </div>
+                            } @else if(u.role === 'pending') {
+                                <div class="p-3 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-lg text-orange-700 dark:text-orange-400 text-xs font-bold flex items-center gap-2">
+                                    <i class="fa-solid fa-hourglass-half shrink-0"></i> <span>Đang chờ cấp quyền.</span>
+                                </div>
+                            } @else {
+                                <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-3 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition rounded-xl flex items-center justify-between group">
+                                    <div class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <i class="fa-solid fa-sliders text-blue-500 shrink-0"></i> <span class="truncate">Cấu hình Quyền ({{u.permissions?.length || 0}})</span>
                                     </div>
-                                } @else if(u.role === 'viewer') {
-                                    <div class="p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg text-blue-700 dark:text-blue-400 text-xs font-bold flex items-center gap-2">
-                                        <i class="fa-solid fa-eye"></i> Tài khoản Viewer chỉ có quyền xem Dashboard (Read-only).
-                                    </div>
-                                } @else if(u.role === 'pending') {
-                                    <div class="p-3 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-lg text-orange-700 dark:text-orange-400 text-xs font-bold flex items-center gap-2">
-                                        <i class="fa-solid fa-hourglass-half"></i> Đang chờ cấp quyền. (Zero Trust)
-                                    </div>
-                                } @else {
-                                    <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-3 min-w-[200px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition rounded-xl flex items-center justify-between group">
-                                        <div class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                            <i class="fa-solid fa-sliders text-blue-500"></i> Cấu hình Quyền
-                                        </div>
-                                        <div class="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                            {{u.permissions?.length || 0}}/15
-                                        </div>
-                                    </button>
-                                }
-                            </td>
-                            <td class="px-6 py-4 text-center align-top">
-                                <button (click)="saveUser(u)" class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white dark:hover:text-white transition flex items-center justify-center shadow-sm dark:shadow-none" title="Lưu thay đổi">
-                                    <i class="fa-solid fa-floppy-disk"></i>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:text-blue-500 transition-colors"></i>
                                 </button>
-                            </td>
-                        </tr>
-                    } @empty {
-                        <tr>
-                            <td colspan="4" class="p-8 text-center text-slate-400 dark:text-slate-500 italic">
-                                Không tìm thấy người dùng.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            }
+                        </div>
+                        
+                        <!-- Col 4: Save -->
+                        <div class="col-span-1 md:col-span-1 flex md:justify-center mt-2 md:mt-0">
+                            <button (click)="saveUser(u)" class="w-full md:w-10 h-10 md:h-10 rounded-xl md:rounded-lg bg-indigo-50 md:bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-indigo-200 md:border-transparent dark:border-indigo-800/30 font-bold gap-2 text-sm shadow-sm md:shadow-none" title="Lưu thay đổi">
+                                <i class="fa-solid fa-floppy-disk text-base md:text-sm"></i> <span class="md:hidden">Lưu Thay Đổi</span>
+                            </button>
+                        </div>
+                        
+                    </div>
+                } @empty {
+                    <div class="p-8 text-center text-slate-400 dark:text-slate-500 italic bg-white dark:bg-slate-800">
+                        Không tìm thấy người dùng.
+                    </div>
+                }
+            </div>
         </div>
     </div>
 

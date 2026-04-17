@@ -59,10 +59,12 @@ import * as XLSX from 'xlsx';
                     
                     <div class="space-y-2 border border-slate-100 dark:border-slate-700/50 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/20">
                         @for (cat of categoriesLocal(); track $index) {
-                            <div class="flex gap-2 items-center group">
-                                <input [(ngModel)]="cat.id" class="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition" placeholder="ID (VD: reagent)">
-                                <input [(ngModel)]="cat.name" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition" placeholder="Tên hiển thị (VD: Hóa chất)">
-                                <button (click)="removeCategory($index)" class="w-6 h-6 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <div class="flex flex-col sm:flex-row gap-2 sm:items-center group">
+                                <div class="flex gap-2 flex-1">
+                                    <input [(ngModel)]="cat.id" class="w-1/3 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="ID (VD: reagent)">
+                                    <input [(ngModel)]="cat.name" class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 sm:py-1 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition shadow-sm sm:shadow-none" placeholder="Tên hiển thị (VD: Hóa chất)">
+                                </div>
+                                <button (click)="removeCategory($index)" class="w-full sm:w-6 h-8 sm:h-6 shrink-0 flex items-center justify-center text-slate-400 dark:text-slate-500 sm:text-slate-300 sm:dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 transition sm:rounded-full sm:hover:bg-slate-100 sm:dark:hover:bg-slate-700 border border-slate-200 sm:border-transparent dark:border-slate-600 bg-white sm:bg-transparent dark:bg-slate-800 rounded shadow-sm sm:shadow-none"><i class="fa-solid fa-trash text-[10px] sm:text-[10px]"></i> <span class="sm:hidden ml-2 text-xs font-bold">Xóa</span></button>
                             </div>
                         }
                     </div>
