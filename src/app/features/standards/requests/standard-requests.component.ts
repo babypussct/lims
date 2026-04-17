@@ -301,82 +301,72 @@ function removeAccents(str: string): string {
                     <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                         @if (standardSearchTerm().length > 0) {
                             <div class="space-y-2">
-                                @for(std of filteredAvailableStandards(); track std.id) {
-                                    <div class="p-5 border rounded-[2rem] transition-all duration-300 flex items-start gap-4 group relative overflow-hidden"
-                                         [ngClass]="{
-                                            'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_2px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_2px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
-                                         }"
-                                         (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
+                                        <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
+                                             [ngClass]="{
+                                                'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
+                                                'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
+                                                'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
+                                             }"
+                                             (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
 
-                                        <!-- Selection Indicator Overlay -->
-                                        @if(selectedStandardIds().has(std.id)) {
-                                            <div class="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-md animate-bounce-in z-20">
-                                                <i class="fa-solid fa-check text-[10px] font-black"></i>
-                                            </div>
-                                        }
+                                            <!-- Selection Indicator Overlay -->
+                                            @if(selectedStandardIds().has(std.id)) {
+                                                <div class="absolute top-3 right-3 w-5 h-5 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-sm animate-bounce-in z-20">
+                                                    <i class="fa-solid fa-check text-[9px] font-black"></i>
+                                                </div>
+                                            }
 
-                                        <!-- Standard Icon/Letter -->
-                                        <div class="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
-                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-110' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-600 group-hover:scale-110'">
-                                            <i class="fa-solid fa-flask-vial text-lg"></i>
-                                        </div>
-
-                                        <div class="flex-1 min-w-0 relative z-10">
-                                            <div class="flex items-center justify-between gap-2 mb-1 pr-6">
-                                                <div class="font-black text-sm truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600" 
-                                                     [title]="std.name">{{std.name}}</div>
-                                                @if(std.internal_id) {
-                                                    <span class="shrink-0 px-2 py-0.5 text-[9px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm">
-                                                        {{std.internal_id}}
-                                                    </span>
-                                                }
+                                            <!-- Standard Icon/Letter -->
+                                            <div class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
+                                                 [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-105' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-500 group-hover:scale-105 group-hover:text-indigo-600'">
+                                                <i class="fa-solid fa-flask-vial text-sm"></i>
                                             </div>
 
-                                            <!-- Detail Grid -->
-                                            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
-                                                <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-barcode text-[10px] w-3 text-slate-400"></i>
-                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Mã: {{std.product_code || 'N/A'}}</span>
+                                            <div class="flex-1 min-w-0 relative z-10">
+                                                <div class="flex items-center justify-between gap-1 mb-1 pr-6">
+                                                    <div class="font-black text-[13px] truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
+                                                         [title]="std.name">{{std.name}}</div>
+                                                    @if(std.internal_id) {
+                                                        <span class="shrink-0 px-1.5 py-0.5 text-[8px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
+                                                            {{std.internal_id}}
+                                                        </span>
+                                                    }
                                                 </div>
-                                                <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-hashtag text-[10px] w-3 text-slate-400"></i>
-                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Lot: {{std.lot_number || 'N/A'}}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-flask text-[10px] w-3 text-slate-400"></i>
-                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">CAS: {{std.cas_number || 'N/A'}}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-industry text-[10px] w-3 text-slate-400"></i>
-                                                    <span class="text-[10px] font-bold truncate text-slate-500 dark:text-slate-400">Hãng: {{std.manufacturer || 'N/A'}}</span>
-                                                </div>
-                                            </div>
 
-                                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                                <div class="flex items-center gap-2">
-                                                    @if(isDepleted(std)) {
-                                                        <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
-                                                            <i class="fa-solid fa-ban text-red-400"></i> Sử dụng hết
-                                                        </div>
-                                                    } @else {
-                                                        <div class="px-2 py-0.5 text-[10px] font-black rounded flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/30 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
-                                                            <i class="fa-solid fa-cube"></i> {{std.current_amount}} {{std.unit}}
+                                                <!-- Detail Grid: More compact -->
+                                                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+                                                    <div class="flex items-center gap-1 truncate" [title]="std.product_code || 'N/A'">
+                                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Mã:</span>
+                                                        <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 truncate" [title]="std.lot_number || 'N/A'">
+                                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lot:</span>
+                                                        <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.lot_number || 'N/A'}}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                                                    <div class="flex items-center gap-2">
+                                                        @if(isDepleted(std)) {
+                                                            <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                                                                <i class="fa-solid fa-ban text-red-400"></i> Hết
+                                                            </div>
+                                                        } @else {
+                                                            <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                                                {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    @if(std.expiry_date) {
+                                                        <div class="text-[9px] font-bold flex items-center gap-1" 
+                                                             [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
+                                                            <i class="fa-regular fa-calendar-xmark"></i>
+                                                            {{std.expiry_date | date:'dd/MM/yyyy'}}
                                                         </div>
                                                     }
                                                 </div>
-                                                @if(std.expiry_date) {
-                                                    <div class="text-[10px] font-bold flex items-center gap-1" 
-                                                         [ngClass]="isExpired(std.expiry_date) ? 'text-red-500 font-black' : 'text-slate-400'">
-                                                        <i class="fa-regular fa-calendar-xmark"></i>
-                                                        {{std.expiry_date | date:'dd/MM/yyyy'}}
-                                                    </div>
-                                                }
                                             </div>
                                         </div>
-                                    </div>
-                                }
                                 @if(filteredAvailableStandards().length === 0) {
                                     <div class="py-12 text-center">
                                         <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -409,49 +399,52 @@ function removeAccents(str: string): string {
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                        <form [formGroup]="form" (ngSubmit)="submitRequest()" class="space-y-6">
-                            <!-- Selected Counter -->
-                            <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-600 shadow-sm">
-                                        <i class="fa-solid fa-check-double"></i>
+                        <form [formGroup]="form" (ngSubmit)="submitRequest()" class="space-y-4">
+                            <!-- Compact Selected Standards Panel -->
+                            <div class="rounded-xl border border-indigo-100 dark:border-indigo-800/30 bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex flex-col">
+                                <!-- Group Header -->
+                                <div class="bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2.5 border-b border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between shrink-0">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                            <i class="fa-solid fa-list-check text-[10px]"></i>
+                                        </div>
+                                        <div class="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
+                                            {{selectedStandardIds().size}} chuẩn đã chọn
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Đã chọn</div>
-                                        <div class="text-lg font-black text-indigo-700 dark:text-indigo-300">{{selectedStandardIds().size}} chất chuẩn</div>
-                                    </div>
+                                    <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[9px] font-bold text-red-500 hover:text-red-600 uppercase transition disabled:opacity-30 flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded">
+                                        <i class="fa-solid fa-trash-can"></i> Xóa hết
+                                    </button>
                                 </div>
-                                <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase underline decoration-2 underline-offset-4 disabled:opacity-30">Xóa tất cả</button>
-                            </div>
-
-                            <!-- Selected Standards Chip List -->
-                            <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
-                                @if (selectedStandardsList().length === 0) {
-                                    <div class="py-4 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-600">
-                                        <i class="fa-regular fa-hand-pointer text-xs"></i>
-                                        <span class="text-[11px] font-medium italic">Tìm kiếm và chọn chuẩn ở cột bên trái để thêm vào yêu cầu.</span>
-                                    </div>
-                                } @else {
-                                    <div class="p-3 max-h-[160px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
-                                        @for (std of selectedStandardsList(); track std.id) {
-                                            <div class="animate-bounce-in flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700/50 shadow-sm group/chip max-w-full">
-                                                <div class="flex flex-col min-w-0">
-                                                    <span class="text-[11px] font-black text-indigo-700 dark:text-indigo-300 truncate max-w-[160px]" [title]="std.name">{{std.name}}</span>
-                                                    @if (std.internal_id || std.lot_number) {
-                                                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 truncate">
-                                                            {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
-                                                        </span>
-                                                    }
+                                <!-- Chip List -->
+                                <div class="bg-slate-50/50 dark:bg-slate-900/30">
+                                    @if (selectedStandardsList().length === 0) {
+                                        <div class="py-3 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                                            <i class="fa-regular fa-hand-pointer text-xs"></i>
+                                            <span class="text-[10px] font-medium italic">Click chọn chuẩn ở danh sách bên trái.</span>
+                                        </div>
+                                    } @else {
+                                        <!-- Reduced max-height to 120px to prevent overflow in smaller screens -->
+                                        <div class="p-2.5 max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5">
+                                            @for (std of selectedStandardsList(); track std.id) {
+                                                <div class="animate-bounce-in flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-700/50 shadow-sm shrink-0">
+                                                    <div class="flex flex-col min-w-0">
+                                                        <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 truncate max-w-[130px] leading-tight" [title]="std.name">{{std.name}}</span>
+                                                        @if (std.internal_id || std.lot_number) {
+                                                            <span class="text-[8px] font-medium text-slate-400 dark:text-slate-500 truncate mt-px">
+                                                                {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                    <button type="button" (click)="toggleStandardSelection(std.id)"
+                                                            class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-0.5">
+                                                        <i class="fa-solid fa-times text-[8px]"></i>
+                                                    </button>
                                                 </div>
-                                                <button type="button" (click)="toggleStandardSelection(std.id)"
-                                                        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-1"
-                                                        title="Bỏ chọn">
-                                                    <i class="fa-solid fa-times text-[9px]"></i>
-                                                </button>
-                                            </div>
-                                        }
-                                    </div>
-                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             </div>
 
                             <div class="space-y-4">
