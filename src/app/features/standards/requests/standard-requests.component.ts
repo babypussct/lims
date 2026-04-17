@@ -50,6 +50,52 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
         </div>
       </div>
 
+      <!-- Mini Dashboard -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mx-2 mt-4 fade-in">
+         <!-- Card 1: Need Approval -->
+         <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/40 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+             <div>
+                 <p class="text-[10px] font-black tracking-widest text-amber-600/70 dark:text-amber-400/80 uppercase mb-1">Cần Duyệt</p>
+                 <h4 class="text-3xl font-black text-amber-600 dark:text-amber-400 leading-none">{{statusCounts().PENDING_APPROVAL}}</h4>
+             </div>
+             <div class="w-12 h-12 rounded-2xl bg-amber-100/50 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl backdrop-blur-md border border-amber-200/50 dark:border-amber-800/50 shadow-inner">
+                 <i class="fa-solid fa-clipboard-check"></i>
+             </div>
+         </div>
+         
+         <!-- Card 2: Overdue -->
+         <div class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/40 dark:to-rose-900/20 border border-red-200/50 dark:border-red-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+             <div>
+                 <p class="text-[10px] font-black tracking-widest text-red-600/70 dark:text-red-400/80 uppercase mb-1">Quá Hạn Trả</p>
+                 <h4 class="text-3xl font-black text-red-600 dark:text-red-400 leading-none">{{statusCounts().OVERDUE}}</h4>
+             </div>
+             <div class="w-12 h-12 rounded-2xl bg-red-100/50 dark:bg-red-900/60 text-red-600 dark:text-red-400 flex items-center justify-center text-xl backdrop-blur-md border border-red-200/50 dark:border-red-800/50 shadow-inner">
+                 <i class="fa-solid fa-clock-rotate-left"></i>
+             </div>
+         </div>
+
+         <!-- Card 3: Pending Return -->
+         <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/40 dark:to-pink-900/20 border border-fuchsia-200/50 dark:border-fuchsia-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+             <div>
+                 <p class="text-[10px] font-black tracking-widest text-fuchsia-600/70 dark:text-fuchsia-400/80 uppercase mb-1">Chờ Admin Nhận</p>
+                 <h4 class="text-3xl font-black text-fuchsia-600 dark:text-fuchsia-400 leading-none">{{statusCounts().PENDING_RETURN}}</h4>
+             </div>
+             <div class="w-12 h-12 rounded-2xl bg-fuchsia-100/50 dark:bg-fuchsia-900/60 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-xl backdrop-blur-md border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-inner">
+                 <i class="fa-solid fa-truck-ramp-box"></i>
+             </div>
+         </div>
+
+         <!-- Card 4: In Use Lab -->
+         <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/40 dark:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
+             <div>
+                 <p class="text-[10px] font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/80 uppercase mb-1">Đang Dùng</p>
+                 <h4 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{{statusCounts().IN_PROGRESS}}</h4>
+             </div>
+             <div class="w-12 h-12 rounded-2xl bg-indigo-100/50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl backdrop-blur-md border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
+                 <i class="fa-solid fa-flask-vial"></i>
+             </div>
+         </div>
+      </div>
 
       <!-- Main Section: List & Filter -->
       <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-0">
@@ -332,11 +378,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       const isAdmin = this.auth.canApproveStandards();
       
       const filtered = isAdmin ? reqs : reqs.filter(r => r.requestedBy === currentUser?.uid);
+      const now = Date.now();
       
       return {
           ALL: filtered.length,
           PENDING_APPROVAL: filtered.filter(r => r.status === 'PENDING_APPROVAL').length,
           IN_PROGRESS: filtered.filter(r => r.status === 'IN_PROGRESS').length,
+          OVERDUE: filtered.filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now).length,
           PENDING_RETURN: filtered.filter(r => r.status === 'PENDING_RETURN').length,
           COMPLETED: filtered.filter(r => r.status === 'COMPLETED').length,
           REJECTED: filtered.filter(r => r.status === 'REJECTED').length

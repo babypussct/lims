@@ -98,7 +98,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 
     <!-- REUSABLE CARD TEMPLATE -->
     <ng-template #cardTemplate let-req>
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all flex flex-col gap-3 group relative cursor-default" [class.ring-2]="isOverdue(req) && req.status === 'IN_PROGRESS'" [class.ring-rose-400]="isOverdue(req) && req.status === 'IN_PROGRESS'">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all duration-300 flex flex-col gap-3 group relative cursor-default hover:-translate-y-1 hover:border-indigo-200 dark:hover:border-indigo-800/50" [class.ring-2]="isOverdue(req) && req.status === 'IN_PROGRESS'" [class.ring-rose-400]="isOverdue(req) && req.status === 'IN_PROGRESS'">
         
         <!-- Header: User & Time -->
         <div class="flex justify-between items-start gap-2">
