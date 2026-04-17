@@ -16,13 +16,15 @@ function removeAccents(str: string): string {
 
 import { RequestsKanbanComponent } from './components/requests-kanban.component';
 import { RequestsTableComponent } from './components/requests-table.component';
+import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
+import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
 
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent],
   template: `
-    <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 custom-scrollbar overflow-y-auto overflow-x-hidden">
+    <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 overflow-hidden">
       <!-- Header Area -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 px-2 mt-2">
         <div>
@@ -50,7 +52,7 @@ import { RequestsTableComponent } from './components/requests-table.component';
 
 
       <!-- Main Section: List & Filter -->
-      <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-[500px]">
+      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->
           <div class="p-4 border-b border-slate-50 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md sticky top-0 z-40">
@@ -129,521 +131,19 @@ import { RequestsTableComponent } from './components/requests-table.component';
           }
       </div>
 
-      <!-- REQUEST MODAL (Tạo yêu cầu mới - Drawer) -->
-      @if (showModal()) {
-         <div class="fixed inset-0 z-[60] flex justify-end bg-slate-900/60 backdrop-blur-sm fade-in">
-            <!-- Overlay click to close -->
-            <div class="absolute inset-0" (click)="closeModal()"></div>
-            
-            <div class="relative bg-white dark:bg-slate-900 shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-slide-left h-full border-l border-slate-100 dark:border-slate-800">
-                
-                <!-- Left Column: Standards Selection -->
-                <div class="w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
-                    <div class="p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
-                            <i class="fa-solid fa-flask-vial text-indigo-600"></i>
-                            Chọn chuẩn đối chiếu
-                        </h3>
-                        
-                        <!-- Search Input -->
-                        <div class="relative">
-                            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="standardSearchTerm.set($event)" 
-                                   placeholder="Tìm theo tên, lot, cas, mã..." 
-                                   class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                        @if (standardSearchTerm().length > 0) {
-                            <div class="space-y-2">
-                                @for(std of filteredAvailableStandards(); track std.id) {
-                                    <div class="p-3 border rounded-2xl transition-all duration-200 flex items-start gap-3 group relative overflow-hidden"
-                                         [ngClass]="{
-                                            'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.3)] z-10 cursor-pointer': selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:shadow-md hover:shadow-indigo-100/30 dark:hover:shadow-none cursor-pointer bg-white dark:bg-slate-900': !selectedStandardIds().has(std.id) && !isDepleted(std),
-                                            'opacity-40 grayscale cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50': isDepleted(std)
-                                         }"
-                                         (click)="!isDepleted(std) && toggleStandardSelection(std.id)">
-
-                                        <!-- Selection Indicator Overlay -->
-                                        @if(selectedStandardIds().has(std.id)) {
-                                            <div class="absolute top-3 right-3 w-5 h-5 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-sm animate-bounce-in z-20">
-                                                <i class="fa-solid fa-check text-[9px] font-black"></i>
-                                            </div>
-                                        }
-
-                                        <!-- Standard Icon/Letter -->
-                                        <div class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
-                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-105' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-500 group-hover:scale-105 group-hover:text-indigo-600'">
-                                            <i class="fa-solid fa-flask-vial text-sm"></i>
-                                        </div>
-
-                                        <div class="flex-1 min-w-0 relative z-10">
-                                            <div class="flex items-center justify-between gap-1 mb-1 pr-6">
-                                                <div class="font-black text-[13px] truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
-                                                     [title]="std.name">{{std.name}}</div>
-                                                @if(std.internal_id) {
-                                                    <span class="shrink-0 px-1.5 py-0.5 text-[8px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
-                                                        {{std.internal_id}}
-                                                    </span>
-                                                }
-                                            </div>
-
-                                            <!-- Detail Grid: Compact with all info -->
-                                            <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
-                                                <div class="flex items-center gap-1 truncate" [title]="std.product_code || 'N/A'">
-                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Mã:</span>
-                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 truncate" [title]="std.lot_number || 'N/A'">
-                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Lot:</span>
-                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.lot_number || 'N/A'}}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 truncate" [title]="std.cas_number || 'N/A'">
-                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">CAS:</span>
-                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.cas_number || 'N/A'}}</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 truncate" [title]="std.manufacturer || 'N/A'">
-                                                    <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Hãng:</span>
-                                                    <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.manufacturer || 'N/A'}}</span>
-                                                </div>
-                                            </div>
-
-                                                <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
-                                                    <div class="flex items-center gap-2">
-                                                        @if(isDepleted(std)) {
-                                                            <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
-                                                                <i class="fa-solid fa-ban text-red-400"></i> Hết
-                                                            </div>
-                                                        } @else {
-                                                            <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                                                {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                    @if(std.expiry_date) {
-                                                        <div class="text-[9px] font-bold flex items-center gap-1" 
-                                                             [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
-                                                            <i class="fa-regular fa-calendar-xmark"></i>
-                                                            {{std.expiry_date | date:'dd/MM/yyyy'}}
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                }
-                                @if(filteredAvailableStandards().length === 0) {
-                                    <div class="py-12 text-center">
-                                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                                            <i class="fa-solid fa-layer-group text-2xl"></i>
-                                        </div>
-                                        <p class="text-slate-500 dark:text-slate-400 font-medium">Không tìm thấy chuẩn nào phù hợp</p>
-                                    </div>
-                                }
-                            </div>
-                        } @else {
-                            <div class="py-20 text-center flex flex-col items-center justify-center">
-                                <div class="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-[2.5rem] flex items-center justify-center mb-6 text-indigo-300 dark:text-indigo-700 animate-pulse">
-                                    <i class="fa-solid fa-search text-4xl"></i>
-                                </div>
-                                <h4 class="text-slate-800 dark:text-slate-100 font-black text-lg mb-2">Tìm kiếm chất chuẩn</h4>
-                                <p class="text-slate-500 dark:text-slate-400 text-sm max-w-[250px] mx-auto font-medium">Nhập tên, số lô hoặc mã CAS để bắt đầu chọn chuẩn mượn.</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                <!-- Right Column: Form & Confirmation -->
-                <div class="flex-1 flex flex-col bg-white dark:bg-slate-900">
-                    <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
-                        <div>
-                            <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
-                            <p class="text-xs text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
-                        </div>
-                        <button (click)="closeModal()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                        <form [formGroup]="form" (ngSubmit)="submitRequest()" class="space-y-4">
-                            <!-- Compact Selected Standards Panel -->
-                            <div class="rounded-xl border border-indigo-100 dark:border-indigo-800/30 bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex flex-col">
-                                <!-- Group Header -->
-                                <div class="bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2.5 border-b border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between shrink-0">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-6 h-6 rounded flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                            <i class="fa-solid fa-list-check text-[10px]"></i>
-                                        </div>
-                                        <div class="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
-                                            {{selectedStandardIds().size}} chuẩn đã chọn
-                                        </div>
-                                    </div>
-                                    <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[9px] font-bold text-red-500 hover:text-red-600 uppercase transition disabled:opacity-30 flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded">
-                                        <i class="fa-solid fa-trash-can"></i> Xóa hết
-                                    </button>
-                                </div>
-                                <!-- Chip List -->
-                                <div class="bg-slate-50/50 dark:bg-slate-900/30">
-                                    @if (selectedStandardsList().length === 0) {
-                                        <div class="py-3 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                                            <i class="fa-regular fa-hand-pointer text-xs"></i>
-                                            <span class="text-[10px] font-medium italic">Click chọn chuẩn ở danh sách bên trái.</span>
-                                        </div>
-                                    } @else {
-                                        <!-- Reduced max-height to 120px to prevent overflow in smaller screens -->
-                                        <div class="p-2.5 max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5">
-                                            @for (std of selectedStandardsList(); track std.id) {
-                                                <div class="animate-bounce-in flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-700/50 shadow-sm shrink-0">
-                                                    <div class="flex flex-col min-w-0">
-                                                        <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 truncate max-w-[130px] leading-tight" [title]="std.name">{{std.name}}</span>
-                                                        @if (std.internal_id || std.lot_number) {
-                                                            <span class="text-[8px] font-medium text-slate-400 dark:text-slate-500 truncate mt-px">
-                                                                {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
-                                                            </span>
-                                                        }
-                                                    </div>
-                                                    <button type="button" (click)="toggleStandardSelection(std.id)"
-                                                            class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-0.5">
-                                                        <i class="fa-solid fa-times text-[8px]"></i>
-                                                    </button>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-
-                            <div class="space-y-4">
-                                 <div>
-                                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
-                                     <textarea formControlName="purpose" rows="3" 
-                                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" 
-                                               placeholder="VD: Pha chuẩn cho máy HPLC-MS/MS..."></textarea>
-                                     <div class="flex flex-wrap gap-2 mt-2">
-                                         <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn máy'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn máy</button>
-                                         <button type="button" (click)="form.patchValue({purpose: 'Kiểm tra định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm tra định kỳ</button>
-                                         <button type="button" (click)="form.patchValue({purpose: 'Ngoại kiểm'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại kiểm</button>
-                                         <button type="button" (click)="form.patchValue({purpose: 'Nghiên cứu phát triển'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Nghiên cứu phát triển</button>
-                                         <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm nghiệm mẫu</button>
-                                     </div>
-                                 </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
-                                    <div class="relative group">
-                                        <i class="fa-regular fa-calendar absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
-                                        <input type="date" formControlName="expectedReturnDate" 
-                                               class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Actions attached to bottom -->
-                    <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
-                        <div class="flex justify-end gap-3">
-                            <button (click)="closeModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy bỏ</button>
-                            <button (click)="submitRequest()" [disabled]="selectedStandardIds().size === 0 || isProcessing()" 
-                                    class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
-                                @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                                @else { <i class="fa-solid fa-paper-plane text-xs"></i> Gửi yêu cầu }
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
-
-
-      <!-- APPROVE MODAL (Duyệt & Giao) -->
-      @if (showApproveModal() && selectedRequest()) {
-          <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-              <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
-                  <!-- Left: Standard Info Summary -->
-                  <div class="hidden md:flex w-2/5 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
-                      <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
-                          <i class="fa-solid fa-vial"></i>
-                      </div>
-                      
-                      <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-2 line-clamp-2">{{selectedRequest()?.standardName}}</h3>
-                      <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-6">Thông tin chuẩn bàn giao</div>
-  
-                      <div class="space-y-4">
-                          <div class="flex flex-col">
-                              <span class="text-[10px] font-bold text-slate-400 uppercase">Số Lô / Lot</span>
-                              <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{selectedRequest()?.lotNumber || 'N/A'}}</span>
-                          </div>
-                          @if(selectedRequest()?.standardDetails?.expiry_date) {
-                              <div class="flex flex-col">
-                                  <span class="text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
-                                  <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{selectedRequest()?.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
-                              </div>
-                          }
-                          <div class="flex flex-col">
-                              <span class="text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
-                              <span class="text-sm font-bold text-emerald-600">{{selectedRequest()?.standardDetails?.current_amount}} {{selectedRequest()?.standardDetails?.unit}}</span>
-                          </div>
-                          @if(selectedRequest()?.standardDetails?.internal_id) {
-                              <div class="flex flex-col">
-                                  <span class="text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
-                                  <span class="text-sm font-bold text-slate-500">{{selectedRequest()?.standardDetails?.internal_id}}</span>
-                              </div>
-                          }
-                      </div>
-  
-                      <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
-                          <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                              <p class="text-[10px] text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
-                                  <i class="fa-solid fa-user-check mr-1"></i>
-                                  Người mượn: <strong>{{selectedRequest()?.requestedByName}}</strong>
-                              </p>
-                          </div>
-                      </div>
-                  </div>
-  
-                  <!-- Right: Approve Form -->
-                  <div class="flex-1 p-8 flex flex-col bg-white dark:bg-slate-900">
-                      <div class="flex justify-between items-center mb-6">
-                          <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Duyệt & Giao chuẩn</h3>
-                          <button (click)="showApproveModal.set(false)" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
-                      </div>
-  
-                      <div class="flex-1 space-y-5">
-                          <div class="grid grid-cols-2 gap-4">
-                              <div>
-                                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
-                                  <input type="date" [ngModel]="approveExpectedDate()" (ngModelChange)="approveExpectedDate.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-                              </div>
-                              <div>
-                                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
-                                  <div class="relative">
-                                      <input type="number" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
-                                      <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{selectedRequest()?.standardDetails?.unit}}</span>
-                                  </div>
-                              </div>
-                          </div>
-  
-                          <div>
-                              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
-                              <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích bàn giao..."></textarea>
-                          </div>
-                      </div>
-  
-                      <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-                          <button (click)="showApproveModal.set(false)" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
-                          <button (click)="confirmApprove()" [disabled]="!approvePurpose() || isProcessing()" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
-                              @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                              @else { <i class="fa-solid fa-check-circle text-xs"></i> Xác nhận & Giao }
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      }
-
-      <!-- REJECT MODAL -->
-      @if (showRejectModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
-                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-red-50/50 dark:bg-red-900/10">
-                    <h3 class="font-black text-red-600 dark:text-red-400 text-xl flex items-center gap-2">
-                        <i class="fa-solid fa-ban"></i> Từ chối yêu cầu
-                    </h3>
-                    <button (click)="closeRejectModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-red-400 transition"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="p-8 bg-white dark:bg-slate-900">
-                    <div class="mb-6">
-                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                            Bạn đang từ chối yêu cầu của <strong>{{selectedRequest()?.requestedByName}}</strong> cho chuẩn <strong>{{selectedRequest()?.standardName}}</strong>.
-                        </p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do từ chối <span class="text-red-500">*</span></label>
-                        <textarea [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none resize-none" placeholder="Nhập lý do cụ thể..."></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-3 mt-8">
-                        <button (click)="closeRejectModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                        <button (click)="confirmReject()" [disabled]="!rejectReason().toString().trim() || isProcessing()" class="px-8 py-3 bg-red-600 text-white font-bold text-sm rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 dark:shadow-none transition disabled:opacity-50">
-                            Xác nhận từ chối
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
-
-      <!-- RETURN MODAL -->
-      @if (showReturnModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
-                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
-                    <h3 class="font-black text-indigo-600 dark:text-indigo-400 text-xl flex items-center gap-2">
-                        <i class="fa-solid fa-rotate-left"></i>
-                        {{ isForceReturn() ? 'Thu hồi chuẩn' : 'Hoàn trả chuẩn' }}
-                    </h3>
-                    <button (click)="closeReturnModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
-                    <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30">
-                        <h4 class="font-black text-slate-800 dark:text-slate-100 leading-tight mb-2">{{returnRequest()?.standardName}}</h4>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
-                            <span class="font-black text-indigo-600">{{currentStandard()?.current_amount || returnRequest()?.standardDetails?.current_amount || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
-                        </div>
-                    </div>
-
-                    @if ((returnRequest()?.usageLogs || []).length > 0) {
-                        <!-- [NEW-1 + NEW-5] Hiển thị tóm tắt khi đã có prior usage logs -->
-                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/40 space-y-2">
-                            <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-sm">
-                                <i class="fa-solid fa-circle-info"></i>
-                                Tổng đã ghi nhận: <span class="text-blue-800 dark:text-blue-200">{{returnRequest()?.totalAmountUsed || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
-                                <span class="text-blue-500 font-medium text-xs">({{(returnRequest()?.usageLogs || []).length}} đợt)</span>
-                            </div>
-                            @if (isForceReturn()) {
-                                <!-- [NEW-1] Cảnh báo cho Admin force-return -->
-                                <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
-                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                                    Kho đã được trừ theo từng đợt. Số lượng nhập bên dưới chỉ để <strong>ghi sổ báo cáo</strong>, không ảnh hưởng thêm vào tồn kho.
-                                </p>
-                            } @else {
-                                <!-- [NEW-5] Cảnh báo cho Employee report return -->
-                                <p class="text-xs text-blue-600 dark:text-blue-400">
-                                    Kho đã được trừ theo từng đợt ghi nhận. Số báo cáo bên dưới chỉ để admin xác nhận.
-                                </p>
-                            }
-                        </div>
-
-                        <!-- [NEW-5] Số lượng pre-filled, người dùng có thể điều chỉnh nếu cần nhưng có cảnh báo rõ ràng -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
-                            <div class="relative">
-                                <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
-                            </div>
-                        </div>
-                    } @else {
-                        <!-- Whole-return flow: nhập bình thường -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
-                            </div>
-                        </div>
-                    }
-                    
-                    <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
-                        <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                        <label for="isDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
-                    </div>
-
-                    <div class="flex justify-end gap-3 mt-4 pt-4">
-                        <button (click)="closeReturnModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                        <button (click)="confirmReturn()" [disabled]="returnAmount() === null || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
-                            Xác nhận trả
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
-
-      <!-- LOG USAGE MODAL -->
-      @if (showLogUsageModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
-                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-teal-50/50 dark:bg-teal-900/10">
-                    <h3 class="font-black text-teal-600 dark:text-teal-400 text-xl flex items-center gap-2">
-                        <i class="fa-solid fa-vial-circle-check"></i> Ghi nhận đợt dùng
-                    </h3>
-                    <button (click)="closeLogUsageModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-teal-400 transition"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Khối lượng đợt này <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="number" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{selectedRequest()?.standardDetails?.unit}}</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ghi chú đợt dùng</label>
-                        <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 transition-all outline-none resize-none" placeholder="VD: Dùng cho mẫu phân tích lô X..."></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button (click)="closeLogUsageModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                        <button (click)="confirmLogUsage()" [disabled]="!logUsageAmount() || isProcessing()" class="px-8 py-3 bg-teal-600 text-white font-bold text-sm rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
-                            Lưu nhật ký dùng
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
-      <!-- ADMIN RECEIVE RETURN MODAL -->
-      @if (showAdminReceiveModal()) {
-         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-bounce-in border border-slate-100 dark:border-slate-800">
-                <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/10">
-                    <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-xl flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-check"></i> Xác nhận nhập kho trả
-                    </h3>
-                    <button (click)="closeAdminReceiveModal()" class="w-8 h-8 rounded-full hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center text-indigo-400 transition"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
-                    <div class="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">NV báo cáo dùng</span>
-                            <span class="text-xl font-black text-indigo-600">{{adminReceiveRequest()?.totalAmountUsed}} {{adminReceiveRequest()?.standardDetails?.unit}}</span>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
-                            <span class="text-sm font-bold" [class]="adminReceiveRequest()?.reportedDepleted ? 'text-red-500' : 'text-emerald-500'">
-                                {{ adminReceiveRequest()?.reportedDepleted ? 'Báo cáo đã hết' : 'Vẫn còn chuẩn' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="number" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{adminReceiveRequest()?.standardDetails?.unit}}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
-                        <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                        <label for="adminIsDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
-                    </div>
-
-                    @if(adminReceiveIsDepleted()) {
-                        <div class="fade-in">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
-                            <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 outline-none resize-none" placeholder="Nhập lý do như: Hết hạn, hỏng, hoặc dùng hết..."></textarea>
-                        </div>
-                    }
-
-                    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
-                        <button (click)="closeAdminReceiveModal()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                        <button (click)="confirmAdminReceive()" [disabled]="adminReceiveAmount() === null || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing()" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
-                            Hoàn tất tiếp nhận
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-      }
+      <app-requests-action-modals
+          [activeModal]="activeModal()"
+          [request]="selectedRequest()"
+          [standard]="currentStandard()"
+          [isForceReturn]="isForceReturn()"
+          [isProcessing]="isProcessing()"
+          (close)="closeActionModal()"
+          (approveAction)="confirmApprove($event)"
+          (rejectAction)="confirmReject($event)"
+          (logUsageAction)="confirmLogUsage($event)"
+          (returnAction)="confirmReturn($event)"
+          (adminReceiveAction)="confirmAdminReceive($event)">
+      </app-requests-action-modals>
 
       <!-- ADMIN PURCHASE REQUESTS MODAL -->
       @if (showPurchaseRequestsAdminModal()) {
@@ -766,67 +266,20 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   
   searchTerm = signal('');
   statusFilter = signal<string>('ALL');
+  viewMode = signal<'kanban' | 'table'>('kanban');
   
   isLoading = signal(true);
   isProcessing = signal(false);
   showModal = signal(false);
   
-  showRejectModal = signal(false);
-  rejectReason = signal<string>('');
   selectedRequest = signal<StandardRequest | null>(null);
-  
-  // Approve Modal (Duyệt & Giao)
-  showApproveModal = signal(false);
-  approveExpectedDate = signal<string>('');
-  approveExpectedAmount = signal<number | null>(null);
-  approvePurpose = signal<string>('');
-  
-  // Return Modal
-  showReturnModal = signal(false);
-  returnAmount = signal<number | null>(null);
-  returnRequest = signal<StandardRequest | null>(null);
+  activeModal = signal<ActionModalMode>(null);
   isForceReturn = signal(false);
-  viewMode = signal<'kanban' | 'table'>('kanban');
-  returnIsDepleted = signal(false);
 
-  // Log Usage Modal (Dùng dần)
-  showLogUsageModal = signal(false);
-  logUsageAmount = signal<number | null>(null);
-  logUsagePurpose = signal('');
-
-  // Admin Receive Return Modal
-  showAdminReceiveModal = signal(false);
-  adminReceiveRequest = signal<StandardRequest | null>(null);
-  adminReceiveAmount = signal<number | null>(null);
-  adminReceiveIsDepleted = signal(false);
-  adminReceiveDisposalReason = signal('');
-  
   currentStandard = computed(() => {
-      const req = this.returnRequest();
+      const req = this.selectedRequest();
       if (!req) return null;
       return this.allStandards().find(s => s.id === req.standardId) || null;
-  });
-
-  // Multi-select state
-  selectedStandardIds = signal<Set<string>>(new Set());
-  standardSearchTerm = signal('');
-
-  clearSelection() {
-      this.selectedStandardIds.set(new Set());
-  }
-
-  // Computed: full details of selected standards for chip display
-  selectedStandardsList = computed(() => {
-      const ids = this.selectedStandardIds();
-      if (ids.size === 0) return [];
-      // Search in both availableStandards and allStandards to cover all cases
-      const allMap = new Map([
-          ...this.availableStandards().map(s => [s.id, s] as [string, ReferenceStandard]),
-          ...this.allStandards().map(s => [s.id, s] as [string, ReferenceStandard])
-      ]);
-      return Array.from(ids)
-          .map(id => allMap.get(id))
-          .filter((s): s is ReferenceStandard => !!s);
   });
 
   // Admin Purchase Requests
@@ -839,46 +292,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   private unsubRequests: Unsubscribe | null = null;
   /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
   private unregisterLiveListener?: () => void;
-
-  form: FormGroup = this.fb.group({
-    purpose: [''],
-    expectedReturnDate: ['']
-  });
-
-  isDepleted(std: ReferenceStandard): boolean {
-      return std.status === 'DEPLETED' || (std.current_amount ?? 0) <= 0;
-  }
-
-  filteredAvailableStandards = computed(() => {
-      const rawTerm = this.standardSearchTerm();
-      let stds = this.availableStandards();
-      
-      if (rawTerm) {
-          const searchTerms = rawTerm.split('+').map(t => removeAccents(t.trim().toLowerCase())).filter(t => t.length > 0);
-          
-          stds = stds.filter(s => {
-              const searchStr = Object.values(s)
-                  .filter(val => val !== null && val !== undefined && typeof val !== 'object')
-                  .map(val => {
-                      let str = String(val);
-                      if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
-                          const parts = val.split('T')[0].split('-');
-                          if (parts.length === 3) str += ` ${parts[2]}/${parts[1]}/${parts[0]}`;
-                      }
-                      return removeAccents(str.toLowerCase());
-                  })
-                  .join(' ');
-              
-              return searchTerms.every(t => searchStr.includes(t));
-          });
-      }
-      // Sort: available first, depleted at bottom
-      return stds.sort((a, b) => {
-          const aD = a.status === 'DEPLETED' || (a.current_amount ?? 0) <= 0 ? 1 : 0;
-          const bD = b.status === 'DEPLETED' || (b.current_amount ?? 0) <= 0 ? 1 : 0;
-          return aD - bD;
-      });
-  });
 
   filteredRequests = computed(() => {
     let reqs = this.requests();
@@ -912,18 +325,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     }));
   });
 
-  // Dashboard Stats
-  pendingApprovalCount = computed(() => this.requests().filter(r => r.status === 'PENDING_APPROVAL').length);
-  inProgressCount = computed(() => this.requests().filter(r => r.status === 'IN_PROGRESS').length);
-  overdueCount = computed(() => {
-      const now = Date.now();
-      return this.requests().filter(r => 
-          r.status === 'IN_PROGRESS' && 
-          r.expectedReturnDate && 
-          r.expectedReturnDate < now
-      ).length;
-  });
-
   // Status Counts for Tabs (Admin views all, Users view theirs)
   statusCounts = computed(() => {
       const reqs = this.requests();
@@ -941,31 +342,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           REJECTED: filtered.filter(r => r.status === 'REJECTED').length
       };
   });
-
-  getStatusClass(status: StandardRequestStatus): string {
-      switch (status) {
-          case 'PENDING_APPROVAL': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
-          case 'IN_PROGRESS': return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
-          case 'PENDING_RETURN': return 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800';
-          case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
-          case 'REJECTED': return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800';
-          default: return 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
-      }
-  }
-
-  getStatusIcon(status: StandardRequestStatus): string {
-      switch (status) {
-          case 'PENDING_APPROVAL': return 'fa-solid fa-hourglass-start';
-          case 'IN_PROGRESS': return 'fa-solid fa-flask-vial';
-          case 'PENDING_RETURN': return 'fa-solid fa-reply-all';
-          case 'COMPLETED': return 'fa-solid fa-check-double';
-          case 'REJECTED': return 'fa-solid fa-circle-xmark';
-          default: return 'fa-solid fa-circle-question';
-      }
-  }
-
-  // Helper for template
-  protected readonly Date = Date;
 
   ngOnInit() {
     // Requests listener (bounded query limit 300, giữ nguyên)
@@ -1043,9 +419,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   openRequestModal() {
-      this.form.reset();
-      this.selectedStandardIds.set(new Set());
-      this.standardSearchTerm.set('');
       this.showModal.set(true);
   }
 
@@ -1053,50 +426,20 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.showModal.set(false);
   }
 
-  toggleStandardSelection(stdId: string) {
-      const current = new Set(this.selectedStandardIds());
-      if (current.has(stdId)) {
-          current.delete(stdId);
-      } else {
-          current.add(stdId);
-      }
-      this.selectedStandardIds.set(current);
-  }
-
-  isExpired(expiryDate: string | undefined): boolean {
-      if (!expiryDate) return false;
-      const date = new Date(expiryDate);
-      if (isNaN(date.getTime())) return false;
-      return date.getTime() < Date.now();
-  }
-
-  isOverdue(expiryDate: string | undefined): boolean {
-      return this.isExpired(expiryDate);
-  }
-
-  async submitRequest() {
-      if (this.selectedStandardIds().size === 0 || this.isProcessing()) return;
+  async submitRequest(event: { standardIds: string[], purpose: string, expectedReturnDate?: number }) {
+      if (event.standardIds.length === 0 || this.isProcessing()) return;
       
       const user = this.auth.currentUser();
       if (!user) {
           this.toast.show('Bạn cần đăng nhập để thực hiện', 'error');
           return;
       }
-
-      const val = this.form.value;
-      const purpose = val.purpose?.trim() || 'Pha chuẩn mới';
-      let expectedReturnDate: number | undefined;
-      if (val.expectedReturnDate) {
-          expectedReturnDate = new Date(val.expectedReturnDate).getTime();
-      }
       
       this.isProcessing.set(true);
       let createdCount = 0;
       let skippedCount = 0;
       try {
-          const selectedIds = Array.from(this.selectedStandardIds());
-          
-          for (const stdId of selectedIds) {
+          for (const stdId of event.standardIds) {
               const std = this.availableStandards().find(s => s.id === stdId);
               if (!std) continue;
 
@@ -1119,12 +462,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   requestedBy: user.uid,
                   requestedByName: user.displayName || user.email || 'Unknown',
                   requestDate: Date.now(),
-                  purpose: purpose,
+                  purpose: event.purpose,
                   status: 'PENDING_APPROVAL',
                   totalAmountUsed: 0
               };
               
-              req.expectedReturnDate = expectedReturnDate ?? null;
+              req.expectedReturnDate = event.expectedReturnDate ?? null;
               
               await this.stdService.createRequest(req);
               createdCount++;
@@ -1164,56 +507,46 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       });
   }
 
-  async approveRequest(req: StandardRequest) {
-      if (!req.id) return;
-      this.selectedRequest.set(req);
-      
-      // Pre-fill from request
-      this.approvePurpose.set(req.purpose || '');
-      this.approveExpectedAmount.set(req.expectedAmount || null);
-      if (req.expectedReturnDate) {
-          const date = new Date(req.expectedReturnDate);
-          this.approveExpectedDate.set(date.toISOString().split('T')[0]);
-      } else {
-          this.approveExpectedDate.set('');
-      }
-      
-      this.showApproveModal.set(true);
+  closeActionModal() {
+      this.activeModal.set(null);
+      this.selectedRequest.set(null);
   }
 
-  async confirmApprove() {
+  approveRequest(req: StandardRequest) {
+      if (this.isProcessing()) return;
+      this.selectedRequest.set(req);
+      this.activeModal.set('approve');
+  }
+
+  async confirmApprove(data: { expectedDate: string, expectedAmount: number | null, purpose: string }) {
       const req = this.selectedRequest();
-      if (!req || !req.id) return;
+      if (!req || !req.id || this.isProcessing()) return;
       const user = this.auth.currentUser();
       if (!user) return;
 
       this.isProcessing.set(true);
       try {
-          // Update expected date if changed
           let updatedExpectedDate = req.expectedReturnDate;
-          if (this.approveExpectedDate()) {
-              updatedExpectedDate = new Date(this.approveExpectedDate()).getTime();
-          } else if (this.approveExpectedDate() === '') {
+          if (data.expectedDate) {
+              updatedExpectedDate = new Date(data.expectedDate).getTime();
+          } else if (data.expectedDate === '') {
               updatedExpectedDate = undefined;
           }
 
           // Dispense
           await this.stdService.dispenseStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown');
           
-          // If purpose or date changed, update it too
-          if (this.approvePurpose() !== req.purpose || updatedExpectedDate !== req.expectedReturnDate || this.approveExpectedAmount() !== req.expectedAmount) {
+          if (data.purpose !== req.purpose || updatedExpectedDate !== req.expectedReturnDate || data.expectedAmount !== req.expectedAmount) {
               const updates: any = {
-                  purpose: this.approvePurpose(),
+                  purpose: data.purpose,
                   expectedReturnDate: updatedExpectedDate ?? null,
-                  expectedAmount: this.approveExpectedAmount() ?? null
+                  expectedAmount: data.expectedAmount ?? null
               };
-              
               await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', updates);
           }
-
+          
           this.toast.show('Đã duyệt và giao chuẩn thành công', 'success');
-          this.showApproveModal.set(false);
-          this.selectedRequest.set(null);
+          this.closeActionModal();
       } catch (e: any) {
           this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {
@@ -1222,32 +555,20 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   openRejectModal(req: StandardRequest) {
+      if (this.isProcessing()) return;
       this.selectedRequest.set(req);
-      this.rejectReason.set('');
-      this.showRejectModal.set(true);
+      this.activeModal.set('reject');
   }
 
-  closeRejectModal() {
-      this.showRejectModal.set(false);
-      this.selectedRequest.set(null);
-      this.rejectReason.set('');
-  }
-
-  async confirmReject() {
+  async confirmReject(data: { reason: string }) {
       const req = this.selectedRequest();
-      const reason = this.rejectReason().trim();
-      
-      if (!req || !req.id) return;
-      if (!reason) {
-          this.toast.show('Vui lòng nhập lý do từ chối', 'info');
-          return;
-      }
+      if (!req || !req.id || this.isProcessing()) return;
 
       this.isProcessing.set(true);
       try {
-          await this.stdService.updateRequestStatus(req.id, 'REJECTED', { rejectionReason: reason });
+          await this.stdService.updateRequestStatus(req.id, 'REJECTED', { rejectionReason: data.reason });
           this.toast.show('Đã từ chối yêu cầu', 'success');
-          this.closeRejectModal();
+          this.closeActionModal();
       } catch (e: any) {
           this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {
@@ -1256,129 +577,107 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   openReturnModal(req: StandardRequest, isForce: boolean) {
-      this.returnRequest.set(req);
-      this.isForceReturn.set(isForce);
-      // Mặc định lấy tổng đã dùng nếu có
-      this.returnAmount.set(req.totalAmountUsed || null);
-      this.returnIsDepleted.set(false);
-      this.showReturnModal.set(true);
-  }
-
-  closeReturnModal() {
-      this.showReturnModal.set(false);
-      this.returnRequest.set(null);
-      this.returnAmount.set(null);
-      this.returnIsDepleted.set(false);
-  }
-
-  openLogUsageModal(req: StandardRequest) {
+      if (this.isProcessing()) return;
       this.selectedRequest.set(req);
-      this.logUsageAmount.set(null);
-      this.logUsagePurpose.set('');
-      this.showLogUsageModal.set(true);
+      this.isForceReturn.set(isForce);
+      this.activeModal.set('return');
   }
 
-  closeLogUsageModal() {
-      this.showLogUsageModal.set(false);
-      this.selectedRequest.set(null);
-      this.logUsageAmount.set(null);
-      this.logUsagePurpose.set('');
-  }
-
-  async confirmLogUsage() {
+  async confirmReturn(data: { amount: number, isDepleted: boolean }) {
       const req = this.selectedRequest();
-      const amount = this.logUsageAmount();
-      if (!req || !req.id || amount === null || amount <= 0) return;
+      if (!req || !req.id || this.isProcessing()) return;
+      
+      const isForce = this.isForceReturn();
 
       this.isProcessing.set(true);
       try {
-          const user = this.auth.currentUser();
-          await this.stdService.logUsageForRequest(req.id, req.standardId, amount, req.standardDetails?.unit || 'mg', this.logUsagePurpose().trim(), user?.uid || '', user?.displayName || user?.email || 'Unknown');
-          this.toast.show('Đã ghi nhận sử dụng (Dùng dần) thành công', 'success');
-          this.closeLogUsageModal();
-      } catch (error: any) {
-          this.toast.show('Lỗi: ' + error.message, 'error');
+          if (isForce) {
+              const user = this.auth.currentUser();
+              await this.stdService.returnStandard(
+                  req.id, 
+                  req.standardId, 
+                  user?.uid || '', 
+                  user?.displayName || user?.email || 'Unknown', 
+                  data.isDepleted, 
+                  data.amount, 
+                  req.standardDetails?.unit || 'mg'
+              );
+              this.toast.show('Đã thu hồi chuẩn thành công', 'success');
+          } else {
+              // Employee -> Pending Admin Receive
+              await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { 
+                  totalAmountUsed: data.amount,
+                  reportedDepleted: data.isDepleted
+              });
+              this.toast.show('Đã báo cáo trả chuẩn', 'success');
+          }
+          this.closeActionModal();
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }
   }
 
-  async confirmReturn() {
-      const req = this.returnRequest();
-      const amount = this.returnAmount();
-      if (!req || !req.id || amount === null || amount < 0) return;
+  openLogUsageModal(req: StandardRequest) {
+      if (this.isProcessing()) return;
+      this.selectedRequest.set(req);
+      this.activeModal.set('logUsage');
+  }
+
+  async confirmLogUsage(data: { amount: number, purpose: string }) {
+      const req = this.selectedRequest();
+      if (!req || !req.id || this.isProcessing()) return;
 
       this.isProcessing.set(true);
       try {
-          if (this.isForceReturn()) {
-              // Admin force return
-              const user = this.auth.currentUser();
-              await this.stdService.returnStandard(req.id, req.standardId, user?.uid || '', user?.displayName || user?.email || 'Unknown', this.returnIsDepleted(), amount, req.standardDetails?.unit || 'mg');
-              this.toast.show('Đã thu hồi chuẩn thành công', 'success');
-          } else {
-              // Employee report return
-              await this.stdService.updateRequestStatus(req.id, 'PENDING_RETURN', { 
-                  totalAmountUsed: amount,
-                  reportedDepleted: this.returnIsDepleted()
-              });
-              this.toast.show('Đã báo cáo trả chuẩn', 'success');
-          }
-          this.closeReturnModal();
-      } catch (error: any) {
-          this.toast.show('Lỗi: ' + error.message, 'error');
+          const user = this.auth.currentUser();
+          await this.stdService.logUsageForRequest(
+              req.id, 
+              req.standardId, 
+              data.amount, 
+              req.standardDetails?.unit || 'mg', 
+              data.purpose.trim(), 
+              user?.uid || '', 
+              user?.displayName || user?.email || 'Unknown'
+          );
+          
+          this.toast.show('Đã ghi nhận sử dụng (Dùng dần) thành công', 'success');
+          this.closeActionModal();
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }
   }
 
   openAdminReceiveModal(req: StandardRequest) {
-      if (!req.id) return;
-      this.adminReceiveRequest.set(req);
-      this.adminReceiveAmount.set(req.totalAmountUsed || 0);
-      this.adminReceiveIsDepleted.set(req.reportedDepleted || false);
-      this.adminReceiveDisposalReason.set(req.disposalReason || '');
-      this.showAdminReceiveModal.set(true);
+      if (this.isProcessing()) return;
+      this.selectedRequest.set(req);
+      this.activeModal.set('adminReceive');
   }
 
-  closeAdminReceiveModal() {
-      this.showAdminReceiveModal.set(false);
-      this.adminReceiveRequest.set(null);
-      this.adminReceiveAmount.set(null);
-      this.adminReceiveIsDepleted.set(false);
-      this.adminReceiveDisposalReason.set('');
-  }
-
-  async confirmAdminReceive() {
-      const req = this.adminReceiveRequest();
-      if (!req || !req.id) return;
+  async confirmAdminReceive(data: { amount: number, isDepleted: boolean, disposalReason: string }) {
+      const req = this.selectedRequest();
+      if (!req || !req.id || this.isProcessing()) return;
       const user = this.auth.currentUser();
       if (!user) return;
-      
-      const amount = this.adminReceiveAmount() || 0;
-      const isDepleted = this.adminReceiveIsDepleted();
-      const reason = this.adminReceiveDisposalReason().trim();
-
-      if (isDepleted && !reason) {
-          this.toast.show('Vui lòng nhập lý do hủy chuẩn (disposal reason)', 'error');
-          return;
-      }
 
       this.isProcessing.set(true);
       try {
-          // [BUG-1] Không gọi updateRequestStatus riêng lẻ nữa.
-          // Truyền disposalReason thẳng vào returnStandard để xử lý trong 1 transaction duy nhất.
+          const reason = data.disposalReason.trim();
           await this.stdService.returnStandard(
               req.id,
               req.standardId,
               user.uid,
               user.displayName || user.email || 'Unknown',
-              isDepleted,
-              amount,
+              data.isDepleted,
+              data.amount,
               req.standardDetails?.unit || 'mg',
-              isDepleted ? reason : undefined
+              data.isDepleted && reason ? reason : undefined
           );
-          this.toast.show('Đã nhận lại chuẩn thành công', 'success');
-          this.closeAdminReceiveModal();
+          this.toast.show('Đã xác nhận nhận lại chuẩn thành công', 'success');
+          this.closeActionModal();
       } catch (e: any) {
           this.toast.show('Lỗi: ' + e.message, 'error');
       } finally {

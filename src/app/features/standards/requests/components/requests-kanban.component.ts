@@ -77,8 +77,16 @@ import { AuthService } from '../../../../core/services/auth.service';
           <span class="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-black">{{ completedReqs().length }}</span>
         </div>
         <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-          @for (req of completedReqs(); track req.id) {
+          @for (req of limitedCompletedReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
+          }
+          @if (completedReqs().length > 30) {
+            <div class="p-4 text-center">
+               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 block">
+                 Đang ẩn {{ completedReqs().length - 30 }} thẻ cũ
+               </span>
+               <p class="text-[9px] text-slate-400 mt-2 italic">Hãy dùng tính năng Cột Table hoặc Tìm kiếm để tra cứu thẻ cũ.</p>
+            </div>
           }
           @if (completedReqs().length === 0) {
             <div class="p-6 text-center text-slate-400 text-xs font-bold italic border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">Không có yêu cầu</div>
@@ -201,6 +209,16 @@ export class RequestsKanbanComponent {
   inProgressReqs = computed(() => this._requests().filter(r => r.status === 'IN_PROGRESS'));
   pendingReturnReqs = computed(() => this._requests().filter(r => r.status === 'PENDING_RETURN'));
   completedReqs = computed(() => this._requests().filter(r => ['COMPLETED', 'REJECTED'].includes(r.status)));
+  
+  // Chỉ lấy 30 thẻ hoàn tất mới nhất (sắp xếp descending by returnDate / updatedAt)
+  limitedCompletedReqs = computed(() => {
+    let sorted = [...this.completedReqs()].sort((a, b) => {
+        const timeA = a.returnDate || a.updatedAt || a.requestDate || 0;
+        const timeB = b.returnDate || b.updatedAt || b.requestDate || 0;
+        return timeB - timeA;
+    });
+    return sorted.slice(0, 30);
+  });
 
   isOverdue(req: StandardRequest): boolean {
     if (!req.expectedReturnDate) return false;
