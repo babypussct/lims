@@ -10,6 +10,7 @@ import { StandardService } from '../standards/standard.service';
 import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
+import { FirebaseService } from '../../core/services/firebase.service';
 import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -295,7 +296,7 @@ interface KanbanColumn {
                                     <div class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
                                     <div class="flex items-start gap-3">
                                         <!-- UPDATED AVATAR CALL -->
-                                        <img [src]="getAvatarUrl(log.user, state.avatarStyle())" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
+                                        <img [src]="getAvatar(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
                                         <div class="flex-1 min-w-0">
                                             <div class="text-xs font-bold text-gray-700 dark:text-slate-300 leading-tight">
                                                 <span class="text-gray-900 dark:text-slate-100">{{log.user}}</span> 
@@ -367,7 +368,7 @@ interface KanbanColumn {
                             <div class="flex -space-x-2 overflow-hidden">
                                 <!-- UPDATED AVATAR CALL -->
                                 @for(user of col.users; track user) {
-                                    <img [src]="getAvatarUrl(user, state.avatarStyle())" class="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-700" [title]="user">
+                                    <img [src]="getAvatar(user)" class="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-700" [title]="user">
                                 }
                             </div>
                             
@@ -420,7 +421,7 @@ interface KanbanColumn {
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
                                         <!-- UPDATED AVATAR CALL -->
-                                        <img [src]="getAvatarUrl(batch.user, state.avatarStyle())" class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600">
+                                        <img [src]="getAvatar(batch.user)" class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600">
                                         <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{batch.user}}</span>
                                     </div>
                                     <span class="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>
@@ -464,6 +465,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   router: Router = inject(Router);
   toast = inject(ToastService);
   qrService = inject(QrGlobalService); // Injected Global Service
+  fb = inject(FirebaseService);
 
   formatNum = formatNum;
   getAvatarUrl = getAvatarUrl;
@@ -472,6 +474,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   lowStockItems = signal<InventoryItem[]>([]); 
   priorityStandard = signal<PriorityStandard | null>(null);
+  userPhotoMap = signal<Record<string, string>>({});
   
   // Date Filters
   startDate = signal<string>(this.getToday());
@@ -710,17 +713,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async ngOnInit() {
       this.isLoading.set(true);
       try {
-          const [lowStock, nearestStd] = await Promise.all([
+          const [lowStock, nearestStd, users] = await Promise.all([
               this.invService.getLowStockItems(5),
-              this.stdService.getNearestExpiry()
+              this.stdService.getNearestExpiry(),
+              this.fb.getAllUsers()
           ]);
           this.lowStockItems.set(lowStock);
           this.processPriorityStandard(nearestStd);
+          
+          const map: Record<string, string> = {};
+          users.forEach(u => {
+              if (u.displayName && u.photoURL) {
+                  map[u.displayName] = u.photoURL;
+              }
+          });
+          this.userPhotoMap.set(map);
       } catch(e) {
           console.error("Dashboard fetch error", e);
       } finally {
           this.isLoading.set(false);
       }
+  }
+
+  getAvatar(name: string | undefined | null): string {
+      const photoUrl = name ? this.userPhotoMap()[name] : undefined;
+      return this.getAvatarUrl(name, this.state.avatarStyle(), photoUrl);
   }
 
   ngOnDestroy(): void {

@@ -37,7 +37,10 @@
               "raf",
               "rgbcolor",
               "dompurify",
-              "pdfmake"
+              "pdfmake",
+              "jsbarcode",
+              "qrcode",
+              "core-js"
             ]
           },
           "configurations": {
