@@ -586,7 +586,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isImporting = signal(false);
   isProcessing = signal(false); // Hardened UX State
 
-  viewMode = signal<'list' | 'grid'>('grid');
+  // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
+  private mobileMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
+  viewMode = signal<'list' | 'grid'>(this.mobileMediaQuery.matches ? 'grid' : 'list');
+  private onMediaChange = (e: MediaQueryListEvent) => this.viewMode.set(e.matches ? 'grid' : 'list');
   searchTerm = signal('');
   sortOption = signal<string>('received_desc');
   searchSubject = new Subject<string>();
@@ -759,6 +762,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   ngOnInit() { 
       this.isLoading.set(true);
+      // Reactive view mode listener (updates on window resize / device rotation)
+      this.mobileMediaQuery.addEventListener('change', this.onMediaChange);
       // Setup Real-time Listener (Load All)
       this.snapshotUnsub = this.stdService.listenToAllStandards((items) => {
           this.allStandards.set(items);
@@ -769,6 +774,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   ngOnDestroy() { 
       this.searchSubject.complete(); 
       if (this.snapshotUnsub) this.snapshotUnsub();
+      this.mobileMediaQuery.removeEventListener('change', this.onMediaChange);
   }
 
   // --- Purchase Requests Logic (Staff) ---

@@ -148,11 +148,12 @@ import * as XLSX from 'xlsx';
                                 </div>
                                 <select [ngModel]="state.avatarStyle()" (ngModelChange)="saveAvatarStyle($event)" 
                                         class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 outline-none focus:border-blue-500 dark:focus:border-blue-500 cursor-pointer">
-                                    <option value="initials">Chữ cái (Letters)</option>
-                                    <option value="identicon">Hình học (Identicon)</option>
-                                    <option value="bottts">Robot (Bottts)</option>
-                                    <option value="shapes">Nghệ thuật (Shapes)</option>
-                                    <option value="avataaars">Hoạt hình (Avatars)</option>
+                                    <option value="google">📷 Ảnh Google (Chất lượng cao)</option>
+                                    <option value="initials">🔤 Chữ cái (Letters)</option>
+                                    <option value="identicon">🔷 Hình học (Identicon)</option>
+                                    <option value="bottts">🤖 Robot (Bottts)</option>
+                                    <option value="shapes">🎨 Nghệ thuật (Shapes)</option>
+                                    <option value="avataaars">🧑 Hoạt hình (Avatars)</option>
                                 </select>
                             </div>
 

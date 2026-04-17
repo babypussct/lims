@@ -144,17 +144,21 @@ export function sanitizeForFirebase<T>(obj: T): T {
 
 /**
  * Generates an avatar URL.
- * Priority 1: Real photo URL (from Google Auth).
- * Priority 2: Generated avatar (DiceBear) based on style.
+ * - If style is 'google': use the real Google photo (photoUrl) if available, fallback to initials.
+ * - Otherwise: always use DiceBear with the selected style (ignore photoUrl).
  */
 export function getAvatarUrl(name: string | undefined | null, style = 'initials', photoUrl?: string | null): string {
-  // 1. If real photo exists, use it
-  if (photoUrl && photoUrl.trim() !== '') {
-      return photoUrl;
+  // 1. When user explicitly chose Google photo style
+  if (style === 'google') {
+      if (photoUrl && photoUrl.trim() !== '') {
+          return photoUrl;
+      }
+      // Fallback to initials if no Google photo
+      const seed = encodeURIComponent(name || 'User');
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}`;
   }
-  
-  // 2. Fallback to DiceBear
-  // Recommended styles: 'initials' (Pro), 'identicon' (Tech), 'bottts' (Fun), 'shapes' (Art)
+
+  // 2. Use DiceBear with the selected style
   const seed = encodeURIComponent(name || 'User');
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
 }

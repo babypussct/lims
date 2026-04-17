@@ -113,20 +113,23 @@ import { PrintService } from './core/services/print.service';
                         [class.p-0]="state.focusMode()">
                      
                      <!-- Content Viewport -->
-                     <!-- UPDATED: Adjusted padding to account for removed Topbar -->
-                     <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-20 md:pb-6" 
+                     <!-- Outer wrapper: flex column that fills main area. pb accounts for bottom nav on mobile. -->
+                     <div class="flex-1 min-h-0 flex flex-col overflow-hidden"
                           [class.px-3]="!state.focusMode()" 
                           [class.pt-4]="!state.focusMode()" 
                           [class.md:p-6]="!state.focusMode()"
                           [class.p-0]="state.focusMode()">
-                          
+                         
                          @if (state.permissionError()) {
-                            <div class="w-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm">
+                            <div class="w-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm shrink-0">
                                 <div class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
                             </div>
                          }
   
-                         <div class="flex-1 h-full"><router-outlet></router-outlet></div>
+                         <!-- Router outlet fills all remaining height. pb-20 on mobile for bottom nav clearance. -->
+                         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-0">
+                             <router-outlet></router-outlet>
+                         </div>
                      </div>
                   </main>
   

@@ -424,6 +424,36 @@ function removeAccents(str: string): string {
                                 <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase underline decoration-2 underline-offset-4 disabled:opacity-30">Xóa tất cả</button>
                             </div>
 
+                            <!-- Selected Standards Chip List -->
+                            <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
+                                @if (selectedStandardsList().length === 0) {
+                                    <div class="py-4 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-600">
+                                        <i class="fa-regular fa-hand-pointer text-xs"></i>
+                                        <span class="text-[11px] font-medium italic">Tìm kiếm và chọn chuẩn ở cột bên trái để thêm vào yêu cầu.</span>
+                                    </div>
+                                } @else {
+                                    <div class="p-3 max-h-[160px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
+                                        @for (std of selectedStandardsList(); track std.id) {
+                                            <div class="animate-bounce-in flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700/50 shadow-sm group/chip max-w-full">
+                                                <div class="flex flex-col min-w-0">
+                                                    <span class="text-[11px] font-black text-indigo-700 dark:text-indigo-300 truncate max-w-[160px]" [title]="std.name">{{std.name}}</span>
+                                                    @if (std.internal_id || std.lot_number) {
+                                                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 truncate">
+                                                            {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <button type="button" (click)="toggleStandardSelection(std.id)"
+                                                        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-1"
+                                                        title="Bỏ chọn">
+                                                    <i class="fa-solid fa-times text-[9px]"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
                             <div class="space-y-4">
                                  <div>
                                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
@@ -890,7 +920,21 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   clearSelection() {
       this.selectedStandardIds.set(new Set());
   }
-  
+
+  // Computed: full details of selected standards for chip display
+  selectedStandardsList = computed(() => {
+      const ids = this.selectedStandardIds();
+      if (ids.size === 0) return [];
+      // Search in both availableStandards and allStandards to cover all cases
+      const allMap = new Map([
+          ...this.availableStandards().map(s => [s.id, s] as [string, ReferenceStandard]),
+          ...this.allStandards().map(s => [s.id, s] as [string, ReferenceStandard])
+      ]);
+      return Array.from(ids)
+          .map(id => allMap.get(id))
+          .filter((s): s is ReferenceStandard => !!s);
+  });
+
   // Admin Purchase Requests
   showPurchaseRequestsAdminModal = signal(false);
   loadingAdminRequests = signal(false);
