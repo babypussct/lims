@@ -35,10 +35,12 @@ export class RecipeService {
   async saveRecipe(recipe: Recipe): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/recipes/${recipe.id}`);
     await setDoc(ref, { ...recipe, lastUpdated: serverTimestamp() });
+    await this.fb.updateMetadata('recipes');
   }
 
   async deleteRecipe(id: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/recipes/${id}`);
     await deleteDoc(ref);
+    await this.fb.updateMetadata('recipes');
   }
 }

@@ -15,6 +15,8 @@ export interface InventoryItem {
   casNumber?: string;
   englishName?: string;
   ghsWarnings?: string[]; // Arrays of GHS codes e.g. 'GHS02', 'GHS06'
+  hazardStatements?: string[]; // Arrays of H codes e.g. 'H225: Highly flammable'
+  precautionaryStatements?: string[]; // Arrays of P codes e.g. 'P210: Keep away from heat'
   lastUpdated?: any;
   notes?: string;
 }

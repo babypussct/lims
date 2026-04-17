@@ -128,7 +128,9 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                             @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                                 <div class="flex gap-1 mt-1">
                                                     @for(ghs of item.ghsWarnings; track ghs) {
-                                                        <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                        @if(GHS_DICT[ghs]) {
+                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-4 h-4 opacity-70" [title]="GHS_DICT[ghs].label" />
+                                                        }
                                                     }
                                                 </div>
                                             }
@@ -190,7 +192,9 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                                 @if(item.ghsWarnings && item.ghsWarnings.length > 0) {
                                                     <div class="flex gap-0.5 opacity-60">
                                                         @for(ghs of item.ghsWarnings; track ghs) {
-                                                            <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                            @if(GHS_DICT[ghs]) {
+                                                                <img [src]="GHS_DICT[ghs].iconUrl" class="w-[14px] h-[14px]" [title]="GHS_DICT[ghs].label" />
+                                                            }
                                                         }
                                                     </div>
                                                 }
@@ -390,11 +394,32 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
                                        <div (click)="toggleGhs(code)" 
                                             class="cursor-pointer border rounded-lg p-1.5 flex flex-col items-center text-center transition active:scale-95 bg-white dark:bg-slate-800 opacity-60 hover:opacity-100"
                                             [class]="form.get('ghsWarnings')?.value?.includes(code) ? '!border-red-500 ring-1 ring-red-200 dark:ring-red-900/50 !opacity-100 shadow-sm bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'">
-                                           <img [src]="GHS_DICT[code].iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
-                                           <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code].label">{{GHS_DICT[code].label}}</span>
+                                           <img [src]="GHS_DICT[code]?.iconUrl" class="w-8 h-8 sm:w-10 sm:h-10 mb-1" [alt]="code" />
+                                           <span class="text-[8px] font-bold text-slate-600 dark:text-slate-400 leading-tight w-full truncate" [title]="GHS_DICT[code]?.label">{{GHS_DICT[code]?.label}}</span>
                                        </div>
                                    }
                                </div>
+                               
+                               @if(form.get('hazardStatements')?.value?.length || form.get('precautionaryStatements')?.value?.length) {
+                                   <div class="mt-3 space-y-2 max-h-40 overflow-y-auto custom-scrollbar text-[10px] p-2 bg-white dark:bg-slate-800 rounded border border-yellow-200 dark:border-yellow-800/30">
+                                       @if(form.get('hazardStatements')?.value?.length) {
+                                           <div>
+                                               <strong class="text-red-600 dark:text-red-400">Cảnh báo Nguy hiểm (H):</strong>
+                                               <ul class="list-disc pl-4 text-slate-600 dark:text-slate-400 mt-1">
+                                                   @for(h of form.get('hazardStatements')?.value; track h) { <li>{{h}}</li> }
+                                               </ul>
+                                           </div>
+                                       }
+                                       @if(form.get('precautionaryStatements')?.value?.length) {
+                                           <div class="mt-2 text-blue-600 dark:text-blue-400">
+                                               <strong>Phòng ngừa (P):</strong>
+                                               <ul class="list-disc pl-4 text-slate-600 dark:text-slate-400 mt-1">
+                                                   @for(p of form.get('precautionaryStatements')?.value; track p) { <li>{{p}}</li> }
+                                               </ul>
+                                           </div>
+                                       }
+                                   </div>
+                               }
                            </div>
 
                            <div class="grid grid-cols-2 gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
@@ -483,9 +508,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
   activeTab = signal<'list' | 'capacity' | 'labels'>('list');
   
   // Data & Pagination (Client-side filtering for instant UX)
-  allItems = signal<InventoryItem[]>([]);
+  allItems = this.state.inventory; 
   displayLimit = signal(20);
-  isInitialLoading = signal(true); 
+  isInitialLoading = computed(() => this.allItems().length === 0); 
   isProcessing = signal(false); 
 
   filteredItems = computed(() => {
@@ -571,7 +596,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
     expiryDate: [''],
     casNumber: [''],
     englishName: [''],
-    ghsWarnings: [[] as string[]]
+    ghsWarnings: [[] as string[]],
+    hazardStatements: [[] as string[]],
+    precautionaryStatements: [[] as string[]]
   });
   
   unitOptions = UNIT_OPTIONS;
@@ -587,19 +614,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-      // Initial Load
-      setTimeout(() => {
-          this.refreshData().then(() => {
-              // Check query params for GS1 auto-fill
-              this.route.queryParams.subscribe(params => {
-                  if (params['action'] === 'scan_gs1') {
-                      this.handleGs1Scan(params);
-                  } else if (params['search']) {
-                      this.searchTerm.set(params['search']);
-                  }
-              });
-          });
-      }, 100); 
+      // Check query params for GS1 auto-fill
+      this.route.queryParams.subscribe(params => {
+          if (params['action'] === 'scan_gs1') {
+              this.handleGs1Scan(params);
+          } else if (params['search']) {
+              this.searchTerm.set(params['search']);
+          }
+      });
   }
 
   ngOnDestroy() { this.searchSubject.complete(); }
@@ -708,18 +730,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   // Data Loading
   async refreshData() {
-      this.isInitialLoading.set(true);
-      try {
-          const data = await this.inventoryService.getAllInventory();
-          this.allItems.set(data);
-          this.displayLimit.set(20);
-          this.selectedIds.set(new Set());
-      } catch (e) {
-          console.error("Error loading inventory", e);
-          this.toast.show('Lỗi tải dữ liệu kho', 'error');
-      } finally {
-          this.isInitialLoading.set(false);
-      }
+      // No-op: Data is automatically synchronized via StateService reactive cache.
+      this.displayLimit.set(20);
+      this.selectedIds.set(new Set());
   }
 
   loadMore() {
@@ -750,7 +763,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     else { 
         this.isEditing.set(false); 
         this.oldStock.set(0);
-        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới', ghsWarnings: [] }); 
+        this.form.reset({ category: 'reagent', stock: 0, unit: 'ml', threshold: 5, reason: 'Tạo mới', ghsWarnings: [], hazardStatements: [], precautionaryStatements: [] }); 
         this.form.controls.id.enable(); 
     }
   }
@@ -774,10 +787,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
       
       this.isFetchingGhs.set(true);
       try {
-          const warnings = await this.pubchem.fetchGHS(query);
-          if (warnings.length > 0) {
-              this.form.patchValue({ ghsWarnings: warnings });
-              this.toast.show(`Thành công! Tìm thấy ${warnings.length} thẻ phân loại GHS từ PubChem.`, 'success');
+          const result = await this.pubchem.fetchGHS(query);
+          if (result && (result.pictograms.length > 0 || result.hazardStatements.length > 0 || result.precautionaryStatements.length > 0)) {
+              this.form.patchValue({ 
+                  ghsWarnings: result.pictograms,
+                  hazardStatements: result.hazardStatements,
+                  precautionaryStatements: result.precautionaryStatements
+              });
+              this.toast.show(`Thành công! Tìm thấy ${result.pictograms.length} GHS, ${result.hazardStatements.length} H-statements từ PubChem.`, 'success');
           } else {
               this.toast.show('PubChem không có thẻ GHS cho hóa chất này.', 'info');
           }

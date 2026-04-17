@@ -16,6 +16,9 @@ export interface UsageLog {
   cas_number?: string;
   internalId?: string;
   manufacturer?: string;
+
+  // [NEW-4] Request linkage — cho phép deleteUsageLog cập nhật đúng request khi chuẩn đã trả về
+  requestId?: string;
 }
 
 export interface ReferenceStandard {

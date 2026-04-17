@@ -637,13 +637,46 @@ function removeAccents(str: string): string {
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
+                    @if ((returnRequest()?.usageLogs || []).length > 0) {
+                        <!-- [NEW-1 + NEW-5] Hiển thị tóm tắt khi đã có prior usage logs -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/40 space-y-2">
+                            <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-sm">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Tổng đã ghi nhận: <span class="text-blue-800 dark:text-blue-200">{{returnRequest()?.totalAmountUsed || 0}} {{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
+                                <span class="text-blue-500 font-medium text-xs">({{(returnRequest()?.usageLogs || []).length}} đợt)</span>
+                            </div>
+                            @if (isForceReturn()) {
+                                <!-- [NEW-1] Cảnh báo cho Admin force-return -->
+                                <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                                    Kho đã được trừ theo từng đợt. Số lượng nhập bên dưới chỉ để <strong>ghi sổ báo cáo</strong>, không ảnh hưởng thêm vào tồn kho.
+                                </p>
+                            } @else {
+                                <!-- [NEW-5] Cảnh báo cho Employee report return -->
+                                <p class="text-xs text-blue-600 dark:text-blue-400">
+                                    Kho đã được trừ theo từng đợt ghi nhận. Số báo cáo bên dưới chỉ để admin xác nhận.
+                                </p>
+                            }
                         </div>
-                    </div>
+
+                        <!-- [NEW-5] Số lượng pre-filled, người dùng có thể điều chỉnh nếu cần nhưng có cảnh báo rõ ràng -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
+                            <div class="relative">
+                                <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
+                            </div>
+                        </div>
+                    } @else {
+                        <!-- Whole-return flow: nhập bình thường -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{currentStandard()?.unit || returnRequest()?.standardDetails?.unit || 'mg'}}</span>
+                            </div>
+                        </div>
+                    }
                     
                     <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
                         <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
@@ -943,7 +976,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   private purchaseReqUnsub?: Unsubscribe;
   
   private unsubRequests: Unsubscribe | null = null;
-  private unsubStandards: Unsubscribe | null = null;
+  /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
+  private unregisterLiveListener?: () => void;
 
   form: FormGroup = this.fb.group({
     purpose: [''],
@@ -1073,20 +1107,28 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   protected readonly Date = Date;
 
   ngOnInit() {
+    // Requests listener (bounded query limit 300, giữ nguyên)
     this.unsubRequests = this.stdService.listenToRequests((reqs) => {
         this.requests.set(reqs);
         this.isLoading.set(false);
     });
-    
-    // Listen to all standards for the dropdown and details mapping
-    this.unsubStandards = this.stdService.listenToAllStandards((stds: ReferenceStandard[]) => {
+
+    // Pha 1: Delta Load — apply localStorage ngay + sync chỉ docs thay đổi
+    this.stdService.loadStandardsWithDeltaSync().then((stds: ReferenceStandard[]) => {
         this.allStandards.set(stds);
-        // Only show standards that are available for new requests
-        // Show all non-IN_USE standards; depleted ones are shown with visual indicator
         this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE'));
     });
-    
-    // Listen to purchase requests for Admin
+
+    // Pha 2: Live Listener Singleton — chia sẻ với StandardsComponent nếu đã mở
+    this.unregisterLiveListener = this.stdService.startRealtimeDeltaListener(() => {
+        const mem = this.stdService['_memStandards'];
+        if (mem) {
+            this.allStandards.set([...mem]);
+            this.availableStandards.set(mem.filter((s: ReferenceStandard) => s.status !== 'IN_USE'));
+        }
+    });
+
+    // Admin: lắng nghe purchase requests (bounded by where status==PENDING)
     if (this.auth.canApproveStandards()) {
         this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((reqs) => {
             this.adminPurchaseRequests.set(reqs);
@@ -1098,7 +1140,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.unsubRequests) this.unsubRequests();
-    if (this.unsubStandards) this.unsubStandards();
+    // Chỉ remove callback khỏi singleton listener — KHÔNG dừng listener
+    if (this.unregisterLiveListener) this.unregisterLiveListener();
     if (this.purchaseReqUnsub) this.purchaseReqUnsub();
   }
 
@@ -1187,12 +1230,26 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       }
       
       this.isProcessing.set(true);
+      let createdCount = 0;
+      let skippedCount = 0;
       try {
           const selectedIds = Array.from(this.selectedStandardIds());
           
           for (const stdId of selectedIds) {
               const std = this.availableStandards().find(s => s.id === stdId);
               if (!std) continue;
+
+              // [BUG-4] Kiểm tra request trùng lặp: người dùng đã có yêu cầu đang hoạt động cho chuẩn này chưa
+              const hasActiveRequest = this.requests().some(r =>
+                  r.standardId === stdId &&
+                  r.requestedBy === user.uid &&
+                  ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'].includes(r.status)
+              );
+              if (hasActiveRequest) {
+                  this.toast.show(`"​${std.name}" đã có yêu cầu của bạn đang hoạt động, bỏ qua.`, 'info');
+                  skippedCount++;
+                  continue;
+              }
               
               const req: StandardRequest = {
                   standardId: std.id,
@@ -1209,9 +1266,14 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               req.expectedReturnDate = expectedReturnDate ?? null;
               
               await this.stdService.createRequest(req);
+              createdCount++;
           }
           
-          this.toast.show(`Đã gửi ${selectedIds.length} yêu cầu thành công`, 'success');
+          if (createdCount > 0) {
+              this.toast.show(`Đã gửi ${createdCount} yêu cầu thành công${skippedCount > 0 ? ` (bỏ qua ${skippedCount} trùng lặp)` : ''}`, 'success');
+          } else if (skippedCount > 0) {
+              this.toast.show('Tất cả chuẩn đã chọn đều đã có yêu cầu đang hoạt động.', 'info');
+          }
           this.closeModal();
       } catch (e: any) {
           this.toast.show('Lỗi: ' + (e.message || e), 'error');
@@ -1442,10 +1504,18 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
       this.isProcessing.set(true);
       try {
-          if (isDepleted) {
-              await this.stdService.updateRequestStatus(req.id, 'COMPLETED', { disposalReason: reason });
-          }
-          await this.stdService.returnStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown', isDepleted, amount, req.standardDetails?.unit || 'mg');
+          // [BUG-1] Không gọi updateRequestStatus riêng lẻ nữa.
+          // Truyền disposalReason thẳng vào returnStandard để xử lý trong 1 transaction duy nhất.
+          await this.stdService.returnStandard(
+              req.id,
+              req.standardId,
+              user.uid,
+              user.displayName || user.email || 'Unknown',
+              isDepleted,
+              amount,
+              req.standardDetails?.unit || 'mg',
+              isDepleted ? reason : undefined
+          );
           this.toast.show('Đã nhận lại chuẩn thành công', 'success');
           this.closeAdminReceiveModal();
       } catch (e: any) {

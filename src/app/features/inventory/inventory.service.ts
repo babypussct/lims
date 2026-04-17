@@ -6,7 +6,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, getDoc,
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
-  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer
+  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField
 } from 'firebase/firestore';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -239,6 +239,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    await this.fb.updateMetadata('inventory');
   }
 
   async deleteItem(id: string, reason = '') {
@@ -246,7 +247,6 @@ export class InventoryService {
     const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
     const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
     
-    // 1. Fetch current stock for NXT trace before deletion
     let finalStock = 0;
     try {
         const docSnap = await getDoc(invRef);
@@ -255,34 +255,17 @@ export class InventoryService {
         }
     } catch (e) { console.warn("Failed to get stock before delete", e); }
 
-    // 2. Sub-collection cleanup (Batch)
-    const historyRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id, 'history');
-    const historySnapshot = await getDocs(historyRef);
-    
-    const chunks: any[][] = [];
-    let currentChunk: any[] = [];
-    historySnapshot.forEach(doc => {
-        currentChunk.push(doc.ref);
-        if (currentChunk.length === 400) {
-            chunks.push(currentChunk);
-            currentChunk = [];
-        }
-    });
-    if (currentChunk.length > 0) chunks.push(currentChunk);
-
-    for (const chunk of chunks) {
-        const batch = writeBatch(this.fb.db);
-        chunk.forEach(ref => batch.delete(ref));
-        await batch.commit();
-    }
-    
-    // 3. Final Deletion and Global Log
+    // SOFT DELETE: We do not touch history sub-collections, just update the document
     const finalBatch = writeBatch(this.fb.db);
-    finalBatch.delete(invRef);
+    finalBatch.update(invRef, {
+        _isDeleted: true,
+        status: 'DELETED',
+        lastUpdated: serverTimestamp()
+    });
     
     finalBatch.set(globalLogRef, {
-        action: 'DELETE_ITEM',
-        details: `Xóa hóa chất: ${id} (Tồn cuối: ${finalStock})`,
+        action: 'SOFT_DELETE_ITEM',
+        details: `Đưa vào Thùng rác: ${id} (Tồn cuối: ${finalStock})`,
         timestamp: serverTimestamp(),
         user: currentUser,
         targetId: id,
@@ -290,6 +273,31 @@ export class InventoryService {
     });
 
     await finalBatch.commit();
+    // Delta Sync doesn't require updateMetadata if we listen to onSnapshot, but keeping it for legacy components
+    await this.fb.updateMetadata('inventory');
+  }
+
+  async restoreItem(id: string) {
+      const currentUser = this.state.getCurrentUserName();
+      const invRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', id);
+      const globalLogRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+      
+      const finalBatch = writeBatch(this.fb.db);
+      finalBatch.update(invRef, {
+          _isDeleted: deleteField(),
+          status: 'ACTIVE',
+          lastUpdated: serverTimestamp()
+      });
+      
+      finalBatch.set(globalLogRef, {
+          action: 'RESTORE_ITEM',
+          details: `Khôi phục từ Thùng rác: ${id}`,
+          timestamp: serverTimestamp(),
+          user: currentUser,
+          targetId: id
+      });
+  
+      await finalBatch.commit();
   }
 
   async updateStock(id: string, currentStock: number, adjustment: number, reason = '') {
@@ -326,6 +334,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    await this.fb.updateMetadata('inventory');
   }
 
   async bulkZeroStock(ids: string[], reason = '') {
@@ -358,5 +367,6 @@ export class InventoryService {
     });
 
     await batch.commit();
+    await this.fb.updateMetadata('inventory');
   }
 }

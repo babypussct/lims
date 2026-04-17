@@ -51,41 +51,35 @@ export const GHS_DICTIONARY: Record<string, {label: string, iconUrl: string, pre
 @Injectable({ providedIn: 'root' })
 export class PubchemService {
 
-  async fetchGHS(query: string): Promise<string[]> {
-    if (!query) return [];
+  async fetchGHS(query: string): Promise<{pictograms: string[], hazardStatements: string[], precautionaryStatements: string[]} | null> {
+    if (!query) return null;
     const sanitizedQuery = query.trim();
     
     try {
-        // 1. Lấy thông số CID thông qua Tên tiếng anh hoặc CAS
-        // PUG REST API 'name' có thể chấp nhận cả chuỗi CAS e.g 67-56-1
         const cidRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(sanitizedQuery)}/cids/JSON`);
-        if (!cidRes.ok) return [];
+        if (!cidRes.ok) return null;
         const cidData = await cidRes.json();
         const cid = cidData.IdentifierList?.CID?.[0];
-        if (!cid) return [];
+        if (!cid) return null;
 
-        // 2. Kéo dữ liệu An toàn PUG VIEW
         const pugViewRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
-        if (!pugViewRes.ok) return [];
+        if (!pugViewRes.ok) return null;
         const pugViewData = await pugViewRes.json();
         
-        let foundGHS = new Set<string>();
+        let pictograms = new Set<string>();
+        let hazardStatements = new Set<string>();
+        let precautionaryStatements = new Set<string>();
 
-        // Cây cấu trúc JSon của PugView rất phức tạp, ta dùng đệ quy tìm cạn Text
         const extractGhsRecursive = (obj: any) => {
             if (typeof obj === 'string') {
-                // Lấy GHS Icons
                 const matchIcon = obj.match(/GHS0[1-9]/g);
-                if (matchIcon) {
-                    matchIcon.forEach(m => foundGHS.add(m));
-                }
+                if (matchIcon) matchIcon.forEach(m => pictograms.add(m));
                 
-                // Lấy Mã H (Hazard Statements) và P (Precautionary)
-                // Format PubChem: "H317: May cause an allergic skin reaction [Warning...]"
-                const matchHP = obj.match(/^(?:H|P)[0-9]{3}.+?(?=\[|$)/g);
-                if (matchHP) {
-                    matchHP.forEach(m => foundGHS.add(m.trim().replace(/\s*\([^)]*\)\s*:/, ':'))); // remove (99.8%) etc.
-                }
+                const matchH = obj.match(/^H[0-9]{3}.+?(?=\[|$)/g);
+                if (matchH) matchH.forEach(m => hazardStatements.add(m.trim().replace(/\s*\([^)]*\)\s*:/, ':')));
+
+                const matchP = obj.match(/^P[0-9]{3}.+?(?=\[|$)/g);
+                if (matchP) matchP.forEach(m => precautionaryStatements.add(m.trim().replace(/\s*\([^)]*\)\s*:/, ':')));
             } else if (Array.isArray(obj)) {
                 obj.forEach(o => extractGhsRecursive(o));
             } else if (typeof obj === 'object' && obj !== null) {
@@ -95,11 +89,15 @@ export class PubchemService {
 
         extractGhsRecursive(pugViewData);
         
-        return Array.from(foundGHS).sort();
+        return {
+            pictograms: Array.from(pictograms).sort(),
+            hazardStatements: Array.from(hazardStatements).sort(),
+            precautionaryStatements: Array.from(precautionaryStatements).sort()
+        };
 
     } catch (e) {
         console.error("PubChem Fetch Error:", e);
-        return [];
+        return null;
     }
   }
 }
