@@ -81,7 +81,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                             <i class="fa-solid fa-sliders text-blue-500"></i> Cấu hình Quyền
                                         </div>
                                         <div class="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                            {{u.permissions?.length || 0}}/13
+                                            {{u.permissions?.length || 0}}/15
                                         </div>
                                     </button>
                                 }
@@ -193,7 +193,7 @@ export class ConfigUsersComponent implements OnInit {
       ring: 'var(--tw-colors-indigo-500, #6366f1)',
       perms: [
         { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
-        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tự Chuẩn' },
+        { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin Chuẩn' },
         { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' },
         { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký Chuẩn' },
         { val: PERMISSIONS.STANDARD_LOG_DELETE, label: 'Xoá Yêu cầu/Nhật ký chuẩn' }
