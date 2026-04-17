@@ -3,3 +3,21 @@
   Note: Tailwind CSS is loaded via CDN in index.html as per Applet requirements.
   This file exists to satisfy Angular CLI build schema.
 */
+
+/* 
+  Critical layout fix: router-outlet is rendered as an inline element by default.
+  Making it display:none (hidden placeholder) keeps it out of layout flow.
+  The actual component injected AFTER router-outlet gets flex + h-full so it
+  fills the parent container which has flex-1 min-h-0.
+*/
+router-outlet {
+  display: none;
+}
+
+router-outlet + * {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+}

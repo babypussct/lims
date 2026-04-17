@@ -126,6 +126,10 @@ export class AuthService {
             if (snap.exists()) {
               const data = snap.data() as UserProfile;
               data.uid = firebaseUser.uid; // Ensure uid is present
+              // Always enrich with live Firebase Auth photoURL (Google photo may not be stored in Firestore)
+              if (firebaseUser.photoURL) {
+                  data.photoURL = firebaseUser.photoURL;
+              }
               this.currentUser.set(data);
             } else {
               const newUser: UserProfile = {

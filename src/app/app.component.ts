@@ -114,7 +114,7 @@ import { IdleTimeoutService } from './core/services/idle-timeout.service';
                         [class.p-0]="state.focusMode()">
                      
                      <!-- Content Viewport -->
-                     <!-- Outer wrapper: flex column that fills main area. pb accounts for bottom nav on mobile. -->
+                     <!-- Outer wrapper: fills main. Each page component manages its own internal scroll. -->
                      <div class="flex-1 min-h-0 flex flex-col overflow-hidden"
                           [class.px-3]="!state.focusMode()" 
                           [class.pt-4]="!state.focusMode()" 
@@ -127,8 +127,9 @@ import { IdleTimeoutService } from './core/services/idle-timeout.service';
                             </div>
                          }
   
-                         <!-- Router outlet fills all remaining height. pb-20 on mobile for bottom nav clearance. -->
-                         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-0">
+                         <!-- Page component is injected here. Global CSS (styles.css) makes it fill this container. -->
+                         <!-- pb-20 on mobile creates clearance above bottom nav without affecting h calc. -->
+                         <div class="flex-1 min-h-0 overflow-hidden pb-20 md:pb-6">
                              <router-outlet></router-outlet>
                          </div>
                      </div>
