@@ -1281,7 +1281,59 @@ export class LabelPrintComponent implements AfterViewInit {
       }
   }
 
-  // --- BROTHER PRINTING LOGIC (Direct Window Print) ---
+  // --- HELPER: Print HTML via hidden iframe (bypass popup blocker) ---
+  private printViaIframe(htmlContent: string) {
+      // Remove any existing print iframe
+      const existingFrame = document.getElementById('lims-print-frame');
+      if (existingFrame) existingFrame.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'lims-print-frame';
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) {
+          this.toast.show('Không thể tạo khung in. Thử lại.', 'error');
+          return;
+      }
+
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+
+      // Wait for iframe content (especially images) to fully load before printing
+      const iframeWin = iframe.contentWindow;
+      if (!iframeWin) return;
+
+      const doPrint = () => {
+          try {
+              iframeWin.focus();
+              iframeWin.print();
+          } catch (e) {
+              console.error('Print error:', e);
+              this.toast.show('Lỗi khi in. Vui lòng thử lại.', 'error');
+          }
+          // Clean up after print dialog closes
+          setTimeout(() => iframe.remove(), 2000);
+      };
+
+      const format = this.displayFormat();
+      if (format !== 'text') {
+          // Images need time to render - use load event with fallback
+          let loaded = false;
+          iframeWin.onload = () => {
+              if (!loaded) { loaded = true; setTimeout(doPrint, 200); }
+          };
+          // Fallback in case onload already fired
+          setTimeout(() => { if (!loaded) { loaded = true; doPrint(); } }, 800);
+      } else {
+          // Text-only: can print immediately after DOM write
+          setTimeout(doPrint, 100);
+      }
+  }
+
+  // --- BROTHER PRINTING LOGIC ---
   printBrother() {
       const pages = this.brotherPages();
       if (pages.length === 0) return;
@@ -1293,13 +1345,6 @@ export class LabelPrintComponent implements AfterViewInit {
       const cols = Math.max(1, this.brotherCols());
       const rows = this.isBrotherFixed() ? Math.max(1, this.brotherRows()) : Math.max(1, Math.ceil(pages[0].length / cols));
       const showCut = this.brotherShowCutLines();
-
-      // Create a dedicated print window to isolate styles
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (!printWindow) {
-          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
-          return;
-      }
 
       const css = `
         @page { size: ${w}mm ${h}mm; margin: 0; padding: 0; }
@@ -1400,32 +1445,19 @@ export class LabelPrintComponent implements AfterViewInit {
 
       htmlContent += `</body></html>`;
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      // Wait for content to load then print
-      setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-      }, 500);
+      this.printViaIframe(htmlContent);
   }
 
   // --- A4 PRINTING LOGIC (Direct Window Print) ---
   printA4() {
       const pages = this.pages();
-      const validPages = pages.filter((p, i) => i === 0 || p.cells.some(c => !c.isEmpty && c.index !== -1));
+      const validPages = pages.filter(p => p.cells.some(c => !c.isEmpty) || p.pageIndex === 0);
       
       if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
 
       const dims = this.layoutDims();
       const isPlain = this.printMode() === 'plain_a4';
       const showCut = isPlain && this.showCutLines();
-
-      const printWindow = window.open('', '_blank', 'width=800,height=1000');
-      if (!printWindow) {
-          this.toast.show('Trình duyệt chặn Pop-up. Hãy cho phép để in.', 'error');
-          return;
-      }
 
       const css = `
         @page { size: A4 portrait; margin: 0; }
@@ -1541,12 +1573,6 @@ export class LabelPrintComponent implements AfterViewInit {
 
       htmlContent += `</body></html>`;
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-      }, 500);
+      this.printViaIframe(htmlContent);
   }
 }

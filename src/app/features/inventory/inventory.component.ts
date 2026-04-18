@@ -309,8 +309,8 @@ import { PubchemService, GHS_DICTIONARY } from '../../core/services/pubchem.serv
 
         <!-- LABELS TAB -->
         @if (activeTab() === 'labels') {
-            <div class="flex-1 min-h-0 w-full relative">
-                <app-label-print class="absolute inset-0 block"></app-label-print>
+            <div class="flex-1 min-h-0 w-full flex flex-col">
+                <app-label-print class="flex-1 min-h-0 w-full block"></app-label-print>
             </div>
         }
       </div>
