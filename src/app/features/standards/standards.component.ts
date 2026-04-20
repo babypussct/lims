@@ -1073,17 +1073,19 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- Bulk CoA Match & Upload Logic ---
-  async triggerBulkCoa(input: HTMLInputElement) {
-      // Google OAuth popup MUST be triggered synchronously from a user click.
-      // We call it here — before the file picker — so the gesture context is preserved.
-      try {
-          await this.googleDriveService.ensureAuthenticated();
-      } catch (e: any) {
-          this.toast.show(e.message || 'Lỗi kết nối Google Drive', 'error');
-          return;
-      }
-      // Token is now cached. Open the file picker — its (change) handler will run sync.
-      input.click();
+  triggerBulkCoa(input: HTMLInputElement) {
+      // KEY INSIGHT: tokenClient.requestAccessToken() is SYNCHRONOUS — it opens the popup
+      // immediately inside this click handler, so Chrome/Safari cannot block it.
+      // We must NOT use async/await before this call, or the gesture context is lost.
+      this.googleDriveService.authenticateSync(
+          () => {
+              // Token cached successfully — now open the file picker
+              input.click();
+          },
+          (msg) => {
+              this.toast.show(msg, 'error');
+          }
+      );
   }
 
   handleBulkCoaSelect(event: any) {

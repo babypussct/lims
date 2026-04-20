@@ -189,11 +189,66 @@ export class GoogleDriveService {
   }
 
   /**
-   * Explictly request authentication to bypass browser popup blockers
+   * Explicitly request authentication to bypass browser popup blockers
    */
   async ensureAuthenticated(): Promise<string> {
       await this.ensureInitialized();
       return this.requestAccessToken();
+  }
+
+  /**
+   * SYNCHRONOUS auth trigger — call directly from a (click) handler WITHOUT await.
+   * `tokenClient.requestAccessToken` opens the Google popup SYNCHRONOUSLY,
+   * preserving the user gesture context (no popup-blocker issues).
+   *
+   * @param onSuccess called with the access token after auth
+   * @param onError   called with an error message if auth fails
+   */
+  authenticateSync(
+      onSuccess: (token: string) => void,
+      onError: (message: string) => void
+  ): void {
+      // Already have a valid cached token — skip popup entirely
+      if (this.accessToken && Date.now() < this.tokenExpiry) {
+          onSuccess(this.accessToken);
+          return;
+      }
+
+      if (!this.tokenClient) {
+          // GIS not ready yet — should not happen if ensureInitialized() ran in ngOnInit
+          onError('Google Drive SDK ch\u01b0a s\u1eb5n s\u00e0ng. H\u00e3y th\u1eed l\u1ea1i sau v\u00e0i gi\u00e2y.');
+          return;
+      }
+
+      const timeout = setTimeout(() => {
+          onError('\u0110\u0103ng nh\u1eadp Google qu\u00e1 th\u1eddi gian (60s). H\u00e3y th\u1eed l\u1ea1i.');
+      }, 60000);
+
+      this.tokenClient.callback = (response: any) => {
+          clearTimeout(timeout);
+          if (response.error) {
+              onError(response.error_description || response.error);
+              return;
+          }
+          this.accessToken = response.access_token;
+          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+          console.log('[GoogleDrive] authenticateSync: token obtained.');
+          onSuccess(this.accessToken);
+      };
+
+      this.tokenClient.error_callback = (error: any) => {
+          clearTimeout(timeout);
+          if (error?.type === 'popup_closed') {
+              onError('C\u1eeda s\u1ed5 \u0111\u0103ng nh\u1eadp Google \u0111\u00e3 b\u1ecb \u0111\u00f3ng. H\u00e3y th\u1eed l\u1ea1i.');
+          } else if (error?.type === 'popup_failed_to_open') {
+              onError('Kh\u00f4ng th\u1ec3 m\u1edf popup. H\u00e3y cho ph\u00e9p popup t\u1eeb trang n\u00e0y.');
+          } else {
+              onError(error?.type || 'L\u1ed7i \u0111\u0103ng nh\u1eadp kh\u00f4ng x\u00e1c \u0111\u1ecbnh');
+          }
+      };
+
+      // THIS LINE IS SYNCHRONOUS — opens the Google popup immediately in the click context
+      this.tokenClient.requestAccessToken({ prompt: '' });
   }
 
   /**
