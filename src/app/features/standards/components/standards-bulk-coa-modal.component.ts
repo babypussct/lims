@@ -87,7 +87,15 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                                    <td class="px-4 py-3">
                                        <div class="flex items-center gap-2">
                                            <i class="fa-regular text-lg" [ngClass]="getFileIcon(item.fileName)"></i>
-                                           <span class="font-bold text-slate-700 dark:text-slate-300 break-all text-xs" [title]="item.fileName">{{item.fileName}}</span>
+                                           <span class="font-bold text-slate-700 dark:text-slate-300 break-all text-xs" [title]="item.fileName">
+                                               @for (seg of getHighlightedFilenameSegments(item.fileName, item); track $index) {
+                                                   @if (seg.isMatch) {
+                                                       <span class="bg-yellow-200 dark:bg-yellow-500/30 text-yellow-900 dark:text-yellow-200 px-0.5 rounded shadow-sm border border-yellow-300 dark:border-yellow-600/50">{{seg.text}}</span>
+                                                   } @else {
+                                                       <span>{{seg.text}}</span>
+                                                   }
+                                               }
+                                           </span>
                                        </div>
                                        @if(item.file.size) { <div class="text-[10px] text-slate-400 mt-0.5 ml-6">{{(item.file.size / 1024).toFixed(1)}} KB</div> }
                                    </td>
@@ -242,5 +250,44 @@ export class StandardsBulkCoaModalComponent {
       if (lower.match(/\.(jpg|jpeg|png|webp|bmp)$/)) return 'fa-file-image text-blue-500';
       if (lower.match(/\.(doc|docx)$/)) return 'fa-file-word text-blue-600';
       return 'fa-file text-slate-500';
+  }
+
+  getHighlightedFilenameSegments(filename: string, item: CoaMatchItem): { text: string; isMatch: boolean }[] {
+      const std = item.matchedStandard;
+      if (!std) return [{ text: filename, isMatch: false }];
+
+      const matchWords: string[] = [];
+      const addWords = (str: any) => {
+          if (!str || typeof str !== 'string' || str === '-' || str === 'na' || str === 'n/a' || str === 'N/A') return;
+          
+          // Exact text
+          if (str.length >= 3 && filename.toLowerCase().includes(str.toLowerCase())) {
+              matchWords.push(str);
+          }
+          // Stripped text (e.g. "Lot-123" -> "Lot123")
+          const clean = str.replace(/[^a-zA-Z0-9]/g, '');
+          if (clean !== str && clean.length >= 3 && filename.toLowerCase().includes(clean.toLowerCase())) {
+              matchWords.push(clean);
+          }
+      };
+
+      addWords(std.lot_number);
+      addWords(std.product_code);
+
+      if (matchWords.length === 0) return [{ text: filename, isMatch: false }];
+
+      // Sort by length desc to match longer tokens first
+      matchWords.sort((a, b) => b.length - a.length);
+
+      // Escape regex chars
+      const escape = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Create pattern matching dynamically any of the strings
+      const pattern = new RegExp(`(${matchWords.map(escape).join('|')})`, 'gi');
+
+      const parts = filename.split(pattern);
+      return parts.filter(p => p.length > 0).map(p => {
+          const isMatch = matchWords.some(w => w.toLowerCase() === p.toLowerCase());
+          return { text: p, isMatch };
+      });
   }
 }
