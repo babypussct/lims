@@ -229,3 +229,55 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
     
     return ranges.join(', ');
 }
+
+/**
+ * Calculates a similarity score between a search query (such as a search term or a filename)
+ * and a standard's database properties. Used for search relevance and auto-matching.
+ */
+export function calculateSimilarityScore(query: string, std: any): number {
+    if (!query || !std) return 0;
+    let score = 0;
+    
+    // Normalize and strip non-alphanumeric from both query and properties
+    const queryClean = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    if (!queryClean) return 0;
+
+    const lotClean = (std.lot_number || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const codeClean = (std.product_code || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const casClean = (std.cas_number || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nameClean = (std.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    const chemicalClean = (std.chemical_name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    const manufacturerClean = (std.manufacturer || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+
+    // High Priority Match: Exact Match on identifiers (Useful when searching exact Lot)
+    if (lotClean && lotClean.length > 2 && lotClean === queryClean) score += 200;
+    // Query contains the standard's lot (Useful when parsing Filename)
+    else if (lotClean && lotClean !== 'na' && lotClean.length > 2 && queryClean.includes(lotClean)) score += 100;
+    
+    if (codeClean && codeClean.length > 2 && codeClean === queryClean) score += 150;
+    else if (codeClean && codeClean !== 'na' && codeClean.length > 2 && queryClean.includes(codeClean)) score += 80;
+    
+    if (casClean && casClean.length > 4 && casClean === queryClean) score += 100;
+    else if (casClean && casClean.length > 4 && queryClean.includes(casClean)) score += 40;
+
+    // Medium Priority: Name matching
+    if (nameClean && nameClean === queryClean) score += 120;
+    else if (nameClean && nameClean.length > 5 && queryClean.includes(nameClean.substring(0, 10))) score += 50;
+    else if (nameClean && nameClean.length > 3 && queryClean.includes(nameClean.substring(0, 5))) score += 20;
+
+    // Medium/Low Priority: Chemical Name & Manufacturer
+    if (chemicalClean && chemicalClean === queryClean) score += 60;
+    else if (chemicalClean && chemicalClean.length > 5 && queryClean.includes(chemicalClean.substring(0, 10))) score += 30;
+    
+    if (manufacturerClean && manufacturerClean === queryClean) score += 30;
+    
+    // Reverse inclusion (Standard's property contains the query) - Used for global SEARCH typed by user
+    if (queryClean.length >= 2) {
+        if (lotClean.includes(queryClean)) score += 60;
+        if (codeClean.includes(queryClean)) score += 50;
+        if (nameClean.includes(queryClean)) score += 40;
+        if (chemicalClean.includes(queryClean)) score += 20;
+    }
+
+    return score;
+}

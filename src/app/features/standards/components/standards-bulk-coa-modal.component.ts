@@ -99,7 +99,7 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                                                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border appearance-none outline-none focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-xs font-medium transition"
                                                [ngClass]="item.matchedStandard ? 'border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 focus:border-emerald-500' : 'border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400 focus:border-amber-500'">
                                                <option value="">-- [Bỏ qua] Không nhận diện được --</option>
-                                               @for (std of allStandards; track std.id) {
+                                               @for (std of item.suggestedStandards || allStandards; track std.id) {
                                                    <option [value]="std.id" class="dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                                        {{std.name}} (LOT: {{std.lot_number || 'N/A'}}) - {{std.product_code || 'No Code'}}
                                                    </option>

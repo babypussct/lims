@@ -8,7 +8,7 @@ import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
-import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
+import { formatNum, generateSlug, UNIT_OPTIONS, calculateSimilarityScore } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -707,11 +707,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   
               return searchTerms.every(t => searchStr.includes(t));
           });
+
+          // Inject search score if search term is active
+          data = data.map(item => ({
+              ...item,
+              search_score: calculateSimilarityScore(term, item)
+          }));
       }
 
       // 3. SORT
       const option = this.sortOption();
       return data.sort((a, b) => {
+          // If searching, prioritize search score over fallback sort method
+          if (term && (b as any).search_score !== (a as any).search_score) {
+              return ((b as any).search_score || 0) - ((a as any).search_score || 0);
+          }
+
           switch (option) {
               case 'name_asc': return (a.name || '').localeCompare(b.name || '');
               case 'name_desc': return (b.name || '').localeCompare(a.name || '');
@@ -1072,31 +1083,29 @@ export class StandardsComponent implements OnInit, OnDestroy {
         if (!file.name.toLowerCase().match(/\.(pdf|jpeg|jpg|png|webp|bmp|doc|docx)$/)) continue;
 
         const nameLower = file.name.toLowerCase();
-        const nameClean = nameLower.replace(/[^a-z0-9]/g, ''); // strip spaces and symbols for fuzzy matching
+        
+        // Match logic: Generate suggested standards sorted by global similarity score
+        const scoredStandards = standards.map(s => {
+            let score = calculateSimilarityScore(nameLower, s);
+            return { std: s, score };
+        });
+
+        // Top ones first, fallback to alphabetical on tie
+        scoredStandards.sort((a, b) => b.score - a.score || (a.std.name || '').localeCompare(b.std.name || ''));
+        const suggestedStandards = scoredStandards.map(ss => ss.std);
+        
+        // Define matched standard as top 1 IF the score is reasonably high enough 
+        // (to avoid forcing a match when nothing is actually similar)
         let matched: ReferenceStandard | null = null;
-        
-        // Match logic:
-        // Priority 1: Lot number
-        const byLot = standards.find(s => s.lot_number && s.lot_number !== '-' && nameClean.includes(s.lot_number.toLowerCase().replace(/[^a-z0-9]/g, '')));
-        if (byLot) {
-            matched = byLot;
-        } else {
-            // Priority 2: Product Code
-            const byCode = standards.find(s => s.product_code && s.product_code !== '-' && nameClean.includes(s.product_code.toLowerCase().replace(/[^a-z0-9]/g, '')));
-            if (byCode) {
-                // To avoid too loose matching for short product codes, verify length or exactly match substring
-                matched = byCode;
-            } else {
-                // Priority 3: Name
-                const byName = standards.find(s => s.name && nameClean.includes(s.name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15))); // Match first 15 chars to avoid long name discrepancies
-                if (byName) matched = byName;
-            }
+        if (scoredStandards[0] && scoredStandards[0].score >= 80) { // arbitrary threshold for confident auto-match
+            matched = scoredStandards[0].std;
         }
-        
+
         newItems.push({
             file,
             fileName: file.name,
             matchedStandard: matched,
+            suggestedStandards: suggestedStandards, // Feed sorted array to dropdown
             status: 'pending'
         });
      }
