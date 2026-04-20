@@ -189,6 +189,14 @@ export class GoogleDriveService {
   }
 
   /**
+   * Explictly request authentication to bypass browser popup blockers
+   */
+  async ensureAuthenticated(): Promise<string> {
+      await this.ensureInitialized();
+      return this.requestAccessToken();
+  }
+
+  /**
    * Upload a file to Google Drive, set sharing, return preview URL.
    *
    * @param file - The File object to upload

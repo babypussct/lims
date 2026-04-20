@@ -1134,6 +1134,15 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
       
+      try {
+          // Pre-authenticate before turning on 'uploading' flags. 
+          // If we wait to authenticate inside the loop, the browser might block the Google login popup!
+          await this.googleDriveService.ensureAuthenticated();
+      } catch (e: any) {
+          this.toast.show(e.message || 'Lỗi đăng nhập Google Drive bị từ chối/chặn', 'error');
+          return;
+      }
+      
       this.isBulkUploading.set(true);
       this.bulkUploadComplete.set(false);
 
