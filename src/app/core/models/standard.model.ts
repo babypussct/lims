@@ -161,7 +161,8 @@ export interface CoaMatchItem {
     file: File;
     fileName: string;
     matchedStandard: ReferenceStandard | null;
-    suggestedStandards?: ReferenceStandard[]; // Pre-sorted list based on similarity
+    matchScore?: number;
+    suggestedStandards?: { std: ReferenceStandard, score: number }[]; // Pre-sorted list with scores
     status: 'pending' | 'uploading' | 'success' | 'error';
     progress?: number;
     uploadError?: string;

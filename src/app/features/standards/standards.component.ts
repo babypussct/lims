@@ -1092,19 +1092,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
         // Top ones first, fallback to alphabetical on tie
         scoredStandards.sort((a, b) => b.score - a.score || (a.std.name || '').localeCompare(b.std.name || ''));
-        const suggestedStandards = scoredStandards.map(ss => ss.std);
+        const suggestedStandards = scoredStandards.map(ss => ({ std: ss.std, score: ss.score }));
         
         // Define matched standard as top 1 IF the score is reasonably high enough 
         // (to avoid forcing a match when nothing is actually similar)
         let matched: ReferenceStandard | null = null;
+        let matchScore = 0;
         if (scoredStandards[0] && scoredStandards[0].score >= 80) { // arbitrary threshold for confident auto-match
             matched = scoredStandards[0].std;
+            matchScore = scoredStandards[0].score;
         }
 
         newItems.push({
             file,
             fileName: file.name,
             matchedStandard: matched,
+            matchScore: matchScore,
             suggestedStandards: suggestedStandards, // Feed sorted array to dropdown
             status: 'pending'
         });

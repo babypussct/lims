@@ -99,15 +99,26 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                                                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border appearance-none outline-none focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-xs font-medium transition"
                                                [ngClass]="item.matchedStandard ? 'border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 focus:border-emerald-500' : 'border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400 focus:border-amber-500'">
                                                <option value="">-- [Bỏ qua] Không nhận diện được --</option>
-                                               @for (std of item.suggestedStandards || allStandards; track std.id) {
-                                                   <option [value]="std.id" class="dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                                       {{std.name}} (LOT: {{std.lot_number || 'N/A'}}) - {{std.product_code || 'No Code'}}
-                                                   </option>
+                                               @if (item.suggestedStandards) {
+                                                   @for (s of item.suggestedStandards; track s.std.id) {
+                                                       <option [value]="s.std.id" class="dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                                           [{{s.score}} điểm] {{s.std.name}} (LOT: {{s.std.lot_number || 'N/A'}}) - {{s.std.product_code || 'No Code'}}
+                                                       </option>
+                                                   }
+                                               } @else {
+                                                   @for (std of allStandards; track std.id) {
+                                                       <option [value]="std.id" class="dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                                           {{std.name}} (LOT: {{std.lot_number || 'N/A'}}) - {{std.product_code || 'No Code'}}
+                                                       </option>
+                                                   }
                                                }
                                            </select>
                                            @if(item.matchedStandard) {
-                                               <div class="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium px-1">
-                                                   <i class="fa-solid fa-check"></i> Đã chọn: {{item.matchedStandard.name}}
+                                               <div class="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center justify-between font-medium px-1">
+                                                   <span class="flex items-center gap-1 truncate"><i class="fa-solid fa-check"></i> Đã chọn: {{item.matchedStandard.name}}</span>
+                                                   @if(item.matchScore !== undefined) {
+                                                       <span class="font-bold bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded ml-1 shrink-0">{{item.matchScore}}đ</span>
+                                                   }
                                                </div>
                                            } @else {
                                                <div class="mt-1 text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium px-1">
@@ -117,8 +128,11 @@ import { ReferenceStandard, CoaMatchItem } from '../../../core/models/standard.m
                                        } @else {
                                            <!-- Readonly Mode During Upload -->
                                            @if(item.matchedStandard) {
-                                               <div class="bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                   {{item.matchedStandard.name}} (LOT: {{item.matchedStandard.lot_number || 'N/A'}})
+                                               <div class="bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex justify-between items-center">
+                                                   <span class="truncate">{{item.matchedStandard.name}} (LOT: {{item.matchedStandard.lot_number || 'N/A'}})</span>
+                                                   @if(item.matchScore !== undefined) {
+                                                       <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded ml-1 shrink-0">{{item.matchScore}}đ</span>
+                                                   }
                                                </div>
                                            } @else {
                                                <span class="text-xs italic text-slate-400">Đã bỏ qua</span>
