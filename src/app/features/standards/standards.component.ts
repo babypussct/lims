@@ -74,10 +74,10 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
                      <i class="fa-solid fa-cloud-arrow-up"></i> Upload CoA Hàng loạt <i class="fa-solid fa-caret-down"></i>
                  </button>
                  <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden flex flex-col p-1">
-                     <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                     <button (click)="triggerBulkCoa(bulkCoaFolderInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                          <i class="fa-solid fa-folder-open text-amber-500 w-4"></i> Từ Thư mục (Files/Folders)
                      </button>
-                     <button (click)="bulkCoaFilesInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                     <button (click)="triggerBulkCoa(bulkCoaFilesInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                          <i class="fa-regular fa-images text-blue-500 w-4"></i> Chọn nhiều Files (PDF/IMG)
                      </button>
                  </div>
@@ -1073,20 +1073,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- Bulk CoA Match & Upload Logic ---
-  async handleBulkCoaSelect(event: any) {
+  async triggerBulkCoa(input: HTMLInputElement) {
+      // Google OAuth popup MUST be triggered synchronously from a user click.
+      // We call it here — before the file picker — so the gesture context is preserved.
+      try {
+          await this.googleDriveService.ensureAuthenticated();
+      } catch (e: any) {
+          this.toast.show(e.message || 'Lỗi kết nối Google Drive', 'error');
+          return;
+      }
+      // Token is now cached. Open the file picker — its (change) handler will run sync.
+      input.click();
+  }
+
+  handleBulkCoaSelect(event: any) {
      const files = event.target.files as FileList;
      if (!files || files.length === 0) return;
-     
-     // Pre-authenticate IMMEDIATELY in the input(change) event (User Gesture)
-     // This guarantees Chrome/Safari won't block the Google Login popup
-     try {
-         this.toast.show('Đang khởi tạo kết nối Google Drive...', 'info');
-         await this.googleDriveService.ensureAuthenticated();
-     } catch (e: any) {
-         this.toast.show(e.message || 'Lỗi kết nối Google Drive', 'error');
-         event.target.value = '';
-         return; // Abort if they cannot login
-     }
 
      const newItems: CoaMatchItem[] = [];
      const standards = this.allStandards();
