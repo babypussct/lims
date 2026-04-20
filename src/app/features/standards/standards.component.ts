@@ -1071,10 +1071,21 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- Bulk CoA Match & Upload Logic ---
-  handleBulkCoaSelect(event: any) {
+  async handleBulkCoaSelect(event: any) {
      const files = event.target.files as FileList;
      if (!files || files.length === 0) return;
      
+     // Pre-authenticate IMMEDIATELY in the input(change) event (User Gesture)
+     // This guarantees Chrome/Safari won't block the Google Login popup
+     try {
+         this.toast.show('Đang khởi tạo kết nối Google Drive...', 'info');
+         await this.googleDriveService.ensureAuthenticated();
+     } catch (e: any) {
+         this.toast.show(e.message || 'Lỗi kết nối Google Drive', 'error');
+         event.target.value = '';
+         return; // Abort if they cannot login
+     }
+
      const newItems: CoaMatchItem[] = [];
      const standards = this.allStandards();
 
@@ -1133,15 +1144,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       let items = this.bulkCoaItems();
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
-      
-      try {
-          // Pre-authenticate before turning on 'uploading' flags. 
-          // If we wait to authenticate inside the loop, the browser might block the Google login popup!
-          await this.googleDriveService.ensureAuthenticated();
-      } catch (e: any) {
-          this.toast.show(e.message || 'Lỗi đăng nhập Google Drive bị từ chối/chặn', 'error');
-          return;
-      }
       
       this.isBulkUploading.set(true);
       this.bulkUploadComplete.set(false);
