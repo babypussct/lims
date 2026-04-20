@@ -156,3 +156,12 @@ export interface ImportUsageLogPreviewItem {
     isValid: boolean;
     errorMessage?: string;
 }
+
+export interface CoaMatchItem {
+    file: File;
+    fileName: string;
+    matchedStandard: ReferenceStandard | null;
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    progress?: number;
+    uploadError?: string;
+}

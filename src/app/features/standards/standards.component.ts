@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest } from '../../core/models/standard.model';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
 import { formatNum, generateSlug, UNIT_OPTIONS } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
@@ -23,11 +23,12 @@ import { StandardsImportDataModalComponent, StandardsImportUsageModalComponent }
 import { StandardsHistoryModalComponent } from './components/standards-history-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
 import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
+import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-modal.component';
 
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsBulkCoaModalComponent],
   template: `
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
       <!-- Header -->
@@ -66,6 +67,23 @@ import { StandardsCoaModalComponent } from './components/standards-coa-modal.com
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
              <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
+             
+             <!-- Drobdown or group for Bulk CoA -->
+             <div class="relative group ml-1">
+                 <button class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5">
+                     <i class="fa-solid fa-cloud-arrow-up"></i> Upload CoA Hàng loạt <i class="fa-solid fa-caret-down"></i>
+                 </button>
+                 <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden flex flex-col p-1">
+                     <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                         <i class="fa-solid fa-folder-open text-amber-500 w-4"></i> Từ Thư mục (Files/Folders)
+                     </button>
+                     <button (click)="bulkCoaFilesInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                         <i class="fa-regular fa-images text-blue-500 w-4"></i> Chọn nhiều Files (PDF/IMG)
+                     </button>
+                 </div>
+                 <input #bulkCoaFolderInput type="file" webkitdirectory directory multiple class="hidden" (change)="handleBulkCoaSelect($event)">
+                 <input #bulkCoaFilesInput type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" class="hidden" (change)="handleBulkCoaSelect($event)">
+             </div>
            }
         </div>
       </div>
@@ -449,6 +467,9 @@ import { StandardsCoaModalComponent } from './components/standards-coa-modal.com
       <!-- IMPORT USAGE LOG PREVIEW MODAL -->
       <app-standards-import-usage-modal [data]="importUsageLogPreviewData()" [validCount]="validUsageLogsCount()" [duplicateCount]="duplicateUsageLogsCount()" [errorCount]="errorUsageLogsCount()" [isImporting]="isImporting()" (cancel)="cancelImport()" (confirm)="confirmUsageLogImport()"></app-standards-import-usage-modal>
 
+      <!-- BULK COA MODAL -->
+      <app-standards-bulk-coa-modal [isOpen]="showBulkCoaModal()" [items]="bulkCoaItems()" [allStandards]="allStandards()" [isUploading]="isBulkUploading()" [uploadComplete]="bulkUploadComplete()" (cancel)="cancelBulkCoa()" (confirm)="confirmBulkCoaUpload()"></app-standards-bulk-coa-modal>
+
       <!-- History, COA Preview Modals... (No changes needed here) -->
 
       @if (showAssignModal() && selectedStd()) {
@@ -748,6 +769,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
   previewType = signal<'iframe' | 'image'>('iframe');
   previewRawUrl = signal<string>('');
 
+  // Bulk CoA Upload State
+  bulkCoaItems = signal<CoaMatchItem[]>([]);
+  showBulkCoaModal = signal(false);
+  isBulkUploading = signal(false);
+  bulkUploadComplete = signal(false);
+
 
 
   formatNum = formatNum;
@@ -1029,6 +1056,97 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.quickUploadStdId.set('');
           this.quickUploadStd = null;
           event.target.value = '';
+      }
+  }
+
+  // --- Bulk CoA Match & Upload Logic ---
+  handleBulkCoaSelect(event: any) {
+     const files = event.target.files as FileList;
+     if (!files || files.length === 0) return;
+     
+     const newItems: CoaMatchItem[] = [];
+     const standards = this.allStandards();
+
+     for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.name.toLowerCase().match(/\.(pdf|jpeg|jpg|png|webp|bmp|doc|docx)$/)) continue;
+
+        const nameLower = file.name.toLowerCase();
+        const nameClean = nameLower.replace(/[^a-z0-9]/g, ''); // strip spaces and symbols for fuzzy matching
+        let matched: ReferenceStandard | null = null;
+        
+        // Match logic:
+        // Priority 1: Lot number
+        const byLot = standards.find(s => s.lot_number && s.lot_number !== '-' && nameClean.includes(s.lot_number.toLowerCase().replace(/[^a-z0-9]/g, '')));
+        if (byLot) {
+            matched = byLot;
+        } else {
+            // Priority 2: Product Code
+            const byCode = standards.find(s => s.product_code && s.product_code !== '-' && nameClean.includes(s.product_code.toLowerCase().replace(/[^a-z0-9]/g, '')));
+            if (byCode) {
+                // To avoid too loose matching for short product codes, verify length or exactly match substring
+                matched = byCode;
+            } else {
+                // Priority 3: Name
+                const byName = standards.find(s => s.name && nameClean.includes(s.name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15))); // Match first 15 chars to avoid long name discrepancies
+                if (byName) matched = byName;
+            }
+        }
+        
+        newItems.push({
+            file,
+            fileName: file.name,
+            matchedStandard: matched,
+            status: 'pending'
+        });
+     }
+     
+     if (newItems.length > 0) {
+         this.bulkCoaItems.set(newItems);
+         this.showBulkCoaModal.set(true);
+         this.bulkUploadComplete.set(false);
+     } else {
+         this.toast.show('Không tìm thấy file tài liệu hợp lệ trong thư mục/số file đã chọn (yêu cầu .pdf, .jpg, v.v.)', 'error');
+     }
+     event.target.value = '';
+  }
+
+  cancelBulkCoa() {
+      if (this.isBulkUploading()) return;
+      this.showBulkCoaModal.set(false);
+      this.bulkCoaItems.set([]);
+  }
+
+  async confirmBulkCoaUpload() {
+      let items = this.bulkCoaItems();
+      const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
+      if (toUpload.length === 0 || this.isBulkUploading()) return;
+      
+      this.isBulkUploading.set(true);
+      this.bulkUploadComplete.set(false);
+
+      try {
+          for (const item of toUpload) {
+              item.status = 'uploading';
+              this.bulkCoaItems.set([...items]); // Trigger UI update
+              
+              const std = item.matchedStandard!;
+              const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', item.file.name);
+              
+              try {
+                  const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
+                  await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
+                  item.status = 'success';
+              } catch(e: any) {
+                  item.status = 'error';
+                  item.uploadError = e.message || 'Lỗi kết nối';
+              }
+              this.bulkCoaItems.set([...items]); // Update progress for this file
+          }
+      } finally {
+          this.isBulkUploading.set(false);
+          this.bulkUploadComplete.set(true);
+          this.toast.show('Hoàn tất quá trình tải lên CoA hàng loạt', 'success');
       }
   }
 
