@@ -800,6 +800,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   ngOnInit() { 
       this.isLoading.set(true);
+      // Pre-load Google Drive SDK script in background so when user interacts, we don't block for network request
+      this.googleDriveService.ensureInitialized().catch(e => console.warn('GIS preload deferred:', e));
       // Reactive view mode listener (updates on window resize / device rotation)
       this.mobileMediaQuery.addEventListener('change', this.onMediaChange);
       // Setup Real-time Listener (Load All)
