@@ -656,11 +656,9 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         if (this.isProcessing() || std.coa_requested) return;
         
         this.confirmation.confirm({
-            title: 'Yêu cầu CoA',
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
             confirmText: 'Gửi Yêu cầu',
-            cancelText: 'Hủy',
-            dangerMessage: 'Chỉ gửi yêu cầu khi cần thiết để tránh làm phiền Quản trị viên.'
+            cancelText: 'Hủy'
         }).then(async (confirmed) => {
             if (!confirmed) return;
             
