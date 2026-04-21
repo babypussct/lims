@@ -45,7 +45,7 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
         <div class="flex gap-2 items-center">
            @if(selectedIds().size > 0 && auth.canEditStandards()) {
                 <button (click)="deleteSelected()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
-                    @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-trash"></i> } Xóa {{selectedIds().size}} mục
+                    @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-eye-slash"></i> } Ẩn {{selectedIds().size}} mục
                 </button>
                 <div class="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
            }
@@ -954,11 +954,11 @@ export class StandardsComponent implements OnInit, OnDestroy {
       const ids = Array.from(this.selectedIds());
       if (ids.length === 0) return;
       
-      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn xóa vĩnh viễn ${ids.length} chuẩn đã chọn và TẤT CẢ lịch sử của chúng?`, confirmText: 'Xóa vĩnh viễn', isDangerous: true })) {
+      if (await this.confirmationService.confirm({ message: `Bạn có chắc muốn ẩn ${ids.length} chuẩn đã chọn khỏi danh sách?\n\n• Lịch sử sử dụng vẫn được lưu giữ đầy đủ.\n• Dữ liệu có thể khôi phục từ Thùng rác (Admin).`, confirmText: 'Xác nhận ẩn', isDangerous: true })) {
           this.isProcessing.set(true);
           try { 
               await this.stdService.deleteSelectedStandards(ids); 
-              this.toast.show(`Đã xóa ${ids.length} mục.`, 'success'); 
+              this.toast.show(`Đã ẩn ${ids.length} chuẩn. Lịch sử sử dụng vẫn được giữ lại.`, 'success'); 
               this.selectedIds.set(new Set());
           } catch(e: any) { 
               this.toast.show('Lỗi xóa: ' + e.message, 'error'); 
