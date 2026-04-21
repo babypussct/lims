@@ -53,8 +53,7 @@ import { AppNotification } from '../../../core/models/notification.model';
                        @for (n of notifications(); track n.id) {
                            <div (click)="onNotificationClick(n)" 
                                 class="px-4 py-3 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors relative group"
-                                [class.bg-blue-50]="!n.isRead"
-                                [class.dark:bg-blue-900/10]="!n.isRead">
+                                [ngClass]="{'bg-blue-50 dark:bg-blue-900/10': !n.isRead}">
                                 
                                 <!-- Unread dot -->
                                 @if (!n.isRead) {
