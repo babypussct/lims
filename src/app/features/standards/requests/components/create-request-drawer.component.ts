@@ -15,11 +15,11 @@ function removeAccents(str: string): string {
   template: `
     <!-- REQUEST MODAL (Tạo yêu cầu mới - Drawer) -->
     @if (isOpen) {
-        <div class="fixed inset-0 z-[60] flex justify-end bg-slate-900/60 backdrop-blur-sm fade-in">
+        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
         <!-- Overlay click to close -->
         <div class="absolute inset-0" (click)="onClose()"></div>
         
-        <div class="relative bg-white dark:bg-slate-900 shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-slide-left h-full border-l border-slate-100 dark:border-slate-800">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-slide-up h-[90vh] md:h-[85vh] border border-slate-100 dark:border-slate-800">
             
             <!-- Left Column: Standards Selection -->
             <div class="w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">

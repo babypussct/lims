@@ -11,7 +11,7 @@ import { AuthService } from '../../../../core/services/auth.service';
     <div class="flex gap-4 h-full p-2 overflow-x-auto custom-scrollbar items-start relative min-h-[500px]">
       
       <!-- COLUMN 1: PENDING_APPROVAL -->
-      <div class="flex-shrink-0 w-[320px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
+      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
         <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-amber-50/50 dark:bg-amber-900/10">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
@@ -30,7 +30,7 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 2: IN_PROGRESS -->
-      <div class="flex-shrink-0 w-[320px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
+      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
         <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -49,7 +49,7 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 3: PENDING_RETURN -->
-      <div class="flex-shrink-0 w-[320px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
+      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
         <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-900/10">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
@@ -68,7 +68,7 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 4: COMPLETED / REJECTED -->
-      <div class="flex-shrink-0 w-[320px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
         <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-slate-100 dark:bg-slate-800/50">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-slate-400 text-sm"></div>
