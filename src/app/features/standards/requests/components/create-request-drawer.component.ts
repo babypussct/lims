@@ -22,7 +22,7 @@ function removeAccents(str: string): string {
         <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-slide-up h-[90vh] md:h-[85vh] border border-slate-100 dark:border-slate-800">
             
             <!-- Left Column: Standards Selection -->
-            <div class="w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-r border-slate-100 dark:border-slate-800">
+            <div class="flex-1 w-full md:w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 min-h-0">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800">
                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-flask-vial text-indigo-600"></i>
@@ -139,7 +139,7 @@ function removeAccents(str: string): string {
             </div>
 
             <!-- Right Column: Form & Confirmation -->
-            <div class="flex-1 flex flex-col bg-white dark:bg-slate-900">
+            <div class="flex-1 w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900 min-h-0">
                 <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
