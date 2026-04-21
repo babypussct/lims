@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StandardService } from './standard.service';
@@ -13,12 +14,13 @@ import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryCl
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
+import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent],
   template: `
     <div class="flex flex-col h-full bg-slate-50 dark:bg-slate-900/50 p-2 md:p-4 gap-4 overflow-y-auto custom-scrollbar relative fade-in">
         
@@ -385,6 +387,8 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
     @if(showPurchaseModal() && standard()) {
         <app-standards-purchase-modal [selectedStd]="standard()" [isOpen]="true" (closeModal)="showPurchaseModal.set(false)"></app-standards-purchase-modal>
     }
+    <!-- COA PREVIEW MODAL -->
+    <app-standards-coa-modal [previewUrl]="previewUrl()" [previewImgUrl]="previewImgUrl()" [previewType]="previewType()" [previewRawUrl]="previewRawUrl()" (closeModal)="closeCoaPreview()"></app-standards-coa-modal>
   `
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
@@ -396,6 +400,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     state = inject(StateService);
     location = inject(Location);
     confirmationService = inject(ConfirmationService);
+    sanitizer = inject(DomSanitizer);
 
     Math = Math;
     formatNum = formatNum;
@@ -421,6 +426,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     showEditModal = signal(false);
     showPrintModal = signal(false);
     showPurchaseModal = signal(false);
+
+    // CoA Preview state
+    previewUrl = signal<SafeResourceUrl | null>(null);
+    previewImgUrl = signal<string>('');
+    previewType = signal<'iframe' | 'image'>('iframe');
+    previewRawUrl = signal<string>('');
 
     private liveUnsub?: () => void;
     private routeSub: any;
@@ -578,7 +589,21 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     openCoaPreview(url: string) {
         if (!url) return;
-        window.open(url, '_blank');
+        this.previewRawUrl.set(url);
+        const cleanUrl = url.split('?')[0].toLowerCase();
+        const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
+        if (isImage) { 
+            this.previewType.set('image'); 
+            this.previewImgUrl.set(url); 
+        } else { 
+            this.previewType.set('iframe'); 
+            this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); 
+        }
+    }
+
+    closeCoaPreview() { 
+        this.previewUrl.set(null); 
+        this.previewImgUrl.set(''); 
     }
 
     async autoZeroStock(std: ReferenceStandard) {
