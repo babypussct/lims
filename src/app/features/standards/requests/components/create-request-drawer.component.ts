@@ -19,10 +19,10 @@ function removeAccents(str: string): string {
         <!-- Overlay click to close -->
         <div class="absolute inset-0" (click)="onClose()"></div>
         
-        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-slide-up h-[90vh] md:h-[85vh] border border-slate-100 dark:border-slate-800">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-y-auto md:overflow-hidden animate-slide-up max-h-[95vh] md:h-[85vh] border border-slate-100 dark:border-slate-800">
             
             <!-- Left Column: Standards Selection -->
-            <div class="flex-1 w-full md:w-1/2 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 min-h-0">
+            <div class="w-full md:w-1/2 h-[55vh] md:h-auto md:flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 md:min-h-0">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800">
                     <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-flask-vial text-indigo-600"></i>
@@ -139,7 +139,7 @@ function removeAccents(str: string): string {
             </div>
 
             <!-- Right Column: Form & Confirmation -->
-            <div class="flex-1 w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900 min-h-0">
+            <div class="w-full md:w-1/2 md:flex-1 flex flex-col bg-white dark:bg-slate-900 shrink-0 md:min-h-0">
                 <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
@@ -148,7 +148,7 @@ function removeAccents(str: string): string {
                     <button (click)="onClose()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <div class="flex-1 md:overflow-y-auto p-6 md:p-8">
                     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
                         <!-- Compact Selected Standards Panel -->
                         <div class="rounded-xl border border-indigo-100 dark:border-indigo-800/30 bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex flex-col">
