@@ -191,6 +191,15 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
           (adminReceiveAction)="confirmAdminReceive($event)">
       </app-requests-action-modals>
 
+      <!-- CREATE REQUEST DRAWER -->
+      <app-create-request-drawer
+          [isOpen]="showModal()"
+          [isProcessing]="isProcessing()"
+          [availableStandards]="availableStandards()"
+          (close)="closeModal()"
+          (submitRequest)="submitRequest($event)">
+      </app-create-request-drawer>
+
       <!-- ADMIN PURCHASE REQUESTS MODAL -->
       @if (showPurchaseRequestsAdminModal()) {
          <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
