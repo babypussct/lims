@@ -116,7 +116,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                                             @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
                                         </button>
                                         <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
-                                        <button type="button" (click)="triggerDriveUpload(driveInput)" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
+                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
                                             @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
                                         </button>
                                         <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
@@ -244,38 +244,37 @@ export class StandardsFormModalComponent {
     }
   }
 
-  triggerDriveUpload(inputEl: HTMLInputElement) {
-      this.googleDriveService.authenticateSync(
-          () => {
-              inputEl.click();
-          },
-          (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
-          }
-      );
-  }
-
   async uploadCoaToDrive(event: any) {
     if (this.isDriveUploading()) return;
     const file = event.target.files[0];
     if (!file) return;
 
     this.isDriveUploading.set(true);
-    try {
-        const stdName = this.form.value.name || 'Unknown';
-        const lotNum = this.form.value.lot_number || 'NoLot';
-        const fileName = GoogleDriveService.generateFileName(stdName, lotNum, file.name);
 
-        this.toast.show(`Đang upload "${fileName}" lên Google Drive...`);
-        const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
-        this.form.patchValue({ certificate_ref: previewUrl });
-        this.toast.show(`Upload Drive thành công! File: ${fileName}`);
-    } catch (e: any) {
-        this.toast.show('Upload Drive lỗi: ' + (e.message || 'Không xác định'), 'error');
-    } finally {
-        this.isDriveUploading.set(false);
-        event.target.value = ''; 
-    }
+    this.googleDriveService.authenticateSync(
+        async () => {
+            try {
+                const stdName = this.form.value.name || 'Unknown';
+                const lotNum = this.form.value.lot_number || 'NoLot';
+                const fileName = GoogleDriveService.generateFileName(stdName, lotNum, file.name);
+
+                this.toast.show(`Đang upload "${fileName}" lên Google Drive...`);
+                const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+                this.form.patchValue({ certificate_ref: previewUrl });
+                this.toast.show(`Upload Drive thành công! File: ${fileName}`);
+            } catch (e: any) {
+                this.toast.show('Upload Drive lỗi: ' + (e.message || 'Không xác định'), 'error');
+            } finally {
+                this.isDriveUploading.set(false);
+                event.target.value = ''; 
+            }
+        },
+        (err) => {
+            this.isDriveUploading.set(false);
+            this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+            event.target.value = ''; 
+        }
+    );
   }
 
   async saveStandard(keepOpen = false) {

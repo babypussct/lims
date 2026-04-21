@@ -74,10 +74,10 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
                      <i class="fa-solid fa-cloud-arrow-up"></i> Upload CoA Hàng loạt <i class="fa-solid fa-caret-down"></i>
                  </button>
                  <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden flex flex-col p-1">
-                     <button (click)="triggerBulkUpload(bulkCoaFolderInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                     <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                          <i class="fa-solid fa-folder-open text-amber-500 w-4"></i> Từ Thư mục (Files/Folders)
                      </button>
-                     <button (click)="triggerBulkUpload(bulkCoaFilesInput)" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                     <button (click)="bulkCoaFilesInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                          <i class="fa-regular fa-images text-blue-500 w-4"></i> Chọn nhiều Files (PDF/IMG)
                      </button>
                  </div>
@@ -1026,31 +1026,24 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- Quick Drive Upload (from list/grid view) ---
   triggerQuickDriveUpload(std: ReferenceStandard, event: Event) {
       event.stopPropagation();
-      this.googleDriveService.authenticateSync(
-          () => {
-              this.quickUploadStd = std;
-              // Find and click the hidden file input
-              const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
-              if (input) {
-                  input.click();
-                  return;
-              }
-              // Fallback: try by ref
-              const inputs = document.querySelectorAll('input[type="file"][accept]');
-              const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
-              if (driveInput && driveInput.classList.contains('hidden')) {
-                  driveInput.click();
-                  return;
-              }
-              this.toast.show('Không tìm thấy input upload', 'error');
-          },
-          (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
-          }
-      );
+      this.quickUploadStd = std;
+      // Find and click the hidden file input
+      const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+      if (input) {
+          input.click();
+          return;
+      }
+      // Fallback: try by ref
+      const inputs = document.querySelectorAll('input[type="file"][accept]');
+      const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
+      if (driveInput && driveInput.classList.contains('hidden')) {
+          driveInput.click();
+          return;
+      }
+      this.toast.show('Không tìm thấy input upload', 'error');
   }
 
-  async handleQuickDriveUpload(event: any) {
+  handleQuickDriveUpload(event: any) {
       const file = event.target.files[0];
       const std = this.quickUploadStd;
       if (!file || !std) {
@@ -1058,24 +1051,35 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return;
       }
 
-      this.quickUploadStdId.set(std.id);
-      try {
-          const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+      // XÁC THỰC NGAY LẬP TỨC TRONG SỰ KIỆN (CHANGE) CỦA INPUT FILE ĐỂ TRÁNH BỊ CHẶN POPUP
+      this.googleDriveService.authenticateSync(
+          async () => {
+              this.quickUploadStdId.set(std.id);
+              try {
+                  const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
+                  this.toast.show(`Đang upload CoA cho "${std.name}"...`);
 
-          const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+                  // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
+                  const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-          // Update Firestore directly (partial update)
-          await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
-          this.toast.show(`Upload CoA thành công! ${fileName}`);
-      } catch (e: any) {
-          console.error('Quick Drive upload error:', e);
-          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
-      } finally {
-          this.quickUploadStdId.set('');
-          this.quickUploadStd = null;
-          event.target.value = '';
-      }
+                  // Update Firestore directly (partial update)
+                  await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
+                  this.toast.show(`Upload CoA thành công! ${fileName}`);
+              } catch (e: any) {
+                  console.error('Quick Drive upload error:', e);
+                  this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+              } finally {
+                  this.quickUploadStdId.set('');
+                  this.quickUploadStd = null;
+                  event.target.value = '';
+              }
+          },
+          (err) => {
+              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+              this.quickUploadStd = null;
+              event.target.value = '';
+          }
+      );
   }
 
   // --- Bulk CoA Match & Upload Logic ---
@@ -1137,22 +1141,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.bulkCoaItems.set([]);
   }
 
-  triggerBulkUpload(inputEl: HTMLInputElement) {
-      this.googleDriveService.authenticateSync(
-          () => {
-              inputEl.click();
-          },
-          (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
-          }
-      );
-  }
+  // Xóa hàm triggerBulkUpload vì không cần nữa
 
   async confirmBulkCoaUpload() {
       let items = this.bulkCoaItems();
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
 
+      // NÚT "XÁC NHẬN UPLOAD" TRONG MODAL SẼ KÍCH HOẠT HÀM NÀY, TỨC LÀ MỘT USER GESTURE.
       this.googleDriveService.authenticateSync(
           async () => {
               this.isBulkUploading.set(true);
