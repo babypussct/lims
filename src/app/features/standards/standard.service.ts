@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { generateSlug, getStandardizedAmount, parseQuantityInput } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +16,7 @@ export class StandardService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
   private toast = inject(ToastService);
+  private notificationService = inject(NotificationService);
 
   // ─── Delta Sync Cache ───────────────────────────────────────────────────────
   // localStorage keys
@@ -767,6 +769,18 @@ export class StandardService {
   async requestCoa(std: ReferenceStandard) {
       await this.quickUpdateField(std.id, { coa_requested: true });
       await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
+      
+      const user = this.auth.currentUser();
+      await this.notificationService.notify({
+          recipientUid: 'role:admin', // Push to all admins
+          senderUid: user?.uid,
+          senderName: user?.displayName || 'Người dùng',
+          type: 'COA_REQUEST',
+          title: 'Yêu cầu bổ sung CoA',
+          message: `${user?.displayName || 'Ai đó'} vừa yêu cầu cập nhật file CoA cho lô chuẩn ${std.name} (Lô: ${std.lot_number || 'N/A'}).`,
+          targetId: std.id,
+          actionUrl: `/standards/${std.id}`
+      });
   }
 
   // --- REQUEST WORKFLOW ---
