@@ -801,6 +801,18 @@ export class StandardService {
           await this.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
       } else {
           await this.logGlobalActivity('REQUEST_STANDARD', `Yêu cầu chuẩn: ${request.standardName}`, request.id);
+          
+          const currentUser = this.auth.currentUser();
+          await this.notificationService.notify({
+              recipientUid: 'role:admin',
+              senderUid: currentUser?.uid,
+              senderName: currentUser?.displayName || 'Người dùng',
+              type: 'BORROW_REQUEST',
+              title: 'Yêu cầu mượn chuẩn',
+              message: `${currentUser?.displayName || 'Ai đó'} vừa đăng ký mượn lô chuẩn ${request.standardName}.`,
+              targetId: request.standardId,
+              actionUrl: `/standards/${request.standardId}`
+          });
       }
   }
 
@@ -816,6 +828,18 @@ export class StandardService {
           if (status === 'REJECTED') {
               action = 'REJECT_STANDARD_REQUEST';
               details = `Từ chối yêu cầu: ${reqData.standardName}`;
+              
+              const currentUser = this.auth.currentUser();
+              await this.notificationService.notify({
+                  recipientUid: reqData.requestedBy,
+                  senderUid: currentUser?.uid,
+                  senderName: currentUser?.displayName || 'Hệ thống',
+                  type: 'REQUEST_REJECTED',
+                  title: 'Yêu cầu bị từ chối',
+                  message: `Yêu cầu mượn lô chuẩn ${reqData.standardName} của bạn không được phê duyệt.`,
+                  targetId: reqData.standardId,
+                  actionUrl: `/standards/${reqData.standardId}`
+              });
           } else if (status === 'PENDING_RETURN') {
               action = 'REPORT_RETURN_STANDARD';
               details = `Báo cáo trả chuẩn: ${reqData.standardName}`;
@@ -862,6 +886,18 @@ export class StandardService {
 
       if (reqData && !isAssign) {
           await this.logGlobalActivity('APPROVE_STANDARD_REQUEST', `Duyệt cấp chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
+          
+          const currentUser = this.auth.currentUser();
+          await this.notificationService.notify({
+              recipientUid: (reqData as StandardRequest).requestedBy,
+              senderUid: currentUser?.uid,
+              senderName: currentUser?.displayName || 'Quản trị viên',
+              type: 'REQUEST_APPROVED',
+              title: 'Yêu cầu được duyệt',
+              message: `Yêu cầu mượn lô chuẩn ${(reqData as StandardRequest).standardName} đã được phê duyệt. Xin hãy bảo quản cẩn thận!`,
+              targetId: standardId,
+              actionUrl: `/standards/${standardId}`
+          });
       }
       // lastUpdated được serverTimestamp() trong transaction → live listener tự bắt
       this.invalidateLocalStandardsCache();
@@ -1043,6 +1079,29 @@ export class StandardService {
       });
       
       await this.logGlobalActivity('LOG_USAGE_STANDARD', `Khai báo sử dụng ${amount}${unit} chuẩn: ${standardId}`, requestId);
+      
+      // Stock Low Alert Logic! Limit fetched outside transaction for speed, assuming typical behavior.
+      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
+      const afterSnap = await getDoc(stdRef);
+      if (afterSnap.exists()) {
+          const s = afterSnap.data() as ReferenceStandard;
+          const initial = s.initial_amount || 0;
+          const current = s.current_amount || 0;
+          const threshold = initial * 0.2; // 20%
+          
+          if (current > 0 && current <= threshold) {
+              await this.notificationService.notify({
+                  recipientUid: 'role:admin',
+                  senderUid: 'system',
+                  senderName: 'Hệ thống LIMS',
+                  type: 'STOCK_LOW_ALERT',
+                  title: 'Cảnh báo tồn kho thấp',
+                  message: `Lô chuẩn ${s.name} chỉ còn ${formatNum(current)} ${s.unit} (dưới 20%). Vui lòng cân nhắc đặt mua thêm.`,
+                  targetId: standardId,
+                  actionUrl: `/standards/${standardId}`
+              });
+          }
+      }
   }
 
   async hardDeleteRequest(request: StandardRequest) {
