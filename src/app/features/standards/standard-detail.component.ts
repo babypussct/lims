@@ -7,7 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { StateService } from '../../core/services/state.service';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../core/models/standard.model';
-import { formatNum, getAvatarUrl } from '../../shared/utils/utils';
+import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryClass, getExpiryTimeLeft, canAssign } from '../../shared/utils/utils';
 
 // Modals
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
@@ -400,6 +400,11 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     Math = Math;
     formatNum = formatNum;
     getAvatarUrl = getAvatarUrl;
+    getStandardStatus = getStandardStatus;
+    getStorageInfo = getStorageInfo;
+    getExpiryClass = getExpiryClass;
+    getExpiryTimeLeft = getExpiryTimeLeft;
+    canAssign = canAssign;
 
     standardId = signal<string>('');
     standard = signal<ReferenceStandard | null>(null);
@@ -605,59 +610,4 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         }
     }
 
-    // --- REUSED HELPERS FROM STANDARDS.COMPONENT ---
-    
-    getStandardStatus(std: ReferenceStandard): { label: string, class: string } {
-        if (std.status === 'IN_USE') return { label: 'Đang dùng', class: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50' };
-        if (std.status === 'DEPLETED' || std.current_amount <= 0) return { label: 'Sử dụng hết', class: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' };
-        if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
-        const exp = new Date(std.expiry_date);
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        if (exp < today) return { label: 'Hết hạn SD', class: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' };
-        const diffDays = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24);
-        if (diffDays < 180) return { label: 'Sắp hết hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
-        if ((std.current_amount / (std.initial_amount || 1)) <= 0.2) return { label: 'Sắp hết hàng', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
-        return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' };
-    }
-
-    getStorageInfo(condition: string | undefined): { icon: string, color: string, bg: string, border: string, text: string }[] {
-        if (!condition) return [];
-        const items: { icon: string, color: string, bg: string, border: string, text: string }[] = [];
-        const lower = condition.toLowerCase();
-        if (lower.includes('ft') || lower.includes('tủ đông') || lower.includes('-20')) items.push({ icon: 'fa-snowflake', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', text: 'Tủ đông (-20°C)' }); 
-        if (lower.includes('df') || lower.includes('-80') || lower.includes('-70')) items.push({ icon: 'fa-icicles', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', text: 'Đông sâu (-70°C)' }); 
-        if (lower.includes('ct') || lower.includes('tủ mát') || lower.includes('2-8')) items.push({ icon: 'fa-temperature-low', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'Tủ mát (2-8°C)' }); 
-        if (lower.includes('rt') || lower.includes('tủ c') || lower.includes('thường')) items.push({ icon: 'fa-sun', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', text: 'Nhiệt độ phòng' }); 
-        if (lower.includes('d:') || lower.match(/\bd\b/) || lower.includes('tối') || lower.includes('dark')) items.push({ icon: 'fa-moon', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', text: 'Tránh ánh sáng' }); 
-        if (items.length === 0 && condition.trim().length > 0) items.push({ icon: 'fa-box', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', text: condition });
-        return items;
-    }
-
-    getExpiryClass(dateStr: string | undefined): string {
-        if (!dateStr) return 'text-slate-400';
-        const exp = new Date(dateStr); const today = new Date();
-        if (exp < today) return 'text-red-600 line-through decoration-2 font-bold'; 
-        const diffMonths = (exp.getTime() - today.getTime()) / (1000 * 3600 * 24 * 30);
-        if (diffMonths < 6) return 'text-orange-600 font-bold'; return 'text-indigo-600 font-bold'; 
-    }
-
-    getExpiryTimeLeft(dateStr: string | undefined): string {
-        if (!dateStr) return '';
-        const exp = new Date(dateStr); const now = new Date();
-        const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays < 0) return `Đã hết hạn ${Math.abs(diffDays)} ngày`;
-        if (diffDays === 0) return 'Hết hạn hôm nay';
-        return `Còn ${diffDays} ngày`;
-    }
-
-    canAssign(std: ReferenceStandard): boolean {
-        if (std.status === 'IN_USE') return false;
-        if (std.status === 'DEPLETED' || std.current_amount <= 0) return false;
-        if (std.expiry_date) {
-            const expDate = new Date(std.expiry_date);
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            if (expDate < today) return false;
-        }
-        return true;
-    }
 }

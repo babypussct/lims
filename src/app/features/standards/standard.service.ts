@@ -554,6 +554,21 @@ export class StandardService {
       this.invalidateLocalStandardsCache();
   }
 
+  async updateStandardStock(stdId: string, newAmount: number, reason: string) {
+      const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+      const updateData: any = {
+          current_amount: newAmount,
+          lastUpdated: serverTimestamp()
+      };
+      if (newAmount <= 0) {
+          updateData.status = 'DEPLETED';
+      }
+      await updateDoc(ref, updateData);
+      await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
+      await this.fb.updateMetadata('standards');
+      this.invalidateLocalStandardsCache();
+  }
+
   async deleteStandard(id: string, name: string = '') {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
       await updateDoc(ref, {
