@@ -16,6 +16,17 @@ export class GoogleDriveService {
   private scriptLoaded = false;
 
   isReady = signal(false);
+  isAuthenticated = signal(false); // true once an access token is obtained
+
+  /** Whether tokenClient is redy to accept a synchronous requestAccessToken call */
+  get canAuthSync(): boolean {
+      return this.initialized && !!this.tokenClient;
+  }
+
+  /** True if we currently have a valid cached access token */
+  get hasValidToken(): boolean {
+      return !!this.accessToken && Date.now() < this.tokenExpiry;
+  }
 
   /**
    * Initialize Google Identity Services (GIS).
@@ -165,6 +176,7 @@ export class GoogleDriveService {
         // Token valid for ~3600s, cache with 5-min buffer
         this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
         console.log('[GoogleDrive] Access token obtained.');
+        this.isAuthenticated.set(true);
         resolve(response.access_token);
       };
 
@@ -233,6 +245,7 @@ export class GoogleDriveService {
           this.accessToken = response.access_token;
           this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
           console.log('[GoogleDrive] authenticateSync: token obtained.');
+          this.isAuthenticated.set(true);
           onSuccess(this.accessToken);
       };
 
