@@ -214,7 +214,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                             </div>
                             <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block"><i class="fa-solid fa-flask-vial mr-1"></i> Ngày mở nắp</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.opened_date ? (std.opened_date | date:'dd/MM/yyyy') : 'Chưa mở nắp'}}</div>
+                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.date_opened ? (std.date_opened | date:'dd/MM/yyyy') : 'Chưa mở nắp'}}</div>
                             </div>
                             @if(std.contract_ref) {
                                 <div class="col-span-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
@@ -317,8 +317,8 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                                                 <td class="px-6 py-4">
                                                     <div class="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1">{{log.purpose}}</div>
                                                     <div class="flex items-center gap-2 text-xs">
-                                                        <img [src]="getAvatarUrl(log.user_name)" class="w-5 h-5 rounded-full object-cover">
-                                                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{log.user_name}}</span>
+                                                        <img [src]="getAvatarUrl(log.user)" class="w-5 h-5 rounded-full object-cover">
+                                                        <span class="text-slate-500 dark:text-slate-400 font-medium">{{log.user}}</span>
                                                     </div>
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
@@ -377,13 +377,13 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 
     <!-- Modals -->
     @if(showEditModal() && standard()) {
-        <app-standards-form-modal [standard]="standard()" [isEditing]="true" (saved)="onModalSaved()" (closed)="showEditModal.set(false)"></app-standards-form-modal>
+        <app-standards-form-modal [std]="standard()" [isOpen]="true" [allStandards]="allStandardsCache()" (closeModal)="onModalSaved()"></app-standards-form-modal>
     }
     @if(showPrintModal() && standard()) {
-        <app-standards-print-modal [standard]="standard()" (closed)="showPrintModal.set(false)"></app-standards-print-modal>
+        <app-standards-print-modal [std]="standard()" [isOpen]="true" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
     }
     @if(showPurchaseModal() && standard()) {
-        <app-standards-purchase-modal [standard]="standard()!" (closed)="showPurchaseModal.set(false)"></app-standards-purchase-modal>
+        <app-standards-purchase-modal [selectedStd]="standard()" [isOpen]="true" (closeModal)="showPurchaseModal.set(false)"></app-standards-purchase-modal>
     }
   `
 })
@@ -446,7 +446,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         if (!std) return '';
         const baseUrl = window.location.origin;
-        return \`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=\${encodeURIComponent(baseUrl + '/standards/' + std.id)}\`;
+        return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/standards/' + std.id)}`;
     });
 
     relatedStandards = computed(() => {
@@ -578,7 +578,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async autoZeroStock(std: ReferenceStandard) {
         if (this.isLoading()) return;
-        if (await this.confirmationService.confirm({ message: \`Xác nhận trừ kho (0 \${std.unit}) cho \${std.name}?\`, confirmText: 'Xác nhận' })) {
+        if (await this.confirmationService.confirm({ message: `Xác nhận trừ kho (0 ${std.unit}) cho ${std.name}?`, confirmText: 'Xác nhận' })) {
             this.isLoading.set(true);
             try {
                 await this.stdService.updateStandardStock(std.id!, 0, 'Sử dụng hết theo kiểm kê');
@@ -594,7 +594,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async deleteLog(log: UsageLog, stdId: string) {
         if (!log.id) return;
-        if (await this.confirmationService.confirm({ message: \`Xóa lịch sử dụng ngày \${log.date}?\`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
+        if (await this.confirmationService.confirm({ message: `Xóa lịch sử dụng ngày ${log.date}?`, confirmText: 'Xóa & Hoàn kho', isDangerous: true })) {
             try { 
                 await this.stdService.deleteUsageLog(stdId, log.id); 
                 this.toast.show('Đã xóa', 'success'); 
@@ -645,9 +645,9 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         if (!dateStr) return '';
         const exp = new Date(dateStr); const now = new Date();
         const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays < 0) return \`Đã hết hạn \${Math.abs(diffDays)} ngày\`;
+        if (diffDays < 0) return `Đã hết hạn ${Math.abs(diffDays)} ngày`;
         if (diffDays === 0) return 'Hết hạn hôm nay';
-        return \`Còn \${diffDays} ngày\`;
+        return `Còn ${diffDays} ngày`;
     }
 
     canAssign(std: ReferenceStandard): boolean {

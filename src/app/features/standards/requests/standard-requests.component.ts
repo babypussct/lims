@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
@@ -318,6 +319,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   confirmationService = inject(ConfirmationService);
   auth = inject(AuthService);
   fb = inject(FormBuilder);
+  router = inject(Router);
 
   requests = signal<StandardRequest[]>([]);
   availableStandards = signal<ReferenceStandard[]>([]);
