@@ -66,33 +66,26 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
              <button (click)="usageLogFileInput.click()" class="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-lg border border-teal-200 dark:border-teal-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import nhật ký sử dụng">
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
-             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
-             
-             <!-- Bulk CoA: Phase 1 = connect, Phase 2 = upload -->
-             @if (!googleDriveService.isAuthenticated()) {
-                <button (click)="connectGoogleDrive()" [disabled]="!googleDriveService.isReady()" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 hover:text-blue-800 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5 disabled:opacity-50">
-                    <i class="fa-brands fa-google"></i>
-                    @if (!googleDriveService.isReady()) { Đang tải SDK... } @else { Kết nối Google Drive }
-                </button>
-             } @else {
-                <div class="flex items-center gap-1.5">
-                    <div class="flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800/30 text-[10px] font-bold">
-                        <i class="fa-solid fa-circle-check text-[9px]"></i> Drive
-                    </div>
-                    <button (click)="bulkCoaFolderInput.click()" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-folder-open text-amber-500"></i> Upload CoA (Thư mục)
-                    </button>
-                    <button (click)="bulkCoaFilesInput.click()" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5">
-                        <i class="fa-regular fa-images"></i> Upload CoA (Files)
-                    </button>
-                </div>
-                <input #bulkCoaFolderInput type="file" webkitdirectory directory multiple class="hidden" (change)="handleBulkCoaSelect($event)">
-                <input #bulkCoaFilesInput type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" class="hidden" (change)="handleBulkCoaSelect($event)">
-             }
+             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="han              <!-- Drobdown or group for Bulk CoA -->
+             <!-- Drobdown or group for Bulk CoA -->
+             <div class="relative group ml-1">
+                 <button class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5">
+                     <i class="fa-solid fa-cloud-arrow-up"></i> Upload CoA Hàng loạt <i class="fa-solid fa-caret-down"></i>
+                 </button>
+                 <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden flex flex-col p-1">
+                     <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                         <i class="fa-solid fa-folder-open text-amber-500 w-4"></i> Từ Thư mục (Files/Folders)
+                     </button>
+                     <button (click)="bulkCoaFilesInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                         <i class="fa-regular fa-images text-blue-500 w-4"></i> Chọn nhiều Files (PDF/IMG)
+                     </button>
+                 </div>
+                 <input #bulkCoaFolderInput type="file" webkitdirectory directory multiple class="hidden" (change)="handleBulkCoaSelect($event)">
+                 <input #bulkCoaFilesInput type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" class="hidden" (change)="handleBulkCoaSelect($event)">
+             </div>
            }
         </div>
       </div>
-
 
       <!-- Main Content -->
       <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
@@ -1078,14 +1071,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   // --- Bulk CoA Match & Upload Logic ---
-  connectGoogleDrive() {
-      // Called directly from (click) — no await before this, gesture context fully preserved.
-      this.googleDriveService.authenticateSync(
-          () => this.toast.show('Kết nối Google Drive thành công!', 'success'),
-          (msg) => this.toast.show(msg, 'error')
-      );
-  }
-
   handleBulkCoaSelect(event: any) {
      const files = event.target.files as FileList;
      if (!files || files.length === 0) return;
