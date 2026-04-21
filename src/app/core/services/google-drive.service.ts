@@ -162,41 +162,38 @@ export class GoogleDriveService {
         reject(new Error('Đăng nhập Google quá thời gian (60s). Hãy thử lại.'));
       }, 60000);
 
-      this.tokenClient.callback = (response: any) => {
-        clearTimeout(timeout);
-        if (response.error) {
-          if (response.error === 'access_denied') {
-            reject(new Error('Bạn đã từ chối quyền truy cập Google Drive. Hãy thử lại và nhấn "Allow".'));
-          } else {
-            reject(new Error(`Google Auth lỗi: ${response.error_description || response.error}`));
+      this.tokenClient.requestAccessToken({
+        callback: (response: any) => {
+          clearTimeout(timeout);
+          if (response.error) {
+            if (response.error === 'access_denied') {
+              reject(new Error('Bạn đã từ chối quyền truy cập Google Drive. Hãy thử lại và nhấn "Allow".'));
+            } else {
+              reject(new Error(`Google Auth lỗi: ${response.error_description || response.error}`));
+            }
+            return;
           }
-          return;
+          this.accessToken = response.access_token;
+          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+          console.log('[GoogleDrive] Access token obtained.');
+          this.isAuthenticated.set(true);
+          resolve(response.access_token);
+        },
+        error_callback: (error: any) => {
+          clearTimeout(timeout);
+          if (error?.type === 'popup_closed') {
+            reject(new Error('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.'));
+          } else if (error?.type === 'popup_failed_to_open') {
+            reject(new Error(
+              'Không thể mở popup đăng nhập Google.\n' +
+              '→ Kiểm tra trình duyệt có chặn popup không.\n' +
+              '→ Cho phép popup từ trang này.'
+            ));
+          } else {
+            reject(new Error(`Đăng nhập Google lỗi: ${error?.type || error?.message || 'Không xác định'}`));
+          }
         }
-        this.accessToken = response.access_token;
-        // Token valid for ~3600s, cache with 5-min buffer
-        this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-        console.log('[GoogleDrive] Access token obtained.');
-        this.isAuthenticated.set(true);
-        resolve(response.access_token);
-      };
-
-      this.tokenClient.error_callback = (error: any) => {
-        clearTimeout(timeout);
-        if (error?.type === 'popup_closed') {
-          reject(new Error('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.'));
-        } else if (error?.type === 'popup_failed_to_open') {
-          reject(new Error(
-            'Không thể mở popup đăng nhập Google.\n' +
-            '→ Kiểm tra trình duyệt có chặn popup không.\n' +
-            '→ Cho phép popup từ trang này.'
-          ));
-        } else {
-          reject(new Error(`Đăng nhập Google lỗi: ${error?.type || error?.message || 'Không xác định'}`));
-        }
-      };
-
-      // prompt: '' → shows account chooser first time, silent refresh after
-      this.tokenClient.requestAccessToken({ prompt: '' });
+      });
     });
   }
 
@@ -236,32 +233,30 @@ export class GoogleDriveService {
           onError('\u0110\u0103ng nh\u1eadp Google qu\u00e1 th\u1eddi gian (60s). H\u00e3y th\u1eed l\u1ea1i.');
       }, 60000);
 
-      this.tokenClient.callback = (response: any) => {
-          clearTimeout(timeout);
-          if (response.error) {
-              onError(response.error_description || response.error);
-              return;
+      this.tokenClient.requestAccessToken({
+          callback: (response: any) => {
+              clearTimeout(timeout);
+              if (response.error) {
+                  onError(response.error_description || response.error);
+                  return;
+              }
+              this.accessToken = response.access_token;
+              this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+              console.log('[GoogleDrive] authenticateSync: token obtained.');
+              this.isAuthenticated.set(true);
+              onSuccess(this.accessToken);
+          },
+          error_callback: (error: any) => {
+              clearTimeout(timeout);
+              if (error?.type === 'popup_closed') {
+                  onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
+              } else if (error?.type === 'popup_failed_to_open') {
+                  onError('Không thể mở popup. Hãy cho phép popup từ trang này.');
+              } else {
+                  onError(error?.type || 'Lỗi đăng nhập không xác định');
+              }
           }
-          this.accessToken = response.access_token;
-          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-          console.log('[GoogleDrive] authenticateSync: token obtained.');
-          this.isAuthenticated.set(true);
-          onSuccess(this.accessToken);
-      };
-
-      this.tokenClient.error_callback = (error: any) => {
-          clearTimeout(timeout);
-          if (error?.type === 'popup_closed') {
-              onError('C\u1eeda s\u1ed5 \u0111\u0103ng nh\u1eadp Google \u0111\u00e3 b\u1ecb \u0111\u00f3ng. H\u00e3y th\u1eed l\u1ea1i.');
-          } else if (error?.type === 'popup_failed_to_open') {
-              onError('Kh\u00f4ng th\u1ec3 m\u1edf popup. H\u00e3y cho ph\u00e9p popup t\u1eeb trang n\u00e0y.');
-          } else {
-              onError(error?.type || 'L\u1ed7i \u0111\u0103ng nh\u1eadp kh\u00f4ng x\u00e1c \u0111\u1ecbnh');
-          }
-      };
-
-      // THIS LINE IS SYNCHRONOUS — opens the Google popup immediately in the click context
-      this.tokenClient.requestAccessToken({ prompt: '' });
+      });
   }
 
   /**
