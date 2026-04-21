@@ -66,7 +66,8 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
              <button (click)="usageLogFileInput.click()" class="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-lg border border-teal-200 dark:border-teal-800/50 transition font-bold text-[11px] flex items-center gap-1.5" title="Import nhật ký sử dụng">
                 <i class="fa-solid fa-book-open"></i> Import Nhật ký
              </button>
-             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="han              <!-- Drobdown or group for Bulk CoA -->
+             <input #usageLogFileInput type="file" class="hidden" accept=".xlsx, .xlsm, .csv" (change)="handleUsageLogFileSelect($event)">
+             
              <!-- Drobdown or group for Bulk CoA -->
              <div class="relative group ml-1">
                  <button class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg border border-blue-200 dark:border-blue-800/50 transition font-bold text-[11px] flex items-center gap-1.5">
