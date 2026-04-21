@@ -9,7 +9,7 @@ import {
 import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { generateSlug, getStandardizedAmount, parseQuantityInput } from '../../shared/utils/utils';
+import { generateSlug, getStandardizedAmount, parseQuantityInput, formatNum } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -1081,7 +1081,6 @@ export class StandardService {
       await this.logGlobalActivity('LOG_USAGE_STANDARD', `Khai báo sử dụng ${amount}${unit} chuẩn: ${standardId}`, requestId);
       
       // Stock Low Alert Logic! Limit fetched outside transaction for speed, assuming typical behavior.
-      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
       const afterSnap = await getDoc(stdRef);
       if (afterSnap.exists()) {
           const s = afterSnap.data() as ReferenceStandard;
