@@ -1,7 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* 
   Global Styles 
-  Note: Tailwind CSS is loaded via CDN in index.html as per Applet requirements.
-  This file exists to satisfy Angular CLI build schema.
+  Note: Tailwind CSS is now loaded via PostCSS to optimize for production.
 */
 
 /* 
