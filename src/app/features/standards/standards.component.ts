@@ -1,14 +1,14 @@
 
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
-import { formatNum, generateSlug, UNIT_OPTIONS, calculateSimilarityScore } from '../../shared/utils/utils';
+import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -32,7 +32,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
   template: `
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
       <!-- Header -->
@@ -176,10 +176,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   router = inject(Router);
-  private fb: FormBuilder = inject(FormBuilder);
   googleDriveService = inject(GoogleDriveService);
   Math = Math;
-  
   isLoading = signal(true);
   quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
   private quickUploadStd: ReferenceStandard | null = null;
@@ -325,7 +323,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
   selectedIds = signal<Set<string>>(new Set());
-  unitOptions = UNIT_OPTIONS;
 
   // Import Preview State
   importPreviewData = signal<ImportPreviewItem[]>([]);
