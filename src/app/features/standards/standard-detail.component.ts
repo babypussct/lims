@@ -577,11 +577,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async autoZeroStock(std: ReferenceStandard) {
-        if (this.isLoading()) return;
+        if (this.isLoading() || std.current_amount <= 0) return;
         if (await this.confirmationService.confirm({ message: `Xác nhận trừ kho (0 ${std.unit}) cho ${std.name}?`, confirmText: 'Xác nhận' })) {
             this.isLoading.set(true);
             try {
-                await this.stdService.updateStandardStock(std.id!, 0, 'Sử dụng hết theo kiểm kê');
+                const log: UsageLog = {
+                    id: '',
+                    date: new Date().toISOString().split('T')[0],
+                    timestamp: Date.now(),
+                    user: 'HỆ THỐNG',
+                    amount_used: std.current_amount,
+                    unit: std.unit || 'mg',
+                    purpose: 'Sử dụng hết theo kiểm kê'
+                };
+                await this.stdService.recordUsage(std.id!, log);
                 this.toast.show('Đã trừ kho thành công', 'success');
                 // Component will auto-update via realtime listener
             } catch (error: any) {
