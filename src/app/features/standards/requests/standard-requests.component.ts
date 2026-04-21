@@ -157,6 +157,7 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
               <app-requests-kanban 
                   class="flex flex-col flex-1 overflow-hidden min-h-0"
                   [requests]="filteredRequests()"
+                  (navigateToStandard)="router.navigate(['/standards', $event])"
                   (actionApprove)="approveRequest($event)"
                   (actionReject)="openRejectModal($event)"
                   (actionLogUsage)="openLogUsageModal($event)"
@@ -169,6 +170,7 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
                   class="flex flex-col flex-1 overflow-hidden min-h-0"
                   [requests]="filteredRequests()"
                   [isLoading]="isLoading()"
+                  (navigateToStandard)="router.navigate(['/standards', $event])"
                   (actionApprove)="approveRequest($event)"
                   (actionReject)="openRejectModal($event)"
                   (actionLogUsage)="openLogUsageModal($event)"

@@ -37,7 +37,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                                 <i class="fa-solid fa-vial-circle-check text-sm font-bold"></i>
                                             </div>
                                             <div>
-                                                <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1">{{req.standardName}}</div>
+                                                <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
                                                 <div class="flex items-center gap-2">
                                                     <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black rounded-lg border border-indigo-100/50 dark:border-indigo-800/30">
                                                         {{req.standardDetails?.internal_id}}
@@ -196,6 +196,7 @@ export class RequestsTableComponent {
   @Input() requests: StandardRequest[] = [];
   @Input() isLoading: boolean = false;
 
+  @Output() navigateToStandard = new EventEmitter<string>();
   @Output() actionApprove = new EventEmitter<StandardRequest>();
   @Output() actionReject = new EventEmitter<StandardRequest>();
   @Output() actionLogUsage = new EventEmitter<StandardRequest>();

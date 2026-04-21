@@ -186,7 +186,7 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
                                      </td>
                                      <td class="px-4 py-3 align-top">
                                         <div class="flex flex-col h-full">
-                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-base mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug break-words" (click)="openEditModal(std)" [title]="std.name">
+                                            <div class="font-bold text-slate-800 dark:text-slate-200 text-base mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer leading-snug break-words" (click)="navigateToDetail(std)" [title]="std.name">
                                                 {{std.name}}
                                             </div>
                                             @if(std.chemical_name) { <div class="text-sm text-slate-500 dark:text-slate-400 italic mb-2 break-words" [title]="std.chemical_name">{{std.chemical_name}}</div> }
@@ -332,7 +332,7 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
                                             </div>
 
                                             <!-- Identity -->
-                                            <div class="mb-4 cursor-pointer" (click)="openEditModal(std)">
+                                            <div class="mb-4 cursor-pointer" (click)="navigateToDetail(std)">
                                                 <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base leading-snug mb-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition break-words">{{std.name}}</h3>
                                                 @if(std.chemical_name) { <p class="text-sm text-slate-500 dark:text-slate-400 italic font-medium break-words">{{std.chemical_name}}</p> }
                                             </div>
@@ -1455,9 +1455,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   getQrCodeUrl(std: ReferenceStandard | null): string {
       if (!std) return '';
-      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(std.internal_id || std.id)}`;
+      const baseUrl = window.location.origin;
+      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/standards/' + std.id)}`;
   }
 
+  navigateToDetail(std: ReferenceStandard) {
+      this.router.navigate(['/standards', std.id]);
+  }
 
 
 

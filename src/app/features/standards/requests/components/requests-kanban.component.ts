@@ -122,7 +122,7 @@ import { AuthService } from '../../../../core/services/auth.service';
         
         <!-- Center: Standard Name -->
         <div>
-          <h4 class="font-black text-sm text-slate-800 dark:text-slate-100 leading-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{req.standardName}}</h4>
+          <h4 class="font-black text-sm text-slate-800 dark:text-slate-100 leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</h4>
           <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium italic line-clamp-2" [title]="req.purpose">{{req.purpose}}</p>
         </div>
 
@@ -194,6 +194,7 @@ export class RequestsKanbanComponent {
   }
   private _requests = signal<StandardRequest[]>([]);
 
+  @Output() navigateToStandard = new EventEmitter<string>();
   @Output() actionApprove = new EventEmitter<StandardRequest>();
   @Output() actionReject = new EventEmitter<StandardRequest>();
   @Output() actionLogUsage = new EventEmitter<StandardRequest>();

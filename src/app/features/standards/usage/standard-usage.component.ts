@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardService } from '../standard.service';
@@ -106,7 +107,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
                                   </td>
                                   <td class="px-6 py-4">
                                       <div class="flex flex-col gap-0.5 max-w-[300px]">
-                                          <span class="text-sm font-black text-slate-700 dark:text-slate-300 truncate" [title]="log.standardName || 'Không có tên'">
+                                          <span class="text-sm font-black text-slate-700 dark:text-slate-300 truncate transition" [ngClass]="log.standardId ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline' : ''" [title]="log.standardName || 'Không có tên'" (click)="log.standardId && router.navigate(['/standards', log.standardId])">
                                               {{log.standardName || '(Nhật ký cũ)'}}
                                           </span>
                                           <div class="flex flex-wrap gap-1.5 mt-1">
@@ -165,6 +166,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   toast = inject(ToastService);
   confirmService = inject(ConfirmationService);
+  router = inject(Router);
 
 
   logs = signal<UsageLog[]>([]);

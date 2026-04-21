@@ -183,6 +183,47 @@ export class StandardService {
     this.invalidateLocalStandardsCache();
   }
 
+  // ─── GET SINGLE STANDARD BY ID (3-tier fallback) ────────────────────────────
+  /**
+   * Lấy 1 chuẩn theo ID với chiến lược 3 lớp:
+   *   L1: _memStandards (in-memory)  → 0 reads, instant
+   *   L2: localStorage cache          → 0 reads, ~5ms
+   *   L3: Firestore getDoc()          → 1 read, slow but always correct
+   *
+   * Dùng cho trang StandardDetailComponent khi deep-link trực tiếp.
+   */
+  async getStandardById(stdId: string): Promise<ReferenceStandard | null> {
+    // L1: In-memory cache
+    if (this._memStandards) {
+      const found = this._memStandards.find(s => s.id === stdId);
+      if (found) return found;
+    }
+    // L2: localStorage cache
+    const cached = this._loadStdFromCache();
+    if (cached) {
+      const found = cached.find(s => s.id === stdId);
+      if (found) return found;
+    }
+    // L3: Firestore single doc read (1 read)
+    try {
+      const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards', stdId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      if (data['_isDeleted'] === true || data['status'] === 'DELETED') return null;
+      return { id: snap.id, ...data } as ReferenceStandard;
+    } catch (e) {
+      console.error('[StandardService] getStandardById error:', e);
+      return null;
+    }
+  }
+
+  /** Lấy tất cả chuẩn từ bộ nhớ/cache (không gây thêm reads nếu đã warm) */
+  getAllStandardsFromCache(): ReferenceStandard[] {
+    if (this._memStandards) return this._memStandards;
+    return this._loadStdFromCache() ?? [];
+  }
+
   // ─── Private Helpers ────────────────────────────────────────────────────────
   /** Merge K changed docs + deleted ids vào _memStandards và lưu vào localStorage */
   private _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
