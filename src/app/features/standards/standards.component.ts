@@ -1062,9 +1062,22 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
                   const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-                  // Update Firestore directly (partial update)
-                  await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
-                  this.toast.show(`Upload CoA thành công! ${fileName}`);
+                  // Tìm tất cả các chuẩn cùng Tên và Số Lô
+                  const siblings = this.allStandards().filter(s => 
+                      s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
+                      (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
+                  );
+
+                  // Cập nhật URL cho tất cả
+                  for (const sibling of siblings) {
+                      await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
+                  }
+
+                  if (siblings.length > 1) {
+                      this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+                  } else {
+                      this.toast.show(`Upload CoA thành công! ${fileName}`);
+                  }
               } catch (e: any) {
                   console.error('Quick Drive upload error:', e);
                   this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
@@ -1164,7 +1177,18 @@ export class StandardsComponent implements OnInit, OnDestroy {
                       
                       try {
                           const previewUrl = await this.googleDriveService.uploadFile(item.file, fileName);
-                          await this.stdService.quickUpdateField(std.id, { certificate_ref: previewUrl });
+                          
+                          // Tìm tất cả các chuẩn cùng Tên và Số Lô (1-to-N matching)
+                          const siblings = this.allStandards().filter(s => 
+                              s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
+                              (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
+                          );
+
+                          // Cập nhật URL cho tất cả các lọ chuẩn đó
+                          for (const sibling of siblings) {
+                              await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
+                          }
+
                           item.status = 'success';
                       } catch(e: any) {
                           item.status = 'error';
