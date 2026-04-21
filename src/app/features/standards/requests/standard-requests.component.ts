@@ -155,6 +155,7 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
           <!-- Content Area based on View Mode -->
           @if(viewMode() === 'kanban') {
               <app-requests-kanban 
+                  class="flex flex-col flex-1 overflow-hidden min-h-0"
                   [requests]="filteredRequests()"
                   (actionApprove)="approveRequest($event)"
                   (actionReject)="openRejectModal($event)"
@@ -165,6 +166,7 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
               </app-requests-kanban>
           } @else {
               <app-requests-table
+                  class="flex flex-col flex-1 overflow-hidden min-h-0"
                   [requests]="filteredRequests()"
                   [isLoading]="isLoading()"
                   (actionApprove)="approveRequest($event)"
