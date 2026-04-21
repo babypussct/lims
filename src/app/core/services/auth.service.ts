@@ -12,7 +12,7 @@ import {
   type User,
   type Auth
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { AuthSession } from '../models/auth.model';
 
@@ -126,10 +126,14 @@ export class AuthService {
             if (snap.exists()) {
               const data = snap.data() as UserProfile;
               data.uid = firebaseUser.uid; // Ensure uid is present
-              // Always enrich with live Firebase Auth photoURL (Google photo may not be stored in Firestore)
-              if (firebaseUser.photoURL) {
+              
+              // Ensure we sync Google Avatar to Firestore so others can see it
+              if (firebaseUser.photoURL && data.photoURL !== firebaseUser.photoURL) {
                   data.photoURL = firebaseUser.photoURL;
+                  // Don't await here to avoid blocking UI sync, let it update in background
+                  updateDoc(userRef, { photoURL: firebaseUser.photoURL }).catch(e => console.error("Could not sync photoURL to Firestore", e));
               }
+              
               this.currentUser.set(data);
             } else {
               const newUser: UserProfile = {
