@@ -116,7 +116,7 @@ import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
                                             @if(isUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-cloud-arrow-up"></i> Upload }
                                         </button>
                                         <input #uploadInput type="file" class="hidden" (change)="uploadCoaFile($event)">
-                                        <button type="button" (click)="driveInput.click()" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
+                                        <button type="button" (click)="triggerDriveUpload(driveInput)" [disabled]="isDriveUploading() || isUploading()" class="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap disabled:opacity-50 border border-blue-200 dark:border-blue-800/50" title="Upload lên Google Drive (15GB free, tự đặt tên)">
                                             @if(isDriveUploading()){ <i class="fa-solid fa-spinner fa-spin"></i> Uploading... } @else { <i class="fa-brands fa-google-drive"></i> Drive }
                                         </button>
                                         <input #driveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="uploadCoaToDrive($event)">
@@ -242,6 +242,17 @@ export class StandardsFormModalComponent {
         this.isUploading.set(false);
         event.target.value = ''; 
     }
+  }
+
+  triggerDriveUpload(inputEl: HTMLInputElement) {
+      this.googleDriveService.authenticateSync(
+          () => {
+              inputEl.click();
+          },
+          (err) => {
+              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+          }
+      );
   }
 
   async uploadCoaToDrive(event: any) {
