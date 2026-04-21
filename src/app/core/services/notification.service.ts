@@ -55,19 +55,13 @@ export class NotificationService {
       // We want notifications strictly for this user UID OR targeted at 'role:admin' if they are an admin
       const isSystemAdmin = ['admin', 'manager'].includes((user.role || '').toLowerCase());
       
-      let q;
-      // Note: Firestore doesn't support logical OR queries broadly in the basic API (without IN operator for single fields).
-      // Since recipientUid is a single field, we can use the 'in' operator to listen for array of values.
-      const recipients = [user.uid];
-      if (isSystemAdmin) {
-          recipients.push('role:admin');
-      }
-
-      q = query(
+      // Để tránh lỗi yêu cầu tạo Composite Index (where + orderBy) trong Firestore,
+      // ta sẽ lấy top 50 thông báo mới nhất rồi filter in-memory.
+      // Vì lượng thông báo nhỏ, cách này an toàn và không gây lỗi crash ngầm.
+      const q = query(
           colRef, 
-          where('recipientUid', 'in', recipients),
           orderBy('createdAt', 'desc'),
-          limit(30) // Only fetch latest 30 to save reads
+          limit(50) 
       );
 
       this.unsub = onSnapshot(q, (snapshot) => {
@@ -76,8 +70,11 @@ export class NotificationService {
           
           snapshot.forEach(d => {
               const data = d.data() as AppNotification;
-              items.push({ ...data, id: d.id });
-              if (!data.isRead) unread++;
+              // In-memory filter
+              if (data.recipientUid === user.uid || (isSystemAdmin && data.recipientUid === 'role:admin')) {
+                  items.push({ ...data, id: d.id });
+                  if (!data.isRead) unread++;
+              }
           });
           
           this.notifications.set(items);

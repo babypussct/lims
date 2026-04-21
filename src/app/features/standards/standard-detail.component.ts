@@ -420,6 +420,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     auth = inject(AuthService);
     toast = inject(ToastService);
     state = inject(StateService);
+    confirmation = inject(ConfirmationService);
     location = inject(Location);
     confirmationService = inject(ConfirmationService);
     sanitizer = inject(DomSanitizer);
@@ -653,15 +654,31 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async requestCoa(std: ReferenceStandard) {
         if (this.isProcessing() || std.coa_requested) return;
-        this.isProcessing.set(true);
-        try {
-            await this.stdService.requestCoa(std);
-            this.toast.show('Đã thông báo yêu cầu bổ sung CoA đến Quản trị viên.', 'success');
-        } catch (e: any) {
-            this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
-        } finally {
-            this.isProcessing.set(false);
-        }
+        
+        this.confirmation.confirm({
+            title: 'Yêu cầu CoA',
+            message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
+            confirmText: 'Gửi Yêu cầu',
+            cancelText: 'Hủy',
+            dangerMessage: 'Chỉ gửi yêu cầu khi cần thiết để tránh làm phiền Quản trị viên.'
+        }).then(async (confirmed) => {
+            if (!confirmed) return;
+            
+            this.isProcessing.set(true);
+            try {
+                // Optimistic UI update to prevent immediate double clicks
+                this.standard.update(s => s ? { ...s, coa_requested: true } : s);
+                
+                await this.stdService.requestCoa(std);
+                this.toast.show('Đã thông báo yêu cầu bổ sung CoA đến Quản trị viên.', 'success');
+            } catch (e: any) {
+                this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
+                // Revert on error
+                this.standard.update(s => s ? { ...s, coa_requested: false } : s);
+            } finally {
+                this.isProcessing.set(false);
+            }
+        });
     }
 
     onModalSaved() {
