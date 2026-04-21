@@ -101,6 +101,18 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
                            placeholder="Tìm kiếm chuẩn, mã số, số lô... (Real-time)">
                  </div>
                  
+                 <!-- FILTER DROPDOWN -->
+                 <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
+                     <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i> Lọc:</span>
+                     <select [ngModel]="activeWidgetFilter()" (ngModelChange)="activeWidgetFilter.set($event)" 
+                             class="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer border-none py-1 pr-1">
+                         <option value="all" class="dark:bg-slate-800">Tất cả ({{stats().total}})</option>
+                         <option value="expired" class="dark:bg-slate-800">Đã hết hạn ({{stats().expired}})</option>
+                         <option value="expiring_soon" class="dark:bg-slate-800">Sắp hết hạn ({{stats().expiringSoon}})</option>
+                         <option value="low_stock" class="dark:bg-slate-800">Sắp hết hàng ({{stats().lowStock}})</option>
+                     </select>
+                 </div>
+                 
                  <!-- SORT DROPDOWN -->
                  <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 shadow-sm dark:shadow-none h-[30px]">
                      <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sắp xếp:</span>
