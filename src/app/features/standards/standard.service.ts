@@ -752,7 +752,7 @@ export class StandardService {
   }
 
   // --- GLOBAL LOGGING ---
-  private async logGlobalActivity(action: string, details: string, targetId?: string) {
+  public async logGlobalActivity(action: string, details: string, targetId?: string) {
       const logRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`));
       await setDoc(logRef, {
           id: logRef.id,
@@ -762,6 +762,11 @@ export class StandardService {
           user: this.auth.currentUser()?.displayName || 'Hệ thống',
           targetId
       });
+  }
+
+  async requestCoa(std: ReferenceStandard) {
+      await this.quickUpdateField(std.id, { coa_requested: true });
+      await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
   }
 
   // --- REQUEST WORKFLOW ---

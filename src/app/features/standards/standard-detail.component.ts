@@ -4,8 +4,10 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StandardService } from './standard.service';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { StateService } from '../../core/services/state.service';
+import { FirebaseService } from '../../core/services/firebase.service';
 import { StateService } from '../../core/services/state.service';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../core/models/standard.model';
 import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryClass, getExpiryTimeLeft, canAssign } from '../../shared/utils/utils';
@@ -15,12 +17,13 @@ import { StandardsFormModalComponent } from './components/standards-form-modal.c
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
 import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
+import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsAssignModalComponent],
   template: `
     <div class="flex flex-col h-full bg-slate-50 dark:bg-slate-900/50 p-2 md:p-4 gap-4 overflow-y-auto custom-scrollbar relative fade-in">
         
@@ -261,11 +264,11 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                     
                     @if(canAssign(std)) {
                         @if(auth.canEditStandards()) {
-                            <button (click)="goToRequests()" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                            <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                 <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
                             </button>
                         } @else {
-                            <button (click)="goToRequests()" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                            <button (click)="openAssignModal(false)" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                 <i class="fa-solid fa-hand-holding-hand"></i> Đăng ký mượn chuẩn
                             </button>
                         }
@@ -281,6 +284,12 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                                 <i class="fa-solid fa-cart-arrow-down"></i> Đã có yêu cầu mua
                             </span>
                         }
+                    }
+
+                    @if(!std.certificate_ref) {
+                        <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="std.coa_requested" [class.opacity-50]="std.coa_requested">
+                            <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested" [class.fa-clock-rotate-left]="std.coa_requested"></i> {{std.coa_requested ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
+                        </button>
                     }
                 </div>
 
@@ -389,12 +398,26 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
     }
     <!-- COA PREVIEW MODAL -->
     <app-standards-coa-modal [previewUrl]="previewUrl()" [previewImgUrl]="previewImgUrl()" [previewType]="previewType()" [previewRawUrl]="previewRawUrl()" (closeModal)="closeCoaPreview()"></app-standards-coa-modal>
+
+    <!-- ASSIGN/BORROW MODAL -->
+    <app-standards-assign-modal
+        [isOpen]="showAssignModal()"
+        [std]="standard()"
+        [isAssignMode]="isAssignMode()"
+        [userList]="userList()"
+        [isProcessing]="isProcessing()"
+        [currentUserUid]="auth.currentUser()?.uid || ''"
+        [currentUserName]="auth.currentUser()?.displayName || ''"
+        (closeModal)="showAssignModal.set(false)"
+        (confirm)="confirmAssign($event)">
+    </app-standards-assign-modal>
   `
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
     route = inject(ActivatedRoute);
     router = inject(Router);
     stdService = inject(StandardService);
+    firebaseService = inject(FirebaseService);
     auth = inject(AuthService);
     toast = inject(ToastService);
     state = inject(StateService);
@@ -418,6 +441,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     
     usageLogs = signal<UsageLog[]>([]);
     loadingHistory = signal(false);
+    isProcessing = signal(false);
     allStandardsCache = signal<ReferenceStandard[]>([]);
     
     activeTab = signal<'usage' | 'related'>('usage');
@@ -426,6 +450,10 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     showEditModal = signal(false);
     showPrintModal = signal(false);
     showPurchaseModal = signal(false);
+    showAssignModal = signal(false);
+    
+    isAssignMode = signal(true);
+    userList = signal<UserProfile[]>([]);
 
     // CoA Preview state
     previewUrl = signal<SafeResourceUrl | null>(null);
@@ -550,10 +578,59 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         this.router.navigate(['/standards', id]);
     }
 
-    goToRequests() {
-        this.router.navigate(['/standards']);
-        this.toast.show('Sử dụng chức năng Gán / Mượn từ danh sách Chuẩn', 'info');
-        // Về danh sách để dùng modal gán phức tạp có sẵn
+    async openAssignModal(isAssign = true) {
+        if (this.isProcessing() || !this.standard()) return;
+        this.isAssignMode.set(isAssign);
+        this.showAssignModal.set(true);
+        
+        if (isAssign && this.userList().length === 0) {
+            try {
+                const users = await this.firebaseService.getAllUsers();
+                this.userList.set(users);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+    }
+
+    async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedDate: string, expectedAmount: number | null}) {
+        const std = this.standard();
+        
+        if (!std || !data.userId || !data.purpose) {
+            this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
+            return;
+        }
+
+        this.isProcessing.set(true);
+        try {
+            const request: StandardRequest = {
+                standardId: std.id,
+                standardName: std.name,
+                lotNumber: std.lot_number,
+                requestedBy: data.userId,
+                requestedByName: data.userName,
+                requestDate: Date.now(),
+                purpose: data.purpose.trim(),
+                expectedReturnDate: data.expectedDate ? new Date(data.expectedDate).getTime() : null,
+                expectedAmount: data.expectedAmount || 0,
+                status: 'PENDING_APPROVAL',
+                totalAmountUsed: 0
+            };
+
+            await this.stdService.createRequest(request, this.isAssignMode());
+            
+            this.toast.show(this.isAssignMode() ? 'Đã gán chuẩn thành công' : 'Đã gửi yêu cầu mượn chuẩn', 'success');
+            this.showAssignModal.set(false);
+            
+            // Xử lý reload trạng thái
+            if (this.standardId()) {
+                this.loadStandardData(this.standardId());
+            }
+        } catch (error: any) {
+            this.toast.show(error.message || 'Lỗi khi xử lý', 'error');
+        } finally {
+            this.isProcessing.set(false);
+        }
     }
 
     goToReturn() {
@@ -573,6 +650,19 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     openPurchaseModal() {
         if (this.standard()) this.showPurchaseModal.set(true);
+    }
+
+    async requestCoa(std: ReferenceStandard) {
+        if (this.isProcessing() || std.coa_requested) return;
+        this.isProcessing.set(true);
+        try {
+            await this.stdService.requestCoa(std);
+            this.toast.show('Đã thông báo yêu cầu bổ sung CoA đến Quản trị viên.', 'success');
+        } catch (e: any) {
+            this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
+        } finally {
+            this.isProcessing.set(false);
+        }
     }
 
     onModalSaved() {
