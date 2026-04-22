@@ -17,6 +17,7 @@ import { AuthService } from './core/services/auth.service';
 import { ToastService } from './core/services/toast.service';
 import { PrintService } from './core/services/print.service';
 import { IdleTimeoutService } from './core/services/idle-timeout.service';
+import { NotificationService } from './core/services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -156,6 +157,7 @@ export class AppComponent {
   printService = inject(PrintService);
   router = inject(Router);
   idleService = inject(IdleTimeoutService);
+  notificationService = inject(NotificationService);
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
@@ -171,12 +173,14 @@ export class AppComponent {
       }
     });
 
-    // Start idle timeout watcher when auth state is ready and logged in
+    // Start idle timeout watcher and notifications when auth state is ready and logged in
     effect(() => {
       if (this.auth.isAuthReady() && this.auth.currentUser()) {
         this.idleService.startWatching();
+        this.notificationService.startListener();
       } else {
         this.idleService.stopWatching();
+        this.notificationService.stopListener();
       }
     });
   }

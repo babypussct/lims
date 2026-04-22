@@ -1,7 +1,7 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
-import { collection, doc, setDoc, updateDoc, writeBatch, query, where, onSnapshot, Unsubscribe, orderBy, limit, deleteDoc, or } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, writeBatch, query, where, onSnapshot, Unsubscribe, deleteDoc } from 'firebase/firestore';
 import { AppNotification } from '../models/notification.model';
 
 @Injectable({ providedIn: 'root' })
@@ -13,18 +13,14 @@ export class NotificationService {
   notifications = signal<AppNotification[]>([]);
   unreadCount = signal(0);
   
-  private unsub?: Unsubscribe;
+  private unsubPersonal?: Unsubscribe;
+  private unsubAdmin?: Unsubscribe;
+  
+  private personalCache = new Map<string, AppNotification>();
+  private adminCache = new Map<string, AppNotification>();
 
   constructor() {
-    // Autostart listener when user logs in, stop when logging out
-    effect(() => {
-        const user = this.auth.currentUser();
-        if (user) {
-            this.startRealtimeListener();
-        } else {
-            this.stopListener();
-        }
-    });
+     // Khởi tạo rỗng, không dùng effect() ở đây để tránh race condition
   }
 
   /** Push a new notification to the system */
@@ -47,55 +43,71 @@ export class NotificationService {
     }
   }
 
-  private startRealtimeListener() {
-      this.stopListener(); // Ensure clean start
+  startListener() {
+      this.stopListener(); // Đảm bảo trạng thái sạch
       
       const user = this.auth.currentUser();
       if (!user) return;
 
       const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
       
-      // We want notifications strictly for this user UID OR targeted at 'role:admin' if they are an admin
+      // DUAL-LISTENER ARCHITECTURE: Chạy 2 luồng độc lập để triệt tiêu lỗi index/operator.
+      
+      // Luồng 1: Personal (Gửi đích danh)
+      const qPersonal = query(colRef, where('recipientUid', '==', user.uid));
+      this.unsubPersonal = onSnapshot(qPersonal, (snapshot) => {
+          this.personalCache.clear();
+          snapshot.forEach(d => {
+              this.personalCache.set(d.id, { ...d.data(), id: d.id } as AppNotification);
+          });
+          this.updateState();
+      });
+
+      // Luồng 2: Admin (Gửi hệ thống chung)
       const isSystemAdmin = ['admin', 'manager'].includes((user.role || '').toLowerCase()) || 
                             this.auth.canManageSystem() || 
                             this.auth.canApproveStandards();
+                            
+      if (isSystemAdmin) {
+          const qAdmin = query(colRef, where('recipientUid', '==', 'role:admin'));
+          this.unsubAdmin = onSnapshot(qAdmin, (snapshot) => {
+              this.adminCache.clear();
+              snapshot.forEach(d => {
+                  this.adminCache.set(d.id, { ...d.data(), id: d.id } as AppNotification);
+              });
+              this.updateState();
+          });
+      }
+  }
+  
+  private updateState() {
+      // Gộp 2 luồng lại thành 1 Map để tự động khử trùng lặp (nếu có)
+      const allMap = new Map<string, AppNotification>();
+      this.personalCache.forEach((v, k) => allMap.set(k, v));
+      this.adminCache.forEach((v, k) => allMap.set(k, v));
       
-      // Sử dụng OR thay vì IN để đảm bảo tính tương thích cao nhất
-      const q = isSystemAdmin 
-          ? query(colRef, or(where('recipientUid', '==', user.uid), where('recipientUid', '==', 'role:admin')))
-          : query(colRef, where('recipientUid', '==', user.uid));
-
-      this.unsub = onSnapshot(q, (snapshot) => {
-          const items: AppNotification[] = [];
-          let unread = 0;
-          
-          snapshot.forEach(d => {
-              const data = d.data() as AppNotification;
-              items.push({ ...data, id: d.id });
-          });
-          
-          // Sort in-memory theo createdAt desc
-          items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          
-          // Giới hạn 50 thông báo mới nhất
-          const recentItems = items.slice(0, 50);
-          
-          recentItems.forEach(n => {
-              if (!n.isRead) unread++;
-          });
-          
-          this.notifications.set(recentItems);
-          this.unreadCount.set(unread);
-      }, (err) => {
-          console.error("Error listening to notifications:", err);
+      const items = Array.from(allMap.values());
+      
+      // Sort theo thời gian mới nhất
+      items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      
+      // Giới hạn 50 cái mới nhất
+      const recentItems = items.slice(0, 50);
+      
+      let unread = 0;
+      recentItems.forEach(n => {
+          if (!n.isRead) unread++;
       });
+      
+      this.notifications.set(recentItems);
+      this.unreadCount.set(unread);
   }
 
-  private stopListener() {
-      if (this.unsub) {
-          this.unsub();
-          this.unsub = undefined;
-      }
+  stopListener() {
+      if (this.unsubPersonal) { this.unsubPersonal(); this.unsubPersonal = undefined; }
+      if (this.unsubAdmin) { this.unsubAdmin(); this.unsubAdmin = undefined; }
+      this.personalCache.clear();
+      this.adminCache.clear();
       this.notifications.set([]);
       this.unreadCount.set(0);
   }
@@ -127,12 +139,12 @@ export class NotificationService {
   }
 
   async deleteNotification(notificationId: string) {
-    if (!notificationId) return;
-    try {
-        const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`, notificationId);
-        await deleteDoc(docRef);
-    } catch (e) {
-        console.error('Failed to delete notification:', e);
-    }
-}
+      if (!notificationId) return;
+      try {
+          const docRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`, notificationId);
+          await deleteDoc(docRef);
+      } catch (e) {
+          console.error('Failed to delete notification:', e);
+      }
+  }
 }
