@@ -980,7 +980,7 @@ export class StandardService {
                   id: newLogRef.id,
                   timestamp: Date.now(),
                   date: new Date().toISOString(),
-                  user: receiverName,
+                  user: reqData.requestedByName || receiverName,
                   amount_used: finalAmountUsed,
                   unit: finalUnit,
                   purpose: disposalReason || reqData.disposalReason || reqData.purpose || 'Sử dụng theo yêu cầu',
@@ -1009,6 +1009,36 @@ export class StandardService {
       }
       // lastUpdated được serverTimestamp() trong transaction → live listener tự bắt
       this.invalidateLocalStandardsCache();
+  }
+
+  async fixHistoricalUsageLogsUsers() {
+      const q = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'));
+      const snapshot = await getDocs(q);
+      let count = 0;
+      for (const d of snapshot.docs) {
+          const reqData = d.data() as StandardRequest;
+          if (!reqData.usageLogs || reqData.usageLogs.length === 0) continue;
+          let changed = false;
+          const updatedLogs = reqData.usageLogs.map(log => {
+              if (log.user !== reqData.requestedByName && reqData.requestedByName) {
+                  log.user = reqData.requestedByName;
+                  changed = true;
+                  if (log.id && reqData.standardId) {
+                      const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs/${log.id}`);
+                      updateDoc(logRef, { user: reqData.requestedByName }).catch(() => {});
+                      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+                      updateDoc(globalLogRef, { user: reqData.requestedByName }).catch(() => {});
+                  }
+              }
+              return log;
+          });
+          if (changed) {
+              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
+              await updateDoc(reqRef, { usageLogs: updatedLogs });
+              count++;
+          }
+      }
+      this.toast.show(`Đã cập nhật tên người dùng cho ${count} mã yêu cầu mượn khác nhau.`, 'success');
   }
 
   async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {
