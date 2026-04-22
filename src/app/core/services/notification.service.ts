@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
+import { ToastService } from './toast.service';
 import { collection, doc, setDoc, updateDoc, writeBatch, query, where, onSnapshot, Unsubscribe, deleteDoc } from 'firebase/firestore';
 import { AppNotification } from '../models/notification.model';
 
@@ -8,6 +9,7 @@ import { AppNotification } from '../models/notification.model';
 export class NotificationService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
+  private toast = inject(ToastService);
 
   // Reactive state
   notifications = signal<AppNotification[]>([]);
@@ -38,8 +40,9 @@ export class NotificationService {
             isRead: false,
             createdAt: Date.now()
         });
-    } catch (e) {
+    } catch (e: any) {
         console.error('Failed to push notification:', e);
+        this.toast.show('Lỗi lưu thông báo (Permission/DB): ' + e.message, 'error');
     }
   }
 
@@ -61,6 +64,8 @@ export class NotificationService {
               this.personalCache.set(d.id, { ...d.data(), id: d.id } as AppNotification);
           });
           this.updateState();
+      }, (error) => {
+          this.toast.show('Lỗi tải thông báo Cá nhân: ' + error.message, 'error');
       });
 
       // Luồng 2: Admin (Gửi hệ thống chung)
@@ -76,6 +81,8 @@ export class NotificationService {
                   this.adminCache.set(d.id, { ...d.data(), id: d.id } as AppNotification);
               });
               this.updateState();
+          }, (error) => {
+              this.toast.show('Lỗi tải thông báo Admin: ' + error.message, 'error');
           });
       }
   }
