@@ -187,7 +187,7 @@ export class AppComponent {
 
   isPrintMode = computed(() => {
     const url = this.currentUrl();
-    return url.includes('/mobile-login') || url.includes('/labels');
+    return url.includes('/mobile-login') || url.includes('/labels') || url.includes('/traceability');
   });
 
   pageTitle = computed(() => {
