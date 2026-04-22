@@ -510,7 +510,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         if (!std) return '';
         const baseUrl = window.location.origin;
-        return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/standards/' + std.id)}`;
+        return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/#/standards/' + std.id)}`;
     });
 
     relatedStandards = computed(() => {

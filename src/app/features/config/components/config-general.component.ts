@@ -387,7 +387,12 @@ service cloud.firestore {
         match /auth_sessions/{sessionId} { allow read, write: if true; }
         match /users/{userId} { allow read: if request.auth != null; allow write: if isManager() || request.auth.uid == userId; }
         match /recipes/{recipeId} { allow read, write: if request.auth != null; }
-        match /print_jobs/{jobId} { allow read, write: if request.auth != null; }
+        
+        // Cho phép đọc công khai (Truy xuất nguồn gốc), yêu cầu đăng nhập để ghi
+        match /logs/{logId} { allow read: if true; allow write: if request.auth != null; }
+        match /print_jobs/{jobId} { allow read: if true; allow write: if request.auth != null; }
+        match /requests/{requestId} { allow read: if true; allow write: if request.auth != null; }
+        
         match /{document=**} { allow read, write: if request.auth != null; }
     }
   }

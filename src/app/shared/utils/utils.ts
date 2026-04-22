@@ -102,7 +102,7 @@ export function cleanName(str: string): string {
 
 export function formatNum(n: any): string {
   const val = parseFloat(n);
-  return isNaN(val) ? "0" : val.toLocaleString('en-US', { maximumFractionDigits: 3 });
+  return isNaN(val) ? "0" : val.toLocaleString('en-US', { maximumFractionDigits: 6 });
 }
 
 export function formatDate(timestamp: any): string {
