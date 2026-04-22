@@ -7,6 +7,7 @@ import { AuthService } from '../services/auth.service';
 import { QrGlobalService } from '../services/qr-global.service';
 import { ToastService } from '../services/toast.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 
 export interface MenuItem {
   name: string;
@@ -26,7 +27,7 @@ export interface MenuGroup {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   template: `
     <aside class="fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-soft-xl z-50 flex flex-col transition-all duration-300 ease-in-out"
            [class.w-64]="!state.sidebarCollapsed()"
@@ -168,6 +169,11 @@ export interface MenuGroup {
                       <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900"
                             [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"
                             [title]="isOnline() ? 'Online' : 'Offline'"></span>
+                      
+                      <!-- Notification Badge -->
+                      <div class="hidden md:block absolute -top-1 -right-1">
+                          <app-notification-bell [asBadge]="true"></app-notification-bell>
+                      </div>
                   </div>
                   <div class="flex-1 min-w-0">
                       <div class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{{auth.currentUser()?.displayName}}</div>
@@ -184,6 +190,11 @@ export interface MenuGroup {
                        title="Tài khoản">
                   <span class="absolute bottom-2 right-1 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900"
                         [class]="isOnline() ? 'bg-emerald-500' : 'bg-red-500'"></span>
+                  
+                  <!-- Notification Badge -->
+                  <div class="hidden md:block absolute -top-1 -right-1">
+                      <app-notification-bell [asBadge]="true"></app-notification-bell>
+                  </div>
               </div>
           }
       </div>

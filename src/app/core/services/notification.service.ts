@@ -55,14 +55,11 @@ export class NotificationService {
       // We want notifications strictly for this user UID OR targeted at 'role:admin' if they are an admin
       const isSystemAdmin = ['admin', 'manager'].includes((user.role || '').toLowerCase());
       
-      // Để tránh lỗi yêu cầu tạo Composite Index (where + orderBy) trong Firestore,
-      // ta sẽ lấy top 50 thông báo mới nhất rồi filter in-memory.
-      // Vì lượng thông báo nhỏ, cách này an toàn và không gây lỗi crash ngầm.
-      const q = query(
-          colRef, 
-          orderBy('createdAt', 'desc'),
-          limit(50) 
-      );
+      // Lấy thông báo theo recipientUid để đảm bảo luôn lấy được thông báo của user thay vì bị lấp bởi user khác
+      // Sau đó sort in-memory để tránh yêu cầu Composite Index từ Firestore.
+      const q = isSystemAdmin 
+          ? query(colRef, where('recipientUid', 'in', [user.uid, 'role:admin']))
+          : query(colRef, where('recipientUid', '==', user.uid));
 
       this.unsub = onSnapshot(q, (snapshot) => {
           const items: AppNotification[] = [];
@@ -70,14 +67,20 @@ export class NotificationService {
           
           snapshot.forEach(d => {
               const data = d.data() as AppNotification;
-              // In-memory filter
-              if (data.recipientUid === user.uid || (isSystemAdmin && data.recipientUid === 'role:admin')) {
-                  items.push({ ...data, id: d.id });
-                  if (!data.isRead) unread++;
-              }
+              items.push({ ...data, id: d.id });
           });
           
-          this.notifications.set(items);
+          // Sort in-memory theo createdAt desc
+          items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          
+          // Giới hạn 50 thông báo mới nhất
+          const recentItems = items.slice(0, 50);
+          
+          recentItems.forEach(n => {
+              if (!n.isRead) unread++;
+          });
+          
+          this.notifications.set(recentItems);
           this.unreadCount.set(unread);
       }, (err) => {
           console.error("Error listening to notifications:", err);

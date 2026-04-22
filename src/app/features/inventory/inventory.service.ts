@@ -6,8 +6,10 @@ import {
   doc, setDoc, updateDoc, deleteDoc, getDoc,
   collection, addDoc, serverTimestamp, writeBatch,
   query, where, orderBy, limit, startAfter, getDocs, 
-  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField
+  QueryConstraint, QueryDocumentSnapshot, runTransaction, getCountFromServer, deleteField, Timestamp
 } from 'firebase/firestore';
+import { effect } from '@angular/core';
+import { AuthService } from '../../core/services/auth.service';
 import { InventoryItem, StockHistoryItem } from '../../core/models/inventory.model';
 import { ToastService } from '../../core/services/toast.service';
 import { Log } from '../../core/models/log.model';
@@ -24,8 +26,31 @@ export class InventoryService {
   private fb = inject(FirebaseService);
   private state = inject(StateService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
 
-  // --- OPTIMIZED READ Operations ---
+  // ─── Delta Sync Cache ───────────────────────────────────────────────────────
+  private readonly INV_CACHE_KEY       = 'lims_inv_list_cache';
+  private readonly INV_SYNC_SECONDS_KEY = 'lims_inv_sync_seconds';
+
+  private _memInventory: InventoryItem[] | null = null;
+
+  constructor() {
+    // Tự động dọn dẹp khi user logout
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (!user) {
+        this._memInventory = null;
+      }
+    });
+  }
+
+  // ─── INVALIDATE CACHE ───────────────────────────────────────────────────────
+  invalidateLocalInventoryCache(): void {
+    this._memInventory = null;
+    localStorage.removeItem(this.INV_SYNC_SECONDS_KEY);
+  }
+
+  // ─── OPTIMIZED READ Operations ──────────────────────────────────────────────
 
   async getInventoryCount(): Promise<number> {
       try {
@@ -111,9 +136,107 @@ export class InventoryService {
   }
 
   async getAllInventory(): Promise<InventoryItem[]> {
+      return this.loadInventoryWithDeltaSync();
+  }
+
+  async loadInventoryWithDeltaSync(): Promise<InventoryItem[]> {
+      if (this._memInventory !== null) {
+          return this._memInventory;
+      }
+
+      const localItems = this._loadInvFromCache();
+      const lastSyncSec = Number(localStorage.getItem(this.INV_SYNC_SECONDS_KEY) || 0);
+
+      if (!localItems || lastSyncSec === 0) {
+          // COLD START
+          return await this._fetchAllInvAndCache();
+      }
+
+      // WARM START
+      this._memInventory = localItems;
+
+      try {
+          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
+          const deltaSnap = await getDocs(query(
+              colRef,
+              where('lastUpdated', '>', Timestamp.fromMillis(lastSyncSec * 1000))
+          ));
+
+          if (!deltaSnap.empty) {
+              const changed: InventoryItem[] = [];
+              const deletedIds: string[] = [];
+
+              deltaSnap.docs.forEach(d => {
+                  const data = d.data();
+                  if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
+                      deletedIds.push(d.id);
+                  } else {
+                      changed.push({ id: d.id, ...data } as InventoryItem);
+                  }
+              });
+
+              this._mergeAndSaveInv(changed, deletedIds);
+          }
+      } catch (e) {
+          console.warn('[InventoryService] Delta sync error, using cached data:', e);
+      }
+
+      return this._memInventory!;
+  }
+
+  private _mergeAndSaveInv(changed: InventoryItem[], deletedIds: string[]): void {
+      if (!this._memInventory) return;
+
+      let items = this._memInventory.filter(i => !deletedIds.includes(i.id));
+
+      changed.forEach(newDoc => {
+          const idx = items.findIndex(i => i.id === newDoc.id);
+          if (idx >= 0) {
+              items[idx] = newDoc;
+          } else {
+              items.unshift(newDoc);
+          }
+      });
+
+      this._memInventory = items;
+      this._saveInvToCache(items);
+  }
+
+  private async _fetchAllInvAndCache(): Promise<InventoryItem[]> {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory');
-      const snapshot = await getDocs(colRef);
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+      const snap = await getDocs(colRef);
+      const items: InventoryItem[] = snap.docs
+          .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
+          .map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+      
+      this._saveInvToCache(items);
+      this._memInventory = items;
+      return items;
+  }
+
+  private _loadInvFromCache(): InventoryItem[] | null {
+      try {
+          const raw = localStorage.getItem(this.INV_CACHE_KEY);
+          return raw ? (JSON.parse(raw) as InventoryItem[]) : null;
+      } catch {
+          return null;
+      }
+  }
+
+  private _saveInvToCache(items: InventoryItem[]): void {
+      try {
+          localStorage.setItem(this.INV_CACHE_KEY, JSON.stringify(items));
+          const maxSec = items.reduce((max, i) => {
+              const sec = (i.lastUpdated as any)?.seconds ?? 0;
+              return sec > max ? sec : max;
+          }, 0);
+          if (maxSec > 0) {
+              localStorage.setItem(this.INV_SYNC_SECONDS_KEY, maxSec.toString());
+          }
+      } catch (e: any) {
+          console.warn('[InventoryService] Cache write failed:', e?.name);
+          try { localStorage.removeItem(this.INV_CACHE_KEY); } catch {}
+      }
   }
 
   async getInventoryPage(
@@ -239,6 +362,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
 
@@ -273,6 +397,7 @@ export class InventoryService {
     });
 
     await finalBatch.commit();
+    this.invalidateLocalInventoryCache();
     // Delta Sync doesn't require updateMetadata if we listen to onSnapshot, but keeping it for legacy components
     await this.fb.updateMetadata('inventory');
   }
@@ -298,6 +423,7 @@ export class InventoryService {
       });
   
       await finalBatch.commit();
+      this.invalidateLocalInventoryCache();
   }
 
   async updateStock(id: string, currentStock: number, adjustment: number, reason = '') {
@@ -334,6 +460,7 @@ export class InventoryService {
             reason: reason
         });
     });
+    this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
 
@@ -367,6 +494,7 @@ export class InventoryService {
     });
 
     await batch.commit();
+    this.invalidateLocalInventoryCache();
     await this.fb.updateMetadata('inventory');
   }
 }

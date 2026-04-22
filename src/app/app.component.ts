@@ -70,13 +70,6 @@ import { IdleTimeoutService } from './core/services/idle-timeout.service';
         }
       </div>
 
-      <!-- Notification Bell -->
-      @if (auth.isAuthReady() && auth.currentUser()) {
-         <div class="fixed top-4 right-4 md:right-8 z-[90] no-print">
-            <app-notification-bell></app-notification-bell>
-         </div>
-      }
-
       <!-- Loaders & Modals -->
       @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
       

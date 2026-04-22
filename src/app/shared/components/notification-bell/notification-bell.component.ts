@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, HostListener, effect, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, effect, ElementRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -11,27 +11,46 @@ import { AppNotification } from '../../../core/models/notification.model';
   template: `
     <div class="relative inline-block text-left" (click)="$event.stopPropagation()">
       <!-- Bell Button -->
-      <button 
-        (click)="toggleMenu()"
-        class="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95 group">
-        
-        <i class="fa-solid fa-bell text-slate-600 dark:text-slate-300 text-[18px] transition-transform" 
-           [class.fa-shake]="unreadCount() > 0 && isOpen()"></i>
-        
-        <!-- Unread Badge -->
-        @if (unreadCount() > 0) {
-            <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center border-2 border-white dark:border-slate-800">
-                {{unreadCount() > 9 ? '9+' : unreadCount()}}
-              </span>
-            </span>
-        }
-      </button>
+      @if (!asBadge) {
+          <button 
+            (click)="toggleMenu()"
+            class="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95 group">
+            
+            <i class="fa-solid fa-bell text-slate-600 dark:text-slate-300 text-[18px] transition-transform" 
+               [class.fa-shake]="unreadCount() > 0 && isOpen()"></i>
+            
+            <!-- Unread Badge -->
+            @if (unreadCount() > 0) {
+                <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center border-2 border-white dark:border-slate-800">
+                    {{unreadCount() > 9 ? '9+' : unreadCount()}}
+                  </span>
+                </span>
+            }
+          </button>
+      } @else {
+          <!-- As Badge on Avatar -->
+          <button 
+            (click)="toggleMenu()"
+            class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm transition-transform hover:scale-110 active:scale-95 z-10"
+            [ngClass]="unreadCount() > 0 ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
+            
+            @if (unreadCount() > 0) {
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-full w-full bg-red-500 text-white text-[9px] font-bold items-center justify-center">
+                  {{unreadCount() > 9 ? '9+' : unreadCount()}}
+                </span>
+            } @else {
+                <i class="fa-solid fa-bell text-[9px]"></i>
+            }
+          </button>
+      }
 
       <!-- Dropdown Menu -->
       @if (isOpen()) {
-         <div class="absolute right-0 mt-3 w-80 md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden origin-top-right fade-in-scale z-[100] flex flex-col max-h-[85vh]">
+         <div class="absolute right-0 w-80 md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden origin-bottom-left fade-in-scale z-[100] flex flex-col max-h-[85vh]"
+              [ngClass]="asBadge ? 'bottom-full mb-3 left-0 right-auto origin-bottom-left' : 'mt-3 origin-top-right'">
             
             <!-- Header -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
@@ -100,6 +119,8 @@ import { AppNotification } from '../../../core/models/notification.model';
   `]
 })
 export class NotificationBellComponent {
+  @Input() asBadge = false;
+
   notificationService = inject(NotificationService);
   router = inject(Router);
   elRef = inject(ElementRef);
