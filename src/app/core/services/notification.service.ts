@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, effect } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
-import { collection, doc, setDoc, updateDoc, writeBatch, query, where, onSnapshot, Unsubscribe, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, writeBatch, query, where, onSnapshot, Unsubscribe, orderBy, limit, deleteDoc, or } from 'firebase/firestore';
 import { AppNotification } from '../models/notification.model';
 
 @Injectable({ providedIn: 'root' })
@@ -33,8 +33,11 @@ export class NotificationService {
         const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
         const newDocRef = doc(colRef);
         
+        // Strip undefined fields which crash Firestore setDoc
+        const cleanPayload = Object.fromEntries(Object.entries(notification).filter(([_, v]) => v !== undefined));
+        
         await setDoc(newDocRef, {
-            ...notification,
+            ...cleanPayload,
             id: newDocRef.id,
             isRead: false,
             createdAt: Date.now()
@@ -57,10 +60,9 @@ export class NotificationService {
                             this.auth.canManageSystem() || 
                             this.auth.canApproveStandards();
       
-      // Lấy thông báo theo recipientUid để đảm bảo luôn lấy được thông báo của user thay vì bị lấp bởi user khác
-      // Sau đó sort in-memory để tránh yêu cầu Composite Index từ Firestore.
+      // Sử dụng OR thay vì IN để đảm bảo tính tương thích cao nhất
       const q = isSystemAdmin 
-          ? query(colRef, where('recipientUid', 'in', [user.uid, 'role:admin']))
+          ? query(colRef, or(where('recipientUid', '==', user.uid), where('recipientUid', '==', 'role:admin')))
           : query(colRef, where('recipientUid', '==', user.uid));
 
       this.unsub = onSnapshot(q, (snapshot) => {
