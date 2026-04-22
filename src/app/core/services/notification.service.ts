@@ -53,7 +53,9 @@ export class NotificationService {
       const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
       
       // We want notifications strictly for this user UID OR targeted at 'role:admin' if they are an admin
-      const isSystemAdmin = ['admin', 'manager'].includes((user.role || '').toLowerCase());
+      const isSystemAdmin = ['admin', 'manager'].includes((user.role || '').toLowerCase()) || 
+                            this.auth.canManageSystem() || 
+                            this.auth.canApproveStandards();
       
       // Lấy thông báo theo recipientUid để đảm bảo luôn lấy được thông báo của user thay vì bị lấp bởi user khác
       // Sau đó sort in-memory để tránh yêu cầu Composite Index từ Firestore.

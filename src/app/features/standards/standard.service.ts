@@ -458,10 +458,12 @@ export class StandardService {
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
       try {
-          const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-          const q = query(colRef, where('expiry_date', '!=', ''), orderBy('expiry_date', 'asc'), limit(1));
-          const snapshot = await getDocs(q);
-          return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as ReferenceStandard;
+          const stds = await this.loadStandardsWithDeltaSync();
+          const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
+          if (active.length > 0) {
+              return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
+          }
+          return null;
       } catch (e: any) { return null; }
   }
 
