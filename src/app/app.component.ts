@@ -182,7 +182,7 @@ export class AppComponent {
         this.idleService.stopWatching();
         this.notificationService.stopListener();
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   isPrintMode = computed(() => {
