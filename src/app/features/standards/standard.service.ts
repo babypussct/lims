@@ -18,7 +18,14 @@ export class StandardService {
   private toast = inject(ToastService);
   private notificationService = inject(NotificationService);
 
-  // ─── Delta Sync Cache ───────────────────────────────────────────────────────
+  // ─── Delta Sync Cache & State ────────────────────────────────────────────────
+  // State bảo lưu trạng thái lưới để khi Back từ chi tiết không bị mất dấu
+  listState = {
+      searchTerm: '',
+      sortOption: 'received_desc',
+      viewMode: '' as 'list' | 'grid' | ''
+  };
+
   // localStorage keys
   private readonly STD_CACHE_KEY       = 'lims_std_list_cache';
   private readonly STD_SYNC_SECONDS_KEY = 'lims_std_sync_seconds';

@@ -186,10 +186,10 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
   private mobileMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
-  viewMode = signal<'list' | 'grid'>(this.mobileMediaQuery.matches ? 'grid' : 'list');
+  viewMode = signal<'list' | 'grid'>(this.stdService.listState.viewMode || (this.mobileMediaQuery.matches ? 'grid' : 'list'));
   private onMediaChange = (e: MediaQueryListEvent) => this.viewMode.set(e.matches ? 'grid' : 'list');
-  searchTerm = signal('');
-  sortOption = signal<string>('received_desc');
+  searchTerm = signal(this.stdService.listState.searchTerm || '');
+  sortOption = signal<string>(this.stdService.listState.sortOption || 'received_desc');
   searchSubject = new Subject<string>();
 
   // --- CHANGED: CLIENT-SIDE STATE ---
@@ -366,6 +366,13 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.searchTerm.set(term); 
           // Reset pagination on search
           this.displayLimit.set(50);
+      });
+
+      // Sync state to service so it persists when navigating away
+      effect(() => {
+          this.stdService.listState.searchTerm = this.searchTerm();
+          this.stdService.listState.sortOption = this.sortOption();
+          this.stdService.listState.viewMode = this.viewMode();
       });
   }
 

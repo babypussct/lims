@@ -18,6 +18,8 @@ import { StandardsPurchaseModalComponent } from './components/standards-purchase
 import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
 import { ConfirmationService } from '../../core/services/confirmation.service';
+import { GoogleDriveService } from '../../core/services/google-drive.service';
+import { writeBatch, doc } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standard-detail',
@@ -193,11 +195,23 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
                                 <h3 class="text-base font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Hạn Dùng & Hồ Sơ</h3>
                             </div>
                             
-                            @if(std.certificate_ref) {
-                                <button (click)="openCoaPreview(std.certificate_ref)" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none hover:from-blue-700 hover:to-indigo-700 transition font-bold text-sm active:scale-95 group">
-                                    <i class="fa-solid fa-file-pdf group-hover:-translate-y-0.5 transition-transform"></i> Xem CoA
-                                </button>
-                            }
+                            <div class="flex items-center gap-2">
+                                @if(std.certificate_ref) {
+                                    <button (click)="openCoaPreview(std.certificate_ref)" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none hover:from-blue-700 hover:to-indigo-700 transition font-bold text-sm active:scale-95 group">
+                                        <i class="fa-solid fa-file-pdf group-hover:-translate-y-0.5 transition-transform"></i> Xem CoA
+                                    </button>
+                                }
+                                @if(auth.canEditStandards()) {
+                                    <button (click)="triggerQuickDriveUpload()" [disabled]="isUploadingCoa()" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition font-bold text-sm active:scale-95 disabled:opacity-50 group shadow-sm">
+                                        @if(isUploadingCoa()) {
+                                            <i class="fa-solid fa-circle-notch fa-spin"></i>
+                                        } @else {
+                                            <i class="fa-brands fa-google-drive text-emerald-600"></i>
+                                        }
+                                        {{ std.certificate_ref ? 'Cập nhật CoA' : 'Upload CoA' }}
+                                    </button>
+                                }
+                            </div>
                         </div>
 
                         <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 mb-6 flex items-center gap-5">
@@ -410,6 +424,9 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
         (closeModal)="showAssignModal.set(false)"
         (confirm)="confirmAssign($event)">
     </app-standards-assign-modal>
+    
+    <!-- Hidden input for quick Drive upload -->
+    <input id="quickDriveInput" #quickDriveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
   `
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
@@ -424,6 +441,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     location = inject(Location);
     confirmationService = inject(ConfirmationService);
     sanitizer = inject(DomSanitizer);
+    googleDriveService = inject(GoogleDriveService);
 
     Math = Math;
     formatNum = formatNum;
@@ -460,6 +478,8 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     previewImgUrl = signal<string>('');
     previewType = signal<'iframe' | 'image'>('iframe');
     previewRawUrl = signal<string>('');
+
+    isUploadingCoa = signal(false);
 
     private liveUnsub?: () => void;
     private routeSub: any;
@@ -747,5 +767,64 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             }
         }
     }
+    // --- Quick Upload CoA ---
+    triggerQuickDriveUpload() {
+        const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+        if (input) {
+            input.click();
+        } else {
+            this.toast.show('Không tìm thấy input upload', 'error');
+        }
+    }
 
+    async handleQuickDriveUpload(event: any) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const std = this.standard();
+        if (!std) return;
+
+        this.googleDriveService.authenticateSync(
+            async () => {
+                try {
+                    this.isUploadingCoa.set(true);
+                    const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
+                    this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+
+                    const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+
+                    // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
+                    const allStds = await this.stdService.loadStandardsWithDeltaSync();
+                    const siblings = allStds.filter(s => s.name === std.name && s.lot_number === std.lot_number && !s._isDeleted);
+                    
+                    const batch = writeBatch(this.firebaseService.db);
+                    for (const s of siblings) {
+                        if (s.id) {
+                            const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
+                            batch.update(ref, { certificate_ref: previewUrl, coa_requested: false });
+                        }
+                    }
+                    await batch.commit();
+
+                    // Cập nhật local signal cho view hiện tại
+                    this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested: false } : current);
+
+                    if (siblings.length > 1) {
+                        this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+                    } else {
+                        this.toast.show(`Upload CoA thành công!`);
+                    }
+                } catch (e: any) {
+                    console.error('Quick Drive upload error:', e);
+                    this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+                } finally {
+                    this.isUploadingCoa.set(false);
+                    event.target.value = '';
+                }
+            },
+            (err) => {
+                this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+            }
+        );
+    }
 }
