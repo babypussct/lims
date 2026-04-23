@@ -263,18 +263,18 @@ export class StateService implements OnDestroy {
             }
 
             let shouldNotify = false;
-            let syncMessage = 'Cập nhật mới đã sẵn sàng. Vuốt xuống để đồng bộ.';
+            let syncMessage = 'Hệ thống vừa có cập nhật mới.';
 
             if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
                 lastSyncTimes['standards'] = data['standards'];
                 shouldNotify = true;
-                syncMessage = 'Danh sách chuẩn vừa có thay đổi. Vui lòng tải lại (Vuốt xuống).';
+                syncMessage = 'Danh sách chuẩn đối chiếu vừa được cập nhật.';
             }
 
             if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
                 lastSyncTimes['inventory'] = data['inventory'];
                 shouldNotify = true;
-                syncMessage = 'Kho hóa chất vừa có cập nhật. Vui lòng tải lại (Vuốt xuống).';
+                syncMessage = 'Kho hóa chất vừa có thay đổi.';
             }
             
             if (data['config'] > (lastSyncTimes['config'] || 0)) {
