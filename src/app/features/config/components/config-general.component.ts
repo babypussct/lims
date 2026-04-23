@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,7 +9,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { CategoryItem } from '../../../core/models/config.model';
 import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
-import { collection, getDocs, writeBatch, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -95,6 +95,55 @@ import * as XLSX from 'xlsx';
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Footer Text (Cam kết cuối phiếu)</label>
                     <textarea [(ngModel)]="printConfig().footerText" rows="2" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-purple-500 dark:focus:border-purple-500 outline-none resize-none transition" placeholder="Nội dung chân trang..."></textarea>
+                </div>
+            </div>
+
+        </div>
+
+            <!-- 2.5. SYSTEM UPDATES NOTIFICATIONS -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-base">
+                        <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center"><i class="fa-solid fa-bullhorn"></i></div>
+                        Thông báo Hệ thống
+                    </h3>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <textarea [(ngModel)]="newUpdateContent" rows="2" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-800 focus:border-orange-500 outline-none resize-none transition" placeholder="Nhập nội dung thông báo mới cho người dùng..."></textarea>
+                    
+                    <div class="flex gap-2 items-center justify-between">
+                        <select [(ngModel)]="newUpdateType" class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 outline-none focus:border-orange-500 cursor-pointer">
+                            <option value="info">Màu xanh lam (Info)</option>
+                            <option value="success">Màu xanh lá (Success)</option>
+                            <option value="warning">Màu cam/đỏ (Warning)</option>
+                        </select>
+                        <button (click)="postSystemUpdate()" [disabled]="!newUpdateContent" class="text-xs bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 rounded-lg font-bold transition shadow-sm disabled:opacity-50">Đăng Thông Báo</button>
+                    </div>
+                </div>
+
+                <div class="space-y-2 mt-2 max-h-[250px] overflow-y-auto custom-scrollbar border-t border-slate-100 dark:border-slate-700/50 pt-2">
+                    @for (item of systemUpdates(); track item.id) {
+                        <div class="flex items-start justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    @if(item.type === 'success') {
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    } @else if(item.type === 'warning') {
+                                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    } @else {
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    }
+                                    <span class="text-[10px] text-slate-400 font-bold">{{item.timestamp | date:'dd/MM/yyyy HH:mm'}}</span>
+                                </div>
+                                <div class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{item.content}}</div>
+                            </div>
+                            <button (click)="deleteSystemUpdate(item.id)" class="text-slate-400 hover:text-red-500 transition p-1 hover:bg-red-50 rounded"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                        </div>
+                    }
+                    @if (systemUpdates().length === 0) {
+                        <div class="text-center text-slate-400 dark:text-slate-500 text-xs italic py-4">Chưa có thông báo nào.</div>
+                    }
                 </div>
             </div>
 
@@ -351,7 +400,7 @@ import * as XLSX from 'xlsx';
     }
   `
 })
-export class ConfigGeneralComponent implements OnInit {
+export class ConfigGeneralComponent implements OnInit, OnDestroy {
   fb = inject(FirebaseService);
   state = inject(StateService);
   toast = inject(ToastService);
@@ -399,9 +448,56 @@ service cloud.firestore {
 }`;
   });
 
+  newUpdateContent = '';
+  newUpdateType = 'info';
+  systemUpdates = signal<any[]>([]);
+  systemUpdatesSub: any;
+
   ngOnInit() {
     this.versionControl.setValue(this.state.systemVersion()); 
     this.categoriesLocal.set(JSON.parse(JSON.stringify(this.state.categories())));
+    this.listenSystemUpdates();
+  }
+
+  ngOnDestroy() {
+      if (this.systemUpdatesSub) this.systemUpdatesSub();
+  }
+
+  listenSystemUpdates() {
+      const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
+      const q = query(updatesRef, orderBy('timestamp', 'desc'));
+      this.systemUpdatesSub = onSnapshot(q, (snap) => {
+          this.systemUpdates.set(snap.docs.map(d => {
+              const data = d.data();
+              return {
+                  id: d.id,
+                  content: data['content'],
+                  type: data['type'] || 'info',
+                  timestamp: data['timestamp'] ? data['timestamp'].toDate() : new Date()
+              };
+          }));
+      });
+  }
+
+  async postSystemUpdate() {
+      if (!this.newUpdateContent.trim()) return;
+      const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
+      const newRef = doc(updatesRef);
+      await setDoc(newRef, {
+          content: this.newUpdateContent.trim(),
+          type: this.newUpdateType,
+          timestamp: serverTimestamp()
+      });
+      this.toast.show('Đã đăng thông báo hệ thống!', 'success');
+      this.newUpdateContent = '';
+  }
+
+  async deleteSystemUpdate(id: string) {
+      if (await this.confirmationService.confirm({ message: 'Bạn muốn xóa thông báo này?', confirmText: 'Xóa' })) {
+          const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates/${id}`);
+          await deleteDoc(ref);
+          this.toast.show('Đã xóa thông báo', 'info');
+      }
   }
 
   async saveVersion() {

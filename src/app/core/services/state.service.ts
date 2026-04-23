@@ -236,7 +236,10 @@ export class StateService implements OnDestroy {
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
     await this.loadConfig();
 
-    // 7. System Force Reload Listener (Delta Sync Architecture)
+    // 7. System Force Reload Listener & Delta Sync Architecture
+    let isFirstMetaLoad = true;
+    let lastSyncTimes: Record<string, number> = {};
+
     const sysMetaSub = onSnapshot(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system/metadata`), (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -249,6 +252,39 @@ export class StateService implements OnDestroy {
                 setTimeout(() => {
                     this.fb.purgeSystemCache();
                 }, 2000);
+                return;
+            }
+
+            // Delta Sync Logic
+            if (isFirstMetaLoad) {
+                lastSyncTimes = { ...data };
+                isFirstMetaLoad = false;
+                return;
+            }
+
+            let shouldNotify = false;
+            let syncMessage = 'Cập nhật mới đã sẵn sàng. Vuốt xuống để đồng bộ.';
+
+            if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
+                lastSyncTimes['standards'] = data['standards'];
+                shouldNotify = true;
+                syncMessage = 'Danh sách chuẩn vừa có thay đổi. Vui lòng tải lại (Vuốt xuống).';
+            }
+
+            if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
+                lastSyncTimes['inventory'] = data['inventory'];
+                shouldNotify = true;
+                syncMessage = 'Kho hóa chất vừa có cập nhật. Vui lòng tải lại (Vuốt xuống).';
+            }
+            
+            if (data['config'] > (lastSyncTimes['config'] || 0)) {
+                lastSyncTimes['config'] = data['config'];
+                shouldNotify = true;
+                syncMessage = 'Cấu hình hệ thống thay đổi. Tải lại trang để áp dụng.';
+            }
+
+            if (shouldNotify) {
+                this.toast.show(syncMessage, 'info');
             }
         }
     }, handleError('System Metadata'));

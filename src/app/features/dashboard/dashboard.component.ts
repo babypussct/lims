@@ -12,6 +12,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { ToastService } from '../../core/services/toast.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
+import { onSnapshot, query, collection, orderBy, limit } from 'firebase/firestore';
 import { formatNum, formatDate, getAvatarUrl, formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
@@ -277,9 +278,36 @@ interface KanbanColumn {
                 </div>
             </div>
 
-            <!-- Right: Activity Feed (1/3) -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col h-[450px] border border-slate-100 dark:border-slate-700">
-                <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg mb-4">Hoạt động gần đây</h6>
+            <!-- Right Column -->
+            <div class="flex flex-col gap-6">
+                <!-- System Updates -->
+                <div class="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-orange-100 dark:border-orange-900/30 shrink-0">
+                    <h6 class="font-bold text-orange-800 dark:text-orange-400 capitalize text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Thông báo Hệ thống</h6>
+                    <div class="overflow-y-auto custom-scrollbar -mr-2 pr-2 max-h-48 space-y-3">
+                        @for (item of systemUpdates(); track item.id) {
+                            <div class="bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm p-3 rounded-xl border border-white/20 dark:border-slate-700">
+                                <div class="flex items-center gap-2 mb-1">
+                                    @if(item.type === 'success') {
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    } @else if(item.type === 'warning') {
+                                        <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                    } @else {
+                                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                    }
+                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{{item.timestamp | date:'dd/MM HH:mm'}}</span>
+                                </div>
+                                <div class="text-xs font-bold text-slate-700 dark:text-slate-200 leading-relaxed">{{item.content}}</div>
+                            </div>
+                        }
+                        @if (systemUpdates().length === 0) {
+                            <div class="text-[10px] text-slate-500 italic py-2">Không có thông báo mới.</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col min-h-[300px] border border-slate-100 dark:border-slate-700">
+                    <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg mb-4">Hoạt động gần đây</h6>
                 <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
                     <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
                         @for (log of recentLogs(); track log.id) {
@@ -482,6 +510,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Modal State
   selectedSopDetails = signal<KanbanColumn | null>(null);
+  
+  // System Updates State
+  systemUpdates = signal<any[]>([]);
+  systemUpdatesSub: any;
 
   // LIVE DATA COMPUTED
   totalPendingRequests = computed(() => this.state.requests().length + this.state.standardRequests().length);
@@ -728,11 +760,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
               }
           });
           this.userPhotoMap.set(map);
+          this.listenSystemUpdates();
       } catch(e) {
           console.error("Dashboard fetch error", e);
       } finally {
           this.isLoading.set(false);
       }
+  }
+
+  listenSystemUpdates() {
+      const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
+      const q = query(updatesRef, orderBy('timestamp', 'desc'), limit(5));
+      this.systemUpdatesSub = onSnapshot(q, (snap) => {
+          this.systemUpdates.set(snap.docs.map(d => {
+              const data = d.data();
+              return {
+                  id: d.id,
+                  content: data['content'],
+                  type: data['type'] || 'info',
+                  timestamp: data['timestamp'] ? data['timestamp'].toDate() : new Date()
+              };
+          }));
+      });
   }
 
   getAvatar(name: string | undefined | null): string {
@@ -744,6 +793,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+      if (this.systemUpdatesSub) this.systemUpdatesSub();
       if (this.chartInstance) {
           this.chartInstance.destroy();
           this.chartInstance = null;

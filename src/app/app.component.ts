@@ -1,5 +1,5 @@
 
-import { Component, inject, computed, effect, signal } from '@angular/core';
+import { Component, inject, computed, effect, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 
@@ -39,6 +39,13 @@ import { NotificationService } from './core/services/notification.service';
        <router-outlet></router-outlet>
     } 
     @else {
+      <!-- Pull to Refresh Spinner -->
+      @if (isPulling()) {
+        <div class="fixed top-10 left-1/2 -translate-x-1/2 z-[300] bg-white rounded-full shadow-lg w-10 h-10 flex items-center justify-center animate-bounce">
+            <i class="fa-solid fa-rotate fa-spin text-blue-500 text-xl"></i>
+        </div>
+      }
+
       <!-- Notifications -->
       <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
         @for (t of toast.toasts(); track t.id) {
@@ -207,4 +214,36 @@ export class AppComponent {
     };
     return titles[url] || 'LIMS Cloud';
   });
+
+  // --- PULL TO REFRESH LOGIC ---
+  private touchStartY = 0;
+  isPulling = signal(false);
+
+  @HostListener('window:touchstart', ['$event'])
+  onTouchStart(e: TouchEvent) {
+    // Chỉ kích hoạt nếu chạm từ mép trên cùng của màn hình (header)
+    if (e.touches[0].clientY < 60) {
+       this.touchStartY = e.touches[0].clientY;
+    } else {
+       this.touchStartY = 0;
+    }
+  }
+
+  @HostListener('window:touchmove', ['$event'])
+  onTouchMove(e: TouchEvent) {
+    if (this.touchStartY === 0) return;
+    const currentY = e.touches[0].clientY;
+    if (currentY - this.touchStartY > 120) {
+      this.isPulling.set(true);
+    }
+  }
+
+  @HostListener('window:touchend')
+  onTouchEnd() {
+    if (this.isPulling()) {
+      window.location.reload();
+    }
+    this.touchStartY = 0;
+    this.isPulling.set(false);
+  }
 }
