@@ -204,10 +204,16 @@ export class AppComponent {
 
     // --- SERVICE WORKER: Lắng nghe bản build mới ---
     if (this.swUpdate.isEnabled) {
+      // Lắng nghe khi có bản mới sẵn sàng
       this.swUpdate.versionUpdates.pipe(
         filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY')
       ).subscribe(() => {
         this.toast.show('🚀 Hệ thống vừa có phiên bản mới. Bấm để cập nhật!', 'info', true);
+      });
+
+      // Chủ động kiểm tra update ngay khi app load (không đợi SW tự check)
+      this.swUpdate.checkForUpdate().catch(() => {
+        // Bỏ qua lỗi nếu SW chưa sẵn sàng
       });
     }
   }

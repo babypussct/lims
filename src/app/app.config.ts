@@ -15,7 +15,7 @@ export const appConfig: ApplicationConfig = {
       withRouterConfig({ canceledNavigationResolution: 'replace' })
     ), provideServiceWorker('ngsw-worker.js', {
             enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
+            registrationStrategy: 'registerImmediately'
           })
   ]
 };
