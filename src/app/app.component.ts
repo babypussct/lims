@@ -18,6 +18,8 @@ import { ToastService } from './core/services/toast.service';
 import { PrintService } from './core/services/print.service';
 import { IdleTimeoutService } from './core/services/idle-timeout.service';
 import { NotificationService } from './core/services/notification.service';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -49,7 +51,7 @@ import { NotificationService } from './core/services/notification.service';
       <!-- Notifications -->
       <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
         @for (t of toast.toasts(); track t.id) {
-          <div class="pointer-events-auto flex items-center gap-4 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up min-w-[300px]"
+          <div class="pointer-events-auto flex flex-col gap-2 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up min-w-[300px]"
                [class.bg-white]="true" 
                [class.bg-opacity-95]="true"
                [class.border-l-4]="true"
@@ -61,19 +63,27 @@ import { NotificationService } from './core/services/notification.service';
                [class.text-blue-800]="t.type === 'info'"
                [class.border-y-white]="true" 
                [class.border-r-white]="true">
-               <div class="shrink-0 text-xl">
-                  @if(t.type === 'success') { <i class="fa-solid fa-circle-check text-emerald-500"></i> }
-                  @else if(t.type === 'error') { <i class="fa-solid fa-circle-xmark text-red-500"></i> }
-                  @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
+               <div class="flex items-center gap-4">
+                  <div class="shrink-0 text-xl">
+                     @if(t.type === 'success') { <i class="fa-solid fa-circle-check text-emerald-500"></i> }
+                     @else if(t.type === 'error') { <i class="fa-solid fa-circle-xmark text-red-500"></i> }
+                     @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
+                  </div>
+                  <div class="flex-1">
+                      <div class="text-xs font-bold uppercase opacity-60 tracking-wider">
+                         {{ t.type === 'success' ? 'Thành công' : t.type === 'error' ? 'Lỗi' : 'Thông báo' }}
+                      </div>
+                      <div class="text-sm font-bold leading-tight">{{t.message}}</div>
+                  </div>
+                  <div class="h-8 w-[1px] bg-gray-200"></div>
+                  <button (click)="toast.remove(t.id)" class="text-gray-400 hover:text-gray-600 transition active:scale-90"><i class="fa-solid fa-xmark"></i></button>
                </div>
-               <div class="flex-1">
-                   <div class="text-xs font-bold uppercase opacity-60 tracking-wider">
-                      {{ t.type === 'success' ? 'Thành công' : t.type === 'error' ? 'Lỗi' : 'Thông báo' }}
-                   </div>
-                   <div class="text-sm font-bold leading-tight">{{t.message}}</div>
-               </div>
-               <div class="h-8 w-[1px] bg-gray-200"></div>
-               <button (click)="toast.remove(t.id)" class="text-gray-400 hover:text-gray-600 transition active:scale-90"><i class="fa-solid fa-xmark"></i></button>
+               @if (t.persistent) {
+                 <button (click)="window_reload()" 
+                         class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 active:scale-95">
+                   <i class="fa-solid fa-rotate-right"></i> Tải lại ngay
+                 </button>
+               }
           </div>
         }
       </div>
@@ -165,6 +175,7 @@ export class AppComponent {
   router = inject(Router);
   idleService = inject(IdleTimeoutService);
   notificationService = inject(NotificationService);
+  swUpdate = inject(SwUpdate);
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
@@ -190,6 +201,15 @@ export class AppComponent {
         this.notificationService.stopListener();
       }
     }, { allowSignalWrites: true });
+
+    // --- SERVICE WORKER: Lắng nghe bản build mới ---
+    if (this.swUpdate.isEnabled) {
+      this.swUpdate.versionUpdates.pipe(
+        filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY')
+      ).subscribe(() => {
+        this.toast.show('🚀 Hệ thống vừa có phiên bản mới. Bấm để cập nhật!', 'info', true);
+      });
+    }
   }
 
   isPrintMode = computed(() => {
@@ -245,5 +265,10 @@ export class AppComponent {
     }
     this.touchStartY = 0;
     this.isPulling.set(false);
+  }
+
+  // Dùng trong template cho nút "Tải lại ngay" trong Toast
+  window_reload() {
+    window.location.reload();
   }
 }
