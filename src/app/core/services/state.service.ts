@@ -262,29 +262,21 @@ export class StateService implements OnDestroy {
                 return;
             }
 
-            let shouldNotify = false;
-            let syncMessage = 'Hệ thống vừa có cập nhật mới.';
-
+            // Delta Sync Logic: mỗi field thay đổi hiện 1 toast riêng, độc lập nhau
             if (data['standards'] > (lastSyncTimes['standards'] || 0)) {
                 lastSyncTimes['standards'] = data['standards'];
-                shouldNotify = true;
-                syncMessage = 'Danh sách chuẩn đối chiếu vừa được cập nhật.';
+                this.toast.show('📊 Danh sách chuẩn đối chiếu vừa được cập nhật.', 'info');
             }
 
             if (data['inventory'] > (lastSyncTimes['inventory'] || 0)) {
                 lastSyncTimes['inventory'] = data['inventory'];
-                shouldNotify = true;
-                syncMessage = 'Kho hóa chất vừa có thay đổi.';
+                this.toast.show('🧪 Kho hóa chất vừa có thay đổi.', 'info');
             }
             
             if (data['config'] > (lastSyncTimes['config'] || 0)) {
                 lastSyncTimes['config'] = data['config'];
-                shouldNotify = true;
-                syncMessage = 'Cấu hình hệ thống thay đổi. Tải lại trang để áp dụng.';
-            }
-
-            if (shouldNotify) {
-                this.toast.show(syncMessage, 'info');
+                // Config không có realtime listener → cần reload mới áp dụng → persistent toast
+                this.toast.show('⚙️ Cấu hình hệ thống có thay đổi. Tải lại để áp dụng!', 'info', true);
             }
         }
     }, handleError('System Metadata'));

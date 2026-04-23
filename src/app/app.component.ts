@@ -1,5 +1,5 @@
 
-import { Component, inject, computed, effect, signal, HostListener } from '@angular/core';
+import { Component, inject, computed, effect, signal, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 
@@ -167,7 +167,7 @@ import { filter } from 'rxjs/operators';
     }
   `
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   auth = inject(AuthService);
   state = inject(StateService);
   toast = inject(ToastService);
@@ -212,9 +212,12 @@ export class AppComponent {
       });
 
       // Chủ động kiểm tra update ngay khi app load (không đợi SW tự check)
-      this.swUpdate.checkForUpdate().catch(() => {
-        // Bỏ qua lỗi nếu SW chưa sẵn sàng
-      });
+      this.swUpdate.checkForUpdate().catch(() => {});
+
+      // Kiểm tra mỗi 10 phút cho user giữ app mở lâu
+      this._swCheckInterval = setInterval(() => {
+        this.swUpdate.checkForUpdate().catch(() => {});
+      }, 10 * 60 * 1000); // 10 phút
     }
   }
 
@@ -244,6 +247,19 @@ export class AppComponent {
   // --- PULL TO REFRESH LOGIC ---
   private touchStartY = 0;
   isPulling = signal(false);
+  private _swCheckInterval: any;
+
+  ngOnDestroy() {
+    clearInterval(this._swCheckInterval);
+  }
+
+  // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)
+  @HostListener('document:visibilitychange')
+  onVisibilityChange() {
+    if (document.visibilityState === 'visible' && this.swUpdate.isEnabled) {
+      this.swUpdate.checkForUpdate().catch(() => {});
+    }
+  }
 
   @HostListener('window:touchstart', ['$event'])
   onTouchStart(e: TouchEvent) {
