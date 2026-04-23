@@ -344,6 +344,7 @@ interface KanbanColumn {
                 </div>
             </div>
         </div>
+        </div>
 
         <!-- SECTION 3: SMART KANBAN -->
         <div class="mb-6 relative">
