@@ -98,8 +98,6 @@ import * as XLSX from 'xlsx';
                 </div>
             </div>
 
-        </div>
-
             <!-- 2.5. SYSTEM UPDATES NOTIFICATIONS -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
                 <div class="flex justify-between items-center">
