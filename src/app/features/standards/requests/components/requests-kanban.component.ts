@@ -7,19 +7,77 @@ import { AuthService } from '../../../../core/services/auth.service';
   selector: 'app-requests-kanban',
   standalone: true,
   imports: [CommonModule],
+  styles: [`
+    .kanban-board {
+      display: flex;
+      gap: 1rem;
+      height: 100%;
+      padding: 0.5rem;
+      overflow-x: auto;
+      align-items: stretch;
+      position: relative;
+      min-height: 500px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .kanban-col {
+      flex: 1;
+      min-width: 300px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    /* Mobile: scroll-snap với mỗi cột chiếm 90vw */
+    @media (max-width: 767px) {
+      .kanban-board {
+        scroll-snap-type: x mandatory;
+        padding: 0.5rem 1rem;
+        gap: 0.75rem;
+        align-items: stretch;
+      }
+      .kanban-col {
+        scroll-snap-align: start;
+        flex: 0 0 calc(100vw - 3rem);
+        min-width: unset;
+        max-width: unset;
+        height: auto;
+        max-height: calc(100vh - 220px);
+      }
+    }
+    /* Tablet: 2 cột nhìn thấy */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .kanban-board {
+        scroll-snap-type: x mandatory;
+        padding: 0.5rem 0.75rem;
+        gap: 0.75rem;
+      }
+      .kanban-col {
+        scroll-snap-align: start;
+        flex: 0 0 calc(50vw - 1.5rem);
+        min-width: unset;
+        max-width: unset;
+      }
+    }
+  `],
   template: `
-    <div class="flex gap-4 h-full p-2 overflow-x-auto custom-scrollbar items-start relative min-h-[500px]">
+    <!-- Mobile swipe hint -->
+    <div class="md:hidden flex items-center justify-center gap-1.5 py-1.5 text-slate-400">
+      <i class="fa-solid fa-left-right text-[10px]"></i>
+      <span class="text-[10px] font-bold uppercase tracking-widest">Vuốt ngang để xem tất cả cột</span>
+    </div>
+
+    <div class="kanban-board custom-scrollbar">
       
       <!-- COLUMN 1: PENDING_APPROVAL -->
-      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-amber-50/50 dark:bg-amber-900/10">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-amber-50/50 dark:bg-amber-900/10 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
             <h3 class="font-black text-amber-700 dark:text-amber-500 text-sm">Chờ Duyệt</h3>
           </div>
           <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 rounded-lg text-xs font-black">{{ pendingApprovalReqs().length }}</span>
         </div>
-        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
           @for (req of pendingApprovalReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
           }
@@ -30,15 +88,15 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 2: IN_PROGRESS -->
-      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
             <h3 class="font-black text-emerald-700 dark:text-emerald-500 text-sm">Đang Dùng</h3>
           </div>
           <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-500 rounded-lg text-xs font-black">{{ inProgressReqs().length }}</span>
         </div>
-        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
           @for (req of inProgressReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
           }
@@ -49,15 +107,15 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 3: PENDING_RETURN -->
-      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-900/10">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
+        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-900/10 shrink-0">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
             <h3 class="font-black text-indigo-700 dark:text-indigo-400 text-sm">Chờ Nhận Trả</h3>
           </div>
           <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-black">{{ pendingReturnReqs().length }}</span>
         </div>
-        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
           @for (req of pendingReturnReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
           }
@@ -68,15 +126,15 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
 
       <!-- COLUMN 4: COMPLETED / REJECTED -->
-      <div class="flex-1 min-w-[300px] max-w-[85vw] flex flex-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 h-full max-h-full overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-        <div class="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-slate-100 dark:bg-slate-800/50">
+      <div class="kanban-col bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+        <div class="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-slate-100 dark:bg-slate-800/50 shrink-0">
           <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-slate-400 text-sm"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-400"></div>
             <h3 class="font-black text-slate-600 dark:text-slate-400 text-sm">Đã Hoàn Tất</h3>
           </div>
           <span class="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-black">{{ completedReqs().length }}</span>
         </div>
-        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3 custom-scrollbar">
           @for (req of limitedCompletedReqs(); track req.id) {
             <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: req }"></ng-container>
           }
