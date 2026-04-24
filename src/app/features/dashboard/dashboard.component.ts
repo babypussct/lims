@@ -202,7 +202,7 @@ interface KanbanColumn {
         </div>
 
         <!-- SECTION 2: ANALYTICS & FEED -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style="max-height: none">
             <!-- Left: Analytics (2/3) -->
             <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
                 @if(!auth.canViewReports()) {
@@ -279,11 +279,11 @@ interface KanbanColumn {
             </div>
 
             <!-- Right Column -->
-            <div class="flex flex-col gap-6">
+            <div class="flex flex-col gap-4 lg:max-h-[520px]">
                 <!-- System Updates -->
-                <div class="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-orange-100 dark:border-orange-900/30 shrink-0">
-                    <h6 class="font-bold text-orange-800 dark:text-orange-400 capitalize text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Thông báo Hệ thống</h6>
-                    <div class="overflow-y-auto custom-scrollbar -mr-2 pr-2 max-h-48 space-y-3">
+                <div class="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col border border-orange-100 dark:border-orange-900/30 shrink-0">
+                    <h6 class="font-bold text-orange-800 dark:text-orange-400 capitalize text-sm mb-2 flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Thông báo Hệ thống</h6>
+                    <div class="overflow-y-auto custom-scrollbar -mr-2 pr-2 max-h-36 lg:max-h-28 space-y-2">
                         @for (item of systemUpdates(); track item.id) {
                             <div class="bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm p-3 rounded-xl border border-white/20 dark:border-slate-700">
                                 <div class="flex items-center gap-2 mb-1">
@@ -306,8 +306,8 @@ interface KanbanColumn {
                 </div>
 
                 <!-- Activity Feed -->
-                <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col min-h-[300px] border border-slate-100 dark:border-slate-700">
-                    <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg mb-4">Hoạt động gần đây</h6>
+                <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
+                    <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base mb-3 shrink-0">Hoạt động gần đây</h6>
                 <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
                     <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
                         @for (log of recentLogs(); track log.id) {

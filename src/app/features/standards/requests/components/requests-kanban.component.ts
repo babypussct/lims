@@ -196,9 +196,12 @@ import { AuthService } from '../../../../core/services/auth.service';
           </div>
           <div class="flex flex-col col-span-2 mt-1">
               <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kho / Vị trí</span>
-              <div class="text-[10px] leading-snug">
+              <div class="text-[10px] leading-snug flex items-center flex-wrap gap-x-1">
+                  @if(req.standardDetails?.internal_id) {
+                    <span class="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded font-black text-[9px] border border-indigo-100 dark:border-indigo-800/30 shrink-0">{{req.standardDetails.internal_id}}</span>
+                  }
                   <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
-                  <span class="text-slate-400 mx-1">•</span>
+                  <span class="text-slate-400">•</span>
                   <span class="font-bold text-slate-600 dark:text-slate-400 break-words">{{req.standardDetails?.location || '?'}}</span>
               </div>
           </div>
