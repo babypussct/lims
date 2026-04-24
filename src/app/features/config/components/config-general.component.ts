@@ -426,21 +426,62 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
     return `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper: kiểm tra user có role 'manager' không
     function isManager() { 
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
     }
+    // Helper: user đã đăng nhập
+    function isAuth() { return request.auth != null; }
+
     match /artifacts/${appId} {
+        // Auth sessions: public (dùng cho shared workstations)
         match /auth_sessions/{sessionId} { allow read, write: if true; }
-        match /users/{userId} { allow read: if request.auth != null; allow write: if isManager() || request.auth.uid == userId; }
-        match /recipes/{recipeId} { allow read, write: if request.auth != null; }
-        
-        // Cho phép đọc công khai (Truy xuất nguồn gốc), yêu cầu đăng nhập để ghi
-        match /logs/{logId} { allow read: if true; allow write: if request.auth != null; }
-        match /print_jobs/{jobId} { allow read: if true; allow write: if request.auth != null; }
-        match /requests/{requestId} { allow read: if true; allow write: if request.auth != null; }
-        
-        match /{document=**} { allow read, write: if request.auth != null; }
+
+        // Users: mọi người đăng nhập đều đọc được (avatar, tên)
+        // Ghi: chỉ manager hoặc chính chủ tài khoản
+        match /users/{userId} { 
+          allow read: if isAuth(); 
+          allow write: if isManager() || request.auth.uid == userId; 
+        }
+
+        // SOP Recipes
+        match /recipes/{recipeId} { allow read, write: if isAuth(); }
+
+        // Công khai đọc (Truy xuất nguồn gốc QR), cần đăng nhập để ghi
+        match /logs/{logId}      { allow read: if true; allow write: if isAuth(); }
+        match /print_jobs/{jobId}{ allow read: if true; allow write: if isAuth(); }
+        match /requests/{reqId}  { allow read: if true; allow write: if isAuth(); }
+
+        // === STANDARD REQUESTS: SCOPED BY ROLE ===
+        // Manager thấy tất cả; nhân viên chỉ thấy request của chính mình
+        match /standard_requests/{reqId} {
+          allow read: if isAuth() && (
+            isManager() ||
+            resource.data.requestedBy == request.auth.uid
+          );
+          allow create: if isAuth();
+          allow update, delete: if isAuth() && (
+            isManager() ||
+            resource.data.requestedBy == request.auth.uid
+          );
+        }
+
+        // Các collections còn lại: cần đăng nhập (inventory, SOPs, config, ...)
+        // KHÔNG dùng wildcard rộng để tránh override rule ở trên
+        match /inventory/{docId}            { allow read, write: if isAuth(); }
+        match /sops/{docId}                 { allow read, write: if isAuth(); }
+        match /reference_standards/{docId}  { allow read, write: if isAuth(); }
+        match /notifications/{docId}        { allow read, write: if isAuth(); }
+        match /system_updates/{docId}       { allow read: if isAuth(); allow write: if isManager(); }
+        match /system/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
+        match /stats/{docId}                { allow read: if isAuth(); allow write: if isAuth(); }
+        match /config/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
+        match /master_targets/{docId}       { allow read, write: if isAuth(); }
+        match /target_groups/{docId}        { allow read, write: if isAuth(); }
+
+        // Fallback an toàn: từ chối tất cả những gì không được liệt kê
+        // (Bỏ wildcard cũ: match /{document=**} { allow read, write: if isAuth(); })
     }
   }
 }`;

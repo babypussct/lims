@@ -205,9 +205,40 @@ export class StateService implements OnDestroy {
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
     // statistics.component.ts uses loadAllStandardRequests() on-demand instead
 
-    const stdReqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'), where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']), orderBy('requestDate', 'desc')), 
-        (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); }, handleError('Standard Requests'));
-    this.listeners.push(stdReqSub);
+    // standard_requests listener: phân nhánh theo quyền để khớp với Firestore Rules.
+    // Manager: query tất cả pending (cần để duyệt)
+    // Nhân viên thường: query chỉ request của chính mình (tránh permission-denied)
+    const currentUser = this.auth.currentUser();
+    const isApprover = this.auth.canApprove() || this.auth.canApproveStandards();
+    const uid = currentUser?.uid;
+
+    let stdReqQuery;
+    if (isApprover) {
+        // Manager/Admin: thấy tất cả pending + pending_return để duyệt
+        stdReqQuery = query(
+            collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'),
+            where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']),
+            orderBy('requestDate', 'desc')
+        );
+    } else if (uid) {
+        // Nhân viên thường: chỉ thấy request của mình (khớp rule Firestore)
+        stdReqQuery = query(
+            collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'),
+            where('requestedBy', '==', uid),
+            where('status', 'in', ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN']),
+            orderBy('requestDate', 'desc')
+        );
+    } else {
+        stdReqQuery = null;
+    }
+
+    if (stdReqQuery) {
+        const stdReqSub = onSnapshot(stdReqQuery,
+            (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); },
+            handleError('Standard Requests')
+        );
+        this.listeners.push(stdReqSub);
+    }
 
     // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()
     // Call it from statistics.component.ts / standard-requests page as needed
