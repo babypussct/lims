@@ -108,6 +108,9 @@ export class AuthService {
 
   async loginWithGoogle() {
     const provider = new GoogleAuthProvider();
+    // Force account picker every time — critical for shared workstations
+    // where multiple employees use the same browser/computer
+    provider.setCustomParameters({ prompt: 'select_account' });
     await signInWithPopup(this.auth, provider);
     // Cannot save password for Google Auth, QR login will require password entry or fail
   }
