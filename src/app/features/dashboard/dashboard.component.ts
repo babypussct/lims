@@ -86,7 +86,9 @@ interface KanbanColumn {
 
                 <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Yêu cầu chờ duyệt</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            {{(auth.canApprove() || auth.canApproveStandards()) ? 'Yêu cầu chờ duyệt' : 'Yêu cầu của tôi'}}
+                        </p>
                         <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
                             @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
                         </h4>
@@ -99,7 +101,7 @@ interface KanbanColumn {
                     <span class="text-xs font-bold" 
                           [class.text-emerald-500]="totalPendingRequests() === 0" 
                           [class.text-fuchsia-500]="totalPendingRequests() > 0">
-                        {{totalPendingRequests() > 0 ? '+ Cần xử lý ngay' : 'Đã hoàn thành'}}
+                        {{totalPendingRequests() > 0 ? ((auth.canApprove() || auth.canApproveStandards()) ? '+ Cần xử lý ngay' : '+ Đang chờ duyệt') : 'Không có yêu cầu'}}
                     </span>
                 </div>
             </div>
@@ -517,7 +519,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
   systemUpdatesSub: any;
 
   // LIVE DATA COMPUTED
-  totalPendingRequests = computed(() => this.state.requests().length + this.state.standardRequests().length);
+  // Manager/Approver: thấy TẤT CẢ pending (vì họ cần duyệt)
+  // Nhân viên thường: chỉ thấy request DO CHÍNH HỌ TẠO đang chờ
+  totalPendingRequests = computed(() => {
+      const uid = this.auth.currentUser()?.uid;
+      const canApprove = this.auth.canApprove() || this.auth.canApproveStandards();
+
+      if (canApprove) {
+          // Admin/Manager: tổng tất cả pending
+          return this.state.requests().length + this.state.standardRequests().length;
+      }
+
+      if (!uid) return 0;
+
+      // Nhân viên thường: chỉ đếm request của chính mình
+      const myPendingSopReqs = this.state.requests()
+          .filter(r => r.user === this.auth.currentUser()?.displayName).length;
+      const myPendingStdReqs = this.state.standardRequests()
+          .filter(r => r.requestedBy === uid).length;
+      return myPendingSopReqs + myPendingStdReqs;
+  });
   recentLogs = computed(() => this.state.logs().slice(0, 6)); 
   todayActivityCount = computed(() => {
       const todayStr = new Date().toISOString().split('T')[0];
