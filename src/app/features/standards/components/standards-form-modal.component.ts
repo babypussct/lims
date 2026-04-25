@@ -7,6 +7,7 @@ import { FirebaseService } from '../../../core/services/firebase.service';
 import { GoogleDriveService } from '../../../core/services/google-drive.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { generateSlug, UNIT_OPTIONS } from '../../../shared/utils/utils';
 
 @Component({
@@ -161,6 +162,7 @@ export class StandardsFormModalComponent {
   firebaseService = inject(FirebaseService);
   googleDriveService = inject(GoogleDriveService);
   auth = inject(AuthService);
+  notificationService = inject(NotificationService);
 
   isProcessing = signal(false);
   isUploading = signal(false);
@@ -303,6 +305,27 @@ export class StandardsFormModalComponent {
         const standardData: ReferenceStandard = { ...val as any, name: val.name?.trim(), internal_id: val.internal_id?.toUpperCase().trim(), location: val.location?.trim() };
     
         if (this.std()) {
+            const originalStd = this.std()!;
+            
+            // Nếu chuẩn đang có người yêu cầu CoA và Admin vừa upload/điền link CoA xong
+            if (originalStd.coa_requested_by && standardData.certificate_ref) {
+                const admin = this.auth.currentUser();
+                await this.notificationService.notify({
+                    recipientUid: originalStd.coa_requested_by,
+                    senderUid: admin?.uid,
+                    senderName: admin?.displayName || 'Quản trị viên',
+                    type: 'SYSTEM_INFO',
+                    title: 'Đã cập nhật CoA',
+                    message: `File CoA của chuẩn "${standardData.name}" đã được tải lên thành công qua Form Chỉnh sửa.`,
+                    targetId: standardData.id,
+                    actionUrl: `/standards/${standardData.id}`
+                });
+                
+                // Xóa cờ (dùng undefined thay vì deleteField vì đây là patch object, updateDoc sẽ ghi đè. Tuy nhiên để chắc chắn xoá field trong firebase, dùng undefined có thể chỉ làm field thành null trong một số SDK. Firestore updateDoc với object thuần tuý bỏ qua undefined field, nó không xoá. Nhưng ReferenceStandard không có schema cứng, set undefined có thể làm nó bị lờ đi. Ta nên truyền null hoặc dùng deleteField nếu là patch).
+                // Ở đây ta update toàn bộ form value, để tránh update đè giá trị cũ, ta set null.
+                (standardData as any).coa_requested_by = null;
+            }
+
             await this.stdService.updateStandard(standardData);
             this.toast.show('Cập nhật chuẩn thành công!', 'success');
         } else {

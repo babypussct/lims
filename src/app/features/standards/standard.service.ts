@@ -758,14 +758,15 @@ export class StandardService {
   async requestCoa(std: ReferenceStandard) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
       const snap = await getDoc(ref);
-      if (snap.exists() && snap.data()['coa_requested']) {
+      if (snap.exists() && snap.data()['coa_requested_by']) {
           throw new Error('Yêu cầu CoA cho chuẩn này đã được gửi trước đó.');
       }
 
-      await this.quickUpdateField(std.id, { coa_requested: true });
+      const user = this.auth.currentUser();
+
+      await this.quickUpdateField(std.id, { coa_requested_by: user?.uid });
       await this.logGlobalActivity('REQUEST_COA', `Yêu cầu bổ sung CoA cho chuẩn: ${std.name} (Lô: ${std.lot_number || 'N/A'})`, std.id);
       
-      const user = this.auth.currentUser();
       await this.notificationService.notify({
           recipientUid: 'role:admin', // Push to all admins
           senderUid: user?.uid,

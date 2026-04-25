@@ -60,7 +60,7 @@ export interface ReferenceStandard {
   current_request_id?: string; // ID of the active request
 
   restock_requested?: boolean; // Flag if purchased has been requested
-  coa_requested?: boolean; // Flag if user requested CoA upload
+  coa_requested_by?: string; // UID of user who requested CoA upload
   lastUpdated?: any;
   _isDeleted?: boolean;
 }

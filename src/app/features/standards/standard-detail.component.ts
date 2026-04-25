@@ -19,7 +19,8 @@ import { StandardsCoaModalComponent } from './components/standards-coa-modal.com
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
-import { writeBatch, doc } from 'firebase/firestore';
+import { NotificationService } from '../../core/services/notification.service';
+import { writeBatch, doc, deleteField } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standard-detail',
@@ -300,8 +301,8 @@ import { writeBatch, doc } from 'firebase/firestore';
                     }
 
                     @if(!std.certificate_ref) {
-                        <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="std.coa_requested" [class.opacity-50]="std.coa_requested">
-                            <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested" [class.fa-clock-rotate-left]="std.coa_requested"></i> {{std.coa_requested ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
+                        <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="!!std.coa_requested_by" [class.opacity-50]="!!std.coa_requested_by">
+                            <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested_by" [class.fa-clock-rotate-left]="!!std.coa_requested_by"></i> {{std.coa_requested_by ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
                         </button>
                     }
                 </div>
@@ -442,6 +443,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     confirmationService = inject(ConfirmationService);
     sanitizer = inject(DomSanitizer);
     googleDriveService = inject(GoogleDriveService);
+    notificationService = inject(NotificationService);
 
     Math = Math;
     formatNum = formatNum;
@@ -673,7 +675,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async requestCoa(std: ReferenceStandard) {
-        if (this.isProcessing() || std.coa_requested) return;
+        if (this.isProcessing() || std.coa_requested_by) return;
         
         this.confirmation.confirm({
             message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
@@ -685,14 +687,15 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             this.isProcessing.set(true);
             try {
                 // Optimistic UI update to prevent immediate double clicks
-                this.standard.update(s => s ? { ...s, coa_requested: true } : s);
+                const uid = this.auth.currentUser()?.uid;
+                this.standard.update(s => s ? { ...s, coa_requested_by: uid } : s);
                 
                 await this.stdService.requestCoa(std);
                 this.toast.show('Đã thông báo yêu cầu bổ sung CoA đến Quản trị viên.', 'success');
             } catch (e: any) {
                 this.toast.show('Lỗi gửi yêu cầu: ' + e.message, 'error');
                 // Revert on error
-                this.standard.update(s => s ? { ...s, coa_requested: false } : s);
+                this.standard.update(s => s ? { ...s, coa_requested_by: undefined } : s);
             } finally {
                 this.isProcessing.set(false);
             }
@@ -807,13 +810,28 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             for (const s of siblings) {
                 if (s.id) {
                     const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
-                    batch.update(ref, { certificate_ref: previewUrl, coa_requested: false });
+                    batch.update(ref, { certificate_ref: previewUrl, coa_requested_by: deleteField() });
                 }
             }
             await batch.commit();
 
+            // Nếu có ai đó yêu cầu CoA, thông báo lại cho họ
+            if (std.coa_requested_by) {
+                const admin = this.auth.currentUser();
+                await this.notificationService.notify({
+                    recipientUid: std.coa_requested_by,
+                    senderUid: admin?.uid,
+                    senderName: admin?.displayName || 'Quản trị viên',
+                    type: 'SYSTEM_INFO', // Hoặc có thể thêm type 'COA_UPLOADED' nếu muốn
+                    title: 'Đã cập nhật CoA',
+                    message: `File CoA của chuẩn "${std.name}" đã được tải lên thành công.`,
+                    targetId: std.id,
+                    actionUrl: `/standards/${std.id}`
+                });
+            }
+
             // Cập nhật local signal cho view hiện tại
-            this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested: false } : current);
+            this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested_by: undefined } : current);
 
             if (siblings.length > 1) {
                 this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
