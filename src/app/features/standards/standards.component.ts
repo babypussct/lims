@@ -44,7 +44,8 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           (openAddModal)="openAddModal()"
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
-          (bulkCoaSelect)="handleBulkCoaSelect($event)">
+          (bulkCoaSelect)="handleBulkCoaSelect($event)"
+          (fixOldLogs)="runFixOldLogs()">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -910,5 +911,27 @@ export class StandardsComponent implements OnInit, OnDestroy {
   closeCoaPreview() { 
       this.previewUrl.set(null); 
       this.previewImgUrl.set(''); 
+  }
+
+  async runFixOldLogs() {
+      if (!this.auth.canEditStandards()) return;
+      
+      this.confirmationService.confirm({
+          message: 'Khôi phục tự động các Log hoàn trả bị thiếu cho các yêu cầu đã COMPLETED trong quá khứ?',
+          confirmText: 'Đồng ý',
+          cancelText: 'Hủy'
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              try {
+                  const count = await this.stdService.fixMissingReturnLogs();
+                  this.toast.show(`Đã khôi phục ${count} log hoàn trả cũ`, 'success');
+              } catch(e: any) {
+                  this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+              } finally {
+                  this.isProcessing.set(false);
+              }
+          }
+      });
   }
 }
