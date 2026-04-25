@@ -1045,7 +1045,6 @@ export class StandardService {
       this.toast.show(`Đã cập nhật tên người dùng cho ${count} mã yêu cầu mượn khác nhau.`, 'success');
   }
   async fixMissingReturnLogs() {
-      const { collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc } = require("firebase/firestore");
       const q = query(collection(this.fb.db, "artifacts", this.fb.APP_ID, "standard_requests"), where("status", "==", "COMPLETED"));
       const snapshot = await getDocs(q);
       let count = 0;

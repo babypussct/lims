@@ -478,6 +478,9 @@ service cloud.firestore {
         match /inventory/{docId}            { allow read, write: if isAuth(); }
         match /sops/{docId}                 { allow read, write: if isAuth(); }
         match /reference_standards/{docId}  { allow read, write: if isAuth(); }
+        match /reference_standards/{docId}/logs/{logId} { allow read, write: if isAuth(); }
+        match /standard_usages/{docId}      { allow read, write: if isAuth(); }
+        match /purchase_requests/{docId}    { allow read, write: if isAuth(); }
         match /notifications/{docId}        { allow read, write: if isAuth(); }
         match /system_updates/{docId}       { allow read: if isAuth(); allow write: if isManager(); }
         match /system/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
