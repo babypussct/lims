@@ -458,8 +458,10 @@ export class LoginComponent implements OnDestroy {
           this.errorMsg.set('Lỗi kết nối mạng.');
       } else if (code === 'auth/popup-blocked') {
           this.errorMsg.set('Trình duyệt đã chặn cửa sổ Popup.');
+      } else if (code === 'permission-denied') {
+          this.errorMsg.set('Tài khoản không có quyền truy cập hệ thống.');
       } else {
-          this.errorMsg.set('Lỗi: ' + (code || 'Không xác định'));
+          this.errorMsg.set('Lỗi: ' + (code || msg || 'Không xác định'));
       }
   }
 }

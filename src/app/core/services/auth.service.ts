@@ -104,6 +104,12 @@ export class AuthService {
     await signInWithEmailAndPassword(this.auth, email, pass);
     // Save for QR functionality
     this.saveLocalCredentials(email, pass);
+    
+    // Fallback: If they were already logged in, onAuthStateChanged might not fire.
+    // Force a sync to break out of the stuck state.
+    if (!this.currentUser() && this.auth.currentUser) {
+        this.syncUser(this.auth.currentUser);
+    }
   }
 
   async loginWithGoogle() {
@@ -113,6 +119,11 @@ export class AuthService {
     provider.setCustomParameters({ prompt: 'select_account' });
     await signInWithPopup(this.auth, provider);
     // Cannot save password for Google Auth, QR login will require password entry or fail
+    
+    // Fallback: Force sync if already logged in and state is stuck
+    if (!this.currentUser() && this.auth.currentUser) {
+        this.syncUser(this.auth.currentUser);
+    }
   }
 
   async logout() {
@@ -156,10 +167,17 @@ export class AuthService {
         } finally {
             this.isAuthReady.set(true);
         }
-    }, (error) => {
+    }, async (error) => {
         console.error("Error listening to user:", error);
-        this.currentUser.set(null);
-        this.isAuthReady.set(true);
+        
+        // Critical Fix: If we get a permission denied or listener is cancelled, 
+        // we must completely log the user out of Firebase to prevent them from
+        // getting stuck on the login page in a half-authenticated state.
+        if (error.code === 'permission-denied') {
+            console.warn("User access denied by Firestore Rules. Forcing logout.");
+        }
+        
+        await this.logout(); // This will trigger onAuthStateChanged(null) and clean up state safely
     });
   }
 

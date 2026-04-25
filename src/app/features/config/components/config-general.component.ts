@@ -431,6 +431,12 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
     }
+    // Helper: kiểm tra user có quyền duyệt chuẩn
+    function isApprover() {
+      return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions != null &&
+             'standard_approve' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions;
+    }
     // Helper: user đã đăng nhập
     function isAuth() { return request.auth != null; }
 
@@ -442,7 +448,7 @@ service cloud.firestore {
         // Ghi: chỉ manager hoặc chính chủ tài khoản
         match /users/{userId} { 
           allow read: if isAuth(); 
-          allow write: if isManager() || request.auth.uid == userId; 
+          allow write: if isAuth() && (isManager() || request.auth.uid == userId); 
         }
 
         // SOP Recipes
@@ -454,15 +460,15 @@ service cloud.firestore {
         match /requests/{reqId}  { allow read: if true; allow write: if isAuth(); }
 
         // === STANDARD REQUESTS: SCOPED BY ROLE ===
-        // Manager thấy tất cả; nhân viên chỉ thấy request của chính mình
+        // Manager/Approver thấy tất cả; nhân viên chỉ thấy request của chính mình
         match /standard_requests/{reqId} {
           allow read: if isAuth() && (
-            isManager() ||
+            isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid
           );
           allow create: if isAuth();
           allow update, delete: if isAuth() && (
-            isManager() ||
+            isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid
           );
         }
