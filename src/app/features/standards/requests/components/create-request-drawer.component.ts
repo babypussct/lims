@@ -95,25 +95,40 @@ function removeAccents(str: string): string {
                                         </div>
 
                                             <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
-                                                <div class="flex items-center gap-2">
-                                                    @if(isDepleted(std)) {
-                                                        <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
-                                                            <i class="fa-solid fa-ban text-red-400"></i> Hết
-                                                        </div>
-                                                    } @else {
-                                                        <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                                            {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
-                                                        </div>
-                                                    }
-                                                </div>
-                                                @if(std.expiry_date) {
-                                                    <div class="text-[9px] font-bold flex items-center gap-1" 
-                                                            [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'">
-                                                        <i class="fa-regular fa-calendar-xmark"></i>
-                                                        {{std.expiry_date | date:'dd/MM/yyyy'}}
-                                                    </div>
-                                                }
-                                            </div>
+                                                 <div class="flex items-center gap-1.5 flex-wrap">
+                                                     @if(isDepleted(std)) {
+                                                         <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                                                             <i class="fa-solid fa-ban text-red-400"></i> Hết
+                                                         </div>
+                                                     } @else {
+                                                         <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                                             {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
+                                                         </div>
+                                                         @if(isFefoTopForName(std)) {
+                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-star text-[7px]"></i> Ưu tiên
+                                                             </span>
+                                                         }
+                                                         @if(isExpiringSoon(std)) {
+                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-triangle-exclamation text-[7px]"></i> Sắp HH
+                                                             </span>
+                                                         }
+                                                         @if(isLowStock(std)) {
+                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-droplet-slash text-[7px]"></i> Sắp hết
+                                                             </span>
+                                                         }
+                                                     }
+                                                 </div>
+                                                 @if(std.expiry_date) {
+                                                     <div class="text-[9px] font-bold flex items-center gap-1" 
+                                                             [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : isExpiringSoon(std) ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500'">
+                                                         <i class="fa-regular fa-calendar-xmark"></i>
+                                                         {{std.expiry_date | date:'dd/MM/yyyy'}}
+                                                     </div>
+                                                 }
+                                             </div>
                                         </div>
                                     </div>
                             }
@@ -294,12 +309,50 @@ export class CreateRequestDrawerComponent implements OnInit {
           });
       }
       
+      const now = Date.now();
+      const thirtyDays = now + 30 * 24 * 60 * 60 * 1000;
+
       return stds.sort((a, b) => {
-          const aD = a.status === 'DEPLETED' || (a.current_amount ?? 0) <= 0 ? 1 : 0;
-          const bD = b.status === 'DEPLETED' || (b.current_amount ?? 0) <= 0 ? 1 : 0;
-          return aD - bD;
+          // Depleted / hết: xuống cuối
+          const aD = this.isDepleted(a) ? 1 : 0;
+          const bD = this.isDepleted(b) ? 1 : 0;
+          if (aD !== bD) return aD - bD;
+
+          // Hết hạn sử dụng: xuống sau lọ còn hạn
+          const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
+          const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
+          const aExpired = aExp < now ? 1 : 0;
+          const bExpired = bExp < now ? 1 : 0;
+          if (aExpired !== bExpired) return aExpired - bExpired;
+
+          // FEFO: gần hết hạn hơn → lên trước
+          if (aExp !== bExp) return aExp - bExp;
+
+          // Cùng hạn: ít lượng hơn → lên trước
+          return (a.current_amount || 0) - (b.current_amount || 0);
       });
   });
+
+  /** Kiểm tra lọ có phải lọ nên ưu tiên nhất trong danh sách cùng tên không */
+  isFefoTopForName(std: ReferenceStandard): boolean {
+      if (this.isDepleted(std)) return false;
+      const nameLc = std.name?.toLowerCase() || '';
+      const sameName = this.filteredAvailableStandards().filter(
+          s => s.name?.toLowerCase() === nameLc && !this.isDepleted(s)
+      );
+      return sameName.length > 1 && sameName[0]?.id === std.id;
+  }
+
+  isExpiringSoon(std: ReferenceStandard): boolean {
+      if (!std.expiry_date) return false;
+      const exp = new Date(std.expiry_date).getTime();
+      const thirtyDays = Date.now() + 30 * 24 * 60 * 60 * 1000;
+      return exp > Date.now() && exp <= thirtyDays;
+  }
+
+  isLowStock(std: ReferenceStandard): boolean {
+      return !this.isDepleted(std) && (std.current_amount || 0) / (std.initial_amount || 1) <= 0.2 && (std.initial_amount || 0) > 0;
+  }
 
   selectedStandardsList = computed(() => {
       const ids = this.selectedStandardIds();
