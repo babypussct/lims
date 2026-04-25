@@ -45,7 +45,8 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
           (bulkCoaSelect)="handleBulkCoaSelect($event)"
-          (fixOldLogs)="runFixOldLogs()">
+          (fixOldLogs)="runFixOldLogs()"
+          (fixDateOpened)="runFixDateOpened()">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -148,6 +149,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           [isProcessing]="isProcessing()"
           [currentUserUid]="auth.currentUser()?.uid || ''"
           [currentUserName]="auth.currentUser()?.displayName || ''"
+          [sameName]="sameNameAsSelected()"
           (closeModal)="showAssignModal.set(false)"
           (confirm)="confirmAssign($event)">
       </app-standards-assign-modal>
@@ -323,6 +325,24 @@ export class StandardsComponent implements OnInit, OnDestroy {
   hasMore = computed(() => this.visibleItems().length < this.filteredItems().length);
 
   selectedIds = signal<Set<string>>(new Set());
+
+  /** Danh sách lọ cùng tên với selectedStd(), đã sắp xếp FEFO. Dùng cho Assign Modal. */
+  sameNameAsSelected = computed(() => {
+    const sel = this.selectedStd();
+    if (!sel) return [];
+    const nameLc = sel.name?.toLowerCase() || '';
+    return this.allStandards()
+      .filter(s => s.id !== sel.id && s.name?.toLowerCase() === nameLc)
+      .sort((a, b) => {
+        const aOk = (a.status !== 'IN_USE' && a.current_amount > 0);
+        const bOk = (b.status !== 'IN_USE' && b.current_amount > 0);
+        if (aOk !== bOk) return aOk ? -1 : 1;
+        const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
+        const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
+        if (aExp !== bExp) return aExp - bExp;
+        return (a.current_amount || 0) - (b.current_amount || 0);
+      });
+  });
 
   // Import Preview State
   importPreviewData = signal<ImportPreviewItem[]>([]);
@@ -928,6 +948,27 @@ export class StandardsComponent implements OnInit, OnDestroy {
                   this.toast.show(`Đã khôi phục ${count} log hoàn trả cũ`, 'success');
               } catch(e: any) {
                   this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+              } finally {
+                  this.isProcessing.set(false);
+              }
+          }
+      });
+  }
+
+  async runFixDateOpened() {
+      if (!this.auth.canEditStandards()) return;
+
+      this.confirmationService.confirm({
+          message: 'Cập nhật Ngày mở nắp cho tất cả chuẩn dựa trên log sử dụng sớm nhất? Dữ liệu hiện có sẽ bị ghi đè.',
+          confirmText: 'Bắt đầu',
+          cancelText: 'Hủy'
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              try {
+                  await this.stdService.fixDateOpenedFromLogs();
+              } catch(e: any) {
+                  this.toast.show('Lỗi: ' + e.message, 'error');
               } finally {
                   this.isProcessing.set(false);
               }

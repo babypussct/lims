@@ -43,6 +43,9 @@ import { CommonModule } from '@angular/common';
                    <button (click)="fixOldLogs.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                        <i class="fa-solid fa-wrench text-red-500 w-4"></i> Khôi phục Log cũ
                    </button>
+                   <button (click)="fixDateOpened.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
+                       <i class="fa-solid fa-calendar-pen text-teal-500 w-4"></i> Sửa Ngày mở nắp
+                   </button>
                    <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                    <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload CoA Hàng loạt</div>
                    <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
@@ -73,6 +76,7 @@ export class StandardsToolbarComponent {
   importUsageLogFile = output<any>();
   bulkCoaSelect = output<any>();
   fixOldLogs = output<void>();
+  fixDateOpened = output<void>();
 
   onFileSelect(event: any, inputEl: HTMLInputElement, type: 'standards' | 'usageLogs') {
     if (type === 'standards') {

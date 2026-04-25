@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { UserProfile } from '../../../core/services/auth.service';
-import { getExpiryClass } from '../../../shared/utils/utils';
+import { getExpiryClass, canAssign } from '../../../shared/utils/utils';
 
 @Component({
   selector: 'app-standards-assign-modal',
@@ -42,6 +42,20 @@ import { getExpiryClass } from '../../../shared/utils/utils';
                           </div>
                       }
                   </div>
+
+                  <!-- FEFO Siblings Info -->
+                  @if(fefoTopSibling(); as top) {
+                      <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700/50">
+                          <div class="flex items-center gap-1.5 mb-1">
+                              <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i>
+                              <span class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wide">Gợi ý FEFO</span>
+                          </div>
+                          <p class="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                              Lọ <strong>{{top.internal_id || top.lot_number}}</strong>
+                              (hạn: {{top.expiry_date || 'N/A'}}) gần hết hạn hơn — nên được cấp trước.
+                          </p>
+                      </div>
+                  }
 
                   <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
                       <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
@@ -120,6 +134,8 @@ export class StandardsAssignModalComponent {
   isProcessing = input.required<boolean>();
   currentUserUid = input<string>('');
   currentUserName = input<string>('');
+  /** Danh sách lọ cùng tên (không gồm lọ hiện tại), đã sắp xếp theo FEFO */
+  sameName = input<ReferenceStandard[]>([]);
 
   closeModal = output<void>();
   confirm = output<{ userId: string, userName: string, purpose: string, expectedDate: string, expectedAmount: number | null }>();
@@ -131,6 +147,24 @@ export class StandardsAssignModalComponent {
   assignExpectedAmount = signal<number | null>(null);
 
   getExpiryClass = getExpiryClass;
+  canAssignFn = canAssign;
+
+  /** Lọ ưu tiên FEFO trong các lọ cùng tên mà nên dùng trước lọ hiện tại */
+  fefoTopSibling = computed(() => {
+    const current = this.std();
+    const siblings = this.sameName();
+    if (!current || siblings.length === 0) return null;
+
+    const first = siblings.find(s => canAssign(s));
+    if (!first) return null;
+
+    const stdExp = current.expiry_date ? new Date(current.expiry_date).getTime() : Infinity;
+    const firstExp = first.expiry_date ? new Date(first.expiry_date).getTime() : Infinity;
+
+    if (firstExp < stdExp) return first;
+    if (firstExp === stdExp && (first.current_amount || 0) < (current.current_amount || 0)) return first;
+    return null;
+  });
 
   constructor() {
     effect(() => {

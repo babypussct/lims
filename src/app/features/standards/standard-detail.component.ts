@@ -169,10 +169,12 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
                                     }
                                 </div>
                             </div>
-                            <div>
+                             @if(std.purity) {
+                             <div>
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Độ tinh khiết</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.purity || 'N/A'}}</div>
-                            </div>
+                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.purity}}</div>
+                             </div>
+                             }
                             <div>
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Quy cách đóng gói</span>
                                 <div class="font-bold text-slate-700 dark:text-slate-200">{{std.pack_size || 'N/A'}}</div>
@@ -270,6 +272,21 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
                 @if(canAssign(std) || std.status === 'DEPLETED' || std.current_amount <= 0 || (!std.certificate_ref && !auth.canEditStandards())) {
                     <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
+
+                        <!-- FEFO Warning: có lọ khác nên dùng trước -->
+                        @if(fefoWarningSibling(); as warn) {
+                            <div class="w-full flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                                <span>
+                                    <strong>Gợi ý FEFO:</strong> Lọ <strong>{{warn.internal_id || warn.lot_number}}</strong>
+                                    (hết hạn: {{warn.expiry_date ? (warn.expiry_date | date:'dd/MM/yyyy') : 'N/A'}})
+                                    nên được cấp trước lọ này.
+                                </span>
+                                <button (click)="navigateToRelated(warn.id!)" class="ml-auto px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black transition whitespace-nowrap">
+                                    Chuyển sang lọ ưu tiên
+                                </button>
+                            </div>
+                        }
                         
                         @if(canAssign(std)) {
                             @if(auth.canEditStandards()) {
@@ -358,6 +375,15 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
 
                         <!-- TAB: RELATED STANDARDS -->
                         @if(activeTab() === 'related') {
+                            <!-- FEFO Banner -->
+                            @if(relatedStandards().length > 0) {
+                                <div class="px-6 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/30 flex items-center gap-2">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
+                                    <p class="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                                        Danh sách được sắp xếp <strong>ưu tiên cấp trước (FEFO)</strong>: gần hết hạn &rarr; ít lượng. Lọ đầu tiên trong danh sách nên được cấp trước.
+                                    </p>
+                                </div>
+                            }
                             <table class="w-full text-sm text-left">
                                 <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0 border-b border-slate-100 dark:border-slate-700">
                                     <tr>
@@ -370,10 +396,17 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                    @for (rStd of relatedStandards(); track rStd.id) {
+                                    @for (rStd of relatedStandards(); track rStd.id; let idx = $index) {
                                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group" (click)="navigateToRelated(rStd.id!)">
                                             <td class="px-6 py-4">
-                                                <span class="font-bold text-slate-700 dark:text-slate-200">{{rStd.internal_id || 'N/A'}}</span>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-bold text-slate-700 dark:text-slate-200">{{rStd.internal_id || 'N/A'}}</span>
+                                                    @if(idx === 0 && canAssign(rStd)) {
+                                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 uppercase tracking-wide whitespace-nowrap">
+                                                            <i class="fa-solid fa-star text-[8px]"></i> Ưu tiên
+                                                        </span>
+                                                    }
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 font-mono text-slate-600 dark:text-slate-300 text-xs">{{rStd.lot_number || '-'}}</td>
                                             <td class="px-6 py-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">{{formatNum(rStd.current_amount)}} {{rStd.unit}}</td>
@@ -515,7 +548,44 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         const all = this.allStandardsCache();
         if (!std || all.length === 0) return [];
-        return all.filter(s => s.id !== std.id && s.name.toLowerCase() === std.name.toLowerCase());
+        const related = all.filter(s => s.id !== std.id && s.name.toLowerCase() === std.name.toLowerCase());
+
+        // Sắp xếp theo FEFO (First Expiry First Out):
+        // 1. Lọ có thể dùng (canAssign) lên trước
+        // 2. Cùng assignable: lọ gần hết hạn hơn lên trước
+        // 3. Cùng hạn: lô ít lượng hơn lên trước
+        return related.sort((a, b) => {
+            const aOk = this.canAssign(a);
+            const bOk = this.canAssign(b);
+            if (aOk !== bOk) return aOk ? -1 : 1;
+
+            const aExp = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
+            const bExp = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
+            if (aExp !== bExp) return aExp - bExp;
+
+            return (a.current_amount || 0) - (b.current_amount || 0);
+        });
+    });
+
+    /**
+     * Trả về lọ cùng tên nên dùng trước lọ hiện tại (theo FEFO).
+     * Dùng để hiển thị cảnh báo trong Action Shortcuts.
+     */
+    fefoWarningSibling = computed(() => {
+        const std = this.standard();
+        if (!std || !this.canAssign(std)) return null;
+
+        const siblings = this.relatedStandards();
+        const first = siblings.find(s => this.canAssign(s));
+        if (!first) return null;
+
+        // Kiểm tra xem first có nên dùng trước lọ hiện tại không
+        const stdExp = std.expiry_date ? new Date(std.expiry_date).getTime() : Infinity;
+        const firstExp = first.expiry_date ? new Date(first.expiry_date).getTime() : Infinity;
+
+        if (firstExp < stdExp) return first;
+        if (firstExp === stdExp && (first.current_amount || 0) < (std.current_amount || 0)) return first;
+        return null;
     });
 
     ngOnInit() {

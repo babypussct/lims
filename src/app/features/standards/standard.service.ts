@@ -671,6 +671,9 @@ export class StandardService {
           log.manufacturer = stdData.manufacturer;
           // Không gán requestId ở đây vì đây là ghi thẳng (không qua request)
 
+          // [AUTO-OPEN] Ghi nhận ngày mở nắp = ngày dùng đầu tiên (luôn override)
+          updateData.date_opened = log.date.split('T')[0];
+
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
           
@@ -1123,6 +1126,51 @@ export class StandardService {
       return count;
   }
 
+  /**
+   * Batch fix: Cập nhật date_opened cho tất cả chuẩn dựa trên log sử dụng sớm nhất.
+   * Override: luôn ghi đè date_opened hiện tại nếu log đầu tiên có ngày sớm hơn.
+   */
+  async fixDateOpenedFromLogs(): Promise<number> {
+      const stds = await this.loadStandardsWithDeltaSync();
+      let count = 0;
+
+      for (const std of stds) {
+          try {
+              // Lấy log sớm nhất theo timestamp
+              const logsRef = collection(this.fb.db,
+                  `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}/logs`);
+              const q = query(logsRef, orderBy('timestamp', 'asc'), limit(1));
+              const snap = await getDocs(q);
+
+              if (snap.empty) continue;
+
+              const firstLog = snap.docs[0].data();
+              // Ưu tiên trường date, fallback về timestamp
+              let logDate = '';
+              if (firstLog['date']) {
+                  logDate = String(firstLog['date']).split('T')[0];
+              } else if (firstLog['timestamp']) {
+                  logDate = new Date(firstLog['timestamp']).toISOString().split('T')[0];
+              }
+
+              if (!logDate) continue;
+
+              // Override nếu khác với giá trị hiện tại
+              if (std.date_opened !== logDate) {
+                  const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
+                  await updateDoc(stdRef, { date_opened: logDate, lastUpdated: serverTimestamp() });
+                  count++;
+              }
+          } catch (e) {
+              console.warn('[fixDateOpenedFromLogs] skip', std.id, e);
+          }
+      }
+
+      this.invalidateLocalStandardsCache();
+      this.toast.show(`Đã cập nhật Ngày mở nắp cho ${count} chuẩn.`, 'success');
+      return count;
+  }
+
   async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
@@ -1176,9 +1224,12 @@ export class StandardService {
           const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
           transaction.set(globalLogRef, log);
           
+          // [AUTO-OPEN] Ghi nhận ngày mở nắp = ngày dùng đầu tiên (luôn override)
+          const logDateStr = new Date().toISOString().split('T')[0];
           transaction.update(stdRef, {
               current_amount: newAmount,
               status: newAmount <= 0 ? 'DEPLETED' : stdData.status,
+              date_opened: logDateStr,
               lastUpdated: serverTimestamp()
           });
 
