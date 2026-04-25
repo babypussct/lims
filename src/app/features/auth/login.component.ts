@@ -433,13 +433,26 @@ export class LoginComponent implements OnDestroy {
   }
 
   async loginGoogle() {
-    this.isLoading.set(true); this.isGoogleLoading.set(true); this.errorMsg.set('');
-    try { 
-        await this.auth.loginWithGoogle(); 
+    this.errorMsg.set('');
+    // DO NOT set loading states synchronously before the popup is invoked!
+    // Changing the DOM (via Signals) right during the click event can cause
+    // strict browsers (Safari, Firefox, or Chrome with aggressive blockers) 
+    // to lose the 'trusted user gesture' context and block the popup.
+    
+    try {
+        // Trigger the popup immediately
+        const loginPromise = this.auth.loginWithGoogle();
+        
+        // NOW we can safely set the loading states while the popup is opening/open
+        this.isLoading.set(true); 
+        this.isGoogleLoading.set(true); 
+        
+        await loginPromise;
     } catch (e: any) { 
         if (e.code !== 'auth/popup-closed-by-user') this.handleError(e, true); 
     } finally { 
-        this.isLoading.set(false); this.isGoogleLoading.set(false); 
+        this.isLoading.set(false); 
+        this.isGoogleLoading.set(false); 
     }
   }
 
