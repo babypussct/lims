@@ -962,48 +962,53 @@ export class StandardService {
               reqUpdateData['disposalReason'] = disposalReason;
           }
 
-          // Luôn ghi nhận một log cho sự kiện Trả chuẩn để đảm bảo Traceability
-          const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
-          const newLogRef = doc(logsRef);
-          
-          let logAmount = 0;
-          let logPurpose = disposalReason || reqData.disposalReason || reqData.purpose || 'Hoàn trả chuẩn';
-          
-          if (!hasPreviousLogs) {
-              logAmount = finalAmountUsed;
-              if (finalAmountUsed === 0 && !disposalReason) {
-                  logPurpose = 'Hoàn trả không sử dụng';
+          // Luôn ghi nhận một log cho sự kiện Trả chuẩn NẾU CHƯA CÓ prior logs
+          // HOẶC nếu có lý do thanh lý (disposalReason)
+          if (!hasPreviousLogs || disposalReason) {
+              const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}/logs`);
+              const newLogRef = doc(logsRef);
+              
+              let logAmount = 0;
+              let logPurpose = disposalReason || reqData.disposalReason || reqData.purpose || 'Hoàn trả chuẩn';
+              
+              if (!hasPreviousLogs) {
+                  logAmount = finalAmountUsed;
+                  if (finalAmountUsed === 0 && !disposalReason) {
+                      logPurpose = 'Hoàn trả không sử dụng';
+                  }
+              } else {
+                  // Có disposalReason nhưng đã dùng dần -> log 0mg với purpose thanh lý
+                  logAmount = 0;
               }
-              reqUpdateData['totalAmountUsed'] = finalAmountUsed;
-          } else {
-              // Nếu đã có prior logs (Dùng dần), tạo log với lượng 0 để tránh double-deduction
-              // Hành động này chỉ để ghi nhận thời điểm "Hoàn trả kho"
-              logAmount = 0;
-              if (!disposalReason) logPurpose = 'Hoàn trả kho (đã trừ kho từng đợt)';
-              reqUpdateData['totalAmountUsed'] = reqData.totalAmountUsed || 0;
+
+              const log: UsageLog = {
+                  id: newLogRef.id,
+                  timestamp: Date.now(),
+                  date: new Date().toISOString(),
+                  user: reqData.requestedByName || receiverName,
+                  amount_used: logAmount,
+                  unit: finalUnit,
+                  purpose: logPurpose,
+                  standardId: stdData.id,
+                  standardName: stdData.name,
+                  lotNumber: stdData.lot_number,
+                  cas_number: stdData.cas_number,
+                  internalId: stdData.internal_id,
+                  manufacturer: stdData.manufacturer,
+                  requestId: requestId
+              };
+
+              reqUpdateData['usageLogs'] = [...currentLogs, log];
+              transaction.set(newLogRef, log);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+              transaction.set(globalLogRef, log);
           }
 
-          const log: UsageLog = {
-              id: newLogRef.id,
-              timestamp: Date.now(),
-              date: new Date().toISOString(),
-              user: reqData.requestedByName || receiverName,
-              amount_used: logAmount,
-              unit: finalUnit,
-              purpose: logPurpose,
-              standardId: stdData.id,
-              standardName: stdData.name,
-              lotNumber: stdData.lot_number,
-              cas_number: stdData.cas_number,
-              internalId: stdData.internal_id,
-              manufacturer: stdData.manufacturer,
-              requestId: requestId
-          };
-
-          reqUpdateData['usageLogs'] = [...currentLogs, log];
-          transaction.set(newLogRef, log);
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
-          transaction.set(globalLogRef, log);
+          if (!hasPreviousLogs) {
+              reqUpdateData['totalAmountUsed'] = finalAmountUsed;
+          } else {
+              reqUpdateData['totalAmountUsed'] = reqData.totalAmountUsed || 0;
+          }
 
           transaction.update(reqRef, reqUpdateData);
       });
@@ -1051,17 +1056,41 @@ export class StandardService {
       for (const d of snapshot.docs) {
           const reqData = d.data() as StandardRequest;
           const usageLogs = reqData.usageLogs || [];
-          const hasReturnLog = usageLogs.some((log: any) => log.purpose && (log.purpose.includes("Hoàn trả") || log.purpose.includes("Trả chuẩn")));
-          if (!hasReturnLog) {
-              const hasPreviousLogs = usageLogs.length > 0;
-              const logAmount = hasPreviousLogs ? 0 : (reqData.totalAmountUsed || 0);
-              const logPurpose = hasPreviousLogs ? "Hoàn trả kho (đã trừ kho từng đợt)" : (logAmount === 0 ? "Hoàn trả không sử dụng" : "Hoàn trả chuẩn (Khôi phục lịch sử)");
+          
+          // Lọc bỏ những log "Hoàn trả kho (đã trừ kho từng đợt)"
+          const unwantedLogs = usageLogs.filter((log: any) => log.purpose === "Hoàn trả kho (đã trừ kho từng đợt)");
+          if (unwantedLogs.length > 0) {
+              const newLogs = usageLogs.filter((log: any) => log.purpose !== "Hoàn trả kho (đã trừ kho từng đợt)");
+              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
+              await updateDoc(reqRef, { usageLogs: newLogs });
+              
+              for (const badLog of unwantedLogs) {
+                  if (badLog.id && reqData.standardId) {
+                      const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs/${badLog.id}`);
+                      await deleteDoc(logRef).catch(() => {});
+                      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${badLog.id}`);
+                      await deleteDoc(globalLogRef).catch(() => {});
+                  }
+              }
+              count++;
+          }
+          
+          // Kiểm tra tạo mới nếu CHƯA CÓ prior logs
+          const remainingLogs = usageLogs.filter((log: any) => log.purpose !== "Hoàn trả kho (đã trừ kho từng đợt)");
+          const hasReturnLog = remainingLogs.some((log: any) => log.purpose && (log.purpose.includes("Hoàn trả") || log.purpose.includes("Trả chuẩn")));
+          const hasPreviousLogs = remainingLogs.length > 0;
+          
+          if (!hasReturnLog && !hasPreviousLogs) {
+              const logAmount = reqData.totalAmountUsed || 0;
+              const logPurpose = logAmount === 0 ? "Hoàn trả không sử dụng" : "Hoàn trả chuẩn (Khôi phục lịch sử)";
+              
               let stdData: any = {};
               if (reqData.standardId) {
                   const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}`);
                   const stdDoc = await getDoc(stdRef);
                   if (stdDoc.exists()) stdData = stdDoc.data();
               }
+              
               const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs`);
               const newLogRef = doc(logsRef);
               const logTime = reqData.returnDate || reqData.updatedAt || Date.now();
@@ -1081,7 +1110,8 @@ export class StandardService {
                   manufacturer: stdData.manufacturer,
                   requestId: d.id
               };
-              const newLogs = [...usageLogs, log];
+              
+              const newLogs = [...remainingLogs, log];
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
               await updateDoc(reqRef, { usageLogs: newLogs });
               await setDoc(newLogRef, log);
