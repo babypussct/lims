@@ -28,9 +28,6 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
             <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 ml-1">Lịch sử tiêu thụ và sử dụng hóa chất chuẩn toàn hệ thống</p>
         </div>
         <div class="flex gap-3 items-center">
-             <button (click)="stdService.fixHistoricalUsageLogsUsers()" *ngIf="auth.canManageSystem()" class="px-4 py-2.5 bg-rose-500 text-white hover:bg-rose-600 rounded-2xl shadow-xl shadow-rose-200 dark:shadow-none transition-all font-bold text-xs flex items-center gap-2">
-                 <i class="fa-solid fa-broom text-sm"></i> Sửa dữ liệu cũ (Tạm thời)
-             </button>
              <button (click)="exportExcel()" class="group px-5 py-2.5 bg-green-600 text-white hover:bg-green-700 rounded-2xl shadow-xl shadow-green-100 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
                 <i class="fa-solid fa-file-excel text-sm transition-transform"></i> Xuất Excel
              </button>

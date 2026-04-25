@@ -42,7 +42,6 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           [canEditStandards]="auth.canEditStandards()"
           (deleteSelected)="deleteSelected()"
           (openAddModal)="openAddModal()"
-          (autoZeroAllSdhet)="autoZeroAllSdhet()"
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
           (bulkCoaSelect)="handleBulkCoaSelect($event)">
@@ -466,37 +465,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
   
 
-  async autoZeroAllSdhet() {
-      const targets = this.allStandards().filter(s => (s.id === 'SDHET' || s.internal_id === 'SDHET') && s.current_amount > 0);
-      if (targets.length === 0) {
-          this.toast.show('Không có chuẩn SDHET nào cần trừ kho.', 'info');
-          return;
-      }
-
-      this.isProcessing.set(true);
-      try {
-          for (const std of targets) {
-              if (await this.confirmationService.confirm({ message: `Bạn có muốn tự động xuất toàn bộ tồn kho (${std.current_amount} ${std.unit}) của chuẩn [${std.name} - Lô: ${std.lot_number || 'N/A'}] với lý do KIỂM KHO?`, confirmText: 'Trừ kho', cancelText: 'Bỏ qua' })) {
-                  const log: UsageLog = {
-                      id: '',
-                      date: new Date().toISOString().split('T')[0],
-                      timestamp: Date.now(),
-                      user: 'HỆ THỐNG',
-                      amount_used: std.current_amount,
-                      unit: std.unit || 'mg',
-                      purpose: 'KIỂM KHO'
-                  };
-                  await this.stdService.recordUsage(std.id!, log);
-                  this.toast.show(`Đã trừ kho: ${std.name}`, 'success');
-              }
-          }
-          this.toast.show('Đã duyệt xong danh sách SDHET.', 'success');
-      } catch (e: any) {
-          this.toast.show('Lỗi: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
 
   async autoZeroStock(std: ReferenceStandard) {
       if (this.isProcessing() || std.current_amount <= 0) return;
@@ -613,23 +581,33 @@ export class StandardsComponent implements OnInit, OnDestroy {
   triggerQuickDriveUpload(std: ReferenceStandard, event: Event) {
       event.stopPropagation();
       this.quickUploadStd = std;
-      // Find and click the hidden file input
-      const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
-      if (input) {
-          input.click();
-          return;
-      }
-      // Fallback: try by ref
-      const inputs = document.querySelectorAll('input[type="file"][accept]');
-      const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
-      if (driveInput && driveInput.classList.contains('hidden')) {
-          driveInput.click();
-          return;
-      }
-      this.toast.show('Không tìm thấy input upload', 'error');
+      
+      // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
+      this.googleDriveService.authenticateSync(
+          () => {
+              // Đã có token, giờ mới mở file picker
+              const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+              if (input) {
+                  input.click();
+                  return;
+              }
+              // Fallback: try by ref
+              const inputs = document.querySelectorAll('input[type="file"][accept]');
+              const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
+              if (driveInput && driveInput.classList.contains('hidden')) {
+                  driveInput.click();
+                  return;
+              }
+              this.toast.show('Không tìm thấy input upload', 'error');
+          },
+          (err) => {
+              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+              this.quickUploadStd = null;
+          }
+      );
   }
 
-  handleQuickDriveUpload(event: any) {
+  async handleQuickDriveUpload(event: any) {
       const file = event.target.files[0];
       const std = this.quickUploadStd;
       if (!file || !std) {
@@ -637,48 +615,38 @@ export class StandardsComponent implements OnInit, OnDestroy {
           return;
       }
 
-      // XÁC THỰC NGAY LẬP TỨC TRONG SỰ KIỆN (CHANGE) CỦA INPUT FILE ĐỂ TRÁNH BỊ CHẶN POPUP
-      this.googleDriveService.authenticateSync(
-          async () => {
-              this.quickUploadStdId.set(std.id);
-              try {
-                  const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-                  this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+      this.quickUploadStdId.set(std.id);
+      try {
+          const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
+          this.toast.show(`Đang upload CoA cho "${std.name}"...`);
 
-                  // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
-                  const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+          // Đã có token rồi nên hàm này sẽ upload luôn mà không bị hỏi lại
+          const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-                  // Tìm tất cả các chuẩn cùng Tên và Số Lô
-                  const siblings = this.allStandards().filter(s => 
-                      s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
-                      (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
-                  );
+          // Tìm tất cả các chuẩn cùng Tên và Số Lô
+          const siblings = this.allStandards().filter(s => 
+              s.name?.trim().toLowerCase() === std.name?.trim().toLowerCase() && 
+              (s.lot_number || '').trim().toLowerCase() === (std.lot_number || '').trim().toLowerCase()
+          );
 
-                  // Cập nhật URL cho tất cả
-                  for (const sibling of siblings) {
-                      await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
-                  }
-
-                  if (siblings.length > 1) {
-                      this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
-                  } else {
-                      this.toast.show(`Upload CoA thành công! ${fileName}`);
-                  }
-              } catch (e: any) {
-                  console.error('Quick Drive upload error:', e);
-                  this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
-              } finally {
-                  this.quickUploadStdId.set('');
-                  this.quickUploadStd = null;
-                  event.target.value = '';
-              }
-          },
-          (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
-              this.quickUploadStd = null;
-              event.target.value = '';
+          // Cập nhật URL cho tất cả
+          for (const sibling of siblings) {
+              await this.stdService.quickUpdateField(sibling.id, { certificate_ref: previewUrl });
           }
-      );
+
+          if (siblings.length > 1) {
+              this.toast.show(`Upload thành công! Đã tự động áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+          } else {
+              this.toast.show(`Upload CoA thành công! ${fileName}`);
+          }
+      } catch (e: any) {
+          console.error('Quick Drive upload error:', e);
+          this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+      } finally {
+          this.quickUploadStdId.set('');
+          this.quickUploadStd = null;
+          event.target.value = '';
+      }
   }
 
   // --- Bulk CoA Match & Upload Logic ---

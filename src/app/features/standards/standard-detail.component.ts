@@ -769,12 +769,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
     // --- Quick Upload CoA ---
     triggerQuickDriveUpload() {
-        const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
-        if (input) {
-            input.click();
-        } else {
-            this.toast.show('Không tìm thấy input upload', 'error');
-        }
+        // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
+        this.googleDriveService.authenticateSync(
+            () => {
+                const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+                if (input) {
+                    input.click();
+                } else {
+                    this.toast.show('Không tìm thấy input upload', 'error');
+                }
+            },
+            (err) => {
+                this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+            }
+        );
     }
 
     async handleQuickDriveUpload(event: any) {
@@ -784,47 +792,40 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const std = this.standard();
         if (!std) return;
 
-        this.googleDriveService.authenticateSync(
-            async () => {
-                try {
-                    this.isUploadingCoa.set(true);
-                    const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-                    this.toast.show(`Đang upload CoA cho "${std.name}"...`);
+        try {
+            this.isUploadingCoa.set(true);
+            const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
+            this.toast.show(`Đang upload CoA cho "${std.name}"...`);
 
-                    const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
+            const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
-                    // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
-                    const allStds = await this.stdService.loadStandardsWithDeltaSync();
-                    const siblings = allStds.filter(s => s.name === std.name && s.lot_number === std.lot_number && !s._isDeleted);
-                    
-                    const batch = writeBatch(this.firebaseService.db);
-                    for (const s of siblings) {
-                        if (s.id) {
-                            const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
-                            batch.update(ref, { certificate_ref: previewUrl, coa_requested: false });
-                        }
-                    }
-                    await batch.commit();
-
-                    // Cập nhật local signal cho view hiện tại
-                    this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested: false } : current);
-
-                    if (siblings.length > 1) {
-                        this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
-                    } else {
-                        this.toast.show(`Upload CoA thành công!`);
-                    }
-                } catch (e: any) {
-                    console.error('Quick Drive upload error:', e);
-                    this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
-                } finally {
-                    this.isUploadingCoa.set(false);
-                    event.target.value = '';
+            // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
+            const allStds = await this.stdService.loadStandardsWithDeltaSync();
+            const siblings = allStds.filter(s => s.name === std.name && s.lot_number === std.lot_number && !s._isDeleted);
+            
+            const batch = writeBatch(this.firebaseService.db);
+            for (const s of siblings) {
+                if (s.id) {
+                    const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
+                    batch.update(ref, { certificate_ref: previewUrl, coa_requested: false });
                 }
-            },
-            (err) => {
-                this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
             }
-        );
+            await batch.commit();
+
+            // Cập nhật local signal cho view hiện tại
+            this.standard.update(current => current ? { ...current, certificate_ref: previewUrl, coa_requested: false } : current);
+
+            if (siblings.length > 1) {
+                this.toast.show(`Upload thành công! Đã áp dụng CoA cho ${siblings.length} lọ chuẩn cùng lô.`);
+            } else {
+                this.toast.show(`Upload CoA thành công!`);
+            }
+        } catch (e: any) {
+            console.error('Quick Drive upload error:', e);
+            this.toast.show('Upload CoA lỗi: ' + (e.message || 'Không xác định'), 'error');
+        } finally {
+            this.isUploadingCoa.set(false);
+            event.target.value = '';
+        }
     }
 }
