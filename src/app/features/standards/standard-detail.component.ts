@@ -267,45 +267,41 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
                 }
 
                 <!-- ACTION SHORTCUTS (BOTTOM PANEL) -->
-                <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
-                    
-                    @if(std.id === 'SDHET' || std.internal_id === 'SDHET') {
-                        <button (click)="autoZeroStock(std)" class="px-4 py-2 bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
-                            <i class="fa-solid fa-box-open"></i> Kiểm kho SDHET
-                        </button>
-                    }
-                    
-                    @if(canAssign(std)) {
-                        @if(auth.canEditStandards()) {
-                            <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
-                                <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
-                            </button>
-                        } @else {
-                            <button (click)="openAssignModal(false)" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
-                                <i class="fa-solid fa-hand-holding-hand"></i> Đăng ký mượn chuẩn
+                @if(canAssign(std) || std.status === 'DEPLETED' || std.current_amount <= 0 || (!std.certificate_ref && !auth.canEditStandards())) {
+                    <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
+                        
+                        @if(canAssign(std)) {
+                            @if(auth.canEditStandards()) {
+                                <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                                    <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
+                                </button>
+                            } @else {
+                                <button (click)="openAssignModal(false)" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                                    <i class="fa-solid fa-hand-holding-hand"></i> Đăng ký mượn chuẩn
+                                </button>
+                            }
+                        }
+
+                        @if(std.status === 'DEPLETED' || std.current_amount <= 0) {
+                            @if(!std.restock_requested) {
+                                <button (click)="openPurchaseModal()" class="px-4 py-2 bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                                    <i class="fa-solid fa-cart-plus"></i> Đề nghị mua thêm
+                                </button>
+                            } @else {
+                                <span class="px-4 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed">
+                                    <i class="fa-solid fa-cart-arrow-down"></i> Đã có yêu cầu mua
+                                </span>
+                            }
+                        }
+
+                        @if(!std.certificate_ref && !auth.canEditStandards()) {
+                            <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="!!std.coa_requested_by" [class.opacity-50]="!!std.coa_requested_by">
+                                <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested_by" [class.fa-clock-rotate-left]="!!std.coa_requested_by"></i> {{std.coa_requested_by ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
                             </button>
                         }
-                    }
-
-                    @if(std.status === 'DEPLETED' || std.current_amount <= 0) {
-                        @if(!std.restock_requested) {
-                            <button (click)="openPurchaseModal()" class="px-4 py-2 bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
-                                <i class="fa-solid fa-cart-plus"></i> Đề nghị mua thêm
-                            </button>
-                        } @else {
-                            <span class="px-4 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed">
-                                <i class="fa-solid fa-cart-arrow-down"></i> Đã có yêu cầu mua
-                            </span>
-                        }
-                    }
-
-                    @if(!std.certificate_ref) {
-                        <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="!!std.coa_requested_by" [class.opacity-50]="!!std.coa_requested_by">
-                            <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested_by" [class.fa-clock-rotate-left]="!!std.coa_requested_by"></i> {{std.coa_requested_by ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
-                        </button>
-                    }
-                </div>
+                    </div>
+                }
 
                 <!-- TABS: RELATED & HISTORY -->
                 <div class="mt-4 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
@@ -733,30 +729,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         this.previewImgUrl.set(''); 
     }
 
-    async autoZeroStock(std: ReferenceStandard) {
-        if (this.isLoading() || std.current_amount <= 0) return;
-        if (await this.confirmationService.confirm({ message: `Xác nhận trừ kho (0 ${std.unit}) cho ${std.name}?`, confirmText: 'Xác nhận' })) {
-            this.isLoading.set(true);
-            try {
-                const log: UsageLog = {
-                    id: '',
-                    date: new Date().toISOString().split('T')[0],
-                    timestamp: Date.now(),
-                    user: 'HỆ THỐNG',
-                    amount_used: std.current_amount,
-                    unit: std.unit || 'mg',
-                    purpose: 'Sử dụng hết theo kiểm kê'
-                };
-                await this.stdService.recordUsage(std.id!, log);
-                this.toast.show('Đã trừ kho thành công', 'success');
-                // Component will auto-update via realtime listener
-            } catch (error: any) {
-                this.toast.show(error.message || 'Lỗi khi cập nhật', 'error');
-            } finally {
-                this.isLoading.set(false);
-            }
-        }
-    }
+
 
     async deleteLog(log: UsageLog, stdId: string) {
         if (!log.id) return;
