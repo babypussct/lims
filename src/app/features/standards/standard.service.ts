@@ -671,8 +671,13 @@ export class StandardService {
           log.manufacturer = stdData.manufacturer;
           // Không gán requestId ở đây vì đây là ghi thẳng (không qua request)
 
-          // [AUTO-OPEN] Ghi nhận ngày mở nắp = ngày dùng đầu tiên (luôn override)
-          updateData.date_opened = log.date.split('T')[0];
+          // [AUTO-OPEN] Chỉ cập nhật date_opened khi chưa có, hoặc khi ngày log mới sớm hơn ngày đang lưu
+          // → Đảm bảo date_opened luôn là ngày mở nắp thực sự (lần dùng đầu tiên sớm nhất)
+          const newLogDate = log.date.split('T')[0];
+          const existingDateOpened = stdData.date_opened || '';
+          if (!existingDateOpened || newLogDate < existingDateOpened) {
+              updateData.date_opened = newLogDate;
+          }
 
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
@@ -1224,14 +1229,19 @@ export class StandardService {
           const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
           transaction.set(globalLogRef, log);
           
-          // [AUTO-OPEN] Ghi nhận ngày mở nắp = ngày dùng đầu tiên (luôn override)
+          // [AUTO-OPEN] Chỉ cập nhật date_opened khi chưa có, hoặc khi ngày log mới sớm hơn ngày đang lưu
+          // → Đảm bảo date_opened luôn là ngày mở nắp thực sự (lần dùng đầu tiên sớm nhất)
           const logDateStr = new Date().toISOString().split('T')[0];
-          transaction.update(stdRef, {
+          const existingOpened = stdData.date_opened || '';
+          const stdUpdates: any = {
               current_amount: newAmount,
               status: newAmount <= 0 ? 'DEPLETED' : stdData.status,
-              date_opened: logDateStr,
               lastUpdated: serverTimestamp()
-          });
+          };
+          if (!existingOpened || logDateStr < existingOpened) {
+              stdUpdates.date_opened = logDateStr;
+          }
+          transaction.update(stdRef, stdUpdates);
 
           const currentLogs = reqData.usageLogs || [];
           transaction.update(reqRef, {
