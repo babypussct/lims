@@ -624,6 +624,47 @@ export class StandardService {
       });
   }
 
+  /** Query nhật ký theo khoảng ngày — vượt giới hạn 100 bản ghi của real-time listener */
+  async queryUsageLogsByDateRange(
+      fromTimestamp: number,
+      toTimestamp: number,
+      pageSize = 500,
+      lastDoc: QueryDocumentSnapshot | null = null
+  ): Promise<{ items: UsageLog[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
+      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
+      const constraints: QueryConstraint[] = [
+          where('timestamp', '>=', fromTimestamp),
+          where('timestamp', '<=', toTimestamp),
+          orderBy('timestamp', 'desc'),
+          limit(pageSize)
+      ];
+      if (lastDoc) constraints.push(startAfter(lastDoc));
+
+      const snapshot = await getDocs(query(colRef, ...constraints));
+      return {
+          items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)),
+          lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+          hasMore: snapshot.docs.length === pageSize
+      };
+  }
+
+  /** Fetch trang nhật ký tiếp theo (không filter ngày) — dùng cho infinite scroll */
+  async queryUsageLogsPage(
+      pageSize = 50,
+      lastDoc: QueryDocumentSnapshot | null = null
+  ): Promise<{ items: UsageLog[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
+      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
+      const constraints: QueryConstraint[] = [orderBy('timestamp', 'desc'), limit(pageSize)];
+      if (lastDoc) constraints.push(startAfter(lastDoc));
+
+      const snapshot = await getDocs(query(colRef, ...constraints));
+      return {
+          items: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog)),
+          lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
+          hasMore: snapshot.docs.length === pageSize
+      };
+  }
+
   async recordUsage(stdId: string, log: UsageLog) {
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
