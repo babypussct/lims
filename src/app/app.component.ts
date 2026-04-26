@@ -99,7 +99,7 @@ import { filter } from 'rxjs/operators';
       @if (!auth.isAuthReady()) {
         <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
            <i class="fa-solid fa-flask text-5xl text-blue-500 animate-pulse mb-4"></i>
-           <div class="text-white font-bold tracking-widest animate-pulse">LIMS CLOUD PRO</div>
+           <div class="text-white font-bold tracking-widest animate-pulse">NAFIQPM6 | LIMS CLOUD</div>
         </div>
       } @else {
         @if (state.currentUser(); as user) {

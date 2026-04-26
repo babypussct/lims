@@ -248,7 +248,7 @@ declare let QRious: any;
             
             <div class="p-6 text-center text-[10px] text-slate-400 border-t border-slate-50">
                 &copy; {{year}} Laboratory Information Management System. All rights reserved.<br>
-                <span class="font-medium text-slate-500">LIMS Cloud Pro v1.0</span>
+                <span class="font-medium text-slate-500">NAFIQPM6 LIMS Cloud v1.0</span>
             </div>
         </div>
       </div>
