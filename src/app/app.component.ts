@@ -225,12 +225,27 @@ export class AppComponent implements OnDestroy {
         this.toast.show('🚀 Hệ thống vừa có phiên bản mới. Bấm để cập nhật!', 'info', true);
       });
 
-      // Xử lý lỗi cài đặt bản mới
+      // Xử lý lỗi cài đặt bản mới (thường do extension modify HTML → hash mismatch)
+      // Khi lỗi này xảy ra, SW cũ bị kẹt — cần xóa SW và reload để lấy bản mới
       this.swUpdate.versionUpdates.pipe(
         filter(e => e.type === 'VERSION_INSTALLATION_FAILED')
-      ).subscribe((event: any) => {
+      ).subscribe(async (event: any) => {
         console.error('[LIMS SW] ❌ VERSION_INSTALLATION_FAILED:', event.error);
-        this.toast.show('⚠️ Cập nhật phiên bản thất bại. Thử tải lại trang.', 'error', true);
+        console.warn('[LIMS SW] 🔧 Đang xóa Service Worker cũ và tải lại bản mới...');
+        
+        // Unregister tất cả SW registrations bị lỗi
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const reg of registrations) {
+            await reg.unregister();
+          }
+          console.log('[LIMS SW] ✅ Đã xóa SW cũ. Đang reload...');
+        } catch (err) {
+          console.warn('[LIMS SW] ⚠️ Không thể xóa SW:', err);
+        }
+        
+        // Hard reload — bỏ qua cache hoàn toàn  
+        window.location.reload();
       });
 
       // Xử lý trạng thái không thể phục hồi (cache corrupt, hash mismatch nghiêm trọng)
