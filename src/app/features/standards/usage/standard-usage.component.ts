@@ -321,6 +321,10 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
 
   filteredLogs = computed(() => {
      let result = this.logs();
+     
+     // Ẩn các log do HỆ THỐNG tự sinh ra (ví dụ: tự động trừ kho)
+     result = result.filter(l => l.user !== 'HỆ THỐNG');
+     
      const search = this.searchTerm().trim().toLowerCase();
      const user = this.userFilter();
      const action = this.actionFilter();
