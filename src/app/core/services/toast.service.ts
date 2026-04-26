@@ -24,4 +24,9 @@ export class ToastService {
   remove(id: number) {
     this.toasts.update(current => current.filter(t => t.id !== id));
   }
+
+  // Xóa tất cả toast chứa đoạn text nhất định (dùng để chống duplicate persistent toast)
+  removeByMessage(partial: string) {
+    this.toasts.update(current => current.filter(t => !t.message.includes(partial)));
+  }
 }

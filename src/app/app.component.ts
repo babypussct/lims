@@ -204,20 +204,59 @@ export class AppComponent implements OnDestroy {
 
     // --- SERVICE WORKER: Lắng nghe bản build mới ---
     if (this.swUpdate.isEnabled) {
+      console.log('[LIMS SW] ✅ Service Worker đang hoạt động. Bắt đầu lắng nghe update...');
+
+      // Lắng nghe TẤT CẢ sự kiện version (để log)
+      this.swUpdate.versionUpdates.subscribe(event => {
+        console.log(`[LIMS SW] 📡 Event: ${event.type}`, event);
+      });
+
       // Lắng nghe khi có bản mới sẵn sàng
       this.swUpdate.versionUpdates.pipe(
         filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY')
-      ).subscribe(() => {
+      ).subscribe(event => {
+        console.log('[LIMS SW] 🚀 VERSION_READY — Bản mới sẵn sàng!', {
+          current: event.currentVersion.hash,
+          latest: event.latestVersion.hash
+        });
+        this.hasNewVersion.set(true);
+        // Xóa toast deploy cũ trước khi thêm mới (tránh chồng chéo)
+        this.toast.removeByMessage('phiên bản mới');
         this.toast.show('🚀 Hệ thống vừa có phiên bản mới. Bấm để cập nhật!', 'info', true);
       });
 
-      // Chủ động kiểm tra update ngay khi app load (không đợi SW tự check)
-      this.swUpdate.checkForUpdate().catch(() => {});
+      // Xử lý lỗi cài đặt bản mới
+      this.swUpdate.versionUpdates.pipe(
+        filter(e => e.type === 'VERSION_INSTALLATION_FAILED')
+      ).subscribe((event: any) => {
+        console.error('[LIMS SW] ❌ VERSION_INSTALLATION_FAILED:', event.error);
+        this.toast.show('⚠️ Cập nhật phiên bản thất bại. Thử tải lại trang.', 'error', true);
+      });
 
-      // Kiểm tra mỗi 10 phút cho user giữ app mở lâu
+      // Xử lý trạng thái không thể phục hồi (cache corrupt, hash mismatch nghiêm trọng)
+      this.swUpdate.unrecoverable.subscribe(event => {
+        console.error('[LIMS SW] 💀 UNRECOVERABLE STATE:', event.reason);
+        this.toast.show('⚠️ Ứng dụng gặp lỗi nghiêm trọng. Đang tải lại...', 'error');
+        setTimeout(() => window.location.reload(), 2000);
+      });
+
+      // Chủ động kiểm tra update ngay khi app load (không đợi SW tự check)
+      this.swUpdate.checkForUpdate().then(hasUpdate => {
+        console.log(`[LIMS SW] 🔍 Kiểm tra lần đầu: ${hasUpdate ? 'CÓ bản mới!' : 'Đang dùng bản mới nhất.'}`);
+      }).catch(err => {
+        console.warn('[LIMS SW] ⚠️ Lỗi kiểm tra update lần đầu:', err);
+      });
+
+      // Kiểm tra mỗi 5 phút cho user giữ app mở lâu (giảm từ 10 phút)
       this._swCheckInterval = setInterval(() => {
-        this.swUpdate.checkForUpdate().catch(() => {});
-      }, 10 * 60 * 1000); // 10 phút
+        this.swUpdate.checkForUpdate().then(hasUpdate => {
+          if (hasUpdate) console.log('[LIMS SW] 🔍 Polling: Phát hiện bản mới!');
+        }).catch(err => {
+          console.warn('[LIMS SW] ⚠️ Polling check failed:', err);
+        });
+      }, 5 * 60 * 1000); // 5 phút
+    } else {
+      console.warn('[LIMS SW] ⛔ Service Worker KHÔNG hoạt động (dev mode hoặc trình duyệt không hỗ trợ).');
     }
   }
 
@@ -247,6 +286,7 @@ export class AppComponent implements OnDestroy {
   // --- PULL TO REFRESH LOGIC ---
   private touchStartY = 0;
   isPulling = signal(false);
+  hasNewVersion = signal(false);
   private _swCheckInterval: any;
 
   ngOnDestroy() {
@@ -257,7 +297,12 @@ export class AppComponent implements OnDestroy {
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
     if (document.visibilityState === 'visible' && this.swUpdate.isEnabled) {
-      this.swUpdate.checkForUpdate().catch(() => {});
+      console.log('[LIMS SW] 👀 Tab được focus lại — kiểm tra update...');
+      this.swUpdate.checkForUpdate().then(hasUpdate => {
+        if (hasUpdate) console.log('[LIMS SW] 🔍 Visibility check: Phát hiện bản mới!');
+      }).catch(err => {
+        console.warn('[LIMS SW] ⚠️ Visibility check failed:', err);
+      });
     }
   }
 
@@ -290,7 +335,17 @@ export class AppComponent implements OnDestroy {
   }
 
   // Dùng trong template cho nút "Tải lại ngay" trong Toast
-  window_reload() {
+  async window_reload() {
+    // Kích hoạt bản SW mới trước khi reload (đảm bảo không serve bản cũ từ cache)
+    if (this.swUpdate.isEnabled && this.hasNewVersion()) {
+      try {
+        console.log('[LIMS SW] ⏳ Đang kích hoạt bản mới trước khi reload...');
+        await this.swUpdate.activateUpdate();
+        console.log('[LIMS SW] ✅ Kích hoạt thành công! Đang reload...');
+      } catch (err) {
+        console.warn('[LIMS SW] ⚠️ activateUpdate() lỗi, reload bình thường:', err);
+      }
+    }
     window.location.reload();
   }
 }
