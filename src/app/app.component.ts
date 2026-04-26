@@ -226,26 +226,13 @@ export class AppComponent implements OnDestroy {
       });
 
       // Xử lý lỗi cài đặt bản mới (thường do extension modify HTML → hash mismatch)
-      // Khi lỗi này xảy ra, SW cũ bị kẹt — cần xóa SW và reload để lấy bản mới
+      // Root fix: index.html đã được loại khỏi hash verification trong ngsw-config.json
+      // Handler này chỉ là safety net — log lỗi và thông báo, KHÔNG auto-reload để tránh loop
       this.swUpdate.versionUpdates.pipe(
         filter(e => e.type === 'VERSION_INSTALLATION_FAILED')
-      ).subscribe(async (event: any) => {
+      ).subscribe((event: any) => {
         console.error('[LIMS SW] ❌ VERSION_INSTALLATION_FAILED:', event.error);
-        console.warn('[LIMS SW] 🔧 Đang xóa Service Worker cũ và tải lại bản mới...');
-        
-        // Unregister tất cả SW registrations bị lỗi
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (const reg of registrations) {
-            await reg.unregister();
-          }
-          console.log('[LIMS SW] ✅ Đã xóa SW cũ. Đang reload...');
-        } catch (err) {
-          console.warn('[LIMS SW] ⚠️ Không thể xóa SW:', err);
-        }
-        
-        // Hard reload — bỏ qua cache hoàn toàn  
-        window.location.reload();
+        this.toast.show('⚠️ Cập nhật phiên bản gặp lỗi. Hãy thử Ctrl+Shift+R để tải lại.', 'info');
       });
 
       // Xử lý trạng thái không thể phục hồi (cache corrupt, hash mismatch nghiêm trọng)
