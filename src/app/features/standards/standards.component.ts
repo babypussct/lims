@@ -403,16 +403,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
       // Reactive view mode listener (updates on window resize / device rotation)
       this.mobileMediaQuery.addEventListener('change', this.onMediaChange);
       // Setup Real-time Listener (Load All)
-      this.stdService.loadStandardsWithDeltaSync().then((items) => {
-          this.allStandards.set(items);
+      const cached = this.stdService.getAllStandardsFromCache();
+      if (cached && cached.length > 0) {
+          this.allStandards.set(cached);
+      }
+      
+      this.snapshotUnsub = this.stdService.listenToStandards((items) => {
+          this.allStandards.set([...items]);
           this.isLoading.set(false);
-          
-          this.snapshotUnsub = this.stdService.startRealtimeDeltaListener(() => {
-              this.allStandards.set([...this.stdService.getAllStandardsFromCache()]);
-          });
-      }).catch((e) => {
-          this.isLoading.set(false);
-          this.toast.show('Lỗi tải dữ liệu: ' + e.message, 'error');
       });
   }
 

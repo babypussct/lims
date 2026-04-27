@@ -413,18 +413,18 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
         this.isLoading.set(false);
     });
 
-    // Pha 1: Delta Load — apply localStorage ngay + sync chỉ docs thay đổi
-    this.stdService.loadStandardsWithDeltaSync().then((stds: ReferenceStandard[]) => {
+    // Pha 1: Delta Load — apply localStorage ngay
+    const stds = this.stdService.getAllStandardsFromCache();
+    if (stds && stds.length > 0) {
         this.allStandards.set(stds);
         this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE'));
-    });
+    }
 
     // Pha 2: Live Listener Singleton — chia sẻ với StandardsComponent nếu đã mở
-    this.unregisterLiveListener = this.stdService.startRealtimeDeltaListener(() => {
-        const mem = this.stdService['_memStandards'];
-        if (mem) {
-            this.allStandards.set([...mem]);
-            this.availableStandards.set(mem.filter((s: ReferenceStandard) => s.status !== 'IN_USE'));
+    this.unregisterLiveListener = this.stdService.listenToStandards((stds) => {
+        if (stds) {
+            this.allStandards.set([...stds]);
+            this.availableStandards.set(stds.filter((s: ReferenceStandard) => s.status !== 'IN_USE'));
         }
     });
 

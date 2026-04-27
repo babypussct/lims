@@ -601,7 +601,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         });
 
         // Register global listener to update if data changes in background
-        this.liveUnsub = this.stdService.startRealtimeDeltaListener(() => {
+        this.liveUnsub = this.stdService.listenToStandards(() => {
             if (this.standardId()) {
                 this.refreshStandardFromCache(this.standardId());
                 this.refreshAllStandards();
@@ -846,7 +846,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
             // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
-            const allStds = await this.stdService.loadStandardsWithDeltaSync();
+            const allStds = this.stdService.getAllStandardsFromCache();
             const siblings = allStds.filter(s => s.name === std.name && s.lot_number === std.lot_number && !s._isDeleted);
             
             const batch = writeBatch(this.firebaseService.db);

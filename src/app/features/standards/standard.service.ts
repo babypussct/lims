@@ -74,57 +74,6 @@ export class StandardService {
    * F5 có K doc đổi: apply L2 + delta K docs = K reads
    * Navigate: L1 hit = 0 reads
    */
-  async loadStandardsWithDeltaSync(): Promise<ReferenceStandard[]> {
-    // L1: In-memory (navigate đi/về trong session = 0 reads)
-    if (this._memStandards !== null) {
-      return this._memStandards;
-    }
-
-    // L2: localStorage (0 reads, apply ngay để UI hiển thị tức thì)
-    const localItems = this._loadStdFromCache();
-    const lastSyncSec = Number(localStorage.getItem(this.STD_SYNC_SECONDS_KEY) || 0);
-
-    if (!localItems || lastSyncSec === 0) {
-      // COLD START: chưa có cache, fetch toàn bộ
-      return await this._fetchAllAndCache();
-    }
-
-    // WARM START: apply cache ngay vào memory
-    this._memStandards = localItems;
-
-    // Background: delta query — chỉ đọc docs thay đổi sau lần sync cuối
-    try {
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      const deltaSnap = await getDocs(query(
-        colRef,
-        where('lastUpdated', '>', Timestamp.fromMillis(lastSyncSec * 1000))
-      ));
-
-      if (!deltaSnap.empty) {
-        // Có K docs thay đổi — chỉ đọc K docs này
-        const changed: ReferenceStandard[] = [];
-        const deletedIds: string[] = [];
-
-        deltaSnap.docs.forEach(d => {
-          const data = d.data();
-          if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
-            deletedIds.push(d.id);
-          } else {
-            changed.push({ id: d.id, ...data } as ReferenceStandard);
-          }
-        });
-
-        this._mergeAndSave(changed, deletedIds);
-      }
-      // deltaSnap.empty = không có gì thay đổi → 0 reads thêm ✓
-    } catch (e) {
-      // Lỗi network: dùng L2 cache làm fallback (offline mode)
-      console.warn('[StandardService] Delta sync error, using cached data:', e);
-    }
-
-    return this._memStandards!;
-  }
-
   // ─── DELTA SYNC: Live Listener Singleton (Pha 2) ───────────────────────────
   /**
    * Singleton live listener dùng onSnapshot(where lastUpdated > NOW).
@@ -204,18 +153,13 @@ export class StandardService {
    * Dùng cho trang StandardDetailComponent khi deep-link trực tiếp.
    */
   async getStandardById(stdId: string): Promise<ReferenceStandard | null> {
-    // L1: In-memory cache
-    if (this._memStandards) {
-      const found = this._memStandards.find(s => s.id === stdId);
-      if (found) return found;
-    }
-    // L2: localStorage cache
-    const cached = this._loadStdFromCache();
+    // L1: localStorage cache via DeltaSyncService
+    const cached = this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID);
     if (cached) {
       const found = cached.find(s => s.id === stdId);
       if (found) return found;
     }
-    // L3: Firestore single doc read (1 read)
+    // L2: Firestore single doc read (1 read)
     try {
       const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards', stdId);
       const snap = await getDoc(ref);
@@ -231,8 +175,7 @@ export class StandardService {
 
   /** Lấy tất cả chuẩn từ bộ nhớ/cache (không gây thêm reads nếu đã warm) */
   getAllStandardsFromCache(): ReferenceStandard[] {
-    if (this._memStandards) return this._memStandards;
-    return this._loadStdFromCache() ?? [];
+    return this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID) ?? [];
   }
 
   // ─── Private Helpers ────────────────────────────────────────────────────────
@@ -467,7 +410,7 @@ export class StandardService {
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
       try {
-          const stds = await this.loadStandardsWithDeltaSync();
+          const stds = this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID);
           const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
           if (active.length > 0) {
               return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
@@ -1063,7 +1006,8 @@ export class StandardService {
               reqUpdateData['totalAmountUsed'] = reqData.totalAmountUsed || 0;
           }
 
-          transaction.update(reqRef, reqUpdateData);
+          reqUpdateData['lastUpdated'] = serverTimestamp();
+              transaction.update(reqRef, reqUpdateData);
       });
 
       if (reqData) {
@@ -1115,7 +1059,7 @@ export class StandardService {
           if (unwantedLogs.length > 0) {
               const newLogs = usageLogs.filter((log: any) => log.purpose !== "Hoàn trả kho (đã trừ kho từng đợt)");
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
-              await updateDoc(reqRef, { usageLogs: newLogs });
+              await updateDoc(reqRef, { usageLogs: newLogs, lastUpdated: serverTimestamp() });
               
               for (const badLog of unwantedLogs) {
                   if (badLog.id && reqData.standardId) {
@@ -1166,7 +1110,7 @@ export class StandardService {
               
               const newLogs = [...remainingLogs, log];
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
-              await updateDoc(reqRef, { usageLogs: newLogs });
+              await updateDoc(reqRef, { usageLogs: newLogs, lastUpdated: serverTimestamp() });
               await setDoc(newLogRef, log);
               const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
               log.lastUpdated = serverTimestamp();
@@ -1182,7 +1126,7 @@ export class StandardService {
    * Override: luôn ghi đè date_opened hiện tại nếu log đầu tiên có ngày sớm hơn.
    */
   async fixDateOpenedFromLogs(): Promise<number> {
-      const stds = await this.loadStandardsWithDeltaSync();
+      const stds = this.getAllStandardsFromCache();
       let count = 0;
 
       for (const std of stds) {
@@ -1385,13 +1329,27 @@ export class StandardService {
 
 
 
-  listenToRequests(callback: (requests: StandardRequest[]) => void) {
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-      // [WARN-2] Thêm limit(300) để tránh đọc không giới hạn khi collection lớn dần
-      const q = query(colRef, orderBy('createdAt', 'desc'), limit(300));
-      return onSnapshot(q, (snapshot) => {
-          callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest)));
-      });
+  listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
+      return this.deltaSync.startListener<StandardRequest>({
+          cacheKey: 'lims_all_standard_requests_cache_' + this.fb.APP_ID,
+          cursorKey: 'lims_all_standard_requests_sync_seconds_' + this.fb.APP_ID,
+          collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
+          maxCacheSize: 1000,
+          orderByField: 'createdAt',
+          orderDirection: 'desc'
+      }, callback);
+  }
+
+  // --- Reference Standards (Delta Sync) ---
+  listenToStandards(callback: (standards: ReferenceStandard[]) => void): Unsubscribe {
+      return this.deltaSync.startListener<ReferenceStandard>({
+          cacheKey: 'lims_reference_standards_cache_' + this.fb.APP_ID,
+          cursorKey: 'lims_reference_standards_sync_seconds_' + this.fb.APP_ID,
+          collectionPath: `artifacts/${this.fb.APP_ID}/reference_standards`,
+          maxCacheSize: 3000,
+          orderByField: 'received_date',
+          orderDirection: 'desc'
+      }, callback);
   }
 
   // --- EXCEL PARSER ---
@@ -1733,7 +1691,7 @@ export class StandardService {
           return this._memStandards;
       }
       // Fallback: gọi delta sync để load (cold start)
-      return await this.loadStandardsWithDeltaSync();
+      return this.getAllStandardsFromCache();
   }
 
   async saveImportedUsageLogs(data: ImportUsageLogPreviewItem[]) {

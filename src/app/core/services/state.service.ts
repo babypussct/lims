@@ -11,6 +11,7 @@ import {
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
+import { DeltaSyncService } from './delta-sync.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -27,6 +28,7 @@ export class StateService implements OnDestroy {
   private toast = inject(ToastService);
   private confirmationService = inject(ConfirmationService);
   private injector = inject(Injector);
+  private deltaSync = inject(DeltaSyncService);
 
   private listeners: Unsubscribe[] = [];
 
@@ -205,38 +207,36 @@ export class StateService implements OnDestroy {
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
     // statistics.component.ts uses loadAllStandardRequests() on-demand instead
 
-    // standard_requests listener: phân nhánh theo quyền để khớp với Firestore Rules.
-    // Manager: query tất cả pending (cần để duyệt)
-    // Nhân viên thường: query chỉ request của chính mình (tránh permission-denied)
+    // standard_requests listener: DeltaSync phân nhánh theo quyền
     const currentUser = this.auth.currentUser();
     const isApprover = this.auth.canApprove() || this.auth.canApproveStandards();
     const uid = currentUser?.uid;
 
-    let stdReqQuery;
+    let constraints = null;
+    let cacheKey = '';
     if (isApprover) {
-        // Manager/Admin: thấy tất cả pending + pending_return để duyệt
-        stdReqQuery = query(
-            collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'),
-            where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN']),
-            orderBy('requestDate', 'desc')
-        );
+        constraints = [where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN'])];
+        cacheKey = 'lims_std_req_approver_' + this.fb.APP_ID;
     } else if (uid) {
-        // Nhân viên thường: chỉ thấy request của mình (khớp rule Firestore)
-        stdReqQuery = query(
-            collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests'),
+        constraints = [
             where('requestedBy', '==', uid),
-            where('status', 'in', ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN']),
-            orderBy('requestDate', 'desc')
-        );
-    } else {
-        stdReqQuery = null;
+            where('status', 'in', ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'])
+        ];
+        cacheKey = 'lims_std_req_user_' + uid + '_' + this.fb.APP_ID;
     }
 
-    if (stdReqQuery) {
-        const stdReqSub = onSnapshot(stdReqQuery,
-            (s) => { const items: any[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() })); this.standardRequests.set(items); },
-            handleError('Standard Requests')
-        );
+    if (constraints && cacheKey) {
+        const stdReqSub = this.deltaSync.startListener({
+            cacheKey: cacheKey,
+            cursorKey: cacheKey + '_cursor',
+            collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
+            maxCacheSize: 300,
+            orderByField: 'requestDate',
+            orderDirection: 'desc',
+            queryConstraints: constraints
+        }, (data) => {
+            this.standardRequests.set(data);
+        });
         this.listeners.push(stdReqSub);
     }
 
@@ -384,6 +384,13 @@ export class StateService implements OnDestroy {
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
   async loadAllStandardRequests(): Promise<void> {
     try {
+      const cacheKey = 'lims_all_standard_requests_cache_' + this.fb.APP_ID;
+      const cached = this.deltaSync.getCache<any>(cacheKey);
+      if (cached && cached.length > 0) {
+        this.allStandardRequests.set(cached);
+        return;
+      }
+      
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
       const q = query(colRef, orderBy('requestDate', 'desc'), limit(300));
       const snap = await getDocs(q);
@@ -396,6 +403,13 @@ export class StateService implements OnDestroy {
   // Populates state.standards() signal so statistics.component.ts works unchanged.
   async loadReferenceStandards(): Promise<void> {
     try {
+      const cacheKey = 'lims_reference_standards_cache_' + this.fb.APP_ID;
+      const cached = this.deltaSync.getCache<any>(cacheKey);
+      if (cached && cached.length > 0) {
+        this.standards.set(cached);
+        return;
+      }
+      
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
       const q = query(colRef, orderBy('received_date', 'desc'), limit(300));
       const snap = await getDocs(q);

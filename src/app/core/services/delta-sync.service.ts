@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, query, onSnapshot, where, orderBy, getDocs, limit, QueryDocumentSnapshot } from 'firebase/firestore';
+import { Firestore, collection, query, onSnapshot, where, orderBy, getDocs, limit, QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 
 export interface DeltaSyncConfig {
   cacheKey: string;
@@ -8,6 +8,7 @@ export interface DeltaSyncConfig {
   maxCacheSize?: number;
   orderByField?: string;
   orderDirection?: 'asc' | 'desc';
+  queryConstraints?: QueryConstraint[];
 }
 
 import { FirebaseService } from './firebase.service';
@@ -68,15 +69,11 @@ export class DeltaSyncService {
     const colRef = collection(this.fb, config.collectionPath);
     let q;
     
+    const constraints = config.queryConstraints || [];
     if (cursor > 0) {
-       // Note: Firetore timestamp is an object, but we store cursor as seconds.
-       // We need to query by comparing the timestamp field.
-       // Wait, if lastUpdated is a serverTimestamp, we need to convert our cursor to a Date or Timestamp object.
-       // It's easier to just query where lastUpdated > new Date(cursor * 1000)
-       q = query(colRef, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
+       q = query(colRef, ...constraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
     } else {
-       // Should not happen if initial fetch works, but fallback just in case
-       q = query(colRef, orderBy('lastUpdated', 'asc'), limit(100));
+       q = query(colRef, ...constraints, orderBy('lastUpdated', 'asc'), limit(100));
     }
 
     return onSnapshot(q, (snapshot) => {
@@ -130,7 +127,8 @@ export class DeltaSyncService {
     
     // We only want docs that are NOT soft deleted. But soft deleted docs might not have _isDeleted field if they are old.
     // So we just fetch the latest docs. If some are soft deleted, they will be filtered out next.
-    const q = query(colRef, orderBy(sortField, sortDir), limit(maxCacheSize));
+    const constraints = config.queryConstraints || [];
+    const q = query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
     const snapshot = await getDocs(q);
     
     const items: T[] = [];
@@ -194,6 +192,10 @@ export class DeltaSyncService {
     }
 
     return maxSeconds;
+  }
+
+  public getCache<T>(key: string): T[] {
+    return this.loadFromCache<T>(key);
   }
 
   private loadFromCache<T>(key: string): T[] {
