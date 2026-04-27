@@ -10,7 +10,6 @@ import {
   onAuthStateChanged, 
   GoogleAuthProvider,
   setPersistence,
-  browserSessionPersistence,
   browserLocalPersistence,
   type User,
   type Auth
@@ -60,38 +59,34 @@ export class AuthService {
   constructor() {
     this.auth = getAuth(this.fb.app);
 
-    // ── Handle Google redirect result FIRST, before setting persistence ──
-    // browserSessionPersistence does NOT survive a page redirect (tab session is reset).
-    // getRedirectResult() reads the pending credential from IndexedDB (set by Firebase
-    // before navigating away), so it must run before we set/change persistence.
-    getRedirectResult(this.auth)
-        .then(async (result) => {
-            if (result?.user) {
-                console.log('[Auth] Google redirect sign-in successful. Switching back to session persistence.');
-                // Downgrade back to session persistence after redirect login succeeds
-                await setPersistence(this.auth, browserSessionPersistence);
-            }
+    // Dùng localStorage persistence để auth state tồn tại qua page redirect
+    // (browserSessionPersistence bị xóa khi navigate, không dùng được với signInWithRedirect)
+    setPersistence(this.auth, browserLocalPersistence).then(() => {
+
+      // Bắt kết quả từ signInWithRedirect (chạy TRƯỚC onAuthStateChanged)
+      getRedirectResult(this.auth)
+        .then((result) => {
+          if (result?.user) {
+            console.log('[Auth] Google redirect sign-in OK:', result.user.email);
+          }
         })
         .catch((e) => {
-            if (e?.code && e.code !== 'auth/popup-closed-by-user') {
-                console.warn('[Auth] Redirect result error:', e.code);
-            }
-        })
-        .finally(() => {
-            // Set session persistence for normal (non-redirect) logins
-            // Only if not currently handling a redirect result
-            setPersistence(this.auth, browserSessionPersistence).then(() =>
-                onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
-                    if (firebaseUser) {
-                        this.syncUser(firebaseUser);
-                    } else {
-                        if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-                        this.currentUser.set(null);
-                        this.isAuthReady.set(true);
-                    }
-                })
-            );
+          if (e?.code && e.code !== 'auth/popup-closed-by-user') {
+            console.warn('[Auth] Redirect result error:', e.code);
+          }
         });
+
+      // onAuthStateChanged sẽ tự nhận user sau redirect
+      onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
+        if (firebaseUser) {
+          this.syncUser(firebaseUser);
+        } else {
+          if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+          this.currentUser.set(null);
+          this.isAuthReady.set(true);
+        }
+      });
+    });
   }
 
   // --- LOCAL CREDENTIAL CACHING (For Seamless QR Login) ---
@@ -148,10 +143,8 @@ export class AuthService {
         }
     } catch (e: any) {
         if (e.code === 'auth/popup-blocked') {
-            // ── 2. Popup blocked → switch to localStorage then redirect ──
-            // Must use localStorage persistence so auth state survives page navigation
-            console.warn('[Auth] Popup blocked. Switching to localStorage + signInWithRedirect.');
-            await setPersistence(this.auth, browserLocalPersistence);
+            // ── 2. Popup blocked → redirect (browserLocalPersistence already set in constructor) ──
+            console.warn('[Auth] Popup blocked. Falling back to signInWithRedirect.');
             await signInWithRedirect(this.auth, provider);
             // Page navigates away — no further code runs here
             return;
