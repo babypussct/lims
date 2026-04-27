@@ -10,10 +10,12 @@ import { ReferenceStandard, UsageLog, StandardsPage, ImportPreviewItem, ImportUs
 import { ToastService } from '../../core/services/toast.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { generateSlug, getStandardizedAmount, parseQuantityInput, formatNum } from '../../shared/utils/utils';
+import { DeltaSyncService } from '../../core/services/delta-sync.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
   private fb = inject(FirebaseService);
+  deltaSync = inject(DeltaSyncService);
   private auth = inject(AuthService);
   private toast = inject(ToastService);
   private notificationService = inject(NotificationService);
@@ -612,16 +614,14 @@ export class StandardService {
 
   // --- NEW: Global Usage Logs ---
   listenToGlobalUsageLogs(callback: (logs: UsageLog[]) => void): Unsubscribe {
-      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages`);
-      // OPTIMIZED: added limit(100) to prevent unbounded snapshot reads
-      const q = query(colRef, orderBy('timestamp', 'desc'), limit(100)); 
-      
-      return onSnapshot(q, (snapshot) => {
-          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UsageLog));
-          callback(items);
-      }, (error) => {
-          console.error("Error listening to global usage logs:", error);
-      });
+      return this.deltaSync.startListener<UsageLog>({
+          cacheKey: 'lims_usage_cache_' + this.fb.APP_ID,
+          cursorKey: 'lims_usage_sync_seconds_' + this.fb.APP_ID,
+          collectionPath: `artifacts/${this.fb.APP_ID}/standard_usages`,
+          maxCacheSize: 1000,
+          orderByField: 'timestamp',
+          orderDirection: 'desc'
+      }, callback);
   }
 
   /** Query nhật ký theo khoảng ngày — vượt giới hạn 100 bản ghi của real-time listener */
@@ -723,7 +723,8 @@ export class StandardService {
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
           
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
+
           transaction.set(globalLogRef, log);
       });
   }
@@ -785,7 +786,9 @@ export class StandardService {
           }
 
           transaction.delete(logRef);
-          transaction.delete(globalLogRef);
+          if (globalLogDoc.exists()) {
+              transaction.update(globalLogRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+          }
       });
       
       await this.logGlobalActivity('DELETE_USAGE_LOG', `Xóa dòng nhật ký và hoàn trả tồn kho chuẩn: ${stdId}`, logId);
@@ -1049,7 +1052,8 @@ export class StandardService {
 
               reqUpdateData['usageLogs'] = [...currentLogs, log];
               transaction.set(newLogRef, log);
-              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
+
               transaction.set(globalLogRef, log);
           }
 
@@ -1085,7 +1089,7 @@ export class StandardService {
                       const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs/${log.id}`);
                       updateDoc(logRef, { user: reqData.requestedByName }).catch(() => {});
                       const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
-                      updateDoc(globalLogRef, { user: reqData.requestedByName }).catch(() => {});
+                      updateDoc(globalLogRef, { user: reqData.requestedByName, lastUpdated: serverTimestamp() }).catch(() => {});
                   }
               }
               return log;
@@ -1118,7 +1122,7 @@ export class StandardService {
                       const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs/${badLog.id}`);
                       await deleteDoc(logRef).catch(() => {});
                       const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${badLog.id}`);
-                      await deleteDoc(globalLogRef).catch(() => {});
+                      await updateDoc(globalLogRef, { _isDeleted: true, lastUpdated: serverTimestamp() }).catch(() => {});
                   }
               }
               count++;
@@ -1165,6 +1169,7 @@ export class StandardService {
               await updateDoc(reqRef, { usageLogs: newLogs });
               await setDoc(newLogRef, log);
               const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+              log.lastUpdated = serverTimestamp();
               await setDoc(globalLogRef, log);
               count++;
           }
@@ -1267,7 +1272,8 @@ export class StandardService {
           };
 
           transaction.set(newLogRef, log);
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
+
           transaction.set(globalLogRef, log);
           
           // [AUTO-OPEN] Chỉ cập nhật date_opened khi chưa có, hoặc khi ngày log mới sớm hơn ngày đang lưu
@@ -1365,7 +1371,7 @@ export class StandardService {
                       transaction.delete(logRef);
                       
                       const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
-                      transaction.delete(globalLogRef);
+                      transaction.set(globalLogRef, { _isDeleted: true, lastUpdated: serverTimestamp() }, { merge: true });
                   }
               });
           }
@@ -1564,7 +1570,8 @@ export class StandardService {
                   
                   batch.set(logRef, log);
                   
-                  const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+                  const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);log.lastUpdated = serverTimestamp();
+
                   batch.set(globalLogRef, log);
                   
                   opCount += 2;
@@ -1759,7 +1766,8 @@ export class StandardService {
               const logRef = doc(logsCollRef);
               log.id = logRef.id;
               batch.set(logRef, log);
-              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);log.lastUpdated = serverTimestamp();
+
               batch.set(globalLogRef, log);
               opCount += 2;
 

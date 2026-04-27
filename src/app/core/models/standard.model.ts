@@ -17,6 +17,10 @@ export interface UsageLog {
   internalId?: string;
   manufacturer?: string;
 
+  // Delta Sync & Soft Delete
+  lastUpdated?: any;
+  _isDeleted?: boolean;
+
   // [NEW-4] Request linkage — cho phép deleteUsageLog cập nhật đúng request khi chuẩn đã trả về
   requestId?: string;
 }

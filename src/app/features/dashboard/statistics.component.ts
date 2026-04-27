@@ -8,6 +8,7 @@ import { InventoryService } from '../../features/inventory/inventory.service';
 import { formatDate, formatNum, cleanName, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
+import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
 import Chart from 'chart.js/auto'; // STANDARD IMPORT
 
 interface NxtReportItem {
@@ -24,7 +25,7 @@ interface NxtReportItem {
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, DateRangeFilterComponent],
+  imports: [CommonModule, FormsModule, DateRangeFilterComponent, ExportModalComponent],
   template: `
     @if (auth.canViewReports()) {
         <div class="h-full flex flex-col space-y-5 pb-6 fade-in overflow-hidden relative font-sans text-slate-800 dark:text-slate-200">
@@ -466,34 +467,18 @@ interface NxtReportItem {
 
     <!-- GLOBAL EXPORT MODAL -->
     @if (showGlobalExportModal()) {
-        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" (click)="$event.target === $event.currentTarget && !isExporting() && showGlobalExportModal.set(false)">
-            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
-                
-                <!-- Header -->
-                <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/10 dark:to-purple-900/10 shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-lg">
-                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-300/30">
-                                <i class="fa-solid fa-file-export text-sm"></i>
-                            </div>
-                            Xuất Báo cáo Tổng hợp
-                        </h3>
-                        <div class="flex items-center gap-2 mt-1 ml-[46px]">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{{startDate()}} → {{endDate()}}</span>
-                            @if (selectedSopId() !== 'all') {
-                                <span class="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-bold">SOP: {{getSelectedSopName()}}</span>
-                            }
-                        </div>
-                    </div>
-                    <button (click)="showGlobalExportModal.set(false)" [disabled]="isExporting()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
-                        <i class="fa-solid fa-times"></i>
-                    </button>
-                </div>
-                
-                <!-- Scrollable Content -->
-                <div class="flex-1 overflow-y-auto custom-scrollbar">
-                    
-                    <!-- Quick Presets -->
+        <app-export-modal
+            title="Xuất Báo cáo Tổng hợp"
+            [dateRangeText]="startDate() + ' → ' + endDate()"
+            [subtitle]="selectedSopId() !== 'all' ? 'SOP: ' + getSelectedSopName() : ''"
+            [isExporting]="isExporting()"
+            [isCompleted]="exportProgress().cover === 'done'"
+            [footerText]="getSelectedSheetsCount() + ' sheet(s) sẽ được xuất'"
+            (close)="showGlobalExportModal.set(false)"
+            (execute)="runGlobalExport()"
+            [isSubmitDisabled]="getSelectedSheetsCount() === 0">
+            
+            <!-- Quick Presets -->
                     @if (!isExporting()) {
                     <div class="px-5 pt-5 pb-3">
                         <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-bolt mr-1"></i> Gợi ý Mẫu Khung Báo Cáo</div>
@@ -722,43 +707,8 @@ interface NxtReportItem {
                                 <span class="text-[10px] text-slate-400 font-medium">Sheet "Trang bìa" với KPIs tóm tắt sẽ tự động được thêm vào file</span>
                             </div>
                         }
-
-                        <!-- Progress complete -->
-                        @if (isExporting() && exportProgress().cover === 'done') {
-                            <div class="mt-2 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-lg shadow-emerald-200">
-                                    <i class="fa-solid fa-check-double"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-black text-emerald-700 dark:text-emerald-400">Hoàn tất! File đã được tải xuống.</div>
-                                    <div class="text-[11px] text-emerald-600 dark:text-emerald-500">Kiểm tra thư mục Downloads của bạn.</div>
-                                </div>
-                            </div>
-                        }
                     </div>
-                </div>
-
-                <!-- Footer -->
-                <div class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 flex gap-3 justify-between items-center shrink-0">
-                    <div class="text-[10px] text-slate-400 font-medium">
-                        @if (!isExporting()) {
-                            {{getSelectedSheetsCount()}} sheet(s) sẽ được xuất
-                        }
-                    </div>
-                    <div class="flex gap-3">
-                        <button (click)="showGlobalExportModal.set(false)" [disabled]="isExporting()" class="px-5 py-2.5 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
-                        @if (!isExporting() || exportProgress().cover === 'done') {
-                            <button (click)="runGlobalExport()" 
-                                    [disabled]="isExporting() || getSelectedSheetsCount() === 0"
-                                    class="px-8 py-2.5 rounded-2xl font-black text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-indigo-200/50 dark:shadow-none transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
-                                <i class="fa-solid fa-cloud-arrow-down"></i>
-                                @if (exportProgress().cover === 'done') { Xuất lại } @else { Bắt đầu Xuất File }
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+        </app-export-modal>
     }
   `
 })
