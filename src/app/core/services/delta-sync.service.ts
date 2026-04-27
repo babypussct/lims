@@ -10,11 +10,14 @@ export interface DeltaSyncConfig {
   orderDirection?: 'asc' | 'desc';
 }
 
+import { FirebaseService } from './firebase.service';
+
 @Injectable({
   providedIn: 'root'
 })
 export class DeltaSyncService {
-  private fb = inject(Firestore);
+  private firebaseService = inject(FirebaseService);
+  private fb = this.firebaseService.db;
 
   /**
    * Initializes a delta sync listener.
