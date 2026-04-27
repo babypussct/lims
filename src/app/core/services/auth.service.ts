@@ -53,6 +53,8 @@ export class AuthService {
 
   currentUser = signal<UserProfile | null>(null);
   isAuthReady = signal<boolean>(false);
+  /** true trong khi đang xử lý token trả về từ Google redirect — dùng để ẩn màn hình Login */
+  isProcessingRedirect = signal<boolean>(false);
   private userUnsub: any = null;
 
   constructor() {
@@ -66,18 +68,22 @@ export class AuthService {
     if (pendingIdToken) {
       sessionStorage.removeItem('__google_id_token'); // Clear immediately
       console.log('[Auth] Intercepted Google ID Token from redirect. Authenticating...');
+      this.isProcessingRedirect.set(true); // ← Khoá màn hình Login
       
       const credential = GoogleAuthProvider.credential(pendingIdToken);
       signInWithCredential(this.auth, credential).then(result => {
           console.log('[Auth] Successfully authenticated with ID Token:', result.user.email);
+          // onAuthStateChanged sẽ set isProcessingRedirect = false sau khi syncUser xong
       }).catch(e => {
           console.error('[Auth] Failed to authenticate with ID Token:', e);
+          this.isProcessingRedirect.set(false); // Mở lại Login nếu lỗi
       });
     }
 
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
+        this.isProcessingRedirect.set(false); // Tắt overlay khi đã có user
         this.syncUser(firebaseUser);
       } else {
         if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }

@@ -101,6 +101,13 @@ import { filter } from 'rxjs/operators';
            <i class="fa-solid fa-flask text-5xl text-blue-500 animate-pulse mb-4"></i>
            <div class="text-white font-bold tracking-widest animate-pulse">NAFIQPM6 | LIMS CLOUD</div>
         </div>
+      } @else if (auth.isProcessingRedirect()) {
+        <!-- Overlay khi đang xử lý token từ Google redirect — không cho tương tác trang login -->
+        <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
+           <i class="fa-brands fa-google text-5xl text-white animate-pulse mb-6"></i>
+           <div class="text-white font-bold tracking-widest animate-pulse mb-2">ĐANG XÁC THỰC TÀI KHOẢN...</div>
+           <div class="text-slate-400 text-sm">Vui lòng chờ trong giây lát</div>
+        </div>
       } @else {
         @if (state.currentUser(); as user) {
           @if (user.role === 'pending') {
