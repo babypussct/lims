@@ -9,6 +9,7 @@ const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 @Injectable({ providedIn: 'root' })
 export class GoogleDriveService {
   private tokenClient: any = null;
+  private tokenClientRedirect: any = null;
   private accessToken: string = '';
   private tokenExpiry: number = 0;
   private initialized = false;
@@ -21,6 +22,20 @@ export class GoogleDriveService {
 
   isReady = signal(false);
   isAuthenticated = signal(false); // true once an access token is obtained
+
+  constructor() {
+      // Restore token from redirect auth (set by index.html pre-bootstrap script)
+      const savedToken = sessionStorage.getItem('__gd_token');
+      const savedExpiry = sessionStorage.getItem('__gd_expiry');
+      if (savedToken && savedExpiry) {
+          this.accessToken = savedToken;
+          this.tokenExpiry = parseInt(savedExpiry);
+          this.isAuthenticated.set(true);
+          sessionStorage.removeItem('__gd_token');
+          sessionStorage.removeItem('__gd_expiry');
+          console.log('[GoogleDrive] Token restored from redirect auth.');
+      }
+  }
 
   /** Whether tokenClient is redy to accept a synchronous requestAccessToken call */
   get canAuthSync(): boolean {
@@ -58,6 +73,7 @@ export class GoogleDriveService {
       throw new Error('Chưa cấu hình Google Drive Client ID trong environment.');
     }
 
+    // Primary: popup mode
     this.tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: config.clientId,
       scope: 'https://www.googleapis.com/auth/drive.file',
@@ -67,6 +83,14 @@ export class GoogleDriveService {
       error_callback: (error: any) => {
           if (this.currentErrorCallback) this.currentErrorCallback(error);
       }
+    });
+
+    // Fallback: redirect mode (no popup needed — navigates the page)
+    this.tokenClientRedirect = google.accounts.oauth2.initTokenClient({
+      client_id: config.clientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      ux_mode: 'redirect',
+      redirect_uri: window.location.origin + window.location.pathname,
     });
 
     this.initialized = true;
@@ -220,20 +244,18 @@ export class GoogleDriveService {
   }
 
   /**
-   * SYNCHRONOUS auth trigger — call directly from a (click) handler.
+   * Auth trigger — call directly from a (click) handler.
    *
-   * Strategy: Pre-open a blank popup via window.open() in the direct user-gesture
-   * context (which browsers always allow), then monkey-patch window.open so that
-   * when GIS internally calls window.open() for the consent screen, it reuses
-   * our pre-opened popup instead of trying to create a new one.
-   *
-   * This guarantees no popup-blocker issues regardless of browser/PWA/extension.
+   * Strategy:
+   * 1. Try popup mode (pre-open popup + monkey-patch window.open)
+   * 2. If popup is blocked → fall back to redirect mode (no popup needed,
+   *    navigates the page to Google auth and back)
    */
   authenticateSync(
       onSuccess: (token: string) => void,
       onError: (message: string) => void
   ): void {
-      // Already have a valid cached token — skip popup entirely
+      // Already have a valid cached token — skip entirely
       if (this.accessToken && Date.now() < this.tokenExpiry) {
           onSuccess(this.accessToken);
           return;
@@ -244,19 +266,18 @@ export class GoogleDriveService {
           return;
       }
 
-      // ── 1. Pre-open popup in user-gesture context ──
-      const authPopup = window.open(
-          'about:blank',
-          'gis_auth_popup',
-          'width=500,height=600,left=200,top=100'
-      );
+      // ── 1. Try popup ──
+      const authPopup = window.open('about:blank', 'gis_auth_popup', 'width=500,height=600,left=200,top=100');
 
       if (!authPopup || authPopup.closed) {
-          onError('Trình duyệt đã chặn popup. Vui lòng cho phép popup từ trang này trong cài đặt trình duyệt.');
+          // Popup blocked → fall back to redirect mode
+          console.warn('[GoogleDrive] Popup blocked. Falling back to redirect mode.');
+          this._authViaRedirect();
+          // Don't call onError — the page is navigating away
           return;
       }
 
-      // Show a friendly loading screen in the pre-opened popup
+      // ── 2. Popup opened → use monkey-patch approach ──
       try {
           authPopup.document.write(
               '<html><head><title>Đăng nhập Google</title></head>' +
@@ -267,17 +288,14 @@ export class GoogleDriveService {
               '<p style="font-size:15px;color:#64748b;font-weight:600">Đang kết nối Google Drive...</p>' +
               '</div></body></html>'
           );
-      } catch (_) { /* cross-origin write may fail, ignore */ }
+      } catch (_) {}
 
-      // ── 2. Monkey-patch window.open so GIS reuses our popup ──
       const origOpen = window.open.bind(window);
       let restored = false;
-      const restore = () => {
-          if (!restored) { window.open = origOpen; restored = true; }
-      };
+      const restore = () => { if (!restored) { window.open = origOpen; restored = true; } };
 
       (window as any).open = (url?: string | URL, target?: string, features?: string): WindowProxy | null => {
-          restore(); // one-shot override
+          restore();
           if (authPopup && !authPopup.closed && url) {
               try { authPopup.location.href = url.toString(); } catch (_) {}
               return authPopup;
@@ -285,12 +303,7 @@ export class GoogleDriveService {
           return origOpen(url, target, features);
       };
 
-      // ── 3. Set up callbacks & timeout ──
-      const cleanup = () => {
-          restore();
-          this.currentCallback = null;
-          this.currentErrorCallback = null;
-      };
+      const cleanup = () => { restore(); this.currentCallback = null; this.currentErrorCallback = null; };
 
       const timeout = setTimeout(() => {
           cleanup();
@@ -301,16 +314,11 @@ export class GoogleDriveService {
       this.currentCallback = (response: any) => {
           clearTimeout(timeout);
           cleanup();
-          // Close the popup (if GIS returned a token silently, the popup is still blank)
           if (authPopup && !authPopup.closed) authPopup.close();
-
-          if (response.error) {
-              onError(response.error_description || response.error);
-              return;
-          }
+          if (response.error) { onError(response.error_description || response.error); return; }
           this.accessToken = response.access_token;
           this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-          console.log('[GoogleDrive] authenticateSync: token obtained.');
+          console.log('[GoogleDrive] authenticateSync: token obtained via popup.');
           this.isAuthenticated.set(true);
           onSuccess(this.accessToken);
       };
@@ -319,7 +327,6 @@ export class GoogleDriveService {
           clearTimeout(timeout);
           cleanup();
           if (authPopup && !authPopup.closed) authPopup.close();
-
           if (error?.type === 'popup_closed') {
               onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
           } else {
@@ -327,7 +334,6 @@ export class GoogleDriveService {
           }
       };
 
-      // ── 4. Fire the token request — GIS will reuse our pre-opened popup ──
       try {
           this.tokenClient.requestAccessToken({ prompt: '' });
       } catch (e) {
@@ -336,6 +342,23 @@ export class GoogleDriveService {
           if (authPopup && !authPopup.closed) authPopup.close();
           console.error('[GoogleDrive] requestAccessToken threw:', e);
           onError('Không thể khởi tạo đăng nhập Google. Hãy thử lại.');
+      }
+  }
+
+  /**
+   * Redirect-based auth fallback. Saves current route, then navigates
+   * the entire page to Google's consent screen. After auth, Google
+   * redirects back and the index.html script restores the token + route.
+   */
+  private _authViaRedirect(): void {
+      // Save current route so we return to the same page
+      sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
+
+      if (this.tokenClientRedirect) {
+          this.tokenClientRedirect.requestAccessToken();
+      } else {
+          // Fallback if redirect client not initialized yet
+          console.error('[GoogleDrive] Redirect client not available.');
       }
   }
 

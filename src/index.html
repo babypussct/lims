@@ -91,6 +91,26 @@
   <meta name="theme-color" content="#1976d2">
 </head>
 <body class="antialiased text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-900 h-full overflow-hidden transition-colors duration-300">
+  <script>
+    // Handle Google OAuth redirect response BEFORE Angular bootstraps.
+    // When ux_mode='redirect', Google redirects back with #access_token=...
+    // We must intercept this before Angular's HashLocationStrategy tries to route it.
+    (function() {
+      var h = window.location.hash || '';
+      if (h.indexOf('access_token=') > -1 && h.charAt(1) !== '/') {
+        var params = new URLSearchParams(h.substring(1));
+        var token = params.get('access_token');
+        var exp = params.get('expires_in');
+        if (token) {
+          sessionStorage.setItem('__gd_token', token);
+          sessionStorage.setItem('__gd_expiry', '' + (Date.now() + (parseInt(exp || '3600') - 300) * 1000));
+        }
+        var route = sessionStorage.getItem('__gd_route') || '#/standards';
+        sessionStorage.removeItem('__gd_route');
+        window.location.replace(window.location.pathname + route);
+      }
+    })();
+  </script>
   <app-root></app-root>
   <!-- Dedicated Container for Direct Printing -->
   <div id="print-container"></div>
