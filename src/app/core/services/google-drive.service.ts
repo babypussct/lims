@@ -9,7 +9,6 @@ const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 @Injectable({ providedIn: 'root' })
 export class GoogleDriveService {
   private tokenClient: any = null;
-  private tokenClientRedirect: any = null;
   private accessToken: string = '';
   private tokenExpiry: number = 0;
   private initialized = false;
@@ -83,14 +82,6 @@ export class GoogleDriveService {
       error_callback: (error: any) => {
           if (this.currentErrorCallback) this.currentErrorCallback(error);
       }
-    });
-
-    // Fallback: redirect mode (no popup needed — navigates the page)
-    this.tokenClientRedirect = google.accounts.oauth2.initTokenClient({
-      client_id: config.clientId,
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      ux_mode: 'redirect',
-      redirect_uri: window.location.origin + window.location.pathname,
     });
 
     this.initialized = true;
@@ -346,20 +337,36 @@ export class GoogleDriveService {
   }
 
   /**
-   * Redirect-based auth fallback. Saves current route, then navigates
-   * the entire page to Google's consent screen. After auth, Google
-   * redirects back and the index.html script restores the token + route.
+   * Redirect-based auth fallback. Bypasses GIS popup entirely by
+   * constructing the OAuth 2.0 implicit grant URL manually and
+   * navigating via window.location.href (no popup needed).
+   *
+   * After auth, Google redirects back with #access_token=... in the URL.
+   * The index.html pre-bootstrap script catches and stores the token.
    */
   private _authViaRedirect(): void {
-      // Save current route so we return to the same page
+      const config = (environment as any).googleDrive;
+      if (!config?.clientId) {
+          console.error('[GoogleDrive] No clientId for redirect auth.');
+          return;
+      }
+
+      // Save current route so we return to the same page after redirect
       sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
 
-      if (this.tokenClientRedirect) {
-          this.tokenClientRedirect.requestAccessToken();
-      } else {
-          // Fallback if redirect client not initialized yet
-          console.error('[GoogleDrive] Redirect client not available.');
-      }
+      const redirectUri = window.location.origin + window.location.pathname;
+      const params = new URLSearchParams({
+          client_id: config.clientId,
+          redirect_uri: redirectUri,
+          response_type: 'token',
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          include_granted_scopes: 'true',
+          prompt: 'consent',
+      });
+
+      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+      console.log('[GoogleDrive] Redirecting to Google OAuth...');
+      window.location.href = authUrl;
   }
 
   /**
