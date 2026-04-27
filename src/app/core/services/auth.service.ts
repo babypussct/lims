@@ -3,7 +3,9 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut, 
   onAuthStateChanged, 
   GoogleAuthProvider,
@@ -58,7 +60,7 @@ export class AuthService {
     this.auth = getAuth(this.fb.app);
     
     // Config session persistence
-    setPersistence(this.auth, browserSessionPersistence).then(() => {
+    setPersistence(this.auth, browserSessionPersistence).then(() =>
         onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
           if (firebaseUser) {
             this.syncUser(firebaseUser);
@@ -67,8 +69,23 @@ export class AuthService {
             this.currentUser.set(null);
             this.isAuthReady.set(true);
           }
+        })
+    );
+
+    // Handle redirect result after signInWithRedirect returns
+    getRedirectResult(getAuth(this.fb.app))
+        .then((result) => {
+            if (result?.user) {
+                console.log('[Auth] Google redirect sign-in successful.');
+                // syncUser will be triggered by onAuthStateChanged automatically
+            }
+        })
+        .catch((e) => {
+            // Redirect errors (e.g. user cancelled) — ignore silently
+            if (e.code !== 'auth/popup-closed-by-user') {
+                console.warn('[Auth] Redirect result error:', e.code);
+            }
         });
-    });
   }
 
   // --- LOCAL CREDENTIAL CACHING (For Seamless QR Login) ---
@@ -114,15 +131,30 @@ export class AuthService {
 
   async loginWithGoogle() {
     const provider = new GoogleAuthProvider();
-    // Force account picker every time — critical for shared workstations
-    // where multiple employees use the same browser/computer
+    // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
-    await signInWithPopup(this.auth, provider);
-    // Cannot save password for Google Auth, QR login will require password entry or fail
-    
-    // Fallback: Force sync if already logged in and state is stuck
-    if (!this.currentUser() && this.auth.currentUser) {
-        this.syncUser(this.auth.currentUser);
+
+    try {
+        // ── 1. Try popup first ──
+        await signInWithPopup(this.auth, provider);
+        if (!this.currentUser() && this.auth.currentUser) {
+            this.syncUser(this.auth.currentUser);
+        }
+    } catch (e: any) {
+        if (
+            e.code === 'auth/popup-blocked' ||
+            e.code === 'auth/popup-closed-by-user'
+        ) {
+            if (e.code === 'auth/popup-blocked') {
+                // ── 2. Popup blocked → fall back to redirect ──
+                console.warn('[Auth] Popup blocked. Falling back to signInWithRedirect.');
+                await signInWithRedirect(this.auth, provider);
+                // Page will navigate away — no further code runs here
+            }
+            // If user closed the popup, do nothing (not an error)
+            return;
+        }
+        throw e; // Re-throw real errors (network, etc.)
     }
   }
 
