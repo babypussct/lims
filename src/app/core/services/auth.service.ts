@@ -59,33 +59,31 @@ export class AuthService {
   constructor() {
     this.auth = getAuth(this.fb.app);
 
-    // Dùng localStorage persistence để auth state tồn tại qua page redirect
-    // (browserSessionPersistence bị xóa khi navigate, không dùng được với signInWithRedirect)
-    setPersistence(this.auth, browserLocalPersistence).then(() => {
-
-      // Bắt kết quả từ signInWithRedirect (chạy TRƯỚC onAuthStateChanged)
-      getRedirectResult(this.auth)
-        .then((result) => {
-          if (result?.user) {
-            console.log('[Auth] Google redirect sign-in OK:', result.user.email);
-          }
-        })
-        .catch((e) => {
-          if (e?.code && e.code !== 'auth/popup-closed-by-user') {
-            console.warn('[Auth] Redirect result error:', e.code);
-          }
-        });
-
-      // onAuthStateChanged sẽ tự nhận user sau redirect
-      onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
-        if (firebaseUser) {
-          this.syncUser(firebaseUser);
-        } else {
-          if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-          this.currentUser.set(null);
-          this.isAuthReady.set(true);
+    // Mặc định Firebase sử dụng local persistence (IndexedDB) cho web.
+    // Persistence mặc định này tồn tại qua page redirect, nên signInWithRedirect hoạt động ổn định.
+    
+    // 1. Bắt kết quả từ signInWithRedirect (chạy TRƯỚC onAuthStateChanged)
+    getRedirectResult(this.auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log('[Auth] Google redirect sign-in OK:', result.user.email);
+        }
+      })
+      .catch((e) => {
+        if (e?.code && e.code !== 'auth/popup-closed-by-user') {
+          console.warn('[Auth] Redirect result error:', e.code);
         }
       });
+
+    // 2. Lắng nghe trạng thái đăng nhập
+    onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
+      if (firebaseUser) {
+        this.syncUser(firebaseUser);
+      } else {
+        if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+        this.currentUser.set(null);
+        this.isAuthReady.set(true);
+      }
     });
   }
 
