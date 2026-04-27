@@ -354,7 +354,9 @@ export class GoogleDriveService {
       // Save current route so we return to the same page after redirect
       sessionStorage.setItem('__gd_route', window.location.hash || '#/standards');
 
-      const redirectUri = window.location.origin + window.location.pathname;
+      // redirect_uri PHẢI KHỚP CHÍNH XÁC với Authorized redirect URIs trong Google Console
+      // Dùng origin only (VD: https://nafiqpm6.vercel.app) — KHÔNG có dấu / cuối
+      const redirectUri = window.location.origin;
       const params = new URLSearchParams({
           client_id: config.clientId,
           redirect_uri: redirectUri,
