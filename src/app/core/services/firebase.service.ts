@@ -31,7 +31,8 @@ export class FirebaseService {
     this.db = initializeFirestore(this.app, {
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager()
-      })
+      }),
+      experimentalForceLongPolling: true
     });
 
     this.storage = getStorage(this.app);
