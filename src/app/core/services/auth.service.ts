@@ -4,8 +4,7 @@ import {
   getAuth, 
   signInWithEmailAndPassword, 
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithCredential,
   signOut, 
   onAuthStateChanged, 
   GoogleAuthProvider,
@@ -59,21 +58,22 @@ export class AuthService {
   constructor() {
     this.auth = getAuth(this.fb.app);
 
-    // Mặc định Firebase sử dụng local persistence (IndexedDB) cho web.
-    // Persistence mặc định này tồn tại qua page redirect, nên signInWithRedirect hoạt động ổn định.
-    
-    // 1. Bắt kết quả từ signInWithRedirect (chạy TRƯỚC onAuthStateChanged)
-    getRedirectResult(this.auth)
-      .then((result) => {
-        if (result?.user) {
-          console.log('[Auth] Google redirect sign-in OK:', result.user.email);
-        }
-      })
-      .catch((e) => {
-        if (e?.code && e.code !== 'auth/popup-closed-by-user') {
-          console.warn('[Auth] Redirect result error:', e.code);
-        }
+    // --- DIRECT OIDC LOGIN FALLBACK INTERCEPTOR ---
+    // If the manual redirect fallback was used, index.html will capture the id_token
+    // from the URL hash and place it in sessionStorage. We process it here BEFORE
+    // regular auth state logic.
+    const pendingIdToken = sessionStorage.getItem('__google_id_token');
+    if (pendingIdToken) {
+      sessionStorage.removeItem('__google_id_token'); // Clear immediately
+      console.log('[Auth] Intercepted Google ID Token from redirect. Authenticating...');
+      
+      const credential = GoogleAuthProvider.credential(pendingIdToken);
+      signInWithCredential(this.auth, credential).then(result => {
+          console.log('[Auth] Successfully authenticated with ID Token:', result.user.email);
+      }).catch(e => {
+          console.error('[Auth] Failed to authenticate with ID Token:', e);
       });
+    }
 
     // 2. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
@@ -141,9 +141,9 @@ export class AuthService {
         }
     } catch (e: any) {
         if (e.code === 'auth/popup-blocked') {
-            // ── 2. Popup blocked → redirect (browserLocalPersistence already set in constructor) ──
-            console.warn('[Auth] Popup blocked. Falling back to signInWithRedirect.');
-            await signInWithRedirect(this.auth, provider);
+            // ── 2. Popup blocked → Bulletproof Direct OpenID Connect Redirect ──
+            console.warn('[Auth] Popup blocked. Falling back to manual OpenID Connect redirect.');
+            this._authViaDirectOidc();
             // Page navigates away — no further code runs here
             return;
         }
@@ -151,6 +151,36 @@ export class AuthService {
             throw e; // Re-throw real errors
         }
     }
+  }
+
+  /**
+   * Directly navigates the browser to Google OAuth to get an ID Token.
+   * Completely bypasses Firebase's cross-domain redirect handlers.
+   */
+  private _authViaDirectOidc(): void {
+      const config = require('../../../environments/environment').environment.googleDrive;
+      if (!config?.clientId) {
+          console.error('[Auth] No clientId found for manual OIDC redirect.');
+          return;
+      }
+
+      // Save current route so index.html knows where to put the user back
+      sessionStorage.setItem('__gd_route', window.location.hash || '#/');
+
+      // Redirect URI must be EXACTLY what is registered in Google Cloud Console
+      const redirectUri = window.location.origin; 
+      const params = new URLSearchParams({
+          client_id: config.clientId,
+          redirect_uri: redirectUri,
+          response_type: 'id_token',
+          scope: 'email profile openid',
+          prompt: 'select_account',
+          nonce: Math.random().toString(36).substring(2) + Date.now() // Required for id_token
+      });
+
+      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+      console.log('[Auth] Redirecting directly to Google OpenID Connect...');
+      window.location.href = authUrl;
   }
 
   async logout() {
