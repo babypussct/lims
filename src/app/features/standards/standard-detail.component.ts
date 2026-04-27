@@ -815,11 +815,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
     // --- Quick Upload CoA ---
     triggerQuickDriveUpload() {
-        // Nếu có pending auth từ lần click trước (popup bị chặn), retry ngay trong user gesture mới
-        if (this.googleDriveService.retryPendingAuth()) {
-            return; // retryPendingAuth sẽ tái sử dụng callbacks đã lưu
-        }
-
         // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
         this.googleDriveService.authenticateSync(
             () => {

@@ -19,10 +19,6 @@ export class GoogleDriveService {
   private currentCallback: ((response: any) => void) | null = null;
   private currentErrorCallback: ((error: any) => void) | null = null;
 
-  // Pending auth state: allows retry on second click if popup was blocked
-  private pendingAuthSuccess: ((token: string) => void) | null = null;
-  private pendingAuthError: ((msg: string) => void) | null = null;
-
   isReady = signal(false);
   isAuthenticated = signal(false); // true once an access token is obtained
 
@@ -224,16 +220,14 @@ export class GoogleDriveService {
   }
 
   /**
-   * SYNCHRONOUS auth trigger — call directly from a (click) handler WITHOUT await.
-   * `tokenClient.requestAccessToken` opens the Google popup SYNCHRONOUSLY,
-   * preserving the user gesture context (no popup-blocker issues).
+   * SYNCHRONOUS auth trigger — call directly from a (click) handler.
    *
-   * If the popup is blocked on first attempt, this stores a "pending" state.
-   * On the SECOND click (still a user gesture), it retries — this time the browser
-   * trusts the popup because it is a fresh, direct user gesture.
+   * Strategy: Pre-open a blank popup via window.open() in the direct user-gesture
+   * context (which browsers always allow), then monkey-patch window.open so that
+   * when GIS internally calls window.open() for the consent screen, it reuses
+   * our pre-opened popup instead of trying to create a new one.
    *
-   * @param onSuccess called with the access token after auth
-   * @param onError   called with an error message if auth fails
+   * This guarantees no popup-blocker issues regardless of browser/PWA/extension.
    */
   authenticateSync(
       onSuccess: (token: string) => void,
@@ -246,36 +240,70 @@ export class GoogleDriveService {
       }
 
       if (!this.tokenClient) {
-          // GIS not ready yet — should not happen if ensureInitialized() ran in ngOnInit.
-          // Store pending callbacks so next click can retry.
-          this.pendingAuthSuccess = onSuccess;
-          this.pendingAuthError = onError;
           onError('Google Drive SDK chưa sẵn sàng. Hãy thử lại sau vài giây.');
           return;
       }
 
-      this._executeTokenRequest(onSuccess, onError);
-  }
+      // ── 1. Pre-open popup in user-gesture context ──
+      const authPopup = window.open(
+          'about:blank',
+          'gis_auth_popup',
+          'width=500,height=600,left=200,top=100'
+      );
 
-  /**
-   * Internal: actually invoke tokenClient.requestAccessToken in current user-gesture context.
-   */
-  private _executeTokenRequest(
-      onSuccess: (token: string) => void,
-      onError: (message: string) => void
-  ): void {
+      if (!authPopup || authPopup.closed) {
+          onError('Trình duyệt đã chặn popup. Vui lòng cho phép popup từ trang này trong cài đặt trình duyệt.');
+          return;
+      }
+
+      // Show a friendly loading screen in the pre-opened popup
+      try {
+          authPopup.document.write(
+              '<html><head><title>Đăng nhập Google</title></head>' +
+              '<body style="display:flex;align-items:center;justify-content:center;' +
+              'height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc">' +
+              '<div style="text-align:center">' +
+              '<div style="font-size:40px;margin-bottom:16px">🔒</div>' +
+              '<p style="font-size:15px;color:#64748b;font-weight:600">Đang kết nối Google Drive...</p>' +
+              '</div></body></html>'
+          );
+      } catch (_) { /* cross-origin write may fail, ignore */ }
+
+      // ── 2. Monkey-patch window.open so GIS reuses our popup ──
+      const origOpen = window.open.bind(window);
+      let restored = false;
+      const restore = () => {
+          if (!restored) { window.open = origOpen; restored = true; }
+      };
+
+      (window as any).open = (url?: string | URL, target?: string, features?: string): WindowProxy | null => {
+          restore(); // one-shot override
+          if (authPopup && !authPopup.closed && url) {
+              try { authPopup.location.href = url.toString(); } catch (_) {}
+              return authPopup;
+          }
+          return origOpen(url, target, features);
+      };
+
+      // ── 3. Set up callbacks & timeout ──
+      const cleanup = () => {
+          restore();
+          this.currentCallback = null;
+          this.currentErrorCallback = null;
+      };
+
       const timeout = setTimeout(() => {
-          this.pendingAuthSuccess = null;
-          this.pendingAuthError = null;
+          cleanup();
+          if (authPopup && !authPopup.closed) authPopup.close();
           onError('Đăng nhập Google quá thời gian (60s). Hãy thử lại.');
       }, 60000);
 
       this.currentCallback = (response: any) => {
           clearTimeout(timeout);
-          this.currentCallback = null;
-          this.currentErrorCallback = null;
-          this.pendingAuthSuccess = null;
-          this.pendingAuthError = null;
+          cleanup();
+          // Close the popup (if GIS returned a token silently, the popup is still blank)
+          if (authPopup && !authPopup.closed) authPopup.close();
+
           if (response.error) {
               onError(response.error_description || response.error);
               return;
@@ -289,98 +317,25 @@ export class GoogleDriveService {
 
       this.currentErrorCallback = (error: any) => {
           clearTimeout(timeout);
-          this.currentCallback = null;
-          this.currentErrorCallback = null;
+          cleanup();
+          if (authPopup && !authPopup.closed) authPopup.close();
+
           if (error?.type === 'popup_closed') {
-              this.pendingAuthSuccess = null;
-              this.pendingAuthError = null;
               onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
-          } else if (error?.type === 'popup_failed_to_open') {
-              // Store pending callbacks so the NEXT click (a fresh user gesture) can retry
-              this.pendingAuthSuccess = onSuccess;
-              this.pendingAuthError = onError;
-              console.warn('[GoogleDrive] Popup blocked. Will retry on next user click.');
-              onError('Popup bị chặn. Hãy bấm nút Upload CoA lần nữa để đăng nhập Google.');
           } else {
-              this.pendingAuthSuccess = null;
-              this.pendingAuthError = null;
               onError(error?.type || 'Lỗi đăng nhập không xác định');
           }
       };
 
-      // THIS LINE IS SYNCHRONOUS — opens the Google popup immediately in the click context
+      // ── 4. Fire the token request — GIS will reuse our pre-opened popup ──
       try {
           this.tokenClient.requestAccessToken({ prompt: '' });
       } catch (e) {
-          // Some browsers throw instead of calling error_callback
           clearTimeout(timeout);
-          console.warn('[GoogleDrive] requestAccessToken threw:', e);
-          this.pendingAuthSuccess = onSuccess;
-          this.pendingAuthError = onError;
-          onError('Popup bị chặn. Hãy bấm nút Upload CoA lần nữa để đăng nhập Google.');
-      }
-  }
-
-  /**
-   * Check if there's a pending auth from a previous popup-blocked attempt.
-   * If yes, retry the auth in the current (fresh) user-gesture context.
-   * Returns true if a retry was triggered, false if no pending auth.
-   */
-  retryPendingAuth(): boolean {
-      if (this.pendingAuthSuccess && this.tokenClient) {
-          console.log('[GoogleDrive] Retrying pending auth in fresh user gesture context...');
-          const onSuccess = this.pendingAuthSuccess;
-          const onError = this.pendingAuthError || (() => {});
-          this.pendingAuthSuccess = null;
-          this.pendingAuthError = null;
-          // Use prompt: 'consent' to force popup on retry (user has already clicked once)
-          this._executeTokenRequestWithPrompt(onSuccess, onError, 'consent');
-          return true;
-      }
-      return false;
-  }
-
-  /**
-   * Execute token request with a specific prompt mode.
-   */
-  private _executeTokenRequestWithPrompt(
-      onSuccess: (token: string) => void,
-      onError: (message: string) => void,
-      prompt: string
-  ): void {
-      const timeout = setTimeout(() => {
-          onError('Đăng nhập Google quá thời gian (60s). Hãy thử lại.');
-      }, 60000);
-
-      this.currentCallback = (response: any) => {
-          clearTimeout(timeout);
-          this.currentCallback = null;
-          this.currentErrorCallback = null;
-          if (response.error) {
-              onError(response.error_description || response.error);
-              return;
-          }
-          this.accessToken = response.access_token;
-          this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-          console.log('[GoogleDrive] Token obtained on retry.');
-          this.isAuthenticated.set(true);
-          onSuccess(this.accessToken);
-      };
-
-      this.currentErrorCallback = (error: any) => {
-          clearTimeout(timeout);
-          this.currentCallback = null;
-          this.currentErrorCallback = null;
-          onError(error?.type === 'popup_closed'
-              ? 'Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.'
-              : (error?.type || 'Lỗi đăng nhập không xác định'));
-      };
-
-      try {
-          this.tokenClient.requestAccessToken({ prompt });
-      } catch (e) {
-          clearTimeout(timeout);
-          onError('Không thể mở cửa sổ đăng nhập. Hãy cho phép popup từ trang này trong trình duyệt.');
+          cleanup();
+          if (authPopup && !authPopup.closed) authPopup.close();
+          console.error('[GoogleDrive] requestAccessToken threw:', e);
+          onError('Không thể khởi tạo đăng nhập Google. Hãy thử lại.');
       }
   }
 

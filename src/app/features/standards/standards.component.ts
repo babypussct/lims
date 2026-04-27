@@ -600,11 +600,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   triggerQuickDriveUpload(std: ReferenceStandard, event: Event) {
       event.stopPropagation();
       this.quickUploadStd = std;
-
-      // Nếu có pending auth từ lần click trước (popup bị chặn), retry ngay trong user gesture mới
-      if (this.googleDriveService.retryPendingAuth()) {
-          return; // retryPendingAuth sẽ tái sử dụng callbacks đã lưu
-      }
       
       // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
       this.googleDriveService.authenticateSync(
@@ -738,11 +733,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       let items = this.bulkCoaItems();
       const toUpload = items.filter(i => i.matchedStandard && i.status !== 'success');
       if (toUpload.length === 0 || this.isBulkUploading()) return;
-
-      // Nếu có pending auth từ lần click trước (popup bị chặn), retry ngay
-      if (this.googleDriveService.retryPendingAuth()) {
-          return;
-      }
 
       // NÚT "XÁC NHẬN UPLOAD" TRONG MODAL SẼ KÍCH HOẠT HÀM NÀY, TỨC LÀ MỘT USER GESTURE.
       this.googleDriveService.authenticateSync(
