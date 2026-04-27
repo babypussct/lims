@@ -11,6 +11,7 @@ import {
   GoogleAuthProvider,
   setPersistence,
   browserSessionPersistence,
+  browserLocalPersistence,
   type User,
   type Auth
 } from 'firebase/auth';
@@ -58,33 +59,38 @@ export class AuthService {
 
   constructor() {
     this.auth = getAuth(this.fb.app);
-    
-    // Config session persistence
-    setPersistence(this.auth, browserSessionPersistence).then(() =>
-        onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
-          if (firebaseUser) {
-            this.syncUser(firebaseUser);
-          } else {
-            if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
-            this.currentUser.set(null);
-            this.isAuthReady.set(true);
-          }
-        })
-    );
 
-    // Handle redirect result after signInWithRedirect returns
-    getRedirectResult(getAuth(this.fb.app))
-        .then((result) => {
+    // ── Handle Google redirect result FIRST, before setting persistence ──
+    // browserSessionPersistence does NOT survive a page redirect (tab session is reset).
+    // getRedirectResult() reads the pending credential from IndexedDB (set by Firebase
+    // before navigating away), so it must run before we set/change persistence.
+    getRedirectResult(this.auth)
+        .then(async (result) => {
             if (result?.user) {
-                console.log('[Auth] Google redirect sign-in successful.');
-                // syncUser will be triggered by onAuthStateChanged automatically
+                console.log('[Auth] Google redirect sign-in successful. Switching back to session persistence.');
+                // Downgrade back to session persistence after redirect login succeeds
+                await setPersistence(this.auth, browserSessionPersistence);
             }
         })
         .catch((e) => {
-            // Redirect errors (e.g. user cancelled) — ignore silently
-            if (e.code !== 'auth/popup-closed-by-user') {
+            if (e?.code && e.code !== 'auth/popup-closed-by-user') {
                 console.warn('[Auth] Redirect result error:', e.code);
             }
+        })
+        .finally(() => {
+            // Set session persistence for normal (non-redirect) logins
+            // Only if not currently handling a redirect result
+            setPersistence(this.auth, browserSessionPersistence).then(() =>
+                onAuthStateChanged(this.auth, async (firebaseUser: User | null) => {
+                    if (firebaseUser) {
+                        this.syncUser(firebaseUser);
+                    } else {
+                        if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+                        this.currentUser.set(null);
+                        this.isAuthReady.set(true);
+                    }
+                })
+            );
         });
   }
 
@@ -141,20 +147,18 @@ export class AuthService {
             this.syncUser(this.auth.currentUser);
         }
     } catch (e: any) {
-        if (
-            e.code === 'auth/popup-blocked' ||
-            e.code === 'auth/popup-closed-by-user'
-        ) {
-            if (e.code === 'auth/popup-blocked') {
-                // ── 2. Popup blocked → fall back to redirect ──
-                console.warn('[Auth] Popup blocked. Falling back to signInWithRedirect.');
-                await signInWithRedirect(this.auth, provider);
-                // Page will navigate away — no further code runs here
-            }
-            // If user closed the popup, do nothing (not an error)
+        if (e.code === 'auth/popup-blocked') {
+            // ── 2. Popup blocked → switch to localStorage then redirect ──
+            // Must use localStorage persistence so auth state survives page navigation
+            console.warn('[Auth] Popup blocked. Switching to localStorage + signInWithRedirect.');
+            await setPersistence(this.auth, browserLocalPersistence);
+            await signInWithRedirect(this.auth, provider);
+            // Page navigates away — no further code runs here
             return;
         }
-        throw e; // Re-throw real errors (network, etc.)
+        if (e.code !== 'auth/popup-closed-by-user') {
+            throw e; // Re-throw real errors
+        }
     }
   }
 
