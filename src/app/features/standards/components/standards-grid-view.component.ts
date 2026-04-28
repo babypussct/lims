@@ -141,11 +141,6 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                                <i class="fa-solid fa-print text-xs"></i>
                                            </button>
                                        }
-                                       @if (std.id === 'SDHET' || std.internal_id === 'SDHET') {
-                                           <button (click)="$event.stopPropagation(); autoZeroStock.emit(std)" class="w-auto px-3 h-8 rounded-lg bg-orange-600 dark:bg-orange-500 text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-md shadow-orange-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Trừ kho (Kiểm kho)">
-                                               <i class="fa-solid fa-box-open"></i> Trừ kho
-                                           </button>
-                                       }
                                        @if(canAssign(std)) {
                                            @if(canEditStandards()) {
                                                <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
@@ -196,7 +191,6 @@ export class StandardsGridViewComponent {
   copyText = output<{text: string, event: Event}>();
   openCoaPreview = output<{url: string, event: Event}>();
   triggerQuickDriveUpload = output<{std: ReferenceStandard, event: Event}>();
-  autoZeroStock = output<ReferenceStandard>();
   openAssignModal = output<{std: ReferenceStandard, isAssign: boolean}>();
   goToReturn = output<ReferenceStandard>();
   openPurchaseRequestModal = output<ReferenceStandard>();

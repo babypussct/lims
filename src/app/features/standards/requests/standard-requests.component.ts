@@ -19,11 +19,12 @@ import { RequestsKanbanComponent } from './components/requests-kanban.component'
 import { RequestsTableComponent } from './components/requests-table.component';
 import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
 import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
+import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
 
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent],
   template: `
     <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 overflow-hidden">
       <!-- Header Area -->
@@ -39,10 +40,12 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
         </div>
         
         <div class="flex gap-3 items-center">
-             @if (auth.canApproveStandards() && pendingPurchaseRequestsCount() > 0) {
+             @if (auth.canApproveStandards()) {
                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
-                     <i class="fa-solid fa-cart-shopping animate-bounce"></i> Yêu cầu Mua sắm
-                     <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
+                     <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu Mua sắm
+                     @if (pendingPurchaseRequestsCount() > 0) {
+                        <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
+                     }
                  </button>
              }
              <button (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
@@ -202,8 +205,16 @@ import { RequestsActionModalsComponent, ActionModalMode } from './components/req
           [isProcessing]="isProcessing()"
           [availableStandards]="availableStandards()"
           (close)="closeModal()"
-          (submitRequest)="submitRequest($event)">
+          (submitRequest)="submitRequest($event)"
+          (requestPurchase)="openPurchaseModal($event)">
       </app-create-request-drawer>
+
+      <!-- PURCHASE REQUEST MODAL FOR USERS -->
+      <app-standards-purchase-modal 
+          [isOpen]="showPurchaseModal()" 
+          [selectedStd]="selectedPurchaseStd()" 
+          (closeModal)="closePurchaseModal()">
+      </app-standards-purchase-modal>
 
       <!-- ADMIN PURCHASE REQUESTS MODAL -->
       @if (showPurchaseRequestsAdminModal()) {
@@ -339,6 +350,9 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isProcessing = signal(false);
   showModal = signal(false);
+  
+  showPurchaseModal = signal(false);
+  selectedPurchaseStd = signal<ReferenceStandard | null>(null);
   
   selectedRequest = signal<StandardRequest | null>(null);
   activeModal = signal<ActionModalMode>(null);
@@ -492,6 +506,16 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   closeModal() {
       this.showModal.set(false);
+  }
+
+  openPurchaseModal(std: ReferenceStandard) {
+      this.selectedPurchaseStd.set(std);
+      this.showPurchaseModal.set(true);
+  }
+
+  closePurchaseModal() {
+      this.showPurchaseModal.set(false);
+      this.selectedPurchaseStd.set(null);
   }
 
   async submitRequest(event: { standardIds: string[], purpose: string, expectedReturnDate?: number }) {

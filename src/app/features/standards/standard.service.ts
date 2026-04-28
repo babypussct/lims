@@ -722,7 +722,8 @@ export class StandardService {
                       transaction.update(reqRef, {
                           usageLogs: updatedLogs,
                           totalAmountUsed: Math.max(0, (reqData.totalAmountUsed || 0) - (amountToRestore || 0)),
-                          updatedAt: Date.now()
+                          updatedAt: Date.now(),
+                          lastUpdated: serverTimestamp()
                       });
                   }
               }
@@ -865,7 +866,8 @@ export class StandardService {
               approvedBy: approverId,
               approvedByName: approverName,
               approvalDate: Date.now(),
-              updatedAt: Date.now()
+              updatedAt: Date.now(),
+              lastUpdated: serverTimestamp()
           });
       });
 
@@ -1040,7 +1042,7 @@ export class StandardService {
           });
           if (changed) {
               const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
-              await updateDoc(reqRef, { usageLogs: updatedLogs });
+              await updateDoc(reqRef, { usageLogs: updatedLogs, lastUpdated: serverTimestamp() });
               count++;
           }
       }
@@ -1195,7 +1197,8 @@ export class StandardService {
           transaction.update(reqRef, {
               totalAmountUsed: (reqData.totalAmountUsed || 0) + amountToDeduct,
               usageLogs: [...currentLogs, log],
-              updatedAt: Date.now()
+              updatedAt: Date.now(),
+              lastUpdated: serverTimestamp()
           });
       });
       
@@ -1748,7 +1751,8 @@ export class StandardService {
           status: 'COMPLETED',
           processedDate: Date.now(),
           processedBy,
-          processedByName
+          processedByName,
+          lastUpdated: serverTimestamp()
       });
 
       // Reset restock_requested on standard

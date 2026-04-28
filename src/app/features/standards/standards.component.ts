@@ -104,7 +104,6 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
                     (copyText)="copyText($event.text, $event.event)"
                     (openCoaPreview)="openCoaPreview($event.url, $event.event)"
                     (triggerQuickDriveUpload)="triggerQuickDriveUpload($event.std, $event.event)"
-                    (autoZeroStock)="autoZeroStock($event)"
                     (openAssignModal)="openAssignModal($event.std, $event.isAssign)"
                     (goToReturn)="goToReturn($event)"
                     (openPurchaseRequestModal)="openPurchaseRequestModal($event)"
@@ -126,7 +125,6 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
                     (copyText)="copyText($event.text, $event.event)"
                     (openCoaPreview)="openCoaPreview($event.url, $event.event)"
                     (triggerQuickDriveUpload)="triggerQuickDriveUpload($event.std, $event.event)"
-                    (autoZeroStock)="autoZeroStock($event)"
                     (openAssignModal)="openAssignModal($event.std, $event.isAssign)"
                     (goToReturn)="goToReturn($event)"
                     (openPurchaseRequestModal)="openPurchaseRequestModal($event)"
@@ -512,29 +510,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   
 
 
-  async autoZeroStock(std: ReferenceStandard) {
-      if (this.isProcessing() || std.current_amount <= 0) return;
-      if (await this.confirmationService.confirm({ message: `Bạn có chắc chắn muốn xuất toàn bộ lượng tồn kho còn lại (${std.current_amount} ${std.unit}) của chuẩn này với lý do KIỂM KHO?`, confirmText: 'Xác nhận trừ kho' })) {
-          this.isProcessing.set(true);
-          try {
-              const log: UsageLog = {
-                  id: '',
-                  date: new Date().toISOString().split('T')[0],
-                  timestamp: Date.now(),
-                  user: 'HỆ THỐNG',
-                  amount_used: std.current_amount,
-                  unit: std.unit || 'mg',
-                  purpose: 'KIỂM KHO'
-              };
-              await this.stdService.recordUsage(std.id!, log);
-              this.toast.show('Đã trừ kho thành công', 'success');
-          } catch(e: any) {
-              this.toast.show('Lỗi trừ kho: ' + e.message, 'error');
-          } finally {
-              this.isProcessing.set(false);
-          }
-      }
-  }
+
 
   // --- HARDENED: Bulk Delete ---
   async deleteSelected() {

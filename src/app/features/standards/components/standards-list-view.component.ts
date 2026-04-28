@@ -104,9 +104,6 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                        <td class="px-4 py-3 align-top text-center border-l border-slate-50 dark:border-slate-800">
                           <div class="flex flex-col items-center gap-2">
                              <div class="flex gap-1">
-                                 @if (std.id === 'SDHET' || std.internal_id === 'SDHET') {
-                                     <button (click)="autoZeroStock.emit(std)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-600 dark:bg-orange-500 text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-md shadow-orange-200 dark:shadow-none transition active:scale-95" title="Trừ kho (Kiểm kho)"><i class="fa-solid fa-box-open text-xs"></i></button>
-                                 }
                                  @if(canAssign(std)) {
                                      @if(canEditStandards()) {
                                          <button (click)="openAssignModal.emit({std: std, isAssign: true})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95" title="Gán cho mượn"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
@@ -156,7 +153,6 @@ export class StandardsListViewComponent {
   copyText = output<{text: string, event: Event}>();
   openCoaPreview = output<{url: string, event: Event}>();
   triggerQuickDriveUpload = output<{std: ReferenceStandard, event: Event}>();
-  autoZeroStock = output<ReferenceStandard>();
   openAssignModal = output<{std: ReferenceStandard, isAssign: boolean}>();
   goToReturn = output<ReferenceStandard>();
   openPurchaseRequestModal = output<ReferenceStandard>();

@@ -100,6 +100,9 @@ function removeAccents(str: string): string {
                                                          <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
                                                              <i class="fa-solid fa-ban text-red-400"></i> Hết
                                                          </div>
+                                                         <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[9px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
+                                                             <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
+                                                         </button>
                                                      } @else {
                                                          <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                                              {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
@@ -266,6 +269,7 @@ export class CreateRequestDrawerComponent implements OnInit {
 
   @Output() close = new EventEmitter<void>();
   @Output() submitRequest = new EventEmitter<{ standardIds: string[], purpose: string, expectedReturnDate?: number }>();
+  @Output() requestPurchase = new EventEmitter<ReferenceStandard>();
 
   form: FormGroup;
   
