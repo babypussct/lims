@@ -780,7 +780,7 @@ export class StandardService {
       request.id = reqRef.id;
       request.createdAt = Date.now();
       request.updatedAt = Date.now();
-      await setDoc(reqRef, request);
+      await setDoc(reqRef, { ...request, lastUpdated: serverTimestamp() });
       
       if (isAssign) {
           await this.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
