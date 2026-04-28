@@ -1065,7 +1065,7 @@ export class StandardService {
           }
           
           const std = docSnap.data() as ReferenceStandard;
-          if (std.status === 'DELETED' || std._isDeleted) continue;
+          if (std._isDeleted) continue;
 
           const logsSnap = await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${docSnap.id}/logs`));
           
