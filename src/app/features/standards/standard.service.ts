@@ -1258,12 +1258,12 @@ export class StandardService {
                   }
               }
 
-              // 2. Revert status if it was active
+              // 2. Revert status if it was active — dùng deleteField() thay null để xóa field thật sự
               if (stdData.current_request_id === request.id) {
                   updates.status = 'AVAILABLE';
-                  updates.current_holder = null;
-                  updates.current_holder_uid = null;
-                  updates.current_request_id = null;
+                  updates.current_holder = deleteField();
+                  updates.current_holder_uid = deleteField();
+                  updates.current_request_id = deleteField();
               }
 
               transaction.update(stdRef, updates);
@@ -1280,8 +1280,10 @@ export class StandardService {
               });
           }
 
-          // 4. Delete the request
-          transaction.delete(reqRef);
+          // 4. Soft-delete request để DeltaSyncService phát hiện được sự thay đổi
+          //    và xóa khỏi cache localStorage. Hard delete (transaction.delete) sẽ khiến
+          //    DeltaSync không nhận được event → request "ma" vẫn hiển thị trên UI.
+          transaction.update(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
       });
 
       await this.logGlobalActivity('HARD_DELETE_REQUEST', `Xóa hoàn toàn lịch sử yêu cầu: ${request.standardName} (Người yêu cầu: ${request.requestedByName})`, request.id);
