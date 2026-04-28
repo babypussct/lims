@@ -1231,8 +1231,13 @@ export class StandardService {
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${request.id}`);
       const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
       
+      let reqExisted = false;
+
       await runTransaction(this.fb.db, async (transaction) => {
+          const reqDoc = await transaction.get(reqRef);
           const stdDoc = await transaction.get(stdRef);
+
+          reqExisted = reqDoc.exists();
           
           if (stdDoc.exists()) {
               const stdData = stdDoc.data() as ReferenceStandard;
@@ -1280,16 +1285,41 @@ export class StandardService {
               });
           }
 
-          // 4. Soft-delete request để DeltaSyncService phát hiện được sự thay đổi
-          //    và xóa khỏi cache localStorage. Hard delete (transaction.delete) sẽ khiến
-          //    DeltaSync không nhận được event → request "ma" vẫn hiển thị trên UI.
-          transaction.update(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+          // 4. Soft-delete hoặc tạo tombstone cho request
+          if (reqExisted) {
+              // Document còn tồn tại → soft-delete để DeltaSync nhận event và xóa khỏi cache
+              transaction.update(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+          } else {
+              // Document đã bị xóa cứng trước đó (ghost record trong cache)
+              // → Tạo tombstone document để DeltaSync nhận event _isDeleted
+              transaction.set(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+          }
       });
+
+      // Fallback: nếu document đã là ghost, xóa trực tiếp khỏi localStorage cache
+      if (!reqExisted) {
+          this.purgeFromRequestsCache(request.id!);
+      }
 
       await this.logGlobalActivity('HARD_DELETE_REQUEST', `Xóa hoàn toàn lịch sử yêu cầu: ${request.standardName} (Người yêu cầu: ${request.requestedByName})`, request.id);
   }
 
-
+  /** Xóa trực tiếp 1 request khỏi localStorage cache của DeltaSync (dùng cho ghost record) */
+  private purgeFromRequestsCache(requestId: string) {
+      const cacheKey = 'lims_all_standard_requests_cache_' + this.fb.APP_ID;
+      try {
+          const raw = localStorage.getItem(cacheKey);
+          if (raw) {
+              const items: any[] = JSON.parse(raw);
+              const filtered = items.filter(i => i.id !== requestId);
+              if (filtered.length !== items.length) {
+                  localStorage.setItem(cacheKey, JSON.stringify(filtered));
+              }
+          }
+      } catch (e) {
+          console.warn('purgeFromRequestsCache failed', e);
+      }
+  }
 
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
       return this.deltaSync.startListener<StandardRequest>({
