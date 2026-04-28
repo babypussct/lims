@@ -35,6 +35,26 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
   imports: [CommonModule, FormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
   template: `
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
+      <!-- RECALCULATE PROGRESS OVERLAY -->
+      @if (isRecalculating()) {
+          <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in">
+              <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 animate-bounce-in">
+                  <div class="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-3xl mb-4 relative">
+                      <i class="fa-solid fa-arrows-rotate fa-spin"></i>
+                  </div>
+                  <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 mb-2">Đang Cân Đối Tồn Kho</h3>
+                  <p class="text-sm text-slate-500 text-center mb-6">Đang kiểm tra và cộng gộp nhật ký sử dụng. Xin vui lòng không đóng trình duyệt!</p>
+                  <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden relative">
+                      <div class="absolute top-0 left-0 h-full bg-indigo-600 rounded-full transition-all duration-300" [style.width.%]="recalculateProgress()"></div>
+                  </div>
+                  <div class="flex justify-between w-full mt-2 text-xs font-bold text-slate-500">
+                      <span>{{recalcCurrent()}} / {{recalcTotal()}} chuẩn</span>
+                      <span>{{recalculateProgress().toFixed(0)}}%</span>
+                  </div>
+              </div>
+          </div>
+      }
+
       <!-- Header -->
       <app-standards-toolbar
           [selectedCount]="selectedIds().size"
@@ -45,8 +65,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
           (bulkCoaSelect)="handleBulkCoaSelect($event)"
-          (fixOldLogs)="runFixOldLogs()"
-          (fixDateOpened)="runFixDateOpened()">
+          (recalculateInventory)="runRecalculateInventory()">
       </app-standards-toolbar>
 
       <!-- Main Content -->
@@ -185,6 +204,14 @@ export class StandardsComponent implements OnInit, OnDestroy {
   private quickUploadStd: ReferenceStandard | null = null;
   isImporting = signal(false);
   isProcessing = signal(false); // Hardened UX State
+  
+  isRecalculating = signal(false);
+  recalcCurrent = signal(0);
+  recalcTotal = signal(0);
+  recalculateProgress = computed(() => {
+      if (this.recalcTotal() === 0) return 0;
+      return (this.recalcCurrent() / this.recalcTotal()) * 100;
+  });
 
   // Responsive view mode: mobile (touch device) defaults to grid, desktop defaults to list
   private mobileMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
@@ -931,44 +958,31 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.previewImgUrl.set(''); 
   }
 
-  async runFixOldLogs() {
-      if (!this.auth.canEditStandards()) return;
-      
+  async runRecalculateInventory() {
+      if (!this.auth.canEditStandards() || this.isProcessing()) return;
+
       this.confirmationService.confirm({
-          message: 'Khôi phục tự động các Log hoàn trả bị thiếu cho các yêu cầu đã COMPLETED trong quá khứ?',
-          confirmText: 'Đồng ý',
-          cancelText: 'Hủy'
+          message: 'Cân đối lại tồn kho sẽ ghi đè "Tồn kho hiện tại" của TẤT CẢ các chuẩn bằng công thức: Khối lượng ban đầu trừ đi tổng lượng đã sử dụng trong nhật ký. Bạn có chắc chắn muốn thực hiện?',
+          confirmText: 'Bắt đầu Cân Đối',
+          cancelText: 'Hủy',
+          isDangerous: true
       }).then(async (confirmed) => {
           if (confirmed) {
               this.isProcessing.set(true);
+              this.isRecalculating.set(true);
+              this.recalcCurrent.set(0);
+              this.recalcTotal.set(0);
               try {
-                  const count = await this.stdService.fixMissingReturnLogs();
-                  this.toast.show(`Đã khôi phục ${count} log hoàn trả cũ`, 'success');
+                  const totalUpdated = await this.stdService.recalculateInventoryFromLogs((current, total) => {
+                      this.recalcCurrent.set(current);
+                      this.recalcTotal.set(total);
+                  });
+                  this.toast.show(`Đã cân đối và cập nhật lại tồn kho cho ${totalUpdated} chuẩn thành công!`, 'success');
               } catch(e: any) {
-                  this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+                  this.toast.show('Lỗi cân đối kho: ' + e.message, 'error');
               } finally {
                   this.isProcessing.set(false);
-              }
-          }
-      });
-  }
-
-  async runFixDateOpened() {
-      if (!this.auth.canEditStandards()) return;
-
-      this.confirmationService.confirm({
-          message: 'Cập nhật Ngày mở nắp cho tất cả chuẩn dựa trên log sử dụng sớm nhất? Dữ liệu hiện có sẽ bị ghi đè.',
-          confirmText: 'Bắt đầu',
-          cancelText: 'Hủy'
-      }).then(async (confirmed) => {
-          if (confirmed) {
-              this.isProcessing.set(true);
-              try {
-                  await this.stdService.fixDateOpenedFromLogs();
-              } catch(e: any) {
-                  this.toast.show('Lỗi: ' + e.message, 'error');
-              } finally {
-                  this.isProcessing.set(false);
+                  this.isRecalculating.set(false);
               }
           }
       });

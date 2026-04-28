@@ -803,7 +803,7 @@ export class StandardService {
 
   async updateRequestStatus(requestId: string, status: StandardRequestStatus, updates: Partial<StandardRequest> = {}) {
       const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${requestId}`);
-      await updateDoc(reqRef, { status, ...updates, updatedAt: Date.now() });
+      await updateDoc(reqRef, { status, ...updates, updatedAt: Date.now(), lastUpdated: serverTimestamp() });
       
       const reqDoc = await getDoc(reqRef);
       if (reqDoc.exists()) {
@@ -1046,124 +1046,81 @@ export class StandardService {
       }
       this.toast.show(`Đã cập nhật tên người dùng cho ${count} mã yêu cầu mượn khác nhau.`, 'success');
   }
-  async fixMissingReturnLogs() {
-      const q = query(collection(this.fb.db, "artifacts", this.fb.APP_ID, "standard_requests"), where("status", "==", "COMPLETED"));
-      const snapshot = await getDocs(q);
-      let count = 0;
-      for (const d of snapshot.docs) {
-          const reqData = d.data() as StandardRequest;
-          const usageLogs = reqData.usageLogs || [];
-          
-          // Lọc bỏ những log "Hoàn trả kho (đã trừ kho từng đợt)"
-          const unwantedLogs = usageLogs.filter((log: any) => log.purpose === "Hoàn trả kho (đã trừ kho từng đợt)");
-          if (unwantedLogs.length > 0) {
-              const newLogs = usageLogs.filter((log: any) => log.purpose !== "Hoàn trả kho (đã trừ kho từng đợt)");
-              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
-              await updateDoc(reqRef, { usageLogs: newLogs, lastUpdated: serverTimestamp() });
-              
-              for (const badLog of unwantedLogs) {
-                  if (badLog.id && reqData.standardId) {
-                      const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs/${badLog.id}`);
-                      await deleteDoc(logRef).catch(() => {});
-                      const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${badLog.id}`);
-                      await updateDoc(globalLogRef, { _isDeleted: true, lastUpdated: serverTimestamp() }).catch(() => {});
-                  }
-              }
-              count++;
+  async recalculateInventoryFromLogs(onProgress?: (current: number, total: number) => void): Promise<number> {
+      // Fetch all standards
+      const stdsSnap = await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`));
+      
+      const totalStandards = stdsSnap.docs.length;
+      let currentStandard = 0;
+      
+      const BATCH_SIZE = 400;
+      let batch = writeBatch(this.fb.db);
+      let opCount = 0;
+      let totalUpdated = 0;
+
+      for (const docSnap of stdsSnap.docs) {
+          currentStandard++;
+          if (onProgress) {
+              onProgress(currentStandard, totalStandards);
           }
           
-          // Kiểm tra tạo mới nếu CHƯA CÓ prior logs
-          const remainingLogs = usageLogs.filter((log: any) => log.purpose !== "Hoàn trả kho (đã trừ kho từng đợt)");
-          const hasReturnLog = remainingLogs.some((log: any) => log.purpose && (log.purpose.includes("Hoàn trả") || log.purpose.includes("Trả chuẩn")));
-          const hasPreviousLogs = remainingLogs.length > 0;
+          const std = docSnap.data() as ReferenceStandard;
+          if (std.status === 'DELETED' || std._isDeleted) continue;
+
+          const logsSnap = await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${docSnap.id}/logs`));
           
-          if (!hasReturnLog && !hasPreviousLogs) {
-              const logAmount = reqData.totalAmountUsed || 0;
-              const logPurpose = logAmount === 0 ? "Hoàn trả không sử dụng" : "Hoàn trả chuẩn (Khôi phục lịch sử)";
-              
-              let stdData: any = {};
-              if (reqData.standardId) {
-                  const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}`);
-                  const stdDoc = await getDoc(stdRef);
-                  if (stdDoc.exists()) stdData = stdDoc.data();
+          let totalUsed = 0;
+          const stockUnit = std.unit || 'mg';
+          
+          logsSnap.forEach(logSnap => {
+              const log = logSnap.data() as UsageLog;
+              const logUnit = log.unit || stockUnit;
+              const usedInStockUnit = getStandardizedAmount(log.amount_used, logUnit, stockUnit);
+              if (usedInStockUnit !== null) {
+                  totalUsed += usedInStockUnit;
               }
+          });
+          
+          // Tránh số âm và làm tròn số thập phân để tránh lỗi javascript floating point
+          let expectedStock = Math.max(0, (std.initial_amount || 0) - totalUsed);
+          expectedStock = Math.round(expectedStock * 1000000) / 1000000;
+          
+          let status = std.status;
+          if (expectedStock <= 0) {
+              status = 'DEPLETED';
+          } else if (status === 'DEPLETED' && expectedStock > 0) {
+              status = std.current_request_id ? 'IN_USE' : 'AVAILABLE';
+          }
+          
+          const currentAmount = std.current_amount !== undefined ? Math.round(std.current_amount * 1000000) / 1000000 : undefined;
+          
+          if (currentAmount !== expectedStock || std.status !== status) {
+              batch.update(docSnap.ref, {
+                  current_amount: expectedStock,
+                  status: status,
+                  lastUpdated: serverTimestamp()
+              });
+              opCount++;
+              totalUpdated++;
               
-              const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}/logs`);
-              const newLogRef = doc(logsRef);
-              const logTime = reqData.returnDate || reqData.updatedAt || Date.now();
-              const log: UsageLog = {
-                  id: newLogRef.id,
-                  timestamp: logTime,
-                  date: new Date(logTime).toISOString(),
-                  user: reqData.requestedByName || "Unknown",
-                  amount_used: logAmount,
-                  unit: stdData.unit || "mg",
-                  purpose: logPurpose,
-                  standardId: reqData.standardId,
-                  standardName: reqData.standardName,
-                  lotNumber: reqData.lotNumber,
-                  cas_number: stdData.cas_number,
-                  internalId: stdData.internal_id,
-                  manufacturer: stdData.manufacturer,
-                  requestId: d.id
-              };
-              
-              const newLogs = [...remainingLogs, log];
-              const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests/${d.id}`);
-              await updateDoc(reqRef, { usageLogs: newLogs, lastUpdated: serverTimestamp() });
-              await setDoc(newLogRef, log);
-              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
-              log.lastUpdated = serverTimestamp();
-              await setDoc(globalLogRef, log);
-              count++;
+              if (opCount >= BATCH_SIZE) {
+                  await batch.commit();
+                  batch = writeBatch(this.fb.db);
+                  opCount = 0;
+              }
           }
       }
-      return count;
-  }
-
-  /**
-   * Batch fix: Cập nhật date_opened cho tất cả chuẩn dựa trên log sử dụng sớm nhất.
-   * Override: luôn ghi đè date_opened hiện tại nếu log đầu tiên có ngày sớm hơn.
-   */
-  async fixDateOpenedFromLogs(): Promise<number> {
-      const stds = this.getAllStandardsFromCache();
-      let count = 0;
-
-      for (const std of stds) {
-          try {
-              // Lấy log sớm nhất theo timestamp
-              const logsRef = collection(this.fb.db,
-                  `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}/logs`);
-              const q = query(logsRef, orderBy('timestamp', 'asc'), limit(1));
-              const snap = await getDocs(q);
-
-              if (snap.empty) continue;
-
-              const firstLog = snap.docs[0].data();
-              // Ưu tiên trường date, fallback về timestamp
-              let logDate = '';
-              if (firstLog['date']) {
-                  logDate = String(firstLog['date']).split('T')[0];
-              } else if (firstLog['timestamp']) {
-                  logDate = new Date(firstLog['timestamp']).toISOString().split('T')[0];
-              }
-
-              if (!logDate) continue;
-
-              // Override nếu khác với giá trị hiện tại
-              if (std.date_opened !== logDate) {
-                  const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
-                  await updateDoc(stdRef, { date_opened: logDate, lastUpdated: serverTimestamp() });
-                  count++;
-              }
-          } catch (e) {
-              console.warn('[fixDateOpenedFromLogs] skip', std.id, e);
-          }
+      
+      if (opCount > 0) {
+          await batch.commit();
       }
-
-      this.invalidateLocalStandardsCache();
-      this.toast.show(`Đã cập nhật Ngày mở nắp cho ${count} chuẩn.`, 'success');
-      return count;
+      
+      if (totalUpdated > 0) {
+          await this.logGlobalActivity('RECALCULATE_INVENTORY', `Đã cân đối lại tồn kho cho ${totalUpdated} chuẩn đối chiếu dựa trên nhật ký sử dụng.`);
+          this.invalidateLocalStandardsCache();
+      }
+      
+      return totalUpdated;
   }
 
   async logUsageForRequest(requestId: string, standardId: string, amount: number, unit: string, purpose: string, userId: string, userName: string) {

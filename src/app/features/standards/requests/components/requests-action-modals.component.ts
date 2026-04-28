@@ -341,6 +341,13 @@ export class RequestsActionModalsComponent {
            if (!this.adminReceiveIsDepleted() && req.reportedDepleted) {
               this.adminReceiveIsDepleted.set(req.reportedDepleted);
            }
+        } else if (mode === 'approve' && req) {
+           if (!this.approvePurpose()) {
+              this.approvePurpose.set(req.purpose || '');
+           }
+           if (!this.approveExpectedDate() && req.expectedReturnDate) {
+              this.approveExpectedDate.set(new Date(req.expectedReturnDate).toISOString().split('T')[0]);
+           }
         }
     }, { allowSignalWrites: true });
   }

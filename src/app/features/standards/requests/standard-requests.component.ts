@@ -322,7 +322,14 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   router = inject(Router);
 
   requests = signal<StandardRequest[]>([]);
-  availableStandards = signal<ReferenceStandard[]>([]);
+  availableStandards = computed(() => {
+      const activeRequestStdIds = new Set(
+          this.requests()
+              .filter(r => ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'].includes(r.status))
+              .map(r => r.standardId)
+      );
+      return this.allStandards().filter(s => s.status !== 'IN_USE' && !activeRequestStdIds.has(s.id));
+  });
   allStandards = signal<ReferenceStandard[]>([]);
   
   searchTerm = signal('');
@@ -417,14 +424,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
     const stds = this.stdService.getAllStandardsFromCache();
     if (stds && stds.length > 0) {
         this.allStandards.set(stds);
-        this.availableStandards.set(stds.filter(s => s.status !== 'IN_USE'));
     }
 
     // Pha 2: Live Listener Singleton — chia sẻ với StandardsComponent nếu đã mở
     this.unregisterLiveListener = this.stdService.listenToStandards((stds) => {
         if (stds) {
             this.allStandards.set([...stds]);
-            this.availableStandards.set(stds.filter((s: ReferenceStandard) => s.status !== 'IN_USE'));
         }
     });
 
@@ -506,10 +511,9 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               const std = this.availableStandards().find(s => s.id === stdId);
               if (!std) continue;
 
-              // [BUG-4] Kiểm tra request trùng lặp: người dùng đã có yêu cầu đang hoạt động cho chuẩn này chưa
+              // Kiểm tra request trùng lặp: bất kỳ ai đã có yêu cầu đang hoạt động cho chuẩn này chưa
               const hasActiveRequest = this.requests().some(r =>
                   r.standardId === stdId &&
-                  r.requestedBy === user.uid &&
                   ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'].includes(r.status)
               );
               if (hasActiveRequest) {
