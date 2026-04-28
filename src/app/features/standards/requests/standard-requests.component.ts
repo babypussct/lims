@@ -430,7 +430,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Requests listener (bounded query limit 300, giữ nguyên)
     this.unsubRequests = this.stdService.listenToRequests((reqs) => {
-        this.requests.set(reqs);
+        // Lọc bỏ ghost records (soft-deleted) còn sót trong DeltaSync cache
+        this.requests.set(reqs.filter(r => !(r as any)._isDeleted));
         this.isLoading.set(false);
     });
 

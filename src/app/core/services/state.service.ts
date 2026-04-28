@@ -235,7 +235,8 @@ export class StateService implements OnDestroy {
             orderDirection: 'desc',
             queryConstraints: constraints
         }, (data) => {
-            this.standardRequests.set(data);
+            // Lọc bỏ ghost records (soft-deleted bởi hardDeleteRequest) còn sót trong cache
+            this.standardRequests.set(data.filter((r: any) => !r._isDeleted));
         });
         this.listeners.push(stdReqSub);
     }
@@ -387,14 +388,14 @@ export class StateService implements OnDestroy {
       const cacheKey = 'lims_all_standard_requests_cache_' + this.fb.APP_ID;
       const cached = this.deltaSync.getCache<any>(cacheKey);
       if (cached && cached.length > 0) {
-        this.allStandardRequests.set(cached);
+        this.allStandardRequests.set(cached.filter((r: any) => !r._isDeleted));
         return;
       }
       
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
       const q = query(colRef, orderBy('requestDate', 'desc'), limit(300));
       const snap = await getDocs(q);
-      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((r: any) => !r._isDeleted));
     } catch (e) { console.warn('loadAllStandardRequests error:', e); }
   }
 
