@@ -746,6 +746,7 @@ export class StandardService {
           action,
           details,
           timestamp: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
           user: this.auth.currentUser()?.displayName || 'Hệ thống',
           targetId
       });

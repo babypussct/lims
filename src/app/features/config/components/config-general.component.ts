@@ -476,6 +476,7 @@ service cloud.firestore {
         // Các collections còn lại: cần đăng nhập (inventory, SOPs, config, ...)
         // KHÔNG dùng wildcard rộng để tránh override rule ở trên
         match /inventory/{docId}            { allow read, write: if isAuth(); }
+        match /inventory/{docId}/history/{historyId} { allow read, write: if isAuth(); }
         match /sops/{docId}                 { allow read, write: if isAuth(); }
         match /reference_standards/{docId}  { allow read, write: if isAuth(); }
         match /reference_standards/{docId}/logs/{logId} { allow read, write: if isAuth(); }

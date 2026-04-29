@@ -790,7 +790,7 @@ export class StateService implements OnDestroy {
         // 2. Update inventory
         for (const itemName of Object.keys(inventoryDiff)) {
             if (inventoryDiff[itemName] !== 0) {
-                transaction.set(invRefs[itemName], { stock: increment(inventoryDiff[itemName]) }, { merge: true });
+                transaction.set(invRefs[itemName], { stock: increment(inventoryDiff[itemName]), lastUpdated: serverTimestamp() }, { merge: true });
             }
         }
         
@@ -801,7 +801,8 @@ export class StateService implements OnDestroy {
             inputs: formInputs,
             margin: formInputs.safetyMargin || 0,
             analysisDate: formInputs.analysisDate || null,
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
         };
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         else reqData.sampleList = deleteField();
@@ -827,6 +828,7 @@ export class StateService implements OnDestroy {
         transaction.set(printJobRef, { 
             ...sanitizeForFirebase(printData),
             createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             createdBy: this.getCurrentUserName()
         });
 
@@ -834,6 +836,7 @@ export class StateService implements OnDestroy {
           action: 'EDIT_REQUEST', 
           details: `Chỉnh sửa phiếu: ${req.sopName}`, 
           timestamp: serverTimestamp(), 
+          lastUpdated: serverTimestamp(),
           user: this.getCurrentUserName(),
           printable: true,
           printJobId: printJobRef.id,
@@ -857,7 +860,7 @@ export class StateService implements OnDestroy {
     if (!this.auth.canApprove()) return;
     if (!await this.confirmationService.confirm({ message: 'Từ chối yêu cầu này?', confirmText: 'Từ chối', isDangerous: true, })) return;
     try {
-      await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp() });
+      await updateDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id), { status: 'rejected', rejectedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
       this.toast.show('Đã từ chối', 'info');
     } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
   }
@@ -865,7 +868,7 @@ export class StateService implements OnDestroy {
   async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
       const batch = writeBatch(this.fb.db);
       const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.update(logRef, { printable: false });
+      batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
       if (printJobId) {
           const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
           batch.delete(jobRef);
@@ -877,7 +880,7 @@ export class StateService implements OnDestroy {
   async deleteSelectedPrintLogs(logs: Log[]) { 
       const batch = writeBatch(this.fb.db);
       logs.forEach(log => {
-          batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false });
+          batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
           if (log.printJobId) {
               batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
           }
