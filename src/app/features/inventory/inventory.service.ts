@@ -327,6 +327,7 @@ export class InventoryService {
             const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.id, 'history'));
             const historyEntry: StockHistoryItem = {
                 timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
                 actionType: 'CREATE',
                 amountChange: item.stock,
                 stockAfter: item.stock,
@@ -338,6 +339,7 @@ export class InventoryService {
             const historyRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.id, 'history'));
             const historyEntry: StockHistoryItem = {
                 timestamp: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
                 actionType: item.stock > oldStock ? 'IMPORT' : 'EXPORT',
                 amountChange: item.stock - oldStock,
                 stockAfter: item.stock,
@@ -357,6 +359,7 @@ export class InventoryService {
             action,
             details,
             timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             user: currentUser,
             targetId: item.id,
             reason: reason
@@ -391,6 +394,7 @@ export class InventoryService {
         action: 'SOFT_DELETE_ITEM',
         details: `Đưa vào Thùng rác: ${id} (Tồn cuối: ${finalStock})`,
         timestamp: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
         user: currentUser,
         targetId: id,
         reason: reason
@@ -418,6 +422,7 @@ export class InventoryService {
           action: 'RESTORE_ITEM',
           details: `Khôi phục từ Thùng rác: ${id}`,
           timestamp: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
           user: currentUser,
           targetId: id
       });
@@ -441,6 +446,7 @@ export class InventoryService {
         // B. Write History
         const historyEntry: StockHistoryItem = {
             timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             actionType: adjustment > 0 ? 'IMPORT' : 'EXPORT',
             amountChange: adjustment,
             stockAfter: newStock,
@@ -455,6 +461,7 @@ export class InventoryService {
             action: actionType,
             details: `Điều chỉnh kho ${id}: ${adjustment > 0 ? '+' : ''}${adjustment}`,
             timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             user: currentUser,
             targetId: id,
             reason: reason
@@ -477,6 +484,7 @@ export class InventoryService {
       
       batch.set(historyRef, {
           timestamp: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
           actionType: 'ADJUST',
           amountChange: 0, stockAfter: 0, reference: reason || 'Bulk Zero Out', user: currentUser
       } as StockHistoryItem);
@@ -488,6 +496,7 @@ export class InventoryService {
         action: 'BULK_ZERO',
         details: `Đặt tồn kho về 0 cho ${ids.length} mục.`,
         timestamp: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
         user: currentUser,
         targetId: 'BATCH',
         reason: reason

@@ -24,6 +24,7 @@ export interface InventoryItem {
 export interface StockHistoryItem {
   id?: string;
   timestamp: any;
+  lastUpdated?: any;
   actionType: 'IMPORT' | 'EXPORT' | 'ADJUST' | 'SOP_DEDUCT' | 'SOP_RETURN' | 'CREATE';
   amountChange: number;
   stockAfter: number;

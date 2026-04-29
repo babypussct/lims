@@ -20,6 +20,7 @@ export interface Log {
   action: string;
   details: string;
   timestamp: any;
+  lastUpdated?: any;
   user: string;
 
   // Enhanced Audit Fields

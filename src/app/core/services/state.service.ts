@@ -518,6 +518,7 @@ export class StateService implements OnDestroy {
         items: requestItems, 
         status: 'pending', 
         timestamp: serverTimestamp(), 
+        lastUpdated: serverTimestamp(),
         user: this.getCurrentUserName(), 
         inputs: formInputs, 
         margin: formInputs.safetyMargin || 0,
@@ -558,7 +559,7 @@ export class StateService implements OnDestroy {
         }
 
         for (let i = 0; i < itemsToDeduct.length; i++) {
-          transaction.update(invRefs[i], { stock: increment(-itemsToDeduct[i].amount) });
+          transaction.update(invRefs[i], { stock: increment(-itemsToDeduct[i].amount), lastUpdated: serverTimestamp() });
         }
 
         const reqData: any = {
@@ -567,6 +568,7 @@ export class StateService implements OnDestroy {
             items: requestItems, 
             status: 'approved', 
             timestamp: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             approvedAt: serverTimestamp(), 
             user: this.getCurrentUserName(), 
             inputs: formInputs, 
@@ -590,6 +592,7 @@ export class StateService implements OnDestroy {
         transaction.set(printJobRef, { 
             ...sanitizeForFirebase(printData), 
             createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
             createdBy: this.getCurrentUserName()
         });
 
@@ -597,6 +600,7 @@ export class StateService implements OnDestroy {
           action: 'DIRECT_APPROVE', 
           details: `Duyệt trực tiếp SOP: ${sop.name}`, 
           timestamp: serverTimestamp(), 
+          lastUpdated: serverTimestamp(),
           user: this.getCurrentUserName(),
           printable: true, 
           printJobId: printJobRef.id,
@@ -635,11 +639,11 @@ export class StateService implements OnDestroy {
           if (currentStock < item.amount) throw new Error(`Kho không đủ "${item.name}". Hiện có: ${currentStock}, Cần: ${item.amount}`);
         }
         for (let i = 0; i < req.items.length; i++) {
-           transaction.update(invRefs[i], { stock: increment(-req.items[i].amount) });
+           transaction.update(invRefs[i], { stock: increment(-req.items[i].amount), lastUpdated: serverTimestamp() });
         }
         
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'approved', approvedAt: serverTimestamp() });
+        transaction.update(reqRef, { status: 'approved', approvedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
         
         const sop = this.sops().find(s => s.id === req.sopId);
         
@@ -686,6 +690,7 @@ export class StateService implements OnDestroy {
             transaction.set(printJobRef, { 
                 ...sanitizeForFirebase(printData),
                 createdAt: serverTimestamp(),
+                lastUpdated: serverTimestamp(),
                 createdBy: this.getCurrentUserName()
             });
 
@@ -693,6 +698,7 @@ export class StateService implements OnDestroy {
               action: 'APPROVE_REQUEST', 
               details: `Duyệt yêu cầu: ${req.sopName}`, 
               timestamp: serverTimestamp(), 
+              lastUpdated: serverTimestamp(),
               user: this.getCurrentUserName(),
               printable: true,
               printJobId: printJobRef.id,
@@ -705,7 +711,7 @@ export class StateService implements OnDestroy {
             });
         } else {
             transaction.set(logRef, {
-              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
+              action: 'APPROVE_REQUEST', details: `Duyệt yêu cầu: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id
             });
         }
       });
@@ -723,13 +729,13 @@ export class StateService implements OnDestroy {
         const readPromises = req.items.map(item => { const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name); return transaction.get(ref); });
         const invSnaps = await Promise.all(readPromises);
         for (let i = 0; i < invSnaps.length; i++) { if(invSnaps[i].exists()) { invRefs.push(invSnaps[i].ref); existingItems.push(req.items[i]); } }
-        for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount) }); }
+        for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount), lastUpdated: serverTimestamp() }); }
         
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'pending', approvedAt: deleteField() });
+        transaction.update(reqRef, { status: 'pending', approvedAt: deleteField(), lastUpdated: serverTimestamp() });
         
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id });
+        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id });
       });
       this.toast.show('Đã hoàn tác!', 'info');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
