@@ -96,6 +96,23 @@ import { filter } from 'rxjs/operators';
       <app-global-scanner></app-global-scanner> 
       <app-gs1-info-modal></app-gs1-info-modal> 
 
+      @if (hasNewVersion()) {
+        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md no-print p-4">
+           <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-blue-500/30 animate-bounce-in">
+              <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500 animate-pulse">
+                <i class="fa-solid fa-rocket text-4xl"></i>
+              </div>
+              <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Đã có phiên bản mới!</h2>
+              <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed">
+                Hệ thống vừa cập nhật một phiên bản mới với nhiều cải tiến. Vui lòng cập nhật ngay để tiếp tục sử dụng.
+              </p>
+              <button (click)="window_reload()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 active:scale-95">
+                <i class="fa-solid fa-rotate-right"></i> Cập nhật ngay
+              </button>
+           </div>
+        </div>
+      } 
+
       @if (!auth.isAuthReady()) {
         <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
            <i class="fa-solid fa-flask text-5xl text-blue-500 animate-pulse mb-4"></i>
@@ -227,9 +244,8 @@ export class AppComponent implements OnDestroy {
           latest: event.latestVersion.hash
         });
         this.hasNewVersion.set(true);
-        // Xóa toast deploy cũ trước khi thêm mới (tránh chồng chéo)
+        // Toast can be removed since we have a blocking modal now
         this.toast.removeByMessage('phiên bản mới');
-        this.toast.show('🚀 Hệ thống vừa có phiên bản mới. Bấm để cập nhật!', 'info', true);
       });
 
       // Xử lý lỗi cài đặt bản mới (thường do extension modify HTML → hash mismatch)
