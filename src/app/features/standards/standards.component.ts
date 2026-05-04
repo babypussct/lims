@@ -60,7 +60,6 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
           [selectedCount]="selectedIds().size"
           [isProcessing]="isProcessing()"
           [canEditStandards]="auth.canEditStandards()"
-          [canAssignStandards]="auth.canAssignStandards()"
           (deleteSelected)="deleteSelected()"
           (openAddModal)="openAddModal()"
           (importStandardsFile)="handleFileSelect($event)"
