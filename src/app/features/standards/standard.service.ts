@@ -666,9 +666,8 @@ export class StandardService {
           transaction.update(stdRef, updateData);
           transaction.set(newLogRef, log);
           
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
-
-          transaction.set(globalLogRef, log);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
       });
   }
 
@@ -998,9 +997,8 @@ export class StandardService {
 
               reqUpdateData['usageLogs'] = [...currentLogs, log];
               transaction.set(newLogRef, log);
-              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
-
-              transaction.set(globalLogRef, log);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+              transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
           }
 
           if (!hasPreviousLogs) {
@@ -1176,9 +1174,8 @@ export class StandardService {
           };
 
           transaction.set(newLogRef, log);
-          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);log.lastUpdated = serverTimestamp();
-
-          transaction.set(globalLogRef, log);
+          const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${log.id}`);
+          transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
           
           // [AUTO-OPEN] Chỉ cập nhật date_opened khi chưa có, hoặc khi ngày log mới sớm hơn ngày đang lưu
           // → Đảm bảo date_opened luôn là ngày mở nắp thực sự (lần dùng đầu tiên sớm nhất)
@@ -1521,9 +1518,8 @@ export class StandardService {
                   
                   batch.set(logRef, log);
                   
-                  const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);log.lastUpdated = serverTimestamp();
-
-                  batch.set(globalLogRef, log);
+                  const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logId}`);
+                  batch.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
                   
                   opCount += 2;
               }
@@ -1717,9 +1713,8 @@ export class StandardService {
               const logRef = doc(logsCollRef);
               log.id = logRef.id;
               batch.set(logRef, log);
-              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);log.lastUpdated = serverTimestamp();
-
-              batch.set(globalLogRef, log);
+              const globalLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_usages/${logRef.id}`);
+              batch.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
               opCount += 2;
 
               // Calculate deduction based on unit

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, effect } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, effect, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StandardRequest, ReferenceStandard } from '../../../../core/models/standard.model';
@@ -291,7 +291,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
     }
   `
 })
-export class RequestsActionModalsComponent {
+export class RequestsActionModalsComponent implements OnChanges {
   @Input() activeModal: ActionModalMode = null;
   @Input() request: StandardRequest | null = null;
   @Input() standard: ReferenceStandard | null = null;
@@ -323,15 +323,14 @@ export class RequestsActionModalsComponent {
   adminReceiveIsDepleted = signal<boolean>(false);
   adminReceiveDisposalReason = signal<string>('');
 
-  constructor() {
-    effect(() => {
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['activeModal'] || changes['request']) {
         const mode = this.activeModal;
         const req = this.request;
         if (!mode) {
            this.resetAllStates();
         } else if (mode === 'adminReceive' && req) {
-           // Provide safe default for adminReceiveAmount if nullish from totalAmountUsed
-           if (this.adminReceiveAmount() === null && req.totalAmountUsed) {
+           if (this.adminReceiveAmount() === null && req.totalAmountUsed != null) {
               this.adminReceiveAmount.set(req.totalAmountUsed);
            }
            if (!this.adminReceiveIsDepleted() && req.reportedDepleted) {
@@ -342,7 +341,7 @@ export class RequestsActionModalsComponent {
               this.approvePurpose.set(req.purpose || '');
            }
         }
-    }, { allowSignalWrites: true });
+    }
   }
 
   resetAllStates() {
