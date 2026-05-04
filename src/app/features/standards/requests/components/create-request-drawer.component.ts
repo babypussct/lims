@@ -229,14 +229,6 @@ function removeAccents(str: string): string {
                                     </div>
                                 </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
-                                <div class="relative group">
-                                    <i class="fa-regular fa-calendar absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
-                                    <input type="date" formControlName="expectedReturnDate" 
-                                            class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-                                </div>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -268,7 +260,7 @@ export class CreateRequestDrawerComponent implements OnInit {
   }
 
   @Output() close = new EventEmitter<void>();
-  @Output() submitRequest = new EventEmitter<{ standardIds: string[], purpose: string, expectedReturnDate?: number }>();
+  @Output() submitRequest = new EventEmitter<{ standardIds: string[], purpose: string }>();
   @Output() requestPurchase = new EventEmitter<ReferenceStandard>();
 
   form: FormGroup;
@@ -279,8 +271,7 @@ export class CreateRequestDrawerComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      purpose: ['', Validators.required],
-      expectedReturnDate: ['']
+      purpose: ['', Validators.required]
     });
   }
 
@@ -399,14 +390,9 @@ export class CreateRequestDrawerComponent implements OnInit {
   onSubmit() {
       if (this.selectedStandardIds().size === 0 || this.isProcessing) return;
       const val = this.form.value;
-      let dateNum: number | undefined;
-      if (val.expectedReturnDate) {
-          dateNum = new Date(val.expectedReturnDate).getTime();
-      }
       this.submitRequest.emit({
           standardIds: Array.from(this.selectedStandardIds()),
-          purpose: val.purpose?.trim() || 'Pha chuẩn mới',
-          expectedReturnDate: dateNum
+          purpose: val.purpose?.trim() || 'Pha chuẩn mới'
       });
   }
 }

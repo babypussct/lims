@@ -98,14 +98,6 @@ import { AuthService } from '../../../../core/services/auth.service';
                                         <span class="w-12 text-slate-400 dark:text-slate-500 font-black uppercase">Yêu cầu:</span>
                                         <span class="text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</span>
                                     </div>
-                                    @if(req.expectedReturnDate) {
-                                        <div class="flex items-center gap-2 text-[10px]">
-                                            <span class="w-12 text-slate-400 dark:text-slate-500 font-black uppercase">Dự kiến:</span>
-                                            <span class="font-bold whitespace-nowrap" [class.text-rose-500]="isOverdue(req)">
-                                                {{req.expectedReturnDate | date:'dd/MM/yyyy'}}
-                                            </span>
-                                        </div>
-                                    }
                                 </div>
                             </td>
                             <td class="px-6 py-5 text-center">
@@ -206,9 +198,7 @@ export class RequestsTableComponent {
 
   Date = Date;
 
-  isOverdue(req: StandardRequest): boolean {
-    return req.status === 'IN_PROGRESS' && !!req.expectedReturnDate && req.expectedReturnDate < Date.now();
-  }
+
 
   isExpOverdue(expiryDate?: string | null): boolean {
     if (!expiryDate) return false;

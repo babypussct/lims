@@ -89,11 +89,7 @@ import { getExpiryClass, canAssign } from '../../../shared/utils/utils';
                           </div>
                       }
 
-                      <div class="grid grid-cols-2 gap-4">
-                          <div>
-                              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
-                              <input type="date" [ngModel]="assignExpectedDate()" (ngModelChange)="assignExpectedDate.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-                          </div>
+                      <div class="grid grid-cols-1 gap-4">
                           <div>
                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng ({{std()?.unit}})</label>
                               <input type="number" [ngModel]="assignExpectedAmount()" (ngModelChange)="assignExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
@@ -138,12 +134,11 @@ export class StandardsAssignModalComponent {
   sameName = input<ReferenceStandard[]>([]);
 
   closeModal = output<void>();
-  confirm = output<{ userId: string, userName: string, purpose: string, expectedDate: string, expectedAmount: number | null }>();
+  confirm = output<{ userId: string, userName: string, purpose: string, expectedAmount: number | null }>();
 
   assignUserId = signal('');
   assignUserName = signal('');
   assignPurpose = signal('');
-  assignExpectedDate = signal('');
   assignExpectedAmount = signal<number | null>(null);
 
   getExpiryClass = getExpiryClass;
@@ -178,7 +173,6 @@ export class StandardsAssignModalComponent {
             this.assignUserName.set(this.currentUserName());
         }
         this.assignPurpose.set('');
-        this.assignExpectedDate.set('');
         this.assignExpectedAmount.set(null);
       }
     }, { allowSignalWrites: true });
@@ -195,7 +189,6 @@ export class StandardsAssignModalComponent {
           userId: this.assignUserId(),
           userName: this.assignUserName(),
           purpose: this.assignPurpose(),
-          expectedDate: this.assignExpectedDate(),
           expectedAmount: this.assignExpectedAmount()
       });
   }

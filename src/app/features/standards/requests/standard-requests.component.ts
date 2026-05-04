@@ -66,17 +66,7 @@ import { StandardsPurchaseModalComponent } from '../components/standards-purchas
                  <i class="fa-solid fa-clipboard-check"></i>
              </div>
          </div>
-         
-         <!-- Card 2: Overdue -->
-         <div class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/40 dark:to-rose-900/20 border border-red-200/50 dark:border-red-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
-             <div>
-                 <p class="text-[10px] font-black tracking-widest text-red-600/70 dark:text-red-400/80 uppercase mb-1">Quá Hạn Trả</p>
-                 <h4 class="text-3xl font-black text-red-600 dark:text-red-400 leading-none">{{statusCounts().OVERDUE}}</h4>
-             </div>
-             <div class="w-12 h-12 rounded-2xl bg-red-100/50 dark:bg-red-900/60 text-red-600 dark:text-red-400 flex items-center justify-center text-xl backdrop-blur-md border border-red-200/50 dark:border-red-800/50 shadow-inner">
-                 <i class="fa-solid fa-clock-rotate-left"></i>
-             </div>
-         </div>
+
 
          <!-- Card 3: Pending Return -->
          <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/40 dark:to-pink-900/20 border border-fuchsia-200/50 dark:border-fuchsia-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
@@ -420,7 +410,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           ALL: filtered.length,
           PENDING_APPROVAL: filtered.filter(r => r.status === 'PENDING_APPROVAL').length,
           IN_PROGRESS: filtered.filter(r => r.status === 'IN_PROGRESS').length,
-          OVERDUE: filtered.filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now).length,
           PENDING_RETURN: filtered.filter(r => r.status === 'PENDING_RETURN').length,
           COMPLETED: filtered.filter(r => r.status === 'COMPLETED').length,
           REJECTED: filtered.filter(r => r.status === 'REJECTED').length
@@ -519,7 +508,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.selectedPurchaseStd.set(null);
   }
 
-  async submitRequest(event: { standardIds: string[], purpose: string, expectedReturnDate?: number }) {
+  async submitRequest(event: { standardIds: string[], purpose: string }) {
       if (event.standardIds.length === 0 || this.isProcessing()) return;
       
       const user = this.auth.currentUser();
@@ -559,7 +548,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   totalAmountUsed: 0
               };
               
-              req.expectedReturnDate = event.expectedReturnDate ?? null;
+
               
               await this.stdService.createRequest(req);
               createdCount++;
@@ -610,7 +599,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       this.activeModal.set('approve');
   }
 
-  async confirmApprove(data: { expectedDate: string, expectedAmount: number | null, purpose: string }) {
+  async confirmApprove(data: { expectedAmount: number | null, purpose: string }) {
       const req = this.selectedRequest();
       if (!req || !req.id || this.isProcessing()) return;
       const user = this.auth.currentUser();
@@ -618,20 +607,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
       this.isProcessing.set(true);
       try {
-          let updatedExpectedDate = req.expectedReturnDate;
-          if (data.expectedDate) {
-              updatedExpectedDate = new Date(data.expectedDate).getTime();
-          } else if (data.expectedDate === '') {
-              updatedExpectedDate = undefined;
-          }
 
           // Dispense
           await this.stdService.dispenseStandard(req.id, req.standardId, user.uid, user.displayName || user.email || 'Unknown');
           
-          if (data.purpose !== req.purpose || updatedExpectedDate !== req.expectedReturnDate || data.expectedAmount !== req.expectedAmount) {
+          if (data.purpose !== req.purpose || data.expectedAmount !== req.expectedAmount) {
               const updates: any = {
                   purpose: data.purpose,
-                  expectedReturnDate: updatedExpectedDate ?? null,
                   expectedAmount: data.expectedAmount ?? null
               };
               await this.stdService.updateRequestStatus(req.id, 'IN_PROGRESS', updates);

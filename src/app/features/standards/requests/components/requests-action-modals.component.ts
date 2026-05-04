@@ -64,11 +64,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                    </div>
 
                    <div class="flex-1 space-y-5">
-                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <div>
-                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ngày dự kiến trả</label>
-                               <input type="date" [ngModel]="approveExpectedDate()" (ngModelChange)="approveExpectedDate.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
-                           </div>
+                       <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                            <div>
                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
                                <div class="relative">
@@ -304,14 +300,14 @@ export class RequestsActionModalsComponent {
 
   @Output() close = new EventEmitter<void>();
   
-  @Output() approveAction = new EventEmitter<{ expectedDate: string, expectedAmount: number | null, purpose: string }>();
+  @Output() approveAction = new EventEmitter<{ expectedAmount: number | null, purpose: string }>();
   @Output() rejectAction = new EventEmitter<{ reason: string }>();
   @Output() logUsageAction = new EventEmitter<{ amount: number, purpose: string }>();
   @Output() returnAction = new EventEmitter<{ amount: number, isDepleted: boolean }>();
   @Output() adminReceiveAction = new EventEmitter<{ amount: number, isDepleted: boolean, disposalReason: string }>();
 
   // State properties
-  approveExpectedDate = signal<string>('');
+
   approveExpectedAmount = signal<number | null>(null);
   approvePurpose = signal<string>('');
 
@@ -345,15 +341,12 @@ export class RequestsActionModalsComponent {
            if (!this.approvePurpose()) {
               this.approvePurpose.set(req.purpose || '');
            }
-           if (!this.approveExpectedDate() && req.expectedReturnDate) {
-              this.approveExpectedDate.set(new Date(req.expectedReturnDate).toISOString().split('T')[0]);
-           }
         }
     }, { allowSignalWrites: true });
   }
 
   resetAllStates() {
-    this.approveExpectedDate.set('');
+
     this.approveExpectedAmount.set(null);
     this.approvePurpose.set('');
     
@@ -377,7 +370,6 @@ export class RequestsActionModalsComponent {
   onApprove() {
     if (this.isProcessing) return;
     this.approveAction.emit({
-        expectedDate: this.approveExpectedDate(),
         expectedAmount: this.approveExpectedAmount(),
         purpose: this.approvePurpose()
     });

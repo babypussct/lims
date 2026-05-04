@@ -156,7 +156,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 
     <!-- REUSABLE CARD TEMPLATE -->
     <ng-template #cardTemplate let-req>
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all duration-300 flex flex-col gap-3 group relative cursor-default hover:-translate-y-1 hover:border-indigo-200 dark:hover:border-indigo-800/50" [class.ring-2]="isOverdue(req) && req.status === 'IN_PROGRESS'" [class.ring-rose-400]="isOverdue(req) && req.status === 'IN_PROGRESS'">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 transition-all duration-300 flex flex-col gap-3 group relative cursor-default hover:-translate-y-1 hover:border-indigo-200 dark:hover:border-indigo-800/50">
         
         <!-- Header: User & Time -->
         <div class="flex justify-between items-start gap-2">
@@ -170,12 +170,6 @@ import { AuthService } from '../../../../core/services/auth.service';
             </div>
           </div>
           
-          <!-- End/Return Date Indicator -->
-          @if(req.expectedReturnDate && req.status === 'IN_PROGRESS') {
-            <div class="px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap" [ngClass]="isOverdue(req) ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'">
-              <i class="fa-regular fa-clock mr-0.5"></i> {{req.expectedReturnDate | date:'dd/MM'}}
-            </div>
-          }
         </div>
         
         <!-- Center: Standard Name -->
@@ -279,11 +273,6 @@ export class RequestsKanbanComponent {
     });
     return sorted.slice(0, 30);
   });
-
-  isOverdue(req: StandardRequest): boolean {
-    if (!req.expectedReturnDate) return false;
-    return req.expectedReturnDate < Date.now();
-  }
 
   isExpOverdue(expiryDate?: string | null): boolean {
     if (!expiryDate) return false;

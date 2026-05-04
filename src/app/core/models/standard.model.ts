@@ -113,7 +113,6 @@ export interface StandardRequest {
   requestDate: number; // timestamp
   purpose: string;
   expectedAmount?: number;
-  expectedReturnDate?: number | null; // timestamp
   
   status: StandardRequestStatus;
   

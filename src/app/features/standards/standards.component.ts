@@ -821,7 +821,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       }
   }
 
-  async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedDate: string, expectedAmount: number | null}) {
+  async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedAmount: number | null}) {
       const std = this.selectedStd();
       
       if (!std || !data.userId || !data.purpose) {
@@ -839,7 +839,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
               requestedByName: data.userName,
               requestDate: Date.now(),
               purpose: data.purpose.trim(),
-              expectedReturnDate: data.expectedDate ? new Date(data.expectedDate).getTime() : null,
               expectedAmount: data.expectedAmount || 0,
               status: 'PENDING_APPROVAL',
               totalAmountUsed: 0

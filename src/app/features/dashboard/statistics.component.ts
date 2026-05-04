@@ -374,14 +374,7 @@ interface NxtReportItem {
                                     </div>
                                     <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-3xl shadow-inner"><i class="fa-solid fa-flask-vial"></i></div>
                                 </div>
-                                <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                                    <div>
-                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cảnh báo Quá hạn trả</div>
-                                        <div class="text-3xl font-black text-red-600 dark:text-red-400">{{healthStats().overdue}}</div>
-                                        <p class="text-[10px] text-red-500 font-bold mt-1 uppercase tracking-tight">Cần thu hồi ngay lập tức</p>
-                                    </div>
-                                    <div class="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-3xl shadow-inner animate-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                                </div>
+
                             </div>
 
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
@@ -411,37 +404,7 @@ interface NxtReportItem {
                                     </div>
                                 </div>
 
-                                <!-- Overdue Return List -->
-                                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col min-h-0">
-                                    <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center shrink-0">
-                                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cảnh báo Quá hạn mượn chuẩn</h4>
-                                    </div>
-                                    <div class="flex-1 overflow-y-auto p-0">
-                                        <table class="w-full text-left text-xs">
-                                            <thead class="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 border-b border-slate-50 dark:border-slate-800">
-                                                <tr>
-                                                    <th class="px-4 py-3">Người mượn</th>
-                                                    <th class="px-4 py-3">Chuẩn / Tên</th>
-                                                    <th class="px-4 py-3 text-right">Ngày trả</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                                @for (req of overdueRequests(); track req.id) {
-                                                    <tr class="hover:bg-red-50/20 dark:hover:bg-red-900/10 transition">
-                                                        <td class="px-4 py-3 font-black text-slate-700 dark:text-slate-300">{{req.requestedByName}}</td>
-                                                        <td class="px-4 py-3">
-                                                            <div class="font-bold truncate max-w-[150px]">{{req.standardName}}</div>
-                                                            <div class="text-[9px] text-slate-400">LOT: {{req.lotNumber}}</div>
-                                                        </td>
-                                                        <td class="px-4 py-3 text-right text-red-600 font-black">{{req.expectedReturnDate | date:'dd/MM/yyyy'}}</td>
-                                                    </tr>
-                                                } @empty {
-                                                    <tr><td colspan="3" class="px-4 py-12 text-center text-slate-400 italic">Không có cảnh báo quá hạn.</td></tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+
                             </div>
                         </div>
                     }
@@ -690,7 +653,7 @@ interface NxtReportItem {
                                     <div class="text-[11px] text-slate-500">Chuẩn đang mượn, quá hạn, hết hạn</div>
                                 </div>
                                 @if (exportStandards()) {
-                                    <span class="text-[10px] font-bold bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full">{{healthStats().borrowing + healthStats().overdue}} records</span>
+                                    <span class="text-[10px] font-bold bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full">{{healthStats().borrowing}} records</span>
                                 }
                                 @if (isExporting()) {
                                     @if (exportProgress().standards === 'done') { <i class="fa-solid fa-circle-check text-pink-500 text-lg"></i> }
@@ -1151,34 +1114,19 @@ export class StatisticsComponent {
               XLSX.utils.sheet_add_aoa(ws, [
                   ["TỔNG QUAN"],
                   ["Đang mượn / Sử dụng:", stats.borrowing],
-                  ["Quá hạn trả:", stats.overdue],
                   ["Chuẩn hết hạn:", stats.expired],
                   ["Tồn kho thấp:", stats.lowStock],
                   []
               ], { origin: "A8" });
 
-              // Section B: Overdue detail
-              const overdue = this.overdueRequests();
-              if (overdue.length > 0) {
-                  const startRow = 15;
-                  XLSX.utils.sheet_add_aoa(ws, [["DANH SÁCH QUÁ HẠN MỰA CHUẨN"]], { origin: `A${startRow}` });
-                  const overdueData = overdue.map((r: any, i: number) => ({
-                      'STT': i + 1, 'Người mượn': r.requestedByName, 'Tên chuẩn': r.standardName,
-                      'LOT': r.lotNumber, 'Hạn trả': r.expectedReturnDate ? new Date(r.expectedReturnDate).toLocaleDateString('vi-VN') : '',
-                      'Trạng thái': 'QUÁ HẠN'
-                  }));
-                  XLSX.utils.sheet_add_json(ws, overdueData, { origin: `A${startRow + 1}`, skipHeader: false });
-              }
-
               // Section C: All borrowed
               const borrowed = this.state.allStandardRequests().filter((r: any) => r.status === 'IN_PROGRESS');
               if (borrowed.length > 0) {
-                  const startRow = 15 + (overdue.length > 0 ? overdue.length + 3 : 0);
+                  const startRow = 15;
                   XLSX.utils.sheet_add_aoa(ws, [["DANH SÁCH ĐANG MƯỢN"]], { origin: `A${startRow}` });
                   const borrowedData = borrowed.map((r: any, i: number) => ({
                       'STT': i + 1, 'Người mượn': r.requestedByName, 'Tên chuẩn': r.standardName,
-                      'LOT': r.lotNumber, 'Ngày mượn': r.requestDate ? new Date(r.requestDate).toLocaleDateString('vi-VN') : '',
-                      'Hạn trả': r.expectedReturnDate ? new Date(r.expectedReturnDate).toLocaleDateString('vi-VN') : ''
+                      'LOT': r.lotNumber, 'Ngày mượn': r.requestDate ? new Date(r.requestDate).toLocaleDateString('vi-VN') : ''
                   }));
                   XLSX.utils.sheet_add_json(ws, borrowedData, { origin: `A${startRow + 1}`, skipHeader: false });
               }
@@ -1228,7 +1176,6 @@ export class StatisticsComponent {
                   ["Tổng mặt hàng tiêu hao:", this.consumptionData().length],
                   ["SOP chạy nhiều nhất:", topSop ? `${topSop.name} (${topSop.count} lần)` : 'N/A'],
                   ["Chuẩn đang mượn:", stats.borrowing],
-                  ["Chuẩn quá hạn:", stats.overdue],
                   ["Chuẩn hết hạn:", stats.expired],
                   [],
                   ["═══════════════════════════════════════════"],
@@ -1276,16 +1223,13 @@ export class StatisticsComponent {
     const now = Date.now();
     return {
         borrowing: reqs.filter(r => r.status === 'IN_PROGRESS').length,
-        overdue: reqs.filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now).length,
+
         expired: stds.filter((s: any) => s.expiry_date && new Date(s.expiry_date).getTime() < now).length,
         lowStock: stds.filter((s: any) => (s.current_amount ?? 0) < 5).length
     };
   });
 
-  overdueRequests = computed(() => {
-    const now = Date.now();
-    return this.state.allStandardRequests().filter(r => r.status === 'IN_PROGRESS' && r.expectedReturnDate && r.expectedReturnDate < now);
-  });
+
 
   criticalLogs = computed(() => {
     return this.state.logs().filter(l => 
