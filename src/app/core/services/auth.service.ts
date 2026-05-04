@@ -301,6 +301,7 @@ export class AuthService {
   canEditRecipes(): boolean { return this.hasPermission(PERMISSIONS.RECIPE_EDIT); }
   canViewRecipes(): boolean { return this.hasPermission(PERMISSIONS.RECIPE_VIEW); }
   canEditStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT); }
+  canAssignStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_EDIT) || this.hasPermission(PERMISSIONS.STANDARD_APPROVE); }
   canViewStandards(): boolean { return this.hasPermission(PERMISSIONS.STANDARD_VIEW); }
   canViewReports(): boolean { return this.hasPermission(PERMISSIONS.REPORT_VIEW); }
   canManageSystem(): boolean { return this.hasPermission(PERMISSIONS.USER_MANAGE); }

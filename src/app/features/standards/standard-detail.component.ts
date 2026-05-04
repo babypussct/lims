@@ -289,7 +289,7 @@ import { writeBatch, doc, deleteField } from 'firebase/firestore';
                         }
                         
                         @if(canAssign(std)) {
-                            @if(auth.canEditStandards()) {
+                            @if(auth.canAssignStandards()) {
                                 <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                     <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
                                 </button>

@@ -105,7 +105,7 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                           <div class="flex flex-col items-center gap-2">
                              <div class="flex gap-1">
                                  @if(canAssign(std)) {
-                                     @if(canEditStandards()) {
+                                     @if(canAssignStandards()) {
                                          <button (click)="openAssignModal.emit({std: std, isAssign: true})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95" title="Gán cho mượn"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
                                      } @else {
                                          <button (click)="openAssignModal.emit({std: std, isAssign: false})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none transition active:scale-95" title="Mượn chuẩn này"><i class="fa-solid fa-hand-holding-hand text-xs"></i></button>
@@ -145,6 +145,7 @@ export class StandardsListViewComponent {
   selectedIds = input<Set<string>>(new Set());
   quickUploadStdId = input<string>('');
   canEditStandards = input<boolean>(true);
+  canAssignStandards = input<boolean>(false);
   currentUser = input<UserProfile | null>(null);
 
   toggleSelection = output<string>();
