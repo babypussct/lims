@@ -230,26 +230,15 @@ export class StateService implements OnDestroy {
         cacheKey = 'lims_std_req_user_' + uid + '_' + this.fb.APP_ID;
     }
 
-    if (constraints && cacheKey) {
-        const statusFilter = validStatuses; // capture for closure
-        const stdReqSub = this.deltaSync.startListener({
-            cacheKey: cacheKey,
-            cursorKey: cacheKey + '_cursor',
-            collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
-            maxCacheSize: 300,
-            orderByField: 'requestDate',
-            orderDirection: 'desc',
-            queryConstraints: constraints
-        }, (data) => {
-            // QUAN TRỌNG: DeltaSync cache có thể chứa các record STALE — tức là
-            // record đã từng khớp status filter (vd. PENDING_APPROVAL) nhưng sau đó
-            // được duyệt thành IN_PROGRESS/COMPLETED. Vì status mới không khớp filter
-            // của Firestore query, DeltaSync sẽ không bao giờ fetch bản cập nhật đó,
-            // khiến bản cũ tồn tại mãi trong cache và bị đếm nhầm trong dashboard.
-            // => Phải re-filter theo đúng status set sau khi DeltaSync merge cache.
-            this.standardRequests.set(
-                data.filter((r: any) => !r._isDeleted && statusFilter.includes(r.status))
-            );
+    if (constraints) {
+        const q = query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`), ...constraints);
+        const stdReqSub = onSnapshot(q, (snap) => {
+            // Không dùng DeltaSync/localStorage cho query filter này để tránh lỗi stale cache
+            // (khi request đổi status, nó không còn khớp query nên DeltaSync không fetch lại được để xóa khỏi cache cũ)
+            const liveData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            this.standardRequests.set(liveData.filter((r: any) => !r._isDeleted));
+        }, (err) => {
+            console.warn('[StateService] standard_requests listener error:', err.message);
         });
         this.listeners.push(stdReqSub);
     }
