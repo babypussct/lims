@@ -429,12 +429,13 @@ service cloud.firestore {
     // Helper: kiểm tra user có role 'manager' không
     function isManager() { 
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
+             'role' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
     }
     // Helper: kiểm tra user có quyền duyệt chuẩn
     function isApprover() {
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions != null &&
+             'permissions' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
              'standard_approve' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions;
     }
     // Helper: user đã đăng nhập

@@ -116,6 +116,8 @@ export class DeltaSyncService {
         this.updateCacheAndCursor(cachedItems, config, sortField, sortDir, maxCacheSize);
         onData([...cachedItems]);
       }
+    }, (error) => {
+      console.warn(`[DeltaSync] Listener error for ${config.collectionPath}:`, error.message);
     });
   }
 
