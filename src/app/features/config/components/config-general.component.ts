@@ -468,8 +468,11 @@ service cloud.firestore {
             resource.data.requestedBy == request.auth.uid
           );
           
-          // Khi tạo mới: người tạo phải đúng với thông tin đăng nhập
-          allow create: if isAuth() && request.resource.data.requestedBy == request.auth.uid;
+          // Khi tạo mới: người tạo phải đúng với thông tin đăng nhập (trừ khi là Manager/Approver tạo dùm)
+          allow create: if isAuth() && (
+            isManager() || isApprover() ||
+            request.resource.data.requestedBy == request.auth.uid
+          );
           
           // Khi cập nhật: chỉ được cập nhật request của mình và KHÔNG được đổi quyền sở hữu sang người khác
           allow update: if isAuth() && (
