@@ -445,15 +445,13 @@ export class LoginComponent implements OnDestroy {
         
         await loginPromise;
     } catch (e: any) {
-        // auth/popup-blocked: AuthService already called signInWithRedirect,
+        // auth/popup-blocked or COOP issues: AuthService already called signInWithRedirect,
         // page is navigating away — just show a brief message, don't treat as error
-        if (e.code === 'auth/popup-blocked') {
+        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
             this.errorMsg.set('Đang chuyển hướng đến Google đăng nhập...');
             return; // Page navigating away, no need to reset loading
         }
-        if (e.code !== 'auth/popup-closed-by-user') {
-            this.handleError(e, true);
-        }
+        this.handleError(e, true);
     } finally { 
         this.isLoading.set(false); 
         this.isGoogleLoading.set(false); 

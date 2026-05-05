@@ -146,16 +146,14 @@ export class AuthService {
             this.syncUser(this.auth.currentUser);
         }
     } catch (e: any) {
-        if (e.code === 'auth/popup-blocked') {
+        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
             // ── 2. Popup blocked → Bulletproof Direct OpenID Connect Redirect ──
-            console.warn('[Auth] Popup blocked. Falling back to manual OpenID Connect redirect.');
+            console.warn('[Auth] Popup blocked or COOP issue. Falling back to manual OpenID Connect redirect.');
             this._authViaDirectOidc();
             // Page navigates away — no further code runs here
             return;
         }
-        if (e.code !== 'auth/popup-closed-by-user') {
-            throw e; // Re-throw real errors
-        }
+        throw e; // Re-throw real errors
     }
   }
 
