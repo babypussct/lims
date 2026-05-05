@@ -385,7 +385,11 @@ export class StateService implements OnDestroy {
   // ─── allStandardRequests: Load on-demand (not realtime) ──────────────────────
   async loadAllStandardRequests(): Promise<void> {
     try {
-      const cacheKey = 'lims_all_standard_requests_cache_' + this.fb.APP_ID;
+      const isApprover = this.auth.canApproveStandards();
+      const currentUser = this.auth.currentUser();
+      const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
+      
+      const cacheKey = `lims_all_standard_requests_cache_${roleKey}_${this.fb.APP_ID}`;
       const cached = this.deltaSync.getCache<any>(cacheKey);
       if (cached && cached.length > 0) {
         this.allStandardRequests.set(cached.filter((r: any) => !r._isDeleted));
@@ -393,7 +397,11 @@ export class StateService implements OnDestroy {
       }
       
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'standard_requests');
-      const q = query(colRef, orderBy('requestDate', 'desc'), limit(300));
+      const constraints: any[] = [orderBy('requestDate', 'desc'), limit(300)];
+      if (!isApprover && currentUser) {
+          constraints.unshift(where('requestedBy', '==', currentUser.uid));
+      }
+      const q = query(colRef, ...constraints);
       const snap = await getDocs(q);
       this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((r: any) => !r._isDeleted));
     } catch (e) { console.warn('loadAllStandardRequests error:', e); }

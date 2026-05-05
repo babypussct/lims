@@ -1320,13 +1320,24 @@ export class StandardService {
   }
 
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
+      const isApprover = this.auth.canApproveStandards();
+      const currentUser = this.auth.currentUser();
+      
+      const constraints: QueryConstraint[] = [];
+      if (!isApprover && currentUser) {
+          constraints.push(where('requestedBy', '==', currentUser.uid));
+      }
+
+      const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
+
       return this.deltaSync.startListener<StandardRequest>({
-          cacheKey: 'lims_all_standard_requests_cache_' + this.fb.APP_ID,
-          cursorKey: 'lims_all_standard_requests_sync_seconds_' + this.fb.APP_ID,
+          cacheKey: `lims_all_standard_requests_cache_${roleKey}_${this.fb.APP_ID}`,
+          cursorKey: `lims_all_standard_requests_sync_seconds_${roleKey}_${this.fb.APP_ID}`,
           collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
           maxCacheSize: 1000,
           orderByField: 'createdAt',
-          orderDirection: 'desc'
+          orderDirection: 'desc',
+          queryConstraints: constraints.length > 0 ? constraints : undefined
       }, callback);
   }
 
