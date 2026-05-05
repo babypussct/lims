@@ -519,24 +519,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
   systemUpdatesSub: any;
 
   // LIVE DATA COMPUTED
-  // Manager/Approver: thấy TẤT CẢ pending (vì họ cần duyệt)
-  // Nhân viên thường: chỉ thấy request DO CHÍNH HỌ TẠO đang chờ
+  // Phân nhánh logic đếm theo từng quyền cụ thể:
+  // - canApprove (SOP): đếm SOP requests đang pending
+  // - canApproveStandards: đếm Standard requests cần action (PENDING_APPROVAL + PENDING_RETURN)
+  // - User thường: chỉ đếm request CỦA CHÍNH MÌNH đang ở trạng thái PENDING_APPROVAL
   totalPendingRequests = computed(() => {
       const uid = this.auth.currentUser()?.uid;
-      const canApprove = this.auth.canApprove() || this.auth.canApproveStandards();
+      const canApproveSop = this.auth.canApprove();
+      const canApproveStd = this.auth.canApproveStandards();
 
-      if (canApprove) {
-          // Admin/Manager: tổng tất cả pending
-          return this.state.requests().length + this.state.standardRequests().length;
+      // Approver — tính từng phần theo quyền tương ứng
+      if (canApproveSop || canApproveStd) {
+          let count = 0;
+
+          // SOP: state.requests() đã được Firestore query chỉ lấy status='pending'
+          // => toàn bộ đều cần duyệt, không cần filter thêm
+          if (canApproveSop) {
+              count += this.state.requests().length;
+          }
+
+          // Standard: phân biệt 2 loại cần hành động
+          // - PENDING_APPROVAL: Manager cần phê duyệt cho mượn
+          // - PENDING_RETURN: Manager cần xác nhận nhận lại chuẩn
+          if (canApproveStd) {
+              count += this.state.standardRequests()
+                  .filter(r => r.status === 'PENDING_APPROVAL' || r.status === 'PENDING_RETURN').length;
+          }
+
+          return count;
       }
 
       if (!uid) return 0;
 
-      // Nhân viên thường: chỉ đếm request của chính mình
+      // User thường: chỉ đếm request CỦA CHÍNH MÌNH đang chờ duyệt (PENDING_APPROVAL)
+      // state.requests() chứa TẤT CẢ pending SOP của mọi người → phải filter theo tên
       const myPendingSopReqs = this.state.requests()
           .filter(r => r.user === this.auth.currentUser()?.displayName).length;
+      // state.standardRequests() đã được filter theo requestedBy=uid ở Firestore
+      // nhưng bao gồm IN_PROGRESS + PENDING_RETURN → chỉ lấy PENDING_APPROVAL
       const myPendingStdReqs = this.state.standardRequests()
-          .filter(r => r.requestedBy === uid).length;
+          .filter(r => r.status === 'PENDING_APPROVAL').length;
       return myPendingSopReqs + myPendingStdReqs;
   });
   recentLogs = computed(() => this.state.logs().slice(0, 6)); 
