@@ -466,8 +466,18 @@ service cloud.firestore {
             isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid
           );
-          allow create: if isAuth();
-          allow update, delete: if isAuth() && (
+          
+          // Khi tạo mới: người tạo phải đúng với thông tin đăng nhập
+          allow create: if isAuth() && request.resource.data.requestedBy == request.auth.uid;
+          
+          // Khi cập nhật: chỉ được cập nhật request của mình và KHÔNG được đổi quyền sở hữu sang người khác
+          allow update: if isAuth() && (
+            isManager() || isApprover() ||
+            (resource.data.requestedBy == request.auth.uid && request.resource.data.requestedBy == request.auth.uid)
+          );
+          
+          // Khi xóa: chỉ được xóa request của mình (không có request.resource khi delete)
+          allow delete: if isAuth() && (
             isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid
           );

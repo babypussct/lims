@@ -209,7 +209,7 @@ export class StateService implements OnDestroy {
 
     // standard_requests listener: DeltaSync phân nhánh theo quyền
     const currentUser = this.auth.currentUser();
-    const isApprover = this.auth.canApprove() || this.auth.canApproveStandards();
+    const isApprover = this.auth.canApproveStandards();
     const uid = currentUser?.uid;
 
     let constraints = null;
