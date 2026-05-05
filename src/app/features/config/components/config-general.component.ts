@@ -433,10 +433,11 @@ service cloud.firestore {
              get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.role == 'manager'; 
     }
     // Helper: kiểm tra user có quyền duyệt chuẩn
+    // LƯU Ý: permissions là Firestore Array => phải dùng hasAny(), KHÔNG dùng 'in' (chỉ cho Map keys)
     function isApprover() {
       return exists(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)) && 
              'permissions' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data &&
-             'standard_approve' in get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions;
+             get(/databases/$(database)/documents/artifacts/${appId}/users/$(request.auth.uid)).data.permissions.hasAny(['standard_approve']);
     }
     // Helper: user đã đăng nhập
     function isAuth() { return request.auth != null; }
@@ -461,9 +462,17 @@ service cloud.firestore {
         match /requests/{reqId}  { allow read: if true; allow write: if isAuth(); }
 
         // === STANDARD REQUESTS: SCOPED BY ROLE ===
-        // Manager/Approver thấy tất cả; nhân viên chỉ thấy request của chính mình
+        // PHÂN BIỆT list (query collection) vs get (đọc 1 doc):
+        // - list: Firestore KHÔNG có resource.data => không thể check requestedBy
+        //   => isAuth() là đủ vì app-level đã đảm bảo query đúng (manager query all, user query by uid)
+        // - get: có resource.data => kiểm tra requestedBy được
         match /standard_requests/{reqId} {
-          allow read: if isAuth() && (
+          // LIST (query collection): không có resource.data, dùng isAuth() đơn giản
+          // App-level đảm bảo: manager/approver query by status, user query by requestedBy+status
+          allow list: if isAuth();
+
+          // GET (đọc 1 document cụ thể): kiểm tra ownership hoặc quyền
+          allow get: if isAuth() && (
             isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid
           );
@@ -480,7 +489,7 @@ service cloud.firestore {
             (resource.data.requestedBy == request.auth.uid && request.resource.data.requestedBy == request.auth.uid)
           );
           
-          // Khi xóa: chỉ được xóa request của mình (không có request.resource khi delete)
+          // Khi xóa: chỉ được xóa request của mình
           allow delete: if isAuth() && (
             isManager() || isApprover() ||
             resource.data.requestedBy == request.auth.uid

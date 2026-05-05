@@ -214,18 +214,24 @@ export class StateService implements OnDestroy {
 
     let constraints = null;
     let cacheKey = '';
+    // Lưu lại status filter để re-apply sau khi DeltaSync trả dữ liệu từ cache
+    let validStatuses: string[] = [];
+
     if (isApprover) {
-        constraints = [where('status', 'in', ['PENDING_APPROVAL', 'PENDING_RETURN'])];
+        validStatuses = ['PENDING_APPROVAL', 'PENDING_RETURN'];
+        constraints = [where('status', 'in', validStatuses)];
         cacheKey = 'lims_std_req_approver_' + this.fb.APP_ID;
     } else if (uid) {
+        validStatuses = ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'];
         constraints = [
             where('requestedBy', '==', uid),
-            where('status', 'in', ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'])
+            where('status', 'in', validStatuses)
         ];
         cacheKey = 'lims_std_req_user_' + uid + '_' + this.fb.APP_ID;
     }
 
     if (constraints && cacheKey) {
+        const statusFilter = validStatuses; // capture for closure
         const stdReqSub = this.deltaSync.startListener({
             cacheKey: cacheKey,
             cursorKey: cacheKey + '_cursor',
@@ -235,8 +241,15 @@ export class StateService implements OnDestroy {
             orderDirection: 'desc',
             queryConstraints: constraints
         }, (data) => {
-            // Lọc bỏ ghost records (soft-deleted bởi hardDeleteRequest) còn sót trong cache
-            this.standardRequests.set(data.filter((r: any) => !r._isDeleted));
+            // QUAN TRỌNG: DeltaSync cache có thể chứa các record STALE — tức là
+            // record đã từng khớp status filter (vd. PENDING_APPROVAL) nhưng sau đó
+            // được duyệt thành IN_PROGRESS/COMPLETED. Vì status mới không khớp filter
+            // của Firestore query, DeltaSync sẽ không bao giờ fetch bản cập nhật đó,
+            // khiến bản cũ tồn tại mãi trong cache và bị đếm nhầm trong dashboard.
+            // => Phải re-filter theo đúng status set sau khi DeltaSync merge cache.
+            this.standardRequests.set(
+                data.filter((r: any) => !r._isDeleted && statusFilter.includes(r.status))
+            );
         });
         this.listeners.push(stdReqSub);
     }
