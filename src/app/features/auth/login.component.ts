@@ -174,8 +174,9 @@ declare let QRious: any;
         </div>
       </div>
     }
-  \`,
-  styles: [\`
+  `,
+  styles: [
+    `
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in-up { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     
@@ -191,7 +192,7 @@ declare let QRious: any;
     .animate-blob { animation: blob 10s infinite; }
     .animation-delay-2000 { animation-delay: 2s; }
     .animation-delay-4000 { animation-delay: 4s; }
-  \`]
+  `]
 })
 export class LoginComponent implements OnDestroy {
   auth = inject(AuthService);
