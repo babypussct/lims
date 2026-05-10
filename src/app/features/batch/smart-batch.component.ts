@@ -67,11 +67,12 @@ interface SplitWizardState {
 }
 
 import { QuickGenerateSampleModalComponent } from '../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
+import { BatchSplitWizardComponent } from './components/batch-split-wizard.component';
 
 @Component({
   selector: 'app-smart-batch',
   standalone: true,
-  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent],
+  imports: [CommonModule, FormsModule, QuickGenerateSampleModalComponent, BatchSplitWizardComponent],
   template: `
     <div class="h-full flex flex-col fade-in pb-0 relative font-sans text-slate-800 dark:text-slate-200">
         <!-- HEADER -->
@@ -96,8 +97,8 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar relative mb-14 p-1">
-            <div class="flex flex-col lg:flex-row gap-6 min-h-fit">
+        <div class="flex-1 overflow-y-auto custom-scrollbar relative mb-24 lg:mb-14 p-2 lg:p-1">
+            <div class="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 min-h-fit">
             
             <!-- STEP 1: JOB BUILDER -->
             @if(step() === 1) {
@@ -138,10 +139,10 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
 
                                 <!-- Block Body -->
                                 @if(!block.isCollapsed) {
-                                    <div class="p-4 flex flex-col gap-4">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="p-3 lg:p-4 flex flex-col gap-4">
+                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                                             <!-- Sample Input -->
-                                        <div>
+                                        <div class="flex flex-col">
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Danh sách mẫu</label>
                                                 <button (click)="openQuickGenerateModal(i)" class="text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded transition font-bold flex items-center gap-1">
@@ -422,30 +423,31 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                             <!-- Resource Table (ACCORDION) -->
                             @if (batch.isExpanded) {
                                 <div class="w-full bg-white dark:bg-slate-800 animate-slide-down">
-                                    <table class="w-full text-xs text-left border-collapse">
+                                    <!-- Desktop Table -->
+                                    <table class="hidden md:table w-full text-xs text-left border-collapse">
                                         <thead class="bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-b border-slate-50 dark:border-slate-700/50">
                                             <tr>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] tracking-wider">Hóa chất / Vật tư</th>
                                                 <th class="px-5 py-2 font-bold uppercase text-[9px] text-right tracking-wider">Lượng cần</th>
-                                                <th class="px-5 py-2 w-20"></th> <!-- Action Column -->
+                                                <th class="px-5 py-2 w-24"></th> <!-- Action Column -->
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-50 dark:divide-slate-700/50">
                                             @for(item of batch.resourceImpact; track item.name) {
                                                 <!-- Parent Item -->
                                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group/row">
-                                                    <td class="px-5 py-2 align-middle">
+                                                    <td class="px-5 py-3 align-middle">
                                                         <div class="break-words whitespace-normal font-medium text-slate-700 dark:text-slate-300 text-xs" [ngClass]="{'text-red-600 dark:text-red-400': item.isMissing}">
                                                             {{item.displayName || item.name}}
                                                             @if(item.isComposite) { <span class="text-[9px] text-slate-400 dark:text-slate-500 italic font-normal ml-1">(Mix)</span> }
                                                         </div>
                                                     </td>
-                                                    <td class="px-5 py-2 text-right font-mono font-bold text-slate-600 dark:text-slate-400 text-xs">
+                                                    <td class="px-5 py-3 text-right font-mono font-bold text-slate-600 dark:text-slate-400 text-xs">
                                                         {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal">{{item.stockUnit}}</span>
                                                     </td>
-                                                    <td class="px-5 py-2 text-right">
+                                                    <td class="px-5 py-3 text-right">
                                                         @if(item.isMissing && !item.isComposite) {
-                                                            <button (click)="openQuickImport(item)" class="text-[9px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-2 py-1 rounded font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto">
+                                                            <button (click)="openQuickImport(item)" class="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-1.5 rounded-lg font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto active:scale-95">
                                                                 <i class="fa-solid fa-bolt"></i> Bù kho
                                                             </button>
                                                         }
@@ -455,18 +457,18 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                                 @if(item.isComposite) {
                                                     @for(sub of item.breakdown; track sub.name) {
                                                         <tr class="bg-slate-50/30 dark:bg-slate-800/30">
-                                                            <td class="px-5 py-1 pl-8 align-middle">
+                                                            <td class="px-5 py-2 pl-8 align-middle">
                                                                 <div class="break-words whitespace-normal text-[10px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 mt-0.5" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
                                                                     <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0 mt-1.5"></div> 
                                                                     <span>{{sub.displayName || sub.name}}</span>
                                                                 </div>
                                                             </td>
-                                                            <td class="px-5 py-1 text-right font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                                                            <td class="px-5 py-2 text-right font-mono text-[10px] text-slate-500 dark:text-slate-400">
                                                                 {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
                                                             </td>
-                                                            <td class="px-5 py-1 text-right">
+                                                            <td class="px-5 py-2 text-right">
                                                                 @if(sub.isMissing) {
-                                                                    <button (click)="openQuickImport(sub)" class="text-[9px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-2 py-1 rounded font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto">
+                                                                    <button (click)="openQuickImport(sub)" class="text-[9px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-2 py-1.5 rounded-lg font-bold border border-red-100 dark:border-red-800 flex items-center gap-1 transition ml-auto active:scale-95">
                                                                         <i class="fa-solid fa-bolt"></i> Bù
                                                                     </button>
                                                                 }
@@ -477,6 +479,55 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                                             }
                                         </tbody>
                                     </table>
+
+                                    <!-- Mobile Card List -->
+                                    <div class="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        @for(item of batch.resourceImpact; track item.name) {
+                                            <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                                                <div class="flex justify-between items-start mb-1 gap-2">
+                                                    <div class="font-medium text-slate-700 dark:text-slate-300 text-xs flex-1" [ngClass]="{'text-red-600 dark:text-red-400': item.isMissing}">
+                                                        {{item.displayName || item.name}}
+                                                        @if(item.isComposite) { <span class="text-[9px] text-slate-400 dark:text-slate-500 italic font-normal ml-1">(Mix)</span> }
+                                                    </div>
+                                                    <div class="font-mono font-bold text-slate-600 dark:text-slate-400 text-xs shrink-0 bg-slate-50 dark:bg-slate-900/50 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
+                                                        {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal">{{item.stockUnit}}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                @if(item.isMissing && !item.isComposite) {
+                                                    <div class="flex justify-end mt-3">
+                                                        <button (click)="openQuickImport(item)" class="text-[11px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-4 py-2 rounded-xl font-bold border border-red-100 dark:border-red-800 flex items-center gap-1.5 transition active:scale-95 w-full justify-center">
+                                                            <i class="fa-solid fa-bolt"></i> Bù kho ngay
+                                                        </button>
+                                                    </div>
+                                                }
+                                                
+                                                @if(item.isComposite) {
+                                                    <div class="mt-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-800 space-y-3">
+                                                        @for(sub of item.breakdown; track sub.name) {
+                                                            <div>
+                                                                <div class="flex justify-between items-center gap-2">
+                                                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 flex-1 leading-tight" [ngClass]="{'text-red-500 dark:text-red-400 font-bold': sub.isMissing}">
+                                                                        {{sub.displayName || sub.name}}
+                                                                    </div>
+                                                                    <div class="font-mono font-bold text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                                                                        {{formatNum(sub.totalNeed)}} {{sub.stockUnit}}
+                                                                    </div>
+                                                                </div>
+                                                                @if(sub.isMissing) {
+                                                                    <div class="flex justify-end mt-2">
+                                                                        <button (click)="openQuickImport(sub)" class="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-1.5 rounded-lg font-bold border border-red-100 dark:border-red-800 flex items-center gap-1.5 transition active:scale-95">
+                                                                            <i class="fa-solid fa-bolt"></i> Bù kho
+                                                                        </button>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             } @else {
                                 <!-- SUMMARY VIEW (When collapsed) -->
@@ -633,16 +684,16 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 lg:gap-3 w-full md:w-auto mt-3 md:mt-0">
                         @if(!coverageMetrics().isFullyCovered) {
-                            <button (click)="fixCoverage()" class="px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold text-xs transition shadow-sm">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Tự động sửa
+                            <button (click)="fixCoverage()" class="flex-1 md:flex-none px-4 py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold text-xs transition shadow-sm active:scale-95 flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Tự sửa
                             </button>
                         }
                         
                         <button (click)="executeAll()" 
                                 [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered" 
-                                class="px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white hover:bg-black dark:hover:bg-slate-600 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                class="flex-[2] md:flex-none px-4 lg:px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white hover:bg-black dark:hover:bg-slate-600 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                             @else { <i class="fa-solid fa-paper-plane"></i> Duyệt & In Phiếu }
                         </button>
@@ -676,148 +727,13 @@ import { QuickGenerateSampleModalComponent } from '../../shared/components/quick
         }
 
         <!-- REVERSE LOGIC SPLIT MODAL (3-STEP WIZARD) -->
-        @if (showSplitModal()) {
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh] animate-slide-up">
-                    
-                    <!-- Header -->
-                    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-                        <div>
-                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-shuffle text-blue-600 dark:text-blue-400"></i> Phân tách & Chuyển Mẻ
-                            </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Nguồn: <b>{{splitState().sourceBatchName}}</b></p>
-                        </div>
-                        <button (click)="showSplitModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition"><i class="fa-solid fa-times text-xl"></i></button>
-                    </div>
-
-                    <!-- Steps Indicator -->
-                    <div class="flex border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 1 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">1. Chọn Mẫu</div>
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 2 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">2. Chọn Chỉ tiêu</div>
-                        <div class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition-colors" [class]="splitState().step >= 3 ? 'border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-300 dark:text-slate-600'">3. Chọn Quy trình Mới</div>
-                    </div>
-
-                    <!-- Wizard Content -->
-                    <div class="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-900/50 relative p-6">
-                        
-                        <!-- STEP 1: SELECT SAMPLES -->
-                        @if (splitState().step === 1) {
-                            <div class="h-full flex flex-col gap-3 animate-fade-in">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn mẫu cần chuyển đi</h4>
-                                    <div class="text-xs space-x-2">
-                                        <button (click)="splitSelectAllSamples()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
-                                        <button (click)="splitDeselectAllSamples()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
-                                    </div>
-                                </div>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                                        @for(sample of splitState().availableSamples; track sample) {
-                                            <div (click)="toggleSplitSample(sample)" 
-                                                 class="p-2 rounded-lg border cursor-pointer text-center transition select-none"
-                                                 [class]="splitState().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'">
-                                                <span class="text-xs font-mono font-bold">{{sample}}</span>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        <!-- STEP 2: SELECT TARGETS -->
-                        @if (splitState().step === 2) {
-                            <div class="h-full flex flex-col gap-3 animate-fade-in">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn chỉ tiêu cần thực hiện</h4>
-                                    <div class="text-xs space-x-2">
-                                        <button (click)="splitSelectAllTargets()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn hết</button>
-                                        <button (click)="splitDeselectAllTargets()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ chọn</button>
-                                    </div>
-                                </div>
-                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 mb-2">
-                                    <i class="fa-solid fa-circle-info mr-1"></i>
-                                    Các mẫu đã chọn ({{splitState().selectedSamples.size}}) sẽ được chuyển sang mẻ mới để làm các chỉ tiêu này.
-                                    Hệ thống đã tự động chọn các chỉ tiêu liên quan.
-                                </div>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-2">
-                                    @for(t of splitState().availableTargets; track t.id) {
-                                        <label class="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 dark:border-slate-700/50 last:border-0 cursor-pointer">
-                                            <input type="checkbox" 
-                                                   [checked]="splitState().selectedTargets.has(t.id)" 
-                                                   (change)="toggleSplitTarget(t.id)"
-                                                   class="w-4 h-4 accent-blue-600 rounded">
-                                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{t.name}}</span>
-                                        </label>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- STEP 3: SELECT SOP -->
-                        @if (splitState().step === 3) {
-                            <div class="h-full flex flex-col gap-3 animate-fade-in">
-                                <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2">Đề xuất Quy trình (SOP) phù hợp</h4>
-                                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                                    @for(sop of filteredSopsForSplit(); track sop.id) {
-                                        <div (click)="selectSplitSop(sop.id)" 
-                                             class="p-4 rounded-xl border cursor-pointer transition flex justify-between items-center group relative overflow-hidden"
-                                             [class]="splitState().selectedSopId === sop.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-1 ring-blue-500' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md'">
-                                            
-                                            <!-- Selection Indicator -->
-                                            @if(splitState().selectedSopId === sop.id) {
-                                                <div class="absolute top-0 right-0 w-8 h-8 bg-blue-500 text-white flex items-center justify-center rounded-bl-xl"><i class="fa-solid fa-check text-sm"></i></div>
-                                            }
-
-                                            <div>
-                                                <div class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-700 dark:group-hover:text-blue-400">{{sop.name}}</div>
-                                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{sop.category}}</div>
-                                            </div>
-                                            <div class="text-right mr-6">
-                                                <div class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Độ phủ</div>
-                                                <div class="text-lg font-black text-emerald-600 dark:text-emerald-400">100%</div>
-                                            </div>
-                                        </div>
-                                    }
-                                    @if(filteredSopsForSplit().length === 0) {
-                                        <div class="p-8 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                                            <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2"></i>
-                                            <p class="text-sm">Không tìm thấy SOP nào phủ hết các chỉ tiêu đã chọn.</p>
-                                            <button (click)="prevSplitStep()" class="text-blue-600 dark:text-blue-400 font-bold hover:underline mt-2 text-xs">Quay lại chọn ít chỉ tiêu hơn</button>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                    </div>
-
-                    <!-- Footer Buttons -->
-                    <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
-                        @if (splitState().step > 1) {
-                            <button (click)="prevSplitStep()" class="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">
-                                <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
-                            </button>
-                        } @else {
-                            <div></div>
-                        }
-
-                        @if (splitState().step < 3) {
-                            <button (click)="nextSplitStep()" 
-                                    [disabled]="(splitState().step === 1 && splitState().selectedSamples.size === 0) || (splitState().step === 2 && splitState().selectedTargets.size === 0)"
-                                    class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                Tiếp tục <i class="fa-solid fa-arrow-right ml-1"></i>
-                            </button>
-                        } @else {
-                            <button (click)="executeSplit()" 
-                                    [disabled]="!splitState().selectedSopId"
-                                    class="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fa-solid fa-check mr-1"></i> Hoàn tất Tách Mẻ
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
+        @if (showSplitModal() && splitState().sourceBatchIndex >= 0) {
+            <app-batch-split-wizard
+                [sourceBatch]="batches()[splitState().sourceBatchIndex]"
+                [allSops]="activeSops()"
+                (close)="showSplitModal.set(false)"
+                (execute)="executeSplitFromWizard($event)">
+            </app-batch-split-wizard>
         }
 
         <!-- QUICK IMPORT MODAL -->
@@ -1483,87 +1399,21 @@ export class SmartBatchComponent {
   openSplitModal(batchIndex: number) {
       const batch = this.batches()[batchIndex];
       this.splitState.set({
-          step: 1,
+          ...this.splitState(),
           sourceBatchIndex: batchIndex,
           sourceBatchName: batch.name,
-          availableSamples: Array.from(batch.samples).sort(),
-          selectedSamples: new Set<string>(),
-          
-          availableTargets: batch.targets, // Targets the source batch was covering
-          selectedTargets: new Set<string>(batch.targets.map(t => t.id)), // Default select all
-          
-          selectedSopId: null
       });
       this.showSplitModal.set(true);
   }
 
-  // Step 1 Helpers
-  toggleSplitSample(sample: string) {
-      this.splitState.update(s => {
-          const newSet = new Set(s.selectedSamples);
-          if (newSet.has(sample)) newSet.delete(sample); else newSet.add(sample);
-          return { ...s, selectedSamples: newSet };
-      });
-  }
-  splitSelectAllSamples() {
-      this.splitState.update(s => ({ ...s, selectedSamples: new Set(s.availableSamples) }));
-  }
-  splitDeselectAllSamples() {
-      this.splitState.update(s => ({ ...s, selectedSamples: new Set() }));
-  }
-
-  // Step 2 Helpers
-  toggleSplitTarget(id: string) {
-      this.splitState.update(s => {
-          const newSet = new Set(s.selectedTargets);
-          if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
-          return { ...s, selectedTargets: newSet };
-      });
-  }
-  splitSelectAllTargets() {
-      this.splitState.update(s => ({ ...s, selectedTargets: new Set(s.availableTargets.map(t => t.id)) }));
-  }
-  splitDeselectAllTargets() {
-      this.splitState.update(s => ({ ...s, selectedTargets: new Set() }));
-  }
-
-  // Step 3 Helpers
-  selectSplitSop(id: string) {
-      this.splitState.update(s => ({ ...s, selectedSopId: id }));
-  }
-
-  // Navigation
-  nextSplitStep() {
-      this.splitState.update(s => {
-          if (s.step === 1) {
-              if (s.selectedSamples.size === 0) return s; 
-              
-              // STICKY TARGET LOGIC: Pre-select targets relevant to the selected samples
-              const sourceBatch = this.batches()[s.sourceBatchIndex];
-              const relevantTargets = new Set<string>();
-              
-              if (sourceBatch.tasks) {
-                  sourceBatch.tasks.forEach(t => {
-                      if (s.selectedSamples.has(t.sample)) {
-                          relevantTargets.add(t.targetId);
-                      }
-                  });
-              } else {
-                  // Fallback for batches without tasks (legacy)
-                  s.availableTargets.forEach(t => relevantTargets.add(t.id));
-              }
-              
-              return { ...s, step: 2, selectedTargets: relevantTargets };
-          }
-          if (s.step === 2 && s.selectedTargets.size === 0) return s; // Guard
-          return { ...s, step: (s.step + 1) as any };
-      });
-  }
-  prevSplitStep() {
-      this.splitState.update(s => {
-          if (s.step === 1) return s;
-          return { ...s, step: (s.step - 1) as any };
-      });
+  executeSplitFromWizard(event: {samples: Set<string>, targets: Set<string>, sopId: string}) {
+      this.splitState.update(s => ({
+          ...s,
+          selectedSamples: event.samples,
+          selectedTargets: event.targets,
+          selectedSopId: event.sopId
+      }));
+      this.executeSplit();
   }
 
   // Helper to re-generate batch metadata from a list of tasks

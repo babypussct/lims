@@ -92,10 +92,10 @@ interface MixRow {
         <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0 relative z-10">
             
             <!-- LEFT PANEL: CONFIG -->
-            <div class="w-full xl:w-5/12 bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden h-[600px] xl:h-auto">
+            <div class="w-full xl:w-5/12 bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden shrink-0">
                 
                 <!-- Mode Tabs -->
-                <div class="flex border-b border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
+                <div class="flex border-b border-slate-100 dark:border-slate-700 overflow-x-auto custom-scrollbar md:no-scrollbar sticky top-0 z-20 bg-white dark:bg-slate-800">
                     @for (m of modes; track m.id) {
                         <button (click)="setCalcMode(m.id)" 
                                 class="flex-1 min-w-[80px] py-4 text-[10px] font-bold uppercase tracking-wider border-b-2 transition hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap flex flex-col items-center gap-1"
@@ -402,32 +402,32 @@ interface MixRow {
                                                 </div>
 
                                                 <!-- Row Inputs -->
-                                                <div class="grid grid-cols-2 gap-2">
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 border-t border-slate-100 dark:border-slate-700 pt-2">
                                                     <div>
-                                                        <label class="text-[8px] font-bold text-slate-400 uppercase">Stock Conc</label>
+                                                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Nồng độ Stock</label>
                                                         <!-- FIX: Safe update for stockConc -->
                                                         <input type="number" min="0" step="any" 
                                                                [ngModel]="row.stockConc" 
                                                                (ngModelChange)="updateMixItem(i, 'stockConc', $event)"
-                                                               class="w-full border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                               class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-center font-bold outline-none focus:border-indigo-400" 
                                                                placeholder="C_stock">
                                                     </div>
-                                                    <div class="flex gap-1">
-                                                        <div class="flex-1">
-                                                            <label class="text-[8px] font-bold text-slate-400 uppercase">Target</label>
+                                                    <div class="flex gap-2">
+                                                        <div class="flex-[2]">
+                                                            <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Nồng độ Đích</label>
                                                             <!-- FIX: Safe update for targetConc -->
                                                             <input type="number" min="0" step="any" 
                                                                    [ngModel]="row.targetConc" 
                                                                    (ngModelChange)="updateMixItem(i, 'targetConc', $event)"
-                                                                   class="w-full border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs text-center font-bold" 
+                                                                   class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-center font-bold outline-none focus:border-indigo-400" 
                                                                    placeholder="C_target">
                                                         </div>
-                                                        <div class="w-16">
-                                                            <label class="text-[8px] font-bold text-slate-400 uppercase">Unit</label>
+                                                        <div class="flex-1">
+                                                            <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị</label>
                                                             <!-- FIX: Safe update for unit -->
                                                             <select [ngModel]="row.unit" 
                                                                     (ngModelChange)="updateMixItem(i, 'unit', $event)"
-                                                                    class="w-full border border-slate-200 dark:border-slate-700 rounded px-1 py-1 text-[10px] font-bold bg-white dark:bg-slate-800 h-[26px]">
+                                                                    class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold bg-white dark:bg-slate-800 outline-none h-[38px]">
                                                                 @for(u of concUnits; track u.val) { <option [value]="u.val">{{u.label}}</option> }
                                                             </select>
                                                         </div>
@@ -542,9 +542,9 @@ interface MixRow {
             </div>
 
             <!-- RIGHT PANEL: RESULTS -->
-            <div class="flex-1 flex flex-col gap-6 h-[600px] xl:h-auto">
+            <div class="flex-1 flex flex-col gap-6">
                 
-                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden relative flex-1 flex flex-col">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden relative flex-1 flex flex-col min-h-[400px]">
                     <!-- Color Bar -->
                     <div class="absolute top-0 left-0 w-full h-1.5 transition-colors duration-500" 
                          [class.bg-blue-500]="calcMode() === 'molar'"
@@ -752,15 +752,15 @@ interface MixRow {
                     </div>
 
                     <!-- FOOTER ACTIONS -->
-                    <div class="p-5 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex gap-3 shrink-0">
-                        <button (click)="goToLabels()" class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95 flex items-center justify-center gap-2">
+                    <div class="p-4 sm:p-5 bg-white dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-3 shrink-0 sticky bottom-0 z-30 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_15px_rgba(0,0,0,0.2)]">
+                        <button (click)="goToLabels()" class="w-full sm:flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition active:scale-95 flex items-center justify-center gap-2 text-sm">
                             <i class="fa-solid fa-print text-slate-400"></i> In Nhãn
                         </button>
                         
                         @if (systemMode() === 'real') {
                             <button (click)="confirmTransaction()" 
                                     [disabled]="!canFulfill() || isProcessing()"
-                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-200 dark:shadow-none transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                    class="w-full sm:flex-[2] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-200 dark:shadow-none transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm">
                                 @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... } 
                                 @else { <i class="fa-solid fa-boxes-packing"></i> Xác nhận & Trừ kho }
                             </button>
