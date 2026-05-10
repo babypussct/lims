@@ -37,7 +37,7 @@ declare let QRious: any;
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[linear-gradient(310deg,#7928ca,#ff0080)] shadow-lg shadow-pink-500/30 text-white mb-6 transform hover:scale-105 transition-transform duration-300">
                         <i class="fa-solid fa-microscope text-3xl"></i>
                     </div>
-                    <h1 class="text-2xl font-black text-gray-700 tracking-tight">LIMS <span class="font-light text-gray-500">CORE</span></h1>
+                    <h1 class="text-2xl font-black text-gray-700 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
                     <p class="text-gray-500 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
                 </div>
 
@@ -67,7 +67,7 @@ declare let QRious: any;
                             <!-- Admin Link hidden nicely -->
                             <div class="pt-4 border-t border-gray-200/50">
                                 <button (click)="switchMode('password')" class="text-gray-400 hover:text-gray-600 font-medium text-[11px] uppercase tracking-wider transition hover:underline decoration-gray-300 underline-offset-4">
-                                    <i class="fa-solid fa-shield-halved mr-1"></i> Dành cho Quản trị viên
+                                    <i class="fa-solid fa-shield-halved mr-1"></i> Đăng nhập bằng tài khoản được cấp
                                 </button>
                             </div>
                         </div>
@@ -192,12 +192,78 @@ declare let QRious: any;
             </div>
             
             <!-- Footer -->
-            <div class="text-center mt-6 text-[11px] font-medium text-gray-400">
+            <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8">
                 &copy; {{year}} Laboratory Information Management System.<br>
                 <span class="text-gray-500">NAFIQPM6 LIMS Cloud v1.0</span>
             </div>
 
+            <!-- Install App Button -->
+            <div class="text-center">
+                <button (click)="showInstallGuide.set(true)" class="inline-flex items-center gap-2 px-4 py-2 bg-white/40 hover:bg-white/60 backdrop-blur-md rounded-full text-fuchsia-600 font-semibold text-[12px] transition-colors shadow-sm border border-white/50">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Hướng dẫn Cài đặt Ứng dụng
+                </button>
+            </div>
+
         </div>
+
+        <!-- PWA Install Guide Modal -->
+        @if (showInstallGuide()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative">
+                    <button (click)="showInstallGuide.set(false)" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors z-10">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    
+                    <div class="bg-[linear-gradient(310deg,#7928ca,#ff0080)] p-6 text-center text-white">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/30">
+                            <i class="fa-solid fa-mobile-screen-button text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold">Cài đặt Ứng dụng</h3>
+                        <p class="text-white/80 text-sm mt-1">Truy cập nhanh hơn trực tiếp từ màn hình chính</p>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="flex flex-col gap-6">
+                            <!-- iOS Safari -->
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-brands fa-safari text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-700 text-[15px]">iPhone / iPad (Safari)</h4>
+                                    <p class="text-gray-500 text-[13px] mt-1 leading-relaxed">
+                                        1. Nhấn biểu tượng <span class="inline-block mx-1 w-6 h-6 bg-gray-100 text-center rounded"><i class="fa-solid fa-arrow-up-from-bracket text-[10px]"></i></span> (Chia sẻ) dưới cùng màn hình.<br>
+                                        2. Kéo lên và chọn <strong>"Thêm vào MH chính"</strong> <span class="text-gray-400 text-[11px]">(Add to Home Screen)</span>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="w-full h-[1px] bg-gray-100"></div>
+
+                            <!-- Android Chrome -->
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-brands fa-chrome text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-700 text-[15px]">Android (Chrome)</h4>
+                                    <p class="text-gray-500 text-[13px] mt-1 leading-relaxed">
+                                        1. Nhấn biểu tượng <span class="inline-block mx-1 w-6 h-6 bg-gray-100 text-center rounded"><i class="fa-solid fa-ellipsis-vertical text-[10px]"></i></span> (Menu) ở góc trên bên phải.<br>
+                                        2. Chọn <strong>"Cài đặt ứng dụng"</strong> <span class="text-gray-400 text-[11px]">(Install App)</span>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <button (click)="showInstallGuide.set(false)" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">
+                                Đã hiểu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
       </div>
     }
   `,
@@ -225,6 +291,7 @@ export class LoginComponent implements OnDestroy {
   toast = inject(ToastService);
   
   mode = signal<'google' | 'password' | 'qr'>('google');
+  showInstallGuide = signal(false);
   
   email = '';
   password = '';
