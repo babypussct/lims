@@ -170,7 +170,20 @@ import { filter } from 'rxjs/operators';
                                 <div class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i><span>Lỗi quyền truy cập (Permission Denied).</span></div>
                             </div>
                          }
-  
+
+                         @if (state.isOffline()) {
+                            <div class="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/30 rounded-xl p-3 mb-4 flex items-center justify-between animate-bounce-in shadow-sm shrink-0">
+                                <div class="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-400 font-bold">
+                                    <i class="fa-solid fa-wifi-slash"></i>
+                                    <span>Mất kết nối dữ liệu ({{ state.offlineSource() }}). Dữ liệu có thể chưa được cập nhật.</span>
+                                </div>
+                                <button (click)="state.clearOfflineState()" class="text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 transition ml-3 shrink-0" title="Đóng">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                         }
+
+
                          <!-- Wrapper scrolls for simple pages (dashboard, config).
                               Storage pages (standards, inventory) fill 100% and scroll internally. -->
                          <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20 md:pb-6">

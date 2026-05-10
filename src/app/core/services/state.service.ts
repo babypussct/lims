@@ -19,6 +19,7 @@ import { Sop, CalculatedItem } from '../models/sop.model';
 import { Request, RequestItem } from '../models/request.model';
 import { Log, PrintData } from '../models/log.model';
 import { PrintConfig, SafetyConfig, CategoryItem } from '../models/config.model';
+import { ReferenceStandard, StandardRequest } from '../models/standard.model';
 import { sanitizeForFirebase } from '../../shared/utils/utils';
 
 @Injectable({ providedIn: 'root' })
@@ -42,14 +43,14 @@ export class StateService implements OnDestroy {
 
   sops = signal<Sop[]>([]); 
   requests = signal<Request[]>([]); 
-  standards = signal<any[]>([]);
-  standardRequests = signal<any[]>([]); 
-  allStandardRequests = signal<any[]>([]);
+  standards = signal<ReferenceStandard[]>([]);
+  standardRequests = signal<StandardRequest[]>([]); 
+  allStandardRequests = signal<StandardRequest[]>([]);
   approvedRequests = signal<Request[]>([]);
   logs = signal<Log[]>([]); 
   printableLogs = signal<Log[]>([]); 
   
-  stats = signal<any>({ totalSopsRun: 0, totalItemsUsed: 0 });
+  stats = signal<{ totalSopsRun: number; totalItemsUsed: number }>({ totalSopsRun: 0, totalItemsUsed: 0 });
   
   printConfig = signal<PrintConfig>({
     footerText: 'Cam kết sử dụng đúng mục đích.', showSignature: false
@@ -91,6 +92,15 @@ export class StateService implements OnDestroy {
   
   isSystemHealthy = signal<boolean>(true);
   permissionError = signal<boolean>(false);
+
+  // Trạng thái kết nối Firestore — hiển thị banner khi listener lỗi
+  isOffline = signal<boolean>(false);
+  offlineSource = signal<string>('');
+
+  clearOfflineState() {
+    this.isOffline.set(false);
+    this.offlineSource.set('');
+  }
   
   // UI STATE
   sidebarOpen = signal<boolean>(false);
@@ -175,7 +185,13 @@ export class StateService implements OnDestroy {
 
     const handleError = (source: string) => (error: any) => {
       console.warn(`${source} listener error:`, error.message);
-      if (error.code === 'permission-denied') this.permissionError.set(true);
+      if (error.code === 'permission-denied') {
+        this.permissionError.set(true);
+      } else {
+        // Lỗi mạng/quota → hiển thị banner offline cho user
+        this.isOffline.set(true);
+        this.offlineSource.set(source);
+      }
     };
 
     // 1. Inventory Listener
@@ -235,8 +251,8 @@ export class StateService implements OnDestroy {
         const stdReqSub = onSnapshot(q, (snap) => {
             // Không dùng DeltaSync/localStorage cho query filter này để tránh lỗi stale cache
             // (khi request đổi status, nó không còn khớp query nên DeltaSync không fetch lại được để xóa khỏi cache cũ)
-            const liveData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            this.standardRequests.set(liveData.filter((r: any) => !r._isDeleted));
+            const liveData = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
+            this.standardRequests.set(liveData.filter(r => !r._isDeleted));
         }, (err) => {
             console.warn('[StateService] standard_requests listener error:', err.message);
         });
@@ -264,7 +280,7 @@ export class StateService implements OnDestroy {
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
     try {
         const statSnap = await getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'stats', 'master'));
-        if (statSnap.exists()) this.stats.set(statSnap.data());
+        if (statSnap.exists()) this.stats.set(statSnap.data() as { totalSopsRun: number; totalItemsUsed: number });
     } catch (e) { console.warn('Stats load error:', e); }
 
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
@@ -405,7 +421,7 @@ export class StateService implements OnDestroy {
       }
       const q = query(colRef, ...constraints);
       const snap = await getDocs(q);
-      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((r: any) => !r._isDeleted));
+      this.allStandardRequests.set(snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest)).filter(r => !r._isDeleted));
     } catch (e) { console.warn('loadAllStandardRequests error:', e); }
   }
 
@@ -424,7 +440,7 @@ export class StateService implements OnDestroy {
       const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
       const q = query(colRef, orderBy('received_date', 'desc'), limit(300));
       const snap = await getDocs(q);
-      this.standards.set(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      this.standards.set(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReferenceStandard)));
     } catch (e) { console.warn('loadReferenceStandards error:', e); }
   }
 
@@ -875,27 +891,35 @@ export class StateService implements OnDestroy {
     } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
   }
 
-  async deletePrintLog(logId: string, sopName: string, printJobId?: string) { 
-      const batch = writeBatch(this.fb.db);
-      const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
-      if (printJobId) {
-          const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
-          batch.delete(jobRef);
+  async deletePrintLog(logId: string, sopName: string, printJobId?: string) {
+      try {
+        const batch = writeBatch(this.fb.db);
+        const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+        batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
+        if (printJobId) {
+            const jobRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', printJobId);
+            batch.delete(jobRef);
+        }
+        await batch.commit();
+        this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
+      } catch (e: any) {
+        this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
       }
-      await batch.commit();
-      this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
   }
-  
-  async deleteSelectedPrintLogs(logs: Log[]) { 
-      const batch = writeBatch(this.fb.db);
-      logs.forEach(log => {
-          batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
-          if (log.printJobId) {
-              batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
-          }
-      });
-      await batch.commit();
-      this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
+
+  async deleteSelectedPrintLogs(logs: Log[]) {
+      try {
+        const batch = writeBatch(this.fb.db);
+        logs.forEach(log => {
+            batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
+            if (log.printJobId) {
+                batch.delete(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs', log.printJobId));
+            }
+        });
+        await batch.commit();
+        this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
+      } catch (e: any) {
+        this.toast.show('Lỗi xóa phiếu: ' + e.message, 'error');
+      }
   }
 }

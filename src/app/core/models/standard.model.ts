@@ -20,8 +20,6 @@ export interface UsageLog {
   // Delta Sync & Soft Delete
   lastUpdated?: any;
   _isDeleted?: boolean;
-
-  // [NEW-4] Request linkage — cho phép deleteUsageLog cập nhật đúng request khi chuẩn đã trả về
   requestId?: string;
 }
 
@@ -135,6 +133,10 @@ export interface StandardRequest {
   
   createdAt?: number;
   updatedAt?: number;
+
+  // Soft Delete / DeltaSync
+  _isDeleted?: boolean;
+  lastUpdated?: any;
 
   // UI mapping
   standardDetails?: ReferenceStandard;
