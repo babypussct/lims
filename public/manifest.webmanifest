@@ -55,5 +55,28 @@
       "type": "image/png",
       "purpose": "maskable any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Kho Chuẩn",
+      "short_name": "Kho Chuẩn",
+      "description": "Quản lý kho hóa chất chuẩn",
+      "url": "/standards",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Yêu Cầu Chuẩn",
+      "short_name": "Yêu Cầu",
+      "description": "Quản lý yêu cầu cấp phát chuẩn",
+      "url": "/standard-requests",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nhật Ký Sử Dụng",
+      "short_name": "Nhật Ký",
+      "description": "Nhật ký sử dụng hóa chất chuẩn",
+      "url": "/standard-usage",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
   ]
 }

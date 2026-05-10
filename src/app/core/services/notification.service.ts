@@ -121,7 +121,9 @@ export class NotificationService {
             const recent = items.slice(0, 50);
 
             this.notifications.set(recent);
-            this.unreadCount.set(recent.filter(n => !n.isRead).length);
+            const currentUnread = recent.filter(n => !n.isRead).length;
+            this.unreadCount.set(currentUnread);
+            this.updateAppBadge(currentUnread);
 
             // Trigger 90-day cleanup in background (fire-and-forget)
             this._cleanupOldNotifications(items);
@@ -129,13 +131,38 @@ export class NotificationService {
         }, (error) => {
             console.error('[NotificationService] Listener error:', error.message);
         });
+
+        // Request FCM Push Token
+        this.fb.requestPushToken().then(token => {
+            if (token) {
+                console.log('[NotificationService] FCM Token received:', token);
+                const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
+                updateDoc(userRef, { fcmToken: token }).catch(() => {});
+            }
+        });
     }
 
     stopListener() {
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
         this.notifications.set([]);
         this.unreadCount.set(0);
+        this.updateAppBadge(0);
         this.adminUidsCache = null; // Reset cache on logout
+    }
+
+    // ── App Badge API ─────────────────────────────────────────────────────────
+    private updateAppBadge(count: number) {
+        if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
+            try {
+                if (count > 0) {
+                    (navigator as any).setAppBadge(count);
+                } else {
+                    (navigator as any).clearAppBadge();
+                }
+            } catch (e) {
+                console.warn('[NotificationService] Failed to update app badge', e);
+            }
+        }
     }
 
     // ── Read / Delete ─────────────────────────────────────────────────────────

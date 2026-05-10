@@ -10,6 +10,7 @@ import {
 import { 
   getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
 } from 'firebase/storage';
+import { getMessaging, getToken, Messaging } from 'firebase/messaging';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
@@ -21,6 +22,7 @@ export class FirebaseService {
   public app: FirebaseApp;
   public db: Firestore;
   public storage: FirebaseStorage;
+  public messaging: Messaging | null = null;
   public APP_ID: string;
 
   private readonly APP_ID_KEY = 'lims_app_id';
@@ -37,7 +39,33 @@ export class FirebaseService {
 
     this.storage = getStorage(this.app);
     
+    try {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        this.messaging = getMessaging(this.app);
+      }
+    } catch (e) {
+      console.warn('Firebase Messaging not supported:', e);
+    }
+    
     this.APP_ID = localStorage.getItem(this.APP_ID_KEY) || 'lims-cloud-fixed';
+  }
+
+  async requestPushToken(): Promise<string | null> {
+    if (!this.messaging) return null;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const swReg = await navigator.serviceWorker.getRegistration();
+        const token = await getToken(this.messaging, {
+          vapidKey: environment.firebase.vapidKey,
+          serviceWorkerRegistration: swReg
+        });
+        return token;
+      }
+    } catch (error) {
+      console.warn('Unable to get permission to notify.', error);
+    }
+    return null;
   }
 
   setAppId(id: string) {
