@@ -655,7 +655,7 @@ import { BatchSplitWizardComponent } from './components/batch-split-wizard.compo
 
         <!-- NEW: Coverage Status Bar (Bottom Sticky) -->
         @if(step() === 2) {
-            <div class="w-full shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)] z-40 transition-transform duration-300">
+            <div class="sticky bottom-0 w-full shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)] z-40 transition-transform duration-300">
                 <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     
                     <!-- Metrics -->
