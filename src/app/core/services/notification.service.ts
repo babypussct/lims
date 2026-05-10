@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { ToastService } from './toast.service';
 import {
     collection, doc, setDoc, updateDoc, writeBatch,
-    query, where, onSnapshot, Unsubscribe, deleteDoc, getDocs
+    query, where, onSnapshot, Unsubscribe, deleteDoc, getDocs, arrayUnion
 } from 'firebase/firestore';
 import { AppNotification } from '../models/notification.model';
 
@@ -136,8 +136,9 @@ export class NotificationService {
         this.fb.requestPushToken().then(token => {
             if (token) {
                 console.log('[NotificationService] FCM Token received:', token);
+                localStorage.setItem('lims_fcm_token', token); // Lưu token của thiết bị này
                 const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
-                updateDoc(userRef, { fcmToken: token }).catch(() => {});
+                updateDoc(userRef, { fcmTokens: arrayUnion(token) }).catch(() => {});
             }
         });
     }
