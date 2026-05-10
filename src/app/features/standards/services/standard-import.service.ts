@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from '../../core/services/firebase.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
 import {
   doc, collection, getDocs, setDoc, updateDoc, writeBatch,
   serverTimestamp, increment
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../core/models/standard.model';
-import { generateSlug, parseQuantityInput, getStandardizedAmount } from '../../shared/utils/utils';
+import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../../core/models/standard.model';
+import { generateSlug, parseQuantityInput, getStandardizedAmount } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
 

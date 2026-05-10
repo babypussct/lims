@@ -1,15 +1,15 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from '../../core/services/firebase.service';
-import { AuthService } from '../../core/services/auth.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDoc, setDoc, updateDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
-  where, QueryConstraint, Unsubscribe
+  where, QueryConstraint, Unsubscribe, onSnapshot
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../core/models/standard.model';
-import { NotificationService } from '../../core/services/notification.service';
-import { getStandardizedAmount } from '../../shared/utils/utils';
-import { DeltaSyncService } from '../../core/services/delta-sync.service';
+import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
+import { NotificationService } from '../../../core/services/notification.service';
+import { getStandardizedAmount } from '../../../shared/utils/utils';
+import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 
@@ -51,7 +51,7 @@ export class StandardRequestService {
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
     const reqRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests`);
     const q = query(reqRef, where('status', '==', 'PENDING'));
-    const { onSnapshot } = require('firebase/firestore');
+    
     return onSnapshot(q, (snapshot: any) => {
       const reqs: PurchaseRequest[] = [];
       snapshot.forEach((d: any) => reqs.push({ ...d.data(), id: d.id } as PurchaseRequest));
@@ -201,7 +201,7 @@ export class StandardRequestService {
       });
 
       const currentLogs = reqData.usageLogs || [];
-      const reqUpdateData: Record<string, unknown> = {
+      const reqUpdateData: Record<string, any> = {
         status: 'COMPLETED', returnDate: Date.now(),
         receivedBy: receiverId, receivedByName: receiverName, updatedAt: Date.now()
       };
@@ -253,7 +253,7 @@ export class StandardRequestService {
         const stdData = stdDoc.data() as ReferenceStandard;
         const stockUnit = stdData.unit || 'mg';
         let newAmount = stdData.current_amount || 0;
-        const updates: Record<string, unknown> = { lastUpdated: serverTimestamp() };
+        const updates: Record<string, any> = { lastUpdated: serverTimestamp() };
 
         if (request.totalAmountUsed > 0) {
           let amountToRestore = 0;

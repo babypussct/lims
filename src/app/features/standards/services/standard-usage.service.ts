@@ -1,16 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from '../../core/services/firebase.service';
-import { AuthService } from '../../core/services/auth.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDocs, getDoc, setDoc, updateDoc,
   serverTimestamp, runTransaction, query, orderBy, limit,
   startAfter, where, QueryDocumentSnapshot, QueryConstraint,
   Unsubscribe
 } from 'firebase/firestore';
-import { ReferenceStandard, UsageLog, StandardRequest } from '../../core/models/standard.model';
-import { NotificationService } from '../../core/services/notification.service';
-import { getStandardizedAmount, formatNum } from '../../shared/utils/utils';
-import { DeltaSyncService } from '../../core/services/delta-sync.service';
+import { ReferenceStandard, UsageLog, StandardRequest } from '../../../core/models/standard.model';
+import { NotificationService } from '../../../core/services/notification.service';
+import { getStandardizedAmount, formatNum } from '../../../shared/utils/utils';
+import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 
@@ -112,7 +112,7 @@ export class StandardUsageService {
       const newAmount = currentAmount - amountToDeduct;
       if (newAmount < 0) throw new Error(`Không đủ lượng tồn kho!`);
 
-      const updateData: Record<string, unknown> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
+      const updateData: Record<string, any> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
       if (newAmount <= 0) updateData['status'] = 'DEPLETED';
 
       log.id = newLogRef.id;
@@ -184,7 +184,7 @@ export class StandardUsageService {
       transaction.set(globalLogRef, { ...log, lastUpdated: serverTimestamp() });
 
       const logDateStr = new Date().toISOString().split('T')[0];
-      const stdUpdates: Record<string, unknown> = {
+      const stdUpdates: Record<string, any> = {
         current_amount: newAmount,
         status: newAmount <= 0 ? 'DEPLETED' : stdData.status,
         lastUpdated: serverTimestamp()
@@ -246,7 +246,7 @@ export class StandardUsageService {
         const amountToRestore = getStandardizedAmount(amountUsed, unitUsed, stockUnit);
         if (amountToRestore !== null) {
           const newStock = currentStock + amountToRestore;
-          const updateData: Record<string, unknown> = { current_amount: newStock, lastUpdated: serverTimestamp() };
+          const updateData: Record<string, any> = { current_amount: newStock, lastUpdated: serverTimestamp() };
           if (stdData['status'] === 'DEPLETED' && newStock > 0) {
             updateData['status'] = stdData['current_request_id'] ? 'IN_USE' : 'AVAILABLE';
           }

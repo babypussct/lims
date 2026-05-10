@@ -1,14 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from '../../core/services/firebase.service';
-import { AuthService } from '../../core/services/auth.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDocs, getDoc, updateDoc, setDoc, writeBatch,
   serverTimestamp, deleteField, query, orderBy, limit, startAfter,
   where, QueryDocumentSnapshot, QueryConstraint
 } from 'firebase/firestore';
-import { ReferenceStandard, StandardsPage } from '../../core/models/standard.model';
-import { ToastService } from '../../core/services/toast.service';
-import { generateSlug } from '../../shared/utils/utils';
+import { ReferenceStandard, StandardsPage } from '../../../core/models/standard.model';
+import { ToastService } from '../../../core/services/toast.service';
+import { generateSlug } from '../../../shared/utils/utils';
 import { StandardCacheService } from './standard-cache.service';
 
 /**
@@ -96,7 +96,7 @@ export class StandardCrudService {
     this.cache.invalidateLocalStandardsCache();
   }
 
-  async quickUpdateField(stdId: string, fields: Record<string, unknown>): Promise<void> {
+  async quickUpdateField(stdId: string, fields: Record<string, any>): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('standards');
@@ -105,7 +105,7 @@ export class StandardCrudService {
 
   async updateStandardStock(stdId: string, newAmount: number, reason: string): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
-    const updateData: Record<string, unknown> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
+    const updateData: Record<string, any> = { current_amount: newAmount, lastUpdated: serverTimestamp() };
     if (newAmount <= 0) updateData['status'] = 'DEPLETED';
     await updateDoc(ref, updateData);
     await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
