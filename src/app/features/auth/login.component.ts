@@ -245,7 +245,7 @@ export class LoginComponent implements OnDestroy {
       this.cleanupSession();
   }
 
-  switchMode(m: 'password' | 'qr') {
+  switchMode(m: 'google' | 'password' | 'qr') {
       this.mode.set(m);
       this.errorMsg.set('');
       if (m === 'qr') {
