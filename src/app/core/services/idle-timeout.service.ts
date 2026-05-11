@@ -20,7 +20,20 @@ export class IdleTimeoutService {
   // The event listener is bounded so it can be un-registered easily
   private resetFn = () => this.resetTimer();
 
+  private shouldDisableTimeout(): boolean {
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileWidth = window.innerWidth <= 768;
+    
+    // Tắt timeout nếu là thiết bị di động (áp dụng chung cho cả Trình duyệt trên Mobile và PWA trên Mobile).
+    // Desktop (kể cả PWA trên Desktop) vẫn sẽ bị tự động đăng xuất.
+    return isMobileUserAgent || isMobileWidth;
+  }
+
   startWatching() {
+    if (this.shouldDisableTimeout()) {
+      return; // Không theo dõi idle timeout trên thiết bị di động hoặc PWA
+    }
+
     if (this.isListening) return;
 
     // Run outside Angular zone to avoid triggering change detection on every mouse move
