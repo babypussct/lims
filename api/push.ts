@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Initialize Firebase Admin if not already initialized
     if (!admin.apps.length) {
-      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+      const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
       if (!serviceAccountJson) {
         throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is not set on Vercel.');
       }
@@ -54,8 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const doc of userDocs) {
       if (doc.exists) {
         const data = doc.data();
-        if (data && data.fcmTokens && Array.isArray(data.fcmTokens)) {
-          allTokens.push(...data.fcmTokens);
+        if (data && data['fcmTokens'] && Array.isArray(data['fcmTokens'])) {
+          allTokens.push(...data['fcmTokens']);
         }
       }
     }

@@ -5,6 +5,7 @@ import { AuthService, PERMISSIONS } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 // Import subcomponents
 import { ConfigGeneralComponent } from './components/config-general.component';
@@ -27,8 +28,13 @@ import { ConfigUsersComponent } from './components/config-users.component';
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium ml-1">Quản trị viên: {{auth.currentUser()?.displayName}}</p>
                 </div>
-                <div class="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
-                    Version: <span class="text-blue-600 dark:text-blue-400 font-mono">{{state.systemVersion()}}</span>
+                <div class="flex items-center gap-3">
+                    <button (click)="enableNotifications()" class="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-full transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-regular fa-bell"></i> Bật Thông Báo
+                    </button>
+                    <div class="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+                        Version: <span class="text-blue-600 dark:text-blue-400 font-mono">{{state.systemVersion()}}</span>
+                    </div>
                 </div>
             </div>
 
@@ -101,6 +107,13 @@ import { ConfigUsersComponent } from './components/config-users.component';
                                         <i class="fa-solid fa-database text-slate-400 dark:text-slate-500"></i> {{fb.APP_ID}}
                                     </div>
                                 </div>
+                                
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-4">
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Thông báo đẩy (PWA)</label>
+                                    <button (click)="enableNotifications()" class="w-full text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 py-2 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                                        <i class="fa-regular fa-bell"></i> Cấp quyền Thông Báo
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Right: Permissions -->
@@ -170,4 +183,23 @@ export class ConfigComponent {
 
   hasPerm(u: any, p: string) { return u.permissions?.includes(p); }
   copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã copy UID!')); }
+
+  async enableNotifications() {
+      try {
+          const token = await this.fb.requestPushToken();
+          if (token) {
+              localStorage.setItem('lims_fcm_token', token);
+              const user = this.auth.currentUser();
+              if (user) {
+                  const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
+                  await updateDoc(userRef, { fcmTokens: arrayUnion(token) });
+                  this.toast.show('Đã bật thông báo đẩy trên thiết bị này!', 'success');
+              }
+          } else {
+              this.toast.show('Bạn đã từ chối quyền hoặc trình duyệt không hỗ trợ.', 'error');
+          }
+      } catch (e: any) {
+          this.toast.show('Lỗi: ' + e.message, 'error');
+      }
+  }
 }
