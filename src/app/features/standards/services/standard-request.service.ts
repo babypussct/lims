@@ -4,7 +4,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDoc, setDoc, updateDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
-  where, QueryConstraint, Unsubscribe, onSnapshot
+  where, QueryConstraint, Unsubscribe, onSnapshot, getDocs
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -59,13 +59,45 @@ export class StandardRequestService {
     });
   }
 
+  // ─── Data Migration ────────────────────────────────────────────────────────
+  async runMigrationToFixPendingRequests(): Promise<number> {
+    const q = query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`), 
+      where('status', '==', 'PENDING_APPROVAL')
+    );
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(this.fb.db);
+    let count = 0;
+    
+    snapshot.forEach(docSnap => {
+      const req = docSnap.data();
+      if (req['standardId']) {
+        const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${req['standardId']}`);
+        batch.update(stdRef, { has_pending_request: true });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
+    return count;
+  }
+
   // ─── Create / Update Request ─────────────────────────────────────────────────
   async createRequest(request: StandardRequest, isAssign = false): Promise<void> {
     const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
     request.id = reqRef.id;
     request.createdAt = Date.now();
     request.updatedAt = Date.now();
-    await setDoc(reqRef, { ...request, lastUpdated: serverTimestamp() });
+    
+    const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${request.standardId}`);
+    const batch = writeBatch(this.fb.db);
+    batch.set(reqRef, { ...request, lastUpdated: serverTimestamp() });
+    if (!isAssign) {
+      batch.update(stdRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+    }
+    await batch.commit();
 
     if (isAssign) {
       await this.crud.logGlobalActivity('ASSIGN_STANDARD', `Gán chuẩn: ${request.standardName} cho ${request.requestedByName}`, request.id);
@@ -97,6 +129,9 @@ export class StandardRequestService {
       let details = `Cập nhật yêu cầu: ${reqData.standardName} -> ${status}`;
 
       if (status === 'REJECTED') {
+        const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${reqData.standardId}`);
+        await updateDoc(stdRef, { has_pending_request: deleteField(), lastUpdated: serverTimestamp() });
+        
         action = 'REJECT_STANDARD_REQUEST';
         details = `Từ chối yêu cầu: ${reqData.standardName}`;
         const currentUser = this.auth.currentUser();
@@ -139,6 +174,7 @@ export class StandardRequestService {
       transaction.update(stdRef, {
         status: 'IN_USE', current_holder: reqData.requestedByName,
         current_holder_uid: reqData.requestedBy, current_request_id: requestId,
+        has_pending_request: deleteField(),
         lastUpdated: serverTimestamp()
       });
       transaction.update(reqRef, {
@@ -273,6 +309,9 @@ export class StandardRequestService {
           updates['current_holder'] = deleteField();
           updates['current_holder_uid'] = deleteField();
           updates['current_request_id'] = deleteField();
+        }
+        if (request.status === 'PENDING_APPROVAL') {
+          updates['has_pending_request'] = deleteField();
         }
         transaction.update(stdRef, updates);
 

@@ -142,7 +142,11 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                            </button>
                                        }
                                        @if(canAssign(std)) {
-                                           @if(canAssignStandards()) {
+                                           @if(std.has_pending_request) {
+                                               <button disabled class="w-auto px-3 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500 flex items-center justify-center gap-1 font-bold text-xs cursor-not-allowed border border-orange-200 dark:border-orange-800/50" title="Đang có người yêu cầu mượn">
+                                                   <i class="fa-solid fa-hourglass-half"></i> Chờ duyệt
+                                               </button>
+                                           } @else if(canAssignStandards()) {
                                                <button (click)="$event.stopPropagation(); openAssignModal.emit({std: std, isAssign: true})" class="w-auto px-3 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center justify-center gap-1 font-bold text-xs active:scale-95" title="Gán cho mượn">
                                                    <i class="fa-solid fa-hand-holding-hand"></i> Gán
                                                </button>

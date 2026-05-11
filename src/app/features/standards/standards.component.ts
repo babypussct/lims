@@ -6,6 +6,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
+import { StandardRequestService } from './services/standard-request.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
@@ -39,6 +40,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   auth = inject(AuthService);
   stdService = inject(StandardService);
+  requestService = inject(StandardRequestService);
   firebaseService = inject(FirebaseService); 
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
@@ -328,6 +330,19 @@ export class StandardsComponent implements OnInit, OnDestroy {
   refreshData() {
       // Just reset the view limit, data is live synced
       this.displayLimit.set(50);
+  }
+
+  async runFixPendingRequests() {
+      if (this.isProcessing()) return;
+      this.isProcessing.set(true);
+      try {
+          const count = await this.requestService.runMigrationToFixPendingRequests();
+          this.toast.show(`Hoàn tất đồng bộ: Đã cập nhật ${count} lọ chuẩn đang chờ duyệt`, 'success');
+      } catch (e: any) {
+          this.toast.show('Lỗi đồng bộ: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
   }
 
   loadMore() {

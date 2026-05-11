@@ -1,4 +1,13 @@
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
+      <!-- TEMPORARY MIGRATION BUTTON -->
+      @if(auth.canEditStandards()) {
+          <div class="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 p-3 text-xs flex flex-wrap gap-2 justify-between items-center px-4 rounded-2xl border border-amber-200 dark:border-amber-800/50 shadow-sm z-10 relative">
+              <span class="font-medium"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Nút đồng bộ dữ liệu cũ (chỉ chạy 1 lần để cập nhật cờ chờ duyệt). Bạn có thể yêu cầu gỡ bỏ nút này sau khi đã chạy xong.</span>
+              <button (click)="runFixPendingRequests()" [disabled]="isProcessing()" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-amber-700 transition shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2">
+                  <i class="fa-solid fa-play text-[10px]"></i> Chạy đồng bộ
+              </button>
+          </div>
+      }
       <!-- RECALCULATE PROGRESS OVERLAY -->
       @if (isRecalculating()) {
           <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in">

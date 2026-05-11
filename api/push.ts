@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import * as admin from 'firebase-admin';
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Allow CORS
@@ -20,14 +20,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('[WebPush API] Request received:', req.body);
     const { recipientUids, title, body, url, appId } = req.body;
 
     if (!recipientUids || !Array.isArray(recipientUids) || recipientUids.length === 0 || !title || !body) {
+      console.warn('[WebPush API] Missing fields');
       return res.status(400).json({ error: 'Missing or invalid required fields (recipientUids, title, body)' });
     }
 
+    // Dynamically import firebase-admin to catch any loading errors on Vercel
+    console.log('[WebPush API] Loading firebase-admin...');
+    const admin = await import('firebase-admin');
+    console.log('[WebPush API] firebase-admin loaded.');
+
     // Initialize Firebase Admin if not already initialized
     if (!admin.apps.length) {
+      console.log('[WebPush API] Initializing Firebase Admin...');
       const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
       if (!serviceAccountJson) {
         throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is not set on Vercel.');
@@ -36,8 +44,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
+      console.log('[WebPush API] Firebase Admin initialized.');
     }
 
+    console.log(`[WebPush API] Querying Firestore for ${recipientUids.length} users...`);
     const db = admin.firestore();
     let allTokens: string[] = [];
 
@@ -60,6 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    console.log(`[WebPush API] Found ${allTokens.length} raw tokens.`);
+
     // Remove duplicates just in case
     allTokens = [...new Set(allTokens)];
 
@@ -81,10 +93,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokens: allTokens,
     };
 
+    console.log('[WebPush API] Sending multicast message...');
     const response = await admin.messaging().sendEachForMulticast(message);
     
-    // We could clean up invalid tokens here if response.responses[i].error exists,
-    // but for simplicity, we just send.
+    console.log(`[WebPush API] Successfully sent ${response.successCount} messages. Failed: ${response.failureCount}`);
 
     return res.status(200).json({ 
       success: true, 
@@ -93,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error: any) {
-    console.error('Error sending push notification:', error);
+    console.error('[WebPush API] Error sending push notification:', error);
     return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }

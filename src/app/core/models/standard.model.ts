@@ -60,6 +60,7 @@ export interface ReferenceStandard {
   current_holder?: string; // User ID or Name holding the standard
   current_holder_uid?: string; // User ID holding the standard
   current_request_id?: string; // ID of the active request
+  has_pending_request?: boolean; // Flag if there is a pending borrowing request
 
   restock_requested?: boolean; // Flag if purchased has been requested
   coa_requested_by?: string; // UID of user who requested CoA upload
