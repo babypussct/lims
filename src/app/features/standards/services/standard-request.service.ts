@@ -33,36 +33,24 @@ export class StandardRequestService {
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
     const isApprover = this.auth.canApproveStandards();
     const currentUser = this.auth.currentUser();
+    const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
     
-    if (isApprover) {
-      // Dành cho Admin: Quản lý lượng dữ liệu lớn -> Dùng DeltaSync để tối ưu siêu tiết kiệm Reads
-      // Không có where('requestedBy') nên không lo bị lỗi thiếu Composite Index
-      return this.deltaSync.startListener<StandardRequest>({
-        cacheKey: `lims_all_standard_requests_cache_admin_${this.fb.APP_ID}`,
-        cursorKey: `lims_all_standard_requests_sync_seconds_admin_${this.fb.APP_ID}`,
-        collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
-        maxCacheSize: 1000,
-        orderByField: 'createdAt',
-        orderDirection: 'desc'
-      }, callback);
-    } else {
-      // Dành cho User thường: Chỉ có vài yêu cầu cá nhân -> Tải trực tiếp bằng onSnapshot
-      // Tránh được lỗi sập ngầm do thiếu Composite Index (requestedBy + lastUpdated)
-      const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
-      if (currentUser) {
-        constraints.unshift(where('requestedBy', '==', currentUser.uid));
-      }
-      
-      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`);
-      const q = query(colRef, ...constraints);
-      
-      return onSnapshot(q, (snap) => {
-        const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
-        callback(reqs);
-      }, (err) => {
-        console.error('[StandardRequestService] listenToRequests error:', err);
-      });
+    // Nếu không phải là người duyệt, chỉ tải yêu cầu của chính mình
+    if (!isApprover && currentUser) {
+      constraints.unshift(where('requestedBy', '==', currentUser.uid));
     }
+    
+    const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`);
+    const q = query(colRef, ...constraints);
+    
+    // Sử dụng onSnapshot thuần túy cho tất cả mọi người để tránh hoàn toàn 
+    // các lỗi kẹt cache (localStorage) hoặc thiếu Composite Index trên thiết bị di động.
+    return onSnapshot(q, (snap) => {
+      const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
+      callback(reqs);
+    }, (err) => {
+      console.error('[StandardRequestService] listenToRequests error:', err);
+    });
   }
 
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
