@@ -39,7 +39,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                             <div>
                                                 <div class="font-black text-slate-800 dark:text-slate-100 text-base leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
                                                 <div class="flex items-center gap-2">
-                                                    <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-lg border border-indigo-100/50 dark:border-indigo-800/30">
+                                                    <span class="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-black rounded-lg border border-indigo-200 dark:border-indigo-700/50 shadow-sm uppercase tracking-wide">
                                                         {{req.standardDetails?.internal_id}}
                                                     </span>
                                                     <span class="text-xs font-bold text-slate-400 dark:text-slate-500 line-clamp-1 italic max-w-[150px]">

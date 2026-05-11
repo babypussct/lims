@@ -68,7 +68,7 @@ function removeAccents(str: string): string {
                                             <div class="font-black text-base truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
                                                     [title]="std.name">{{std.name}}</div>
                                             @if(std.internal_id) {
-                                                <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
+                                                <span class="shrink-0 px-2 py-0.5 text-xs font-black rounded-md uppercase border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 shadow-sm leading-none mt-0.5 tracking-wide">
                                                     {{std.internal_id}}
                                                 </span>
                                             }

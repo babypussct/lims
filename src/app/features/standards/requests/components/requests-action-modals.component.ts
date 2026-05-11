@@ -41,7 +41,7 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                        @if(request.standardDetails?.internal_id) {
                            <div class="flex flex-col">
                                <span class="text-xs font-bold text-slate-400 uppercase">Mã quản lý</span>
-                               <span class="text-base font-bold text-slate-500">{{request.standardDetails?.internal_id}}</span>
+                               <span class="text-lg font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">{{request.standardDetails?.internal_id}}</span>
                            </div>
                        }
                    </div>

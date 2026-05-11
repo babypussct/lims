@@ -200,7 +200,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kho / Vị trí</span>
               <div class="text-xs leading-snug flex items-center flex-wrap gap-x-1">
                   @if(req.standardDetails?.internal_id) {
-                    <span class="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded font-black text-[11px] border border-indigo-100 dark:border-indigo-800/30 shrink-0">{{req.standardDetails.internal_id}}</span>
+                    <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-md font-black text-xs border border-indigo-200 dark:border-indigo-700 shadow-sm shrink-0 uppercase">{{req.standardDetails.internal_id}}</span>
                   }
                   <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
                   <span class="text-slate-400">•</span>
