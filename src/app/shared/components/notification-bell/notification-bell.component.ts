@@ -49,7 +49,7 @@ import { AppNotification } from '../../../core/models/notification.model';
 
       <!-- Dropdown Menu -->
       @if (isOpen()) {
-         <div class="absolute right-0 w-80 md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden origin-bottom-left fade-in-scale z-[100] flex flex-col max-h-[85vh]"
+         <div class="absolute right-0 w-[calc(100vw-2rem)] md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
               [ngClass]="asBadge ? 'bottom-full mb-3 left-0 right-auto origin-bottom-left' : 'mt-3 origin-top-right'">
             
             <!-- Header -->
