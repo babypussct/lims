@@ -6,11 +6,12 @@ import { QrGlobalService } from '../services/qr-global.service';
 import { AuthService } from '../services/auth.service';
 import { StateService } from '../services/state.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
+import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NotificationBellComponent],
   template: `
     <!-- INSTALL GUIDE OVERLAY (iOS Style) -->
     @if (showInstallGuide()) {
@@ -74,6 +75,14 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             <!-- Grid Menu -->
             <div class="p-4 grid grid-cols-4 gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 
+                <!-- 0. Quét Mã (Moved from bottom bar) -->
+                <button (click)="startScan()" class="flex flex-col items-center gap-1 group">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-slate-700 dark:border-slate-600">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Quét Mã</span>
+                </button>
+
                 <!-- 1. Smart Prep -->
                 @if(auth.canViewInventory()) {
                     <button (click)="navTo('/prep')" class="flex flex-col items-center gap-1 group">
@@ -228,14 +237,9 @@ import { getAvatarUrl } from '../../shared/utils/utils';
             </button>
         }
 
-        <!-- 3. SCAN (Center - Always) -->
-        <div class="relative -top-5">
-            <div class="absolute -inset-1 bg-gradient-to-b from-white/80 to-transparent dark:from-slate-900/80 rounded-full"></div>
-            <button (click)="qrService.startScan()" 
-                    class="relative w-[60px] h-[60px] rounded-full bg-gradient-to-br from-slate-800 to-slate-950 dark:from-slate-600 dark:to-slate-800 text-white shadow-xl shadow-slate-400/40 dark:shadow-none flex items-center justify-center active:scale-90 transition-all border-[3px] border-white dark:border-slate-900 group">
-                <i class="fa-solid fa-qrcode text-xl group-active:scale-110 transition-transform"></i>
-            </button>
-            <span class="block text-center text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-1">Quét</span>
+        <!-- 3. Notifications (Replaces SCAN) -->
+        <div class="flex flex-col items-center justify-center min-w-[56px] group">
+            <app-notification-bell [bottomNavMode]="true"></app-notification-bell>
         </div>
 
         <!-- 4. Smart Batch (Checked) -->
@@ -287,6 +291,11 @@ export class BottomNavComponent {
   toggleMenu() {
       this.showMenu.update(v => !v);
       this.showInstallGuide.set(false);
+  }
+
+  startScan() {
+      this.showMenu.set(false);
+      this.qrService.startScan();
   }
 
   toggleInstallGuide() {

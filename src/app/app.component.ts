@@ -157,23 +157,6 @@ import { filter } from 'rxjs/operators';
                         [class.md:ml-20]="state.sidebarCollapsed() && !state.focusMode()"
                         [class.p-0]="state.focusMode()">
                      
-                     <!-- Mobile Top Header -->
-                     @if (!state.focusMode()) {
-                         <div class="md:hidden flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800 shrink-0 z-[60]">
-                             <div class="flex items-center gap-2.5">
-                                 <div class="w-8 h-8 rounded-lg bg-gradient-soft flex items-center justify-center shadow-soft-md shrink-0">
-                                     <i class="fa-solid fa-flask text-white text-xs"></i>
-                                 </div>
-                                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[15px] tracking-wide">
-                                     {{ pageTitle() }}
-                                 </span>
-                             </div>
-                             <div class="flex items-center">
-                                 <app-notification-bell></app-notification-bell>
-                             </div>
-                         </div>
-                     }
-
                      <!-- Content Viewport -->
                      <!-- Outer wrapper: fills main. Each page component manages its own internal scroll. -->
                      <div class="flex-1 min-h-0 flex flex-col overflow-hidden"

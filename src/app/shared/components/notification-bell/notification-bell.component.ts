@@ -11,7 +11,7 @@ import { AppNotification } from '../../../core/models/notification.model';
   template: `
     <div class="relative inline-block text-left" (click)="$event.stopPropagation()">
       <!-- Bell Button -->
-      @if (!asBadge) {
+      @if (!asBadge && !bottomNavMode) {
           <button 
             (click)="toggleMenu()"
             class="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95 group">
@@ -29,7 +29,7 @@ import { AppNotification } from '../../../core/models/notification.model';
                 </span>
             }
           </button>
-      } @else {
+      } @else if (asBadge) {
           <!-- As Badge on Avatar -->
           <button 
             (click)="toggleMenu()"
@@ -45,12 +45,32 @@ import { AppNotification } from '../../../core/models/notification.model';
                 <i class="fa-solid fa-bell text-[9px]"></i>
             }
           </button>
+      } @else if (bottomNavMode) {
+          <!-- Bottom Nav Mode -->
+          <button (click)="toggleMenu()" class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
+            <div class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                 [class]="isOpen() ? 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'">
+              <i class="fa-solid fa-bell text-base transition-transform duration-200" 
+                 [class.-translate-y-0.5]="isOpen()" [class.fa-shake]="unreadCount() > 0 && isOpen()"></i>
+              
+              <!-- Unread Badge -->
+              @if (unreadCount() > 0) {
+                  <span class="absolute top-2 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+              }
+            </div>
+            <span class="text-[9px] font-bold transition-colors" 
+                  [class]="isOpen() ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-400 dark:text-slate-500'">Thông báo</span>
+          </button>
       }
 
       <!-- Dropdown Menu -->
       @if (isOpen()) {
-         <div class="absolute right-0 w-[calc(100vw-2rem)] md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
-              [ngClass]="asBadge ? 'bottom-full mb-3 left-0 right-auto origin-bottom-left' : 'mt-3 origin-top-right'">
+         <div class="absolute w-[calc(100vw-2rem)] md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
+              [ngClass]="{
+                 'bottom-full mb-3 left-0 origin-bottom-left': asBadge,
+                 'bottom-full mb-3 left-1/2 -translate-x-1/2 origin-bottom': bottomNavMode,
+                 'mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
+              }">
             
             <!-- Header -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
@@ -120,6 +140,7 @@ import { AppNotification } from '../../../core/models/notification.model';
 })
 export class NotificationBellComponent {
   @Input() asBadge = false;
+  @Input() bottomNavMode = false;
 
   notificationService = inject(NotificationService);
   router = inject(Router);
