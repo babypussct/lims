@@ -4,7 +4,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDoc, setDoc, updateDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
-  where, QueryConstraint, Unsubscribe, onSnapshot, getDocs
+  where, QueryConstraint, Unsubscribe, onSnapshot, getDocs,
+  orderBy, limit
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -32,20 +33,36 @@ export class StandardRequestService {
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
     const isApprover = this.auth.canApproveStandards();
     const currentUser = this.auth.currentUser();
-    const constraints: QueryConstraint[] = [];
-    if (!isApprover && currentUser) {
-      constraints.push(where('requestedBy', '==', currentUser.uid));
+    
+    if (isApprover) {
+      // Dành cho Admin: Quản lý lượng dữ liệu lớn -> Dùng DeltaSync để tối ưu siêu tiết kiệm Reads
+      // Không có where('requestedBy') nên không lo bị lỗi thiếu Composite Index
+      return this.deltaSync.startListener<StandardRequest>({
+        cacheKey: `lims_all_standard_requests_cache_admin_${this.fb.APP_ID}`,
+        cursorKey: `lims_all_standard_requests_sync_seconds_admin_${this.fb.APP_ID}`,
+        collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
+        maxCacheSize: 1000,
+        orderByField: 'createdAt',
+        orderDirection: 'desc'
+      }, callback);
+    } else {
+      // Dành cho User thường: Chỉ có vài yêu cầu cá nhân -> Tải trực tiếp bằng onSnapshot
+      // Tránh được lỗi sập ngầm do thiếu Composite Index (requestedBy + lastUpdated)
+      const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
+      if (currentUser) {
+        constraints.unshift(where('requestedBy', '==', currentUser.uid));
+      }
+      
+      const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`);
+      const q = query(colRef, ...constraints);
+      
+      return onSnapshot(q, (snap) => {
+        const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
+        callback(reqs);
+      }, (err) => {
+        console.error('[StandardRequestService] listenToRequests error:', err);
+      });
     }
-    const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
-    return this.deltaSync.startListener<StandardRequest>({
-      cacheKey: `lims_all_standard_requests_cache_${roleKey}_${this.fb.APP_ID}`,
-      cursorKey: `lims_all_standard_requests_sync_seconds_${roleKey}_${this.fb.APP_ID}`,
-      collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
-      maxCacheSize: 1000,
-      orderByField: 'createdAt',
-      orderDirection: 'desc',
-      queryConstraints: constraints.length > 0 ? constraints : undefined
-    }, callback);
   }
 
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
