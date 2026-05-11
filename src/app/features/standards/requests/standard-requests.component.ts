@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -78,6 +78,48 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   private unsubRequests: Unsubscribe | null = null;
   /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
   private unregisterLiveListener?: () => void;
+  private currentListenerRoleKey = '';
+
+  constructor() {
+      // Đảm bảo listener hoạt động đúng kể cả khi PWA tải siêu nhanh
+      // và auth state chưa được nạp xong.
+      effect(() => {
+          const isAuthReady = this.auth.isAuthReady();
+          const user = this.auth.currentUser();
+          
+          if (isAuthReady && user) {
+              const isAdmin = this.auth.canApproveStandards();
+              const roleKey = isAdmin ? 'admin' : user.uid;
+              
+              if (this.currentListenerRoleKey !== roleKey) {
+                  this.currentListenerRoleKey = roleKey;
+                  
+                  // 1. Lắng nghe Standard Requests
+                  if (this.unsubRequests) this.unsubRequests();
+                  this.isLoading.set(true);
+                  this.unsubRequests = this.stdService.listenToRequests((reqs) => {
+                      this.requests.set(reqs.filter(r => !(r as any)._isDeleted));
+                      this.isLoading.set(false);
+                  });
+                  
+                  // 2. Lắng nghe Purchase Requests (chỉ dành cho Admin)
+                  if (isAdmin) {
+                      if (this.purchaseReqUnsub) this.purchaseReqUnsub();
+                      this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((reqs) => {
+                          this.adminPurchaseRequests.set(reqs);
+                          this.pendingPurchaseRequestsCount.set(reqs.length);
+                          this.loadingAdminRequests.set(false);
+                      });
+                  } else {
+                      if (this.purchaseReqUnsub) {
+                          this.purchaseReqUnsub();
+                          this.purchaseReqUnsub = undefined;
+                      }
+                  }
+              }
+          }
+      }, { allowSignalWrites: true });
+  }
 
   filteredRequests = computed(() => {
     let reqs = this.requests();
@@ -131,13 +173,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    // Requests listener (bounded query limit 300, giữ nguyên)
-    this.unsubRequests = this.stdService.listenToRequests((reqs) => {
-        // Lọc bỏ ghost records (soft-deleted) còn sót trong DeltaSync cache
-        this.requests.set(reqs.filter(r => !(r as any)._isDeleted));
-        this.isLoading.set(false);
-    });
-
     // Pha 1: Delta Load — apply localStorage ngay
     const stds = this.stdService.getAllStandardsFromCache();
     if (stds && stds.length > 0) {
@@ -150,15 +185,6 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
             this.allStandards.set([...stds]);
         }
     });
-
-    // Admin: lắng nghe purchase requests (bounded by where status==PENDING)
-    if (this.auth.canApproveStandards()) {
-        this.purchaseReqUnsub = this.stdService.listenToPendingPurchaseRequests((reqs) => {
-            this.adminPurchaseRequests.set(reqs);
-            this.pendingPurchaseRequestsCount.set(reqs.length);
-            this.loadingAdminRequests.set(false);
-        });
-    }
   }
 
   ngOnDestroy() {

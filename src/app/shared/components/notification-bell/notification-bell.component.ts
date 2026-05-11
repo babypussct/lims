@@ -34,7 +34,7 @@ import { AppNotification } from '../../../core/models/notification.model';
           <!-- As Badge on Avatar -->
           <button 
             (click)="toggleMenu()"
-            class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm transition-transform hover:scale-110 active:scale-95 z-10"
+            class="relative flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm transition-transform hover:scale-110 active:scale-95 z-10"
             [ngClass]="unreadCount() > 0 ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
             
             @if (unreadCount() > 0) {
@@ -68,9 +68,9 @@ import { AppNotification } from '../../../core/models/notification.model';
       @if (isOpen()) {
          <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[150] flex flex-col max-h-[85vh]"
               [ngClass]="{
-                 'fixed bottom-[70px] md:w-96 origin-bottom-left transition-all duration-300': asBadge,
-                 'left-[85px]': asBadge && state.sidebarCollapsed(),
-                 'left-[270px]': asBadge && !state.sidebarCollapsed(),
+                 'absolute bottom-full mb-3 w-[350px] md:w-96 origin-bottom-left transition-all duration-300': asBadge,
+                 'left-0': asBadge && !state.sidebarCollapsed(),
+                 'left-full ml-4': asBadge && state.sidebarCollapsed(),
                  'fixed bottom-[calc(85px+env(safe-area-inset-bottom,0px))] left-4 right-4 origin-bottom': bottomNavMode,
                  'absolute w-[calc(100vw-2rem)] md:w-96 mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
               }">
