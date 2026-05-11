@@ -199,8 +199,8 @@ export class StandardRequestService {
         targetId: standardId, actionUrl: `/standards/${standardId}`
       });
     }
-    // Invalidate và merge ngay document mới vào cache để UI phản ánh đúng không cần F5
-    this.cache.invalidateLocalStandardsCache();
+    // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
+    // (Xóa cache trước rồi merge sẽ ghi lại chỉ 1 doc, làm mất toàn bộ danh sách)
     try {
       const freshSnap = await getDoc(stdRef);
       if (freshSnap.exists()) {
@@ -284,8 +284,7 @@ export class StandardRequestService {
     if (reqData) {
       await this.crud.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
     }
-    // Invalidate và merge ngay document mới vào cache để UI phản ánh đúng không cần F5
-    this.cache.invalidateLocalStandardsCache();
+    // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
     try {
       const freshSnap = await getDoc(stdRef);
       if (freshSnap.exists()) {
