@@ -177,17 +177,17 @@ export class NotificationBellComponent {
       const dropdownWidth = 320; // w-80 = 320px
       const gap = 8;
 
-      // Tính bottom từ top của badge (dropdown mọc lên trên)
+      // Dropdown xuất hiện phía TRÊN badge button
       const bottomPx = window.innerHeight - rect.top + gap;
 
-      // Tính left: ưu tiên căn theo cạnh trái sidebar
+      // Dropdown xuất hiện bên PHẢI của sidebar (không bị che bởi sidebar)
       // Sidebar luôn ở left=0, rộng 256px (expanded) hoặc 80px (collapsed)
       const sidebarWidth = this.state.sidebarCollapsed() ? 80 : 256;
-      let leftPx = Math.max(8, sidebarWidth - dropdownWidth - 8);
+      let leftPx = sidebarWidth + gap;
 
-      // Đảm bảo không bị overflow sang phải
-      if (leftPx + dropdownWidth > window.innerWidth - 8) {
-          leftPx = window.innerWidth - dropdownWidth - 8;
+      // Đảm bảo không bị overflow sang phải màn hình
+      if (leftPx + dropdownWidth > window.innerWidth - gap) {
+          leftPx = window.innerWidth - dropdownWidth - gap;
       }
 
       this.badgeDropdownStyle.set({
