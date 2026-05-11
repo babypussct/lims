@@ -89,7 +89,132 @@ export class StandardRequestService {
     return count;
   }
 
-  // ─── Create / Update Request ─────────────────────────────────────────────────
+  /**
+   * Dọn dẹp request PENDING_APPROVAL "mồ côi":
+   * chuẩn đã IN_USE/DEPLETED → tự động REJECT + xóa has_pending_request.
+   * Dùng để sửa data cũ bị split-brain (cùng 1 chuẩn vừa Chờ duyệt vừa Đang dùng).
+   */
+  async runCleanupOrphanedRequests(): Promise<number> {
+    const pendingSnap = await getDocs(query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
+      where('status', '==', 'PENDING_APPROVAL')
+    ));
+    if (pendingSnap.empty) return 0;
+
+    // Lấy danh sách unique standardId
+    const stdIds = [...new Set(
+      pendingSnap.docs.map(d => d.data()['standardId'] as string).filter(Boolean)
+    )];
+
+    // Fetch status của từng chuẩn
+    const stdStatusMap = new Map<string, string>();
+    await Promise.all(stdIds.map(async (stdId) => {
+      try {
+        const snap = await getDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`));
+        if (snap.exists()) stdStatusMap.set(stdId, snap.data()['status'] ?? 'AVAILABLE');
+      } catch {}
+    }));
+
+    const batch = writeBatch(this.fb.db);
+    let rejectedCount = 0;
+    const stdIdsToUnflag = new Set<string>();
+
+    pendingSnap.docs.forEach(docSnap => {
+      const req = docSnap.data();
+      const stdId = req['standardId'] as string;
+      if (!stdId) return;
+      const stdStatus = stdStatusMap.get(stdId);
+      if (stdStatus === 'IN_USE' || stdStatus === 'DEPLETED') {
+        batch.update(docSnap.ref, {
+          status: 'REJECTED',
+          rejectionReason: 'Chuẩn đã được cấp cho người khác hoặc đã hết.',
+          updatedAt: Date.now(),
+          lastUpdated: serverTimestamp()
+        });
+        stdIdsToUnflag.add(stdId);
+        rejectedCount++;
+      }
+    });
+
+    // Xóa has_pending_request trên các chuẩn vừa được dọn dẹp
+    stdIdsToUnflag.forEach(stdId => {
+      batch.update(
+        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`),
+        { has_pending_request: deleteField(), lastUpdated: serverTimestamp() }
+      );
+    });
+
+    if (rejectedCount > 0) await batch.commit();
+    return rejectedCount;
+  }
+  /**
+   * Full reconciliation của has_pending_request flag.
+   * So sánh flag hiện tại trên mỗi chuẩn với các PENDING_APPROVAL requests thực tế:
+   * - Có flag nhưng KHÔNG có PENDING_APPROVAL → CLEAR flag (sai)
+   * - Có PENDING_APPROVAL nhưng KHÔNG có flag → SET flag (thiếu)
+   * - Là IN_USE/DEPLETED nhưng vẫn có flag → CLEAR flag (sai do migration chạy sai)
+   *
+   * Đây là hàm khắc phục chính cho lỗi gây ra khi chạy runMigrationToFixPendingRequests()
+   * nhiều lần trên dữ liệu đã có inconsistency.
+   */
+  async runFullResyncHasPendingFlag(): Promise<{ set: number; cleared: number }> {
+    // 1. Lấy tất cả PENDING_APPROVAL requests thực sự
+    const pendingSnap = await getDocs(query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
+      where('status', '==', 'PENDING_APPROVAL')
+    ));
+
+    // Map: standardId → true (có PENDING_APPROVAL thực sự)
+    const stdIdsWithRealPending = new Set<string>(
+      pendingSnap.docs.map(d => d.data()['standardId'] as string).filter(Boolean)
+    );
+
+    // 2. Lấy tất cả standards đang có flag = true
+    const flaggedSnap = await getDocs(query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
+      where('has_pending_request', '==', true)
+    ));
+
+    const batch = writeBatch(this.fb.db);
+    let clearedCount = 0;
+    let setCount = 0;
+
+    // 3. Clear flag sai: có flag nhưng không có PENDING_APPROVAL, HOẶC đang IN_USE/DEPLETED
+    flaggedSnap.forEach(docSnap => {
+      const stdData = docSnap.data();
+      const stdId = docSnap.id;
+      const hasRealPending = stdIdsWithRealPending.has(stdId);
+      const isOccupied = stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED';
+
+      if (!hasRealPending || isOccupied) {
+        // Flag sai → clear
+        batch.update(docSnap.ref, { has_pending_request: deleteField(), lastUpdated: serverTimestamp() });
+        clearedCount++;
+        // Không cần set flag cho IN_USE/DEPLETED dù có pending request
+        if (isOccupied) stdIdsWithRealPending.delete(stdId);
+      }
+    });
+
+    // 4. Set flag còn thiếu: có PENDING_APPROVAL nhưng chưa có flag (edge case)
+    for (const stdId of stdIdsWithRealPending) {
+      try {
+        const stdSnap = await getDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`));
+        if (stdSnap.exists()) {
+          const stdData = stdSnap.data();
+          const isOccupied = stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED';
+          if (!stdData['has_pending_request'] && !isOccupied) {
+            batch.update(stdSnap.ref, { has_pending_request: true, lastUpdated: serverTimestamp() });
+            setCount++;
+          }
+        }
+      } catch {}
+    }
+
+    if (clearedCount > 0 || setCount > 0) await batch.commit();
+    return { set: setCount, cleared: clearedCount };
+  }
+
+
   async createRequest(request: StandardRequest, isAssign = false): Promise<void> {
     const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));
     request.id = reqRef.id;
@@ -199,8 +324,33 @@ export class StandardRequestService {
         targetId: standardId, actionUrl: `/standards/${standardId}`
       });
     }
+
+    // Tự động từ chối các request PENDING_APPROVAL còn sót cho cùng chuẩn
+    // (ngăn UI hiển thị cùng 1 chuẩn vừa "Chờ duyệt" vừa "Đang dùng")
+    try {
+      const staleQuery = query(
+        collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
+        where('standardId', '==', standardId),
+        where('status', '==', 'PENDING_APPROVAL')
+      );
+      const staleSnap = await getDocs(staleQuery);
+      if (!staleSnap.empty) {
+        const cleanupBatch = writeBatch(this.fb.db);
+        staleSnap.forEach(d => {
+          if (d.id !== requestId) { // không đụng đến request vừa được duyệt
+            cleanupBatch.update(d.ref, {
+              status: 'REJECTED',
+              rejectionReason: 'Chuẩn đã được cấp cho người khác.',
+              updatedAt: Date.now(),
+              lastUpdated: serverTimestamp()
+            });
+          }
+        });
+        await cleanupBatch.commit();
+      }
+    } catch (e) { console.warn('[StandardRequestService] cleanup stale requests failed:', e); }
+
     // Merge ngay document mới vào cache KHÔNG xóa trước — để giữ nguyên toàn bộ danh sách chuẩn
-    // (Xóa cache trước rồi merge sẽ ghi lại chỉ 1 doc, làm mất toàn bộ danh sách)
     try {
       const freshSnap = await getDoc(stdRef);
       if (freshSnap.exists()) {

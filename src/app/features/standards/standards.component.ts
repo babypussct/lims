@@ -345,6 +345,42 @@ export class StandardsComponent implements OnInit, OnDestroy {
       }
   }
 
+  async runCleanupOrphanedRequests() {
+      if (this.isProcessing()) return;
+      this.isProcessing.set(true);
+      try {
+          const count = await this.requestService.runCleanupOrphanedRequests();
+          if (count > 0) {
+              this.toast.show(`Dọn dẹp hoàn tất: Đã từ chối ${count} yêu cầu mồ côi (chuẩn đã được cấp cho người khác)`, 'success');
+          } else {
+              this.toast.show('Không tìm thấy yêu cầu mồ côi nào cần dọn dẹp', 'info');
+          }
+      } catch (e: any) {
+          this.toast.show('Lỗi dọn dẹp: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
+  async runFullResyncPendingFlags() {
+      if (this.isProcessing()) return;
+      this.isProcessing.set(true);
+      try {
+          // Bước 1: reject request mồ côi (chuẩn đã IN_USE)
+          const orphaned = await this.requestService.runCleanupOrphanedRequests();
+          // Bước 2: full resync flag với Firestore thực tế
+          const result = await this.requestService.runFullResyncHasPendingFlag();
+          this.toast.show(
+              `Khắc phục hoàn tất: Reject ${orphaned} request mồ côi · Xóa ${result.cleared} flag sai · Thêm ${result.set} flag thiếu`,
+              'success'
+          );
+      } catch (e: any) {
+          this.toast.show('Lỗi khắc phục: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
   loadMore() {
       // Increase visible limit
       this.displayLimit.update(l => l + 50);
