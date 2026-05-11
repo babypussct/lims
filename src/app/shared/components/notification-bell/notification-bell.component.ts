@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, HostListener, effect, ElementRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { StateService } from '../../../core/services/state.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AppNotification } from '../../../core/models/notification.model';
 
@@ -65,9 +66,11 @@ import { AppNotification } from '../../../core/models/notification.model';
 
       <!-- Dropdown Menu -->
       @if (isOpen()) {
-         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
+         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[150] flex flex-col max-h-[85vh]"
               [ngClass]="{
-                 'absolute w-[calc(100vw-2rem)] md:w-96 bottom-full mb-3 left-0 origin-bottom-left': asBadge,
+                 'fixed bottom-[70px] md:w-96 origin-bottom-left transition-all duration-300': asBadge,
+                 'left-[85px]': asBadge && state.sidebarCollapsed(),
+                 'left-[270px]': asBadge && !state.sidebarCollapsed(),
                  'fixed bottom-[calc(85px+env(safe-area-inset-bottom,0px))] left-4 right-4 origin-bottom': bottomNavMode,
                  'absolute w-[calc(100vw-2rem)] md:w-96 mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
               }">
@@ -143,6 +146,7 @@ export class NotificationBellComponent {
   @Input() bottomNavMode = false;
 
   notificationService = inject(NotificationService);
+  state = inject(StateService);
   router = inject(Router);
   elRef = inject(ElementRef);
 

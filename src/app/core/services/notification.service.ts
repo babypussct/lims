@@ -6,6 +6,7 @@ import {
     collection, doc, setDoc, updateDoc, writeBatch,
     query, where, onSnapshot, Unsubscribe, deleteDoc, getDocs, arrayUnion
 } from 'firebase/firestore';
+import { onMessage } from 'firebase/messaging';
 import { AppNotification } from '../models/notification.model';
 
 // Notifications older than 90 days are auto-cleaned up on listener start
@@ -22,6 +23,7 @@ export class NotificationService {
     unreadCount = signal(0);
 
     private unsub?: Unsubscribe;
+    private fcmUnsub?: () => void;
 
     // Cache of admin/manager UIDs — populated once per session on first broadcast
     private adminUidsCache: string[] | null = null;
@@ -175,10 +177,29 @@ export class NotificationService {
                 updateDoc(userRef, { fcmTokens: arrayUnion(token) }).catch(() => {});
             }
         });
+
+        // Listen for foreground FCM messages
+        if (this.fb.messaging) {
+            this.fcmUnsub = onMessage(this.fb.messaging, (payload) => {
+                console.log('[NotificationService] Foreground message received:', payload);
+                const title = payload.notification?.title || 'Thông báo';
+                const body = payload.notification?.body || 'Bạn có thông báo mới.';
+                this.toast.show(`${title}: ${body}`, 'info');
+                
+                // Trình duyệt hỗ trợ Notification API và đã cấp quyền, có thể gọi system notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: '/icons/icon-192x192.png'
+                    });
+                }
+            });
+        }
     }
 
     stopListener() {
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
+        if (this.fcmUnsub) { this.fcmUnsub(); this.fcmUnsub = undefined; }
         this.notifications.set([]);
         this.unreadCount.set(0);
         this.updateAppBadge(0);

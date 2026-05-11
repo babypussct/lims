@@ -51,21 +51,38 @@ export class FirebaseService {
   }
 
   async requestPushToken(): Promise<string | null> {
-    if (!this.messaging) return null;
+    if (!('Notification' in window)) {
+        throw new Error('Trình duyệt không hỗ trợ Push Notification. (Trên iOS, bạn phải chọn "Thêm vào Màn hình chính" - Add to Home Screen trước).');
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        throw new Error(`Quyền bị từ chối (trạng thái: ${permission}). Hãy kiểm tra Cài đặt thiết bị.`);
+    }
+
+    if (!this.messaging) {
+        try {
+            this.messaging = getMessaging(this.app);
+        } catch (e: any) {
+            throw new Error('Thiết bị không hỗ trợ Firebase Messaging: ' + e.message);
+        }
+    }
+
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
         const swReg = await navigator.serviceWorker.getRegistration();
+        if (!swReg) {
+            throw new Error('Chưa tìm thấy Service Worker. Hãy tải lại trang web.');
+        }
+
         const token = await getToken(this.messaging, {
-          vapidKey: environment.firebase.vapidKey,
-          serviceWorkerRegistration: swReg
+            vapidKey: environment.firebase.vapidKey,
+            serviceWorkerRegistration: swReg
         });
         return token;
-      }
-    } catch (error) {
-      console.warn('Unable to get permission to notify.', error);
+    } catch (error: any) {
+        console.error('Lỗi lấy FCM token:', error);
+        throw new Error(error?.message || 'Lỗi không xác định khi đăng ký Token.');
     }
-    return null;
   }
 
   setAppId(id: string) {
