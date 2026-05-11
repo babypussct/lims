@@ -8,20 +8,20 @@
                 </div>
                 Quản lý Yêu cầu Chuẩn
             </h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 ml-1">Theo dõi, cấp phát và thu hồi chuẩn đối chiếu</p>
+            <p class="text-slate-500 dark:text-slate-400 text-base font-medium mt-1 ml-1">Theo dõi, cấp phát và thu hồi chuẩn đối chiếu</p>
         </div>
         
         <div class="flex gap-3 items-center">
              @if (auth.canApproveStandards()) {
-                 <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
+                 <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                      <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu Mua sắm
                      @if (pendingPurchaseRequestsCount() > 0) {
-                        <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
+                        <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
                      }
                  </button>
              }
-             <button (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
-                <i class="fa-solid fa-plus-circle text-sm group-hover:rotate-90 transition-transform"></i> Tạo Yêu cầu Mới
+             <button (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+                <i class="fa-solid fa-plus-circle text-base group-hover:rotate-90 transition-transform"></i> Tạo Yêu cầu Mới
              </button>
         </div>
       </div>
@@ -31,7 +31,7 @@
          <!-- Card 1: Need Approval -->
          <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/40 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
              <div>
-                 <p class="text-[10px] font-black tracking-widest text-amber-600/70 dark:text-amber-400/80 uppercase mb-1">Cần Duyệt</p>
+                 <p class="text-xs font-black tracking-widest text-amber-600/70 dark:text-amber-400/80 uppercase mb-1">Cần Duyệt</p>
                  <h4 class="text-3xl font-black text-amber-600 dark:text-amber-400 leading-none">{{statusCounts().PENDING_APPROVAL}}</h4>
              </div>
              <div class="w-12 h-12 rounded-2xl bg-amber-100/50 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl backdrop-blur-md border border-amber-200/50 dark:border-amber-800/50 shadow-inner">
@@ -43,7 +43,7 @@
          <!-- Card 3: Pending Return -->
          <div class="bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/40 dark:to-pink-900/20 border border-fuchsia-200/50 dark:border-fuchsia-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
              <div>
-                 <p class="text-[10px] font-black tracking-widest text-fuchsia-600/70 dark:text-fuchsia-400/80 uppercase mb-1">Chờ Admin Nhận</p>
+                 <p class="text-xs font-black tracking-widest text-fuchsia-600/70 dark:text-fuchsia-400/80 uppercase mb-1">Chờ Admin Nhận</p>
                  <h4 class="text-3xl font-black text-fuchsia-600 dark:text-fuchsia-400 leading-none">{{statusCounts().PENDING_RETURN}}</h4>
              </div>
              <div class="w-12 h-12 rounded-2xl bg-fuchsia-100/50 dark:bg-fuchsia-900/60 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-xl backdrop-blur-md border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-inner">
@@ -54,7 +54,7 @@
          <!-- Card 4: In Use Lab -->
          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/40 dark:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-800/50 rounded-3xl p-5 flex items-center justify-between shadow-sm transition-transform hover:-translate-y-1">
              <div>
-                 <p class="text-[10px] font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/80 uppercase mb-1">Đang Dùng</p>
+                 <p class="text-xs font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/80 uppercase mb-1">Đang Dùng</p>
                  <h4 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{{statusCounts().IN_PROGRESS}}</h4>
              </div>
              <div class="w-12 h-12 rounded-2xl bg-indigo-100/50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl backdrop-blur-md border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
@@ -73,45 +73,45 @@
                   <div class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
                       <button (click)="statusFilter.set('ALL')" 
                               [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
-                          Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-[10px] opacity-70">{{statusCounts().ALL}}</span>
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                          Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().ALL}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_APPROVAL')" 
                               [class]="statusFilter() === 'PENDING_APPROVAL' ? 'bg-white dark:bg-slate-800 shadow-sm text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
-                          Chờ duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-[10px] opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                          Chờ duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-xs opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
                       </button>
                       <button (click)="statusFilter.set('IN_PROGRESS')" 
                               [class]="statusFilter() === 'IN_PROGRESS' ? 'bg-white dark:bg-slate-800 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
-                          Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-[10px] opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                          Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-xs opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_RETURN')" 
                               [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
-                          Chờ trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-[10px] opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                          Chờ trả <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-xs opacity-70 text-indigo-600">{{statusCounts().PENDING_RETURN}}</span>
                       </button>
                       <button (click)="statusFilter.set('COMPLETED')" 
                               [class]="statusFilter() === 'COMPLETED' ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap">
-                          Hoàn thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-[10px] opacity-70">{{statusCounts().COMPLETED}}</span>
+                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                          Hoàn thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().COMPLETED}}</span>
                       </button>
                   </div>
 
                   <!-- Search & View Toggle -->
                   <div class="flex items-center gap-2">
                        <div class="flex items-center bg-slate-100/50 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-100 dark:border-slate-800">
-                           <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-sm" title="Giao diện Thẻ (Kanban)">
+                           <button (click)="viewMode.set('kanban')" [class]="viewMode() === 'kanban' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện Thẻ (Kanban)">
                                <i class="fa-solid fa-columns"></i>
                            </button>
-                           <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-sm" title="Giao diện Bảng (Table)">
+                           <button (click)="viewMode.set('table')" [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base" title="Giao diện Bảng (Table)">
                                <i class="fa-solid fa-list"></i>
                            </button>
                        </div>
                       <div class="relative min-w-[250px]">
                           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                           <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" 
-                                 class="w-full pl-11 pr-4 py-2 bg-slate-100/50 dark:bg-slate-900/50 border border-transparent rounded-xl text-[13px] font-bold text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all placeholder-slate-400"
+                                 class="w-full pl-11 pr-4 py-2 bg-slate-100/50 dark:bg-slate-900/50 border border-transparent rounded-xl text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all placeholder-slate-400"
                                  placeholder="Tìm tên chuẩn, người mượn, số lô...">
                       </div>
                   </div>
@@ -123,6 +123,7 @@
               <app-requests-kanban 
                   class="flex flex-col flex-1 overflow-hidden min-h-0"
                   [requests]="filteredRequests()"
+                  [currentFilter]="statusFilter()"
                   (navigateToStandard)="router.navigate(['/standards', $event])"
                   (actionApprove)="approveRequest($event)"
                   (actionReject)="openRejectModal($event)"
@@ -199,8 +200,8 @@
                              <div class="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">Không có yêu cầu mua sắm nào chờ xử lý.</div>
                          } @else {
                              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-x-auto shadow-sm">
-                                 <table class="w-full text-left text-sm whitespace-nowrap">
-                                     <thead class="bg-slate-50 dark:bg-slate-800/80 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                 <table class="w-full text-left text-base whitespace-nowrap">
+                                     <thead class="bg-slate-50 dark:bg-slate-800/80 text-sm uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
                                          <tr>
                                              <th class="px-4 py-3">Chuẩn đối chiếu</th>
                                              <th class="px-4 py-3">Phân loại & Mục đích</th>
@@ -214,10 +215,10 @@
                                              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                                                  <td class="px-4 py-3 align-top">
                                                      <div class="font-bold text-slate-800 dark:text-slate-200 whitespace-normal line-clamp-2 max-w-[200px]" [title]="r.standardName">{{r.standardName}}</div>
-                                                     <div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1"><i class="fa-solid fa-barcode mr-1"></i> {{r.product_code}}</div>
+                                                     <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-1"><i class="fa-solid fa-barcode mr-1"></i> {{r.product_code}}</div>
                                                  </td>
                                                  <td class="px-4 py-3 align-top">
-                                                     <div class="flex flex-col gap-1.5 text-[11px]">
+                                                     <div class="flex flex-col gap-1.5 text-sm">
                                                          @if(r.required_level) {
                                                             <div class="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded w-max">
                                                                 <i class="fa-solid fa-shield-halved"></i> {{r.required_level}}
@@ -236,7 +237,7 @@
                                                      </div>
                                                  </td>
                                                  <td class="px-4 py-3 align-top">
-                                                     <div class="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                                     <div class="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300">
                                                          @if(r.preferred_manufacturer) { 
                                                             <div class="flex gap-2">
                                                                 <span class="w-16 text-slate-400 font-medium">Hãng CC:</span>
@@ -253,20 +254,20 @@
                                                  </td>
                                                  <td class="px-4 py-3 align-top">
                                                      <div class="flex flex-col gap-1">
-                                                         <div class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                                             <div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] text-slate-500"><i class="fa-solid fa-user"></i></div>
+                                                         <div class="font-bold text-base text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                                             <div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-500"><i class="fa-solid fa-user"></i></div>
                                                              {{r.requestedByName}}
                                                          </div>
-                                                         <div class="text-[11px] text-slate-500 ml-6"><i class="fa-regular fa-clock mr-1"></i> {{r.requestDate | date:'dd/MM/yyyy HH:mm'}}</div>
+                                                         <div class="text-sm text-slate-500 ml-6"><i class="fa-regular fa-clock mr-1"></i> {{r.requestDate | date:'dd/MM/yyyy HH:mm'}}</div>
                                                          @if(r.priority === 'HIGH') {
                                                              <div class="ml-6 mt-1">
-                                                                 <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 uppercase tracking-widest"><i class="fa-solid fa-bolt mr-1"></i> GẤP</span>
+                                                                 <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 uppercase tracking-widest"><i class="fa-solid fa-bolt mr-1"></i> GẤP</span>
                                                              </div>
                                                          }
                                                      </div>
                                                  </td>
                                                  <td class="px-4 py-3 text-center align-top">
-                                                     <button (click)="markPurchaseRequestCompleted(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 active:scale-95 flex items-center gap-1.5 mx-auto">
+                                                     <button (click)="markPurchaseRequestCompleted(r)" [disabled]="isProcessing()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold shadow-sm shadow-emerald-200 dark:shadow-none transition disabled:opacity-50 active:scale-95 flex items-center gap-1.5 mx-auto">
                                                          <i class="fa-solid fa-check"></i> Đã nhận hàng
                                                      </button>
                                                  </td>

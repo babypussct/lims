@@ -12,12 +12,12 @@ import { AuthService } from '../../../../core/services/auth.service';
         <table class="w-full text-left border-separate border-spacing-0">
             <thead class="bg-white dark:bg-slate-800 sticky top-0 z-30">
                 <tr>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Thông tin chuẩn đối chiếu</th>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Người mượn & Hoạt động</th>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Mốc thời gian</th>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Trạng thái</th>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Xác nhận</th>
-                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Thao tác</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Thông tin chuẩn đối chiếu</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Người mượn & Hoạt động</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700">Mốc thời gian</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Trạng thái</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Xác nhận</th>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-50 dark:border-slate-700 text-center">Thao tác</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
@@ -34,15 +34,15 @@ import { AuthService } from '../../../../core/services/auth.service';
                                     <div class="flex flex-col gap-3">
                                         <div class="flex items-start gap-3">
                                             <div class="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                <i class="fa-solid fa-vial-circle-check text-sm font-bold"></i>
+                                                <i class="fa-solid fa-vial-circle-check text-base font-bold"></i>
                                             </div>
                                             <div>
-                                                <div class="font-black text-slate-800 dark:text-slate-100 text-[14px] leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
+                                                <div class="font-black text-slate-800 dark:text-slate-100 text-base leading-tight mb-1 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors" (click)="navigateToStandard.emit(req.standardId); $event.stopPropagation()">{{req.standardName}}</div>
                                                 <div class="flex items-center gap-2">
-                                                    <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black rounded-lg border border-indigo-100/50 dark:border-indigo-800/30">
+                                                    <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-lg border border-indigo-100/50 dark:border-indigo-800/30">
                                                         {{req.standardDetails?.internal_id}}
                                                     </span>
-                                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 line-clamp-1 italic max-w-[150px]">
+                                                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 line-clamp-1 italic max-w-[150px]">
                                                         {{req.standardDetails?.manufacturer}}
                                                     </span>
                                                 </div>
@@ -52,21 +52,21 @@ import { AuthService } from '../../../../core/services/auth.service';
                                         <!-- Standard Meta Grid (Rich Identity) -->
                                         <div class="grid grid-cols-2 gap-2 mt-1">
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
-                                                <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số Lô (LOT)</span>
-                                                <span class="text-[11px] font-black text-blue-600 dark:text-blue-400 truncate">{{req.lotNumber || 'N/A'}}</span>
+                                                <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Số Lô (LOT)</span>
+                                                <span class="text-sm font-black text-blue-600 dark:text-blue-400 truncate">{{req.lotNumber || 'N/A'}}</span>
                                             </div>
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-0.5">
-                                                <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">CAS Number</span>
-                                                <span class="text-[11px] font-black text-teal-600 dark:text-teal-400 truncate">{{req.standardDetails?.cas_number || 'N/A'}}</span>
+                                                <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">CAS Number</span>
+                                                <span class="text-sm font-black text-teal-600 dark:text-teal-400 truncate">{{req.standardDetails?.cas_number || 'N/A'}}</span>
                                             </div>
                                             <div class="px-2.5 py-1.5 rounded-xl border flex flex-col gap-0.5" 
                                                     [class]="isExpOverdue(req.standardDetails?.expiry_date) ? 'bg-rose-50/50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30' : 'bg-slate-50/50 border-slate-100 dark:bg-slate-900/30 dark:border-slate-800/50'">
-                                                <span class="text-[8px] font-black uppercase tracking-widest" [class.text-rose-500]="isExpOverdue(req.standardDetails?.expiry_date)" [class.text-slate-400]="!isExpOverdue(req.standardDetails?.expiry_date)">Hạn dùng (EXP)</span>
-                                                <span class="text-[11px] font-black" [class.text-rose-600]="isExpOverdue(req.standardDetails?.expiry_date)" [class.text-slate-700]="!isExpOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
+                                                <span class="text-[10px] font-black uppercase tracking-widest" [class.text-rose-500]="isExpOverdue(req.standardDetails?.expiry_date)" [class.text-slate-400]="!isExpOverdue(req.standardDetails?.expiry_date)">Hạn dùng (EXP)</span>
+                                                <span class="text-sm font-black" [class.text-rose-600]="isExpOverdue(req.standardDetails?.expiry_date)" [class.text-slate-700]="!isExpOverdue(req.standardDetails?.expiry_date)">{{req.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
                                             </div>
                                             <div class="px-2.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-1">
-                                                <span class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tồn kho / Vị trí</span>
-                                                <div class="text-[11px] leading-snug">
+                                                <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tồn kho / Vị trí</span>
+                                                <div class="text-sm leading-snug">
                                                     <span class="font-black text-slate-700 dark:text-slate-300">{{req.standardDetails?.current_amount}}{{req.standardDetails?.unit}}</span>
                                                     <span class="text-slate-400 mx-1">•</span>
                                                     <span class="font-bold text-slate-600 dark:text-slate-400 break-words">{{req.standardDetails?.location || '?'}}</span>
@@ -77,16 +77,16 @@ import { AuthService } from '../../../../core/services/auth.service';
                                 </td>
                             <td class="px-6 py-5">
                                 <div class="flex items-start gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 uppercase font-black text-[10px] shrink-0 border border-placeholder">
+                                    <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 uppercase font-black text-xs shrink-0 border border-placeholder">
                                         {{req.requestedByName.charAt(0)}}
                                     </div>
                                     <div>
-                                        <div class="font-black text-slate-700 dark:text-slate-300 text-xs mb-0.5">{{req.requestedByName}}</div>
-                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium italic line-clamp-1 max-w-[200px]" [title]="req.purpose">{{req.purpose}}</div>
+                                        <div class="font-black text-slate-700 dark:text-slate-300 text-sm mb-0.5">{{req.requestedByName}}</div>
+                                        <div class="text-sm text-slate-500 dark:text-slate-400 font-medium italic line-clamp-1 max-w-[200px]" [title]="req.purpose">{{req.purpose}}</div>
                                         @if(req.totalAmountUsed) {
                                             <div class="mt-2 flex items-center gap-2 bg-rose-50/80 dark:bg-rose-900/10 px-2.5 py-1.5 rounded-xl border border-rose-100/50 dark:border-rose-900/30 w-fit min-w-[120px] shadow-sm justify-between">
-                                                <span class="text-[9px] font-black text-rose-500/80 dark:text-rose-400/80 uppercase tracking-widest"><i class="fa-solid fa-droplet mr-1.5"></i>Tổng đã dùng</span>
-                                                <span class="text-xs font-black text-rose-600 dark:text-rose-400">{{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
+                                                <span class="text-[11px] font-black text-rose-500/80 dark:text-rose-400/80 uppercase tracking-widest"><i class="fa-solid fa-droplet mr-1.5"></i>Tổng đã dùng</span>
+                                                <span class="text-sm font-black text-rose-600 dark:text-rose-400">{{req.totalAmountUsed}} {{req.standardDetails?.unit || ''}}</span>
                                             </div>
                                         }
                                     </div>
@@ -94,14 +94,14 @@ import { AuthService } from '../../../../core/services/auth.service';
                             </td>
                             <td class="px-6 py-5">
                                 <div class="space-y-1.5">
-                                    <div class="flex items-center gap-2 text-[10px]">
+                                    <div class="flex items-center gap-2 text-xs">
                                         <span class="w-12 text-slate-400 dark:text-slate-500 font-black uppercase">Yêu cầu:</span>
                                         <span class="text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</span>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-5 text-center">
-                                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border shadow-sm" [ngClass]="getStatusClass(req.status)">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border shadow-sm" [ngClass]="getStatusClass(req.status)">
                                     <i [class]="getStatusIcon(req.status)"></i>
                                     {{getStatusLabel(req.status)}}
                                 </div>
@@ -109,17 +109,17 @@ import { AuthService } from '../../../../core/services/auth.service';
                             <td class="px-6 py-5 text-center">
                                 <div class="flex flex-col gap-1 items-center">
                                     @if(req.approvedByName) {
-                                        <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black rounded-lg border border-emerald-100/50 dark:border-emerald-800/30 whitespace-nowrap">
+                                        <div class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-black rounded-lg border border-emerald-100/50 dark:border-emerald-800/30 whitespace-nowrap">
                                             <i class="fa-solid fa-stamp mr-1"></i>Duyệt: {{req.approvedByName}}
                                         </div>
                                     }
                                     @if(req.receivedByName) {
-                                        <div class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded-lg border border-blue-100/50 dark:border-blue-800/30 whitespace-nowrap">
+                                        <div class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-black rounded-lg border border-blue-100/50 dark:border-blue-800/30 whitespace-nowrap">
                                             <i class="fa-solid fa-check-double mr-1"></i>Nhận: {{req.receivedByName}}
                                         </div>
                                     }
                                     @if(!req.approvedByName && !req.receivedByName) {
-                                        <span class="text-[10px] text-slate-300 dark:text-slate-600 font-black italic">Trống</span>
+                                        <span class="text-xs text-slate-300 dark:text-slate-600 font-black italic">Trống</span>
                                     }
                                 </div>
                             </td>
@@ -151,7 +151,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                     }
                                     @if(req.status === 'PENDING_RETURN' && auth.canApproveStandards()) {
                                         <button (click)="actionAdminReceive.emit(req)" 
-                                                class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-[10px] font-black" 
+                                                class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-xs font-black" 
                                                 title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
                                     }
                                     @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
@@ -172,7 +172,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                 <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-slate-200 dark:text-slate-800 border-2 border-dashed border-slate-100 dark:border-slate-800">
                                     <i class="fa-solid fa-box-open text-3xl"></i>
                                 </div>
-                                <p class="text-slate-400 dark:text-slate-500 font-black uppercase text-[11px] tracking-[0.2em]">Không tìm thấy yêu cầu nào</p>
+                                <p class="text-slate-400 dark:text-slate-500 font-black uppercase text-sm tracking-[0.2em]">Không tìm thấy yêu cầu nào</p>
                             </td>
                         </tr> 
                     }
