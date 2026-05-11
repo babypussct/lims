@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, HostListener, effect, ElementRef, Input } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, ElementRef, Input, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
@@ -68,12 +68,11 @@ import { AppNotification } from '../../../core/models/notification.model';
       @if (isOpen()) {
          <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[150] flex flex-col max-h-[85vh]"
               [ngClass]="{
-                 'absolute bottom-full mb-3 w-[350px] md:w-96 origin-bottom-left transition-all duration-300': asBadge,
-                 'left-0': asBadge && !state.sidebarCollapsed(),
-                 'left-full ml-4': asBadge && state.sidebarCollapsed(),
+                 'fixed w-80 origin-bottom-left': asBadge,
                  'fixed bottom-[calc(85px+env(safe-area-inset-bottom,0px))] left-4 right-4 origin-bottom': bottomNavMode,
                  'absolute w-[calc(100vw-2rem)] md:w-96 mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
-              }">
+              }"
+              [ngStyle]="asBadge ? badgeDropdownStyle() : {}">
             
             <!-- Header -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
@@ -149,8 +148,10 @@ export class NotificationBellComponent {
   state = inject(StateService);
   router = inject(Router);
   elRef = inject(ElementRef);
+  private zone = inject(NgZone);
 
   isOpen = signal(false);
+  badgeDropdownStyle = signal<Record<string, string>>({});
 
   notifications = this.notificationService.notifications;
   unreadCount = this.notificationService.unreadCount;
@@ -162,7 +163,43 @@ export class NotificationBellComponent {
       }
   }
 
+  @HostListener('window:scroll', [])
+  @HostListener('window:resize', [])
+  onViewChange() {
+      if (this.isOpen() && this.asBadge) {
+          this._computeBadgeDropdownStyle();
+      }
+  }
+
+  private _computeBadgeDropdownStyle(): void {
+      const el: HTMLElement = this.elRef.nativeElement;
+      const rect = el.getBoundingClientRect();
+      const dropdownWidth = 320; // w-80 = 320px
+      const gap = 8;
+
+      // Tính bottom từ top của badge (dropdown mọc lên trên)
+      const bottomPx = window.innerHeight - rect.top + gap;
+
+      // Tính left: ưu tiên căn theo cạnh trái sidebar
+      // Sidebar luôn ở left=0, rộng 256px (expanded) hoặc 80px (collapsed)
+      const sidebarWidth = this.state.sidebarCollapsed() ? 80 : 256;
+      let leftPx = Math.max(8, sidebarWidth - dropdownWidth - 8);
+
+      // Đảm bảo không bị overflow sang phải
+      if (leftPx + dropdownWidth > window.innerWidth - 8) {
+          leftPx = window.innerWidth - dropdownWidth - 8;
+      }
+
+      this.badgeDropdownStyle.set({
+          bottom: bottomPx + 'px',
+          left: leftPx + 'px',
+      });
+  }
+
   toggleMenu() {
+      if (this.asBadge && !this.isOpen()) {
+          this._computeBadgeDropdownStyle();
+      }
       this.isOpen.set(!this.isOpen());
   }
 

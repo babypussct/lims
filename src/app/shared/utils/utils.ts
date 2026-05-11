@@ -373,7 +373,9 @@ export function getExpiryTimeLeft(dateStr: string | undefined): string {
 export function getStandardStatus(std: ReferenceStandard): { label: string, class: string } {
     if (std.status === 'IN_USE') return { label: 'Đang dùng', class: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50' };
     if (std.status === 'DEPLETED' || std.current_amount <= 0) return { label: 'Sử dụng hết', class: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' };
-    if (std.has_pending_request) return { label: 'Chờ duyệt', class: 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800/50' };
+    // Guard: nếu standard đang có current_holder (đã được cấp phát), ưu tiên trạng thái Firestore thực
+    // hơn flag has_pending_request có thể còn stale trong cache
+    if (std.has_pending_request && !std.current_holder && !std.current_request_id) return { label: 'Chờ duyệt', class: 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800/50' };
     
     if (!std.expiry_date) return { label: 'Chưa rõ hạn', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
     

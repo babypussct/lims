@@ -199,7 +199,15 @@ export class StandardRequestService {
         targetId: standardId, actionUrl: `/standards/${standardId}`
       });
     }
+    // Invalidate và merge ngay document mới vào cache để UI phản ánh đúng không cần F5
     this.cache.invalidateLocalStandardsCache();
+    try {
+      const freshSnap = await getDoc(stdRef);
+      if (freshSnap.exists()) {
+        const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
+        this.cache._mergeAndSave([freshStd], []);
+      }
+    } catch (e) { console.warn('[StandardRequestService] post-dispense cache merge failed:', e); }
   }
 
   // ─── Return Standard ──────────────────────────────────────────────────────────
@@ -276,7 +284,15 @@ export class StandardRequestService {
     if (reqData) {
       await this.crud.logGlobalActivity('RETURN_STANDARD', `Nhận lại chuẩn: ${(reqData as StandardRequest).standardName}`, requestId);
     }
+    // Invalidate và merge ngay document mới vào cache để UI phản ánh đúng không cần F5
     this.cache.invalidateLocalStandardsCache();
+    try {
+      const freshSnap = await getDoc(stdRef);
+      if (freshSnap.exists()) {
+        const freshStd = { id: freshSnap.id, ...freshSnap.data() } as ReferenceStandard;
+        this.cache._mergeAndSave([freshStd], []);
+      }
+    } catch (e) { console.warn('[StandardRequestService] post-return cache merge failed:', e); }
   }
 
   // ─── Hard Delete Request ──────────────────────────────────────────────────────

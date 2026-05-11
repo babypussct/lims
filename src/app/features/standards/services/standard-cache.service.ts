@@ -22,8 +22,13 @@ export class StandardCacheService {
   private auth = inject(AuthService);
   deltaSync = inject(DeltaSyncService);
 
-  readonly STD_CACHE_KEY       = 'lims_std_list_cache';
+  /** @deprecated Không dùng trực tiếp, chỉ để tương thích ngược */
+  readonly STD_CACHE_KEY        = 'lims_std_list_cache';
   readonly STD_SYNC_SECONDS_KEY = 'lims_std_sync_seconds';
+
+  // Key thực sự DeltaSync đang dùng (computed sau khi APP_ID sẵn sàng)
+  get _deltaCacheKey()  { return 'lims_reference_standards_cache_'        + this.fb.APP_ID; }
+  get _deltaCursorKey() { return 'lims_reference_standards_sync_seconds_' + this.fb.APP_ID; }
 
   // L1: In-memory (0 reads, mất khi F5)
   _memStandards: ReferenceStandard[] | null = null;
@@ -106,9 +111,16 @@ export class StandardCacheService {
   }
 
   // ─── Cache Invalidation ──────────────────────────────────────────────────────
+  /**
+   * Xóa toàn bộ cache standards (memory + localStorage).
+   * Buộc lần tải tiếp theo phải fetch lại từ Firestore.
+   */
   invalidateLocalStandardsCache(): void {
     this._memStandards = null;
-    localStorage.removeItem(this.STD_SYNC_SECONDS_KEY);
+    // Xóa cả key cũ (legacy) lẫn key thực sự DeltaSync đang dùng
+    localStorage.removeItem(this.STD_SYNC_SECONDS_KEY);  // legacy
+    localStorage.removeItem(this._deltaCacheKey);         // DeltaSync data
+    localStorage.removeItem(this._deltaCursorKey);        // DeltaSync cursor
   }
 
   /** @deprecated Dùng invalidateLocalStandardsCache() */
@@ -150,14 +162,29 @@ export class StandardCacheService {
   }
 
   // ─── Private Helpers ─────────────────────────────────────────────────────────
+  /**
+   * Merge changed/deleted docs vào memory và localStorage.
+   * Nếu _memStandards chưa được khởi tạo, chỉ cập nhật localStorage
+   * để tránh mất update từ live listener khi component chưa load xong.
+   */
   _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
-    if (!this._memStandards) return;
-    let items = this._memStandards.filter(i => !deletedIds.includes(i.id));
+    // Lấy dữ liệu hiện tại: ưu tiên memory, fallback sang localStorage
+    const base: ReferenceStandard[] =
+      this._memStandards ?? (
+        this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? []
+      );
+
+    let items = base.filter(i => !deletedIds.includes(i.id));
     changed.forEach(newDoc => {
       const idx = items.findIndex(i => i.id === newDoc.id);
       if (idx >= 0) { items[idx] = newDoc; } else { items.unshift(newDoc); }
     });
-    this._memStandards = items;
+
+    // Cập nhật memory chỉ khi đã được khởi tạo (tránh dùng stale list rỗng)
+    if (this._memStandards) {
+      this._memStandards = items;
+    }
+    // Luôn ghi xuống localStorage để lần load sau lấy được dữ liệu mới nhất
     this._saveStdToCache(items);
   }
 
@@ -174,15 +201,24 @@ export class StandardCacheService {
 
   private _saveStdToCache(items: ReferenceStandard[]): void {
     try {
-      localStorage.setItem(this.STD_CACHE_KEY, JSON.stringify(items));
+      // Ghi vào _deltaCacheKey (key mà DeltaSync đọc) để đảm bảo
+      // các thay đổi từ startRealtimeDeltaListener được DeltaSync nhìn thấy
+      const json = JSON.stringify(items);
+      localStorage.setItem(this._deltaCacheKey, json);
+      // Cũng ghi vào key cũ để tương thích ngược
+      localStorage.setItem(this.STD_CACHE_KEY, json);
+
       const maxSec = items.reduce((max, i) => {
         const sec = (i.lastUpdated as any)?.seconds ?? 0;
         return sec > max ? sec : max;
       }, 0);
-      if (maxSec > 0) localStorage.setItem(this.STD_SYNC_SECONDS_KEY, maxSec.toString());
+      if (maxSec > 0) {
+        localStorage.setItem(this._deltaCursorKey, maxSec.toString());
+        localStorage.setItem(this.STD_SYNC_SECONDS_KEY, maxSec.toString()); // legacy
+      }
     } catch (e: any) {
       console.warn('[StandardCacheService] Cache write failed:', e?.name);
-      try { localStorage.removeItem(this.STD_CACHE_KEY); } catch {}
+      try { localStorage.removeItem(this._deltaCacheKey); } catch {}
     }
   }
 
