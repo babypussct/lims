@@ -84,6 +84,10 @@ export class NotificationService {
                     });
                 }
                 await batch.commit();
+                
+                // ── Trigger Web Push API ──
+                this._triggerWebPush(adminUids, cleanPayload);
+
             } else {
                 // ── PERSONAL: single document for a specific user ─────────────
                 const newDocRef = doc(colRef);
@@ -93,10 +97,40 @@ export class NotificationService {
                     isRead: false,
                     createdAt,
                 });
+                
+                // ── Trigger Web Push API ──
+                if (notification.recipientUid) {
+                    this._triggerWebPush([notification.recipientUid], cleanPayload);
+                }
             }
         } catch (e: any) {
             console.error('Failed to push notification:', e);
             this.toast.show('Lỗi lưu thông báo: ' + e.message, 'error');
+        }
+    }
+
+    // ── Call Vercel Serverless Function to send Web Push ─────────────
+    private async _triggerWebPush(recipientUids: string[], notification: any) {
+        if (!recipientUids || recipientUids.length === 0) return;
+        try {
+            // Using absolute URL to ensure it works properly
+            const url = window.location.origin + '/api/push';
+            const payload = {
+                recipientUids,
+                title: notification.title || 'LIMS Thông báo',
+                body: notification.message || 'Bạn có một thông báo mới.',
+                url: notification.link || '/',
+                appId: this.fb.APP_ID
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.warn('[WebPush] fetch error:', e)); // Fire and forget
+            
+        } catch (e) {
+            console.warn('[NotificationService] Web Push API call failed:', e);
         }
     }
 
