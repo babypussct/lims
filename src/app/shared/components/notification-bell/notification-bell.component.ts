@@ -65,11 +65,11 @@ import { AppNotification } from '../../../core/models/notification.model';
 
       <!-- Dropdown Menu -->
       @if (isOpen()) {
-         <div class="absolute w-[calc(100vw-2rem)] md:w-96 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
+         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 dark:border-slate-700 overflow-hidden fade-in-scale z-[100] flex flex-col max-h-[85vh]"
               [ngClass]="{
-                 'bottom-full mb-3 left-0 origin-bottom-left': asBadge,
-                 'bottom-full mb-3 left-1/2 -translate-x-1/2 origin-bottom': bottomNavMode,
-                 'mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
+                 'absolute w-[calc(100vw-2rem)] md:w-96 bottom-full mb-3 left-0 origin-bottom-left': asBadge,
+                 'fixed bottom-[calc(85px+env(safe-area-inset-bottom,0px))] left-4 right-4 origin-bottom': bottomNavMode,
+                 'absolute w-[calc(100vw-2rem)] md:w-96 mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
               }">
             
             <!-- Header -->
