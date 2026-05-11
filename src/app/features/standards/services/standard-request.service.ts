@@ -76,7 +76,8 @@ export class StandardRequestService {
     
     snapshot.forEach(docSnap => {
       const req = docSnap.data();
-      if (req['standardId']) {
+      // Bỏ qua request đã bị xóa mềm (_isDeleted: true)
+      if (req['standardId'] && !req['_isDeleted']) {
         const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${req['standardId']}`);
         batch.update(stdRef, { has_pending_request: true });
         count++;
@@ -101,9 +102,12 @@ export class StandardRequestService {
     ));
     if (pendingSnap.empty) return 0;
 
-    // Lấy danh sách unique standardId
+    // Lấy danh sách unique standardId — bỏ qua request đã xóa mềm
     const stdIds = [...new Set(
-      pendingSnap.docs.map(d => d.data()['standardId'] as string).filter(Boolean)
+      pendingSnap.docs
+        .filter(d => !d.data()['_isDeleted'])
+        .map(d => d.data()['standardId'] as string)
+        .filter(Boolean)
     )];
 
     // Fetch status của từng chuẩn
@@ -164,9 +168,12 @@ export class StandardRequestService {
       where('status', '==', 'PENDING_APPROVAL')
     ));
 
-    // Map: standardId → true (có PENDING_APPROVAL thực sự)
+    // Map: standardId → true (có PENDING_APPROVAL thực sự, không phải request đã xóa mềm)
     const stdIdsWithRealPending = new Set<string>(
-      pendingSnap.docs.map(d => d.data()['standardId'] as string).filter(Boolean)
+      pendingSnap.docs
+        .filter(d => !d.data()['_isDeleted'])
+        .map(d => d.data()['standardId'] as string)
+        .filter(Boolean)
     );
 
     // 2. Lấy tất cả standards đang có flag = true
@@ -496,9 +503,12 @@ export class StandardRequestService {
       }
 
       if (reqExisted) {
-        transaction.update(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+        // Đổi status sang REJECTED đồng thời để tránh migration query tìm thấy
+        // request đã xóa (PENDING_APPROVAL + _isDeleted) và tái set flag sai
+        const deletedStatus = request.status === 'PENDING_APPROVAL' ? 'REJECTED' : request.status;
+        transaction.update(reqRef, { _isDeleted: true, status: deletedStatus, lastUpdated: serverTimestamp() });
       } else {
-        transaction.set(reqRef, { _isDeleted: true, lastUpdated: serverTimestamp() });
+        transaction.set(reqRef, { _isDeleted: true, status: 'REJECTED', lastUpdated: serverTimestamp() });
       }
     });
 
