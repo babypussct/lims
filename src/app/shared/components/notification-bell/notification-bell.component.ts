@@ -72,7 +72,8 @@ import { AppNotification } from '../../../core/models/notification.model';
                  'fixed bottom-[calc(85px+env(safe-area-inset-bottom,0px))] left-4 right-4 origin-bottom': bottomNavMode,
                  'absolute w-[calc(100vw-2rem)] md:w-96 mt-3 right-0 origin-top-right': !asBadge && !bottomNavMode
               }"
-              [ngStyle]="asBadge ? badgeDropdownStyle() : {}">
+              [style.left.px]="asBadge ? dropdownLeft() : null"
+              [style.bottom.px]="asBadge ? dropdownBottom() : null">
             
             <!-- Header -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
@@ -151,7 +152,8 @@ export class NotificationBellComponent {
   private zone = inject(NgZone);
 
   isOpen = signal(false);
-  badgeDropdownStyle = signal<Record<string, string>>({});
+  dropdownLeft = signal<number>(0);
+  dropdownBottom = signal<number>(0);
 
   notifications = this.notificationService.notifications;
   unreadCount = this.notificationService.unreadCount;
@@ -175,14 +177,16 @@ export class NotificationBellComponent {
       const el: HTMLElement = this.elRef.nativeElement;
       const rect = el.getBoundingClientRect();
       const dropdownWidth = 320; // w-80 = 320px
-      const gap = 8;
+      const gap = 12; // Khoảng cách an toàn
 
       // Dropdown xuất hiện phía TRÊN badge button
-      const bottomPx = window.innerHeight - rect.top + gap;
+      const bottomPx = window.innerHeight - rect.bottom + 16; // Thêm padding
 
-      // Dropdown xuất hiện bên PHẢI của sidebar (không bị che bởi sidebar)
-      // Sidebar luôn ở left=0, rộng 256px (expanded) hoặc 80px (collapsed)
-      const sidebarWidth = this.state.sidebarCollapsed() ? 80 : 256;
+      // Lấy chính xác chiều rộng hiện tại của sidebar trên DOM
+      const sidebarEl = document.querySelector('aside');
+      const sidebarWidth = sidebarEl ? sidebarEl.getBoundingClientRect().width : (this.state.sidebarCollapsed() ? 80 : 256);
+      
+      // Đặt dropdown nằm ngay bên PHẢI của sidebar
       let leftPx = sidebarWidth + gap;
 
       // Đảm bảo không bị overflow sang phải màn hình
@@ -190,10 +194,8 @@ export class NotificationBellComponent {
           leftPx = window.innerWidth - dropdownWidth - gap;
       }
 
-      this.badgeDropdownStyle.set({
-          bottom: bottomPx + 'px',
-          left: leftPx + 'px',
-      });
+      this.dropdownBottom.set(bottomPx);
+      this.dropdownLeft.set(leftPx);
   }
 
   toggleMenu() {
