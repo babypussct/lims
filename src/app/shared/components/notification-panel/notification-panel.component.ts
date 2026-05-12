@@ -90,8 +90,7 @@ import { AppNotification } from '../../../core/models/notification.model';
                 <div
                   (click)="onNotificationClick(n)"
                   class="px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors relative group"
-                  [class.bg-blue-50]="!n.isRead"
-                  [class.dark:bg-blue-950/20]="!n.isRead">
+                  [ngClass]="{'bg-blue-50 dark:bg-blue-950/20': !n.isRead}">
 
                   <!-- Unread indicator -->
                   @if (!n.isRead) {
