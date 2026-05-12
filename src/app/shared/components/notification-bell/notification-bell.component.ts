@@ -13,18 +13,21 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
  * Modes:
  *  - Default:       Nút tròn với icon chuông (dùng trong sidebar desktop)
  *  - bottomNavMode: Nút bottom-nav dạng tab (dùng trong mobile bottom bar)
- *  - asBadge:       Badge nhỏ gắn vào avatar (deprecated — giữ lại để tương thích)
+ *  - asBadge:       Badge nhỏ gắn vào avatar
  */
 @Component({
   selector: 'app-notification-bell',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    '(click)': '$event.stopPropagation()'
+  },
   template: `
     @if (bottomNavMode) {
       <!-- Bottom Nav Tab -->
       <button
         id="notif-bell-mobile"
-        (click)="panel.toggle()"
+        (click)="onToggle($event)"
         class="flex flex-col items-center justify-center min-w-[56px] py-2 gap-1 group active:scale-90 transition-transform">
         <div class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
              [class]="panel.isOpen() ? 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 shadow-sm'
@@ -45,7 +48,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- Badge on Avatar (sidebar footer) -->
       <button
         id="notif-bell-badge"
-        (click)="panel.toggle()"
+        (click)="onToggle($event)"
         class="relative flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm transition-transform hover:scale-110 active:scale-95 z-10"
         [ngClass]="unreadCount() > 0 ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'">
         @if (unreadCount() > 0) {
@@ -62,7 +65,7 @@ import { NotificationPanelService } from '../../../core/services/notification-pa
       <!-- Default: Standalone round button -->
       <button
         id="notif-bell-default"
-        (click)="panel.toggle()"
+        (click)="onToggle($event)"
         class="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95">
         <i class="fa-solid fa-bell text-slate-600 dark:text-slate-300 text-[18px]"
            [class.fa-shake]="unreadCount() > 0 && panel.isOpen()"></i>
@@ -85,4 +88,10 @@ export class NotificationBellComponent {
   panel         = inject(NotificationPanelService);
   notifications = inject(NotificationService);
   unreadCount   = this.notifications.unreadCount;
+
+  /** stopPropagation ngăn click bubble lên parent (sidebar toggleProfileMenu) */
+  onToggle(event: Event) {
+    event.stopPropagation();
+    this.panel.toggle();
+  }
 }
