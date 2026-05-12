@@ -5,11 +5,12 @@ import {
   doc, collection, getDoc, setDoc, updateDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
   where, QueryConstraint, Unsubscribe, onSnapshot, getDocs,
-  orderBy, limit, Timestamp
+  orderBy, limit
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
+import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 
@@ -18,6 +19,8 @@ import { StandardCacheService } from './standard-cache.service';
  *
  * Bao gồm: tạo, duyệt, cấp, trả, hủy, xóa cứng request.
  * Cũng bao gồm PurchaseRequest (đặt mua chuẩn khi tồn kho thấp).
+ *
+ * v2: Dùng DeltaSyncService singleton mode thay vì tự quản lý listener.
  */
 @Injectable({ providedIn: 'root' })
 export class StandardRequestService {
@@ -25,34 +28,17 @@ export class StandardRequestService {
   private auth = inject(AuthService);
   private crud = inject(StandardCrudService);
   private cache = inject(StandardCacheService);
+  private deltaSync = inject(DeltaSyncService);
   private notificationService = inject(NotificationService);
-
-  // ─── Singleton Listener Infrastructure ─────────────────────────────────────
-  // Mô hình giống StandardCacheService.startRealtimeDeltaListener():
-  // - 1 listener duy nhất chạy suốt phiên login
-  // - Components subscribe/unsubscribe callback, KHÔNG tạo/hủy listener
-  // - localStorage persistence giúp data hiển thị tức thì khi reload
-  private _memRequests: StandardRequest[] | null = null;
-  private _liveUnsub?: Unsubscribe;
-  private _liveCallbacks: Array<(reqs: StandardRequest[]) => void> = [];
-  private _currentRoleKey = '';
 
   constructor() {
     // Cleanup singleton khi user logout hoặc đổi account
     effect(() => {
       const user = this.auth.currentUser();
-      if (!user) this._cleanupOnLogout();
+      if (!user) {
+        this.deltaSync.destroySingleton(this._getCacheKey('admin'));
+      }
     });
-  }
-
-  private _cleanupOnLogout(): void {
-    if (this._liveUnsub) {
-      this._liveUnsub();
-      this._liveUnsub = undefined;
-    }
-    this._liveCallbacks = [];
-    this._memRequests = null;
-    this._currentRoleKey = '';
   }
 
   // Cache key phân biệt theo role để tránh data leak giữa admin/user
@@ -62,201 +48,55 @@ export class StandardRequestService {
   private _getCursorKey(roleKey: string): string {
     return `lims_std_req_cursor_${roleKey}_${this.fb.APP_ID}`;
   }
+  private _getRoleKey(): string {
+    const isApprover = this.auth.canApproveStandards();
+    const uid = this.auth.currentUser()?.uid;
+    return isApprover ? 'admin' : (uid || 'guest');
+  }
 
-  // ─── Singleton Listener ────────────────────────────────────────────────────────
+  // ─── Singleton Listener via DeltaSync v2 ───────────────────────────────────
 
   /**
    * Subscribe vào singleton listener cho standard_requests.
-   * - Lần đầu: tạo listener, emit từ cache ngay lập tức
-   * - Lần sau: chỉ đăng ký callback, dùng listener đã chạy
+   * Delegates to DeltaSyncService.startSingletonListener().
    * @returns Hàm unregister callback (KHÔNG hủy listener singleton)
    */
   startRequestsListener(callback: (requests: StandardRequest[]) => void): () => void {
-    this._liveCallbacks.push(callback);
-
     const isApprover = this.auth.canApproveStandards();
-    const currentUser = this.auth.currentUser();
-    const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
+    const uid = this.auth.currentUser()?.uid;
+    const roleKey = this._getRoleKey();
 
-    // Emit cached data ngay lập tức (0 reads)
-    if (this._memRequests && this._currentRoleKey === roleKey) {
-      callback([...this._memRequests]);
-    } else {
-      // Load từ localStorage nếu chưa có trong memory
-      const cached = this._loadFromCache(roleKey);
-      if (cached.length > 0) {
-        this._memRequests = cached;
-        this._currentRoleKey = roleKey;
-        callback([...cached]);
-      }
-    }
-
-    // Start singleton listener nếu chưa có hoặc role đã thay đổi
-    if (!this._liveUnsub || this._currentRoleKey !== roleKey) {
-      this._startSingletonListener(roleKey, isApprover, currentUser?.uid);
-    }
-
-    // Return unregister function (chỉ bỏ callback, KHÔNG hủy listener)
-    return () => {
-      this._liveCallbacks = this._liveCallbacks.filter(cb => cb !== callback);
-    };
+    return this.deltaSync.startSingletonListener<StandardRequest>({
+      cacheKey: this._getCacheKey(roleKey),
+      cursorKey: this._getCursorKey(roleKey),
+      collectionPath: `artifacts/${this.fb.APP_ID}/standard_requests`,
+      maxCacheSize: 300,
+      orderByField: 'createdAt',
+      orderDirection: 'desc',
+      queryConstraints: (!isApprover && uid) ? [where('requestedBy', '==', uid)] : []
+    }, (data) => callback(data.filter(r => !r._isDeleted)));
   }
 
   /**
-   * Đọc requests từ localStorage cache (0 Firestore reads).
-   * Dùng cho Phase 1 — hiển thị data tức thì trước khi listener bắt kịp.
+   * Đọc requests từ cache (0 Firestore reads).
+   * Ưu tiên in-memory (singleton đang chạy) → fallback localStorage.
    */
   getRequestsFromCache(): StandardRequest[] {
-    if (this._memRequests) return [...this._memRequests];
-    const isApprover = this.auth.canApproveStandards();
-    const currentUser = this.auth.currentUser();
-    const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
-    return this._loadFromCache(roleKey);
-  }
-
-  /**
-   * Tạo singleton onSnapshot listener.
-   * Phase 1: getDocs initial batch nếu cache rỗng
-   * Phase 2: onSnapshot(lastUpdated > startTime) chỉ nhận delta changes
-   */
-  private _startSingletonListener(roleKey: string, isApprover: boolean, uid?: string): void {
-    // Cleanup listener cũ nếu role thay đổi
-    if (this._liveUnsub) {
-      this._liveUnsub();
-      this._liveUnsub = undefined;
-    }
-    this._currentRoleKey = roleKey;
-
-    const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`);
-
-    // Phase 1: Nếu chưa có data trong memory, fetch initial batch
-    if (!this._memRequests || this._memRequests.length === 0) {
-      const cached = this._loadFromCache(roleKey);
-      if (cached.length > 0) {
-        this._memRequests = cached;
-        this._notifyAll();
-      } else {
-        // Fetch initial batch từ Firestore (chỉ xảy ra 1 lần đầu tiên)
-        const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
-        if (!isApprover && uid) {
-          constraints.unshift(where('requestedBy', '==', uid));
-        }
-        const q = query(colRef, ...constraints);
-        getDocs(q).then(snap => {
-          const items = snap.docs
-            .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
-            .filter(r => !r._isDeleted);
-          this._memRequests = items;
-          this._saveToCache(roleKey, items);
-          this._notifyAll();
-        }).catch(err => {
-          console.warn('[StandardRequestService] Initial fetch failed:', err.message);
-        });
-      }
-    }
-
-    // Phase 2: Singleton live listener — bắt đầu từ CURSOR (không phải Timestamp.now())
-    // để lấp khoảng trống giữa lần cache cuối và thời điểm mở app
-    const cachedCursor = this._loadCursor(roleKey);
-    const startTime = cachedCursor > 0
-      ? new Date(cachedCursor * 1000) // Cursor = seconds → Date
-      : Timestamp.now();
-    const liveConstraints: QueryConstraint[] = [where('lastUpdated', '>', startTime)];
-    if (!isApprover && uid) {
-      liveConstraints.unshift(where('requestedBy', '==', uid));
-    }
-    const liveQuery = query(colRef, ...liveConstraints);
-
-    this._liveUnsub = onSnapshot(liveQuery, (snapshot) => {
-      if (snapshot.empty) return;
-
-      let hasChanges = false;
-      const items = this._memRequests ? [...this._memRequests] : [];
-
-      snapshot.docChanges().forEach(change => {
-        const data = { id: change.doc.id, ...change.doc.data() } as StandardRequest;
-
-        if (data._isDeleted) {
-          const idx = items.findIndex(i => i.id === data.id);
-          if (idx !== -1) {
-            items.splice(idx, 1);
-            hasChanges = true;
-          }
-        } else {
-          const idx = items.findIndex(i => i.id === data.id);
-          if (idx !== -1) {
-            items[idx] = data;
-          } else {
-            items.unshift(data); // Thêm mới lên đầu
-          }
-          hasChanges = true;
-        }
-      });
-
-      if (hasChanges) {
-        this._memRequests = items;
-        this._saveToCache(roleKey, items);
-        this._notifyAll();
-      }
-    }, (err) => {
-      console.warn('[StandardRequestService] Live listener error:', err.message);
-      if (err.code === 'permission-denied' || err.code === 'unauthenticated') {
-        if (this._liveUnsub) { this._liveUnsub(); this._liveUnsub = undefined; }
-        this._liveCallbacks = [];
-      }
-    });
-  }
-
-  private _notifyAll(): void {
-    const data = this._memRequests ? [...this._memRequests] : [];
-    this._liveCallbacks.forEach(cb => cb(data));
-  }
-
-  private _loadFromCache(roleKey: string): StandardRequest[] {
-    try {
-      const raw = localStorage.getItem(this._getCacheKey(roleKey));
-      return raw ? (JSON.parse(raw) as StandardRequest[]).filter(r => !r._isDeleted) : [];
-    } catch { return []; }
-  }
-
-  private _saveToCache(roleKey: string, items: StandardRequest[]): void {
-    try {
-      localStorage.setItem(this._getCacheKey(roleKey), JSON.stringify(items));
-      // Lưu cursor = max lastUpdated seconds để listener lần sau bắt đầu từ đây
-      let maxSeconds = 0;
-      for (const item of items) {
-        const lu = (item as any).lastUpdated;
-        if (lu) {
-          const sec = typeof lu.toMillis === 'function'
-            ? Math.floor(lu.toMillis() / 1000)
-            : (lu.seconds || (typeof lu === 'number' ? Math.floor(lu / 1000) : 0));
-          if (sec > maxSeconds) maxSeconds = sec;
-        }
-      }
-      if (maxSeconds > 0) {
-        localStorage.setItem(this._getCursorKey(roleKey), maxSeconds.toString());
-      }
-    } catch (e: any) {
-      console.warn('[StandardRequestService] Cache write failed:', e?.name);
-    }
-  }
-
-  private _loadCursor(roleKey: string): number {
-    try {
-      const raw = localStorage.getItem(this._getCursorKey(roleKey));
-      return raw ? parseInt(raw, 10) : 0;
-    } catch { return 0; }
+    const roleKey = this._getRoleKey();
+    const cacheKey = this._getCacheKey(roleKey);
+    return (this.deltaSync.getMemCache<StandardRequest>(cacheKey)
+      ?? this.deltaSync.getCache<StandardRequest>(cacheKey))
+      .filter(r => !r._isDeleted);
   }
 
   /**
    * @deprecated Dùng startRequestsListener() thay thế.
-   * Giữ lại để tương thích ngược — bên trong gọi startRequestsListener().
    */
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
     const unregister = this.startRequestsListener(callback);
-    // Trả về unregister dưới dạng Unsubscribe để giữ type compatibility
     return unregister as unknown as Unsubscribe;
   }
+
 
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
     const reqRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests`);

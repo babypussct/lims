@@ -3,18 +3,19 @@ import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   collection, getDocs, getDoc, doc, query, orderBy,
-  onSnapshot, Unsubscribe, where, Timestamp
+  Unsubscribe
 } from 'firebase/firestore';
 import { ReferenceStandard, StandardRequest } from '../../../core/models/standard.model';
 import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 
 /**
- * StandardCacheService — Quản lý Delta Sync 3 lớp cho ReferenceStandards.
- * 
+ * StandardCacheService — Quản lý cache cho ReferenceStandards.
+ *
+ * v2: Dùng DeltaSyncService singleton mode thay vì tự quản lý listener.
  * Chiến lược cache:
- *  L1: _memStandards (in-memory, 0 reads, mất khi F5)
- *  L2: localStorage (0 reads, sống qua F5)
- *  L3: getDocs delta (chỉ đọc docs THAY ĐỔI kể từ lần đồng bộ cuối)
+ *  L1: DeltaSync memCache (in-memory, 0 reads, mất khi F5)
+ *  L2: DeltaSync localStorage (0 reads, sống qua F5)
+ *  L3: DeltaSync delta listener (chỉ đọc docs THAY ĐỔI kể từ cursor)
  */
 @Injectable({ providedIn: 'root' })
 export class StandardCacheService {
@@ -30,12 +31,9 @@ export class StandardCacheService {
   get _deltaCacheKey()  { return 'lims_reference_standards_cache_'        + this.fb.APP_ID; }
   get _deltaCursorKey() { return 'lims_reference_standards_sync_seconds_' + this.fb.APP_ID; }
 
-  // L1: In-memory (0 reads, mất khi F5)
+  // L1: In-memory — giờ quản lý bởi DeltaSync singleton
+  // Giữ _memStandards chỉ cho fetchAllAndCache() (admin bulk operation)
   _memStandards: ReferenceStandard[] | null = null;
-
-  // Live listener singleton
-  private _liveUnsub?: Unsubscribe;
-  private _liveCallbacks: Array<() => void> = [];
 
   // Trạng thái view (giữ lại khi Back từ detail)
   listState = {
@@ -43,6 +41,18 @@ export class StandardCacheService {
     sortOption: 'received_desc',
     viewMode: '' as 'list' | 'grid' | ''
   };
+
+  private _deltaSyncConfig() {
+    return {
+      cacheKey: this._deltaCacheKey,
+      cursorKey: this._deltaCursorKey,
+      collectionPath: `artifacts/${this.fb.APP_ID}/reference_standards`,
+      maxCacheSize: 3000,
+      orderByField: 'received_date',
+      orderDirection: 'desc' as const,
+      isDeletedFn: (doc: any) => doc._isDeleted === true || doc.status === 'DELETED'
+    };
+  }
 
   constructor() {
     effect(() => {
@@ -53,61 +63,37 @@ export class StandardCacheService {
 
   // ─── Cleanup khi logout ──────────────────────────────────────────────────────
   private _cleanupOnLogout(): void {
-    if (this._liveUnsub) {
-      this._liveUnsub();
-      this._liveUnsub = undefined;
-    }
-    this._liveCallbacks = [];
+    this.deltaSync.destroySingleton(this._deltaCacheKey);
     this._memStandards = null;
   }
 
-  // ─── Live Listener Singleton ─────────────────────────────────────────────────
+  // ─── Singleton Listener (thay thế cả startRealtimeDeltaListener + listenToStandards) ──
+  /**
+   * Subscribe vào DeltaSync singleton cho reference_standards.
+   *
+   * Trước v2: Có 2 listener riêng biệt:
+   *  - startRealtimeDeltaListener() → singleton tự xây (lastUpdated > now)
+   *  - listenToStandards() → DeltaSync classic (cursor-based)
+   * → 2 listener cho 1 collection = lãng phí.
+   *
+   * Sau v2: 1 singleton duy nhất, cursor-based, in-memory cache.
+   */
   startRealtimeDeltaListener(cb: () => void): () => void {
-    this._liveCallbacks.push(cb);
-
-    if (!this._liveUnsub) {
-      const startTime = Timestamp.now();
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      const q = query(colRef, where('lastUpdated', '>', startTime));
-
-      this._liveUnsub = onSnapshot(q, (snapshot) => {
-        if (snapshot.empty) return;
-        const changed: ReferenceStandard[] = [];
-        const deletedIds: string[] = [];
-        snapshot.docChanges().forEach(change => {
-          const data = change.doc.data();
-          if (data['_isDeleted'] === true || data['status'] === 'DELETED') {
-            deletedIds.push(change.doc.id);
-          } else {
-            changed.push({ id: change.doc.id, ...data } as ReferenceStandard);
-          }
-        });
-        this._mergeAndSave(changed, deletedIds);
-        this._liveCallbacks.forEach(fn => fn());
-      }, (err) => {
-        console.warn('[StandardCacheService] Live listener error:', err.code);
-        if (err.code === 'permission-denied' || err.code === 'unauthenticated') {
-          if (this._liveUnsub) { this._liveUnsub(); this._liveUnsub = undefined; }
-          this._liveCallbacks = [];
-        }
-      });
-    }
-
-    return () => {
-      this._liveCallbacks = this._liveCallbacks.filter(fn => fn !== cb);
-    };
+    // Wrap void callback thành data callback để phù hợp DeltaSync API
+    return this.deltaSync.startSingletonListener<ReferenceStandard>(
+      this._deltaSyncConfig(),
+      (_data) => cb()
+    );
   }
 
-  // ─── Delta Sync Listener ─────────────────────────────────────────────────────
+  // ─── Delta Sync Listener (backward compat) ─────────────────────────────────
   listenToStandards(callback: (standards: ReferenceStandard[]) => void): Unsubscribe {
-    return this.deltaSync.startListener<ReferenceStandard>({
-      cacheKey: 'lims_reference_standards_cache_' + this.fb.APP_ID,
-      cursorKey: 'lims_reference_standards_sync_seconds_' + this.fb.APP_ID,
-      collectionPath: `artifacts/${this.fb.APP_ID}/reference_standards`,
-      maxCacheSize: 3000,
-      orderByField: 'received_date',
-      orderDirection: 'desc'
-    }, callback);
+    const unregister = this.deltaSync.startSingletonListener<ReferenceStandard>(
+      this._deltaSyncConfig(),
+      (data) => callback(data)
+    );
+    // Trả về dưới dạng Unsubscribe để giữ type compatibility
+    return unregister as unknown as Unsubscribe;
   }
 
   // ─── Cache Invalidation ──────────────────────────────────────────────────────
@@ -117,10 +103,11 @@ export class StandardCacheService {
    */
   invalidateLocalStandardsCache(): void {
     this._memStandards = null;
-    // Xóa cả key cũ (legacy) lẫn key thực sự DeltaSync đang dùng
-    localStorage.removeItem(this.STD_SYNC_SECONDS_KEY);  // legacy
-    localStorage.removeItem(this._deltaCacheKey);         // DeltaSync data
-    localStorage.removeItem(this._deltaCursorKey);        // DeltaSync cursor
+    this.deltaSync.destroySingleton(this._deltaCacheKey);
+    this.deltaSync.clearCache(this._deltaCacheKey, this._deltaCursorKey);
+    // Xóa cả key cũ (legacy)
+    localStorage.removeItem(this.STD_SYNC_SECONDS_KEY);
+    localStorage.removeItem(this.STD_CACHE_KEY);
   }
 
   /** @deprecated Dùng invalidateLocalStandardsCache() */
@@ -128,7 +115,7 @@ export class StandardCacheService {
 
   // ─── Single Standard Lookup ──────────────────────────────────────────────────
   async getStandardById(stdId: string): Promise<ReferenceStandard | null> {
-    const cached = this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID);
+    const cached = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
     if (cached) {
       const found = cached.find(s => s.id === stdId);
       if (found) return found;
@@ -147,12 +134,12 @@ export class StandardCacheService {
   }
 
   getAllStandardsFromCache(): ReferenceStandard[] {
-    return this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID) ?? [];
+    return this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
   }
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
     try {
-      const stds = this.deltaSync.getCache<ReferenceStandard>('lims_reference_standards_cache_' + this.fb.APP_ID);
+      const stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
       const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
       if (active.length > 0) {
         return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
@@ -161,33 +148,22 @@ export class StandardCacheService {
     } catch { return null; }
   }
 
-  // ─── Private Helpers ─────────────────────────────────────────────────────────
+  // ─── Optimistic Cache Update ────────────────────────────────────────────────
   /**
-   * Merge changed/deleted docs vào memory và localStorage.
-   * Nếu _memStandards chưa được khởi tạo, chỉ cập nhật localStorage
-   * để tránh mất update từ live listener khi component chưa load xong.
+   * Merge changed/deleted docs vào cache ngay lập tức (optimistic update).
+   * Dùng sau khi write Firestore để UI cập nhật tức thì, không chờ live listener.
    */
   _mergeAndSave(changed: ReferenceStandard[], deletedIds: string[]): void {
-    // Lấy dữ liệu hiện tại: ưu tiên memory, fallback sang localStorage
-    const base: ReferenceStandard[] =
-      this._memStandards ?? (
-        this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? []
-      );
-
+    const base = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey) ?? [];
     let items = base.filter(i => !deletedIds.includes(i.id));
     changed.forEach(newDoc => {
       const idx = items.findIndex(i => i.id === newDoc.id);
       if (idx >= 0) { items[idx] = newDoc; } else { items.unshift(newDoc); }
     });
-
-    // Cập nhật memory chỉ khi đã được khởi tạo (tránh dùng stale list rỗng)
-    if (this._memStandards) {
-      this._memStandards = items;
-    }
-    // Luôn ghi xuống localStorage để lần load sau lấy được dữ liệu mới nhất
     this._saveStdToCache(items);
   }
 
+  // ─── Admin Bulk Operations ──────────────────────────────────────────────────
   async fetchAllAndCache(): Promise<ReferenceStandard[]> {
     const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
     const snap = await getDocs(query(colRef, orderBy('received_date', 'desc')));
@@ -201,12 +177,9 @@ export class StandardCacheService {
 
   private _saveStdToCache(items: ReferenceStandard[]): void {
     try {
-      // Ghi vào _deltaCacheKey (key mà DeltaSync đọc) để đảm bảo
-      // các thay đổi từ startRealtimeDeltaListener được DeltaSync nhìn thấy
       const json = JSON.stringify(items);
       localStorage.setItem(this._deltaCacheKey, json);
-      // Cũng ghi vào key cũ để tương thích ngược
-      localStorage.setItem(this.STD_CACHE_KEY, json);
+      localStorage.setItem(this.STD_CACHE_KEY, json); // legacy
 
       const maxSec = items.reduce((max, i) => {
         const sec = (i.lastUpdated as any)?.seconds ?? 0;

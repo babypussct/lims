@@ -175,6 +175,8 @@ export class StateService implements OnDestroy {
       this._unregisterStdReqListener();
       this._unregisterStdReqListener = undefined;
     }
+    // Hủy tất cả DeltaSync singletons (reference_standards, standard_requests, ...)
+    this.deltaSync.destroyAll();
     this.sops.set([]);
     this.inventory.set([]);
     this.standards.set([]);
