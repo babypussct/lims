@@ -1,4 +1,3 @@
-
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +5,6 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
-import { StandardRequestService } from './services/standard-request.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem } from '../../core/models/standard.model';
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
@@ -15,7 +13,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
-import { Unsubscribe, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { Unsubscribe } from 'firebase/firestore';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
@@ -40,8 +38,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   auth = inject(AuthService);
   stdService = inject(StandardService);
-  requestService = inject(StandardRequestService);
-  firebaseService = inject(FirebaseService); 
+  firebaseService = inject(FirebaseService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   sanitizer: DomSanitizer = inject(DomSanitizer); 
@@ -79,8 +76,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- Purchase Requests State (Staff) ---
   showPurchaseRequestModal = signal(false);
   selectedPurchaseStd = signal<ReferenceStandard | null>(null);
-
-
 
   // Stats Computed
   stats = computed(() => {
@@ -253,8 +248,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   isBulkUploading = signal(false);
   bulkUploadComplete = signal(false);
 
-
-
   formatNum = formatNum;
 
   constructor() {
@@ -332,55 +325,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.displayLimit.set(50);
   }
 
-  async runFixPendingRequests() {
-      if (this.isProcessing()) return;
-      this.isProcessing.set(true);
-      try {
-          const count = await this.requestService.runMigrationToFixPendingRequests();
-          this.toast.show(`Hoàn tất đồng bộ: Đã cập nhật ${count} lọ chuẩn đang chờ duyệt`, 'success');
-      } catch (e: any) {
-          this.toast.show('Lỗi đồng bộ: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
-
-  async runCleanupOrphanedRequests() {
-      if (this.isProcessing()) return;
-      this.isProcessing.set(true);
-      try {
-          const count = await this.requestService.runCleanupOrphanedRequests();
-          if (count > 0) {
-              this.toast.show(`Dọn dẹp hoàn tất: Đã từ chối ${count} yêu cầu mồ côi (chuẩn đã được cấp cho người khác)`, 'success');
-          } else {
-              this.toast.show('Không tìm thấy yêu cầu mồ côi nào cần dọn dẹp', 'info');
-          }
-      } catch (e: any) {
-          this.toast.show('Lỗi dọn dẹp: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
-
-  async runFullResyncPendingFlags() {
-      if (this.isProcessing()) return;
-      this.isProcessing.set(true);
-      try {
-          // Bước 1: reject request mồ côi (chuẩn đã IN_USE)
-          const orphaned = await this.requestService.runCleanupOrphanedRequests();
-          // Bước 2: full resync flag với Firestore thực tế
-          const result = await this.requestService.runFullResyncHasPendingFlag();
-          this.toast.show(
-              `Khắc phục hoàn tất: Reject ${orphaned} request mồ côi · Xóa ${result.cleared} flag sai · Thêm ${result.set} flag thiếu`,
-              'success'
-          );
-      } catch (e: any) {
-          this.toast.show('Lỗi khắc phục: ' + e.message, 'error');
-      } finally {
-          this.isProcessing.set(false);
-      }
-  }
-
   loadMore() {
       // Increase visible limit
       this.displayLimit.update(l => l + 50);
@@ -407,10 +351,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.showModal.set(false); 
       }
   }
-  
-
-
-
 
   // --- HARDENED: Bulk Delete ---
   async deleteSelected() {
@@ -767,10 +707,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showPrintModal.set(true);
   }
 
-
-
-
-
   getQrCodeUrl(std: ReferenceStandard | null): string {
       if (!std) return '';
       const baseUrl = window.location.origin;
@@ -781,10 +717,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.router.navigate(['/standards', std.id]);
   }
 
-
-
-
-  async viewHistory(std: ReferenceStandard) { 
+  async viewHistory(std: ReferenceStandard) {
       this.historyStd.set(std); 
       this.loadingHistory.set(true); 
       try { 

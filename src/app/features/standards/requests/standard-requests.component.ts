@@ -9,6 +9,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
+import { StandardRequestService } from '../services/standard-request.service';
 
 function removeAccents(str: string): string {
     if (!str) return '';
@@ -29,6 +30,7 @@ import { StandardsPurchaseModalComponent } from '../components/standards-purchas
 })
 export class StandardRequestsComponent implements OnInit, OnDestroy {
   stdService = inject(StandardService);
+  requestService = inject(StandardRequestService);
   state = inject(StateService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
@@ -75,8 +77,9 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   pendingPurchaseRequestsCount = signal(0);
   private purchaseReqUnsub?: Unsubscribe;
   
-  private unsubRequests: Unsubscribe | null = null;
-  /** Hàm bỏ đăng ký khỏi live listener singleton — KHÔNG hủy listener */
+  /** Hàm bỏ đăng ký khỏi singleton listener — KHÔNG hủy listener */
+  private unregisterRequests?: () => void;
+  /** Hàm bỏ đăng ký khỏi live listener singleton cho standards — KHÔNG hủy listener */
   private unregisterLiveListener?: () => void;
   private currentListenerRoleKey = '';
 
@@ -94,10 +97,10 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               if (this.currentListenerRoleKey !== roleKey) {
                   this.currentListenerRoleKey = roleKey;
                   
-                  // 1. Lắng nghe Standard Requests
-                  if (this.unsubRequests) this.unsubRequests();
+                  // 1. Lắng nghe Standard Requests (singleton — chỉ register callback)
+                  if (this.unregisterRequests) this.unregisterRequests();
                   this.isLoading.set(true);
-                  this.unsubRequests = this.stdService.listenToRequests((reqs) => {
+                  this.unregisterRequests = this.requestService.startRequestsListener((reqs) => {
                       this.requests.set(reqs.filter(r => !(r as any)._isDeleted));
                       this.isLoading.set(false);
                   });
@@ -174,6 +177,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Pha 1: Delta Load — apply localStorage ngay
+    const cachedRequests = this.requestService.getRequestsFromCache();
+    if (cachedRequests.length > 0 && this.requests().length === 0) {
+        this.requests.set(cachedRequests.filter(r => !(r as any)._isDeleted));
+        this.isLoading.set(false);
+    }
+
     const stds = this.stdService.getAllStandardsFromCache();
     if (stds && stds.length > 0) {
         this.allStandards.set(stds);
@@ -188,8 +197,8 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.unsubRequests) this.unsubRequests();
     // Chỉ remove callback khỏi singleton listener — KHÔNG dừng listener
+    if (this.unregisterRequests) this.unregisterRequests();
     if (this.unregisterLiveListener) this.unregisterLiveListener();
     if (this.purchaseReqUnsub) this.purchaseReqUnsub();
   }

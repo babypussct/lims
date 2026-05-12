@@ -1,16 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, effect } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   doc, collection, getDoc, setDoc, updateDoc, writeBatch,
   serverTimestamp, runTransaction, deleteField, query,
   where, QueryConstraint, Unsubscribe, onSnapshot, getDocs,
-  orderBy, limit
+  orderBy, limit, Timestamp
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, StandardRequest, StandardRequestStatus, PurchaseRequest } from '../../../core/models/standard.model';
 import { NotificationService } from '../../../core/services/notification.service';
 import { getStandardizedAmount } from '../../../shared/utils/utils';
-import { DeltaSyncService } from '../../../core/services/delta-sync.service';
 import { StandardCrudService } from './standard-crud.service';
 import { StandardCacheService } from './standard-cache.service';
 
@@ -26,31 +25,237 @@ export class StandardRequestService {
   private auth = inject(AuthService);
   private crud = inject(StandardCrudService);
   private cache = inject(StandardCacheService);
-  private deltaSync = inject(DeltaSyncService);
   private notificationService = inject(NotificationService);
 
-  // ─── Listeners ────────────────────────────────────────────────────────────────
-  listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
+  // ─── Singleton Listener Infrastructure ─────────────────────────────────────
+  // Mô hình giống StandardCacheService.startRealtimeDeltaListener():
+  // - 1 listener duy nhất chạy suốt phiên login
+  // - Components subscribe/unsubscribe callback, KHÔNG tạo/hủy listener
+  // - localStorage persistence giúp data hiển thị tức thì khi reload
+  private _memRequests: StandardRequest[] | null = null;
+  private _liveUnsub?: Unsubscribe;
+  private _liveCallbacks: Array<(reqs: StandardRequest[]) => void> = [];
+  private _currentRoleKey = '';
+
+  constructor() {
+    // Cleanup singleton khi user logout hoặc đổi account
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (!user) this._cleanupOnLogout();
+    });
+  }
+
+  private _cleanupOnLogout(): void {
+    if (this._liveUnsub) {
+      this._liveUnsub();
+      this._liveUnsub = undefined;
+    }
+    this._liveCallbacks = [];
+    this._memRequests = null;
+    this._currentRoleKey = '';
+  }
+
+  // Cache key phân biệt theo role để tránh data leak giữa admin/user
+  private _getCacheKey(roleKey: string): string {
+    return `lims_std_req_cache_${roleKey}_${this.fb.APP_ID}`;
+  }
+  private _getCursorKey(roleKey: string): string {
+    return `lims_std_req_cursor_${roleKey}_${this.fb.APP_ID}`;
+  }
+
+  // ─── Singleton Listener ────────────────────────────────────────────────────────
+
+  /**
+   * Subscribe vào singleton listener cho standard_requests.
+   * - Lần đầu: tạo listener, emit từ cache ngay lập tức
+   * - Lần sau: chỉ đăng ký callback, dùng listener đã chạy
+   * @returns Hàm unregister callback (KHÔNG hủy listener singleton)
+   */
+  startRequestsListener(callback: (requests: StandardRequest[]) => void): () => void {
+    this._liveCallbacks.push(callback);
+
     const isApprover = this.auth.canApproveStandards();
     const currentUser = this.auth.currentUser();
-    const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
-    
-    // Nếu không phải là người duyệt, chỉ tải yêu cầu của chính mình
-    if (!isApprover && currentUser) {
-      constraints.unshift(where('requestedBy', '==', currentUser.uid));
+    const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
+
+    // Emit cached data ngay lập tức (0 reads)
+    if (this._memRequests && this._currentRoleKey === roleKey) {
+      callback([...this._memRequests]);
+    } else {
+      // Load từ localStorage nếu chưa có trong memory
+      const cached = this._loadFromCache(roleKey);
+      if (cached.length > 0) {
+        this._memRequests = cached;
+        this._currentRoleKey = roleKey;
+        callback([...cached]);
+      }
     }
-    
+
+    // Start singleton listener nếu chưa có hoặc role đã thay đổi
+    if (!this._liveUnsub || this._currentRoleKey !== roleKey) {
+      this._startSingletonListener(roleKey, isApprover, currentUser?.uid);
+    }
+
+    // Return unregister function (chỉ bỏ callback, KHÔNG hủy listener)
+    return () => {
+      this._liveCallbacks = this._liveCallbacks.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Đọc requests từ localStorage cache (0 Firestore reads).
+   * Dùng cho Phase 1 — hiển thị data tức thì trước khi listener bắt kịp.
+   */
+  getRequestsFromCache(): StandardRequest[] {
+    if (this._memRequests) return [...this._memRequests];
+    const isApprover = this.auth.canApproveStandards();
+    const currentUser = this.auth.currentUser();
+    const roleKey = isApprover ? 'admin' : (currentUser?.uid || 'guest');
+    return this._loadFromCache(roleKey);
+  }
+
+  /**
+   * Tạo singleton onSnapshot listener.
+   * Phase 1: getDocs initial batch nếu cache rỗng
+   * Phase 2: onSnapshot(lastUpdated > startTime) chỉ nhận delta changes
+   */
+  private _startSingletonListener(roleKey: string, isApprover: boolean, uid?: string): void {
+    // Cleanup listener cũ nếu role thay đổi
+    if (this._liveUnsub) {
+      this._liveUnsub();
+      this._liveUnsub = undefined;
+    }
+    this._currentRoleKey = roleKey;
+
     const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`);
-    const q = query(colRef, ...constraints);
-    
-    // Sử dụng onSnapshot thuần túy cho tất cả mọi người để tránh hoàn toàn 
-    // các lỗi kẹt cache (localStorage) hoặc thiếu Composite Index trên thiết bị di động.
-    return onSnapshot(q, (snap) => {
-      const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
-      callback(reqs);
+
+    // Phase 1: Nếu chưa có data trong memory, fetch initial batch
+    if (!this._memRequests || this._memRequests.length === 0) {
+      const cached = this._loadFromCache(roleKey);
+      if (cached.length > 0) {
+        this._memRequests = cached;
+        this._notifyAll();
+      } else {
+        // Fetch initial batch từ Firestore (chỉ xảy ra 1 lần đầu tiên)
+        const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(300)];
+        if (!isApprover && uid) {
+          constraints.unshift(where('requestedBy', '==', uid));
+        }
+        const q = query(colRef, ...constraints);
+        getDocs(q).then(snap => {
+          const items = snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as StandardRequest))
+            .filter(r => !r._isDeleted);
+          this._memRequests = items;
+          this._saveToCache(roleKey, items);
+          this._notifyAll();
+        }).catch(err => {
+          console.warn('[StandardRequestService] Initial fetch failed:', err.message);
+        });
+      }
+    }
+
+    // Phase 2: Singleton live listener — bắt đầu từ CURSOR (không phải Timestamp.now())
+    // để lấp khoảng trống giữa lần cache cuối và thời điểm mở app
+    const cachedCursor = this._loadCursor(roleKey);
+    const startTime = cachedCursor > 0
+      ? new Date(cachedCursor * 1000) // Cursor = seconds → Date
+      : Timestamp.now();
+    const liveConstraints: QueryConstraint[] = [where('lastUpdated', '>', startTime)];
+    if (!isApprover && uid) {
+      liveConstraints.unshift(where('requestedBy', '==', uid));
+    }
+    const liveQuery = query(colRef, ...liveConstraints);
+
+    this._liveUnsub = onSnapshot(liveQuery, (snapshot) => {
+      if (snapshot.empty) return;
+
+      let hasChanges = false;
+      const items = this._memRequests ? [...this._memRequests] : [];
+
+      snapshot.docChanges().forEach(change => {
+        const data = { id: change.doc.id, ...change.doc.data() } as StandardRequest;
+
+        if (data._isDeleted) {
+          const idx = items.findIndex(i => i.id === data.id);
+          if (idx !== -1) {
+            items.splice(idx, 1);
+            hasChanges = true;
+          }
+        } else {
+          const idx = items.findIndex(i => i.id === data.id);
+          if (idx !== -1) {
+            items[idx] = data;
+          } else {
+            items.unshift(data); // Thêm mới lên đầu
+          }
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        this._memRequests = items;
+        this._saveToCache(roleKey, items);
+        this._notifyAll();
+      }
     }, (err) => {
-      console.error('[StandardRequestService] listenToRequests error:', err);
+      console.warn('[StandardRequestService] Live listener error:', err.message);
+      if (err.code === 'permission-denied' || err.code === 'unauthenticated') {
+        if (this._liveUnsub) { this._liveUnsub(); this._liveUnsub = undefined; }
+        this._liveCallbacks = [];
+      }
     });
+  }
+
+  private _notifyAll(): void {
+    const data = this._memRequests ? [...this._memRequests] : [];
+    this._liveCallbacks.forEach(cb => cb(data));
+  }
+
+  private _loadFromCache(roleKey: string): StandardRequest[] {
+    try {
+      const raw = localStorage.getItem(this._getCacheKey(roleKey));
+      return raw ? (JSON.parse(raw) as StandardRequest[]).filter(r => !r._isDeleted) : [];
+    } catch { return []; }
+  }
+
+  private _saveToCache(roleKey: string, items: StandardRequest[]): void {
+    try {
+      localStorage.setItem(this._getCacheKey(roleKey), JSON.stringify(items));
+      // Lưu cursor = max lastUpdated seconds để listener lần sau bắt đầu từ đây
+      let maxSeconds = 0;
+      for (const item of items) {
+        const lu = (item as any).lastUpdated;
+        if (lu) {
+          const sec = typeof lu.toMillis === 'function'
+            ? Math.floor(lu.toMillis() / 1000)
+            : (lu.seconds || (typeof lu === 'number' ? Math.floor(lu / 1000) : 0));
+          if (sec > maxSeconds) maxSeconds = sec;
+        }
+      }
+      if (maxSeconds > 0) {
+        localStorage.setItem(this._getCursorKey(roleKey), maxSeconds.toString());
+      }
+    } catch (e: any) {
+      console.warn('[StandardRequestService] Cache write failed:', e?.name);
+    }
+  }
+
+  private _loadCursor(roleKey: string): number {
+    try {
+      const raw = localStorage.getItem(this._getCursorKey(roleKey));
+      return raw ? parseInt(raw, 10) : 0;
+    } catch { return 0; }
+  }
+
+  /**
+   * @deprecated Dùng startRequestsListener() thay thế.
+   * Giữ lại để tương thích ngược — bên trong gọi startRequestsListener().
+   */
+  listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
+    const unregister = this.startRequestsListener(callback);
+    // Trả về unregister dưới dạng Unsubscribe để giữ type compatibility
+    return unregister as unknown as Unsubscribe;
   }
 
   listenToPendingPurchaseRequests(callback: (reqs: PurchaseRequest[]) => void): Unsubscribe {
@@ -63,164 +268,6 @@ export class StandardRequestService {
       callback(reqs);
     });
   }
-
-  // ─── Data Migration ────────────────────────────────────────────────────────
-  async runMigrationToFixPendingRequests(): Promise<number> {
-    const q = query(
-      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`), 
-      where('status', '==', 'PENDING_APPROVAL')
-    );
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(this.fb.db);
-    let count = 0;
-    
-    snapshot.forEach(docSnap => {
-      const req = docSnap.data();
-      // Bỏ qua request đã bị xóa mềm (_isDeleted: true)
-      if (req['standardId'] && !req['_isDeleted']) {
-        const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${req['standardId']}`);
-        batch.update(stdRef, { has_pending_request: true });
-        count++;
-      }
-    });
-
-    if (count > 0) {
-      await batch.commit();
-    }
-    return count;
-  }
-
-  /**
-   * Dọn dẹp request PENDING_APPROVAL "mồ côi":
-   * chuẩn đã IN_USE/DEPLETED → tự động REJECT + xóa has_pending_request.
-   * Dùng để sửa data cũ bị split-brain (cùng 1 chuẩn vừa Chờ duyệt vừa Đang dùng).
-   */
-  async runCleanupOrphanedRequests(): Promise<number> {
-    const pendingSnap = await getDocs(query(
-      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
-      where('status', '==', 'PENDING_APPROVAL')
-    ));
-    if (pendingSnap.empty) return 0;
-
-    // Lấy danh sách unique standardId — bỏ qua request đã xóa mềm
-    const stdIds = [...new Set(
-      pendingSnap.docs
-        .filter(d => !d.data()['_isDeleted'])
-        .map(d => d.data()['standardId'] as string)
-        .filter(Boolean)
-    )];
-
-    // Fetch status của từng chuẩn
-    const stdStatusMap = new Map<string, string>();
-    await Promise.all(stdIds.map(async (stdId) => {
-      try {
-        const snap = await getDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`));
-        if (snap.exists()) stdStatusMap.set(stdId, snap.data()['status'] ?? 'AVAILABLE');
-      } catch {}
-    }));
-
-    const batch = writeBatch(this.fb.db);
-    let rejectedCount = 0;
-    const stdIdsToUnflag = new Set<string>();
-
-    pendingSnap.docs.forEach(docSnap => {
-      const req = docSnap.data();
-      const stdId = req['standardId'] as string;
-      if (!stdId) return;
-      const stdStatus = stdStatusMap.get(stdId);
-      if (stdStatus === 'IN_USE' || stdStatus === 'DEPLETED') {
-        batch.update(docSnap.ref, {
-          status: 'REJECTED',
-          rejectionReason: 'Chuẩn đã được cấp cho người khác hoặc đã hết.',
-          updatedAt: Date.now(),
-          lastUpdated: serverTimestamp()
-        });
-        stdIdsToUnflag.add(stdId);
-        rejectedCount++;
-      }
-    });
-
-    // Xóa has_pending_request trên các chuẩn vừa được dọn dẹp
-    stdIdsToUnflag.forEach(stdId => {
-      batch.update(
-        doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`),
-        { has_pending_request: deleteField(), lastUpdated: serverTimestamp() }
-      );
-    });
-
-    if (rejectedCount > 0) await batch.commit();
-    return rejectedCount;
-  }
-  /**
-   * Full reconciliation của has_pending_request flag.
-   * So sánh flag hiện tại trên mỗi chuẩn với các PENDING_APPROVAL requests thực tế:
-   * - Có flag nhưng KHÔNG có PENDING_APPROVAL → CLEAR flag (sai)
-   * - Có PENDING_APPROVAL nhưng KHÔNG có flag → SET flag (thiếu)
-   * - Là IN_USE/DEPLETED nhưng vẫn có flag → CLEAR flag (sai do migration chạy sai)
-   *
-   * Đây là hàm khắc phục chính cho lỗi gây ra khi chạy runMigrationToFixPendingRequests()
-   * nhiều lần trên dữ liệu đã có inconsistency.
-   */
-  async runFullResyncHasPendingFlag(): Promise<{ set: number; cleared: number }> {
-    // 1. Lấy tất cả PENDING_APPROVAL requests thực sự
-    const pendingSnap = await getDocs(query(
-      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
-      where('status', '==', 'PENDING_APPROVAL')
-    ));
-
-    // Map: standardId → true (có PENDING_APPROVAL thực sự, không phải request đã xóa mềm)
-    const stdIdsWithRealPending = new Set<string>(
-      pendingSnap.docs
-        .filter(d => !d.data()['_isDeleted'])
-        .map(d => d.data()['standardId'] as string)
-        .filter(Boolean)
-    );
-
-    // 2. Lấy tất cả standards đang có flag = true
-    const flaggedSnap = await getDocs(query(
-      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
-      where('has_pending_request', '==', true)
-    ));
-
-    const batch = writeBatch(this.fb.db);
-    let clearedCount = 0;
-    let setCount = 0;
-
-    // 3. Clear flag sai: có flag nhưng không có PENDING_APPROVAL, HOẶC đang IN_USE/DEPLETED
-    flaggedSnap.forEach(docSnap => {
-      const stdData = docSnap.data();
-      const stdId = docSnap.id;
-      const hasRealPending = stdIdsWithRealPending.has(stdId);
-      const isOccupied = stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED';
-
-      if (!hasRealPending || isOccupied) {
-        // Flag sai → clear
-        batch.update(docSnap.ref, { has_pending_request: deleteField(), lastUpdated: serverTimestamp() });
-        clearedCount++;
-        // Không cần set flag cho IN_USE/DEPLETED dù có pending request
-        if (isOccupied) stdIdsWithRealPending.delete(stdId);
-      }
-    });
-
-    // 4. Set flag còn thiếu: có PENDING_APPROVAL nhưng chưa có flag (edge case)
-    for (const stdId of stdIdsWithRealPending) {
-      try {
-        const stdSnap = await getDoc(doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`));
-        if (stdSnap.exists()) {
-          const stdData = stdSnap.data();
-          const isOccupied = stdData['status'] === 'IN_USE' || stdData['status'] === 'DEPLETED';
-          if (!stdData['has_pending_request'] && !isOccupied) {
-            batch.update(stdSnap.ref, { has_pending_request: true, lastUpdated: serverTimestamp() });
-            setCount++;
-          }
-        }
-      } catch {}
-    }
-
-    if (clearedCount > 0 || setCount > 0) await batch.commit();
-    return { set: setCount, cleared: clearedCount };
-  }
-
 
   async createRequest(request: StandardRequest, isAssign = false): Promise<void> {
     const reqRef = doc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`));

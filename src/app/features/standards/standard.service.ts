@@ -161,6 +161,13 @@ export class StandardService {
   // ═══════════════════════════════════════════════════════════════════════════
   // REQUESTS
   // ═══════════════════════════════════════════════════════════════════════════
+  startRequestsListener(callback: (requests: StandardRequest[]) => void): () => void {
+    return this.request.startRequestsListener(callback);
+  }
+  getRequestsFromCache(): StandardRequest[] {
+    return this.request.getRequestsFromCache();
+  }
+  /** @deprecated Dùng startRequestsListener() */
   listenToRequests(callback: (requests: StandardRequest[]) => void): Unsubscribe {
     return this.request.listenToRequests(callback);
   }

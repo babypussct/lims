@@ -32,6 +32,8 @@ export class StateService implements OnDestroy {
   private deltaSync = inject(DeltaSyncService);
 
   private listeners: Unsubscribe[] = [];
+  /** Singleton request listener — unregister callback (không hủy listener) */
+  private _unregisterStdReqListener?: () => void;
 
   // --- DATA SIGNALS ---
   inventory = signal<InventoryItem[]>([]);
@@ -169,6 +171,10 @@ export class StateService implements OnDestroy {
   private cleanupListeners() {
     this.listeners.forEach(unsub => unsub());
     this.listeners = [];
+    if (this._unregisterStdReqListener) {
+      this._unregisterStdReqListener();
+      this._unregisterStdReqListener = undefined;
+    }
     this.sops.set([]);
     this.inventory.set([]);
     this.standards.set([]);
@@ -223,40 +229,25 @@ export class StateService implements OnDestroy {
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
     // statistics.component.ts uses loadAllStandardRequests() on-demand instead
 
-    // standard_requests listener: DeltaSync phân nhánh theo quyền
-    const currentUser = this.auth.currentUser();
-    const isApprover = this.auth.canApproveStandards();
-    const uid = currentUser?.uid;
+    // standard_requests: subscribe vào singleton của StandardRequestService
+    // (tránh tạo listener trùng lặp — tiết kiệm ~89% reads)
+    {
+      const { StandardRequestService } = await import('../../features/standards/services/standard-request.service');
+      const reqService = this.injector.get(StandardRequestService);
 
-    let constraints = null;
-    let cacheKey = '';
-    // Lưu lại status filter để re-apply sau khi DeltaSync trả dữ liệu từ cache
-    let validStatuses: string[] = [];
+      if (this._unregisterStdReqListener) this._unregisterStdReqListener();
 
-    if (isApprover) {
-        validStatuses = ['PENDING_APPROVAL', 'PENDING_RETURN'];
-        constraints = [where('status', 'in', validStatuses)];
-        cacheKey = 'lims_std_req_approver_' + this.fb.APP_ID;
-    } else if (uid) {
-        validStatuses = ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'];
-        constraints = [
-            where('requestedBy', '==', uid),
-            where('status', 'in', validStatuses)
-        ];
-        cacheKey = 'lims_std_req_user_' + uid + '_' + this.fb.APP_ID;
-    }
+      // Lọc theo role ở client-side (singleton đã fetch đúng data theo role)
+      const isApprover = this.auth.canApproveStandards();
+      const validStatuses = isApprover
+        ? ['PENDING_APPROVAL', 'PENDING_RETURN']
+        : ['PENDING_APPROVAL', 'IN_PROGRESS', 'PENDING_RETURN'];
 
-    if (constraints) {
-        const q = query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`), ...constraints);
-        const stdReqSub = onSnapshot(q, (snap) => {
-            // Không dùng DeltaSync/localStorage cho query filter này để tránh lỗi stale cache
-            // (khi request đổi status, nó không còn khớp query nên DeltaSync không fetch lại được để xóa khỏi cache cũ)
-            const liveData = snap.docs.map(d => ({ id: d.id, ...d.data() } as StandardRequest));
-            this.standardRequests.set(liveData.filter(r => !r._isDeleted));
-        }, (err) => {
-            console.warn('[StateService] standard_requests listener error:', err.message);
-        });
-        this.listeners.push(stdReqSub);
+      this._unregisterStdReqListener = reqService.startRequestsListener((reqs) => {
+        this.standardRequests.set(
+          reqs.filter(r => !r._isDeleted && validStatuses.includes(r.status))
+        );
+      });
     }
 
     // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()

@@ -1,21 +1,5 @@
     <div class="flex flex-col space-y-2 md:space-y-3 fade-in h-full relative">
-      <!-- DATA REPAIR BANNER -->
-      @if(auth.canEditStandards()) {
-          <div class="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-3 text-xs flex flex-wrap gap-2 justify-between items-center px-4 rounded-2xl border border-red-200 dark:border-red-800/50 shadow-sm z-10 relative">
-              <span class="font-semibold"><i class="fa-solid fa-screwdriver-wrench mr-1.5"></i> Công cụ đồng bộ &amp; khắc phục dữ liệu chuẩn (chỉ dành cho quản trị viên).</span>
-              <div class="flex gap-2 flex-wrap">
-                  <button (click)="runFullResyncPendingFlags()" [disabled]="isProcessing()" class="bg-red-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-red-700 transition shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2" title="Chạy đồng thời: Reject request mồ côi + Resync toàn bộ cờ chờ duyệt">
-                      <i class="fa-solid fa-rotate text-[10px]"></i> Khắc phục toàn diện ⭐
-                  </button>
-                  <button (click)="runFixPendingRequests()" [disabled]="isProcessing()" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-amber-700 transition shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2">
-                      <i class="fa-solid fa-play text-[10px]"></i> Đồng bộ cờ
-                  </button>
-                  <button (click)="runCleanupOrphanedRequests()" [disabled]="isProcessing()" class="bg-slate-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-slate-700 transition shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2" title="Từ chối các yêu cầu Chờ duyệt của chuẩn đã được cấp cho người khác">
-                      <i class="fa-solid fa-broom text-[10px]"></i> Dọn request mồ côi
-                  </button>
-              </div>
-          </div>
-      }
+
       <!-- RECALCULATE PROGRESS OVERLAY -->
       @if (isRecalculating()) {
           <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in">
