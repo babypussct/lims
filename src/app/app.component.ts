@@ -11,6 +11,7 @@ import { GlobalScannerComponent } from './shared/components/global-scanner/globa
 import { Gs1InfoModalComponent } from './shared/components/gs1-info-modal/gs1-info-modal.component';
 import { LoginComponent } from './features/auth/login.component';
 import { NotificationBellComponent } from './shared/components/notification-bell/notification-bell.component';
+import { NotificationPanelComponent } from './shared/components/notification-panel/notification-panel.component';
 
 import { StateService } from './core/services/state.service';
 import { AuthService } from './core/services/auth.service';
@@ -34,7 +35,8 @@ import { filter } from 'rxjs/operators';
     GlobalScannerComponent, 
     Gs1InfoModalComponent,
     LoginComponent,
-    NotificationBellComponent
+    NotificationBellComponent,
+    NotificationPanelComponent
   ],
   template: `
     @if (isPrintMode()) {
@@ -94,7 +96,9 @@ import { filter } from 'rxjs/operators';
       <app-confirmation-modal></app-confirmation-modal>
       <app-print-preview-modal></app-print-preview-modal>
       <app-global-scanner></app-global-scanner> 
-      <app-gs1-info-modal></app-gs1-info-modal> 
+      <app-gs1-info-modal></app-gs1-info-modal>
+      <!-- Notification Panel: rendered at root to bypass sidebar stacking context -->
+      <app-notification-panel></app-notification-panel>
 
       @if (hasNewVersion()) {
         <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md no-print p-4">
