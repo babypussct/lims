@@ -11,6 +11,7 @@ import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, setDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-config-general',
@@ -26,6 +27,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   inventoryService = inject(InventoryService);
   standardService = inject(StandardService);
   router = inject(Router);
+  notificationService = inject(NotificationService);
 
   versionControl = new FormControl(''); 
   printConfig = this.state.printConfig;
@@ -142,6 +144,7 @@ service cloud.firestore {
 
   newUpdateContent = '';
   newUpdateType = 'info';
+  newUpdateActionUrl = '';
   systemUpdates = signal<any[]>([]);
   systemUpdatesSub: any;
 
@@ -165,6 +168,7 @@ service cloud.firestore {
                   id: d.id,
                   content: data['content'],
                   type: data['type'] || 'info',
+                  actionUrl: data['actionUrl'] || '',
                   timestamp: data['timestamp'] ? data['timestamp'].toDate() : new Date()
               };
           }));
@@ -175,13 +179,29 @@ service cloud.firestore {
       if (!this.newUpdateContent.trim()) return;
       const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
       const newRef = doc(updatesRef);
+      
+      const content = this.newUpdateContent.trim();
+      const actionUrl = this.newUpdateActionUrl.trim();
+
       await setDoc(newRef, {
-          content: this.newUpdateContent.trim(),
+          content: content,
           type: this.newUpdateType,
+          actionUrl: actionUrl,
           timestamp: serverTimestamp()
       });
-      this.toast.show('Đã đăng thông báo hệ thống!', 'success');
+
+      // Gửi Broadcast (Push Notification) tới tất cả user
+      await this.notificationService.notify({
+          recipientUid: 'role:all',
+          type: 'SYSTEM_UPDATE',
+          title: 'Thông báo Hệ thống',
+          message: content,
+          actionUrl: actionUrl
+      });
+
+      this.toast.show('Đã đăng và Broadcast thông báo tới tất cả người dùng!', 'success');
       this.newUpdateContent = '';
+      this.newUpdateActionUrl = '';
   }
 
   async deleteSystemUpdate(id: string) {
