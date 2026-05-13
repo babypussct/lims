@@ -190,16 +190,17 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
 
     const isSequential = (prev: string, curr: string): boolean => {
         if (!prev || !curr) return false;
-        let pLen = 0;
-        const minLen = Math.min(prev.length, curr.length);
-        while (pLen < minLen && prev[pLen] === curr[pLen]) { pLen++; }
-        let sLen = 0;
-        while (sLen < minLen - pLen && prev[prev.length - 1 - sLen] === curr[curr.length - 1 - sLen]) { sLen++; }
-        const prevMid = prev.substring(pLen, prev.length - sLen);
-        const currMid = curr.substring(pLen, curr.length - sLen);
-        if (!prevMid || !currMid || !/^\d+$/.test(prevMid) || !/^\d+$/.test(currMid)) { return false; }
-        const prevNum = parseInt(prevMid, 10);
-        const currNum = parseInt(currMid, 10);
+
+        const prevMatch = prev.match(/^(.*?)(\d+)(\D*)$/);
+        const currMatch = curr.match(/^(.*?)(\d+)(\D*)$/);
+
+        if (!prevMatch || !currMatch) return false;
+        
+        if (prevMatch[1] !== currMatch[1] || prevMatch[3] !== currMatch[3]) return false;
+
+        const prevNum = parseInt(prevMatch[2], 10);
+        const currNum = parseInt(currMatch[2], 10);
+        
         return currNum === prevNum + 1;
     };
 

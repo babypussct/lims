@@ -496,7 +496,7 @@ export class LabelPrintComponent implements AfterViewInit {
 
   sortInput() {
       const labels = this.parseInput(this.rawInput());
-      const sorted = labels.sort((a, b) => a.localeCompare(b));
+      const sorted = labels.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
       const newVal = sorted.join('\n');
       this.rawInput.set(newVal);
       this.inputSubject.next(newVal);
