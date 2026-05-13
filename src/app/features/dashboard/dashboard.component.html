@@ -1,0 +1,434 @@
+    <div class="pb-20 fade-in font-sans">
+        
+        <!-- HEADER: Welcome & Scan -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                    Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <!-- Calls Global Service (Hidden on md and larger screens) -->
+                <button (click)="qrService.startScan()" class="md:hidden px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
+                    <i class="fa-solid fa-qrcode"></i> Quét Mã
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 1: KPI CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+            <!-- Card 1: Pending Requests -->
+            <div (click)="handlePendingRequestsClick()"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewSop() || auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewSop() || auth.canViewStandards()" [class.hover:border-purple-100]="auth.canViewSop() || auth.canViewStandards()" [class.dark:hover:border-purple-500]="auth.canViewSop() || auth.canViewStandards()">
+                
+                @if(!auth.canViewSop() && !auth.canViewStandards()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            {{(auth.canApprove() || auth.canApproveStandards()) ? 'Yêu cầu chờ duyệt' : 'Yêu cầu của tôi'}}
+                        </p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{(auth.canViewSop() || auth.canViewStandards()) ? totalPendingRequests() : '--'}} }
+                        </h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewSop() && !auth.canViewStandards()">
+                        <i class="fa-solid fa-clipboard-list text-lg"></i>
+                    </div>
+                </div>
+                <div class="z-10" [class.opacity-20]="!auth.canViewSop() && !auth.canViewStandards()" [class.blur-sm]="!auth.canViewSop() && !auth.canViewStandards()">
+                    <span class="text-xs font-bold" 
+                          [class.text-emerald-500]="totalPendingRequests() === 0" 
+                          [class.text-fuchsia-500]="totalPendingRequests() > 0">
+                        {{totalPendingRequests() > 0 ? ((auth.canApprove() || auth.canApproveStandards()) ? '+ Cần xử lý ngay' : '+ Đang chờ duyệt') : 'Không có yêu cầu'}}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card 2: Low Stock -->
+            <div (click)="auth.canViewInventory() ? navTo('inventory') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewInventory()" [class.hover:-translate-y-1]="auth.canViewInventory()" [class.hover:border-red-100]="auth.canViewInventory()" [class.dark:hover:border-red-500]="auth.canViewInventory()">
+                
+                @if(!auth.canViewInventory()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cảnh báo Kho</p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewInventory() ? lowStockItems().length : '--'}} }
+                        </h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-red-600 to-rose-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewInventory()">
+                        <i class="fa-solid fa-box-open text-lg"></i>
+                    </div>
+                </div>
+                <div class="z-10" [class.opacity-20]="!auth.canViewInventory()" [class.blur-sm]="!auth.canViewInventory()">
+                    @if(lowStockItems().length > 0) {
+                        <span class="text-xs font-bold text-red-500 dark:text-red-400">Mục dưới định mức</span>
+                    } @else {
+                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Kho ổn định</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Card 3: Today's Activity -->
+            <div (click)="auth.canViewReports() ? navTo('stats') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewReports()" [class.hover:-translate-y-1]="auth.canViewReports()" [class.hover:border-blue-100]="auth.canViewReports()" [class.dark:hover:border-blue-500]="auth.canViewReports()">
+                
+                @if(!auth.canViewReports()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Hoạt động hôm nay</p>
+                        <h4 class="text-2xl font-black text-gray-800 dark:text-slate-100">
+                            @if(isLoading()) { <app-skeleton width="40px" height="32px"></app-skeleton> } @else { {{auth.canViewReports() ? todayActivityCount() : '--'}} }
+                        </h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewReports()">
+                        <i class="fa-solid fa-bolt text-lg"></i>
+                    </div>
+                </div>
+                <div class="z-10" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()">
+                    <span class="text-xs font-bold text-gray-400 dark:text-slate-500">Ghi nhận log hệ thống</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Standards Priority -->
+            <div (click)="auth.canViewStandards() ? navTo('standards') : null"
+                 class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 flex flex-col justify-between h-32 overflow-hidden group border border-transparent dark:border-slate-700 transition-transform"
+                 [class.cursor-pointer]="auth.canViewStandards()" [class.hover:-translate-y-1]="auth.canViewStandards()" [class.hover:border-orange-100]="auth.canViewStandards()" [class.dark:hover:border-orange-500]="auth.canViewStandards()">
+                
+                @if(!auth.canViewStandards()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-2xl mb-1"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Không có quyền</span>
+                    </div>
+                }
+
+                <div class="flex justify-between items-start z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
+                    <div class="min-w-0 pr-2">
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Chuẩn sắp hết hạn</p>
+                        @if(priorityStandard(); as std) {
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-slate-100 truncate leading-tight mt-1" [title]="std.name">{{std.name}}</h4>
+                        } @else {
+                            <h4 class="text-lg font-black text-gray-800 dark:text-slate-100">An toàn</h4>
+                        }
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tl from-orange-500 to-yellow-400 shadow-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform" [class.grayscale]="!auth.canViewStandards()">
+                        <i class="fa-solid fa-clock text-lg"></i>
+                    </div>
+                </div>
+                <div class="z-10" [class.opacity-20]="!auth.canViewStandards()" [class.blur-sm]="!auth.canViewStandards()">
+                    @if(priorityStandard(); as std) {
+                        <span class="text-xs font-bold" [ngClass]="{'text-red-500 dark:text-red-400': std.status === 'expired', 'text-orange-500 dark:text-orange-400': std.status === 'warning'}">
+                            {{std.daysLeft < 0 ? 'Đã hết hạn' : 'Còn ' + std.daysLeft + ' ngày'}}
+                        </span>
+                    } @else {
+                        <span class="text-xs font-bold text-emerald-500 dark:text-emerald-400">Tất cả còn hạn dùng</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ANALYTICS & FEED -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style="max-height: none">
+            <!-- Left: Analytics (2/3) -->
+            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
+                @if(!auth.canViewReports()) {
+                    <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-lock text-4xl mb-3"></i>
+                        <span class="text-sm font-bold uppercase tracking-wider">Tính năng yêu cầu quyền truy cập Báo cáo</span>
+                        <span class="text-xs mt-1">Vui lòng liên hệ Quản trị viên</span>
+                    </div>
+                }
+
+                <div class="flex-1 flex flex-col" [class.opacity-20]="!auth.canViewReports()" [class.blur-sm]="!auth.canViewReports()" [class.pointer-events-none]="!auth.canViewReports()">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div>
+                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-lg">Hiệu suất Phân tích</h6>
+                            <!-- Trend Indicator -->
+                            <div class="flex flex-col">
+                                <p class="text-sm font-bold flex items-center gap-1.5" [ngClass]="trendInfo().colorClass">
+                                    <i class="fa-solid" [class]="trendInfo().icon"></i>
+                                    <span>{{trendInfo().statusText}}</span>
+                                    <span class="text-xs ml-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 font-mono">
+                                        {{trendInfo().percentText}}
+                                    </span>
+                                </p>
+                                <p class="text-gray-400 dark:text-slate-500 font-normal text-[11px] mt-1">
+                                    TB {{trendInfo().currentAvg}} mẫu/ngày so với {{trendInfo().historyMean}} ({{trendInfo().historyDays}} ngày qua)
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Date Filter Component -->
+                        <app-date-range-filter 
+                            [initStart]="startDate()" 
+                            [initEnd]="endDate()" 
+                            (dateChange)="onDateRangeChange($event)">
+                        </app-date-range-filter>
+                    </div>
+
+                    <!-- KPIs Row -->
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
+                            <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẻ</p>
+                            <h4 class="text-xl font-black text-blue-600 dark:text-blue-400">{{chartKpis().totalBatches}}</h4>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">TB Mẫu/Mẻ</p>
+                            <h4 class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{chartKpis().avgSamplesPerBatch}}</h4>
+                        </div>
+                    </div>
+
+                    <!-- Charts Area -->
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[250px]">
+                        <div class="md:col-span-2 relative w-full h-full min-h-[200px] bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
+                            @if(isLoading()) {
+                                <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
+                            } @else {
+                                <canvas #activityChart class="w-full h-full"></canvas>
+                            }
+                        </div>
+                        <div class="relative w-full h-full min-h-[200px] flex flex-col items-center justify-center">
+                            <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full">Phân bổ SOP</h6>
+                            @if(isLoading()) {
+                                <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
+                            } @else {
+                                <div class="relative w-full h-full flex items-center justify-center">
+                                    <canvas #doughnutChart class="max-w-[180px] max-h-[180px]"></canvas>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="flex flex-col gap-4 lg:max-h-[520px]">
+                <!-- System Updates -->
+                <div class="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col border border-orange-100 dark:border-orange-900/30 shrink-0">
+                    <h6 class="font-bold text-orange-800 dark:text-orange-400 capitalize text-sm mb-2 flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Thông báo Hệ thống</h6>
+                    <div class="overflow-y-auto custom-scrollbar -mr-2 pr-2 max-h-36 lg:max-h-28 space-y-2">
+                        @for (item of systemUpdates(); track item.id) {
+                            <div class="bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm p-3 rounded-xl border border-white/20 dark:border-slate-700">
+                                <div class="flex items-center gap-2 mb-1">
+                                    @if(item.type === 'success') {
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    } @else if(item.type === 'warning') {
+                                        <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                    } @else {
+                                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                    }
+                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{{item.timestamp | date:'dd/MM HH:mm'}}</span>
+                                </div>
+                                <div class="text-xs font-bold text-slate-700 dark:text-slate-200 leading-relaxed">{{item.content}}</div>
+                            </div>
+                        }
+                        @if (systemUpdates().length === 0) {
+                            <div class="text-[10px] text-slate-500 italic py-2">Không có thông báo mới.</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
+                    <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base mb-3 shrink-0">Hoạt động gần đây</h6>
+                <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
+                    <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
+                        @for (log of recentLogs(); track log.id) {
+                            <div class="relative pl-6">
+                                <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
+                                     [ngClass]="{
+                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE') && !log.action.includes('STANDARD'),
+                                         'bg-blue-500 dark:bg-blue-400': log.action.includes('STOCK'),
+                                         'bg-orange-500 dark:bg-orange-400': log.action.includes('STANDARD'),
+                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK') && !log.action.includes('STANDARD')
+                                     }">
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
+                                    <div class="flex items-start gap-3">
+                                        <!-- UPDATED AVATAR CALL -->
+                                        <img [src]="getAvatar(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-bold text-gray-700 dark:text-slate-300 leading-tight">
+                                                <span class="text-gray-900 dark:text-slate-100">{{log.user}}</span> 
+                                                <span class="font-normal text-[10px] text-gray-500 dark:text-slate-400 ml-1 block sm:inline">{{getLogActionText(log.action)}}</span>
+                                            </div>
+                                            <p class="text-[10px] text-gray-500 dark:text-slate-400 mt-1 line-clamp-2 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700 font-medium">
+                                                {{log.details}}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        } @empty {
+                            <div class="text-center text-gray-400 dark:text-slate-500 text-sm py-10">Chưa có dữ liệu.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- SECTION 3: SMART KANBAN -->
+        <div class="mb-6 relative">
+            @if(!auth.canViewSop()) {
+                <div class="absolute inset-0 bg-slate-50/60 dark:bg-slate-900/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 rounded-2xl">
+                    <i class="fa-solid fa-lock text-4xl mb-3"></i>
+                    <span class="text-sm font-bold uppercase tracking-wider">Tính năng yêu cầu quyền truy cập Vận hành SOP</span>
+                    <span class="text-xs mt-1">Vui lòng liên hệ Quản trị viên</span>
+                </div>
+            }
+
+            <div [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()" [class.pointer-events-none]="!auth.canViewSop()">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 px-1">
+                    <h6 class="font-bold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-blue-500 dark:text-blue-400"></i> Bảng theo dõi SOP (Hoàn thành)
+                    </h6>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                
+                @for (col of kanbanBoard(); track col.sopName) {
+                    <div (click)="openSopDetails(col)" 
+                         class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col cursor-pointer hover:-translate-y-1 transition-all hover:shadow-md dark:hover:border-slate-600 group relative overflow-hidden h-full">
+                        
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1 min-w-0 pr-2">
+                                <span class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-indigo-100 dark:border-indigo-800/30 mb-1 inline-block">
+                                    {{col.batchCount}} mẻ
+                                </span>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm leading-snug line-clamp-2" [title]="col.sopName">
+                                    {{col.sopName}}
+                                </h4>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                            </div>
+                        </div>
+
+                        <!-- Sample List (Grouped Text) -->
+                        <div class="flex-1 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl p-3 mb-3 border border-slate-50 dark:border-slate-700/50">
+                            <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wide">Mẫu đã xử lý:</div>
+                            <p class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 break-words leading-relaxed line-clamp-3">
+                                {{ col.sampleDisplay }}
+                            </p>
+                        </div>
+
+                        <!-- Footer Info -->
+                        <div class="mt-auto pt-3 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
+                            <div class="flex -space-x-2 overflow-hidden">
+                                <!-- UPDATED AVATAR CALL -->
+                                @for(user of col.users; track user) {
+                                    <img [src]="getAvatar(user)" class="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-700" [title]="user">
+                                }
+                            </div>
+                            
+                            <div class="text-right">
+                                <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Lần cuối: {{formatDateShort(col.lastRun)}}</span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Tổng: <b class="text-lg text-indigo-600 dark:text-indigo-400">{{col.totalSamples}}</b> mẫu</span>
+                            </div>
+                        </div>
+                    </div>
+                } 
+                @empty {
+                    @if(!isLoading()) {
+                        <div class="col-span-full py-10 flex items-center justify-center text-slate-400 dark:text-slate-500 italic text-xs bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                            Không có dữ liệu hiệu suất trong khoảng thời gian này.
+                        </div>
+                    }
+                }
+            </div>
+            </div>
+        </div>
+
+        <!-- DETAIL MODAL -->
+        @if (selectedSopDetails(); as details) {
+            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" (click)="selectedSopDetails.set(null)">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-bounce-in border border-slate-100 dark:border-slate-700" (click)="$event.stopPropagation()">
+                    
+                    <!-- Modal Header -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 p-5 shrink-0 flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 tracking-wider">Chi tiết Hiệu suất</span>
+                            <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mt-1">{{details.sopName}}</h3>
+                            <div class="flex gap-2 mt-2">
+                                <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-200 dark:border-blue-800/50">
+                                    {{details.totalSamples}} mẫu
+                                </span>
+                                <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-bold border border-purple-200 dark:border-purple-800/50">
+                                    {{details.batchCount}} mẻ
+                                </span>
+                            </div>
+                        </div>
+                        <button (click)="selectedSopDetails.set(null)" class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition shadow-sm active:scale-90">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body: History List -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                        @for (batch of details.history; track batch.id) {
+                            <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <!-- UPDATED AVATAR CALL -->
+                                        <img [src]="getAvatar(batch.user)" class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600">
+                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{batch.user}}</span>
+                                    </div>
+                                    <span class="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">{{formatDateShort(batch.timestamp)}}</span>
+                                </div>
+                                
+                                <div class="pl-8">
+                                    <div class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                        <span class="text-indigo-600 dark:text-indigo-400">{{batch.sampleCount}} mẫu</span>
+                                    </div>
+                                    <div class="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700 break-words">
+                                        {{batch.sampleDisplay}}
+                                    </div>
+                                    <div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button (click)="navTo('traceability/' + batch.id)" class="text-[10px] bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold shadow-sm transition">
+                                            <i class="fa-solid fa-qrcode mr-1"></i> Truy xuất
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                        <button (click)="createBatchForSop(details.sopId)" class="w-full py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none transition active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Tạo Mẻ Mới Ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>

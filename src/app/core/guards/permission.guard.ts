@@ -14,10 +14,10 @@ export const permissionGuard: CanActivateFn = (route, state) => {
 
   const user = auth.currentUser();
 
-  // 1. Check Login
+  // 1. Check Login — redirect về '/' để AppComponent hiển thị màn hình đăng nhập
   if (!user) {
-    // Usually handled by AppComponent layout, but safe to redirect
-    return true; 
+    router.navigate(['/']);
+    return false;
   }
 
   // 2. Check Admin Override

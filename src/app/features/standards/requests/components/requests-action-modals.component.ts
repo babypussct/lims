@@ -21,34 +21,34 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                    </div>
                    
                    <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-2 line-clamp-2">{{request.standardName}}</h3>
-                   <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-6">Thông tin chuẩn bàn giao</div>
+                   <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-6">Thông tin chuẩn bàn giao</div>
 
                    <div class="space-y-4">
                        <div class="flex flex-col">
-                           <span class="text-[10px] font-bold text-slate-400 uppercase">Số Lô / Lot</span>
-                           <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{request.lotNumber || 'N/A'}}</span>
+                           <span class="text-xs font-bold text-slate-400 uppercase">Số Lô / Lot</span>
+                           <span class="text-base font-bold text-slate-700 dark:text-slate-200">{{request.lotNumber || 'N/A'}}</span>
                        </div>
                        @if(request.standardDetails?.expiry_date) {
                            <div class="flex flex-col">
-                               <span class="text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
-                               <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{request.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
+                               <span class="text-xs font-bold text-slate-400 uppercase">Hạn dùng</span>
+                               <span class="text-base font-bold text-slate-700 dark:text-slate-200">{{request.standardDetails?.expiry_date | date:'dd/MM/yyyy'}}</span>
                            </div>
                        }
                        <div class="flex flex-col">
-                           <span class="text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
-                           <span class="text-sm font-bold text-emerald-600">{{request.standardDetails?.current_amount}} {{request.standardDetails?.unit}}</span>
+                           <span class="text-xs font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
+                           <span class="text-base font-bold text-emerald-600">{{request.standardDetails?.current_amount}} {{request.standardDetails?.unit}}</span>
                        </div>
                        @if(request.standardDetails?.internal_id) {
                            <div class="flex flex-col">
-                               <span class="text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
-                               <span class="text-sm font-bold text-slate-500">{{request.standardDetails?.internal_id}}</span>
+                               <span class="text-xs font-bold text-slate-400 uppercase">Mã quản lý</span>
+                               <span class="text-lg font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">{{request.standardDetails?.internal_id}}</span>
                            </div>
                        }
                    </div>
 
                    <div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-700">
                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                           <p class="text-[10px] text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+                           <p class="text-xs text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
                                <i class="fa-solid fa-user-check mr-1"></i>
                                Người mượn: <strong>{{request.requestedByName}}</strong>
                            </p>
@@ -66,25 +66,25 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                    <div class="flex-1 space-y-5">
                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                            <div>
-                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
+                               <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng</label>
                                <div class="relative">
-                                   <input type="number" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
-                                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
+                                   <input type="number" [ngModel]="approveExpectedAmount()" (ngModelChange)="approveExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none" placeholder="VD: 5">
+                                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                                </div>
                            </div>
                        </div>
 
                        <div>
-                           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
-                           <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích bàn giao..."></textarea>
+                           <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                           <textarea [ngModel]="approvePurpose()" (ngModelChange)="approvePurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích bàn giao..."></textarea>
                        </div>
                    </div>
 
                    <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
-                       <button (click)="onApprove()" [disabled]="!approvePurpose() || isProcessing" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
+                       <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy bỏ</button>
+                       <button (click)="onApprove()" [disabled]="!approvePurpose() || isProcessing" class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
                            @if(isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                           @else { <i class="fa-solid fa-check-circle text-xs"></i> Xác nhận & Giao }
+                           @else { <i class="fa-solid fa-check-circle text-sm"></i> Xác nhận & Giao }
                        </button>
                    </div>
                </div>
@@ -105,18 +105,18 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
               <div class="p-8 bg-white dark:bg-slate-900">
                   <div class="mb-6">
-                      <p class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                      <p class="text-base font-medium text-slate-600 dark:text-slate-300">
                           Bạn đang từ chối yêu cầu của <strong>{{request.requestedByName}}</strong> cho chuẩn <strong>{{request.standardName}}</strong>.
                       </p>
                   </div>
                   <div>
-                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do từ chối <span class="text-red-500">*</span></label>
-                      <textarea [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none resize-none" placeholder="Nhập lý do cụ thể..."></textarea>
+                      <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do từ chối <span class="text-red-500">*</span></label>
+                      <textarea [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none resize-none" placeholder="Nhập lý do cụ thể..."></textarea>
                   </div>
 
                   <div class="flex justify-end gap-3 mt-8">
-                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onReject()" [disabled]="!rejectReason().toString().trim() || isProcessing" class="px-8 py-3 bg-red-600 text-white font-bold text-sm rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                      <button (click)="onReject()" [disabled]="!rejectReason().toString().trim() || isProcessing" class="px-8 py-3 bg-red-600 text-white font-bold text-base rounded-2xl hover:bg-red-700 shadow-xl shadow-red-200 dark:shadow-none transition disabled:opacity-50">
                           Xác nhận từ chối
                       </button>
                   </div>
@@ -141,55 +141,55 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                   <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30">
                       <h4 class="font-black text-slate-800 dark:text-slate-100 leading-tight mb-2">{{request.standardName}}</h4>
                       <div class="flex justify-between items-center">
-                          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
+                          <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tồn kho hiện tại</span>
                           <span class="font-black text-indigo-600">{{standard?.current_amount || request.standardDetails?.current_amount || 0}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                       </div>
                   </div>
 
                   @if ((request.usageLogs || []).length > 0) {
                       <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/40 space-y-2">
-                          <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-sm">
+                          <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-black text-base">
                               <i class="fa-solid fa-circle-info"></i>
                               Tổng đã ghi nhận: <span class="text-blue-800 dark:text-blue-200">{{request.totalAmountUsed || 0}} {{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
-                              <span class="text-blue-500 font-medium text-xs">({{(request.usageLogs || []).length}} đợt)</span>
+                              <span class="text-blue-500 font-medium text-sm">({{(request.usageLogs || []).length}} đợt)</span>
                           </div>
                           @if (isForceReturn) {
-                              <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
+                              <p class="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-xl border border-amber-200 dark:border-amber-800/40">
                                   <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                                   Kho đã được trừ theo từng đợt. Số lượng nhập bên dưới chỉ để <strong>ghi sổ báo cáo</strong>, không ảnh hưởng thêm vào tồn kho.
                               </p>
                           } @else {
-                              <p class="text-xs text-blue-600 dark:text-blue-400">
+                              <p class="text-sm text-blue-600 dark:text-blue-400">
                                   Kho đã được trừ theo từng đợt. Số báo cáo bên dưới chỉ để admin xác nhận.
                               </p>
                           }
                       </div>
 
                       <div>
-                          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
+                          <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số lượng báo cáo (ghi sổ)</label>
                           <div class="relative">
-                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
-                              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
+                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Số lượng...">
+                              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                       </div>
                   } @else {
                       <div>
-                          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
+                          <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế đã dùng <span class="text-red-500">*</span></label>
                           <div class="relative">
-                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
-                              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
+                              <input type="number" [ngModel]="returnAmount()" (ngModelChange)="returnAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Nhập số lượng...">
+                              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{standard?.unit || request.standardDetails?.unit || 'mg'}}</span>
                           </div>
                       </div>
                   }
                   
                   <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
                       <input type="checkbox" id="isDepleted" [ngModel]="returnIsDepleted()" (ngModelChange)="returnIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                      <label for="isDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
+                      <label for="isDepleted" class="text-sm font-bold text-amber-700 dark:amber-400 cursor-pointer">Đánh dấu chuẩn đã dùng hết (Depleted)</label>
                   </div>
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
-                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onReturn()" [disabled]="returnAmount() === null || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                      <button (click)="onReturn()" [disabled]="returnAmount() === null || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Xác nhận trả
                       </button>
                   </div>
@@ -211,21 +211,21 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
 
               <div class="p-8 space-y-6 bg-white dark:bg-slate-900">
                   <div>
-                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Khối lượng đợt này <span class="text-red-500">*</span></label>
+                      <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Khối lượng đợt này <span class="text-red-500">*</span></label>
                       <div class="relative">
-                          <input type="number" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
-                          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
+                          <input type="number" [ngModel]="logUsageAmount()" (ngModelChange)="logUsageAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 outline-none pr-12" placeholder="VD: 5.25">
+                          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                   </div>
 
                   <div>
-                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ghi chú đợt dùng</label>
-                      <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 transition-all outline-none resize-none" placeholder="VD: Dùng cho mẫu phân tích lô X..."></textarea>
+                      <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Ghi chú đợt dùng</label>
+                      <textarea [ngModel]="logUsagePurpose()" (ngModelChange)="logUsagePurpose.set($event)" rows="2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-teal-500 transition-all outline-none resize-none" placeholder="VD: Dùng cho mẫu phân tích lô X..."></textarea>
                   </div>
 
                   <div class="flex justify-end gap-3 mt-4">
-                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onLogUsage()" [disabled]="!logUsageAmount() || isProcessing" class="px-8 py-3 bg-teal-600 text-white font-bold text-sm rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                      <button (click)="onLogUsage()" [disabled]="!logUsageAmount() || isProcessing" class="px-8 py-3 bg-teal-600 text-white font-bold text-base rounded-2xl hover:bg-teal-700 shadow-xl shadow-teal-200 dark:shadow-none transition disabled:opacity-50">
                           Lưu nhật ký dùng
                       </button>
                   </div>
@@ -248,40 +248,40 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
               <div class="p-6 md:p-8 space-y-6 bg-white dark:bg-slate-900 overflow-y-auto">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
                       <div class="flex flex-col">
-                          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">NV báo cáo dùng</span>
+                          <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">NV báo cáo dùng</span>
                           <span class="text-xl font-black text-indigo-600">{{request.totalAmountUsed}} {{request.standardDetails?.unit}}</span>
                       </div>
                       <div class="flex flex-col">
-                          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
-                          <span class="text-sm font-bold" [class]="request.reportedDepleted ? 'text-red-500' : 'text-emerald-500'">
+                          <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
+                          <span class="text-base font-bold" [class]="request.reportedDepleted ? 'text-red-500' : 'text-emerald-500'">
                               {{ request.reportedDepleted ? 'Báo cáo đã hết' : 'Vẫn còn chuẩn' }}
                           </span>
                       </div>
                   </div>
 
                   <div>
-                      <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
+                      <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng thực tế trừ kho <span class="text-red-500">*</span></label>
                       <div class="relative">
-                          <input type="number" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
-                          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
+                          <input type="number" [ngModel]="adminReceiveAmount()" (ngModelChange)="adminReceiveAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 outline-none pr-12" placeholder="Xác nhận số lượng thực tế...">
+                          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{{request.standardDetails?.unit}}</span>
                       </div>
                   </div>
                   
                   <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/20">
                       <input type="checkbox" id="adminIsDepleted" [ngModel]="adminReceiveIsDepleted()" (ngModelChange)="adminReceiveIsDepleted.set($event)" class="w-5 h-5 accent-amber-600 rounded-lg">
-                      <label for="adminIsDepleted" class="text-xs font-bold text-amber-700 dark:amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
+                      <label for="adminIsDepleted" class="text-sm font-bold text-amber-700 dark:amber-400 cursor-pointer">Xác nhận chuẩn đã dùng hết (Hủy chuẩn)</label>
                   </div>
 
                   @if(adminReceiveIsDepleted()) {
                       <div class="fade-in">
-                          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
-                          <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 outline-none resize-none" placeholder="Nhập lý do như: Hết hạn, hỏng, hoặc dùng hết..."></textarea>
+                          <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lý do hủy chuẩn <span class="text-red-500">*</span></label>
+                          <textarea [ngModel]="adminReceiveDisposalReason()" (ngModelChange)="adminReceiveDisposalReason.set($event)" rows="2" class="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-red-500 outline-none resize-none" placeholder="Nhập lý do như: Hết hạn, hỏng, hoặc dùng hết..."></textarea>
                       </div>
                   }
 
                   <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800">
-                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
-                      <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
+                      <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition">Hủy</button>
+                      <button (click)="onAdminReceive()" [disabled]="adminReceiveAmount() === null || (adminReceiveIsDepleted() && !adminReceiveDisposalReason()) || isProcessing" class="px-8 py-3 bg-indigo-600 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50">
                           Hoàn tất tiếp nhận
                       </button>
                   </div>

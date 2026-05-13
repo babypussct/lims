@@ -13,7 +13,7 @@ import {
   type User,
   type Auth
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
 import { AuthSession } from '../models/auth.model';
 
@@ -189,6 +189,20 @@ export class AuthService {
 
   async logout() {
     this.clearLocalCredentials(); // Security cleanup
+    
+    // Xóa FCM token của thiết bị này để ngừng nhận Push Notifications
+    const currentUser = this.currentUser();
+    const currentToken = localStorage.getItem('lims_fcm_token');
+    if (currentUser && currentToken) {
+        try {
+            const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${currentUser.uid}`);
+            await updateDoc(userRef, { fcmTokens: arrayRemove(currentToken) });
+            localStorage.removeItem('lims_fcm_token');
+        } catch(e) {
+            console.warn('[Auth] Failed to remove FCM token on logout', e);
+        }
+    }
+
     await signOut(this.auth);
   }
 

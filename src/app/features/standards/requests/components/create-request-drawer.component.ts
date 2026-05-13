@@ -34,7 +34,7 @@ function removeAccents(str: string): string {
                         <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" [ngModel]="standardSearchTerm()" (ngModelChange)="standardSearchTerm.set($event)" 
                                 placeholder="Tìm theo tên, lot, cas, mã..." 
-                                class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                                class="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
                     </div>
                 </div>
 
@@ -53,29 +53,29 @@ function removeAccents(str: string): string {
                                     <!-- Selection Indicator Overlay -->
                                     @if(selectedStandardIds().has(std.id)) {
                                         <div class="absolute top-3 right-3 w-5 h-5 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-sm animate-bounce-in z-20">
-                                            <i class="fa-solid fa-check text-[9px] font-black"></i>
+                                            <i class="fa-solid fa-check text-[11px] font-black"></i>
                                         </div>
                                     }
 
                                     <!-- Standard Icon/Letter -->
                                     <div class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 relative z-10"
                                             [ngClass]="selectedStandardIds().has(std.id) ? 'bg-indigo-600 text-white border-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/50 rotate-12 scale-105' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-indigo-500 group-hover:scale-105 group-hover:text-indigo-600'">
-                                        <i class="fa-solid fa-flask-vial text-sm"></i>
+                                        <i class="fa-solid fa-flask-vial text-base"></i>
                                     </div>
 
                                     <div class="flex-1 min-w-0 relative z-10">
                                         <div class="flex items-center justify-between gap-1 mb-1 pr-6">
-                                            <div class="font-black text-[13px] truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
+                                            <div class="font-black text-base truncate transition-colors text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 leading-tight" 
                                                     [title]="std.name">{{std.name}}</div>
                                             @if(std.internal_id) {
-                                                <span class="shrink-0 px-1.5 py-0.5 text-[8px] font-black rounded uppercase border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm leading-none mt-0.5">
+                                                <span class="shrink-0 px-2 py-0.5 text-xs font-black rounded-md uppercase border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 shadow-sm leading-none mt-0.5 tracking-wide">
                                                     {{std.internal_id}}
                                                 </span>
                                             }
                                         </div>
 
                                         <!-- Detail Grid: Compact with all info -->
-                                        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+                                        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
                                             <div class="flex items-center gap-1 truncate" [title]="std.product_code || 'N/A'">
                                                 <span class="font-bold text-slate-400 dark:text-slate-500 uppercase">Mã:</span>
                                                 <span class="font-medium text-slate-600 dark:text-slate-300 truncate">{{std.product_code || 'N/A'}}</span>
@@ -97,35 +97,35 @@ function removeAccents(str: string): string {
                                             <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
                                                  <div class="flex items-center gap-1.5 flex-wrap">
                                                      @if(isDepleted(std)) {
-                                                         <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                                                         <div class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-black rounded flex items-center gap-1 border border-slate-200 dark:border-slate-700">
                                                              <i class="fa-solid fa-ban text-red-400"></i> Hết
                                                          </div>
-                                                         <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[9px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
+                                                         <button (click)="$event.stopPropagation(); requestPurchase.emit(std)" class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[11px] font-black rounded flex items-center gap-1 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
                                                              <i class="fa-solid fa-cart-plus"></i> Đề nghị mua
                                                          </button>
                                                      } @else {
-                                                         <div class="text-xs font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                                             {{std.current_amount}} <span class="text-[9px] text-emerald-500 uppercase">{{std.unit}}</span>
+                                                         <div class="text-sm font-black flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                                             {{std.current_amount}} <span class="text-[11px] text-emerald-500 uppercase">{{std.unit}}</span>
                                                          </div>
                                                          @if(isFefoTopForName(std)) {
-                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 whitespace-nowrap">
-                                                                 <i class="fa-solid fa-star text-[7px]"></i> Ưu tiên
+                                                             <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-star text-[9px]"></i> Ưu tiên
                                                              </span>
                                                          }
                                                          @if(isExpiringSoon(std)) {
-                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 whitespace-nowrap">
-                                                                 <i class="fa-solid fa-triangle-exclamation text-[7px]"></i> Sắp HH
+                                                             <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Sắp HH
                                                              </span>
                                                          }
                                                          @if(isLowStock(std)) {
-                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 whitespace-nowrap">
-                                                                 <i class="fa-solid fa-droplet-slash text-[7px]"></i> Sắp hết
+                                                             <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 whitespace-nowrap">
+                                                                 <i class="fa-solid fa-droplet-slash text-[9px]"></i> Sắp hết
                                                              </span>
                                                          }
                                                      }
                                                  </div>
                                                  @if(std.expiry_date) {
-                                                     <div class="text-[9px] font-bold flex items-center gap-1" 
+                                                     <div class="text-[11px] font-bold flex items-center gap-1" 
                                                              [ngClass]="isExpired(std.expiry_date) ? 'text-red-500' : isExpiringSoon(std) ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500'">
                                                          <i class="fa-regular fa-calendar-xmark"></i>
                                                          {{std.expiry_date | date:'dd/MM/yyyy'}}
@@ -150,7 +150,7 @@ function removeAccents(str: string): string {
                                 <i class="fa-solid fa-search text-4xl"></i>
                             </div>
                             <h4 class="text-slate-800 dark:text-slate-100 font-black text-lg mb-2">Tìm kiếm chất chuẩn</h4>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm max-w-[250px] mx-auto font-medium">Nhập tên, số lô hoặc mã CAS để bắt đầu chọn chuẩn mượn.</p>
+                            <p class="text-slate-500 dark:text-slate-400 text-base max-w-[250px] mx-auto font-medium">Nhập tên, số lô hoặc mã CAS để bắt đầu chọn chuẩn mượn.</p>
                         </div>
                     }
                 </div>
@@ -161,7 +161,7 @@ function removeAccents(str: string): string {
                 <div class="p-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg">Hoàn tất yêu cầu</h3>
-                        <p class="text-xs text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
+                        <p class="text-sm text-slate-500 font-medium">Vui lòng cung cấp mục đích và thời gian dự kiến</p>
                     </div>
                     <button (click)="onClose()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition"><i class="fa-solid fa-times"></i></button>
                 </div>
@@ -174,13 +174,13 @@ function removeAccents(str: string): string {
                             <div class="bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2.5 border-b border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between shrink-0">
                                 <div class="flex items-center gap-2">
                                     <div class="w-6 h-6 rounded flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                        <i class="fa-solid fa-list-check text-[10px]"></i>
+                                        <i class="fa-solid fa-list-check text-xs"></i>
                                     </div>
-                                    <div class="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
+                                    <div class="text-sm font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
                                         {{selectedStandardIds().size}} chuẩn đã chọn
                                     </div>
                                 </div>
-                                <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[9px] font-bold text-red-500 hover:text-red-600 uppercase transition disabled:opacity-30 flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded">
+                                <button type="button" (click)="clearSelection()" [disabled]="selectedStandardIds().size === 0" class="text-[11px] font-bold text-red-500 hover:text-red-600 uppercase transition disabled:opacity-30 flex items-center gap-1 bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded">
                                     <i class="fa-solid fa-trash-can"></i> Xóa hết
                                 </button>
                             </div>
@@ -188,24 +188,24 @@ function removeAccents(str: string): string {
                             <div class="bg-slate-50/50 dark:bg-slate-900/30">
                                 @if (selectedStandardsList().length === 0) {
                                     <div class="py-3 px-4 flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                                        <i class="fa-regular fa-hand-pointer text-xs"></i>
-                                        <span class="text-[10px] font-medium italic">Click chọn chuẩn ở danh sách bên trái.</span>
+                                        <i class="fa-regular fa-hand-pointer text-sm"></i>
+                                        <span class="text-xs font-medium italic">Click chọn chuẩn ở danh sách bên trái.</span>
                                     </div>
                                 } @else {
                                     <div class="p-2.5 max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5">
                                         @for (std of selectedStandardsList(); track std.id) {
                                             <div class="animate-bounce-in flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-700/50 shadow-sm shrink-0">
                                                 <div class="flex flex-col min-w-0">
-                                                    <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 truncate max-w-[130px] leading-tight" [title]="std.name">{{std.name}}</span>
+                                                    <span class="text-xs font-bold text-indigo-700 dark:text-indigo-300 truncate max-w-[130px] leading-tight" [title]="std.name">{{std.name}}</span>
                                                     @if (std.internal_id || std.lot_number) {
-                                                        <span class="text-[8px] font-medium text-slate-400 dark:text-slate-500 truncate mt-px">
+                                                        <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate mt-px">
                                                             {{std.internal_id || ''}}{{std.internal_id && std.lot_number ? ' · ' : ''}}{{std.lot_number ? 'Lot ' + std.lot_number : ''}}
                                                         </span>
                                                     }
                                                 </div>
                                                 <button type="button" (click)="toggleStandardSelection(std.id)"
                                                         class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition ml-0.5">
-                                                    <i class="fa-solid fa-times text-[8px]"></i>
+                                                    <i class="fa-solid fa-times text-[10px]"></i>
                                                 </button>
                                             </div>
                                         }
@@ -216,16 +216,16 @@ function removeAccents(str: string): string {
 
                         <div class="space-y-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
+                                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
                                     <textarea formControlName="purpose" rows="3" 
-                                            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" 
+                                            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-base font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none placeholder-slate-300" 
                                             placeholder="VD: Pha chuẩn cho máy HPLC-MS/MS..."></textarea>
                                     <div class="flex flex-wrap gap-2 mt-2">
-                                        <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn mới'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn mới</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm tra định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm tra định kỳ</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Ngoại kiểm'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại kiểm</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Nghiên cứu phát triển'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Nghiên cứu phát triển</button>
-                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm nghiệm mẫu</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Pha chuẩn mới'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Pha chuẩn mới</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm tra định kỳ'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm tra định kỳ</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Ngoại kiểm'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Ngoại kiểm</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Nghiên cứu phát triển'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Nghiên cứu phát triển</button>
+                                        <button type="button" (click)="form.patchValue({purpose: 'Kiểm nghiệm mẫu'})" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-200"># Kiểm nghiệm mẫu</button>
                                     </div>
                                 </div>
 
@@ -236,11 +236,11 @@ function removeAccents(str: string): string {
                 <!-- Actions attached to bottom -->
                 <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
                     <div class="flex justify-end gap-3">
-                        <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy bỏ</button>
+                        <button (click)="onClose()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-base hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition">Hủy bỏ</button>
                         <button (click)="onSubmit()" [disabled]="selectedStandardIds().size === 0 || isProcessing" 
-                                class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
+                                class="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-base rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-xl shadow-indigo-200 dark:shadow-none transition disabled:opacity-50 flex items-center gap-2 active:scale-95">
                             @if(isProcessing) { <i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... } 
-                            @else { <i class="fa-solid fa-paper-plane text-xs"></i> Gửi yêu cầu }
+                            @else { <i class="fa-solid fa-paper-plane text-sm"></i> Gửi yêu cầu }
                         </button>
                     </div>
                 </div>

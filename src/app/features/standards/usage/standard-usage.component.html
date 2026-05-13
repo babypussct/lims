@@ -1,0 +1,324 @@
+    <div class="flex flex-col space-y-4 fade-in h-full relative p-1 pb-6 custom-scrollbar overflow-y-auto overflow-x-hidden">
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 px-2 mt-2">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-fuchsia-600 text-white flex items-center justify-center shadow-lg shadow-fuchsia-200 dark:shadow-none transition-transform hover:scale-110">
+                    <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                </div>
+                Nhật ký dùng chuẩn
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 ml-1">Lịch sử tiêu thụ và sử dụng hóa chất chuẩn toàn hệ thống</p>
+        </div>
+        <div class="flex gap-3 items-center">
+             <button (click)="showExportModal.set(true); exportCompleted.set(false);" class="group px-5 py-2.5 bg-green-600 text-white hover:bg-green-700 rounded-2xl shadow-xl shadow-green-100 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
+                <i class="fa-solid fa-file-excel text-sm transition-transform"></i> Xuất Excel
+             </button>
+        </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="bg-white dark:bg-slate-800 mx-2 p-4 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex flex-wrap gap-4 items-end">
+          <div class="flex-1 min-w-[200px]">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tìm kiếm</label>
+              <div class="relative">
+                  <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <!-- Sử dụng (input) thay vì ngModelChange để debounce -->
+                  <input type="text" [ngModel]="searchTerm()" (input)="onSearchInput($event)"
+                         class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none"
+                         placeholder="Tên, lô, người dùng, ID...">
+              </div>
+          </div>
+          
+          <div class="w-40 min-w-[150px]">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nhân viên</label>
+              <select [ngModel]="userFilter()" (ngModelChange)="userFilter.set($event)"
+                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
+                  <option value="">Tất cả</option>
+                  @for (u of uniqueUsers(); track u) {
+                      <option [value]="u">{{u}}</option>
+                  }
+              </select>
+          </div>
+
+          <div class="w-40 min-w-[150px]">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Hành động</label>
+              <select [ngModel]="actionFilter()" (ngModelChange)="actionFilter.set($event)"
+                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
+                  <option value="">Tất cả</option>
+                  <option value="usage">Sử dụng</option>
+                  <option value="return">Hoàn trả / Trừ kho</option>
+                  <option value="import">Import Data</option>
+              </select>
+          </div>
+
+          <div class="w-40 min-w-[150px]">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Từ ngày</label>
+              <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"
+                     class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+          </div>
+
+          <div class="w-40 min-w-[150px]">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Đến ngày</label>
+              <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"
+                     class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none [color-scheme:light] dark:[color-scheme:dark]">
+          </div>
+          
+          <button (click)="clearFilters()" *ngIf="searchTerm() || fromDate() || toDate() || userFilter() || actionFilter()" class="px-4 py-2.5 text-slate-400 hover:text-red-500 font-bold text-sm transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20">
+              Xóa lọc
+          </button>
+      </div>
+
+      <!-- Filter Chips -->
+      @if (searchTerm() || fromDate() || toDate() || userFilter() || actionFilter()) {
+        <div class="flex flex-wrap gap-2 mx-2 -mt-1">
+          @if (searchTerm()) {
+            <div class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-indigo-100 dark:border-indigo-800/50">
+                <i class="fa-solid fa-search text-[10px]"></i> "{{searchTerm()}}"
+                <button (click)="searchTerm.set('')" class="hover:text-indigo-800 dark:hover:text-indigo-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          }
+          @if (userFilter()) {
+            <div class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-blue-100 dark:border-blue-800/50">
+                <i class="fa-solid fa-user text-[10px]"></i> {{userFilter()}}
+                <button (click)="userFilter.set('')" class="hover:text-blue-800 dark:hover:text-blue-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          }
+          @if (actionFilter()) {
+            <div class="px-3 py-1 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-fuchsia-100 dark:border-fuchsia-800/50">
+                <i class="fa-solid fa-tag text-[10px]"></i> {{actionFilter() === 'usage' ? 'Sử dụng' : actionFilter() === 'return' ? 'Hoàn trả / Trừ kho' : 'Import'}}
+                <button (click)="actionFilter.set('')" class="hover:text-fuchsia-800 dark:hover:text-fuchsia-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          }
+          @if (fromDate() || toDate()) {
+            <div class="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-amber-100 dark:border-amber-800/50">
+                <i class="fa-regular fa-calendar text-[10px]"></i> 
+                {{fromDate() ? (fromDate() | date:'dd/MM/yyyy') : '...'}} <i class="fa-solid fa-arrow-right text-[10px] mx-1"></i> {{toDate() ? (toDate() | date:'dd/MM/yyyy') : '...'}}
+                <button (click)="fromDate.set(''); toDate.set('')" class="hover:text-amber-800 dark:hover:text-amber-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Summary Stats Bar -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mx-2">
+          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-list"></i>
+              </div>
+              <div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().totalLogs}}</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lượt sử dụng</div>
+              </div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-droplet"></i>
+              </div>
+              <div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().totalAmountUsed | number:'1.1-2'}}</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng tiêu hao</div>
+              </div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-users"></i>
+              </div>
+              <div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueUsers}}</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nhân viên</div>
+              </div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-vial"></i>
+              </div>
+              <div>
+                  <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueStandards}}</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chất chuẩn</div>
+              </div>
+          </div>
+      </div>
+
+      <!-- Cảnh báo chế độ Server-side Query -->
+      @if (dateQueryMode()) {
+          <div class="mx-2 px-5 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl flex items-center gap-3 text-blue-700 dark:text-blue-400 text-xs font-bold shrink-0">
+              <i class="fa-solid fa-server text-sm"></i>
+              <span>Đang truy xuất dữ liệu từ máy chủ theo khoảng ngày. (Giới hạn tối đa 500 kết quả). Xóa bộ lọc ngày để xem dữ liệu theo thời gian thực mới nhất.</span>
+          </div>
+      }
+
+      <!-- Data Table -->
+      <div class="flex flex-col bg-white dark:bg-slate-800 mx-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 overflow-hidden flex-1">
+          <div class="flex-1 overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left border-separate border-spacing-0">
+                  <thead class="bg-slate-50/50 dark:bg-slate-800/80 sticky top-0 z-30">
+                      <tr>
+                          <th (click)="toggleSort('timestamp')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                              Ngày lưu / NV dùng
+                              @if (sortColumn() === 'timestamp') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                              @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                          </th>
+                          <th (click)="toggleSort('standardName')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                              Thông tin chuẩn
+                              @if (sortColumn() === 'standardName') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                              @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                          </th>
+                          <th (click)="toggleSort('amount_used')" class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                              Lượng tiêu hao
+                              @if (sortColumn() === 'amount_used') { <i class="fa-solid ml-1" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i> }
+                              @else { <i class="fa-solid fa-sort ml-1 opacity-30"></i> }
+                          </th>
+                          <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">Mục đích</th>
+                          <th class="px-6 py-4 text-center w-16 border-b border-slate-100 dark:border-slate-700"></th>
+                      </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100/50 dark:divide-slate-800/50">
+                      @if (isLoading() && visibleLogs().length === 0) {
+                          @for(i of [1,2,3,4,5,6]; track i) {
+                              <tr class="animate-pulse">
+                                  <td colspan="5" class="px-6 py-4"><div class="h-10 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl w-full"></div></td>
+                              </tr>
+                          }
+                      } @else {
+                          @for (log of visibleLogs(); track log.id) {
+                              <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+                                  <td class="px-6 py-4">
+                                      <div class="flex items-center gap-3">
+                                          <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 flex items-center justify-center font-black text-xs border border-indigo-100/50 dark:border-indigo-800/30">
+                                              {{(log.user || '?').charAt(0).toUpperCase()}}
+                                          </div>
+                                          <div>
+                                              <div class="text-[13px] font-black text-slate-800 dark:text-slate-200">{{log.user || 'N/A'}}</div>
+                                              <div class="text-[10px] font-bold text-slate-400">{{log.timestamp | date:'dd/MM/yyyy HH:mm'}}</div>
+                                          </div>
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-4">
+                                      <div class="flex flex-col gap-0.5 max-w-[300px]">
+                                          <span class="text-sm font-black text-slate-700 dark:text-slate-300 truncate transition" [ngClass]="log.standardId ? 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline' : ''" [title]="log.standardName || 'Không có tên'" (click)="log.standardId && router.navigate(['/standards', log.standardId])">
+                                              {{log.standardName || '(Nhật ký cũ)'}}
+                                          </span>
+                                          <div class="flex flex-wrap gap-1.5 mt-1">
+                                              @if(log.lotNumber) {
+                                                  <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-500">Lot: {{log.lotNumber}}</span>
+                                              }
+                                              @if(log.internalId) {
+                                                  <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded text-[9px] font-bold text-blue-600 dark:text-blue-400">{{log.internalId}}</span>
+                                              }
+                                              @if(log.manufacturer) {
+                                                  <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-500 truncate max-w-[80px]">{{log.manufacturer}}</span>
+                                              }
+                                          </div>
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-4 text-right">
+                                      <div class="text-sm font-black text-fuchsia-600 dark:text-fuchsia-400 flex flex-col items-end">
+                                        -{{log.amount_used}} {{log.unit || 'mg'}}
+                                      </div>
+                                  </td>
+                                  <td class="px-6 py-4">
+                                      <span class="text-xs font-medium text-slate-600 dark:text-slate-400 italic line-clamp-2 max-w-[250px]" [title]="log.purpose || ''">
+                                          {{log.purpose || 'Không ghi chú'}}
+                                      </span>
+                                  </td>
+                                  <td class="px-6 py-4 text-center">
+                                      @if (auth.canDeleteStandardLogs()) {
+                                          <button (click)="deleteUsage(log)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 dark:hover:text-rose-400 transition" title="Xóa & Hoàn trả Thể tích">
+                                              <i class="fa-solid fa-trash text-[10px]"></i>
+                                          </button>
+                                      }
+                                  </td>
+                              </tr>
+                          }
+                          @if (visibleLogs().length === 0) {
+                              <tr>
+                                  <td colspan="5" class="px-6 py-16 text-center">
+                                      <div class="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300 dark:text-slate-600">
+                                          <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
+                                      </div>
+                                      <div class="text-sm font-bold text-slate-400">Không có dữ liệu sử dụng nào phù hợp</div>
+                                  </td>
+                              </tr>
+                          }
+                      }
+                  </tbody>
+              </table>
+
+              <!-- Load More -->
+              @if ((hasMore() || filteredLogs().length > displayLimit()) && !isLoading()) {
+                  <div class="p-6 text-center">
+                      <button (click)="loadMore()" [disabled]="isLoadingMore()" class="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2 mx-auto">
+                          @if (isLoadingMore()) {
+                              <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                          } @else {
+                              <i class="fa-solid fa-chevron-down"></i> Tải thêm dữ liệu
+                          }
+                      </button>
+                  </div>
+              }
+          </div>
+      </div>
+
+      <!-- EXPORT MODAL -->
+      @if (showExportModal()) {
+          <app-export-modal
+              title="Xuất Nhật ký dùng chuẩn"
+              [dateRangeText]="(fromDate() ? (fromDate() | date:'dd/MM/yyyy') : '') + (fromDate() || toDate() ? ' → ' : '') + (toDate() ? (toDate() | date:'dd/MM/yyyy') : '')"
+              [isExporting]="isExporting()"
+              [isCompleted]="exportCompleted()"
+              (close)="showExportModal.set(false)"
+              (execute)="runExport()">
+              
+              <div class="px-5 pb-5 space-y-2 mt-4">
+                  <!-- 1. Raw Data -->
+                  <div class="border rounded-2xl overflow-hidden transition-all" 
+                       [class]="exportType() === 'raw' ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-900/20' : 'border-slate-100 dark:border-slate-700'">
+                      <button (click)="!isExporting() && exportType.set('raw'); exportCompleted.set(false)" [disabled]="isExporting()"
+                              class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
+                          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                               [class]="exportType() === 'raw' ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                              <i class="fa-solid fa-list"></i>
+                          </div>
+                          <div class="flex-1 text-left">
+                              <div class="text-sm font-black dark:text-slate-200" [class.text-indigo-700]="exportType() === 'raw'">1. Nhật ký chi tiết (Raw Data)</div>
+                              <div class="text-[11px] text-slate-500">Toàn bộ lịch sử thao tác theo dòng thời gian</div>
+                          </div>
+                      </button>
+                  </div>
+                  
+                  <!-- 2. By Standard -->
+                  <div class="border rounded-2xl overflow-hidden transition-all" 
+                       [class]="exportType() === 'standard' ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-900/20' : 'border-slate-100 dark:border-slate-700'">
+                      <button (click)="!isExporting() && exportType.set('standard'); exportCompleted.set(false)" [disabled]="isExporting()"
+                              class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
+                          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                               [class]="exportType() === 'standard' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                              <i class="fa-solid fa-flask"></i>
+                          </div>
+                          <div class="flex-1 text-left">
+                              <div class="text-sm font-black dark:text-slate-200" [class.text-emerald-700]="exportType() === 'standard'">2. Tổng hợp theo Hóa chất</div>
+                              <div class="text-[11px] text-slate-500">Tổng lượng dùng của từng mã hóa chất</div>
+                          </div>
+                      </button>
+                  </div>
+
+                  <!-- 3. By User -->
+                  <div class="border rounded-2xl overflow-hidden transition-all" 
+                       [class]="exportType() === 'user' ? 'border-orange-200 bg-orange-50/30 dark:border-orange-800 dark:bg-orange-900/20' : 'border-slate-100 dark:border-slate-700'">
+                      <button (click)="!isExporting() && exportType.set('user'); exportCompleted.set(false)" [disabled]="isExporting()"
+                              class="w-full flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
+                          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-sm"
+                               [class]="exportType() === 'user' ? 'bg-orange-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'">
+                              <i class="fa-solid fa-users"></i>
+                          </div>
+                          <div class="flex-1 text-left">
+                              <div class="text-sm font-black dark:text-slate-200" [class.text-orange-700]="exportType() === 'user'">3. Tổng hợp theo Nhân viên</div>
+                              <div class="text-[11px] text-slate-500">Tần suất và tổng lượng dùng theo từng nhân viên</div>
+                          </div>
+                      </button>
+                  </div>
+              </div>
+          </app-export-modal>
+      }
+    </div>

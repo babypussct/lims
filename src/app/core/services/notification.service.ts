@@ -4,8 +4,9 @@ import { AuthService } from './auth.service';
 import { ToastService } from './toast.service';
 import {
     collection, doc, setDoc, updateDoc, writeBatch,
-    query, where, onSnapshot, Unsubscribe, deleteDoc, getDocs
+    query, where, onSnapshot, Unsubscribe, deleteDoc, getDocs, arrayUnion
 } from 'firebase/firestore';
+import { onMessage } from 'firebase/messaging';
 import { AppNotification } from '../models/notification.model';
 
 // Notifications older than 90 days are auto-cleaned up on listener start
@@ -22,6 +23,7 @@ export class NotificationService {
     unreadCount = signal(0);
 
     private unsub?: Unsubscribe;
+    private fcmUnsub?: () => void;
 
     // Cache of admin/manager UIDs — populated once per session on first broadcast
     private adminUidsCache: string[] | null = null;
@@ -84,6 +86,10 @@ export class NotificationService {
                     });
                 }
                 await batch.commit();
+                
+                // ── Trigger Web Push API ──
+                this._triggerWebPush(adminUids, cleanPayload);
+
             } else {
                 // ── PERSONAL: single document for a specific user ─────────────
                 const newDocRef = doc(colRef);
@@ -93,10 +99,40 @@ export class NotificationService {
                     isRead: false,
                     createdAt,
                 });
+                
+                // ── Trigger Web Push API ──
+                if (notification.recipientUid) {
+                    this._triggerWebPush([notification.recipientUid], cleanPayload);
+                }
             }
         } catch (e: any) {
             console.error('Failed to push notification:', e);
             this.toast.show('Lỗi lưu thông báo: ' + e.message, 'error');
+        }
+    }
+
+    // ── Call Vercel Serverless Function to send Web Push ─────────────
+    private async _triggerWebPush(recipientUids: string[], notification: any) {
+        if (!recipientUids || recipientUids.length === 0) return;
+        try {
+            // Using absolute URL to ensure it works properly
+            const url = window.location.origin + '/api/push';
+            const payload = {
+                recipientUids,
+                title: notification.title || 'LIMS Thông báo',
+                body: notification.message || 'Bạn có một thông báo mới.',
+                url: notification.link || '/',
+                appId: this.fb.APP_ID
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.warn('[WebPush] fetch error:', e)); // Fire and forget
+            
+        } catch (e) {
+            console.warn('[NotificationService] Web Push API call failed:', e);
         }
     }
 
@@ -121,7 +157,9 @@ export class NotificationService {
             const recent = items.slice(0, 50);
 
             this.notifications.set(recent);
-            this.unreadCount.set(recent.filter(n => !n.isRead).length);
+            const currentUnread = recent.filter(n => !n.isRead).length;
+            this.unreadCount.set(currentUnread);
+            this.updateAppBadge(currentUnread);
 
             // Trigger 90-day cleanup in background (fire-and-forget)
             this._cleanupOldNotifications(items);
@@ -129,13 +167,58 @@ export class NotificationService {
         }, (error) => {
             console.error('[NotificationService] Listener error:', error.message);
         });
+
+        // Request FCM Push Token
+        this.fb.requestPushToken().then(token => {
+            if (token) {
+                console.log('[NotificationService] FCM Token received:', token);
+                localStorage.setItem('lims_fcm_token', token); // Lưu token của thiết bị này
+                const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users`, user.uid);
+                updateDoc(userRef, { fcmTokens: arrayUnion(token) }).catch(() => {});
+            }
+        });
+
+        // Listen for foreground FCM messages
+        if (this.fb.messaging) {
+            this.fcmUnsub = onMessage(this.fb.messaging, (payload) => {
+                console.log('[NotificationService] Foreground message received:', payload);
+                const title = payload.notification?.title || 'Thông báo';
+                const body = payload.notification?.body || 'Bạn có thông báo mới.';
+                this.toast.show(`${title}: ${body}`, 'info');
+                
+                // Trình duyệt hỗ trợ Notification API và đã cấp quyền, có thể gọi system notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: '/icons/icon-192x192.png'
+                    });
+                }
+            });
+        }
     }
 
     stopListener() {
         if (this.unsub) { this.unsub(); this.unsub = undefined; }
+        if (this.fcmUnsub) { this.fcmUnsub(); this.fcmUnsub = undefined; }
         this.notifications.set([]);
         this.unreadCount.set(0);
+        this.updateAppBadge(0);
         this.adminUidsCache = null; // Reset cache on logout
+    }
+
+    // ── App Badge API ─────────────────────────────────────────────────────────
+    private updateAppBadge(count: number) {
+        if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
+            try {
+                if (count > 0) {
+                    (navigator as any).setAppBadge(count);
+                } else {
+                    (navigator as any).clearAppBadge();
+                }
+            } catch (e) {
+                console.warn('[NotificationService] Failed to update app badge', e);
+            }
+        }
     }
 
     // ── Read / Delete ─────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import {
 import { 
   getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL 
 } from 'firebase/storage';
+import { getMessaging, getToken, Messaging } from 'firebase/messaging';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
@@ -21,6 +22,7 @@ export class FirebaseService {
   public app: FirebaseApp;
   public db: Firestore;
   public storage: FirebaseStorage;
+  public messaging: Messaging | null = null;
   public APP_ID: string;
 
   private readonly APP_ID_KEY = 'lims_app_id';
@@ -37,7 +39,50 @@ export class FirebaseService {
 
     this.storage = getStorage(this.app);
     
+    try {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        this.messaging = getMessaging(this.app);
+      }
+    } catch (e) {
+      console.warn('Firebase Messaging not supported:', e);
+    }
+    
     this.APP_ID = localStorage.getItem(this.APP_ID_KEY) || 'lims-cloud-fixed';
+  }
+
+  async requestPushToken(): Promise<string | null> {
+    if (!('Notification' in window)) {
+        throw new Error('Trình duyệt không hỗ trợ Push Notification. (Trên iOS, bạn phải chọn "Thêm vào Màn hình chính" - Add to Home Screen trước).');
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        throw new Error(`Quyền bị từ chối (trạng thái: ${permission}). Hãy kiểm tra Cài đặt thiết bị.`);
+    }
+
+    if (!this.messaging) {
+        try {
+            this.messaging = getMessaging(this.app);
+        } catch (e: any) {
+            throw new Error('Thiết bị không hỗ trợ Firebase Messaging: ' + e.message);
+        }
+    }
+
+    try {
+        const swReg = await navigator.serviceWorker.getRegistration();
+        if (!swReg) {
+            throw new Error('Chưa tìm thấy Service Worker. Hãy tải lại trang web.');
+        }
+
+        const token = await getToken(this.messaging, {
+            vapidKey: environment.firebase.vapidKey,
+            serviceWorkerRegistration: swReg
+        });
+        return token;
+    } catch (error: any) {
+        console.error('Lỗi lấy FCM token:', error);
+        throw new Error(error?.message || 'Lỗi không xác định khi đăng ký Token.');
+    }
   }
 
   setAppId(id: string) {

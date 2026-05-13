@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, query, onSnapshot, where, orderBy, getDocs, limit, QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, orderBy, getDocs, limit, QueryConstraint } from 'firebase/firestore';
+import { FirebaseService } from './firebase.service';
 
 export interface DeltaSyncConfig {
   cacheKey: string;
@@ -9,71 +10,297 @@ export interface DeltaSyncConfig {
   orderByField?: string;
   orderDirection?: 'asc' | 'desc';
   queryConstraints?: QueryConstraint[];
+  /**
+   * Hàm kiểm tra doc đã bị xóa hay chưa.
+   * Mặc định: (doc) => doc._isDeleted === true
+   * Override cho collection dùng status='DELETED':
+   *   (doc) => doc._isDeleted === true || doc.status === 'DELETED'
+   */
+  isDeletedFn?: (doc: any) => boolean;
 }
 
-import { FirebaseService } from './firebase.service';
+/** Entry nội bộ cho mỗi singleton */
+interface SingletonEntry<T = any> {
+  unsub: () => void;
+  callbacks: Array<(data: T[]) => void>;
+  memCache: T[];
+  config: DeltaSyncConfig;
+}
 
-@Injectable({
-  providedIn: 'root'
-})
+/**
+ * DeltaSyncService v2 — Quản lý đồng bộ delta tập trung.
+ *
+ * 2 chế độ:
+ *  - **Singleton** (`startSingletonListener`): 1 listener / cacheKey, sống suốt phiên.
+ *    Components chỉ subscribe/unsubscribe callback. Navigate giữa các tab = 0 reads.
+ *  - **Classic** (`startListener`): Listener tạo/hủy theo caller lifecycle.
+ *    Phù hợp cho component có mode-switch (VD: realtime ↔ date-range query).
+ *
+ * Cả 2 chế độ đều:
+ *  - Persist cache + cursor vào localStorage
+ *  - Dùng cursor-based startTime (không mất data giữa sessions)
+ *  - Xử lý soft delete (_isDeleted hoặc custom fn)
+ */
+@Injectable({ providedIn: 'root' })
 export class DeltaSyncService {
   private firebaseService = inject(FirebaseService);
   private fb = this.firebaseService.db;
 
+  /** Map<cacheKey, SingletonEntry> */
+  private _singletons = new Map<string, SingletonEntry>();
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SINGLETON MODE — 1 listener / key, N subscribers
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /**
-   * Initializes a delta sync listener.
-   * @param config Configuration for the sync.
-   * @param onData Callback that fires with the updated cache array whenever data changes.
-   * @returns An unsubscribe function.
+   * Subscribe vào singleton listener cho collection.
+   * - Lần đầu: tạo listener + emit từ cache ngay lập tức
+   * - Lần sau: chỉ thêm callback, dùng listener đã chạy
+   * @returns Hàm unregister callback (KHÔNG hủy listener singleton)
    */
-  public startListener<T extends { id?: string, lastUpdated?: any, _isDeleted?: boolean, [key: string]: any }>(
+  public startSingletonListener<T extends { id?: string; lastUpdated?: any; _isDeleted?: boolean; [k: string]: any }>(
+    config: DeltaSyncConfig,
+    onData: (data: T[]) => void
+  ): () => void {
+    const key = config.cacheKey;
+    const isDeleted = config.isDeletedFn || ((d: any) => d._isDeleted === true);
+
+    // Singleton đã tồn tại → emit memCache ngay + thêm callback
+    if (this._singletons.has(key)) {
+      const entry = this._singletons.get(key)!;
+      entry.callbacks.push(onData as any);
+      // Emit data hiện tại ngay lập tức (0 reads)
+      if (entry.memCache.length > 0) {
+        onData([...entry.memCache] as T[]);
+      }
+      return () => {
+        entry.callbacks = entry.callbacks.filter(cb => cb !== onData);
+      };
+    }
+
+    // Tạo singleton mới
+    const maxCacheSize = config.maxCacheSize || 1000;
+    const sortField = config.orderByField || 'timestamp';
+    const sortDir = config.orderDirection || 'desc';
+
+    // Phase 1: Load từ localStorage
+    let memCache: T[] = this._loadFromCache<T>(key).filter(d => !isDeleted(d));
+    const callbacks: Array<(data: T[]) => void> = [onData];
+
+    // Emit cached data ngay
+    if (memCache.length > 0) {
+      onData([...memCache]);
+    }
+
+    const colRef = collection(this.fb, config.collectionPath);
+
+    // Nếu cache rỗng → fetch initial batch trước
+    if (memCache.length === 0) {
+      const constraints = config.queryConstraints || [];
+      const q = query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
+      getDocs(q).then(snapshot => {
+        const items: T[] = [];
+        snapshot.forEach(doc => {
+          const data = doc.data() as T;
+          (data as any).id = doc.id;
+          this._normalizeTimestamps(data, sortField);
+          if (!isDeleted(data)) items.push(data);
+        });
+        memCache = items;
+        this._updateCacheAndCursor(memCache, config, sortField, sortDir, maxCacheSize);
+        // Cập nhật entry
+        const entry = this._singletons.get(key);
+        if (entry) {
+          entry.memCache = memCache;
+          entry.callbacks.forEach(cb => cb([...memCache]));
+        }
+      }).catch(err => {
+        console.warn(`[DeltaSync] Initial fetch failed for ${config.collectionPath}:`, err.message);
+      });
+    }
+
+    // Phase 2: Live listener — bắt đầu từ CURSOR (cursor-based, không phải Timestamp.now())
+    const cursor = this._loadCursor(config.cursorKey);
+    const startConstraints = config.queryConstraints || [];
+    let liveQuery;
+    if (cursor > 0) {
+      liveQuery = query(colRef, ...startConstraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
+    } else {
+      liveQuery = query(colRef, ...startConstraints, orderBy('lastUpdated', 'asc'));
+    }
+
+    const unsub = onSnapshot(liveQuery, (snapshot) => {
+      if (snapshot.empty) return;
+
+      const entry = this._singletons.get(key);
+      if (!entry) return;
+
+      let hasChanges = false;
+      const items = [...entry.memCache];
+
+      snapshot.docChanges().forEach(change => {
+        const docData = change.doc.data() as T;
+        (docData as any).id = change.doc.id;
+        this._normalizeTimestamps(docData, sortField);
+
+        if (isDeleted(docData)) {
+          const idx = items.findIndex(i => i.id === docData.id);
+          if (idx !== -1) { items.splice(idx, 1); hasChanges = true; }
+        } else {
+          const idx = items.findIndex(i => i.id === docData.id);
+          if (idx !== -1) { items[idx] = docData; } else { items.unshift(docData); }
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        entry.memCache = items;
+        this._updateCacheAndCursor(items, config, sortField, sortDir, maxCacheSize);
+        entry.callbacks.forEach(cb => cb([...items]));
+      }
+    }, (error) => {
+      console.warn(`[DeltaSync] Singleton listener error for ${config.collectionPath}:`, error.message);
+      if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+        this.destroySingleton(key);
+      }
+    });
+
+    // Lưu entry vào Map
+    this._singletons.set(key, { unsub, callbacks, memCache, config });
+
+    // Return unregister function
+    return () => {
+      const entry = this._singletons.get(key);
+      if (entry) {
+        entry.callbacks = entry.callbacks.filter(cb => cb !== onData);
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLASSIC MODE — Listener tạo/hủy theo caller lifecycle (backward compat)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Tạo listener mới mỗi lần gọi. Caller chịu trách nhiệm hủy.
+   * FIX v2: Trả về unsub function đúng kể cả khi cache rỗng (fix listener leak).
+   */
+  public startListener<T extends { id?: string; lastUpdated?: any; _isDeleted?: boolean; [k: string]: any }>(
     config: DeltaSyncConfig,
     onData: (data: T[]) => void
   ): () => void {
     const maxCacheSize = config.maxCacheSize || 1000;
     const sortField = config.orderByField || 'timestamp';
     const sortDir = config.orderDirection || 'desc';
+    const isDeleted = config.isDeletedFn || ((d: any) => d._isDeleted === true);
 
-    // 1. Load existing cache
-    let cachedItems: T[] = this.loadFromCache(config.cacheKey);
-    let cursor = this.loadCursor(config.cursorKey);
+    let cachedItems: T[] = this._loadFromCache<T>(config.cacheKey).filter(d => !isDeleted(d));
+    let cursor = this._loadCursor(config.cursorKey);
 
-    // If cache is empty, we don't have a cursor. We need to fetch the initial batch.
+    // FIX: Lưu unsub reference bên ngoài .then() để caller luôn hủy được
+    let listenerUnsub: (() => void) | null = null;
+    let destroyed = false;
+
+    const cleanup = () => {
+      destroyed = true;
+      if (listenerUnsub) { listenerUnsub(); listenerUnsub = null; }
+    };
+
     if (cachedItems.length === 0) {
-      this.fetchInitialBatch<T>(config).then(items => {
-        cachedItems = items;
-        cursor = this.updateCacheAndCursor(cachedItems, config, sortField, sortDir, maxCacheSize);
-        onData([...cachedItems]); // Initial emit
-        
-        // Start listener after initial fetch
-        this._setupSnapshotListener(config, cursor, cachedItems, sortField, sortDir, maxCacheSize, onData);
+      // Cache rỗng → fetch initial batch async
+      this._fetchInitialBatch<T>(config).then(items => {
+        if (destroyed) return; // Caller đã hủy trước khi fetch xong → không leak
+        cachedItems = items.filter(d => !isDeleted(d));
+        cursor = this._updateCacheAndCursor(cachedItems, config, sortField, sortDir, maxCacheSize);
+        onData([...cachedItems]);
+        listenerUnsub = this._setupSnapshotListener(config, cursor, cachedItems, sortField, sortDir, maxCacheSize, onData, isDeleted);
+      }).catch(err => {
+        console.warn(`[DeltaSync] Initial fetch failed:`, err.message);
       });
-      return () => {}; // Temporary unsub before listener starts (edge case, usually fine)
     } else {
-      // Emit cached data immediately
       onData([...cachedItems]);
-      // Start listener immediately
-      return this._setupSnapshotListener(config, cursor, cachedItems, sortField, sortDir, maxCacheSize, onData);
+      listenerUnsub = this._setupSnapshotListener(config, cursor, cachedItems, sortField, sortDir, maxCacheSize, onData, isDeleted);
+    }
+
+    return cleanup;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LIFECYCLE — Cleanup API
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Hủy 1 singleton theo cacheKey */
+  public destroySingleton(cacheKey: string): void {
+    const entry = this._singletons.get(cacheKey);
+    if (entry) {
+      entry.unsub();
+      entry.callbacks = [];
+      entry.memCache = [];
+      this._singletons.delete(cacheKey);
     }
   }
 
-  private _setupSnapshotListener<T extends { id?: string, lastUpdated?: any, _isDeleted?: boolean, [key: string]: any }>(
+  /** Hủy TẤT CẢ singletons — gọi khi logout */
+  public destroyAll(): void {
+    this._singletons.forEach((entry, key) => {
+      entry.unsub();
+      entry.callbacks = [];
+      entry.memCache = [];
+    });
+    this._singletons.clear();
+  }
+
+  /** Xóa localStorage cache + cursor */
+  public clearCache(cacheKey: string, cursorKey: string): void {
+    try {
+      localStorage.removeItem(cacheKey);
+      localStorage.removeItem(cursorKey);
+    } catch {}
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CACHE READ API
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Đọc từ in-memory singleton cache (ưu tiên) hoặc localStorage */
+  public getCache<T>(key: string): T[] {
+    // Ưu tiên memCache nếu singleton đang chạy
+    const entry = this._singletons.get(key);
+    if (entry && entry.memCache.length > 0) {
+      return [...entry.memCache] as T[];
+    }
+    return this._loadFromCache<T>(key);
+  }
+
+  /** Đọc chỉ từ in-memory (nhanh nhất, null nếu chưa load) */
+  public getMemCache<T>(key: string): T[] | null {
+    const entry = this._singletons.get(key);
+    return entry ? [...entry.memCache] as T[] : null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PRIVATE HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  private _setupSnapshotListener<T extends { id?: string; lastUpdated?: any; _isDeleted?: boolean; [k: string]: any }>(
     config: DeltaSyncConfig,
     cursor: number,
     cachedItems: T[],
     sortField: string,
     sortDir: 'asc' | 'desc',
     maxCacheSize: number,
-    onData: (data: T[]) => void
+    onData: (data: T[]) => void,
+    isDeleted: (doc: any) => boolean
   ): () => void {
     const colRef = collection(this.fb, config.collectionPath);
-    let q;
-    
     const constraints = config.queryConstraints || [];
+    let q;
+
     if (cursor > 0) {
-       q = query(colRef, ...constraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
+      q = query(colRef, ...constraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
     } else {
-       q = query(colRef, ...constraints, orderBy('lastUpdated', 'asc'), limit(100));
+      q = query(colRef, ...constraints, orderBy('lastUpdated', 'asc'), limit(100));
     }
 
     return onSnapshot(q, (snapshot) => {
@@ -82,38 +309,21 @@ export class DeltaSyncService {
       let hasChanges = false;
       snapshot.docChanges().forEach(change => {
         const docData = change.doc.data() as T;
-        docData.id = change.doc.id;
+        (docData as any).id = change.doc.id;
+        this._normalizeTimestamps(docData, sortField);
 
-        // Ensure we parse firestore timestamps to numbers for local caching
-        if (docData.lastUpdated && typeof docData.lastUpdated.toMillis === 'function') {
-          docData.lastUpdated = { seconds: Math.floor(docData.lastUpdated.toMillis() / 1000) };
-        }
-        
-        if ((docData as any)[sortField] && typeof (docData as any)[sortField].toMillis === 'function') {
-           (docData as any)[sortField] = (docData as any)[sortField].toMillis();
-        }
-
-        if (docData._isDeleted) {
-          // Remove from cache
+        if (isDeleted(docData)) {
           const idx = cachedItems.findIndex(i => i.id === docData.id);
-          if (idx !== -1) {
-            cachedItems.splice(idx, 1);
-            hasChanges = true;
-          }
+          if (idx !== -1) { cachedItems.splice(idx, 1); hasChanges = true; }
         } else {
-          // Add or Update
           const idx = cachedItems.findIndex(i => i.id === docData.id);
-          if (idx !== -1) {
-            cachedItems[idx] = docData;
-          } else {
-            cachedItems.push(docData);
-          }
+          if (idx !== -1) { cachedItems[idx] = docData; } else { cachedItems.push(docData); }
           hasChanges = true;
         }
       });
 
       if (hasChanges) {
-        this.updateCacheAndCursor(cachedItems, config, sortField, sortDir, maxCacheSize);
+        this._updateCacheAndCursor(cachedItems, config, sortField, sortDir, maxCacheSize);
         onData([...cachedItems]);
       }
     }, (error) => {
@@ -121,100 +331,88 @@ export class DeltaSyncService {
     });
   }
 
-  private async fetchInitialBatch<T>(config: DeltaSyncConfig): Promise<T[]> {
+  private async _fetchInitialBatch<T>(config: DeltaSyncConfig): Promise<T[]> {
     const colRef = collection(this.fb, config.collectionPath);
     const sortField = config.orderByField || 'timestamp';
     const sortDir = config.orderDirection || 'desc';
     const maxCacheSize = config.maxCacheSize || 1000;
-    
-    // We only want docs that are NOT soft deleted. But soft deleted docs might not have _isDeleted field if they are old.
-    // So we just fetch the latest docs. If some are soft deleted, they will be filtered out next.
+
     const constraints = config.queryConstraints || [];
     const q = query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
     const snapshot = await getDocs(q);
-    
+
     const items: T[] = [];
     snapshot.forEach(doc => {
       const data = doc.data() as T;
       (data as any).id = doc.id;
-      
-      // Convert timestamps
-      if ((data as any).lastUpdated && typeof (data as any).lastUpdated.toMillis === 'function') {
-        (data as any).lastUpdated = { seconds: Math.floor((data as any).lastUpdated.toMillis() / 1000) };
-      }
-      if ((data as any)[sortField] && typeof (data as any)[sortField].toMillis === 'function') {
-        (data as any)[sortField] = (data as any)[sortField].toMillis();
-      }
-
-      if (!(data as any)._isDeleted) {
-        items.push(data);
-      }
+      this._normalizeTimestamps(data, sortField);
+      items.push(data);
     });
-    
+
     return items;
   }
 
-  private updateCacheAndCursor<T extends { lastUpdated?: any }>(
-    items: T[], 
-    config: DeltaSyncConfig, 
-    sortField: string, 
+  /** Chuẩn hóa Firestore Timestamps → plain object { seconds } để JSON.stringify được */
+  private _normalizeTimestamps(data: any, sortField: string): void {
+    if (data.lastUpdated && typeof data.lastUpdated.toMillis === 'function') {
+      data.lastUpdated = { seconds: Math.floor(data.lastUpdated.toMillis() / 1000) };
+    }
+    if (data[sortField] && typeof data[sortField].toMillis === 'function') {
+      data[sortField] = data[sortField].toMillis();
+    }
+  }
+
+  private _updateCacheAndCursor<T extends { lastUpdated?: any }>(
+    items: T[],
+    config: DeltaSyncConfig,
+    sortField: string,
     sortDir: 'asc' | 'desc',
     maxCacheSize: number
   ): number {
-    // Sort array
+    // Sort
     items.sort((a: any, b: any) => {
       const valA = a[sortField] || 0;
       const valB = b[sortField] || 0;
       return sortDir === 'asc' ? valA - valB : valB - valA;
     });
 
-    // Slice array to max size
+    // Trim
     if (items.length > maxCacheSize) {
       items.splice(maxCacheSize);
     }
 
-    // Find max lastUpdated
+    // Cursor = max lastUpdated seconds
     let maxSeconds = 0;
     for (const item of items) {
       if (item.lastUpdated && item.lastUpdated.seconds) {
-        if (item.lastUpdated.seconds > maxSeconds) {
-          maxSeconds = item.lastUpdated.seconds;
-        }
+        if (item.lastUpdated.seconds > maxSeconds) maxSeconds = item.lastUpdated.seconds;
       }
     }
 
-    // Save to local storage
+    // Persist
     try {
       localStorage.setItem(config.cacheKey, JSON.stringify(items));
       if (maxSeconds > 0) {
         localStorage.setItem(config.cursorKey, maxSeconds.toString());
       }
     } catch (e) {
-      console.warn('Could not save delta sync cache to localStorage', e);
+      console.warn('[DeltaSync] Cache write failed', e);
     }
 
     return maxSeconds;
   }
 
-  public getCache<T>(key: string): T[] {
-    return this.loadFromCache<T>(key);
-  }
-
-  private loadFromCache<T>(key: string): T[] {
+  private _loadFromCache<T>(key: string): T[] {
     try {
       const data = localStorage.getItem(key);
       return data ? JSON.parse(data) : [];
-    } catch (e) {
-      return [];
-    }
+    } catch { return []; }
   }
 
-  private loadCursor(key: string): number {
+  private _loadCursor(key: string): number {
     try {
       const data = localStorage.getItem(key);
       return data ? parseInt(data, 10) : 0;
-    } catch (e) {
-      return 0;
-    }
+    } catch { return 0; }
   }
 }

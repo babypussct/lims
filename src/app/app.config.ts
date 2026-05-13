@@ -52,7 +52,7 @@ export const appConfig: ApplicationConfig = {
       // Tối ưu hoá Navigation Stack nếu người dùng huỷ chuyển trang (cancel loading module)
       withRouterConfig({ canceledNavigationResolution: 'replace' })
     ), 
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('firebase-messaging-sw.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerImmediately'
     }),
