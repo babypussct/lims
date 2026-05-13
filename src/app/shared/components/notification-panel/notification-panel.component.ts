@@ -386,6 +386,7 @@ export class NotificationPanelComponent {
       'REQUEST_APPROVED': 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
       'REQUEST_REJECTED': 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
       'STOCK_LOW_ALERT':  'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      'SYSTEM_UPDATE':    'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
     };
     return map[type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
   }
@@ -397,6 +398,7 @@ export class NotificationPanelComponent {
       'REQUEST_APPROVED': 'fa-circle-check',
       'REQUEST_REJECTED': 'fa-circle-xmark',
       'STOCK_LOW_ALERT':  'fa-triangle-exclamation',
+      'SYSTEM_UPDATE':    'fa-bullhorn',
     };
     return map[type] ?? 'fa-bell';
   }

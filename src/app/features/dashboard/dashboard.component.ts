@@ -78,10 +78,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Modal State
   selectedSopDetails = signal<KanbanColumn | null>(null);
-  
-  // System Updates State
-  systemUpdates = signal<any[]>([]);
-  systemUpdatesSub: any;
 
   // LIVE DATA COMPUTED
   // Phân nhánh logic đếm theo từng quyền cụ thể:
@@ -369,7 +365,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
               }
           });
           this.userPhotoMap.set(map);
-          this.listenSystemUpdates();
       } catch(e) {
           console.error("Dashboard fetch error", e);
       } finally {
@@ -377,21 +372,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
-  listenSystemUpdates() {
-      const updatesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates`);
-      const q = query(updatesRef, orderBy('timestamp', 'desc'), limit(5));
-      this.systemUpdatesSub = onSnapshot(q, (snap) => {
-          this.systemUpdates.set(snap.docs.map(d => {
-              const data = d.data();
-              return {
-                  id: d.id,
-                  content: data['content'],
-                  type: data['type'] || 'info',
-                  timestamp: data['timestamp'] ? data['timestamp'].toDate() : new Date()
-              };
-          }));
-      });
-  }
+
 
   getAvatar(name: string | undefined | null): string {
       let photoUrl = name ? this.userPhotoMap()[name] : undefined;
@@ -402,7 +383,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-      if (this.systemUpdatesSub) this.systemUpdatesSub();
       if (this.chartInstance) {
           this.chartInstance.destroy();
           this.chartInstance = null;

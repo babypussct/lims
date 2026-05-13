@@ -410,7 +410,7 @@ export class StandardRequestService {
     const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/purchase_requests/${id}`);
     const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${req.standardId}`);
     await runTransaction(this.fb.db, async (transaction) => {
-      transaction.set(reqRef, newReq);
+      transaction.set(reqRef, { ...newReq, lastUpdated: serverTimestamp() });
       transaction.update(stdRef, { restock_requested: true, lastUpdated: serverTimestamp() });
     });
     return id;

@@ -27,6 +27,8 @@ export class NotificationService {
 
     // Cache of admin/manager UIDs — populated once per session on first broadcast
     private adminUidsCache: string[] | null = null;
+    // Cache of all UIDs — populated once per session on first global broadcast
+    private allUidsCache: string[] | null = null;
 
     constructor() {
         // Initialise empty; startListener() is called by AppComponent after login
@@ -44,6 +46,18 @@ export class NotificationService {
             this.adminUidsCache = [];
         }
         return this.adminUidsCache;
+    }
+
+    // ── Fan-out: resolve ALL UIDs (cached per session) ──────────
+    private async getAllUids(): Promise<string[]> {
+        if (this.allUidsCache) return this.allUidsCache;
+        try {
+            const users = await this.fb.getAllUsers();
+            this.allUidsCache = users.map(u => u.uid);
+        } catch {
+            this.allUidsCache = [];
+        }
+        return this.allUidsCache;
     }
 
     // ── Push a notification ───────────────────────────────────────────────────
@@ -64,22 +78,24 @@ export class NotificationService {
                 Object.entries(notification).filter(([_, v]) => v !== undefined)
             );
 
-            if (notification.recipientUid === 'role:admin') {
-                // ── BROADCAST: fan-out — one document per admin/manager ──────
-                const adminUids = await this.getAdminUids();
+            if (notification.recipientUid === 'role:admin' || notification.recipientUid === 'role:all') {
+                // ── BROADCAST: fan-out — one document per recipient ──────
+                const uids = notification.recipientUid === 'role:all' 
+                    ? await this.getAllUids() 
+                    : await this.getAdminUids();
 
-                if (adminUids.length === 0) {
-                    console.warn('[NotificationService] No admin/manager UIDs found for broadcast.');
+                if (uids.length === 0) {
+                    console.warn(`[NotificationService] No UIDs found for broadcast (${notification.recipientUid}).`);
                     return;
                 }
 
                 const batch = writeBatch(this.fb.db);
-                for (const uid of adminUids) {
+                for (const uid of uids) {
                     const newDocRef = doc(colRef);
                     batch.set(newDocRef, {
                         ...cleanPayload,
                         id: newDocRef.id,
-                        recipientUid: uid,   // Replace 'role:admin' with real UID
+                        recipientUid: uid,   // Replace role placeholder with real UID
                         groupId,             // Link all copies to the same event
                         isRead: false,
                         createdAt,
@@ -88,7 +104,7 @@ export class NotificationService {
                 await batch.commit();
                 
                 // ── Trigger Web Push API ──
-                this._triggerWebPush(adminUids, cleanPayload);
+                this._triggerWebPush(uids, cleanPayload);
 
             } else {
                 // ── PERSONAL: single document for a specific user ─────────────
@@ -204,6 +220,7 @@ export class NotificationService {
         this.unreadCount.set(0);
         this.updateAppBadge(0);
         this.adminUidsCache = null; // Reset cache on logout
+        this.allUidsCache = null;
     }
 
     // ── App Badge API ─────────────────────────────────────────────────────────
