@@ -296,16 +296,22 @@ export class GoogleDriveService {
 
       const cleanup = () => { restore(); this.currentCallback = null; this.currentErrorCallback = null; };
 
+      const safeClosePopup = () => {
+          if (authPopup) {
+              try { authPopup.close(); } catch (e) {}
+          }
+      };
+
       const timeout = setTimeout(() => {
           cleanup();
-          if (authPopup && !authPopup.closed) authPopup.close();
+          safeClosePopup();
           onError('Đăng nhập Google quá thời gian (60s). Hãy thử lại.');
       }, 60000);
 
       this.currentCallback = (response: any) => {
           clearTimeout(timeout);
           cleanup();
-          if (authPopup && !authPopup.closed) authPopup.close();
+          safeClosePopup();
           if (response.error) { onError(response.error_description || response.error); return; }
           this.accessToken = response.access_token;
           this.tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
@@ -317,7 +323,7 @@ export class GoogleDriveService {
       this.currentErrorCallback = (error: any) => {
           clearTimeout(timeout);
           cleanup();
-          if (authPopup && !authPopup.closed) authPopup.close();
+          safeClosePopup();
           if (error?.type === 'popup_closed') {
               onError('Cửa sổ đăng nhập Google đã bị đóng. Hãy thử lại.');
           } else {
@@ -330,7 +336,7 @@ export class GoogleDriveService {
       } catch (e) {
           clearTimeout(timeout);
           cleanup();
-          if (authPopup && !authPopup.closed) authPopup.close();
+          safeClosePopup();
           console.error('[GoogleDrive] requestAccessToken threw:', e);
           onError('Không thể khởi tạo đăng nhập Google. Hãy thử lại.');
       }

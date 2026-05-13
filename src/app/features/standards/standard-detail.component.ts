@@ -20,7 +20,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { writeBatch, doc, deleteField } from 'firebase/firestore';
+import { writeBatch, doc, deleteField, serverTimestamp } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standard-detail',
@@ -814,20 +814,24 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
     // --- Quick Upload CoA ---
     triggerQuickDriveUpload() {
-        // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
-        this.googleDriveService.authenticateSync(
-            () => {
-                const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
-                if (input) {
-                    input.click();
-                } else {
-                    this.toast.show('Không tìm thấy input upload', 'error');
-                }
-            },
-            (err) => {
-                this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+        if (this.googleDriveService.hasValidToken) {
+            const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+            if (input) {
+                input.click();
+            } else {
+                this.toast.show('Không tìm thấy input upload', 'error');
             }
-        );
+        } else {
+            // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
+            this.googleDriveService.authenticateSync(
+                () => {
+                    this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
+                },
+                (err) => {
+                    this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+                }
+            );
+        }
     }
 
     async handleQuickDriveUpload(event: any) {
@@ -852,10 +856,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             for (const s of siblings) {
                 if (s.id) {
                     const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, s.id);
-                    batch.update(ref, { certificate_ref: previewUrl, coa_requested_by: deleteField() });
+                    batch.update(ref, { certificate_ref: previewUrl, coa_requested_by: deleteField(), lastUpdated: serverTimestamp() });
                 }
             }
             await batch.commit();
+            await this.firebaseService.updateMetadata('standards');
+            this.stdService.invalidateLocalStandardsCache();
 
             // Nếu có ai đó yêu cầu CoA, thông báo lại cho họ
             if (std.coa_requested_by) {

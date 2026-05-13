@@ -606,29 +606,32 @@ export class StandardsComponent implements OnInit, OnDestroy {
       event.stopPropagation();
       this.quickUploadStd = std;
       
-      // XÁC THỰC TRƯỚC KHI MỞ FILE PICKER ĐỂ KHÔNG BỊ CHẶN POPUP
-      this.googleDriveService.authenticateSync(
-          () => {
-              // Đã có token, giờ mới mở file picker
-              const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
-              if (input) {
-                  input.click();
-                  return;
-              }
-              // Fallback: try by ref
-              const inputs = document.querySelectorAll('input[type="file"][accept]');
-              const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
-              if (driveInput && driveInput.classList.contains('hidden')) {
-                  driveInput.click();
-                  return;
-              }
-              this.toast.show('Không tìm thấy input upload', 'error');
-          },
-          (err) => {
-              this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
-              this.quickUploadStd = null;
+      if (this.googleDriveService.hasValidToken) {
+          const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
+          if (input) {
+              input.click();
+              return;
           }
-      );
+          // Fallback: try by ref
+          const inputs = document.querySelectorAll('input[type="file"][accept]');
+          const driveInput = Array.from(inputs).find(el => (el as HTMLInputElement).accept.includes('.pdf')) as HTMLInputElement;
+          if (driveInput && driveInput.classList.contains('hidden')) {
+              driveInput.click();
+              return;
+          }
+          this.toast.show('Không tìm thấy input upload', 'error');
+      } else {
+          // XÁC THỰC TRƯỚC: Nếu chưa có token, xác thực xong yêu cầu user nhấn lại để có user activation
+          this.googleDriveService.authenticateSync(
+              () => {
+                  this.toast.show('Đã kết nối Google Drive! Vui lòng nhấn lại nút Upload để chọn file.', 'success');
+              },
+              (err) => {
+                  this.toast.show('Lỗi đăng nhập Google: ' + err, 'error');
+                  this.quickUploadStd = null;
+              }
+          );
+      }
   }
 
   async handleQuickDriveUpload(event: any) {
