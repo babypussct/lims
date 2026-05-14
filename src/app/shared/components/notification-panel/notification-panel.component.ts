@@ -107,7 +107,12 @@ import { AppNotification } from '../../../core/models/notification.model';
                       <h4 class="font-bold text-[13px] text-slate-800 dark:text-slate-200 truncate">{{ n.title }}</h4>
                       <span class="text-[10px] whitespace-nowrap text-slate-400 dark:text-slate-500 shrink-0 pt-0.5 font-medium">{{ getTimeAgo(n.createdAt) }}</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{{ n.message }}</p>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap break-words" [class.line-clamp-2]="!isExpanded(n)">{{ n.message }}</div>
+                    @if (n.message && n.message.length > 90) {
+                      <button (click)="toggleExpand(n, $event)" class="text-[10px] font-bold text-blue-500 hover:text-blue-600 mt-0.5 transition inline-block">
+                        {{ isExpanded(n) ? 'Ẩn bớt' : 'Xem thêm' }}
+                      </button>
+                    }
                   </div>
 
                   <!-- Delete (hover) -->
@@ -351,6 +356,22 @@ export class NotificationPanelComponent {
 
   notifications = this.notificationService.notifications;
   unreadCount   = this.notificationService.unreadCount;
+  
+  expandedIds = new Set<string>();
+
+  isExpanded(n: AppNotification): boolean {
+      return this.expandedIds.has(n.id || '');
+  }
+
+  toggleExpand(n: AppNotification, event: Event) {
+      event.stopPropagation();
+      const id = n.id || '';
+      if (this.expandedIds.has(id)) {
+          this.expandedIds.delete(id);
+      } else {
+          this.expandedIds.add(id);
+      }
+  }
 
   /** Căn drawer ngay sát phải sidebar trên desktop, sát mép trái trên mobile */
   get drawerLeft(): string {
