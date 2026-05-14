@@ -430,7 +430,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             }
             await batch.commit();
             await this.firebaseService.updateMetadata('standards');
-            this.stdService.invalidateLocalStandardsCache();
 
             // Nếu có ai đó yêu cầu CoA, thông báo lại cho họ
             if (std.coa_requested_by) {

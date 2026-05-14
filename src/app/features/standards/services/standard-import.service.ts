@@ -265,7 +265,6 @@ export class StandardImportService {
     }
     if (opCount > 0) await batch.commit();
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   // ─── Parse Usage Log Excel ────────────────────────────────────────────────────

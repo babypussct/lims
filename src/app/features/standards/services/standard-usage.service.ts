@@ -358,7 +358,6 @@ export class StandardUsageService {
     if (opCount > 0) await batch.commit();
     if (totalUpdated > 0) {
       await this.crud.logGlobalActivity('RECALCULATE_INVENTORY', `Đã cân đối lại tồn kho cho ${totalUpdated} chuẩn đối chiếu dựa trên nhật ký sử dụng.`);
-      this.cache.invalidateLocalStandardsCache();
     }
     return totalUpdated;
   }
