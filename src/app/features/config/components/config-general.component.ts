@@ -193,6 +193,7 @@ service cloud.firestore {
       // Gửi Broadcast (Push Notification) tới tất cả user
       await this.notificationService.notify({
           recipientUid: 'role:all',
+          groupId: newRef.id,
           type: 'SYSTEM_UPDATE',
           title: 'Thông báo Hệ thống',
           message: content,
@@ -205,10 +206,11 @@ service cloud.firestore {
   }
 
   async deleteSystemUpdate(id: string) {
-      if (await this.confirmationService.confirm({ message: 'Bạn muốn xóa thông báo này?', confirmText: 'Xóa' })) {
+      if (await this.confirmationService.confirm({ message: 'Bạn muốn xóa thông báo này? Lưu ý: Tác vụ này cũng sẽ thu hồi thông báo đẩy tương ứng trên máy của tất cả người dùng.', confirmText: 'Thu hồi & Xóa' })) {
           const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/system_updates/${id}`);
           await deleteDoc(ref);
-          this.toast.show('Đã xóa thông báo', 'info');
+          await this.notificationService.deleteBroadcastByGroupId(id);
+          this.toast.show('Đã xóa và thu hồi thông báo từ tất cả người dùng', 'info');
       }
   }
 

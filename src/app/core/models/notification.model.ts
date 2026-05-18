@@ -1,4 +1,4 @@
-export type NotificationType = 'COA_REQUEST' | 'BORROW_REQUEST' | 'REQUEST_APPROVED' | 'REQUEST_REJECTED' | 'RETURN_OVERDUE' | 'STOCK_LOW_ALERT' | 'SYSTEM_INFO';
+export type NotificationType = 'COA_REQUEST' | 'BORROW_REQUEST' | 'REQUEST_APPROVED' | 'REQUEST_REJECTED' | 'RETURN_OVERDUE' | 'STOCK_LOW_ALERT' | 'SYSTEM_INFO' | 'SYSTEM_UPDATE';
 
 export interface AppNotification {
   id?: string;

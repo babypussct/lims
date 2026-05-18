@@ -71,7 +71,7 @@ export class NotificationService {
     async notify(notification: Omit<AppNotification, 'createdAt' | 'isRead'>) {
         try {
             const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
-            const groupId = doc(colRef).id; // Shared event ID for all fan-out copies
+            const groupId = notification.groupId || doc(colRef).id; // Use provided groupId or generate a shared event ID
             const createdAt = Date.now();
 
             const cleanPayload = Object.fromEntries(
@@ -272,6 +272,26 @@ export class NotificationService {
             await deleteDoc(docRef);
         } catch (e) {
             console.error('Failed to delete notification:', e);
+        }
+    }
+
+    async deleteBroadcastByGroupId(groupId: string) {
+        if (!groupId) return;
+        try {
+            const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/notifications`);
+            const q = query(colRef, where('groupId', '==', groupId));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) return;
+
+            const batch = writeBatch(this.fb.db);
+            snapshot.forEach(d => {
+                batch.delete(d.ref);
+            });
+            await batch.commit();
+            console.log(`[NotificationService] Deleted ${snapshot.size} fan-out notifications for groupId ${groupId}`);
+        } catch (e) {
+            console.error('Failed to delete broadcast by groupId:', e);
         }
     }
 

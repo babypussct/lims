@@ -1,11 +1,12 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, effect } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { StandardService } from '../standard.service';
 import { StandardRequest, StandardRequestStatus, ReferenceStandard, PurchaseRequest } from '../../../core/models/standard.model';
 import { ToastService } from '../../../core/services/toast.service';
+import { ExportModalComponent } from '../../../shared/components/export-modal/export-modal.component';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
@@ -25,7 +26,8 @@ import { StandardsPurchaseModalComponent } from '../components/standards-purchas
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent],
+  providers: [DatePipe],
   templateUrl: './standard-requests.component.html'
 })
 export class StandardRequestsComponent implements OnInit, OnDestroy {
@@ -37,6 +39,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   fb = inject(FormBuilder);
   router = inject(Router);
+  datePipe = inject(DatePipe);
 
   requests = signal<StandardRequest[]>([]);
   availableStandards = computed(() => {
@@ -54,6 +57,13 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   viewMode = signal<'kanban' | 'table'>('kanban');
   
   isLoading = signal(true);
+
+  // Export
+  showExportModal = signal(false);
+  exportType = signal<'raw' | 'standard' | 'user'>('raw');
+  isExporting = signal(false);
+  exportCompleted = signal(false);
+  dateRangeFilter = signal<{ from: string; to: string }>({ from: '', to: '' });
   isProcessing = signal(false);
   showModal = signal(false);
   
@@ -516,6 +526,188 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
           case 'COMPLETED': return 'Hoàn thành';
           case 'REJECTED': return 'Từ chối';
           default: return status;
+      }
+  }
+
+  openExportModal() {
+      this.exportCompleted.set(false);
+      this.isExporting.set(false);
+      this.exportType.set('raw');
+      this.showExportModal.set(true);
+  }
+
+  closeExportModal() {
+      this.showExportModal.set(false);
+  }
+
+  getExportDateRangeText(): string {
+      const dr = this.dateRangeFilter();
+      if (!dr.from && !dr.to) return '';
+      const fromStr = dr.from ? (this.datePipe.transform(dr.from, 'dd/MM/yyyy') ?? '...') : '...';
+      const toStr = dr.to ? (this.datePipe.transform(dr.to, 'dd/MM/yyyy') ?? '...') : '...';
+      return `${fromStr} → ${toStr}`;
+  }
+
+  getExportableRequests(): any[] {
+      let reqs = this.filteredRequests();
+
+      // Date range filter (from export modal)
+      const dr = this.dateRangeFilter();
+      if (dr.from) {
+          const fromTs = new Date(dr.from).getTime();
+          reqs = reqs.filter(r => r.requestDate >= fromTs);
+      }
+      if (dr.to) {
+          const toTs = new Date(dr.to).setHours(23, 59, 59, 999);
+          reqs = reqs.filter(r => r.requestDate <= toTs);
+      }
+
+      return reqs;
+  }
+
+  async runExport() {
+      const reqs = this.getExportableRequests();
+      if (reqs.length === 0) {
+          this.toast.show('Không có dữ liệu để xuất.', 'info');
+          return;
+      }
+
+      this.isExporting.set(true);
+      this.exportCompleted.set(false);
+
+      try {
+          const XLSX = await import('xlsx');
+          const wb = XLSX.utils.book_new();
+
+          if (this.exportType() === 'raw') {
+              const exportData = reqs.map((r, i) => ({
+                  'STT': i + 1,
+                  'Tên chuẩn': r.standardName,
+                  'Số lô (Lot)': r.lotNumber || '',
+                  'Mã quản lý': r.standardDetails?.internal_id || '',
+                  'Số CAS': r.standardDetails?.cas_number || '',
+                  'Hãng sản xuất': r.standardDetails?.manufacturer || '',
+                  'Người yêu cầu': r.requestedByName,
+                  'Ngày yêu cầu': this.datePipe.transform(r.requestDate, 'dd/MM/yyyy HH:mm'),
+                  'Mục đích': r.purpose || '',
+                  'Lượng dự kiến': r.expectedAmount ?? '',
+                  'Trạng thái': this.getStatusLabel(r.status),
+                  'Người duyệt': r.approvedByName || '',
+                  'Ngày duyệt': r.approvalDate ? this.datePipe.transform(r.approvalDate, 'dd/MM/yyyy HH:mm') : '',
+                  'Lượng đã dùng': r.totalAmountUsed || 0,
+                  'Đơn vị': r.standardDetails?.unit || 'mg',
+                  'Ngày trả': r.returnDate ? this.datePipe.transform(r.returnDate, 'dd/MM/yyyy HH:mm') : '',
+                  'Người nhận lại': r.receivedByName || '',
+                  'Đã hết chuẩn': r.reportedDepleted ? 'Có' : '',
+                  'Lý do từ chối': r.rejectionReason || '',
+                  'Lý do hủy/tiêu hủy': r.disposalReason || ''
+              }));
+              const ws = XLSX.utils.json_to_sheet(exportData);
+              // Auto-width columns
+              const colWidths = Object.keys(exportData[0]).map(key => ({
+                  wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key] || '').length)) + 2
+              }));
+              ws['!cols'] = colWidths;
+              XLSX.utils.book_append_sheet(wb, ws, 'Chi tiết yêu cầu');
+          }
+          else if (this.exportType() === 'standard') {
+              const summary: Record<string, { name: string; lot: string; internalId: string; manufacturer: string; count: number; totalUsed: number; unit: string; pending: number; inProgress: number; completed: number; rejected: number }> = {};
+              reqs.forEach(r => {
+                  const key = r.standardId;
+                  if (!summary[key]) {
+                      summary[key] = {
+                          name: r.standardName,
+                          lot: r.lotNumber || '',
+                          internalId: r.standardDetails?.internal_id || '',
+                          manufacturer: r.standardDetails?.manufacturer || '',
+                          count: 0,
+                          totalUsed: 0,
+                          unit: r.standardDetails?.unit || 'mg',
+                          pending: 0,
+                          inProgress: 0,
+                          completed: 0,
+                          rejected: 0
+                      };
+                  }
+                  summary[key].count++;
+                  summary[key].totalUsed += (r.totalAmountUsed || 0);
+                  if (r.status === 'PENDING_APPROVAL') summary[key].pending++;
+                  else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                  else if (r.status === 'COMPLETED') summary[key].completed++;
+                  else if (r.status === 'REJECTED') summary[key].rejected++;
+              });
+              const exportData = Object.values(summary).map((s, i) => ({
+                  'STT': i + 1,
+                  'Tên chuẩn': s.name,
+                  'Số lô': s.lot,
+                  'Mã quản lý': s.internalId,
+                  'Hãng sản xuất': s.manufacturer,
+                  'Tổng yêu cầu': s.count,
+                  'Chờ duyệt': s.pending,
+                  'Đang dùng': s.inProgress,
+                  'Hoàn thành': s.completed,
+                  'Từ chối': s.rejected,
+                  'Tổng lượng đã dùng': s.totalUsed,
+                  'Đơn vị': s.unit
+              }));
+              const ws = XLSX.utils.json_to_sheet(exportData);
+              ws['!cols'] = Object.keys(exportData[0]).map(key => ({
+                  wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key] || '').length)) + 2
+              }));
+              XLSX.utils.book_append_sheet(wb, ws, 'Theo Chất chuẩn');
+          }
+          else if (this.exportType() === 'user') {
+              const summary: Record<string, { name: string; total: number; totalUsed: number; pending: number; inProgress: number; completed: number; rejected: number; standards: Set<string> }> = {};
+              reqs.forEach(r => {
+                  const key = r.requestedBy;
+                  if (!summary[key]) {
+                      summary[key] = {
+                          name: r.requestedByName,
+                          total: 0,
+                          totalUsed: 0,
+                          pending: 0,
+                          inProgress: 0,
+                          completed: 0,
+                          rejected: 0,
+                          standards: new Set()
+                      };
+                  }
+                  summary[key].total++;
+                  summary[key].totalUsed += (r.totalAmountUsed || 0);
+                  summary[key].standards.add(r.standardName);
+                  if (r.status === 'PENDING_APPROVAL') summary[key].pending++;
+                  else if (r.status === 'IN_PROGRESS') summary[key].inProgress++;
+                  else if (r.status === 'COMPLETED') summary[key].completed++;
+                  else if (r.status === 'REJECTED') summary[key].rejected++;
+              });
+              const exportData = Object.values(summary).map((s, i) => ({
+                  'STT': i + 1,
+                  'Nhân viên': s.name,
+                  'Tổng yêu cầu': s.total,
+                  'Số chuẩn sử dụng': s.standards.size,
+                  'Chờ duyệt': s.pending,
+                  'Đang dùng': s.inProgress,
+                  'Hoàn thành': s.completed,
+                  'Từ chối': s.rejected,
+                  'Tổng lượng đã dùng': s.totalUsed
+              }));
+              const ws = XLSX.utils.json_to_sheet(exportData);
+              ws['!cols'] = Object.keys(exportData[0]).map(key => ({
+                  wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key] || '').length)) + 2
+              }));
+              XLSX.utils.book_append_sheet(wb, ws, 'Theo Nhân viên');
+          }
+
+          const statusSuffix = this.statusFilter() !== 'ALL' ? `_${this.statusFilter()}` : '';
+          const typeSuffix = this.exportType();
+          XLSX.writeFile(wb, `YeuCauChuan_${typeSuffix}${statusSuffix}_${this.datePipe.transform(Date.now(), 'yyyyMMdd_HHmm')}.xlsx`);
+
+          this.exportCompleted.set(true);
+      } catch (err) {
+          console.error('Lỗi xuất Excel:', err);
+          this.toast.show('Lỗi xuất file Excel', 'error');
+      } finally {
+          this.isExporting.set(false);
       }
   }
 }

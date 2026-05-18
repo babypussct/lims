@@ -84,7 +84,6 @@ export class StandardCrudService {
     await setDoc(ref, { ...std, lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('CREATE_STANDARD', `Thêm chuẩn mới: ${std.name} (Lô: ${std.lot_number})`, std.id);
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async updateStandard(std: ReferenceStandard): Promise<void> {
@@ -93,14 +92,12 @@ export class StandardCrudService {
     await updateDoc(ref, { ...std, lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('UPDATE_STANDARD', `Cập nhật chuẩn: ${std.name} (ID: ${std.id})`, std.id);
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async quickUpdateField(stdId: string, fields: Record<string, any>): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
     await updateDoc(ref, { ...fields, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async updateStandardStock(stdId: string, newAmount: number, reason: string): Promise<void> {
@@ -110,14 +107,12 @@ export class StandardCrudService {
     await updateDoc(ref, updateData);
     await this.logGlobalActivity('UPDATE_STOCK', `Cập nhật tồn kho: ${newAmount} (${reason})`, stdId);
     await this.fb.updateMetadata('standards');
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async deleteStandard(id: string, name = ''): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
     await updateDoc(ref, { _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('SOFT_DELETE_STANDARD', `Đưa chuẩn vào thùng rác: ${name || id}`, id);
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async deleteSelectedStandards(ids: string[]): Promise<void> {
@@ -132,14 +127,12 @@ export class StandardCrudService {
     }
     if (opCount > 0) await batch.commit();
     await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
-    this.cache.invalidateLocalStandardsCache();
   }
 
   async restoreStandard(id: string, name = ''): Promise<void> {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
     await updateDoc(ref, { _isDeleted: deleteField(), status: 'ACTIVE', lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
-    this.cache.invalidateLocalStandardsCache();
   }
 
   // ─── CoA Request ─────────────────────────────────────────────────────────────
