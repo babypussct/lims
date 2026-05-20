@@ -285,6 +285,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   // SOP configuration matching ANGULAR_SOP_CONFIG keys
   config = signal<any | null>(null);
 
+  // Resolved config key (vd: 'trifluralin-gcms') — dùng để gửi sang GAS
+  configKey = signal<string | null>(null);
+
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.requestId) {
@@ -328,7 +331,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const sopObj = this.state.sops().find(s => s.id === runDoc.sopId) || null;
     const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
     const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
-    if (!sopConf) {
+    if (!sopConf || !resolvedKey) {
       const displayName = sopObj?.name || runDoc.sopName || runDoc.sopId;
       this.toast.show(
         `Chưa có cấu hình nhập liệu cho chỉ tiêu "${displayName}". ` +
@@ -339,6 +342,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
     this.config.set(sopConf);
+    // Lưu resolved config key để dùng khi gửi payload sang GAS
+    this.configKey.set(resolvedKey);
 
 
     // 3. Fetch Draft document from Firestore
@@ -496,10 +501,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       });
 
       const reportPayload: any = {
-        templateKey: currentRun.sopId,
+        action: 'generate_pdf',
+        sopId: this.configKey(),    // ← Dùng resolved config key (vd: 'trifluralin-gcms'), KHÔNG dùng Firestore doc ID
         metadata: {
           ...currentDraft.page1Data,
-          ngayBaoCao: currentDraft.page1Data.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+          ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
         },
         samples: samplesPayload
       };
