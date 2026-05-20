@@ -4,6 +4,7 @@ import { StateService } from '../../core/services/state.service';
 import { Router } from '@angular/router';
 import { formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { ResultService } from './services/result.service';
 
 @Component({
   selector: 'app-result-list',
@@ -107,14 +108,15 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                           <!-- Nút Xem PDF chính -->
                           <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
                                   class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-xl text-xs font-bold transition"
-                                  [class.rounded-r-xl]="!run.analysisResult?.pdfHistory?.length"
+                                  [class.rounded-r-xl]="(run.analysisResult?.version || 0) <= 1"
                                   title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
                             <i class="fa-solid fa-file-pdf"></i> Xem PDF (v{{ run.analysisResult?.version || 1 }})
                           </button>
                           
                           <!-- Nút Dropdown lịch sử nếu có -->
-                          @if (run.analysisResult?.pdfHistory?.length) {
-                            <button class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
+                          @if ((run.analysisResult?.version || 0) > 1) {
+                            <button (mouseenter)="preloadHistory(run.id)"
+                                    class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
                               <i class="fa-solid fa-chevron-down text-[10px]"></i>
                             </button>
                             
@@ -137,21 +139,30 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                 </div>
                               </div>
                               
-                              <!-- Các bản trong lịch sử -->
-                              @for (hist of run.analysisResult?.pdfHistory; track hist.version) {
-                                <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                  <div class="flex flex-col gap-0.5">
-                                    <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }}</span>
-                                    <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
-                                  </div>
-                                  <div class="flex gap-1.5 font-bold">
-                                    <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
-                                    @if (hist.docsUrl) {
-                                      <span class="text-slate-300">|</span>
-                                      <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
-                                    }
-                                  </div>
+                              <!-- Spinner loading -->
+                              @if (loadingHistories()[run.id]) {
+                                <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
+                                  <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
                                 </div>
+                              } @else {
+                                <!-- Các bản trong lịch sử -->
+                                @for (hist of historiesMap()[run.id] || []; track hist.version) {
+                                  @if (hist.version !== run.analysisResult?.version) {
+                                    <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                      <div class="flex flex-col gap-0.5">
+                                        <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                                        <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
+                                      </div>
+                                      <div class="flex gap-1.5 font-bold">
+                                        <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
+                                        @if (hist.docsUrl) {
+                                          <span class="text-slate-300">|</span>
+                                          <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
+                                        }
+                                      </div>
+                                    </div>
+                                  }
+                                }
                               }
                             </div>
                           }
@@ -203,11 +214,28 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 export class ResultListComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private router = inject(Router);
+  private resultService = inject(ResultService);
 
   formatSampleList = formatSampleList;
 
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
+
+  // Dynamic history loading states
+  historiesMap = signal<Record<string, any[]>>({});
+  loadingHistories = signal<Record<string, boolean>>({});
+
+  async preloadHistory(requestId: string) {
+    if (this.historiesMap()[requestId] || this.loadingHistories()[requestId]) return;
+    
+    this.loadingHistories.update(map => ({ ...map, [requestId]: true }));
+    try {
+      const hist = await this.resultService.getHistory(requestId);
+      this.historiesMap.update(map => ({ ...map, [requestId]: hist }));
+    } finally {
+      this.loadingHistories.update(map => ({ ...map, [requestId]: false }));
+    }
+  }
 
   // Đọc động trạng thái mẻ chạy từ StateService của Requests (Đã có sẵn cơ chế DeltaSync thời gian thực)
   runStatusMap = computed(() => {

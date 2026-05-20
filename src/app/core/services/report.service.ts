@@ -80,6 +80,28 @@ export class ReportService {
   }
 
   /**
+   * Yêu cầu GAS lưu trữ và dọn dẹp các tệp cũ bị hủy
+   */
+  async archiveReports(files: { pdfUrl?: string; docsUrl?: string }[]): Promise<any> {
+    if (!this.GAS_URL) {
+      throw new Error('Chưa cấu hình GAS Web App URL.');
+    }
+    const payload = {
+      action: 'archive_reports',
+      files: files.filter(f => f.pdfUrl || f.docsUrl)
+    };
+    if (payload.files.length === 0) return { success: true };
+
+    const result = await firstValueFrom(
+      this.http.post<any>(this.GAS_URL, JSON.stringify(payload), {
+        headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
+      })
+    );
+    return result;
+  }
+
+
+  /**
    * Mở PDF trong tab mới để xem/in.
    */
   openPdf(result: ReportResult): void {

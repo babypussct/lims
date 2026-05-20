@@ -171,16 +171,17 @@ function doGet(e) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
-    const { sopId, metadata, samples, action, version } = payload;
-
-    // Validate
-    if (!sopId || !CONFIG.TEMPLATES[sopId]) {
-      throw new Error(`Unknown sopId: ${sopId}`);
-    }
+    const { sopId, metadata, samples, action, version, files } = payload;
 
     let result;
     if (action === 'generate_pdf') {
+      // Validate
+      if (!sopId || !CONFIG.TEMPLATES[sopId]) {
+        throw new Error(`Unknown sopId: ${sopId}`);
+      }
       result = generateReport(sopId, metadata, samples, version);
+    } else if (action === 'archive_reports') {
+      result = archiveReportsAction(files);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -958,3 +959,82 @@ function cleanLastPageBreak(body) {
     Logger.log(`[Autocut 3B] Không thể dọn dẹp PageBreak cuối: ${e.toString()}`);
   }
 }
+
+// ── Helpers & Action: Dọn dẹp/Lưu trữ báo cáo cũ bị hủy ───────────
+function archiveReportsAction(files) {
+  if (!files || !Array.isArray(files)) {
+    throw new Error('Missing or invalid files array');
+  }
+
+  const results = [];
+  
+  files.forEach(fileObj => {
+    const archiveResult = {
+      pdfUrl: fileObj.pdfUrl,
+      docsUrl: fileObj.docsUrl,
+      pdfArchived: false,
+      docsArchived: false
+    };
+
+    try {
+      const pdfId = getFileIdFromUrl(fileObj.pdfUrl);
+      if (pdfId) {
+        archiveSingleFile(pdfId);
+        archiveResult.pdfArchived = true;
+      }
+    } catch (e) {
+      Logger.log('Error archiving PDF: ' + e.message);
+      archiveResult.pdfError = e.message;
+    }
+
+    try {
+      const docsId = getFileIdFromUrl(fileObj.docsUrl);
+      if (docsId) {
+        archiveSingleFile(docsId);
+        archiveResult.docsArchived = true;
+      }
+    } catch (e) {
+      Logger.log('Error archiving Doc: ' + e.message);
+      archiveResult.docsError = e.message;
+    }
+
+    results.push(archiveResult);
+  });
+
+  return { results };
+}
+
+function getFileIdFromUrl(url) {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+}
+
+function archiveSingleFile(fileId) {
+  const file = DriveApp.getFileById(fileId);
+  const parents = file.getParents();
+  if (!parents.hasNext()) {
+    throw new Error('File has no parent directory');
+  }
+
+  const parentFolder = parents.next();
+  let archiveFolder;
+
+  // Tìm folder Bản_Hủy_Archived hoặc tạo mới trong parentFolder
+  const subFolders = parentFolder.getFoldersByName('Bản_Hủy_Archived');
+  if (subFolders.hasNext()) {
+    archiveFolder = subFolders.next();
+  } else {
+    archiveFolder = parentFolder.createFolder('Bản_Hủy_Archived');
+  }
+
+  // Đổi tên file (thêm tiền tố [HUY]_)
+  const originalName = file.getName();
+  if (!originalName.startsWith('[HUY]_')) {
+    file.setName('[HUY]_' + originalName);
+  }
+
+  // Di chuyển file vào folder lưu trữ
+  file.moveTo(archiveFolder);
+}
+

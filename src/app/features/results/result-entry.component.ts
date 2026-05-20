@@ -183,7 +183,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
         @if (run() && draft()) {
           <div class="flex items-center gap-2">
             <!-- Revert/Restore Version (Dropdown menu) -->
-            @if ((draft()?.version || 0) > 0) {
+            @if (historyList().length > 0) {
               <div class="relative group">
                 <button [disabled]="isProcessing()"
                         class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
@@ -197,19 +197,23 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
                   <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Chọn phiên bản khôi phục</div>
                   
                   <!-- Bản hiện tại vừa in gần nhất -->
-                  <button (click)="restoreFromVersion(draft()!.version!)"
-                          class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
-                    <span class="font-bold text-indigo-600 dark:text-indigo-400">Bản hiện tại (v{{ draft()?.version }})</span>
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in gần nhất: {{ draft()?.updatedBy }}</span>
-                  </button>
+                  @if (draft()?.version) {
+                    <button (click)="restoreFromVersion(draft()!.version!)"
+                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                      <span class="font-bold text-indigo-600 dark:text-indigo-400">Bản hiện tại (v{{ draft()?.version }})</span>
+                      <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in gần nhất: {{ draft()?.updatedBy }}</span>
+                    </button>
+                  }
                   
                   <!-- Các bản cũ trong lịch sử -->
-                  @for (hist of draft()?.pdfHistory; track hist.version) {
-                    <button (click)="restoreFromVersion(hist.version)"
-                            class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
-                      <span class="font-bold">Phiên bản v{{ hist.version }}</span>
-                      <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in: {{ hist.publishedBy }}</span>
-                    </button>
+                  @for (hist of historyList(); track hist.version) {
+                    @if (hist.version !== draft()?.version) {
+                      <button (click)="restoreFromVersion(hist.version)"
+                              class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                        <span class="font-bold">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in: {{ hist.publishedBy }}</span>
+                      </button>
+                    }
                   }
                 </div>
               </div>
@@ -230,6 +234,32 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
               <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
               <span>{{ (draft()?.version || 0) > 0 ? 'Tạo & In bản v' + ((draft()?.version || 0) + 1) : 'Tạo & In PDF' }}</span>
             </button>
+
+            <!-- Thao tác khác Dropdown -->
+            <div class="relative group/actions">
+              <button [disabled]="isProcessing()"
+                      class="px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1 disabled:opacity-50">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+                <i class="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
+              </button>
+              
+              <div class="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 invisible group-hover/actions:opacity-100 group-hover/actions:visible transition-all duration-200 z-50 py-1">
+                @if (draft()?.status === 'completed') {
+                  <button (click)="triggerRevertToDraft()" 
+                          [disabled]="isProcessing()"
+                          class="w-full text-left px-4 py-2.5 text-xs text-amber-600 dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                    <i class="fa-solid fa-unlock"></i>
+                    <span>Hủy xuất bản kết quả</span>
+                  </button>
+                }
+                <button (click)="openResetModal()"
+                        [disabled]="isProcessing()"
+                        class="w-full text-left px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/50">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Xóa hoàn toàn kết quả</span>
+                </button>
+              </div>
+            </div>
           </div>
         }
       </div>
@@ -281,7 +311,49 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
           </div>
         }
       </div>
+
+      <!-- Reset Confirmation Modal -->
+      @if (showResetModal()) {
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
+              <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <h3 class="text-base font-bold">Xác nhận xóa hoàn toàn kết quả</h3>
+            </div>
+            
+            <p class="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+              Hành động này sẽ <strong class="text-red-600 dark:text-red-400">xóa sạch toàn bộ số liệu nhập liệu</strong> của mẻ chạy này và di chuyển các báo cáo PDF đã in trên Drive vào thư mục lưu trữ (Archived). Bạn không thể hoàn tác hành động này.
+            </p>
+            
+            <div class="mb-5">
+              <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                Để xác nhận, vui lòng nhập chữ <span class="text-red-600 dark:text-red-400 font-bold">XÓA</span> vào ô dưới đây:
+              </label>
+              <input type="text" 
+                     [value]="resetConfirmText()"
+                     (input)="onResetConfirmInput($event)"
+                     placeholder="Nhập XÓA để xác nhận"
+                     class="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-red-500 text-center font-bold uppercase tracking-wider" />
+            </div>
+            
+            <div class="flex gap-3">
+              <button (click)="closeResetModal()" 
+                      class="flex-1 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl transition">
+                Hủy bỏ
+              </button>
+              <button (click)="triggerResetResults()" 
+                      [disabled]="resetConfirmText() !== 'XÓA' || isProcessing()"
+                      class="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-40">
+                Xác nhận Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
+
   `
 })
 export class ResultEntryComponent implements OnInit, OnDestroy {
@@ -309,6 +381,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   // Resolved config key (vd: 'trifluralin-gcms') — dùng để gửi sang GAS
   configKey = signal<string | null>(null);
+
+  // Sub-collection history signal
+  historyList = signal<any[]>([]);
+  showResetModal = signal(false);
+  resetConfirmText = signal('');
 
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
@@ -377,6 +454,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
     
     this.draft.set(draftDoc);
+    
+    // Nạp danh sách lịch sử in từ sub-collection
+    const hist = await this.resultService.getHistory(this.requestId);
+    this.historyList.set(hist);
+    
     this.isLoading.set(false);
   }
 
@@ -477,6 +559,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const restored = await this.resultService.restoreFromVersion(this.requestId, version);
     if (restored) {
       this.draft.set(restored);
+      // Reload lịch sử
+      const hist = await this.resultService.getHistory(this.requestId);
+      this.historyList.set(hist);
     }
     this.isSavingDraft.set(false);
   }
@@ -491,7 +576,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     if (!currentDraft || !currentRun || !currentConf) return;
 
     // ── Mở cửa sổ trống NGAY LẬP TỨC (trước async) để tránh popup blocker ──
-    // Trình duyệt chỉ cho phép window.open() từ user gesture trực tiếp
     const pdfWindow = window.open('', '_blank');
     if (pdfWindow) {
       pdfWindow.document.write(`
@@ -555,7 +639,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
       const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
       if (result.success) {
-        this.draft.update(d => d ? { ...d, status: 'completed' } as any : null);
+        this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+
+        // Load lại lịch sử sau khi in mới thành công
+        const hist = await this.resultService.getHistory(this.requestId);
+        this.historyList.set(hist);
 
         // Điền URL vào cửa sổ đã mở, hoặc đóng nếu không có URL
         const url = result.pdfViewUrl || result.pdfUrl;
@@ -574,7 +662,65 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Hủy xuất bản kết quả (Mở khóa chỉnh sửa)
+   */
+  async triggerRevertToDraft() {
+    if (this.isProcessing()) return;
+    const confirmed = confirm('Bạn có chắc chắn muốn hủy xuất bản mẻ này? Bản in hiện tại sẽ được lưu trữ (Archived) và mẻ chạy sẽ quay về trạng thái bản nháp.');
+    if (!confirmed) return;
+
+    this.isSavingDraft.set(true);
+    try {
+      const updated = await this.resultService.revertToDraft(this.requestId);
+      if (updated) {
+        this.draft.set(updated);
+        // Reload lịch sử
+        const hist = await this.resultService.getHistory(this.requestId);
+        this.historyList.set(hist);
+      }
+    } finally {
+      this.isSavingDraft.set(false);
+    }
+  }
+
+  // Reset results modal actions
+  openResetModal() {
+    this.resetConfirmText.set('');
+    this.showResetModal.set(true);
+  }
+
+  closeResetModal() {
+    this.showResetModal.set(false);
+    this.resetConfirmText.set('');
+  }
+
+  onResetConfirmInput(event: Event) {
+    const val = (event.target as HTMLInputElement).value;
+    this.resetConfirmText.set(val);
+  }
+
+  async triggerResetResults() {
+    if (this.resetConfirmText() !== 'XÓA' || this.isProcessing()) return;
+    this.showResetModal.set(false);
+    this.isSavingDraft.set(true);
+
+    try {
+      const updated = await this.resultService.resetResults(this.requestId);
+      if (updated) {
+        this.draft.set(updated);
+        // Reload lịch sử
+        const hist = await this.resultService.getHistory(this.requestId);
+        this.historyList.set(hist);
+      }
+    } finally {
+      this.isSavingDraft.set(false);
+      this.resetConfirmText.set('');
+    }
+  }
+
   goBack() {
     this.router.navigate(['/results']);
   }
 }
+
