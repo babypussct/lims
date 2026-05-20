@@ -26,6 +26,7 @@ const CONFIG = {
   // Config từng SOP: cách điền dữ liệu vào bảng
   SOP_CONFIG: {
     'trifluralin-gcms': {
+      folderName: 'Trifluralin (GC-MS)',
       formType: 'type2',
       sampleTableIndex: 2,   // table index trong Google Doc (0-based)
       columns: {
@@ -47,6 +48,7 @@ const CONFIG = {
       }
     },
     'fipronil-chlorpyrifos': {
+      folderName: 'Fipronil - Chlorpyrifos',
       formType: 'type2',
       sampleTableIndex: 2,
       columns: {
@@ -80,6 +82,7 @@ const CONFIG = {
       }
     },
     'dichlorvos-gcms': {
+      folderName: 'Dichlorvos (GC-MS)',
       formType: 'type3a',
       sampleTableIndex: 2,
       columns: {
@@ -101,6 +104,7 @@ const CONFIG = {
       }
     },
     'chlor-huu-co': {
+      folderName: 'Chlor hữu cơ (Type 3B)',
       formType: 'type3b',
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
       checkboxLines: {
@@ -124,6 +128,7 @@ const CONFIG = {
       ]
     },
     'lan-huu-co': {
+      folderName: 'Lân hữu cơ (Type 3B)',
       formType: 'type3b',
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
       checkboxLines: {
@@ -166,7 +171,7 @@ function doGet(e) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
-    const { sopId, metadata, samples, action } = payload;
+    const { sopId, metadata, samples, action, version } = payload;
 
     // Validate
     if (!sopId || !CONFIG.TEMPLATES[sopId]) {
@@ -175,7 +180,7 @@ function doPost(e) {
 
     let result;
     if (action === 'generate_pdf') {
-      result = generateReport(sopId, metadata, samples);
+      result = generateReport(sopId, metadata, samples, version);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -193,7 +198,7 @@ function doPost(e) {
 }
 
 // ── Core: Tạo báo cáo ────────────────────────────────────────────────
-function generateReport(sopId, metadata, samples) {
+function generateReport(sopId, metadata, samples, version) {
   const templateId = CONFIG.TEMPLATES[sopId];
   const sopConfig   = CONFIG.SOP_CONFIG[sopId];
 
@@ -201,13 +206,14 @@ function generateReport(sopId, metadata, samples) {
     throw new Error(`Template chưa được cấu hình cho SOP: ${sopId}`);
   }
 
-  // 1. Tạo tên file theo chuẩn
+  // 1. Tạo tên file theo chuẩn có version
   const now = new Date();
   const dateStr = Utilities.formatDate(now, 'Asia/Ho_Chi_Minh', 'yyyyMMdd_HHmm');
-  const fileName = `KQ_${sopId}_${metadata.batchCode || dateStr}`;
+  const vSuffix = version ? `_v${version}` : '';
+  const fileName = `KQ_${sopId}_${metadata.batchCode || dateStr}${vSuffix}`;
 
-  // 2. Tạo/lấy folder theo năm/tháng
-  const folder = getOrCreateFolder(now);
+  // 2. Tạo/lấy folder theo năm/tháng/chỉ tiêu
+  const folder = getOrCreateFolder(now, sopId);
 
   // 3. Copy template
   const templateFile = DriveApp.getFileById(templateId);
@@ -683,8 +689,8 @@ function setCellText(row, colIndex, text, chunkSize) {
   return extraLines;
 }
 
-// ── Helper: tạo folder năm/tháng trong ROOT_FOLDER ───────────────────
-function getOrCreateFolder(date) {
+// ── Helper: tạo folder năm/tháng/chỉ tiêu trong ROOT_FOLDER ──────────
+function getOrCreateFolder(date, sopId) {
   const year  = date.getFullYear().toString();
   const month = Utilities.formatDate(date, 'Asia/Ho_Chi_Minh', 'MM-MMMM');
   // e.g. "05-May"
@@ -692,24 +698,28 @@ function getOrCreateFolder(date) {
   const root = DriveApp.getFolderById(CONFIG.ROOT_FOLDER_ID);
 
   // Tìm hoặc tạo folder năm
-  let yearFolder;
-  const yearIter = root.getFoldersByName(year);
-  if (yearIter.hasNext()) {
-    yearFolder = yearIter.next();
-  } else {
-    yearFolder = root.createFolder(year);
-  }
+  let yearFolder = getSubFolderOrCreate(root, year);
 
   // Tìm hoặc tạo folder tháng
-  let monthFolder;
-  const monthIter = yearFolder.getFoldersByName(month);
-  if (monthIter.hasNext()) {
-    monthFolder = monthIter.next();
-  } else {
-    monthFolder = yearFolder.createFolder(month);
-  }
+  let monthFolder = getSubFolderOrCreate(yearFolder, month);
 
-  return monthFolder;
+  // Tìm hoặc tạo folder chỉ tiêu (SOP)
+  let sopFolderName = sopId;
+  if (CONFIG.SOP_CONFIG[sopId] && CONFIG.SOP_CONFIG[sopId].folderName) {
+    sopFolderName = CONFIG.SOP_CONFIG[sopId].folderName;
+  }
+  let sopFolder = getSubFolderOrCreate(monthFolder, sopFolderName);
+
+  return sopFolder;
+}
+
+// Helper function to find or create a subfolder safely
+function getSubFolderOrCreate(parentFolder, folderName) {
+  const iter = parentFolder.getFoldersByName(folderName);
+  if (iter.hasNext()) {
+    return iter.next();
+  }
+  return parentFolder.createFolder(folderName);
 }
 
 // ── Diagnostic: kiểm tra cấu trúc template trước khi test ────────────

@@ -28,7 +28,9 @@ export interface GenerateReportPayload {
   sopId: string;
   metadata: ReportMetadata;
   samples: SampleResult[];
+  version?: number;
 }
+
 
 export interface ReportResult {
   success: boolean;

@@ -96,20 +96,92 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                   }
                 </div>
 
-                <!-- Action Button -->
-                <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-4">
-                  <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">
-                    {{ run.sampleList?.length || 0 }} mẫu phân tích
-                  </span>
-                  
-                  <button (click)="enterResults(run.id)"
-                          [class]="runStatusMap()[run.id] === 'completed' 
-                            ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30'
-                            : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm'"
-                          class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
-                    {{ runStatusMap()[run.id] === 'completed' ? 'Chỉnh sửa / Re-print' : 'Nhập Kết quả' }}
-                  </button>
+                <!-- Action Buttons -->
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
+
+                  <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF) -->
+                  @if (run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                    <div class="flex items-center gap-2">
+                      @if (run.analysisResult?.pdfUrl) {
+                        <div class="flex-1 flex items-center relative group">
+                          <!-- Nút Xem PDF chính -->
+                          <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
+                                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-xl text-xs font-bold transition"
+                                  [class.rounded-r-xl]="!run.analysisResult?.pdfHistory?.length"
+                                  title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
+                            <i class="fa-solid fa-file-pdf"></i> Xem PDF (v{{ run.analysisResult?.version || 1 }})
+                          </button>
+                          
+                          <!-- Nút Dropdown lịch sử nếu có -->
+                          @if (run.analysisResult?.pdfHistory?.length) {
+                            <button class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
+                              <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+                            
+                            <!-- Dropdown menu -->
+                            <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
+                              <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
+                              
+                              <!-- Bản hiện tại -->
+                              <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                <div class="flex flex-col gap-0.5">
+                                  <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
+                                  <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                                </div>
+                                <div class="flex gap-1.5">
+                                  <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
+                                  @if (run.analysisResult?.docsUrl) {
+                                    <span class="text-slate-300">|</span>
+                                    <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
+                                  }
+                                </div>
+                              </div>
+                              
+                              <!-- Các bản trong lịch sử -->
+                              @for (hist of run.analysisResult?.pdfHistory; track hist.version) {
+                                <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                  <div class="flex flex-col gap-0.5">
+                                    <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }}</span>
+                                    <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
+                                  </div>
+                                  <div class="flex gap-1.5 font-bold">
+                                    <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
+                                    @if (hist.docsUrl) {
+                                      <span class="text-slate-300">|</span>
+                                      <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                      @if (run.analysisResult?.docsUrl) {
+                        <button (click)="openUrl(run.analysisResult!.docsUrl!)"
+                                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-xl text-xs font-bold transition"
+                                title="Mở bản Google Docs gốc để xem/in">
+                          <i class="fa-brands fa-google-drive"></i> Mở Docs
+                        </button>
+                      }
+                    </div>
+                  }
+
+
+                  <!-- Enter / Edit Button -->
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">
+                      {{ run.sampleList?.length || 0 }} mẫu phân tích
+                    </span>
+                    <button (click)="enterResults(run.id)"
+                            [class]="runStatusMap()[run.id] === 'completed' 
+                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30'
+                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm'"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                      <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
+                      {{ runStatusMap()[run.id] === 'completed' ? 'Chỉnh sửa / In lại' : 'Nhập Kết quả' }}
+                    </button>
+                  </div>
                 </div>
               </div>
             } @empty {
@@ -212,5 +284,9 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   enterResults(requestId: string) {
     this.router.navigate(['/results', requestId]);
+  }
+
+  openUrl(url: string) {
+    if (url) window.open(url, '_blank');
   }
 }

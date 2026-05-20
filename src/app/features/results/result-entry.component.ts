@@ -182,15 +182,37 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
         <!-- Toolbar Buttons -->
         @if (run() && draft()) {
           <div class="flex items-center gap-2">
-            <!-- Revert/Restore Last Published (Fallback mechanism) -->
-            @if (draft()?.publishedBackup) {
-              <button (click)="restoreBackup()" 
-                      [disabled]="isProcessing()"
-                      class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
-                      title="Khôi phục dữ liệu từ bản in PDF trước đó">
-                <i class="fa-solid fa-arrow-rotate-left"></i>
-                <span class="hidden md:inline">Khôi phục bản cũ</span>
-              </button>
+            <!-- Revert/Restore Version (Dropdown menu) -->
+            @if ((draft()?.version || 0) > 0) {
+              <div class="relative group">
+                <button [disabled]="isProcessing()"
+                        class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+                        title="Khôi phục số liệu từ các bản in cũ">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span class="hidden md:inline">Khôi phục bản cũ</span>
+                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                <!-- Tooltip/Dropdown list -->
+                <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
+                  <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Chọn phiên bản khôi phục</div>
+                  
+                  <!-- Bản hiện tại vừa in gần nhất -->
+                  <button (click)="restoreFromVersion(draft()!.version!)"
+                          class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                    <span class="font-bold text-indigo-600 dark:text-indigo-400">Bản hiện tại (v{{ draft()?.version }})</span>
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in gần nhất: {{ draft()?.updatedBy }}</span>
+                  </button>
+                  
+                  <!-- Các bản cũ trong lịch sử -->
+                  @for (hist of draft()?.pdfHistory; track hist.version) {
+                    <button (click)="restoreFromVersion(hist.version)"
+                            class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                      <span class="font-bold">Phiên bản v{{ hist.version }}</span>
+                      <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in: {{ hist.publishedBy }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
             }
 
             <!-- Save Draft Button -->
@@ -206,7 +228,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
                     [disabled]="isProcessing()"
                     class="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50">
               <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
-              <span>Tạo & In PDF</span>
+              <span>{{ (draft()?.version || 0) > 0 ? 'Tạo & In bản v' + ((draft()?.version || 0) + 1) : 'Tạo & In PDF' }}</span>
             </button>
           </div>
         }
@@ -443,6 +465,23 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Khôi phục số liệu từ một phiên bản cụ thể
+   */
+  async restoreFromVersion(version: number) {
+    if (this.isProcessing()) return;
+    
+    const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
+    if (!confirmed) return;
+
+    this.isSavingDraft.set(true);
+    const restored = await this.resultService.restoreFromVersion(this.requestId, version);
+    if (restored) {
+      this.draft.set(restored);
+    }
+    this.isSavingDraft.set(false);
+  }
+
+  /**
    * Xuất bản kết quả -> Tạo tệp PDF
    */
   async triggerPublishReport() {
@@ -451,10 +490,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const currentConf = this.config();
     if (!currentDraft || !currentRun || !currentConf) return;
 
+    // ── Mở cửa sổ trống NGAY LẬP TỨC (trước async) để tránh popup blocker ──
+    // Trình duyệt chỉ cho phép window.open() từ user gesture trực tiếp
+    const pdfWindow = window.open('', '_blank');
+    if (pdfWindow) {
+      pdfWindow.document.write(`
+        <html><head><title>Đang tạo PDF...</title></head>
+        <body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;">
+          <div style="text-align:center;color:#64748b;">
+            <div style="font-size:48px;margin-bottom:16px">⏳</div>
+            <div style="font-size:18px;font-weight:bold;margin-bottom:8px">Đang tạo báo cáo PDF...</div>
+            <div style="font-size:14px">Vui lòng đợi, trang sẽ tự chuyển sang PDF sau vài giây.</div>
+          </div>
+        </body></html>`);
+    }
+
     this.isPublishing.set(true);
 
     try {
-      // Tạo payload định dạng chuẩn đồng bộ gửi sang GAS Web App
       const samplesPayload: any[] = [];
       const sampleList = currentRun.sampleList || [];
 
@@ -462,9 +515,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         const resObj = currentDraft.resultData[sampleCode] || {};
         
         if (currentConf.formType === 'type3b') {
-          // Tạo payload Dạng 3B
           const activeCompounds: Record<string, { kq: string; nd: boolean; qc: string[] }> = {};
-          
           currentConf.compounds.forEach((c: string) => {
             activeCompounds[c] = {
               kq: resObj[c] || 'KPH',
@@ -476,33 +527,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
               ]
             };
           });
-
-          samplesPayload.push({
-            maSoMau: sampleCode,
-            activeCompounds
-          });
+          samplesPayload.push({ maSoMau: sampleCode, activeCompounds });
         } else {
-          // Tạo payload Dạng 2 hoặc 3A
           const rowData: Record<string, any> = {
             loSo: String(idx + 1),
             maSoMau: sampleCode,
             ghiChu: resObj['ghiChu'] || ''
           };
-
-          // Ánh xạ dữ liệu các cột kết quả hoạt chất
           Object.keys(currentConf.columns).forEach(col => {
             if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
               rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
             }
           });
-
           samplesPayload.push(rowData);
         }
       });
 
       const reportPayload: any = {
         action: 'generate_pdf',
-        sopId: this.configKey(),    // ← Dùng resolved config key (vd: 'trifluralin-gcms'), KHÔNG dùng Firestore doc ID
+        sopId: this.configKey(),
         metadata: {
           ...currentDraft.page1Data,
           ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
@@ -510,11 +553,21 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         samples: samplesPayload
       };
 
-      // Kích hoạt tiến trình xuất bản & in PDF
-      const success = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
-      if (success) {
-        // Cập nhật trạng thái hiển thị
+      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
+      if (result.success) {
         this.draft.update(d => d ? { ...d, status: 'completed' } as any : null);
+
+        // Điền URL vào cửa sổ đã mở, hoặc đóng nếu không có URL
+        const url = result.pdfViewUrl || result.pdfUrl;
+        if (url && pdfWindow && !pdfWindow.closed) {
+          pdfWindow.location.href = url;
+        } else if (pdfWindow && !pdfWindow.closed) {
+          pdfWindow.close();
+          this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
+        }
+      } else {
+        // Đóng cửa sổ trống nếu thất bại
+        if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
       }
     } finally {
       this.isPublishing.set(false);

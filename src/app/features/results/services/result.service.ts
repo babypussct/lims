@@ -100,23 +100,63 @@ export class ResultService {
   }
 
   /**
+   * Khôi phục số liệu từ một phiên bản in cụ thể (Rollback)
+   */
+  async restoreFromVersion(requestId: string, versionNumber: number): Promise<AnalysisResultDraft | null> {
+    try {
+      const draft = await this.getDraft(requestId);
+      if (!draft) return null;
+
+      let page1DataBackup = null;
+      let resultDataBackup = null;
+
+      if (draft.version === versionNumber) {
+        page1DataBackup = draft.publishedBackup?.page1Data || draft.page1Data;
+        resultDataBackup = draft.publishedBackup?.resultData || draft.resultData;
+      } else {
+        const historyEntry = draft.pdfHistory?.find(h => h.version === versionNumber);
+        if (historyEntry) {
+          page1DataBackup = historyEntry.page1DataBackup;
+          resultDataBackup = historyEntry.resultDataBackup;
+        }
+      }
+
+      if (page1DataBackup && resultDataBackup) {
+        const restoredData: Partial<AnalysisResultDraft> = {
+          page1Data: page1DataBackup,
+          resultData: resultDataBackup,
+          status: 'draft'
+        };
+        await this.saveDraft(requestId, restoredData);
+        this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}!`, 'success');
+        return {
+          ...draft,
+          ...restoredData,
+          updatedAt: new Date().toISOString()
+        } as any;
+      }
+      
+      this.toast.show(`Không tìm thấy dữ liệu sao lưu cho bản v${versionNumber}!`, 'info');
+      return null;
+    } catch (e: any) {
+      console.error('Error restoring version:', e);
+      this.toast.show('Lỗi khôi phục: ' + e.message, 'error');
+      return null;
+    }
+  }
+
+
+  /**
    * Xuất bản PDF báo cáo và lưu backup trực tiếp trong Request document
+   * Trả về { success: boolean, pdfUrl?: string } để component tự mở cửa sổ (tránh popup blocker)
    */
   async publishReport(
     requestId: string,
     draftData: Partial<AnalysisResultDraft>,
     payload: GenerateReportPayload
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string }> {
     try {
-      // 1. Gọi API GAS tạo báo cáo PDF trước
-      this.toast.show('Đang gửi lệnh tạo báo cáo PDF sang Google Docs...', 'info');
-      const response = await this.reportService.generateReport(payload);
-      
-      if (!response.success) {
-        throw new Error(response.error || 'GAS Web App returned success = false');
-      }
-
-      // 2. Lưu trạng thái completed và tạo bản backup hồi phục (Fallback backup)
+      // 1. Lấy thông tin phiên bản hiện tại từ Firestore để xác định số phiên bản tiếp theo
       const ref = this.getDocRef(requestId);
       const docSnap = await getDoc(ref);
       if (!docSnap.exists()) {
@@ -125,7 +165,40 @@ export class ResultService {
 
       const reqData = docSnap.data();
       const currentResult = reqData['analysisResult'] || {};
+      
+      const currentVersion = currentResult.version || 0;
+      const nextVersion = currentVersion + 1;
 
+      // Gán version vào payload gửi sang Google Apps Script
+      payload.version = nextVersion;
+
+      // 2. Gọi API GAS tạo báo cáo PDF
+      this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion} sang Google Docs...`, 'info');
+      const response = await this.reportService.generateReport(payload);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'GAS Web App returned success = false');
+      }
+
+      // 3. Đóng gói phiên bản cũ vào mảng lịch sử (pdfHistory) nếu bản in cũ đã tồn tại
+      const currentHistory = currentResult.pdfHistory || [];
+      const updatedHistory = [...currentHistory];
+
+      if (currentResult.pdfUrl) {
+        updatedHistory.push({
+          version: currentVersion || 1,
+          pdfUrl: currentResult.pdfUrl,
+          pdfViewUrl: currentResult.pdfViewUrl,
+          docsUrl: currentResult.docsUrl,
+          pdfFileName: currentResult.pdfFileName || `KQ_Bản_v${currentVersion}`,
+          publishedAt: currentResult.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
+          publishedBy: currentResult.updatedBy || 'Unknown',
+          page1DataBackup: currentResult.publishedBackup?.page1Data || currentResult.page1Data || {},
+          resultDataBackup: currentResult.publishedBackup?.resultData || currentResult.resultData || {}
+        });
+      }
+
+      // 4. Lưu trạng thái completed + phiên bản mới nhất + lịch sử và backup hồi phục vào Request document
       const backup = {
         page1Data: draftData.page1Data,
         resultData: draftData.resultData,
@@ -137,25 +210,29 @@ export class ResultService {
         ...currentResult,
         ...draftData,
         status: 'completed',
+        version: nextVersion,
+        pdfHistory: updatedHistory,
         publishedBackup: backup,
+        // Lưu PDF URLs phiên bản mới nhất để hiển thị nhanh
+        pdfUrl: response.pdfUrl || null,
+        pdfViewUrl: response.pdfViewUrl || null,
+        docsUrl: response.docsUrl || null,
+        pdfFileName: response.fileName || null,
+        pdfCreatedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
       await updateDoc(ref, { analysisResult: finalResult });
-      
-      // 3. Mở tệp PDF mới tạo trong tab mới
-      if (response.pdfUrl) {
-        window.open(response.pdfUrl, '_blank');
-        this.toast.show('Báo cáo PDF đã được tạo và hiển thị ở cửa sổ mới!', 'success');
-      } else {
-        this.toast.show('Tạo thành công nhưng không nhận được liên kết PDF!', 'info');
-      }
-      return true;
+
+      this.toast.show(`Báo cáo PDF bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
+      return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl };
     } catch (e: any) {
       console.error('Error publishing report:', e);
       this.toast.show('Lỗi xuất bản báo cáo: ' + e.message, 'error');
-      return false;
+      return { success: false };
     }
   }
+
 }
+

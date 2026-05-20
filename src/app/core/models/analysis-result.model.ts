@@ -1,3 +1,16 @@
+export interface AnalysisResultVersion {
+  version: number;
+  pdfUrl: string;
+  pdfViewUrl?: string;
+  docsUrl?: string;
+  pdfFileName: string;
+  publishedAt: string;
+  publishedBy: string;
+  // Bản sao lưu số liệu nhập liệu của phiên bản này
+  page1DataBackup: any;
+  resultDataBackup: any;
+}
+
 export interface AnalysisResultDraft {
   id: string; // Trùng với requestId/runId
   requestId: string;
@@ -22,6 +35,18 @@ export interface AnalysisResultDraft {
     publishedAt: any;
     publishedBy: string;
   };
+  // Phiên bản hiện tại và lịch sử các bản in báo cáo PDF
+  version?: number;
+  pdfHistory?: AnalysisResultVersion[];
+  
+  // URLs PDF đã tạo — lưu để xem lại bất cứ lúc nào
+  pdfUrl?: string;      // Google Drive viewer URL
+  pdfViewUrl?: string;  // Direct download URL
+  docsUrl?: string;     // Google Docs editor URL
+  pdfFileName?: string; // Tên file PDF đã lưu
+  pdfCreatedAt?: string;
   updatedAt: any;
   updatedBy: string;
 }
+
+
