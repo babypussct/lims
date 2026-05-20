@@ -406,3 +406,33 @@ export function canAssign(std: ReferenceStandard): boolean {
     }
     return true;
 }
+
+export function getSafeGoogleUrl(url: string | null | undefined, type: 'pdf' | 'doc'): string {
+    if (!url) return '';
+    
+    // For PDFs: transform drive.usercontent.com/download?id=... or export=download to drive.google.com/file/d/.../view
+    if (type === 'pdf') {
+        if (url.includes('drive.usercontent.com/download') || url.includes('export=download')) {
+            try {
+                const urlObj = new URL(url);
+                const id = urlObj.searchParams.get('id');
+                if (id) {
+                    return `https://drive.google.com/file/d/${id}/view`;
+                }
+            } catch(e) {
+                // Ignore parse errors and fallback to original
+            }
+        }
+        return url;
+    }
+    
+    // For Docs: transform /edit to /preview to enforce Read-Only mode
+    if (type === 'doc') {
+        if (url.includes('docs.google.com/document/d/')) {
+            return url.replace(/\/edit.*$/, '/preview');
+        }
+        return url;
+    }
+    
+    return url;
+}

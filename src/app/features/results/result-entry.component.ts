@@ -9,6 +9,7 @@ import { ResultEntryType3bComponent } from './result-entry-type3b.component';
 import { ToastService } from '../../core/services/toast.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
+import { getSafeGoogleUrl } from '../../shared/utils/utils';
 
 @Component({
   selector: 'app-result-entry',
@@ -852,22 +853,28 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   getCurrentPdfUrl(): string | null {
     const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    let url: string | null = null;
     if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
-      return this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
+      url = this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
+    } else {
+      const reports = this.draft()?.reports || {};
+      const reportForFilter = reports[activeFilter] || {};
+      url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
     }
-    const reports = this.draft()?.reports || {};
-    const reportForFilter = reports[activeFilter] || {};
-    return reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
+    return getSafeGoogleUrl(url, 'pdf');
   }
 
   getCurrentDocsUrl(): string | null {
     const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    let url: string | null = null;
     if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
-      return this.draft()?.docsUrl || null;
+      url = this.draft()?.docsUrl || null;
+    } else {
+      const reports = this.draft()?.reports || {};
+      const reportForFilter = reports[activeFilter] || {};
+      url = reportForFilter.docsUrl || null;
     }
-    const reports = this.draft()?.reports || {};
-    const reportForFilter = reports[activeFilter] || {};
-    return reportForFilter.docsUrl || null;
+    return getSafeGoogleUrl(url, 'doc');
   }
 
   openUrl(url: string | null) {

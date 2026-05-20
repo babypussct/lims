@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { Router } from '@angular/router';
-import { formatSampleList } from '../../shared/utils/utils';
+import { formatSampleList, getSafeGoogleUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ResultService } from './services/result.service';
@@ -156,7 +156,7 @@ import { ResultService } from './services/result.service';
                     </span>
                     <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">
                       <i class="fa-regular fa-calendar mr-1"></i>
-                      {{ run.analysisDate ? formatAnalysisDate(run.analysisDate) : 'Không có ngày' }}
+                      {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
                     </span>
                   </div>
 
@@ -195,12 +195,12 @@ import { ResultService } from './services/result.service';
                           
                           <div class="flex-1 flex items-center relative group">
                             <!-- Nút Xem PDF chính -->
-                            <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
+                            <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
                                     class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-lg text-[11px] font-bold transition"
                                     [class.rounded-r-lg]="(run.analysisResult?.version || 0) <= 1"
                                     title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
                               <i class="fa-solid fa-file-pdf"></i> PDF (v{{ run.analysisResult?.version || 1 }})
-                            </button>
+                            </a>
                             
                             <!-- Nút Dropdown lịch sử nếu có -->
                             @if ((run.analysisResult?.version || 0) > 1) {
@@ -220,10 +220,10 @@ import { ResultService } from './services/result.service';
                                     <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                                   </div>
                                   <div class="flex gap-1.5">
-                                    <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
+                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</a>
                                     @if (run.analysisResult?.docsUrl) {
                                       <span class="text-slate-300">|</span>
-                                      <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
+                                      <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</a>
                                     }
                                   </div>
                                 </div>
@@ -243,10 +243,10 @@ import { ResultService } from './services/result.service';
                                           <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
                                         </div>
                                         <div class="flex gap-1.5 font-bold">
-                                          <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
+                                          <a [href]="getSafeGoogleUrl(hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</a>
                                           @if (hist.docsUrl) {
                                             <span class="text-slate-300">|</span>
-                                            <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
+                                            <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</a>
                                           }
                                         </div>
                                       </div>
@@ -258,11 +258,11 @@ import { ResultService } from './services/result.service';
                           </div>
 
                           @if (run.analysisResult?.docsUrl) {
-                            <button (click)="openUrl(run.analysisResult!.docsUrl!)"
+                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
                                     class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
                                     title="Mở bản Google Docs gốc">
                               <i class="fa-brands fa-google-drive"></i> Docs
-                            </button>
+                            </a>
                           }
                         </div>
                       }
@@ -277,18 +277,18 @@ import { ResultService } from './services/result.service';
                             </span>
                             
                             @if (report?.pdfUrl) {
-                              <button (click)="openUrl(report?.pdfUrl || '')"
+                              <a [href]="getSafeGoogleUrl(report?.pdfUrl || '', 'pdf')" target="_blank" rel="noopener noreferrer"
                                       class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg text-[11px] font-bold transition"
                                       title="Xem PDF bản v{{ report?.version || 1 }}">
                                 <i class="fa-solid fa-file-pdf"></i> PDF (v{{ report?.version || 1 }})
-                              </button>
+                              </a>
                             }
                             @if (report?.docsUrl) {
-                              <button (click)="openUrl(report?.docsUrl || '')"
+                              <a [href]="getSafeGoogleUrl(report?.docsUrl || '', 'doc')" target="_blank" rel="noopener noreferrer"
                                       class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
                                       title="Mở Google Docs">
                                 <i class="fa-brands fa-google-drive"></i> Docs
-                              </button>
+                              </a>
                             }
                           </div>
                         }
@@ -334,6 +334,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private resultService = inject(ResultService);
 
   formatSampleList = formatSampleList;
+  getSafeGoogleUrl = getSafeGoogleUrl;
 
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
@@ -463,9 +464,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const end = this.endDate();
     if (start || end) {
       list = list.filter(run => {
-        if (!run.analysisDate) return false;
-        if (start && run.analysisDate < start) return false;
-        if (end && run.analysisDate > end) return false;
+        const runDate = this.getRunDate(run);
+        if (!runDate) return false;
+        if (start && runDate < start) return false;
+        if (end && runDate > end) return false;
         return true;
       });
     }
@@ -509,9 +511,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const end = this.endDate();
     if (start || end) {
       list = list.filter(run => {
-        if (!run.analysisDate) return false;
-        if (start && run.analysisDate < start) return false;
-        if (end && run.analysisDate > end) return false;
+        const runDate = this.getRunDate(run);
+        if (!runDate) return false;
+        if (start && runDate < start) return false;
+        if (end && runDate > end) return false;
         return true;
       });
     }
@@ -540,6 +543,23 @@ export class ResultListComponent implements OnInit, OnDestroy {
       default: 
         return 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30';
     }
+  }
+
+  getRunDate(run: any): string {
+    if (run.analysisDate) return run.analysisDate;
+    if (run.approvedAt?.toDate) {
+      const d = run.approvedAt.toDate();
+      const offset = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - (offset * 60 * 1000));
+      return local.toISOString().split('T')[0];
+    }
+    if (run.timestamp?.toDate) {
+      const d = run.timestamp.toDate();
+      const offset = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - (offset * 60 * 1000));
+      return local.toISOString().split('T')[0];
+    }
+    return '';
   }
 
   formatAnalysisDate(dateStr: string): string {

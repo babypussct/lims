@@ -983,11 +983,13 @@ export class SmartBatchComponent {
           
           try {
               for (const batch of this.batches()) {
+                  const todayStr = new Date().toISOString().split('T')[0];
                   const finalInputs = { 
                       ...batch.inputValues, 
                       safetyMargin: Number(batch.safetyMargin), 
                       sampleList: Array.from(batch.samples),
-                      targetIds: batch.targets.map(t => t.id)
+                      targetIds: batch.targets.map(t => t.id),
+                      analysisDate: batch.inputValues['analysisDate'] || todayStr
                   };
                   const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap);
                   if (res) {
