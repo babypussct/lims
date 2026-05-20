@@ -9,7 +9,7 @@ import { ResultEntryType3bComponent } from './result-entry-type3b.component';
 import { ToastService } from '../../core/services/toast.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
-import { getSafeGoogleUrl } from '../../shared/utils/utils';
+import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 
 @Component({
   selector: 'app-result-entry',
@@ -168,8 +168,8 @@ import { getSafeGoogleUrl } from '../../shared/utils/utils';
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
-                  {{ run()?.sampleList?.length || 0 }} mẫu
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg truncate" title="{{ run()?.sampleList ? formatSampleList(run()!.sampleList!) : '' }}">
+                  {{ run()?.sampleList?.length || 0 }} mẫu ({{ run()?.sampleList ? formatSampleList(run()!.sampleList!) : 'Trống' }})
                 </span>
                 <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform duration-300"
                    [class.rotate-180]="isMetadataExpanded()"></i>
@@ -867,6 +867,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
     return getSafeGoogleUrl(url, 'pdf');
   }
+
+  formatSampleList = formatSampleList;
 
   getRunDate(): string {
     const run = this.run();
