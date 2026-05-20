@@ -298,8 +298,8 @@ import { ResultService } from './services/result.service';
 
                   <!-- Enter / Edit Button -->
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">
-                      {{ run.sampleList?.length || 0 }} mẫu phân tích
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold max-w-[120px] sm:max-w-[200px] truncate" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
+                      {{ run.sampleList?.length || 0 }} mẫu ({{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }})
                     </span>
                     <button (click)="enterResults(run.id)"
                             [class]="runStatusMap()[run.id] === 'completed' 
