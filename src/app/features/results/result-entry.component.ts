@@ -32,20 +32,40 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
 ];
 
 /**
- * Tra cứu config key theo 3 ưu tiên:
+ * Tra cứu config key theo 4 ưu tiên:
  * 1. Khớp trực tiếp sopId với ANGULAR_SOP_CONFIG (nếu SOP được đặt tên theo slug)
  * 2. Khớp qua bảng SOP_ID_MAP (alias Firestore document ID → config key)
- * 3. Fuzzy match theo từ khóa trong sopName
+ * 3. Fuzzy match theo từ khóa trong sopName / sop.category / targets
+ * 4. Dùng SOP object thực tế (tên, category, targets) từ StateService — chính xác nhất
  */
-export function resolveConfigKey(sopId: string, sopName: string): string | null {
+export function resolveConfigKey(
+  sopId: string,
+  sopName: string,
+  sopObj?: { name?: string; category?: string; targets?: { name: string }[] } | null
+): string | null {
+  // 1. Khớp trực tiếp sopId với ANGULAR_SOP_CONFIG
   if (ANGULAR_SOP_CONFIG[sopId]) return sopId;
+
+  // 2. Khớp qua bảng alias
   if (SOP_ID_MAP[sopId]) return SOP_ID_MAP[sopId];
-  const nameLower = (sopName || '').toLowerCase();
+
+  // Xây dựng chuỗi tìm kiếm kết hợp từ tất cả nguồn thông tin
+  const searchTexts = [
+    sopName,
+    sopObj?.name,
+    sopObj?.category,
+    ...(sopObj?.targets || []).map(t => t.name)
+  ].filter(Boolean).map(s => s!.toLowerCase());
+
+  const combinedText = searchTexts.join(' ');
+
+  // 3+4. Fuzzy match theo từ khóa trong tất cả nguồn
   for (const entry of SOP_NAME_MAP) {
-    if (entry.keywords.some(kw => nameLower.includes(kw.toLowerCase()))) {
+    if (entry.keywords.some(kw => combinedText.includes(kw.toLowerCase()))) {
       return entry.configKey;
     }
   }
+
   return null;
 }
 
@@ -303,13 +323,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   private async loadDraftAndConfig(runDoc: any) {
-    // 2. Fetch SOP configurations — tra cứu thông minh theo sopId, alias hoặc sopName
-    const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '');
+    // 2. Fetch SOP configurations — tra cứu thông minh: sopId → alias → SOP object thực tế từ Firestore
+    //    Tra cứu SOP object từ StateService để dùng tên, category và danh sách targets thực tế
+    const sopObj = this.state.sops().find(s => s.id === runDoc.sopId) || null;
+    const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
     const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
     if (!sopConf) {
+      const displayName = sopObj?.name || runDoc.sopName || runDoc.sopId;
       this.toast.show(
-        `Chưa có cấu hình nhập liệu cho chỉ tiêu "${runDoc.sopName || runDoc.sopId}". ` +
-        `Vui lòng thêm mapping trong SOP_ID_MAP hoặc SOP_NAME_MAP.`,
+        `Chưa có cấu hình nhập liệu cho chỉ tiêu "${displayName}". ` +
+        `Vui lòng thêm từ khóa tương ứng vào SOP_NAME_MAP trong result-entry.component.ts.`,
         'info'
       );
       this.isLoading.set(false);
