@@ -682,7 +682,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           metadata: {
             ...currentDraft.page1Data,
             prefix: prefixForReport,
-            ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+            ngayNguoiPhanTich: this.getRunDate(),
+            ngayNguoiThamTra: new Date().toISOString().split('T')[0],
+            ngayBaoCao: this.getRunDate()
           },
           samples: samplesPayload
         };
@@ -753,7 +755,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           sopId: this.configKey(),
           metadata: {
             ...currentDraft.page1Data,
-            ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+            ngayNguoiPhanTich: this.getRunDate(),
+            ngayNguoiThamTra: new Date().toISOString().split('T')[0],
+            ngayBaoCao: this.getRunDate()
           },
           samples: samplesPayload
         };
@@ -862,6 +866,23 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
     }
     return getSafeGoogleUrl(url, 'pdf');
+  }
+
+  getRunDate(): string {
+    const run = this.run();
+    if (!run) return new Date().toISOString().split('T')[0];
+    if (run.analysisDate) return run.analysisDate;
+    if (run.approvedAt?.toDate) {
+      const d = run.approvedAt.toDate();
+      const offset = d.getTimezoneOffset();
+      return new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
+    }
+    if (run.timestamp?.toDate) {
+      const d = run.timestamp.toDate();
+      const offset = d.getTimezoneOffset();
+      return new Date(d.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
+    }
+    return new Date().toISOString().split('T')[0];
   }
 
   getCurrentDocsUrl(): string | null {
