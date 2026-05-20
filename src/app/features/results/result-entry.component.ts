@@ -10,6 +10,45 @@ import { ToastService } from '../../core/services/toast.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 
 // Copy đồng bộ cấu hình SOP_CONFIG từ GAS để xử lý ở Angular Client
+
+// ── Bảng ánh xạ sopId (Firestore document ID) → config key ──────────────────
+// Anh chỉ cần điền đúng ID thực tế tương ứng với từng SOP trong Firestore tại đây
+export const SOP_ID_MAP: Record<string, string> = {
+  // Ví dụ — bỏ dấu comment và điền đúng ID thực tế:
+  // 'SOP-01': 'trifluralin-gcms',
+  // 'SOP-02': 'fipronil-chlorpyrifos',
+  // 'SOP-03': 'dichlorvos-gcms',
+  // 'SOP-04': 'chlor-huu-co',
+  // 'SOP-05': 'lan-huu-co',
+};
+
+// ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────
+export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
+  { keywords: ['trifluralin'],                              configKey: 'trifluralin-gcms' },
+  { keywords: ['fipronil', 'chlorpyrifos'],                 configKey: 'fipronil-chlorpyrifos' },
+  { keywords: ['dichlorvos'],                               configKey: 'dichlorvos-gcms' },
+  { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
+  { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'],     configKey: 'lan-huu-co' },
+];
+
+/**
+ * Tra cứu config key theo 3 ưu tiên:
+ * 1. Khớp trực tiếp sopId với ANGULAR_SOP_CONFIG (nếu SOP được đặt tên theo slug)
+ * 2. Khớp qua bảng SOP_ID_MAP (alias Firestore document ID → config key)
+ * 3. Fuzzy match theo từ khóa trong sopName
+ */
+export function resolveConfigKey(sopId: string, sopName: string): string | null {
+  if (ANGULAR_SOP_CONFIG[sopId]) return sopId;
+  if (SOP_ID_MAP[sopId]) return SOP_ID_MAP[sopId];
+  const nameLower = (sopName || '').toLowerCase();
+  for (const entry of SOP_NAME_MAP) {
+    if (entry.keywords.some(kw => nameLower.includes(kw.toLowerCase()))) {
+      return entry.configKey;
+    }
+  }
+  return null;
+}
+
 export const ANGULAR_SOP_CONFIG: Record<string, {
   formType: 'type2' | 'type3a' | 'type3b';
   columns: Record<string, number>;
@@ -264,15 +303,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   private async loadDraftAndConfig(runDoc: any) {
-    // 2. Fetch SOP configurations
-    const sopId = runDoc.sopId;
-    const sopConf = ANGULAR_SOP_CONFIG[sopId];
+    // 2. Fetch SOP configurations — tra cứu thông minh theo sopId, alias hoặc sopName
+    const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '');
+    const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
     if (!sopConf) {
-      this.toast.show(`Không tìm thấy cấu hình nhập liệu cho chỉ tiêu: ${sopId}`, 'info');
+      this.toast.show(
+        `Chưa có cấu hình nhập liệu cho chỉ tiêu "${runDoc.sopName || runDoc.sopId}". ` +
+        `Vui lòng thêm mapping trong SOP_ID_MAP hoặc SOP_NAME_MAP.`,
+        'info'
+      );
       this.isLoading.set(false);
       return;
     }
     this.config.set(sopConf);
+
 
     // 3. Fetch Draft document from Firestore
     let draftDoc = await this.resultService.getDraft(this.requestId);
