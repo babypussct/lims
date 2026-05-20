@@ -4,12 +4,13 @@ import { StateService } from '../../core/services/state.service';
 import { Router } from '@angular/router';
 import { formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ResultService } from './services/result.service';
 
 @Component({
   selector: 'app-result-list',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent],
+  imports: [CommonModule, SkeletonComponent, DateRangeFilterComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative p-6">
       <!-- Header -->
@@ -117,22 +118,14 @@ import { ResultService } from './services/result.service';
               </select>
             </div>
 
-            <!-- Start date picker -->
-            <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Từ ngày</label>
-              <input type="date" 
-                     [value]="startDate()" 
-                     (change)="onStartDateChange($event)"
-                     class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
-            </div>
-
-            <!-- End date picker -->
-            <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Đến ngày</label>
-              <input type="date" 
-                     [value]="endDate()" 
-                     (change)="onEndDateChange($event)"
-                     class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+            <!-- Date Range Filter -->
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
+              <app-date-range-filter 
+                  [initStart]="startDate()" 
+                  [initEnd]="endDate()" 
+                  (dateChange)="onDateRangeChange($event)">
+              </app-date-range-filter>
             </div>
           </div>
         }
@@ -349,8 +342,29 @@ export class ResultListComponent implements OnInit, OnDestroy {
   searchText = signal<string>('');
   selectedSopId = signal<string>('all');
   selectedAnalyst = signal<string>('all');
-  startDate = signal<string>('');
-  endDate = signal<string>('');
+  
+  // Date Filters
+  private getInitialThisWeekRange() {
+      const today = new Date();
+      const start = new Date();
+      const day = today.getDay(); 
+      const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
+      start.setDate(diffToMon);
+      
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6); // Sunday
+      
+      const toStr = (d: Date) => {
+          const offset = d.getTimezoneOffset();
+          const local = new Date(d.getTime() - (offset * 60 * 1000));
+          return local.toISOString().split('T')[0];
+      };
+      
+      return { start: toStr(start), end: toStr(end) };
+  }
+  private initialDates = this.getInitialThisWeekRange();
+  startDate = signal<string>(this.initialDates.start);
+  endDate = signal<string>(this.initialDates.end);
   showAdvancedFilters = signal<boolean>(false);
 
   // Dynamic history loading states
@@ -385,7 +399,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    // Không cần lắng nghe snapshot collection phụ mới -> Đã kế thừa DeltaSync của Requests
     this.isLoading.set(false);
   }
 
@@ -543,20 +556,17 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.searchText.set((event.target as HTMLInputElement).value);
   }
 
-  onSopChange(event: Event) {
-    this.selectedSopId.set((event.target as HTMLSelectElement).value);
+  onSopChange(event: any) {
+    this.selectedSopId.set(event.target.value);
   }
 
-  onAnalystChange(event: Event) {
-    this.selectedAnalyst.set((event.target as HTMLSelectElement).value);
+  onAnalystChange(event: any) {
+    this.selectedAnalyst.set(event.target.value);
   }
 
-  onStartDateChange(event: Event) {
-    this.startDate.set((event.target as HTMLInputElement).value);
-  }
-
-  onEndDateChange(event: Event) {
-    this.endDate.set((event.target as HTMLInputElement).value);
+  onDateRangeChange(range: { start: string, end: string, label: string }) {
+    this.startDate.set(range.start);
+    this.endDate.set(range.end);
   }
 
   hasActiveFilters(): boolean {

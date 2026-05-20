@@ -83,18 +83,18 @@ import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
 
             <!-- View PDF / Open Docs if available for the active tab -->
             @if (getCurrentPdfUrl()) {
-              <button (click)="openUrl(getCurrentPdfUrl())"
-                      class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5">
+              <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
+                 class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span>Xem PDF</span>
-              </button>
+              </a>
             }
             @if (getCurrentDocsUrl()) {
-              <button (click)="openUrl(getCurrentDocsUrl())"
-                      class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5">
+              <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                 class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline">
                 <i class="fa-brands fa-google-drive"></i>
                 <span>Mở Docs</span>
-              </button>
+              </a>
             }
 
             <!-- Publish / Generate PDF -->

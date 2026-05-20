@@ -151,8 +151,17 @@ export class DateRangeFilterComponent {
       const lastMonthEnd = toStr(new Date(today.getFullYear(), today.getMonth(), 0));
       const yearStart = toStr(new Date(today.getFullYear(), 0, 1));
 
+      const weekStart = new Date(today);
+      const day = weekStart.getDay();
+      weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1));
+      const weekStartStr = toStr(weekStart);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      const weekEndStr = toStr(weekEnd);
+
       if (start === todayStr && end === todayStr) return { preset: 'today', label: 'Hôm nay' };
       if (start === yesterdayStr && end === yesterdayStr) return { preset: 'yesterday', label: 'Hôm qua' };
+      if (start === weekStartStr && end === weekEndStr) return { preset: 'this_week', label: 'Tuần này' };
       if (start === monthStart && end === todayStr) return { preset: 'this_month', label: 'Tháng này' };
       if (start === lastMonthStart && end === lastMonthEnd) return { preset: 'last_month', label: 'Tháng trước' };
       if (start === yearStart && end === todayStr) return { preset: 'this_year', label: 'Năm nay' };
@@ -207,7 +216,8 @@ export class DateRangeFilterComponent {
               const day = today.getDay(); 
               const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
               start.setDate(diffToMon);
-              // End is today
+              end = new Date(start);
+              end.setDate(start.getDate() + 6); // Sunday
               break;
 
           case 'last_week':
