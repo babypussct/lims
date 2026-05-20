@@ -268,3 +268,77 @@ function fillSampleTable(body, sopConfig, samples) {
     }
   }
 }
+
+/**
+ * Hàm xử lý chuyên biệt cho chỉ tiêu Trifluralin (SOP-03)
+ * Thực hiện điền Bảng Đường chuẩn (Table 4) và các mẫu chính
+ */
+function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, folder, fileName, version) {
+  const templateFile = DriveApp.getFileById(templateId);
+  const newFile = templateFile.makeCopy(fileName, folder);
+  const docId = newFile.getId();
+  const doc = DocumentApp.openById(docId);
+  const body = doc.getBody();
+
+  // 1. Điền các text fields & checkbox chung
+  const sopConfig = CONFIG.SOP_CONFIG['trifluralin-gcms'];
+  fillTextFields(body, sopConfig, metadata);
+
+  // 2. Tìm và điền bảng đường chuẩn (Table 4 có 8 dòng)
+  const tables = body.getTables();
+  let calibrationTable = null;
+  for (let t = 0; t < tables.length; t++) {
+    const candidate = tables[t];
+    if (candidate.getNumRows() === 8) {
+      const lastRowText = candidate.getRow(7).getCell(0).getText().trim();
+      if (lastRowText.indexOf('R2') !== -1 || lastRowText.indexOf('R²') !== -1) {
+        calibrationTable = candidate;
+        break;
+      }
+    }
+  }
+
+  if (calibrationTable) {
+    Logger.log('[TrifluralinCustom] Tìm thấy bảng đường chuẩn.');
+    // Điền R2
+    const r2Val = metadata.r2 || '';
+    setCellText(calibrationTable.getRow(7), 1, r2Val);
+
+    // Điền 7 điểm đường chuẩn
+    const calibPoints = metadata.calibPoints || [];
+    for (let i = 0; i < 7; i++) {
+      const pt = calibPoints[i] || { loSo: '', hamLuong: '' };
+      const row = calibrationTable.getRow(i);
+      setCellText(row, 0, pt.loSo || '');
+      setCellText(row, 1, pt.hamLuong || '');
+    }
+  } else {
+    Logger.log('[TrifluralinCustom] CẢNH BÁO: Không tìm thấy bảng đường chuẩn 8 dòng.');
+  }
+
+  // 3. Điền bảng mẫu kết quả chính (sử dụng logic fillSampleTable chuẩn)
+  fillSampleTable(body, sopConfig, samples);
+
+  // 4. Lưu doc
+  doc.saveAndClose();
+
+  // Export PDF
+  const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+  const pdfName = fileName + '.pdf';
+  const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+  const pdfUrl     = pdfFile.getUrl();
+  const docsUrl    = `https://docs.google.com/document/d/${docId}/edit`;
+  const pdfViewUrl = pdfFile.getDownloadUrl();
+
+  return {
+    docId,
+    pdfId:       pdfFile.getId(),
+    docsUrl,
+    pdfUrl,
+    pdfViewUrl,
+    fileName,
+    createdAt:   new Date().toISOString(),
+  };
+}
+

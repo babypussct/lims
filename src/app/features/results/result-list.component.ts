@@ -100,84 +100,111 @@ import { ResultService } from './services/result.service';
                 <!-- Action Buttons -->
                 <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
 
-                  <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF) -->
-                  @if (run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
-                    <div class="flex items-center gap-2">
-                      @if (run.analysisResult?.pdfUrl) {
-                        <div class="flex-1 flex items-center relative group">
-                          <!-- Nút Xem PDF chính -->
-                          <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
-                                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-xl text-xs font-bold transition"
-                                  [class.rounded-r-xl]="(run.analysisResult?.version || 0) <= 1"
-                                  title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
-                            <i class="fa-solid fa-file-pdf"></i> Xem PDF (v{{ run.analysisResult?.version || 1 }})
-                          </button>
-                          
-                          <!-- Nút Dropdown lịch sử nếu có -->
-                          @if ((run.analysisResult?.version || 0) > 1) {
-                            <button (mouseenter)="preloadHistory(run.id)"
-                                    class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
-                              <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                            </button>
+                  <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF hoặc các bản báo cáo theo nhóm) -->
+                  @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                    <div class="flex flex-col gap-2 mb-2">
+                      @if (run.analysisResult?.reports) {
+                        @for (prefix of getReportKeys(run.analysisResult?.reports); track prefix) {
+                          @let report = run.analysisResult?.reports?.[prefix];
+                          <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                            <span class="text-xs font-black text-slate-500 dark:text-slate-400 min-w-[70px] truncate">
+                              {{ prefix === '' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
+                            </span>
                             
-                            <!-- Dropdown menu -->
-                            <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
-                              <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
+                            @if (report?.pdfUrl) {
+                              <button (click)="openUrl(report?.pdfUrl || '')"
+                                      class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg text-[11px] font-bold transition"
+                                      title="Xem PDF bản v{{ report?.version || 1 }}">
+                                <i class="fa-solid fa-file-pdf"></i> PDF (v{{ report?.version || 1 }})
+                              </button>
+                            }
+                            @if (report?.docsUrl) {
+                              <button (click)="openUrl(report?.docsUrl || '')"
+                                      class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
+                                      title="Mở Google Docs">
+                                <i class="fa-brands fa-google-drive"></i> Docs
+                              </button>
+                            }
+                          </div>
+                        }
+                      } @else {
+                        <div class="flex items-center gap-2 w-full">
+                          @if (run.analysisResult?.pdfUrl) {
+                            <div class="flex-1 flex items-center relative group">
+                              <!-- Nút Xem PDF chính -->
+                              <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
+                                      class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-xl text-xs font-bold transition"
+                                      [class.rounded-r-xl]="(run.analysisResult?.version || 0) <= 1"
+                                      title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
+                                <i class="fa-solid fa-file-pdf"></i> Xem PDF (v{{ run.analysisResult?.version || 1 }})
+                              </button>
                               
-                              <!-- Bản hiện tại -->
-                              <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                <div class="flex flex-col gap-0.5">
-                                  <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
-                                  <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                                </div>
-                                <div class="flex gap-1.5">
-                                  <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
-                                  @if (run.analysisResult?.docsUrl) {
-                                    <span class="text-slate-300">|</span>
-                                    <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
-                                  }
-                                </div>
-                              </div>
-                              
-                              <!-- Spinner loading -->
-                              @if (loadingHistories()[run.id]) {
-                                <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
-                                  <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
-                                </div>
-                              } @else {
-                                <!-- Các bản trong lịch sử -->
-                                @for (hist of historiesMap()[run.id] || []; track hist.version) {
-                                  @if (hist.version !== run.analysisResult?.version) {
-                                    <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                      <div class="flex flex-col gap-0.5">
-                                        <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
-                                        <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
-                                      </div>
-                                      <div class="flex gap-1.5 font-bold">
-                                        <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
-                                        @if (hist.docsUrl) {
-                                          <span class="text-slate-300">|</span>
-                                          <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
-                                        }
-                                      </div>
+                              <!-- Nút Dropdown lịch sử nếu có -->
+                              @if ((run.analysisResult?.version || 0) > 1) {
+                                <button (mouseenter)="preloadHistory(run.id)"
+                                        class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
+                                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                                
+                                <!-- Dropdown menu -->
+                                <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
+                                  <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
+                                  
+                                  <!-- Bản hiện tại -->
+                                  <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <div class="flex flex-col gap-0.5">
+                                      <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
+                                      <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                                     </div>
+                                    <div class="flex gap-1.5">
+                                      <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
+                                      @if (run.analysisResult?.docsUrl) {
+                                        <span class="text-slate-300">|</span>
+                                        <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
+                                      }
+                                    </div>
+                                  </div>
+                                  
+                                  <!-- Spinner loading -->
+                                  @if (loadingHistories()[run.id]) {
+                                    <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
+                                      <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
+                                    </div>
+                                  } @else {
+                                    <!-- Các bản trong lịch sử -->
+                                    @for (hist of historiesMap()[run.id] || []; track hist.version) {
+                                      @if (hist.version !== run.analysisResult?.version) {
+                                        <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                          <div class="flex flex-col gap-0.5">
+                                            <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                                            <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
+                                          </div>
+                                          <div class="flex gap-1.5 font-bold">
+                                            <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
+                                            @if (hist.docsUrl) {
+                                              <span class="text-slate-300">|</span>
+                                              <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
+                                            }
+                                          </div>
+                                        </div>
+                                      }
+                                    }
                                   }
-                                }
+                                </div>
                               }
                             </div>
                           }
+                          @if (run.analysisResult?.docsUrl) {
+                            <button (click)="openUrl(run.analysisResult!.docsUrl!)"
+                                    class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-xl text-xs font-bold transition"
+                                    title="Mở bản Google Docs gốc để xem/in">
+                              <i class="fa-brands fa-google-drive"></i> Mở Docs
+                            </button>
+                          }
                         </div>
-                      }
-                      @if (run.analysisResult?.docsUrl) {
-                        <button (click)="openUrl(run.analysisResult!.docsUrl!)"
-                                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-xl text-xs font-bold transition"
-                                title="Mở bản Google Docs gốc để xem/in">
-                          <i class="fa-brands fa-google-drive"></i> Mở Docs
-                        </button>
                       }
                     </div>
                   }
-
 
                   <!-- Enter / Edit Button -->
                   <div class="flex items-center justify-between gap-2">
@@ -224,6 +251,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
   // Dynamic history loading states
   historiesMap = signal<Record<string, any[]>>({});
   loadingHistories = signal<Record<string, boolean>>({});
+
+  getReportKeys(reports: any): string[] {
+    if (!reports) return [];
+    return Object.keys(reports).sort();
+  }
 
   async preloadHistory(requestId: string) {
     if (this.historiesMap()[requestId] || this.loadingHistories()[requestId]) return;

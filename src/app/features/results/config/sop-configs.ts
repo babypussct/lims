@@ -3,7 +3,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   // Ví dụ — bỏ dấu comment và điền đúng ID thực tế:
   // 'SOP-01': 'trifluralin-gcms',
   // 'SOP-02': 'fipronil-chlorpyrifos',
-  // 'SOP-03': 'dichlorvos-gcms',
+  'SOP-03': 'trifluralin-gcms',
   // 'SOP-04': 'chlor-huu-co',
   // 'SOP-05': 'lan-huu-co',
 };

@@ -317,6 +317,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {
+    const isTrifluralin = runDoc.sopId === 'SOP-03' || (sopConf.columns && sopConf.columns.kqTrifluralin !== undefined);
+
     const defaultPage1: Record<string, any> = {
       ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
       ngayNguoiThamTra: new Date().toISOString().split('T')[0],
@@ -324,8 +326,21 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       checkCoMauPhatHien: false
     };
 
-    // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
-    if (sopConf.checkboxLines) {
+    if (isTrifluralin) {
+      defaultPage1['r2'] = '';
+      defaultPage1['blankName'] = 'Blank';
+      defaultPage1['spikeName'] = 'Spike';
+      defaultPage1['calibPoints'] = [
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' },
+        { loSo: '', hamLuong: '' }
+      ];
+    } else if (sopConf.checkboxLines) {
+      // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
       Object.values(sopConf.checkboxLines).forEach((field: any) => {
         if (field !== 'checkTatCaND' && field !== 'checkCoMauPhatHien') {
           defaultPage1[field] = false;
@@ -336,27 +351,41 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const defaultResultData: Record<string, any> = {};
     const sampleList = runDoc.sampleList || [];
     
-    sampleList.forEach((sampleCode: string) => {
-      defaultResultData[sampleCode] = {};
+    if (isTrifluralin) {
+      defaultResultData['__BLANK__'] = { loSo: '1', kqTrifluralin: '', ghiChu: '', selected: true };
+      defaultResultData['__SPIKE__'] = { loSo: '2', kqTrifluralin: '', ghiChu: '', selected: true };
       
-      if (sopConf.formType === 'type3b') {
-        // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt
-        sopConf.compounds.forEach((c: string) => {
-          defaultResultData[sampleCode][c] = 'KPH';
-          defaultResultData[sampleCode][`${c}_nd`] = true;
-          defaultResultData[sampleCode][`${c}_qc1`] = 'Đạt';
-          defaultResultData[sampleCode][`${c}_qc2`] = 'Đạt';
-          defaultResultData[sampleCode][`${c}_qc3`] = 'Đạt';
-        });
-      } else {
-        // Cho dạng 2 / 3A: Cột hoạt chất rỗng
-        Object.keys(sopConf.columns).forEach((col: string) => {
-          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-            defaultResultData[sampleCode][col] = '';
-          }
-        });
-      }
-    });
+      sampleList.forEach((sampleCode: string, idx: number) => {
+        defaultResultData[sampleCode] = {
+          loSo: String(idx + 3),
+          kqTrifluralin: '',
+          ghiChu: '',
+          selected: true
+        };
+      });
+    } else {
+      sampleList.forEach((sampleCode: string) => {
+        defaultResultData[sampleCode] = {};
+        
+        if (sopConf.formType === 'type3b') {
+          // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt
+          sopConf.compounds.forEach((c: string) => {
+            defaultResultData[sampleCode][c] = 'KPH';
+            defaultResultData[sampleCode][`${c}_nd`] = true;
+            defaultResultData[sampleCode][`${c}_qc1`] = 'Đạt';
+            defaultResultData[sampleCode][`${c}_qc2`] = 'Đạt';
+            defaultResultData[sampleCode][`${c}_qc3`] = 'Đạt';
+          });
+        } else {
+          // Cho dạng 2 / 3A: Cột hoạt chất rỗng
+          Object.keys(sopConf.columns).forEach((col: string) => {
+            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+              defaultResultData[sampleCode][col] = '';
+            }
+          });
+        }
+      });
+    }
 
     return {
       id: this.requestId,
@@ -446,70 +475,178 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.isPublishing.set(true);
 
     try {
-      const samplesPayload: any[] = [];
-      const sampleList = currentRun.sampleList || [];
+      const isTrifluralin = this.configKey() === 'trifluralin-gcms';
 
-      sampleList.forEach((sampleCode: string, idx: number) => {
-        const resObj = currentDraft.resultData[sampleCode] || {};
-        
-        if (currentConf.formType === 'type3b') {
-          const activeCompounds: Record<string, { kq: string; nd: boolean; qc: string[] }> = {};
-          currentConf.compounds.forEach((c: string) => {
-            activeCompounds[c] = {
-              kq: resObj[c] || 'KPH',
-              nd: resObj[`${c}_nd`] === true,
-              qc: [
-                resObj[`${c}_qc1`] || 'Đạt',
-                resObj[`${c}_qc2`] || 'Đạt',
-                resObj[`${c}_qc3`] || 'Đạt'
-              ]
-            };
-          });
-          samplesPayload.push({ maSoMau: sampleCode, activeCompounds });
-        } else {
-          const rowData: Record<string, any> = {
-            loSo: String(idx + 1),
-            maSoMau: sampleCode,
-            ghiChu: resObj['ghiChu'] || ''
-          };
-          Object.keys(currentConf.columns).forEach(col => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-            }
-          });
-          samplesPayload.push(rowData);
+      if (isTrifluralin) {
+        const sampleList = currentRun.sampleList || [];
+        const checkedSamples = sampleList.filter((s: string) => {
+          const resObj = currentDraft.resultData[s] || {};
+          return resObj['selected'] !== false;
+        });
+
+        if (checkedSamples.length === 0) {
+          this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+          this.isPublishing.set(false);
+          return;
         }
-      });
 
-      const reportPayload: any = {
-        action: 'generate_pdf',
-        sopId: this.configKey(),
-        metadata: {
-          ...currentDraft.page1Data,
-          ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
-        },
-        samples: samplesPayload
-      };
+        // Nhóm mẫu theo tiền tố (ký tự chữ cái đầu tiên, nếu có)
+        const groups: Record<string, string[]> = {};
+        checkedSamples.forEach((sampleCode: string) => {
+          const startsWithLetter = /^[a-zA-Z]/.test(sampleCode);
+          const prefix = startsWithLetter ? sampleCode.charAt(0).toUpperCase() : '';
+          const groupKey = prefix || '__DEFAULT__';
+          if (!groups[groupKey]) {
+            groups[groupKey] = [];
+          }
+          groups[groupKey].push(sampleCode);
+        });
 
-      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
-      if (result.success) {
-        this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+        const prefixKeys = Object.keys(groups);
+        this.toast.show(`Phát hiện ${prefixKeys.length} nhóm tiền tố cần in độc lập: ${prefixKeys.map(k => k === '__DEFAULT__' ? 'Không tiền tố' : k).join(', ')}`, 'info');
 
-        // Load lại lịch sử sau khi in mới thành công
-        const hist = await this.resultService.getHistory(this.requestId);
-        this.historyList.set(hist);
+        let allSuccess = true;
+        for (let i = 0; i < prefixKeys.length; i++) {
+          const groupKey = prefixKeys[i];
+          const prefixForReport = groupKey === '__DEFAULT__' ? '' : groupKey;
+          const prefixSamples = groups[groupKey];
 
-        // Điền URL vào cửa sổ đã mở, hoặc đóng nếu không có URL
-        const url = result.pdfViewUrl || result.pdfUrl;
-        if (url && pdfWindow && !pdfWindow.closed) {
-          pdfWindow.location.href = url;
-        } else if (pdfWindow && !pdfWindow.closed) {
-          pdfWindow.close();
-          this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
+          const samplesPayload: any[] = [];
+
+          // 1. Thêm Blank vào đầu danh sách
+          const blankObj = currentDraft.resultData['__BLANK__'] || {};
+          samplesPayload.push({
+            loSo: blankObj['loSo'] || '1',
+            maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
+            kqTrifluralin: blankObj['kqTrifluralin'] || '',
+            ghiChu: blankObj['ghiChu'] || ''
+          });
+
+          // 2. Thêm Spike vào vị trí thứ 2
+          const spikeObj = currentDraft.resultData['__SPIKE__'] || {};
+          samplesPayload.push({
+            loSo: spikeObj['loSo'] || '2',
+            maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
+            kqTrifluralin: spikeObj['kqTrifluralin'] || '',
+            ghiChu: spikeObj['ghiChu'] || ''
+          });
+
+          // 3. Thêm các mẫu thuộc nhóm tiền tố này
+          prefixSamples.forEach((sampleCode: string) => {
+            const resObj = currentDraft.resultData[sampleCode] || {};
+            samplesPayload.push({
+              loSo: resObj['loSo'] || '',
+              maSoMau: sampleCode,
+              kqTrifluralin: resObj['kqTrifluralin'] || '',
+              ghiChu: resObj['ghiChu'] || ''
+            });
+          });
+
+          const reportPayload: any = {
+            action: 'generate_pdf',
+            sopId: this.configKey(),
+            metadata: {
+              ...currentDraft.page1Data,
+              prefix: prefixForReport,
+              ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+            },
+            samples: samplesPayload
+          };
+
+          const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
+          if (result.success) {
+            const url = result.pdfViewUrl || result.pdfUrl;
+            if (url) {
+              if (i === 0) {
+                if (pdfWindow && !pdfWindow.closed) {
+                  pdfWindow.location.href = url;
+                } else {
+                  window.open(url, '_blank');
+                }
+              } else {
+                window.open(url, '_blank');
+              }
+            }
+          } else {
+            allSuccess = false;
+          }
+        }
+
+        if (allSuccess) {
+          const latestDraft = await this.resultService.getDraft(this.requestId);
+          if (latestDraft) {
+            this.draft.set(latestDraft);
+          }
+          const hist = await this.resultService.getHistory(this.requestId);
+          this.historyList.set(hist);
+        } else {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else {
-        // Đóng cửa sổ trống nếu thất bại
-        if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+        // Luồng tạo báo cáo tiêu chuẩn cho các SOP khác
+        const samplesPayload: any[] = [];
+        const sampleList = currentRun.sampleList || [];
+
+        sampleList.forEach((sampleCode: string, idx: number) => {
+          const resObj = currentDraft.resultData[sampleCode] || {};
+          
+          if (currentConf.formType === 'type3b') {
+            const activeCompounds: Record<string, { kq: string; nd: boolean; qc: string[] }> = {};
+            currentConf.compounds.forEach((c: string) => {
+              activeCompounds[c] = {
+                kq: resObj[c] || 'KPH',
+                nd: resObj[`${c}_nd`] === true,
+                qc: [
+                  resObj[`${c}_qc1`] || 'Đạt',
+                  resObj[`${c}_qc2`] || 'Đạt',
+                  resObj[`${c}_qc3`] || 'Đạt'
+                ]
+              };
+            });
+            samplesPayload.push({ maSoMau: sampleCode, activeCompounds });
+          } else {
+            const rowData: Record<string, any> = {
+              loSo: String(idx + 1),
+              maSoMau: sampleCode,
+              ghiChu: resObj['ghiChu'] || ''
+            };
+            Object.keys(currentConf.columns).forEach(col => {
+              if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+              }
+            });
+            samplesPayload.push(rowData);
+          }
+        });
+
+        const reportPayload: any = {
+          action: 'generate_pdf',
+          sopId: this.configKey(),
+          metadata: {
+            ...currentDraft.page1Data,
+            ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+          },
+          samples: samplesPayload
+        };
+
+        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
+        if (result.success) {
+          this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+
+          const hist = await this.resultService.getHistory(this.requestId);
+          this.historyList.set(hist);
+
+          const url = result.pdfViewUrl || result.pdfUrl;
+          if (url && pdfWindow && !pdfWindow.closed) {
+            pdfWindow.location.href = url;
+          } else if (pdfWindow && !pdfWindow.closed) {
+            pdfWindow.close();
+            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
+          }
+        } else {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+        }
       }
     } finally {
       this.isPublishing.set(false);

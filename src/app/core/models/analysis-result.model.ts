@@ -39,6 +39,17 @@ export interface AnalysisResultDraft {
   version?: number;
   pdfHistory?: AnalysisResultVersion[];
   
+  // Danh sách báo cáo theo tiền tố (cho SOP-03)
+  reports?: Record<string, {
+    pdfUrl: string;
+    pdfViewUrl?: string;
+    docsUrl?: string;
+    pdfFileName: string;
+    publishedAt: string;
+    publishedBy: string;
+    version: number;
+  }>;
+  
   // URLs PDF đã tạo — lưu để xem lại bất cứ lúc nào
   pdfUrl?: string;      // Google Drive viewer URL
   pdfViewUrl?: string;  // Direct download URL
