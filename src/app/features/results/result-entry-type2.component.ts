@@ -152,6 +152,28 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
               <i class="fa-solid fa-trash-can"></i>
               <span>Xóa hết bảng</span>
             </button>
+
+            @if (isTrifluralin) {
+              <!-- Quick Vial Input (Lọ số nhanh) -->
+              <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs">
+                <span class="font-bold text-slate-500 dark:text-slate-400">Lọ số:</span>
+                <input type="number" 
+                       [(ngModel)]="bulkVialStart" 
+                       (ngModelChange)="onBulkVialStartChange()"
+                       placeholder="Bắt đầu" 
+                       class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                <span class="text-slate-400">-</span>
+                <input type="number" 
+                       [(ngModel)]="bulkVialEnd" 
+                       placeholder="Kết thúc" 
+                       class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                <button (click)="applyBulkVials()" 
+                        class="px-2.5 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1">
+                  <i class="fa-solid fa-check"></i>
+                  <span>Áp dụng</span>
+                </button>
+              </div>
+            }
           </div>
         </div>
 
@@ -159,12 +181,12 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
         @if (isTrifluralin && detectedPrefixes().length > 0) {
           <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 dark:border-slate-700 pb-2">
             <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2">Nhóm tiền tố:</span>
-            <button (click)="selectedPrefixFilter.set('ALL')"
+            <button (click)="onPrefixFilterChanged('ALL')"
                     [class]="selectedPrefixFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition'">
               Tất cả mẫu
             </button>
             @for (prefix of detectedPrefixes(); track prefix) {
-              <button (click)="selectedPrefixFilter.set(prefix)"
+              <button (click)="onPrefixFilterChanged(prefix)"
                       [class]="selectedPrefixFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition'">
                 {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
               </button>
@@ -204,9 +226,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
             
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
               @if (isTrifluralin) {
-                @if (selectedPrefixFilter() === 'ALL') {
-                  <!-- 1. Trifluralin-specific QC: Blank Row (Always shown in ALL) -->
-                  @if (draft.resultData['QC_BLANK']) {
+                @for (row of getDisplayRowsForPrefix(selectedPrefixFilter()); track row.key; let rowIdx = $index) {
+                  @if (row.type === 'QC_BLANK') {
                     <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                       <td class="py-2.5 px-3 text-center">
                         <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -224,6 +245,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         <input type="text"
                                [(ngModel)]="draft.resultData['QC_BLANK']['kqTrifluralin']"
                                (ngModelChange)="onCellChanged('QC_BLANK')"
+                               [id]="'cell-' + rowIdx + '-kqTrifluralin'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                                placeholder="..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
@@ -238,10 +261,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC BLANK</span>
                       </td>
                     </tr>
-                  }
-
-                  <!-- 2. Trifluralin-specific QC: Spike Row (Always shown in ALL) -->
-                  @if (draft.resultData['QC_SPIKE']) {
+                  } @else if (row.type === 'QC_SPIKE') {
                     <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                       <td class="py-2.5 px-3 text-center">
                         <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -259,6 +279,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         <input type="text"
                                [(ngModel)]="draft.resultData['QC_SPIKE']['kqTrifluralin']"
                                (ngModelChange)="onCellChanged('QC_SPIKE')"
+                               [id]="'cell-' + rowIdx + '-kqTrifluralin'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                                placeholder="..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
@@ -273,208 +295,85 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC SPIKE</span>
                       </td>
                     </tr>
-                  }
-
-                  <!-- 3. Trifluralin-specific: Regular Samples (ALL) -->
-                  @for (sample of filteredSamples(); track sample; let rowIdx = $index) {
-                    @if (draft.resultData[sample]) {
-                      <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition" [class.opacity-60]="draft.resultData[sample]['selected'] === false">
-                        <td class="py-2.5 px-3 text-center">
-                          <input type="checkbox"
-                                 [(ngModel)]="draft.resultData[sample]['selected']"
-                                 (ngModelChange)="onDataChanged()"
-                                 class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500">
-                        </td>
-                        <td class="py-1 px-2 w-24">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[sample]['loSo']"
-                                 (ngModelChange)="onDataChanged()"
-                                 [id]="'cell-' + rowIdx + '-loSo'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ sample }}</td>
-                        
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[sample]['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged(sample)"
-                                 [id]="'cell-' + rowIdx + '-kqTrifluralin'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
-                                 placeholder="..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[sample]['ghiChu']"
-                                 (ngModelChange)="onDataChanged()"
-                                 [id]="'cell-' + rowIdx + '-ghiChu'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', 2)"
-                                 placeholder="Ghi chú..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
-                        </td>
-                        <td class="py-1 px-4 text-center">
-                          <button (click)="copyRowToAll(sample)" 
-                                  class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
-                                  title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
-                            <i class="fa-solid fa-copy"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  }
-                } @else {
-                  <!-- 4. Prefix-specific Display Rows (Blank, Spike, Regulars, SPIKE_N, FINAL) -->
-                  @for (row of getDisplayRowsForPrefix(selectedPrefixFilter()); track row.key; let rowIdx = $index) {
-                    @if (row.type === 'QC_BLANK') {
-                      <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
-                        <td class="py-2.5 px-3 text-center">
-                          <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        </td>
-                        <td class="py-1 px-2 w-24">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_BLANK']['loSo']"
-                                 (ngModelChange)="onDataChanged()"
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-500 dark:text-slate-400">
-                          {{ draft.page1Data['blankName'] || 'Blank' }}
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_BLANK']['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged('QC_BLANK')"
-                                 [id]="'cell-' + rowIdx + '-kqTrifluralin'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
-                                 placeholder="..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_BLANK']['ghiChu']"
-                                 (ngModelChange)="onDataChanged()"
-                                 placeholder="Ghi chú..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
-                        </td>
-                        <td class="py-1 px-4 text-center">
-                          <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC BLANK</span>
-                        </td>
-                      </tr>
-                    } @else if (row.type === 'QC_SPIKE') {
-                      <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
-                        <td class="py-2.5 px-3 text-center">
-                          <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        </td>
-                        <td class="py-1 px-2 w-24">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_SPIKE']['loSo']"
-                                 (ngModelChange)="onDataChanged()"
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-500 dark:text-slate-400">
-                          {{ draft.page1Data['spikeName'] || 'Spike' }}
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_SPIKE']['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged('QC_SPIKE')"
-                                 [id]="'cell-' + rowIdx + '-kqTrifluralin'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
-                                 placeholder="..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
-                                 (ngModelChange)="onDataChanged()"
-                                 placeholder="Ghi chú..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
-                        </td>
-                        <td class="py-1 px-4 text-center">
-                          <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC SPIKE</span>
-                        </td>
-                      </tr>
-                    } @else if (row.type === 'QC_SPIKE_N' || row.type === 'QC_FINAL') {
-                      <tr class="bg-indigo-50/10 dark:bg-indigo-950/5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
-                        <td class="py-2.5 px-3 text-center">
-                          <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        </td>
-                        <td class="py-1 px-2 w-24">
-                          <input type="text"
-                                 [value]="draft.resultData['QC_SPIKE'] ? draft.resultData['QC_SPIKE']['loSo'] : '2'"
-                                 disabled
-                                 class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 font-bold outline-none text-center">
-                        </td>
-                        <td class="py-2.5 px-4 font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                          {{ row.label }}
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged(row.key)"
-                                 [id]="'cell-' + rowIdx + '-kqTrifluralin'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
-                                 placeholder="..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[row.key]['ghiChu']"
-                                 (ngModelChange)="onDataChanged()"
-                                 placeholder="Ghi chú..."
-                                 class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
-                        </td>
-                        <td class="py-1 px-4 text-center">
-                          <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC {{ row.label }}</span>
-                        </td>
-                      </tr>
-                    } @else if (row.type === 'REGULAR') {
-                      <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition" [class.opacity-60]="draft.resultData[row.key]['selected'] === false">
-                        <td class="py-2.5 px-3 text-center">
-                          <input type="checkbox"
-                                 [(ngModel)]="draft.resultData[row.key]['selected']"
-                                 (ngModelChange)="onDataChanged()"
-                                 class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500">
-                        </td>
-                        <td class="py-1 px-2 w-24">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[row.key]['loSo']"
-                                 (ngModelChange)="onDataChanged()"
-                                 [id]="'cell-' + rowIdx + '-loSo'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ row.key }}</td>
-                        
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged(row.key)"
-                                 [id]="'cell-' + rowIdx + '-kqTrifluralin'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
-                                 placeholder="..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
-                        
-                        <td class="py-1 px-2">
-                          <input type="text"
-                                 [(ngModel)]="draft.resultData[row.key]['ghiChu']"
-                                 (ngModelChange)="onDataChanged()"
-                                 [id]="'cell-' + rowIdx + '-ghiChu'"
-                                 (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', 2)"
-                                 placeholder="Ghi chú..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
-                        </td>
-                        <td class="py-1 px-4 text-center">
-                          <button (click)="copyRowToAll(row.key)" 
-                                  class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
-                                  title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
-                            <i class="fa-solid fa-copy"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    }
+                  } @else if (row.type === 'QC_SPIKE_N' || row.type === 'QC_FINAL') {
+                    <tr class="bg-indigo-50/10 dark:bg-indigo-950/5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                      <td class="py-2.5 px-3 text-center">
+                        <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                      </td>
+                      <td class="py-1 px-2 w-24">
+                        <input type="text"
+                               [value]="draft.resultData['QC_SPIKE'] ? draft.resultData['QC_SPIKE']['loSo'] : '2'"
+                               disabled
+                               class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 font-bold outline-none text-center">
+                      </td>
+                      <td class="py-2.5 px-4 font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                        {{ row.label }}
+                      </td>
+                      <td class="py-1 px-2">
+                        <input type="text"
+                               [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
+                               (ngModelChange)="onCellChanged(row.key)"
+                               [id]="'cell-' + rowIdx + '-kqTrifluralin'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                               placeholder="..."
+                               class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                      </td>
+                      <td class="py-1 px-2">
+                        <input type="text"
+                               [(ngModel)]="draft.resultData[row.key]['ghiChu']"
+                               (ngModelChange)="onDataChanged()"
+                               placeholder="Ghi chú..."
+                               class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                      </td>
+                      <td class="py-1 px-4 text-center">
+                        <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC {{ row.label }}</span>
+                      </td>
+                    </tr>
+                  } @else if (row.type === 'REGULAR') {
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition" [class.opacity-60]="draft.resultData[row.key]['selected'] === false">
+                      <td class="py-2.5 px-3 text-center">
+                        <input type="checkbox"
+                               [(ngModel)]="draft.resultData[row.key]['selected']"
+                               (ngModelChange)="onDataChanged()"
+                               class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500">
+                      </td>
+                      <td class="py-1 px-2 w-24">
+                        <input type="text"
+                               [(ngModel)]="draft.resultData[row.key]['loSo']"
+                               (ngModelChange)="onDataChanged()"
+                               [id]="'cell-' + rowIdx + '-loSo'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                      </td>
+                      <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ row.key }}</td>
+                      
+                      <td class="py-1 px-2">
+                        <input type="text"
+                               [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
+                               (ngModelChange)="onCellChanged(row.key)"
+                               [id]="'cell-' + rowIdx + '-kqTrifluralin'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                               placeholder="..."
+                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                      </td>
+                      
+                      <td class="py-1 px-2">
+                        <input type="text"
+                               [(ngModel)]="draft.resultData[row.key]['ghiChu']"
+                               (ngModelChange)="onDataChanged()"
+                               [id]="'cell-' + rowIdx + '-ghiChu'"
+                               (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', 2)"
+                               placeholder="Ghi chú..."
+                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                      </td>
+                      <td class="py-1 px-4 text-center">
+                        <button (click)="copyRowToAll(row.key)" 
+                                class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
+                                title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
+                          <i class="fa-solid fa-copy"></i>
+                        </button>
+                      </td>
+                    </tr>
                   }
                 }
               } @else {
@@ -542,6 +441,10 @@ export class ResultEntryType2Component implements OnInit {
   selectedPrefixFilter = signal<string>('ALL');
   detectedPrefixes = signal<string[]>([]);
 
+  // Bulk vial properties
+  bulkVialStart = 1;
+  bulkVialEnd = 1;
+
   ngOnInit() {
     this.isTrifluralin = this.run.sopId === 'SOP-03' || (this.config.columns && this.config.columns.kqTrifluralin !== undefined);
 
@@ -559,6 +462,7 @@ export class ResultEntryType2Component implements OnInit {
 
     if (this.isTrifluralin) {
       this.detectPrefixes();
+      this.onBulkVialStartChange();
     }
   }
 
@@ -570,6 +474,43 @@ export class ResultEntryType2Component implements OnInit {
       prefixes.add(prefix);
     });
     this.detectedPrefixes.set(Array.from(prefixes).sort());
+  }
+
+  onPrefixFilterChanged(prefix: string) {
+    this.selectedPrefixFilter.set(prefix);
+    this.onBulkVialStartChange();
+  }
+
+  onBulkVialStartChange() {
+    const start = parseInt(String(this.bulkVialStart), 10);
+    if (!isNaN(start)) {
+      const count = this.getVisibleRegularSamples().length;
+      this.bulkVialEnd = start + Math.max(0, count - 1);
+    }
+  }
+
+  applyBulkVials() {
+    const start = parseInt(String(this.bulkVialStart), 10);
+    const end = parseInt(String(this.bulkVialEnd), 10);
+    if (isNaN(start) || isNaN(end) || start > end) {
+      return;
+    }
+    const visible = this.getVisibleRegularSamples();
+    visible.forEach((sample: string, idx: number) => {
+      const val = start + idx;
+      if (val <= end) {
+        if (!this.draft.resultData[sample]) {
+          this.draft.resultData[sample] = {
+            loSo: '',
+            kqTrifluralin: '',
+            ghiChu: '',
+            selected: true
+          };
+        }
+        this.draft.resultData[sample]['loSo'] = String(val);
+      }
+    });
+    this.onDataChanged();
   }
 
   filteredSamples(): string[] {
@@ -636,6 +577,7 @@ export class ResultEntryType2Component implements OnInit {
 
   getDisplayRowsForPrefix(prefix: string): any[] {
     const samples = (this.run.sampleList || []).filter((sample: string) => {
+      if (prefix === 'ALL') return true;
       const startsWithLetter = /^[a-zA-Z]/.test(sample);
       const p = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
       return p === prefix;

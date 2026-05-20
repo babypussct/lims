@@ -314,25 +314,40 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         if (!draftDoc.page1Data) {
           draftDoc.page1Data = {};
         }
-        if (!draftDoc.page1Data['calibPoints']) {
+        if (!draftDoc.page1Data['calibPoints'] || draftDoc.page1Data['calibPoints'].length === 0) {
           draftDoc.page1Data['calibPoints'] = [
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' },
-            { loSo: '', hamLuong: '' }
+            { loSo: '41', hamLuong: '0' },
+            { loSo: '42', hamLuong: '0.5' },
+            { loSo: '43', hamLuong: '1.0' },
+            { loSo: '44', hamLuong: '5.0' },
+            { loSo: '45', hamLuong: '10.0' },
+            { loSo: '46', hamLuong: '30.0' }
           ];
         }
-        if (draftDoc.page1Data['r2'] === undefined) {
-          draftDoc.page1Data['r2'] = '';
+        if (draftDoc.page1Data['r2'] === undefined || draftDoc.page1Data['r2'] === '') {
+          draftDoc.page1Data['r2'] = '0.999';
         }
         if (draftDoc.page1Data['blankName'] === undefined) {
           draftDoc.page1Data['blankName'] = 'Blank';
         }
         if (draftDoc.page1Data['spikeName'] === undefined) {
           draftDoc.page1Data['spikeName'] = 'Spike';
+        }
+
+        // Đảm bảo các lọ QC và ND mặc định
+        if (!draftDoc.resultData) {
+          draftDoc.resultData = {};
+        }
+        if (!draftDoc.resultData['QC_BLANK']) {
+          draftDoc.resultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
+        } else {
+          if (!draftDoc.resultData['QC_BLANK']['loSo']) draftDoc.resultData['QC_BLANK']['loSo'] = '47';
+          if (!draftDoc.resultData['QC_BLANK']['kqTrifluralin']) draftDoc.resultData['QC_BLANK']['kqTrifluralin'] = 'ND';
+        }
+        if (!draftDoc.resultData['QC_SPIKE']) {
+          draftDoc.resultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
+        } else {
+          if (!draftDoc.resultData['QC_SPIKE']['loSo']) draftDoc.resultData['QC_SPIKE']['loSo'] = '48';
         }
       }
     }
@@ -357,17 +372,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     };
 
     if (isTrifluralin) {
-      defaultPage1['r2'] = '';
+      defaultPage1['r2'] = '0.999';
       defaultPage1['blankName'] = 'Blank';
       defaultPage1['spikeName'] = 'Spike';
       defaultPage1['calibPoints'] = [
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' },
-        { loSo: '', hamLuong: '' }
+        { loSo: '41', hamLuong: '0' },
+        { loSo: '42', hamLuong: '0.5' },
+        { loSo: '43', hamLuong: '1.0' },
+        { loSo: '44', hamLuong: '5.0' },
+        { loSo: '45', hamLuong: '10.0' },
+        { loSo: '46', hamLuong: '30.0' }
       ];
     } else if (sopConf.checkboxLines) {
       // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
@@ -382,12 +396,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const sampleList = runDoc.sampleList || [];
     
     if (isTrifluralin) {
-      defaultResultData['QC_BLANK'] = { loSo: '1', kqTrifluralin: '', ghiChu: '', selected: true };
-      defaultResultData['QC_SPIKE'] = { loSo: '2', kqTrifluralin: '', ghiChu: '', selected: true };
+      defaultResultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
+      defaultResultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
       
       sampleList.forEach((sampleCode: string, idx: number) => {
         defaultResultData[sampleCode] = {
-          loSo: String(idx + 3),
+          loSo: String(idx + 1),
           kqTrifluralin: '',
           ghiChu: '',
           selected: true
