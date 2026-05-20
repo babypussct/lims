@@ -1,0 +1,270 @@
+/**
+ * LIMS Report Generator — Dạng Biểu Mẫu 2 & 3A
+ * ========================================================
+ * Chứa logic điền bảng và thay thế trường dữ liệu trên 1 hoặc nhiều trang.
+ */
+
+/**
+ * Xử lý điền báo cáo cho Dạng 2 & Dạng 3A (Điền bảng)
+ */
+function generateType2_3aReport(body, sopConfig, metadata, samples) {
+  fillTextFields(body, sopConfig, metadata);
+  fillSampleTable(body, sopConfig, samples);
+}
+
+/**
+ * Điền các trường văn bản tự do, checkbox và ngày tháng ký duyệt
+ */
+function fillTextFields(body, sopConfig, metadata) {
+  // 1. Text replacements đơn giản
+  if (sopConfig.textReplacements) {
+    for (const [searchText, fieldName] of Object.entries(sopConfig.textReplacements)) {
+      const value = metadata[fieldName] || '';
+      body.replaceText(searchText, value);
+    }
+  }
+
+  // 2. Checkbox lines: dùng replaceText cấp paragraph để GIỮ NGUYÊN in đậm/in nghiêng
+  if (sopConfig.checkboxLines) {
+    for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
+      const isChecked = metadata[fieldName] === true;
+      const checkChar = isChecked ? '☑' : '☐';
+      
+      let searchResult = body.findText(lineText);
+      while (searchResult) {
+        const para = searchResult.getElement().getParent().asParagraph();
+        // Thay thế đúng vị trí [ ] hoặc ☐, không làm hỏng font chữ
+        para.replaceText('\\[ \\]', checkChar);
+        para.replaceText('☐', checkChar);
+        
+        // Tìm tiếp tục từ kết quả vừa tìm được để xử lý cho các trang sau
+        searchResult = body.findText(lineText, searchResult);
+      }
+    }
+  }
+
+  // 3. Custom: Xử lý điền Ngày tháng thông qua placeholder trên biểu mẫu (date1, date2)
+  if (sopConfig.signaturePlaceholders) {
+    for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
+      const textVal = metadata[fieldName] || '';
+      if (!textVal) continue;
+      
+      // Tách lấy phần Ngày (ví dụ: "19/05/2026 / Ong Thanh Dat" -> "19/05/2026")
+      const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
+      
+      // Thay thế trực tiếp placeholder bằng ngày (Google Docs sẽ tự động giữ nguyên căn giữa, font và size)
+      body.replaceText(placeholderText, dateOnly);
+    }
+  }
+}
+
+/**
+ * Điền bảng mẫu theo tọa độ và thực hiện Auto-cut trang thừa tự động
+ */
+function fillSampleTable(body, sopConfig, samples) {
+  const tables = body.getTables();
+  
+  // 1. Tìm tất cả các bảng mẫu trong tài liệu để tính toán tablesPerPage động
+  const sampleTableIndices = [];
+  for (let t = 0; t < tables.length; t++) {
+    const candidate = tables[t];
+    if (candidate.getNumRows() >= 10) {
+      const headerText = candidate.getRow(0).getText();
+      if (headerText.includes('Lọ số') || headerText.includes('Mẫu thử') || headerText.includes('Mã số mẫu')) {
+        sampleTableIndices.push(t);
+      }
+    }
+  }
+
+  if (sampleTableIndices.length === 0) {
+    throw new Error("Không tìm thấy bảng mẫu điền dữ liệu.");
+  }
+
+  const sampleTableIndex = sampleTableIndices[0];
+  const sampleTable = tables[sampleTableIndex];
+  
+  // Tính số lượng bảng trên mỗi trang bằng khoảng cách giữa 2 bảng mẫu liên tiếp
+  const tablesPerPage = sampleTableIndices.length > 1 
+    ? (sampleTableIndices[1] - sampleTableIndices[0]) 
+    : tables.length;
+
+  const cols  = sopConfig.columns;
+  const startRow = sopConfig.headerRows || 1;
+  const maxSamplesPerPage = sampleTable.getNumRows() - startRow; // Dung lượng tối đa 1 trang
+  const totalPagesNeeded = Math.ceil(samples.length / maxSamplesPerPage);
+  
+  Logger.log(`[ReportType2] Đang xử lý: Tổng mẫu: ${samples.length} | Dung lượng 1 trang: ${maxSamplesPerPage} | Số trang cần giữ: ${totalPagesNeeded}`);
+
+  // 2. Điền dữ liệu phân đoạn tương ứng cho từng trang cần thiết
+  for (let p = 0; p < totalPagesNeeded; p++) {
+    const currentTableIdx = sampleTableIndex + p * tablesPerPage;
+    
+    // Đảm bảo không bị tràn mảng nếu mẫu nhiều vượt quá số lượng trang thực tế trong file
+    if (currentTableIdx >= tables.length) {
+      Logger.log(`CẢNH BÁO: Số lượng mẫu vượt quá dung lượng tối đa của template (${tables.length / tablesPerPage} trang).`);
+      break;
+    }
+    
+    const currentTable = tables[currentTableIdx];
+    const pageSamples = samples.slice(p * maxSamplesPerPage, (p + 1) * maxSamplesPerPage);
+    
+    let pageExtraLines = 0;
+    for (let i = 0; i < pageSamples.length; i++) {
+      const rowIdx = startRow + i;
+      const row = currentTable.getRow(rowIdx);
+      const sample = pageSamples[i];
+
+      let rowExtraLines = 0;
+      // Điền tất cả các cột được cấu hình động
+      for (const [colKey, colIdx] of Object.entries(cols)) {
+        if (colIdx === undefined || colIdx === null) continue;
+        
+        let textVal = '';
+        if (colKey === 'loSo') {
+          textVal = sample.loSo || '';
+        } else if (colKey === 'maSoMau') {
+          textVal = sample.maSoMau || '';
+        } else if (colKey === 'nd') {
+          textVal = sample.nd ? '☑' : '☐';
+        } else if (colKey === 'ghiChu') {
+          textVal = sample.ghiChu || '';
+        } else {
+          // Các cột chỉ tiêu kết quả hoặc QC (kqTrifluralin, kqFip, qc1,...)
+          textVal = sample[colKey] !== undefined ? sample[colKey] : (sample.kq !== undefined ? sample.kq : '');
+        }
+        
+        // Cột mã số mẫu: Áp dụng ngắt dòng tự động dựa trên cấu hình maSoMauChunkSize
+        const chunkSize = (colKey === 'maSoMau') ? (sopConfig.maSoMauChunkSize || 0) : 0;
+        const e = setCellText(row, colIdx, textVal, chunkSize);
+        rowExtraLines = Math.max(rowExtraLines, e);
+      }
+      
+      pageExtraLines += rowExtraLines;
+    }
+    
+    // Tiến hành xóa các dòng trống ở cuối bảng tương ứng với số dòng bị phình ra
+    if (pageExtraLines > 0) {
+      const totalRows = currentTable.getNumRows();
+      const lastSampleRowIdx = startRow + pageSamples.length - 1;
+      
+      // Số lượng dòng trống tối đa có thể xóa (từ dòng cuối bảng ngược lên đến dòng sau mẫu cuối cùng)
+      const emptyRowsAvailable = totalRows - 1 - lastSampleRowIdx;
+      
+      // Xóa tối đa pageExtraLines dòng trống ở cuối bảng
+      const rowsToDelete = Math.min(pageExtraLines, emptyRowsAvailable);
+      if (rowsToDelete > 0) {
+        Logger.log(`[TableFit] Phát hiện phình ${pageExtraLines} dòng trên trang ${p + 1}. Tiến hành xóa ${rowsToDelete} dòng trống ở cuối bảng.`);
+        for (let r = 0; r < rowsToDelete; r++) {
+          try {
+            currentTable.removeRow(currentTable.getNumRows() - 1);
+          } catch(err) {
+            Logger.log(`[TableFit] Lỗi khi xóa dòng cuối bảng: ${err.toString()}`);
+          }
+        }
+      }
+    }
+  }
+
+  // 3. TỰ ĐỘNG CẮT (TRUNCATE) CÁC TRANG DƯ THỪA BẰNG CÔNG THỨC TOÁN HỌC BẤT BIẾN
+  const numChildren = body.getNumChildren();
+  let cutIndex = -1;
+
+  if (sampleTableIndices.length > 1) {
+    const idx1 = body.getChildIndex(tables[sampleTableIndices[0]]);
+    const idx2 = body.getChildIndex(tables[sampleTableIndices[1]]);
+    const elementsPerPage = idx2 - idx1;
+    
+    // Vị trí cắt chính xác tuyệt đối bằng số trang cần giữ nhân với số phần tử mỗi trang
+    cutIndex = totalPagesNeeded * elementsPerPage;
+    Logger.log(`[Autocut] Tính toán vị trí cắt bằng toán học: idx1=${idx1}, idx2=${idx2}, elementsPerPage=${elementsPerPage} | Cắt từ child index ${cutIndex}`);
+    
+    if (cutIndex >= numChildren) {
+      cutIndex = -1;
+    }
+  }
+
+  // Nếu tìm thấy dấu cắt, tiến hành xóa toàn bộ các phần tử thừa từ điểm cắt tới cuối tài liệu
+  if (cutIndex !== -1) {
+    Logger.log(`[Autocut] Tiến hành cắt bỏ các trang thừa. Điểm cắt tại phần tử index ${cutIndex}.`);
+    
+    let activeIndex = cutIndex;
+    while (activeIndex < body.getNumChildren()) {
+      const child = body.getChild(activeIndex);
+      try {
+        body.removeChild(child);
+        // Nếu xóa thành công, phần tử tiếp theo sẽ tự động dịch chuyển về index activeIndex
+      } catch(e) {
+        Logger.log(`[Autocut] Không thể xóa phần tử index ${activeIndex}: ${e.toString()}`);
+        try {
+          if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            child.asParagraph().clear();
+          } else if (child.getType() === DocumentApp.ElementType.TABLE) {
+            const tbl = child.asTable();
+            for (let r = 0; r < tbl.getNumRows(); r++) {
+              const row = tbl.getRow(r);
+              for (let c = 0; c < row.getNumCells(); c++) {
+                row.getCell(c).clear();
+              }
+            }
+          }
+        } catch(err) {
+          Logger.log(`[Autocut] Không thể clear phần tử index ${activeIndex}: ${err.toString()}`);
+        }
+        activeIndex++;
+      }
+    }
+
+    // 4. TIẾN HÀNH DỌN DẸP DẤU NGẮT TRANG & DÒNG TRỐNG THỪA Ở CUỐI TÀI LIỆU ĐÃ CẮT
+    try {
+      for (let k = 0; k < 3; k++) {
+        const currentLastIdx = body.getNumChildren() - 1;
+        if (currentLastIdx <= 0) break;
+        const lastChild = body.getChild(currentLastIdx);
+        let removed = false;
+        
+        if (lastChild.getType() === DocumentApp.ElementType.PAGE_BREAK) {
+          try {
+            body.removeChild(lastChild);
+            removed = true;
+          } catch(err) {}
+        } else if (lastChild.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const p = lastChild.asParagraph();
+          for (let c = p.getNumChildren() - 1; c >= 0; c--) {
+            if (p.getChild(c).getType() === DocumentApp.ElementType.PAGE_BREAK) {
+              try {
+                p.removeChild(p.getChild(c));
+              } catch(err) {}
+            }
+          }
+          if (p.getText().trim() === "" && p.getNumChildren() === 0 && body.getNumChildren() > 1) {
+            try {
+              body.removeChild(p);
+              removed = true;
+            } catch(err) {}
+          }
+        }
+        if (!removed) break;
+      }
+    } catch(e) {
+      Logger.log(`[Autocut] Lỗi trong vòng lặp dọn dẹp: ${e.toString()}`);
+    }
+
+    // Thiết lập chiều cao của phần tử Paragraph cuối cùng về 1pt và không có khoảng cách
+    try {
+      const finalLastIdx = body.getNumChildren() - 1;
+      if (finalLastIdx >= 0) {
+        const lastChild = body.getChild(finalLastIdx);
+        if (lastChild.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const p = lastChild.asParagraph();
+          p.clear();
+          p.setFontSize(1);
+          p.setLineSpacing(0.06);
+          p.setSpacingAfter(0);
+          p.setSpacingBefore(0);
+        }
+      }
+    } catch(e) {
+      Logger.log(`[Autocut] Lỗi khi co nhỏ paragraph cuối: ${e.toString()}`);
+    }
+  }
+}
