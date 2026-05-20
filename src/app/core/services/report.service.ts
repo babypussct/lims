@@ -46,8 +46,8 @@ export interface ReportResult {
 export class ReportService {
   private http = inject(HttpClient);
 
-  /** URL của GAS Web App — deploy xong paste vào environment */
-  private readonly GAS_URL = (environment as any)['gasReportUrl'] || '';
+  /** URL của GAS Web App — deploy xong paste vào environment.gasReportUrl */
+  private readonly GAS_URL = environment.gasReportUrl || '';
 
   /**
    * Tạo báo cáo PDF từ dữ liệu nhập kết quả.
@@ -55,8 +55,12 @@ export class ReportService {
    */
   async generateReport(payload: GenerateReportPayload): Promise<ReportResult> {
     if (!this.GAS_URL) {
-      throw new Error('gasReportUrl chưa được cấu hình trong environment');
+      throw new Error(
+        'Chưa cấu hình GAS Web App URL. ' +
+        'Vui lòng deploy Google Apps Script và paste URL vào environment.gasReportUrl.'
+      );
     }
+
 
     // GAS Web App không nhận Content-Type: application/json trực tiếp
     // Cần gửi dưới dạng text/plain để tránh CORS preflight

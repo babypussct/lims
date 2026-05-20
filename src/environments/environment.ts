@@ -1,4 +1,3 @@
-
 export const environment = {
   production: false,
   firebase: {
@@ -16,5 +15,7 @@ export const environment = {
     clientId: '659051444640-bcal7vcjb9dd5m9aim5to7su4nk9kdtg.apps.googleusercontent.com',
     folderId: '1Lf9E9Hn8300oveEH0LKVj_iibftodzU8',
     appId: '659051444640'
-  }
+  },
+  // URL Google Apps Script Web App
+  gasReportUrl: 'https://script.google.com/macros/s/AKfycbx4kihClD49tPdoi9wSQWRmeO_BHIwCU2indOCXOWcU_n3fmgon6LeXvzJ3r-Yl_oeC/exec'
 };
