@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
@@ -145,6 +145,7 @@ import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
           <!-- Render Type 2 / 3A Component (Grid spreadsheet) -->
           @else {
             <app-result-entry-type2 
+              #type2Grid
               [run]="run()!" 
               [draft]="draft()!" 
               [config]="config()!" 
@@ -211,6 +212,7 @@ import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
   `
 })
 export class ResultEntryComponent implements OnInit, OnDestroy {
+  @ViewChild('type2Grid') type2Grid?: ResultEntryType2Component;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private state = inject(StateService);
@@ -478,10 +480,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       const isTrifluralin = this.configKey() === 'trifluralin-gcms';
 
       if (isTrifluralin) {
+        const activeFilter = this.type2Grid?.selectedPrefixFilter() || 'ALL';
         const sampleList = currentRun.sampleList || [];
         const checkedSamples = sampleList.filter((s: string) => {
           const resObj = currentDraft.resultData[s] || {};
-          return resObj['selected'] !== false;
+          const startsWithLetter = /^[a-zA-Z]/.test(s);
+          const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+          const isSelected = resObj['selected'] !== false;
+          const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+          return isSelected && matchesFilter;
         });
 
         if (checkedSamples.length === 0) {
@@ -532,7 +539,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             ghiChu: spikeObj['ghiChu'] || ''
           });
 
-          // 3. Thêm các mẫu thuộc nhóm tiền tố này
+          // 3. Thêm các mẫu thuộc nhóm tiền tố này và các mẫu SPIKE_N xen kẽ
+          let selectedCount = 0;
           prefixSamples.forEach((sampleCode: string) => {
             const resObj = currentDraft.resultData[sampleCode] || {};
             samplesPayload.push({
@@ -541,7 +549,32 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
               kqTrifluralin: resObj['kqTrifluralin'] || '',
               ghiChu: resObj['ghiChu'] || ''
             });
+
+            selectedCount++;
+            if (selectedCount % 10 === 0) {
+              const n = selectedCount / 10;
+              const spikeNKey = `__SPIKE_${n}_QC_${prefixForReport}__`;
+              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
+              samplesPayload.push({
+                loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
+                maSoMau: `SPIKE_${n}`,
+                kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
+                ghiChu: spikeNObj['ghiChu'] || ''
+              });
+            }
           });
+
+          // 4. FINAL row
+          if (selectedCount > 0) {
+            const finalKey = `__FINAL_QC_${prefixForReport}__`;
+            const finalObj = currentDraft.resultData[finalKey] || {};
+            samplesPayload.push({
+              loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
+              maSoMau: 'FINAL',
+              kqTrifluralin: finalObj['kqTrifluralin'] || '',
+              ghiChu: finalObj['ghiChu'] || ''
+            });
+          }
 
           const reportPayload: any = {
             action: 'generate_pdf',
