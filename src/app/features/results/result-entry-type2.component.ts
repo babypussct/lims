@@ -568,11 +568,13 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   getSpikeNKey(n: number, prefix: string): string {
-    return `QC_SPIKE_${n}_QC_${prefix}`;
+    const p = prefix === 'ALL' ? '' : prefix;
+    return `QC_SPIKE_${n}_QC_${p}`;
   }
 
   getFinalKey(prefix: string): string {
-    return `QC_FINAL_QC_${prefix}`;
+    const p = prefix === 'ALL' ? '' : prefix;
+    return `QC_FINAL_QC_${p}`;
   }
 
   getDisplayRowsForPrefix(prefix: string): any[] {

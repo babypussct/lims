@@ -63,7 +63,8 @@ function generateReport(sopId, metadata, samples, version) {
   const now = new Date();
   const dateStr = Utilities.formatDate(now, 'Asia/Ho_Chi_Minh', 'yyyyMMdd_HHmm');
   const vSuffix = version ? `_v${version}` : '';
-  const fileName = `KQ_${sopId}_${metadata.batchCode || dateStr}${vSuffix}`;
+  const prefixSuffix = metadata.prefix ? `_${metadata.prefix}` : '';
+  const fileName = `KQ_${sopId}_${metadata.batchCode || dateStr}${vSuffix}${prefixSuffix}`;
 
   // 2. Tạo/lấy folder theo năm/tháng/chỉ tiêu
   const folder = getOrCreateFolder(now, sopId);

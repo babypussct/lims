@@ -522,7 +522,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       const isTrifluralin = this.configKey() === 'trifluralin-gcms';
 
       if (isTrifluralin) {
-        const activeFilter = this.type2Grid?.selectedPrefixFilter() || 'ALL';
+        const activeFilter = this.type2Grid?.selectedPrefixFilter() !== undefined ? this.type2Grid.selectedPrefixFilter() : 'ALL';
         const sampleList = currentRun.sampleList || [];
         const checkedSamples = sampleList.filter((s: string) => {
           const resObj = currentDraft.resultData[s] || {};
@@ -540,115 +540,92 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Nhóm mẫu theo tiền tố (ký tự chữ cái đầu tiên, nếu có)
-        const groups: Record<string, string[]> = {};
-        checkedSamples.forEach((sampleCode: string) => {
-          const startsWithLetter = /^[a-zA-Z]/.test(sampleCode);
-          const prefix = startsWithLetter ? sampleCode.charAt(0).toUpperCase() : '';
-          const groupKey = prefix || '__DEFAULT__';
-          if (!groups[groupKey]) {
-            groups[groupKey] = [];
-          }
-          groups[groupKey].push(sampleCode);
+        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+        const prefixSamples = checkedSamples;
+
+        const samplesPayload: any[] = [];
+
+        // 1. Thêm Blank vào đầu danh sách
+        const blankObj = currentDraft.resultData['QC_BLANK'] || {};
+        samplesPayload.push({
+          loSo: blankObj['loSo'] || '1',
+          maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
+          kqTrifluralin: blankObj['kqTrifluralin'] || '',
+          ghiChu: blankObj['ghiChu'] || ''
         });
 
-        const prefixKeys = Object.keys(groups);
-        this.toast.show(`Phát hiện ${prefixKeys.length} nhóm tiền tố cần in độc lập: ${prefixKeys.map(k => k === '__DEFAULT__' ? 'Không tiền tố' : k).join(', ')}`, 'info');
+        // 2. Thêm Spike vào vị trí thứ 2
+        const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
+        samplesPayload.push({
+          loSo: spikeObj['loSo'] || '2',
+          maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
+          kqTrifluralin: spikeObj['kqTrifluralin'] || '',
+          ghiChu: spikeObj['ghiChu'] || ''
+        });
 
-        let allSuccess = true;
-        for (let i = 0; i < prefixKeys.length; i++) {
-          const groupKey = prefixKeys[i];
-          const prefixForReport = groupKey === '__DEFAULT__' ? '' : groupKey;
-          const prefixSamples = groups[groupKey];
-
-          const samplesPayload: any[] = [];
-
-          // 1. Thêm Blank vào đầu danh sách
-          const blankObj = currentDraft.resultData['QC_BLANK'] || {};
+        // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
+        let selectedCount = 0;
+        prefixSamples.forEach((sampleCode: string) => {
+          const resObj = currentDraft.resultData[sampleCode] || {};
           samplesPayload.push({
-            loSo: blankObj['loSo'] || '1',
-            maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
-            kqTrifluralin: blankObj['kqTrifluralin'] || '',
-            ghiChu: blankObj['ghiChu'] || ''
+            loSo: resObj['loSo'] || '',
+            maSoMau: sampleCode,
+            kqTrifluralin: resObj['kqTrifluralin'] || '',
+            ghiChu: resObj['ghiChu'] || ''
           });
 
-          // 2. Thêm Spike vào vị trí thứ 2
-          const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
-          samplesPayload.push({
-            loSo: spikeObj['loSo'] || '2',
-            maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
-            kqTrifluralin: spikeObj['kqTrifluralin'] || '',
-            ghiChu: spikeObj['ghiChu'] || ''
-          });
-
-          // 3. Thêm các mẫu thuộc nhóm tiền tố này và các mẫu SPIKE_N xen kẽ
-          let selectedCount = 0;
-          prefixSamples.forEach((sampleCode: string) => {
-            const resObj = currentDraft.resultData[sampleCode] || {};
+          selectedCount++;
+          if (selectedCount % 10 === 0) {
+            const n = selectedCount / 10;
+            const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
+            const spikeNObj = currentDraft.resultData[spikeNKey] || {};
             samplesPayload.push({
-              loSo: resObj['loSo'] || '',
-              maSoMau: sampleCode,
-              kqTrifluralin: resObj['kqTrifluralin'] || '',
-              ghiChu: resObj['ghiChu'] || ''
-            });
-
-            selectedCount++;
-            if (selectedCount % 10 === 0) {
-              const n = selectedCount / 10;
-              const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
-              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
-              samplesPayload.push({
-                loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
-                maSoMau: `SPIKE_${n}`,
-                kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
-                ghiChu: spikeNObj['ghiChu'] || ''
-              });
-            }
-          });
-
-          // 4. FINAL row
-          if (selectedCount > 0) {
-            const finalKey = `QC_FINAL_QC_${prefixForReport}`;
-            const finalObj = currentDraft.resultData[finalKey] || {};
-            samplesPayload.push({
-              loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
-              maSoMau: 'FINAL',
-              kqTrifluralin: finalObj['kqTrifluralin'] || '',
-              ghiChu: finalObj['ghiChu'] || ''
+              loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
+              maSoMau: `SPIKE_${n}`,
+              kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
+              ghiChu: spikeNObj['ghiChu'] || ''
             });
           }
+        });
 
-          const reportPayload: any = {
-            action: 'generate_pdf',
-            sopId: this.configKey(),
-            metadata: {
-              ...currentDraft.page1Data,
-              prefix: prefixForReport,
-              ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
-            },
-            samples: samplesPayload
-          };
+        // 4. FINAL row
+        if (selectedCount > 0) {
+          const finalKey = `QC_FINAL_QC_${prefixForReport}`;
+          const finalObj = currentDraft.resultData[finalKey] || {};
+          samplesPayload.push({
+            loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
+            maSoMau: 'FINAL',
+            kqTrifluralin: finalObj['kqTrifluralin'] || '',
+            ghiChu: finalObj['ghiChu'] || ''
+          });
+        }
 
-          const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
-          if (result.success) {
-            const url = result.pdfViewUrl || result.pdfUrl;
-            if (url) {
-              if (i === 0) {
-                if (pdfWindow && !pdfWindow.closed) {
-                  pdfWindow.location.href = url;
-                } else {
-                  window.open(url, '_blank');
-                }
-              } else {
-                window.open(url, '_blank');
-              }
+        const reportPayload: any = {
+          action: 'generate_pdf',
+          sopId: this.configKey(),
+          metadata: {
+            ...currentDraft.page1Data,
+            prefix: prefixForReport,
+            ngayBaoCao: currentDraft.page1Data?.ngayNguoiPhanTich || new Date().toISOString().split('T')[0]
+          },
+          samples: samplesPayload
+        };
+
+        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
+        let success = false;
+        if (result.success) {
+          success = true;
+          const url = result.pdfViewUrl || result.pdfUrl;
+          if (url) {
+            if (pdfWindow && !pdfWindow.closed) {
+              pdfWindow.location.href = url;
+            } else {
+              window.open(url, '_blank');
             }
-          } else {
-            allSuccess = false;
           }
         }
 
-        if (allSuccess) {
+        if (success) {
           const latestDraft = await this.resultService.getDraft(this.requestId);
           if (latestDraft) {
             this.draft.set(latestDraft);
