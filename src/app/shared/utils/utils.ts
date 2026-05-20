@@ -191,17 +191,47 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
     const isSequential = (prev: string, curr: string): boolean => {
         if (!prev || !curr) return false;
 
-        const prevMatch = prev.match(/^(.*?)(\d+)(\D*)$/);
-        const currMatch = curr.match(/^(.*?)(\d+)(\D*)$/);
+        // Tách chuỗi thành các phần text và number
+        const splitRegex = /(\d+)/g;
+        const getParts = (s: string) => {
+            const parts: string[] = [];
+            let lastIdx = 0;
+            let m;
+            while ((m = splitRegex.exec(s)) !== null) {
+                parts.push(s.substring(lastIdx, m.index));
+                parts.push(m[1]);
+                lastIdx = splitRegex.lastIndex;
+            }
+            parts.push(s.substring(lastIdx));
+            return parts;
+        };
 
-        if (!prevMatch || !currMatch) return false;
-        
-        if (prevMatch[1] !== currMatch[1] || prevMatch[3] !== currMatch[3]) return false;
+        const prevParts = getParts(prev);
+        const currParts = getParts(curr);
 
-        const prevNum = parseInt(prevMatch[2], 10);
-        const currNum = parseInt(currMatch[2], 10);
+        if (prevParts.length !== currParts.length) return false;
+
+        let diffCount = 0;
+        let isSeq = false;
+
+        for (let i = 0; i < prevParts.length; i++) {
+            if (i % 2 === 0) { // Text parts must be exactly equal
+                if (prevParts[i] !== currParts[i]) return false;
+            } else { // Number parts
+                if (prevParts[i] !== currParts[i]) {
+                    diffCount++;
+                    const prevNum = parseInt(prevParts[i], 10);
+                    const currNum = parseInt(currParts[i], 10);
+                    if (currNum === prevNum + 1) {
+                        isSeq = true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
         
-        return currNum === prevNum + 1;
+        return diffCount === 1 && isSeq;
     };
 
     const ranges: string[] = [];
