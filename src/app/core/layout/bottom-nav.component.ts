@@ -113,6 +113,16 @@ import { NotificationBellComponent } from '../../shared/components/notification-
                     </button>
                 }
 
+                <!-- 3b. Nhập Kết quả -->
+                @if(auth.canViewSop()) {
+                    <button (click)="navTo('/results')" class="flex flex-col items-center gap-1 group">
+                        <div class="w-14 h-14 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center text-xl shadow-sm group-active:scale-95 transition border border-fuchsia-100 dark:border-fuchsia-800/30">
+                            <i class="fa-solid fa-square-poll-vertical"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Nhập KQ</span>
+                    </button>
+                }
+
                 <!-- 4. Standards -->
                 @if(auth.canViewStandards()) {
                     <button (click)="navTo('/standards')" class="flex flex-col items-center gap-1 group">

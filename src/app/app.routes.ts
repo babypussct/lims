@@ -91,6 +91,18 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.SOP_VIEW }
   },
   {
+    path: 'results',
+    loadComponent: () => import('./features/results/result-list.component').then(m => m.ResultListComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
+    path: 'results/:id',
+    loadComponent: () => import('./features/results/result-entry.component').then(m => m.ResultEntryComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
     path: 'stats',
     loadComponent: () => import('./features/dashboard/statistics.component').then(m => m.StatisticsComponent),
     canActivate: [permissionGuard],

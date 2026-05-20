@@ -1,0 +1,102 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
+
+export interface SampleResult {
+  loSo: string;
+  maSoMau: string;
+  kq: string | null;   // null = ND (không phát hiện)
+  ghiChu?: string;
+  nd?: boolean;        // cho Type3B
+  qc1?: string;
+  qc2?: string;
+  qc3?: string;
+}
+
+export interface ReportMetadata {
+  batchCode: string;
+  ngayNguoiPhanTich: string;
+  ngayNguoiThamTra: string;
+  checkTatCaND?: boolean;
+  checkCoMauPhatHien?: boolean;
+  [key: string]: any;
+}
+
+export interface GenerateReportPayload {
+  action: 'generate_pdf';
+  sopId: string;
+  metadata: ReportMetadata;
+  samples: SampleResult[];
+}
+
+export interface ReportResult {
+  success: boolean;
+  docId: string;
+  pdfId: string;
+  docsUrl: string;
+  pdfUrl: string;
+  pdfViewUrl: string;
+  fileName: string;
+  createdAt: string;
+  error?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ReportService {
+  private http = inject(HttpClient);
+
+  /** URL của GAS Web App — deploy xong paste vào environment */
+  private readonly GAS_URL = (environment as any)['gasReportUrl'] || '';
+
+  /**
+   * Tạo báo cáo PDF từ dữ liệu nhập kết quả.
+   * GAS sẽ: copy template → điền data → export PDF → lưu Drive → trả URL
+   */
+  async generateReport(payload: GenerateReportPayload): Promise<ReportResult> {
+    if (!this.GAS_URL) {
+      throw new Error('gasReportUrl chưa được cấu hình trong environment');
+    }
+
+    // GAS Web App không nhận Content-Type: application/json trực tiếp
+    // Cần gửi dưới dạng text/plain để tránh CORS preflight
+    const result = await firstValueFrom(
+      this.http.post<ReportResult>(this.GAS_URL, JSON.stringify(payload), {
+        headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
+      })
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Lỗi không xác định từ GAS');
+    }
+
+    return result;
+  }
+
+  /**
+   * Mở PDF trong tab mới để xem/in.
+   */
+  openPdf(result: ReportResult): void {
+    window.open(result.pdfViewUrl || result.pdfUrl, '_blank');
+  }
+
+  /**
+   * Build payload chuẩn cho filebieumau2 (Trifluralin GC-MS).
+   * Dùng làm reference để xây cho các SOP khác.
+   */
+  buildTrifluralinPayload(
+    batchCode: string,
+    metadata: ReportMetadata,
+    samples: SampleResult[]
+  ): GenerateReportPayload {
+    return {
+      action: 'generate_pdf',
+      sopId: 'trifluralin-gcms',
+      metadata: {
+        ...metadata,
+        batchCode,
+      },
+      samples,
+    };
+  }
+}
