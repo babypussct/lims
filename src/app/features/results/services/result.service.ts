@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService as CoreFirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -16,17 +16,19 @@ export class ResultService {
   private toast = inject(ToastService);
 
   private getDocRef(requestId: string) {
-    return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'analysis_results', requestId);
+    // Tái sử dụng collection 'requests' đã có đầy đủ quyền đọc/ghi trên Production
+    return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
   }
 
   /**
-   * Tải bản ghi nháp từ Firestore
+   * Tải bản ghi nháp từ trường analysisResult trong Request document
    */
   async getDraft(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
       const docSnap = await getDoc(this.getDocRef(requestId));
       if (docSnap.exists()) {
-        return docSnap.data() as AnalysisResultDraft;
+        const reqData = docSnap.data();
+        return reqData['analysisResult'] || null;
       }
       return null;
     } catch (e: any) {
@@ -37,17 +39,28 @@ export class ResultService {
   }
 
   /**
-   * Lưu nháp kết quả phân tích vào Firestore
+   * Lưu nháp kết quả phân tích vào trường analysisResult trong Request document
    */
   async saveDraft(requestId: string, draft: Partial<AnalysisResultDraft>): Promise<boolean> {
     try {
       const ref = this.getDocRef(requestId);
-      const dataToSave = {
+      const docSnap = await getDoc(ref);
+      if (!docSnap.exists()) {
+        throw new Error('Mẻ chạy không tồn tại trên hệ thống!');
+      }
+
+      const reqData = docSnap.data();
+      const currentResult = reqData['analysisResult'] || {};
+
+      // Merge dữ liệu cũ và mới để tránh mất thông tin
+      const updatedResult = {
+        ...currentResult,
         ...draft,
-        updatedAt: serverTimestamp(),
+        updatedAt: new Date().toISOString(),
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
-      await setDoc(ref, dataToSave, { merge: true });
+
+      await updateDoc(ref, { analysisResult: updatedResult });
       return true;
     } catch (e: any) {
       console.error('Error saving result draft:', e);
@@ -74,8 +87,8 @@ export class ResultService {
         return {
           ...draft,
           ...restoredData,
-          updatedAt: new Date()
-        } as AnalysisResultDraft;
+          updatedAt: new Date().toISOString()
+        } as any;
       }
       this.toast.show('Không tìm thấy bản xuất bản trước đó để khôi phục!', 'info');
       return null;
@@ -87,7 +100,7 @@ export class ResultService {
   }
 
   /**
-   * Xuất bản PDF báo cáo và lưu backup trong Firestore
+   * Xuất bản PDF báo cáo và lưu backup trực tiếp trong Request document
    */
   async publishReport(
     requestId: string,
@@ -105,22 +118,31 @@ export class ResultService {
 
       // 2. Lưu trạng thái completed và tạo bản backup hồi phục (Fallback backup)
       const ref = this.getDocRef(requestId);
+      const docSnap = await getDoc(ref);
+      if (!docSnap.exists()) {
+        throw new Error('Mẻ chạy không tồn tại!');
+      }
+
+      const reqData = docSnap.data();
+      const currentResult = reqData['analysisResult'] || {};
+
       const backup = {
         page1Data: draftData.page1Data,
         resultData: draftData.resultData,
-        publishedAt: serverTimestamp(),
+        publishedAt: new Date().toISOString(),
         publishedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
-      const finalData: Partial<AnalysisResultDraft> = {
+      const finalResult = {
+        ...currentResult,
         ...draftData,
         status: 'completed',
         publishedBackup: backup,
-        updatedAt: serverTimestamp(),
+        updatedAt: new Date().toISOString(),
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
-      await setDoc(ref, finalData, { merge: true });
+      await updateDoc(ref, { analysisResult: finalResult });
       
       // 3. Mở tệp PDF mới tạo trong tab mới
       if (response.pdfUrl) {

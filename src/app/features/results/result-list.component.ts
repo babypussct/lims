@@ -1,10 +1,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
-import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
-import { collection, onSnapshot, query } from 'firebase/firestore';
-import { FirebaseService } from '../../core/services/firebase.service';
 import { formatSampleList } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 
@@ -133,7 +130,6 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 })
 export class ResultListComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
-  private fb = inject(FirebaseService);
   private router = inject(Router);
 
   formatSampleList = formatSampleList;
@@ -141,36 +137,22 @@ export class ResultListComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
 
-  // Map lưu trữ trạng thái của từng requestId từ collection analysis_results
-  runStatusMap = signal<Record<string, 'pending' | 'draft' | 'completed'>>({});
-  private unsubscribes: (() => void)[] = [];
+  // Đọc động trạng thái mẻ chạy từ StateService của Requests (Đã có sẵn cơ chế DeltaSync thời gian thực)
+  runStatusMap = computed(() => {
+    const statusMap: Record<string, 'pending' | 'draft' | 'completed'> = {};
+    const all = this.state.approvedRequests() || [];
+    all.forEach(run => {
+      statusMap[run.id] = run.analysisResult?.status || 'pending';
+    });
+    return statusMap;
+  });
 
   ngOnInit() {
-    this.listenToAnalysisResults();
+    // Không cần lắng nghe snapshot collection phụ mới -> Đã kế thừa DeltaSync của Requests
+    this.isLoading.set(false);
   }
 
-  ngOnDestroy() {
-    this.unsubscribes.forEach(unsub => unsub());
-  }
-
-  private listenToAnalysisResults() {
-    const q = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'analysis_results'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const statusMap: Record<string, 'pending' | 'draft' | 'completed'> = {};
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        statusMap[docSnap.id] = data['status'] || 'draft';
-      });
-      
-      this.runStatusMap.set(statusMap);
-      this.isLoading.set(false);
-    }, (error) => {
-      console.error('Error listening to analysis results:', error);
-      this.isLoading.set(false);
-    });
-    
-    this.unsubscribes.push(unsub);
-  }
+  ngOnDestroy() {}
 
   // Danh sách các mẻ đã duyệt thành công
   allApprovedRuns = computed(() => {

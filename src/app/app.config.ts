@@ -2,6 +2,7 @@ import { ApplicationConfig, provideZoneChangeDetection, isDevMode, ErrorHandler,
 import { provideRouter, withHashLocation, withComponentInputBinding, withRouterConfig } from '@angular/router';
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideHttpClient } from '@angular/common/http';
 
 /**
  * Global Error Handler: Tự động reload khi gặp lỗi "stale chunk" sau deploy mới.
@@ -56,6 +57,7 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerImmediately'
     }),
+    provideHttpClient(),
     // Global chunk error handler
     { provide: ErrorHandler, useClass: GlobalErrorHandler }
   ]

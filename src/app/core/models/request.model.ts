@@ -1,4 +1,6 @@
 
+import { AnalysisResultDraft } from './analysis-result.model';
+
 export interface RequestItem {
   name: string; // ID of the item
   displayName?: string; // Human readable name (Denormalized)
@@ -26,4 +28,7 @@ export interface Request {
   // New Feature: Sample & Target Tracking
   sampleList?: string[]; // List of Sample IDs
   targetIds?: string[];  // List of Selected Target IDs
+  
+  // Embed Analysis Result directly in Request to reuse existing collections and rules
+  analysisResult?: AnalysisResultDraft;
 }
