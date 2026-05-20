@@ -206,14 +206,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
               @if (isTrifluralin) {
                 @if (selectedPrefixFilter() === 'ALL') {
                   <!-- 1. Trifluralin-specific QC: Blank Row (Always shown in ALL) -->
-                  @if (draft.resultData['__BLANK__']) {
+                  @if (draft.resultData['QC_BLANK']) {
                     <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                       <td class="py-2.5 px-3 text-center">
                         <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                       </td>
                       <td class="py-1 px-2 w-24">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__BLANK__']['loSo']"
+                               [(ngModel)]="draft.resultData['QC_BLANK']['loSo']"
                                (ngModelChange)="onDataChanged()"
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
@@ -222,14 +222,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                       </td>
                       <td class="py-1 px-2">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__BLANK__']['kqTrifluralin']"
-                               (ngModelChange)="onCellChanged('__BLANK__')"
+                               [(ngModel)]="draft.resultData['QC_BLANK']['kqTrifluralin']"
+                               (ngModelChange)="onCellChanged('QC_BLANK')"
                                placeholder="..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
                       <td class="py-1 px-2">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__BLANK__']['ghiChu']"
+                               [(ngModel)]="draft.resultData['QC_BLANK']['ghiChu']"
                                (ngModelChange)="onDataChanged()"
                                placeholder="Ghi chú..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
@@ -241,14 +241,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   }
 
                   <!-- 2. Trifluralin-specific QC: Spike Row (Always shown in ALL) -->
-                  @if (draft.resultData['__SPIKE__']) {
+                  @if (draft.resultData['QC_SPIKE']) {
                     <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                       <td class="py-2.5 px-3 text-center">
                         <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                       </td>
                       <td class="py-1 px-2 w-24">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__SPIKE__']['loSo']"
+                               [(ngModel)]="draft.resultData['QC_SPIKE']['loSo']"
                                (ngModelChange)="onDataChanged()"
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
@@ -257,14 +257,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                       </td>
                       <td class="py-1 px-2">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__SPIKE__']['kqTrifluralin']"
-                               (ngModelChange)="onCellChanged('__SPIKE__')"
+                               [(ngModel)]="draft.resultData['QC_SPIKE']['kqTrifluralin']"
+                               (ngModelChange)="onCellChanged('QC_SPIKE')"
                                placeholder="..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                       </td>
                       <td class="py-1 px-2">
                         <input type="text"
-                               [(ngModel)]="draft.resultData['__SPIKE__']['ghiChu']"
+                               [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
                                (ngModelChange)="onDataChanged()"
                                placeholder="Ghi chú..."
                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
@@ -334,7 +334,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2 w-24">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__BLANK__']['loSo']"
+                                 [(ngModel)]="draft.resultData['QC_BLANK']['loSo']"
                                  (ngModelChange)="onDataChanged()"
                                  class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                         </td>
@@ -343,8 +343,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__BLANK__']['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged('__BLANK__')"
+                                 [(ngModel)]="draft.resultData['QC_BLANK']['kqTrifluralin']"
+                                 (ngModelChange)="onCellChanged('QC_BLANK')"
                                  [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                                  (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                                  placeholder="..."
@@ -352,7 +352,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__BLANK__']['ghiChu']"
+                                 [(ngModel)]="draft.resultData['QC_BLANK']['ghiChu']"
                                  (ngModelChange)="onDataChanged()"
                                  placeholder="Ghi chú..."
                                  class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
@@ -368,7 +368,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2 w-24">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__SPIKE__']['loSo']"
+                                 [(ngModel)]="draft.resultData['QC_SPIKE']['loSo']"
                                  (ngModelChange)="onDataChanged()"
                                  class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                         </td>
@@ -377,8 +377,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__SPIKE__']['kqTrifluralin']"
-                                 (ngModelChange)="onCellChanged('__SPIKE__')"
+                                 [(ngModel)]="draft.resultData['QC_SPIKE']['kqTrifluralin']"
+                                 (ngModelChange)="onCellChanged('QC_SPIKE')"
                                  [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                                  (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                                  placeholder="..."
@@ -386,7 +386,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData['__SPIKE__']['ghiChu']"
+                                 [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
                                  (ngModelChange)="onDataChanged()"
                                  placeholder="Ghi chú..."
                                  class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
@@ -402,7 +402,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                         </td>
                         <td class="py-1 px-2 w-24">
                           <input type="text"
-                                 [value]="draft.resultData['__SPIKE__'] ? draft.resultData['__SPIKE__']['loSo'] : '2'"
+                                 [value]="draft.resultData['QC_SPIKE'] ? draft.resultData['QC_SPIKE']['loSo'] : '2'"
                                  disabled
                                  class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 font-bold outline-none text-center">
                         </td>
@@ -627,11 +627,11 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   getSpikeNKey(n: number, prefix: string): string {
-    return `__SPIKE_${n}_QC_${prefix}__`;
+    return `QC_SPIKE_${n}_QC_${prefix}`;
   }
 
   getFinalKey(prefix: string): string {
-    return `__FINAL_QC_${prefix}__`;
+    return `QC_FINAL_QC_${prefix}`;
   }
 
   getDisplayRowsForPrefix(prefix: string): any[] {
@@ -646,28 +646,28 @@ export class ResultEntryType2Component implements OnInit {
     const ensureKey = (key: string, isSpikeQC: boolean) => {
       if (!this.draft.resultData[key]) {
         this.draft.resultData[key] = {
-          loSo: isSpikeQC ? (this.draft.resultData['__SPIKE__']?.['loSo'] || '2') : '',
+          loSo: isSpikeQC ? (this.draft.resultData['QC_SPIKE']?.['loSo'] || '2') : '',
           kqTrifluralin: '',
           ghiChu: '',
           selected: true
         };
       } else if (isSpikeQC) {
-        this.draft.resultData[key]['loSo'] = this.draft.resultData['__SPIKE__']?.['loSo'] || '2';
+        this.draft.resultData[key]['loSo'] = this.draft.resultData['QC_SPIKE']?.['loSo'] || '2';
       }
     };
 
-    ensureKey('__BLANK__', false);
-    ensureKey('__SPIKE__', false);
+    ensureKey('QC_BLANK', false);
+    ensureKey('QC_SPIKE', false);
 
     list.push({
-      key: '__BLANK__',
+      key: 'QC_BLANK',
       type: 'QC_BLANK',
       label: this.draft.page1Data['blankName'] || 'Blank',
       isQC: true
     });
 
     list.push({
-      key: '__SPIKE__',
+      key: 'QC_SPIKE',
       type: 'QC_SPIKE',
       label: this.draft.page1Data['spikeName'] || 'Spike',
       isQC: true
@@ -725,7 +725,7 @@ export class ResultEntryType2Component implements OnInit {
     // Check if row matches spike criteria: sample name contains spike/sp, or is spike row, or is SPIKE_N/FINAL QC row
     const isSpike = sampleCode.toLowerCase().includes('spike') || 
                     sampleCode.toLowerCase().includes('sp') ||
-                    sampleCode === '__SPIKE__' || 
+                    sampleCode === 'QC_SPIKE' || 
                     sampleCode.includes('_QC_') ||
                     spikeName.toLowerCase().includes('spike') || 
                     spikeName.toLowerCase().includes('sp');
@@ -775,7 +775,7 @@ export class ResultEntryType2Component implements OnInit {
     if (this.isTrifluralin) {
       // Also fill blank/spike and any dynamic QC rows if empty
       Object.keys(this.draft.resultData).forEach(key => {
-        if (key.startsWith('__')) {
+        if (key.startsWith('QC_')) {
           const row = this.draft.resultData[key];
           if (row) {
             this.activeColumns.forEach(col => {
@@ -811,7 +811,7 @@ export class ResultEntryType2Component implements OnInit {
 
     if (this.isTrifluralin) {
       Object.keys(this.draft.resultData).forEach(key => {
-        if (key.startsWith('__')) {
+        if (key.startsWith('QC_')) {
           const row = this.draft.resultData[key];
           if (row) {
             this.activeColumns.forEach(col => {
@@ -851,7 +851,7 @@ export class ResultEntryType2Component implements OnInit {
 
     if (this.isTrifluralin) {
       Object.keys(this.draft.resultData).forEach(key => {
-        if (key.startsWith('__') && key !== sourceSampleCode) {
+        if (key.startsWith('QC_') && key !== sourceSampleCode) {
           const destRow = this.draft.resultData[key];
           if (destRow) {
             this.activeColumns.forEach(col => {

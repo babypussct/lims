@@ -307,6 +307,34 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
     if (!draftDoc) {
       draftDoc = this.createDefaultDraft(runDoc, sopConf);
+    } else {
+      // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
+      const isTrifluralin = resolvedKey === 'trifluralin-gcms';
+      if (isTrifluralin) {
+        if (!draftDoc.page1Data) {
+          draftDoc.page1Data = {};
+        }
+        if (!draftDoc.page1Data['calibPoints']) {
+          draftDoc.page1Data['calibPoints'] = [
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' },
+            { loSo: '', hamLuong: '' }
+          ];
+        }
+        if (draftDoc.page1Data['r2'] === undefined) {
+          draftDoc.page1Data['r2'] = '';
+        }
+        if (draftDoc.page1Data['blankName'] === undefined) {
+          draftDoc.page1Data['blankName'] = 'Blank';
+        }
+        if (draftDoc.page1Data['spikeName'] === undefined) {
+          draftDoc.page1Data['spikeName'] = 'Spike';
+        }
+      }
     }
     
     this.draft.set(draftDoc);
@@ -354,8 +382,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const sampleList = runDoc.sampleList || [];
     
     if (isTrifluralin) {
-      defaultResultData['__BLANK__'] = { loSo: '1', kqTrifluralin: '', ghiChu: '', selected: true };
-      defaultResultData['__SPIKE__'] = { loSo: '2', kqTrifluralin: '', ghiChu: '', selected: true };
+      defaultResultData['QC_BLANK'] = { loSo: '1', kqTrifluralin: '', ghiChu: '', selected: true };
+      defaultResultData['QC_SPIKE'] = { loSo: '2', kqTrifluralin: '', ghiChu: '', selected: true };
       
       sampleList.forEach((sampleCode: string, idx: number) => {
         defaultResultData[sampleCode] = {
@@ -522,7 +550,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           const samplesPayload: any[] = [];
 
           // 1. Thêm Blank vào đầu danh sách
-          const blankObj = currentDraft.resultData['__BLANK__'] || {};
+          const blankObj = currentDraft.resultData['QC_BLANK'] || {};
           samplesPayload.push({
             loSo: blankObj['loSo'] || '1',
             maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
@@ -531,7 +559,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           });
 
           // 2. Thêm Spike vào vị trí thứ 2
-          const spikeObj = currentDraft.resultData['__SPIKE__'] || {};
+          const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
           samplesPayload.push({
             loSo: spikeObj['loSo'] || '2',
             maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
@@ -553,7 +581,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             selectedCount++;
             if (selectedCount % 10 === 0) {
               const n = selectedCount / 10;
-              const spikeNKey = `__SPIKE_${n}_QC_${prefixForReport}__`;
+              const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
               const spikeNObj = currentDraft.resultData[spikeNKey] || {};
               samplesPayload.push({
                 loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
@@ -566,7 +594,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           // 4. FINAL row
           if (selectedCount > 0) {
-            const finalKey = `__FINAL_QC_${prefixForReport}__`;
+            const finalKey = `QC_FINAL_QC_${prefixForReport}`;
             const finalObj = currentDraft.resultData[finalKey] || {};
             samplesPayload.push({
               loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',

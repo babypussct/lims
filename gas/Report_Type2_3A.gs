@@ -142,6 +142,16 @@ function fillSampleTable(body, sopConfig, samples) {
       pageExtraLines += rowExtraLines;
     }
     
+    // 2.5. Dọn dẹp các dòng trống còn lại trên trang này (nếu có placeholder chưa dùng)
+    for (let i = pageSamples.length; i < maxSamplesPerPage; i++) {
+      const rowIdx = startRow + i;
+      const row = currentTable.getRow(rowIdx);
+      for (const [colKey, colIdx] of Object.entries(cols)) {
+        if (colIdx === undefined || colIdx === null) continue;
+        setCellText(row, colIdx, '');
+      }
+    }
+    
     // Tiến hành xóa các dòng trống ở cuối bảng tương ứng với số dòng bị phình ra
     if (pageExtraLines > 0) {
       const totalRows = currentTable.getNumRows();
@@ -280,9 +290,43 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
   const doc = DocumentApp.openById(docId);
   const body = doc.getBody();
 
-  // 1. Điền các text fields & checkbox chung
+  // 1. Điền các text fields & checkbox chung bằng bộ khung mặc định
   const sopConfig = CONFIG.SOP_CONFIG['trifluralin-gcms'];
   fillTextFields(body, sopConfig, metadata);
+
+  // 1.5. Bổ sung thay thế các placeholder riêng biệt của biểu mẫu Trifluralin (nếu có trong template)
+  const analystVal = metadata.ngayNguoiPhanTich || '';
+  let datePhanTich = '';
+  let namePhanTich = '';
+  if (analystVal) {
+    const parts = analystVal.split('/');
+    if (parts.length > 1) {
+      datePhanTich = parts[0].trim();
+      namePhanTich = parts.slice(1).join('/').trim();
+    } else {
+      datePhanTich = analystVal.trim();
+    }
+  }
+
+  const verifierVal = metadata.ngayNguoiThamTra || '';
+  let dateThamTra = '';
+  let nameThamTra = '';
+  if (verifierVal) {
+    const parts = verifierVal.split('/');
+    if (parts.length > 1) {
+      dateThamTra = parts[0].trim();
+      nameThamTra = parts.slice(1).join('/').trim();
+    } else {
+      dateThamTra = verifierVal.trim();
+    }
+  }
+
+  body.replaceText('\\{\\{CheckTatCaND\\}\\}', metadata.checkTatCaND ? '☑' : '☐');
+  body.replaceText('\\{\\{CheckCoMauPhatHien\\}\\}', metadata.checkCoMauPhatHien ? '☑' : '☐');
+  body.replaceText('\\{\\{NgayPhanTich\\}\\}', datePhanTich);
+  body.replaceText('\\{\\{NguoiPhanTich\\}\\}', namePhanTich);
+  body.replaceText('\\{\\{NgayThamTra\\}\\}', dateThamTra);
+  body.replaceText('\\{\\{NguoiThamTra\\}\\}', nameThamTra);
 
   // 2. Tìm và điền bảng đường chuẩn (Table 4 có 8 dòng)
   const tables = body.getTables();
@@ -302,7 +346,16 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
     Logger.log('[TrifluralinCustom] Tìm thấy bảng đường chuẩn.');
     // Điền R2
     const r2Val = metadata.r2 || '';
-    setCellText(calibrationTable.getRow(7), 1, r2Val);
+    const cell0Text = calibrationTable.getRow(7).getCell(0).getText();
+    if (cell0Text.indexOf('{{R2}}') !== -1 || cell0Text.indexOf('{{r2}}') !== -1) {
+      // Nếu có placeholder trong ô 0, thay thế trực tiếp và để ô 1 trống
+      calibrationTable.getRow(7).getCell(0).replaceText('\\{\\{R2\\}\\}', r2Val);
+      calibrationTable.getRow(7).getCell(0).replaceText('\\{\\{r2\\}\\}', r2Val);
+      setCellText(calibrationTable.getRow(7), 1, '');
+    } else {
+      // Nếu không, điền vào ô 1 như bình thường
+      setCellText(calibrationTable.getRow(7), 1, r2Val);
+    }
 
     // Điền 7 điểm đường chuẩn
     const calibPoints = metadata.calibPoints || [];
