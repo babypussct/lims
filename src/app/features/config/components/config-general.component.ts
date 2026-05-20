@@ -81,7 +81,14 @@ service cloud.firestore {
         // Công khai đọc (Truy xuất nguồn gốc QR), cần đăng nhập để ghi
         match /logs/{logId}      { allow read: if true; allow write: if isAuth(); }
         match /print_jobs/{jobId}{ allow read: if true; allow write: if isAuth(); }
-        match /requests/{reqId}  { allow read: if true; allow write: if isAuth(); }
+        match /requests/{reqId}  { 
+          allow read: if true; 
+          allow write: if isAuth(); 
+          
+          match /history/{version} {
+            allow read, write: if isAuth();
+          }
+        }
 
         // === STANDARD REQUESTS: SCOPED BY ROLE ===
         // PHÂN BIỆT list (query collection) vs get (đọc 1 doc):
