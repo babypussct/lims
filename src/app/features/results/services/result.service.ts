@@ -190,8 +190,12 @@ export class ResultService {
       const reports = currentResult.reports || {};
       const currentVersion = currentResult.version || 0;
 
-      if (prefix) {
-        const prefixReport = reports[prefix] || {};
+      // Xác định xem đây là báo cáo theo nhóm tiền tố hay báo cáo chung (Tất cả mẫu)
+      const isPrefixReport = prefix !== undefined && prefix !== null && prefix !== 'ALL';
+
+      if (isPrefixReport) {
+        const prefixKey = prefix!;
+        const prefixReport = reports[prefixKey] || {};
         nextVersion = (prefixReport.version || 0) + 1;
       } else {
         nextVersion = currentVersion + 1;
@@ -201,7 +205,7 @@ export class ResultService {
       payload.version = nextVersion;
 
       // 2. Gọi API GAS tạo báo cáo PDF
-      this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion}${prefix ? ' (nhóm ' + prefix + ')' : ''} sang Google Docs...`, 'info');
+      this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion}${isPrefixReport ? ' (nhóm ' + (prefix === '' ? 'Không tiền tố' : prefix) + ')' : ''} sang Google Docs...`, 'info');
       const response = await this.reportService.generateReport(payload);
       
       if (!response.success) {
@@ -209,17 +213,18 @@ export class ResultService {
       }
 
       // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
-      if (prefix) {
-        const prefixReport = reports[prefix];
+      if (isPrefixReport) {
+        const prefixKey = prefix!;
+        const prefixReport = reports[prefixKey];
         if (prefixReport && prefixReport.pdfUrl) {
-          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${prefixReport.version}_${prefix}`);
+          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${prefixReport.version}_${prefixKey}`);
           await setDoc(historyDocRef, {
             version: prefixReport.version || 1,
-            prefix: prefix,
+            prefix: prefixKey,
             pdfUrl: prefixReport.pdfUrl,
             pdfViewUrl: prefixReport.pdfViewUrl || '',
             docsUrl: prefixReport.docsUrl || '',
-            pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefix}_Bản_v${prefixReport.version}`,
+            pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefixKey || 'Không_tiền_tố'}_Bản_v${prefixReport.version}`,
             publishedAt: prefixReport.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
             publishedBy: currentResult.updatedBy || 'Unknown',
             page1DataBackup: prefixReport.publishedBackup?.page1Data || {},
@@ -252,10 +257,11 @@ export class ResultService {
       };
 
       let finalResult: any;
-      if (prefix) {
+      if (isPrefixReport) {
+        const prefixKey = prefix!;
         const updatedReports = {
           ...reports,
-          [prefix]: {
+          [prefixKey]: {
             pdfUrl: response.pdfUrl || null,
             pdfViewUrl: response.pdfViewUrl || null,
             docsUrl: response.docsUrl || null,
@@ -294,7 +300,7 @@ export class ResultService {
 
       await updateDoc(ref, { analysisResult: finalResult });
 
-      this.toast.show(`Báo cáo PDF${prefix ? ' nhóm ' + prefix : ''} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
+      this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
       return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl };
     } catch (e: any) {
       console.error('Error publishing report:', e);

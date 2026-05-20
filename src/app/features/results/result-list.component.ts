@@ -48,6 +48,96 @@ import { ResultService } from './services/result.service';
         </div>
       </div>
 
+      <!-- Advanced Filter Panel & Search -->
+      <div class="mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-4 shrink-0 transition-all duration-300">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <!-- Text Search Box -->
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" 
+                   [value]="searchText()"
+                   (input)="onSearchInput($event)"
+                   placeholder="Tìm theo Mã mẻ chạy, SOP, Mã số mẫu, Analyst..." 
+                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 dark:text-slate-100 font-medium">
+            @if (searchText()) {
+              <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fa-solid fa-circle-xmark text-xs"></i>
+              </button>
+            }
+          </div>
+
+          <!-- Advanced Toggle & Clear Buttons -->
+          <div class="flex items-center gap-2">
+            <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
+                    [class]="showAdvancedFilters() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-900/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="px-4 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+              <i class="fa-solid fa-sliders text-[10px]"></i>
+              <span>Bộ lọc nâng cao</span>
+              <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300" [class.rotate-180]="showAdvancedFilters()"></i>
+            </button>
+            
+            @if (hasActiveFilters()) {
+              <button (click)="resetAllFilters()" 
+                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                <span>Xóa bộ lọc</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Collapsible Content -->
+        @if (showAdvancedFilters()) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-700/40 text-xs animate-fade-in">
+            <!-- SOP selection -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Phương pháp (SOP)</label>
+              <select [value]="selectedSopId()" 
+                      (change)="onSopChange($event)"
+                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+                <option value="all">Tất cả phương pháp</option>
+                @for (sop of availableSops(); track sop.id) {
+                  <option [value]="sop.id">{{ sop.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Analyst selection -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Người thực hiện (Analyst)</label>
+              <select [value]="selectedAnalyst()" 
+                      (change)="onAnalystChange($event)"
+                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+                <option value="all">Tất cả nhân viên</option>
+                @for (analyst of availableAnalysts(); track analyst) {
+                  <option [value]="analyst">{{ analyst }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Start date picker -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Từ ngày</label>
+              <input type="date" 
+                     [value]="startDate()" 
+                     (change)="onStartDateChange($event)"
+                     class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+            </div>
+
+            <!-- End date picker -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Đến ngày</label>
+              <input type="date" 
+                     [value]="endDate()" 
+                     (change)="onEndDateChange($event)"
+                     class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+            </div>
+          </div>
+        }
+      </div>
+
       <!-- Main Content Area -->
       <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20">
         @if (isLoading()) {
@@ -99,15 +189,97 @@ import { ResultService } from './services/result.service';
 
                 <!-- Action Buttons -->
                 <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
-
                   <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF hoặc các bản báo cáo theo nhóm) -->
                   @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
                     <div class="flex flex-col gap-2 mb-2">
+                      
+                      <!-- 1. Báo cáo chung (Tất cả mẫu) - Chỉ hiện khi có pdfUrl ở root -->
+                      @if (run.analysisResult?.pdfUrl) {
+                        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                          <span class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 min-w-[85px] truncate">
+                            Tất cả mẫu:
+                          </span>
+                          
+                          <div class="flex-1 flex items-center relative group">
+                            <!-- Nút Xem PDF chính -->
+                            <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
+                                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-lg text-[11px] font-bold transition"
+                                    [class.rounded-r-lg]="(run.analysisResult?.version || 0) <= 1"
+                                    title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
+                              <i class="fa-solid fa-file-pdf"></i> PDF (v{{ run.analysisResult?.version || 1 }})
+                            </button>
+                            
+                            <!-- Nút Dropdown lịch sử nếu có -->
+                            @if ((run.analysisResult?.version || 0) > 1) {
+                              <button (mouseenter)="preloadHistory(run.id)"
+                                      class="px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-lg text-[10px] font-bold transition flex items-center justify-center">
+                                <i class="fa-solid fa-chevron-down text-[8px]"></i>
+                              </button>
+                              
+                              <!-- Dropdown menu -->
+                              <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
+                                <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
+                                
+                                <!-- Bản hiện tại -->
+                                <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                  <div class="flex flex-col gap-0.5">
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
+                                    <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                                  </div>
+                                  <div class="flex gap-1.5">
+                                    <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
+                                    @if (run.analysisResult?.docsUrl) {
+                                      <span class="text-slate-300">|</span>
+                                      <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
+                                    }
+                                  </div>
+                                </div>
+                                
+                                <!-- Spinner loading -->
+                                @if (loadingHistories()[run.id]) {
+                                  <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
+                                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
+                                  </div>
+                                } @else {
+                                  <!-- Các bản trong lịch sử -->
+                                  @for (hist of historiesMap()[run.id] || []; track hist.version) {
+                                    @if (hist.version !== run.analysisResult?.version) {
+                                      <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <div class="flex flex-col gap-0.5">
+                                          <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                                          <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
+                                        </div>
+                                        <div class="flex gap-1.5 font-bold">
+                                          <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
+                                          @if (hist.docsUrl) {
+                                            <span class="text-slate-300">|</span>
+                                            <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
+                                          }
+                                        </div>
+                                      </div>
+                                    }
+                                  }
+                                }
+                              </div>
+                            }
+                          </div>
+
+                          @if (run.analysisResult?.docsUrl) {
+                            <button (click)="openUrl(run.analysisResult!.docsUrl!)"
+                                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
+                                    title="Mở bản Google Docs gốc">
+                              <i class="fa-brands fa-google-drive"></i> Docs
+                            </button>
+                          }
+                        </div>
+                      }
+
+                      <!-- 2. Các báo cáo phân theo nhóm tiền tố -->
                       @if (run.analysisResult?.reports) {
                         @for (prefix of getReportKeys(run.analysisResult?.reports); track prefix) {
                           @let report = run.analysisResult?.reports?.[prefix];
                           <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
-                            <span class="text-xs font-black text-slate-500 dark:text-slate-400 min-w-[70px] truncate">
+                            <span class="text-[11px] font-black text-slate-500 dark:text-slate-400 min-w-[85px] truncate">
                               {{ prefix === '' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
                             </span>
                             
@@ -127,81 +299,6 @@ import { ResultService } from './services/result.service';
                             }
                           </div>
                         }
-                      } @else {
-                        <div class="flex items-center gap-2 w-full">
-                          @if (run.analysisResult?.pdfUrl) {
-                            <div class="flex-1 flex items-center relative group">
-                              <!-- Nút Xem PDF chính -->
-                              <button (click)="openUrl(run.analysisResult!.pdfUrl!)"
-                                      class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-xl text-xs font-bold transition"
-                                      [class.rounded-r-xl]="(run.analysisResult?.version || 0) <= 1"
-                                      title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
-                                <i class="fa-solid fa-file-pdf"></i> Xem PDF (v{{ run.analysisResult?.version || 1 }})
-                              </button>
-                              
-                              <!-- Nút Dropdown lịch sử nếu có -->
-                              @if ((run.analysisResult?.version || 0) > 1) {
-                                <button (mouseenter)="preloadHistory(run.id)"
-                                        class="px-2.5 py-2 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-xl text-xs font-bold transition flex items-center justify-center">
-                                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                </button>
-                                
-                                <!-- Dropdown menu -->
-                                <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
-                                  <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
-                                  
-                                  <!-- Bản hiện tại -->
-                                  <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                    <div class="flex flex-col gap-0.5">
-                                      <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
-                                      <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                                    </div>
-                                    <div class="flex gap-1.5">
-                                      <button (click)="openUrl(run.analysisResult!.pdfUrl!)" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</button>
-                                      @if (run.analysisResult?.docsUrl) {
-                                        <span class="text-slate-300">|</span>
-                                        <button (click)="openUrl(run.analysisResult!.docsUrl!)" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</button>
-                                      }
-                                    </div>
-                                  </div>
-                                  
-                                  <!-- Spinner loading -->
-                                  @if (loadingHistories()[run.id]) {
-                                    <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
-                                      <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
-                                    </div>
-                                  } @else {
-                                    <!-- Các bản trong lịch sử -->
-                                    @for (hist of historiesMap()[run.id] || []; track hist.version) {
-                                      @if (hist.version !== run.analysisResult?.version) {
-                                        <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                          <div class="flex flex-col gap-0.5">
-                                            <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
-                                            <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
-                                          </div>
-                                          <div class="flex gap-1.5 font-bold">
-                                            <button (click)="openUrl(hist.pdfUrl)" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</button>
-                                            @if (hist.docsUrl) {
-                                              <span class="text-slate-300">|</span>
-                                              <button (click)="openUrl(hist.docsUrl)" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</button>
-                                            }
-                                          </div>
-                                        </div>
-                                      }
-                                    }
-                                  }
-                                </div>
-                              }
-                            </div>
-                          }
-                          @if (run.analysisResult?.docsUrl) {
-                            <button (click)="openUrl(run.analysisResult!.docsUrl!)"
-                                    class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-xl text-xs font-bold transition"
-                                    title="Mở bản Google Docs gốc để xem/in">
-                              <i class="fa-brands fa-google-drive"></i> Mở Docs
-                            </button>
-                          }
-                        </div>
                       }
                     </div>
                   }
@@ -248,6 +345,14 @@ export class ResultListComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
 
+  // Advanced Filters State
+  searchText = signal<string>('');
+  selectedSopId = signal<string>('all');
+  selectedAnalyst = signal<string>('all');
+  startDate = signal<string>('');
+  endDate = signal<string>('');
+  showAdvancedFilters = signal<boolean>(false);
+
   // Dynamic history loading states
   historiesMap = signal<Record<string, any[]>>({});
   loadingHistories = signal<Record<string, boolean>>({});
@@ -291,25 +396,116 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return this.state.approvedRequests() || [];
   });
 
-  // Lọc danh sách mẻ hiển thị theo bộ lọc
-  displayedRuns = computed(() => {
-    const all = this.allApprovedRuns();
-    const statusFilter = this.filterStatus();
-    const statusMap = this.runStatusMap();
-
-    return all.filter(run => {
-      const status = statusMap[run.id] || 'pending';
-      if (statusFilter === 'all') return true;
-      return status === statusFilter;
+  // Dynamic lists for filters
+  availableSops = computed(() => {
+    const runs = this.allApprovedRuns();
+    const map = new Map<string, string>(); // sopId -> sopName
+    runs.forEach(run => {
+      if (run.sopId && run.sopName) {
+        map.set(run.sopId, run.sopName);
+      }
     });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   });
 
-  // Đếm số lượng mẻ theo bộ lọc để hiển thị badge số lượng
-  filteredCount(status: 'all' | 'pending' | 'draft' | 'completed'): number {
-    const all = this.allApprovedRuns();
+  availableAnalysts = computed(() => {
+    const runs = this.allApprovedRuns();
+    const set = new Set<string>();
+    runs.forEach(run => {
+      if (run.user) set.add(run.user);
+    });
+    return Array.from(set).sort();
+  });
+
+  // Lọc danh sách mẻ hiển thị theo bộ lọc
+  displayedRuns = computed(() => {
+    let list = this.allApprovedRuns();
+    
+    // 1. Filter by Search Text
+    const search = this.searchText().trim().toLowerCase();
+    if (search) {
+      list = list.filter(run => {
+        const batchCode = (run.inputs?.['batchCode'] || run.id || '').toLowerCase();
+        const sopName = (run.sopName || '').toLowerCase();
+        const user = (run.user || '').toLowerCase();
+        const samples = (run.sampleList || []).map((s: string) => s.toLowerCase());
+        return batchCode.includes(search) || sopName.includes(search) || user.includes(search) || samples.some((s: string) => s.includes(search));
+      });
+    }
+
+    // 2. Filter by SOP
+    const sopId = this.selectedSopId();
+    if (sopId !== 'all') {
+      list = list.filter(run => run.sopId === sopId);
+    }
+
+    // 3. Filter by Analyst
+    const analyst = this.selectedAnalyst();
+    if (analyst !== 'all') {
+      list = list.filter(run => run.user === analyst);
+    }
+
+    // 4. Filter by Date
+    const start = this.startDate();
+    const end = this.endDate();
+    if (start || end) {
+      list = list.filter(run => {
+        if (!run.analysisDate) return false;
+        if (start && run.analysisDate < start) return false;
+        if (end && run.analysisDate > end) return false;
+        return true;
+      });
+    }
+
+    // 5. Filter by Status Tab
+    const statusFilter = this.filterStatus();
     const statusMap = this.runStatusMap();
-    if (status === 'all') return all.length;
-    return all.filter(run => (statusMap[run.id] || 'pending') === status).length;
+    if (statusFilter !== 'all') {
+      list = list.filter(run => (statusMap[run.id] || 'pending') === statusFilter);
+    }
+
+    return list;
+  });
+
+  // Đếm số lượng mẻ theo bộ lọc (áp dụng các bộ lọc nâng cao)
+  filteredCount(status: 'all' | 'pending' | 'draft' | 'completed'): number {
+    let list = this.allApprovedRuns();
+    
+    const search = this.searchText().trim().toLowerCase();
+    if (search) {
+      list = list.filter(run => {
+        const batchCode = (run.inputs?.['batchCode'] || run.id || '').toLowerCase();
+        const sopName = (run.sopName || '').toLowerCase();
+        const user = (run.user || '').toLowerCase();
+        const samples = (run.sampleList || []).map((s: string) => s.toLowerCase());
+        return batchCode.includes(search) || sopName.includes(search) || user.includes(search) || samples.some((s: string) => s.includes(search));
+      });
+    }
+
+    const sopId = this.selectedSopId();
+    if (sopId !== 'all') {
+      list = list.filter(run => run.sopId === sopId);
+    }
+
+    const analyst = this.selectedAnalyst();
+    if (analyst !== 'all') {
+      list = list.filter(run => run.user === analyst);
+    }
+
+    const start = this.startDate();
+    const end = this.endDate();
+    if (start || end) {
+      list = list.filter(run => {
+        if (!run.analysisDate) return false;
+        if (start && run.analysisDate < start) return false;
+        if (end && run.analysisDate > end) return false;
+        return true;
+      });
+    }
+
+    const statusMap = this.runStatusMap();
+    if (status === 'all') return list.length;
+    return list.filter(run => (statusMap[run.id] || 'pending') === status).length;
   }
 
   getStatusText(requestId: string): string {
@@ -340,6 +536,43 @@ export class ResultListComponent implements OnInit, OnDestroy {
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return dateStr;
+  }
+
+  // Event handlers cho bộ lọc nâng cao
+  onSearchInput(event: Event) {
+    this.searchText.set((event.target as HTMLInputElement).value);
+  }
+
+  onSopChange(event: Event) {
+    this.selectedSopId.set((event.target as HTMLSelectElement).value);
+  }
+
+  onAnalystChange(event: Event) {
+    this.selectedAnalyst.set((event.target as HTMLSelectElement).value);
+  }
+
+  onStartDateChange(event: Event) {
+    this.startDate.set((event.target as HTMLInputElement).value);
+  }
+
+  onEndDateChange(event: Event) {
+    this.endDate.set((event.target as HTMLInputElement).value);
+  }
+
+  hasActiveFilters(): boolean {
+    return this.searchText() !== '' || 
+           this.selectedSopId() !== 'all' || 
+           this.selectedAnalyst() !== 'all' || 
+           this.startDate() !== '' || 
+           this.endDate() !== '';
+  }
+
+  resetAllFilters() {
+    this.searchText.set('');
+    this.selectedSopId.set('all');
+    this.selectedAnalyst.set('all');
+    this.startDate.set('');
+    this.endDate.set('');
   }
 
   enterResults(requestId: string) {

@@ -81,12 +81,29 @@ import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
               <span>Lưu nháp</span>
             </button>
 
+            <!-- View PDF / Open Docs if available for the active tab -->
+            @if (getCurrentPdfUrl()) {
+              <button (click)="openUrl(getCurrentPdfUrl())"
+                      class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Xem PDF</span>
+              </button>
+            }
+            @if (getCurrentDocsUrl()) {
+              <button (click)="openUrl(getCurrentDocsUrl())"
+                      class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-brands fa-google-drive"></i>
+                <span>Mở Docs</span>
+              </button>
+            }
+
             <!-- Publish / Generate PDF -->
             <button (click)="triggerPublishReport()" 
                     [disabled]="isProcessing()"
-                    class="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50">
+                    class="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                    [title]="getPrintButtonLabel()">
               <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
-              <span>{{ (draft()?.version || 0) > 0 ? 'Tạo & In bản v' + ((draft()?.version || 0) + 1) : 'Tạo & In PDF' }}</span>
+              <span>{{ getPrintButtonLabel() }}</span>
             </button>
 
             <!-- Thao tác khác Dropdown -->
@@ -133,6 +150,63 @@ import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
             </div>
           </div>
         } @else if (run() && draft() && config()) {
+          <!-- Run Metadata Info Banner -->
+          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm mb-6 overflow-hidden transition-all duration-300">
+            <!-- Header Section (Clickable to Toggle) -->
+            <div (click)="isMetadataExpanded.set(!isMetadataExpanded())" 
+                 class="px-5 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/40 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 dark:border-slate-700/40">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <i class="fa-solid fa-circle-info text-sm"></i>
+                </div>
+                <div>
+                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Thông tin chi tiết mẻ phân tích</h4>
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+                    Mã mẻ: <span class="font-mono font-bold text-slate-600 dark:text-slate-400">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                  {{ run()?.sampleList?.length || 0 }} mẫu
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform duration-300"
+                   [class.rotate-180]="isMetadataExpanded()"></i>
+              </div>
+            </div>
+
+            <!-- Body Section (Collapsible) -->
+            @if (isMetadataExpanded()) {
+              <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs animate-fade-in">
+                <div>
+                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy (Batch)</span>
+                  <span class="font-mono font-extrabold text-slate-800 dark:text-slate-200 break-all select-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+                </div>
+                <div>
+                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị phân tích</span>
+                  <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-microscope text-slate-400"></i>
+                    {{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || 'GC-MS/MS / LC-MS/MS' }}
+                  </span>
+                </div>
+                <div>
+                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày phân tích</span>
+                  <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-regular fa-calendar text-slate-400"></i>
+                    {{ run()?.analysisDate ? formatAnalysisDate(run()!.analysisDate!) : 'Chưa thiết lập' }}
+                  </span>
+                </div>
+                <div>
+                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người thực hiện (Analyst)</span>
+                  <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-ninja text-slate-400"></i>
+                    {{ run()?.user || 'Chưa thiết lập' }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
           <!-- Render Type 3B Component (Vertical Lists per sample) -->
           @if (config()?.formType === 'type3b') {
             <app-result-entry-type3b 
@@ -242,6 +316,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   historyList = signal<any[]>([]);
   showResetModal = signal(false);
   resetConfirmText = signal('');
+  isMetadataExpanded = signal(false);
 
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
@@ -760,6 +835,52 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.isSavingDraft.set(false);
       this.resetConfirmText.set('');
     }
+  }
+
+  getPrintButtonLabel(): string {
+    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+      const v = (this.draft()?.version || 0) + 1;
+      return `Tạo & In bản v${v} (Tất cả mẫu)`;
+    }
+    const reports = this.draft()?.reports || {};
+    const reportForFilter = reports[activeFilter] || {};
+    const v = (reportForFilter.version || 0) + 1;
+    const filterName = activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`;
+    return `Tạo & In bản v${v} (${filterName})`;
+  }
+
+  getCurrentPdfUrl(): string | null {
+    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+      return this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
+    }
+    const reports = this.draft()?.reports || {};
+    const reportForFilter = reports[activeFilter] || {};
+    return reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
+  }
+
+  getCurrentDocsUrl(): string | null {
+    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+      return this.draft()?.docsUrl || null;
+    }
+    const reports = this.draft()?.reports || {};
+    const reportForFilter = reports[activeFilter] || {};
+    return reportForFilter.docsUrl || null;
+  }
+
+  openUrl(url: string | null) {
+    if (url) window.open(url, '_blank');
+  }
+
+  formatAnalysisDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
   }
 
   goBack() {
