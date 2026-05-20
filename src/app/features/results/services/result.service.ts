@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService as CoreFirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -370,7 +370,40 @@ export class ResultService {
         });
       }
 
-      // 4. Xóa trắng số liệu nhập liệu trên tài liệu chính, giữ mẻ ở draft
+      // 4. Khởi dựng lại page1Data và resultData an toàn để tránh crash lưới nhập kết quả (Grid Spreadsheet)
+      const resetPage1Data: Record<string, any> = {
+        ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
+        ngayNguoiThamTra: new Date().toISOString().split('T')[0],
+        checkTatCaND: true,
+        checkCoMauPhatHien: false
+      };
+      
+      if (currentResult.page1Data) {
+        Object.keys(currentResult.page1Data).forEach(key => {
+          if (key !== 'ngayNguoiPhanTich' && key !== 'ngayNguoiThamTra' && key !== 'checkTatCaND' && key !== 'checkCoMauPhatHien') {
+            resetPage1Data[key] = false;
+          }
+        });
+      }
+
+      const resetResultData: Record<string, any> = {};
+      const sampleList = reqData['sampleList'] || currentResult.sampleList || [];
+      
+      let activeCols: string[] = [];
+      if (currentResult.resultData) {
+        const firstSample = Object.keys(currentResult.resultData)[0];
+        if (firstSample && currentResult.resultData[firstSample]) {
+          activeCols = Object.keys(currentResult.resultData[firstSample]);
+        }
+      }
+
+      sampleList.forEach((sample: string) => {
+        resetResultData[sample] = {};
+        activeCols.forEach(col => {
+          resetResultData[sample][col] = '';
+        });
+      });
+
       const resetResult: AnalysisResultDraft = {
         id: requestId,
         requestId: requestId,
@@ -378,8 +411,8 @@ export class ResultService {
         sopName: currentResult.sopName || reqData['sopName'] || '',
         status: 'draft',
         version: 0,
-        page1Data: {},
-        resultData: {},
+        page1Data: resetPage1Data,
+        resultData: resetResultData,
         pdfUrl: '',
         pdfViewUrl: '',
         docsUrl: '',
@@ -389,7 +422,7 @@ export class ResultService {
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
-      await updateDoc(ref, { analysisResult: resetResult });
+      await updateDoc(ref, { analysisResult: deleteField() });
       this.toast.show('Đã reset và xóa toàn bộ số liệu của mẻ chạy thành công!', 'success');
       return resetResult;
     } catch (e: any) {
