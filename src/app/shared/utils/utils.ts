@@ -192,8 +192,9 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
         if (!prev || !curr) return false;
 
         // Tách chuỗi thành các phần text và number
-        const splitRegex = /(\d+)/g;
+        // FIX: Tạo regex mới cho mỗi lần gọi getParts để tránh lỗi shared lastIndex
         const getParts = (s: string) => {
+            const splitRegex = /(\d+)/g;
             const parts: string[] = [];
             let lastIdx = 0;
             let m;
