@@ -170,60 +170,72 @@ import { calculateSop01Recovery } from './sop-01-engine';
         </h4>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-4 space-y-4">
-            <div class="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl space-y-3 shadow-sm">
+          <div class="lg:col-span-5 space-y-3">
+            <div class="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl space-y-2.5 shadow-sm">
               <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide flex items-center gap-1.5">
-                <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC
+                <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC & Tên tuỳ chỉnh
               </h5>
               
-              <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition">
+              <label class="flex items-center gap-2 cursor-pointer py-1.5 px-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition">
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data['hasCheckSample']" 
                        (ngModelChange)="onDataChanged()"
                        class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
                 <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
               </label>
-              
-              <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                Mẫu CHECK_SAMPLE thực hiện ở tần suất thấp. Khi được tích chọn, mẫu sẽ tự động xuất hiện tại vị trí Vial 1.9 (ngay sau BLANK & SPIKE) trên lưới nhập liệu và báo cáo xuất bản.
-              </p>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Tên Blank</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['blankName']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="BLANK"
+                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Tên Spike</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['spikeName']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="SPIKE"
+                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+              </div>
+
+              @if (draft.page1Data['hasCheckSample']) {
+                <div class="animate-fade-in">
+                  <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Tên Check Sample</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['checkSampleName']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="CHECK_SAMPLE"
+                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+              }
             </div>
           </div>
 
-          <!-- Calibration Points Grid -->
-          <div class="lg:col-span-8">
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">5 Điểm Đường chuẩn (Calibration Curve Points)</label>
-            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-900/50">
-              <table class="w-full text-xs text-left border-collapse">
-                <thead class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-24">Điểm chuẩn</th>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Nội chuẩn cần dùng (ng/ml)</th>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Nồng độ chuẩn (ng/ml)</th>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-36">Vial No.</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
-                  @for (pt of draft.page1Data['calibPoints']; track $index) {
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition">
-                      <td class="py-2 px-3 font-extrabold text-slate-500 dark:text-slate-400 text-center bg-slate-50/50 dark:bg-slate-900/10">
-                        {{ 'C' + $index }}
-                      </td>
-                      <td class="py-2.5 px-3 font-semibold text-slate-600 dark:text-slate-300">20</td>
-                      <td class="py-2.5 px-3 font-bold text-indigo-600 dark:text-indigo-400 select-all">
-                        {{ $index === 0 ? '0' : ($index === 1 ? '5' : ($index === 2 ? '10' : ($index === 3 ? '20' : '50'))) }}
-                      </td>
-                      <td class="py-1 px-2 text-center">
-                        <input type="text" 
-                               [(ngModel)]="pt['loSo']" 
-                               (ngModelChange)="onDataChanged()"
-                               placeholder="Vial..."
-                               class="w-32 mx-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+          <!-- Calibration Points Grid: Compact horizontal row layout -->
+          <div class="lg:col-span-7 flex flex-col justify-between">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5 uppercase">5 Điểm Đường chuẩn (Calibration Curve Points)</label>
+              <div class="grid grid-cols-5 gap-2">
+                @for (pt of draft.page1Data['calibPoints']; track $index) {
+                  <div class="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-2.5 text-center shadow-sm">
+                    <div class="text-[10px] font-black text-indigo-650 dark:text-indigo-400 uppercase">C{{ $index }}</div>
+                    <div class="text-[11px] font-extrabold text-slate-850 dark:text-slate-200 my-0.5">
+                      {{ $index === 0 ? '0 ppb' : ($index === 1 ? '5 ppb' : ($index === 2 ? '10 ppb' : ($index === 3 ? '20 ppb' : '50 ppb'))) }}
+                    </div>
+                    <div class="text-[9px] text-slate-400 dark:text-slate-500 mb-1.5 font-bold">IS: 20 ppb</div>
+                    <input type="text" 
+                           [(ngModel)]="pt['loSo']" 
+                           (ngModelChange)="onDataChanged()"
+                           placeholder="Vial..."
+                           class="w-full text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-1 px-1.5 text-xs text-slate-800 dark:text-slate-100 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
+                  </div>
+                }
+              </div>
             </div>
           </div>
         </div>
@@ -407,6 +419,29 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['tinhTrangMau'] === undefined) this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
 
+    // Khởi tạo tên tuỳ chỉnh cho các mẫu QC
+    if (this.draft.page1Data['blankName'] === undefined) this.draft.page1Data['blankName'] = 'BLANK';
+    if (this.draft.page1Data['spikeName'] === undefined) this.draft.page1Data['spikeName'] = 'SPIKE';
+    if (this.draft.page1Data['checkSampleName'] === undefined) this.draft.page1Data['checkSampleName'] = 'CHECK_SAMPLE';
+
+    // Khởi tạo đánh giá chất lượng (QC checklist) mặc định Đạt (true), ngoại trừ qcNhanDang là undefined (N/A)
+    const qcKeys = [
+      'qcKiemTraNoiBo',
+      'qcR2',
+      'qcThoiGianLuu',
+      'qcThemChuan',
+      'qcThuHoi',
+      'qcDanhGiaChung'
+    ];
+    qcKeys.forEach(k => {
+      if (this.draft.page1Data[k] === undefined) {
+        this.draft.page1Data[k] = true;
+      }
+    });
+    if (this.draft.page1Data['qcNhanDang'] === undefined) {
+      this.draft.page1Data['qcNhanDang'] = undefined;
+    }
+
     if (!this.draft.resultData) {
       this.draft.resultData = {};
     }
@@ -439,8 +474,10 @@ export class Sop01EntryComponent implements OnInit {
   onCheckboxChange(changedKey: string) {
     if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
       this.draft.page1Data['checkCoMauPhatHien'] = false;
+      this.draft.page1Data['qcNhanDang'] = undefined; // Reset to N/A
     } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
       this.draft.page1Data['checkTatCaND'] = false;
+      this.draft.page1Data['qcNhanDang'] = true; // Auto check "Đạt"
     }
     this.onDataChanged();
   }
@@ -507,8 +544,15 @@ export class Sop01EntryComponent implements OnInit {
     row['ghiChu'] = calculateSop01Recovery(row, sampleCode);
   }
 
+  getSpikeNKey(n: number): string {
+    return `QC_SPIKE_${n}`;
+  }
+
   getDisplayRowsForFipronil(): any[] {
     const list: any[] = [];
+    const blankName = this.draft.page1Data['blankName'] || 'BLANK';
+    const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
+    const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
     
     const ensureKey = (key: string, defaultVial: string) => {
       if (!this.draft.resultData[key]) {
@@ -521,10 +565,20 @@ export class Sop01EntryComponent implements OnInit {
 
     // 1. BLANK (vial 1.7)
     ensureKey('QC_BLANK', '1.7');
+    if (this.draft.resultData['QC_BLANK']['kqFip'] === undefined || this.draft.resultData['QC_BLANK']['kqFip'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFip'] = 'ND';
+    }
+    if (this.draft.resultData['QC_BLANK']['kqFipDesl'] === undefined || this.draft.resultData['QC_BLANK']['kqFipDesl'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFipDesl'] = 'ND';
+    }
+    if (this.draft.resultData['QC_BLANK']['kqFipSulf'] === undefined || this.draft.resultData['QC_BLANK']['kqFipSulf'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFipSulf'] = 'ND';
+    }
+
     list.push({
       key: 'QC_BLANK',
       type: 'QC_BLANK',
-      label: 'BLANK',
+      label: blankName,
       isQC: true
     });
 
@@ -533,7 +587,7 @@ export class Sop01EntryComponent implements OnInit {
     list.push({
       key: 'QC_SPIKE',
       type: 'QC_SPIKE',
-      label: 'SPIKE',
+      label: spikeName,
       isQC: true
     });
 
@@ -543,12 +597,13 @@ export class Sop01EntryComponent implements OnInit {
       list.push({
         key: 'QC_CHECK_SAMPLE',
         type: 'QC_CHECK_SAMPLE',
-        label: 'CHECK_SAMPLE',
+        label: checkSampleName,
         isQC: true
       });
     }
 
-    // 4. REGULAR samples (vials start at 1.10)
+    // 4. REGULAR samples (vials start at 1.10) with dynamic SP_N every 10 samples
+    let regularCount = 0;
     (this.run.sampleList || []).forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode] = {
@@ -562,6 +617,28 @@ export class Sop01EntryComponent implements OnInit {
         label: sampleCode,
         isQC: false
       });
+
+      regularCount++;
+      if (regularCount % 10 === 0) {
+        const n = regularCount / 10;
+        const spikeNKey = this.getSpikeNKey(n);
+        const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
+        if (!this.draft.resultData[spikeNKey]) {
+          this.draft.resultData[spikeNKey] = {
+            loSo: spikeVial,
+            selected: true
+          };
+        } else {
+          this.draft.resultData[spikeNKey]['loSo'] = spikeVial;
+        }
+        list.push({
+          key: spikeNKey,
+          type: 'QC_SPIKE_N',
+          label: `SP_${n}`,
+          isQC: true,
+          n: n
+        });
+      }
     });
 
     // 5. FINAL (vial 1.8)
