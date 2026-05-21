@@ -831,18 +831,22 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         };
 
         // 1. BLANK (vial 1.7)
-        samplesPayload.push(ensureKeyAndGet('QC_BLANK', '1.7', 'BLANK'));
+        const blankName = currentDraft.page1Data['blankName'] || 'BLANK';
+        samplesPayload.push(ensureKeyAndGet('QC_BLANK', '1.7', blankName));
 
         // 2. SPIKE (vial 1.8)
-        samplesPayload.push(ensureKeyAndGet('QC_SPIKE', '1.8', 'SPIKE'));
+        const spikeName = currentDraft.page1Data['spikeName'] || 'SPIKE';
+        samplesPayload.push(ensureKeyAndGet('QC_SPIKE', '1.8', spikeName));
 
         // 3. CHECK_SAMPLE (vial 1.9, optional)
         if (currentDraft.page1Data['hasCheckSample']) {
-          samplesPayload.push(ensureKeyAndGet('QC_CHECK_SAMPLE', '1.9', 'CHECK_SAMPLE'));
+          const checkSampleName = currentDraft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
+          samplesPayload.push(ensureKeyAndGet('QC_CHECK_SAMPLE', '1.9', checkSampleName));
         }
 
-        // 4. Regular samples
+        // 4. Regular samples & dynamic SP_N every 10 samples
         const sampleList = currentRun.sampleList || [];
+        let regularCount = 0;
         sampleList.forEach((sampleCode: string) => {
           const resObj = currentDraft.resultData[sampleCode] || {};
           const rowData: Record<string, any> = {
@@ -856,6 +860,26 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             }
           });
           samplesPayload.push(rowData);
+
+          regularCount++;
+          if (regularCount % 10 === 0) {
+            const n = regularCount / 10;
+            const spikeNKey = `QC_SPIKE_${n}`;
+            const spikeNObj = currentDraft.resultData[spikeNKey] || {};
+            const spikeVial = currentDraft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
+            
+            const spRowData: Record<string, any> = {
+              loSo: spikeNObj['loSo'] || spikeVial,
+              maSoMau: `SP_${n}`,
+              ghiChu: spikeNObj['ghiChu'] || ''
+            };
+            Object.keys(currentConf.columns).forEach(col => {
+              if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+                spRowData[col] = spikeNObj[col] !== undefined ? spikeNObj[col] : '';
+              }
+            });
+            samplesPayload.push(spRowData);
+          }
         });
 
         // 5. FINAL (vial 1.8)

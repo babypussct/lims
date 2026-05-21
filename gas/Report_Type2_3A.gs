@@ -108,11 +108,35 @@ function fillSampleTable(body, sopConfig, samples) {
     const currentTable = tables[currentTableIdx];
     const pageSamples = samples.slice(p * maxSamplesPerPage, (p + 1) * maxSamplesPerPage);
     
+    let rowIdx = startRow;
     let pageExtraLines = 0;
+    
     for (let i = 0; i < pageSamples.length; i++) {
-      const rowIdx = startRow + i;
-      const row = currentTable.getRow(rowIdx);
       const sample = pageSamples[i];
+      let row = null;
+      
+      // Bỏ qua tất cả các dòng tiêu đề lặp lại trong bảng
+      while (rowIdx < currentTable.getNumRows()) {
+        const candidateRow = currentTable.getRow(rowIdx);
+        const rowText = candidateRow.getText().trim();
+        
+        if (rowText.includes("Mã số mẫu") || 
+            rowText.includes("Vial No") || 
+            rowText.includes("Kết quả mẫu thử") || 
+            rowText.includes("Fipronil desulfinyl") || 
+            rowText.includes("Chlorpyrifos methyl")) {
+          Logger.log(`[TableFit] Phát hiện dòng tiêu đề lặp lại tại hàng ${rowIdx}. Bỏ qua.`);
+          rowIdx++;
+        } else {
+          row = candidateRow;
+          break;
+        }
+      }
+      
+      if (!row) {
+        Logger.log(`[TableFit] Cảnh báo: Hết dòng trong bảng khi đang điền mẫu index ${i}`);
+        break;
+      }
 
       let rowExtraLines = 0;
       // Điền tất cả các cột được cấu hình động
@@ -140,16 +164,28 @@ function fillSampleTable(body, sopConfig, samples) {
       }
       
       pageExtraLines += rowExtraLines;
+      rowIdx++;
     }
     
     // 2.5. Dọn dẹp các dòng trống còn lại trên trang này (nếu có placeholder chưa dùng)
-    for (let i = pageSamples.length; i < maxSamplesPerPage; i++) {
-      const rowIdx = startRow + i;
-      const row = currentTable.getRow(rowIdx);
+    while (rowIdx < currentTable.getNumRows()) {
+      const candidateRow = currentTable.getRow(rowIdx);
+      const rowText = candidateRow.getText().trim();
+      
+      if (rowText.includes("Mã số mẫu") || 
+          rowText.includes("Vial No") || 
+          rowText.includes("Kết quả mẫu thử") || 
+          rowText.includes("Fipronil desulfinyl") || 
+          rowText.includes("Chlorpyrifos methyl")) {
+        rowIdx++;
+        continue;
+      }
+      
       for (const [colKey, colIdx] of Object.entries(cols)) {
         if (colIdx === undefined || colIdx === null) continue;
-        setCellText(row, colIdx, '');
+        setCellText(candidateRow, colIdx, '');
       }
+      rowIdx++;
     }
     
     // Tiến hành xóa các dòng trống ở cuối bảng tương ứng với số dòng bị phình ra
