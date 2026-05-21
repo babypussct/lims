@@ -417,6 +417,58 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
   // 1. Điền các text fields & checkbox chung bằng bộ khung mặc định
   fillTextFields(body, sopConfig, metadata);
 
+  // 1.1 Custom: Xử lý điền Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu
+  try {
+    const maHoSoVal = (metadata.maHoSo || "").trim();
+    const maHoSoDisplay = maHoSoVal ? maHoSoVal : "……………………";
+    const p3Text = `1. Mã hồ sơ : ${maHoSoDisplay}        2. Khối lượng mẫu: m = 10.0 ± 0.1 gram`;
+    let searchResultP3 = body.findText("1\\. Mã hồ sơ");
+    if (searchResultP3) {
+      const para = searchResultP3.getElement().getParent().asParagraph();
+      para.setText(p3Text);
+      para.setFontFamily("Times New Roman");
+      para.setFontSize(11);
+    }
+
+    const fVal = (metadata.heSoPhaLoang || "1").trim();
+    const isF1 = fVal === "1";
+    const f1Check = isF1 ? "☑" : "☐";
+    const fOtherCheck = !isF1 ? "☑" : "☐";
+    const fOtherVal = !isF1 ? fVal : "…..";
+
+    const loaiMauVal = (metadata.loaiMau || "Thủy sản").trim();
+    const isTS = loaiMauVal === "Thủy sản" || loaiMauVal === "Thuỷ sản";
+    const tsCheck = isTS ? "☑" : "☐";
+    const loaiMauOtherCheck = !isTS ? "☑" : "☐";
+    const loaiMauOtherVal = !isTS ? loaiMauVal : "…………";
+
+    const p4Text = `3. Hệ số pha loãng: ${f1Check} f= 1;  ${fOtherCheck} f= ${fOtherVal}     4. Loại mẫu: ${tsCheck} Thuỷ sản; ${loaiMauOtherCheck} Khác: ${loaiMauOtherVal}`;
+    let searchResultP4 = body.findText("3\\. Hệ số pha loãng");
+    if (searchResultP4) {
+      const para = searchResultP4.getElement().getParent().asParagraph();
+      para.setText(p4Text);
+      para.setFontFamily("Times New Roman");
+      para.setFontSize(11);
+    }
+
+    const tinhTrangVal = (metadata.tinhTrangMau || "Bình thường").trim();
+    const isNormal = tinhTrangVal === "Bình thường";
+    const normalCheck = isNormal ? "☑" : "☐";
+    const normalOtherCheck = !isNormal ? "☑" : "☐";
+    const normalOtherVal = !isNormal ? tinhTrangVal : "……………………………………………………";
+
+    const p5Text = `5. Tình trạng mẫu: ${normalCheck} Bình thường; ${normalOtherCheck} Khác: ${normalOtherVal}`;
+    let searchResultP5 = body.findText("5\\. Tình trạng mẫu");
+    if (searchResultP5) {
+      const para = searchResultP5.getElement().getParent().asParagraph();
+      para.setText(p5Text);
+      para.setFontFamily("Times New Roman");
+      para.setFontSize(11);
+    }
+  } catch (e) {
+    Logger.log(`[FipronilCustom] Lỗi khi điền metadata đầu trang: ${e.toString()}`);
+  }
+
   // 2. Điền Bảng QC (Xử lý ô Checkbox Đạt/Không đạt nằm ở cột 3 của hàng tương ứng)
   fillQcTableCheckboxes(body, sopConfig, metadata);
 

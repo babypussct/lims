@@ -38,19 +38,19 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
   'fipronil-chlorpyrifos': {
     formType: 'type2',
     columns: {
-      loSo: 0, maSoMau: 1, kqFip: 2, kqFipDesl: 3, kqFipSulf: 4,
-      kqFipSulf2: 5, kqClp: 6, kqClpMe: 7, kqClpMeDes: 8, ghiChu: 9
+      maSoMau: 0, loSo: 1, kqFip: 2, kqFipDesl: 3, kqFipSulf: 4,
+      kqFipSulf2: 5, kqClp: 6, kqClpMe: 7, kqClpMeDes: 8
     },
     checkboxLines: {
-      'Các mẫu thử không phát hiện nhóm Fipronil và Chlorpyrifos': 'checkTatCaND',
-      'Có mẫu thử phát hiện nhóm Fipronil và Chlorpyrifos': 'checkCoMauPhatHien',
-      'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
-      'R2 >= 0.99': 'qcR2',
-      'Độ lệch thời gian lưu': 'qcThoiGianLuu',
-      'Nhận dạng mẫu nhiễm': 'qcNhanDang',
-      'Nhận dạng mẫu thêm chuẩn': 'qcThemChuan',
-      'Độ thu hồi IS': 'qcThuHoi',
-      'Đánh giá chung': 'qcDanhGiaChung'
+      'Tất cả mẫu thử đều không phát hiện':                           'checkTatCaND',
+      'Có mẫu thử phát hiện':                                          'checkCoMauPhatHien',
+      'Mẫu kiểm tra nội bộ':                                           'qcKiemTraNoiBo',
+      'Hệ số hồi quy tuyến tính':                                      'qcR2',
+      'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
+      'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':             'qcNhanDang',
+      'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':        'qcThemChuan',
+      'Độ thu hồi IS':                                                 'qcThuHoi',
+      'Đánh giá chung':                                                'qcDanhGiaChung'
     },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
   },

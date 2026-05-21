@@ -47,16 +47,15 @@ const CONFIG = {
       formType: 'type2',
       sampleTableIndex: 2,
       columns: {
-        loSo:          0, // Lọ số / Vial
-        maSoMau:       1, // Mẫu thử
+        maSoMau:       0, // Mã số mẫu
+        loSo:          1, // Vial No.
         kqFip:         2, // Fipronil
         kqFipDesl:     3, // Fipronil desulfinyl
         kqFipSulf:     4, // Fipronil sulfide
         kqFipSulf2:    5, // Fipronil sulfone
         kqClp:         6, // Chlorpyrifos
         kqClpMe:       7, // Chlorpyrifos methyl
-        kqClpMeDes:    8, // Chlorpyriphos-methyl-desmethyl
-        ghiChu:        9  // Ghi chú
+        kqClpMeDes:    8  // Chlorpyriphos-methyl-desmethyl
       },
       headerRows: 2,         // Row 0: merged header; Row 1: compound sub-headers
       textReplacements: {},
@@ -66,7 +65,7 @@ const CONFIG = {
         'Có mẫu thử phát hiện':                                         'checkCoMauPhatHien',
         // Khớp đúng text trong bảng QC (section 8) — col 0 của từng hàng
         'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
-        'R2 \u2265 0.99':                                               'qcR2',          // ≥ (U+2265)
+        'Hệ số hồi quy tuyến tính':                                      'qcR2',
         'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
         'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDang',
         'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcThemChuan',

@@ -34,6 +34,84 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
           </div>
         </div>
 
+        <!-- Fipronil specific inputs (Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu) -->
+        @if (isFipronil) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-950/30">
+            <!-- Mã hồ sơ -->
+            <div>
+              <label class="block text-[10px] font-black text-indigo-600 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">1. Mã hồ sơ</label>
+              <input type="text" 
+                     [(ngModel)]="draft.page1Data['maHoSo']" 
+                     (ngModelChange)="onDataChanged()"
+                     placeholder="Nhập mã hồ sơ..."
+                     class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none shadow-sm">
+            </div>
+
+            <!-- Hệ số pha loãng -->
+            <div>
+              <label class="block text-[10px] font-black text-indigo-600 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">3. Hệ số pha loãng (f)</label>
+              <div class="flex items-center gap-1.5">
+                <!-- Preset f=1 -->
+                <button type="button"
+                        (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
+                        [class]="draft.page1Data['heSoPhaLoang'] === '1' 
+                          ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition-all shrink-0' 
+                          : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shrink-0'"
+                        title="Chọn f=1">
+                  f=1
+                </button>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['heSoPhaLoang']" 
+                       (ngModelChange)="onDataChanged()"
+                       placeholder="Hệ số f..."
+                       class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none shadow-sm">
+              </div>
+            </div>
+
+            <!-- Loại mẫu -->
+            <div>
+              <label class="block text-[10px] font-black text-indigo-600 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">4. Loại mẫu</label>
+              <div class="flex items-center gap-1.5">
+                <!-- Preset Thủy sản -->
+                <button type="button"
+                        (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
+                        [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
+                          ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition-all shrink-0' 
+                          : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shrink-0'"
+                        title="Chọn Thủy sản">
+                  Thủy sản
+                </button>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['loaiMau']" 
+                       (ngModelChange)="onDataChanged()"
+                       placeholder="Loại mẫu..."
+                       class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none shadow-sm">
+              </div>
+            </div>
+
+            <!-- Tình trạng mẫu -->
+            <div>
+              <label class="block text-[10px] font-black text-indigo-600 dark:text-indigo-400 mb-1.5 uppercase tracking-wider">5. Tình trạng mẫu</label>
+              <div class="flex items-center gap-1.5">
+                <!-- Preset Bình thường -->
+                <button type="button"
+                        (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
+                        [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
+                          ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition-all shrink-0' 
+                          : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shrink-0'"
+                        title="Chọn Bình thường">
+                  Bình thường
+                </button>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['tinhTrangMau']" 
+                       (ngModelChange)="onDataChanged()"
+                       placeholder="Tình trạng..."
+                       class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none shadow-sm">
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Checkbox & QC segment controls grid (Dynamic from SOP metadata configuration) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
           @for (checkbox of checkboxList; track checkbox.key) {
@@ -95,74 +173,95 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
         </div>
       </div>
 
-      <!-- 1.5. Section 6 Đường chuẩn (Calibration Curve) - Chỉ dành cho Trifluralin -->
-      @if (isTrifluralin) {
+      <!-- 1.5. Section 6 / 7 Đường chuẩn (Calibration Curve) -->
+      @if (isTrifluralin || isFipronil) {
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4 animate-fade-in">
           <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-            <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500"></i> Section 6. Khai báo Đường chuẩn & QC
+            <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500"></i> 
+            {{ isTrifluralin ? 'Section 6. Khai báo Đường chuẩn & QC' : '7. Khai báo Đường chuẩn' }}
           </h4>
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Left Side: QC configuration & R^2 -->
-            <div class="lg:col-span-4 space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Trắng (Blank)</label>
-                <input type="text" 
-                       [(ngModel)]="draft.page1Data['blankName']" 
-                       (ngModelChange)="onDataChanged()"
-                       placeholder="Blank..."
-                       class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
-              </div>
-              
-              <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Thêm chuẩn (Spike)</label>
-                <input type="text" 
-                       [(ngModel)]="draft.page1Data['spikeName']" 
-                       (ngModelChange)="onDataChanged()"
-                       placeholder="Spike..."
-                       class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
-              </div>
+            <!-- Left Side: QC configuration & R^2 (Only for Trifluralin) -->
+            @if (isTrifluralin) {
+              <div class="lg:col-span-4 space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Trắng (Blank)</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['blankName']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="Blank..."
+                         class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                </div>
+                
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Thêm chuẩn (Spike)</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['spikeName']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="Spike..."
+                         class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                </div>
 
-              <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Hệ số xác định R²</label>
-                <input type="text" 
-                       [(ngModel)]="draft.page1Data['r2']" 
-                       (ngModelChange)="onDataChanged()"
-                       placeholder="Ví dụ: 0.9992..."
-                       class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Hệ số xác định R²</label>
+                  <input type="text" 
+                         [(ngModel)]="draft.page1Data['r2']" 
+                         (ngModelChange)="onDataChanged()"
+                         placeholder="Ví dụ: 0.9992..."
+                         class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                </div>
               </div>
-            </div>
+            }
 
-            <!-- Right Side: 7 Calibration Points Grid -->
-            <div class="lg:col-span-8">
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">7 Điểm Đường chuẩn (Calibration Curve Points)</label>
+            <!-- Right Side: Calibration Points Grid -->
+            <div [class]="isTrifluralin ? 'lg:col-span-8' : 'lg:col-span-12'">
+              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                {{ isTrifluralin ? '6 Điểm Đường chuẩn (Calibration Curve Points)' : '5 Điểm Đường chuẩn (Calibration Curve Points)' }}
+              </label>
               <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-900/50">
                 <table class="w-full text-xs text-left border-collapse">
                   <thead class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-20">STT</th>
-                      <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Số Lọ (Vial)</th>
-                      <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Hàm lượng (µg/L hoặc µg/kg)</th>
+                      <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-24">Điểm chuẩn</th>
+                      @if (isFipronil) {
+                        <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Nội chuẩn cần dùng (ng/ml)</th>
+                        <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Nồng độ chuẩn (ng/ml)</th>
+                      }
+                      <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-36">Vial No.</th>
+                      @if (isTrifluralin) {
+                        <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Hàm lượng (µg/kg)</th>
+                      }
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-200 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
                     @for (pt of draft.page1Data['calibPoints']; track $index) {
                       <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition">
-                        <td class="py-2 px-3 font-bold text-slate-400 dark:text-slate-500 text-center bg-slate-50/50 dark:bg-slate-900/10">Điểm {{ $index + 1 }}</td>
-                        <td class="py-1 px-2">
+                        <td class="py-2 px-3 font-extrabold text-slate-500 dark:text-slate-400 text-center bg-slate-50/50 dark:bg-slate-900/10">
+                          {{ isFipronil ? ('C' + $index) : ('Điểm ' + ($index + 1)) }}
+                        </td>
+                        @if (isFipronil) {
+                          <td class="py-2.5 px-3 font-semibold text-slate-600 dark:text-slate-300">20</td>
+                          <td class="py-2.5 px-3 font-bold text-indigo-600 dark:text-indigo-400 select-all">
+                            {{ $index === 0 ? '0' : ($index === 1 ? '5' : ($index === 2 ? '10' : ($index === 3 ? '20' : '50'))) }}
+                          </td>
+                        }
+                        <td class="py-1 px-2 text-center">
                           <input type="text" 
                                  [(ngModel)]="pt['loSo']" 
                                  (ngModelChange)="onDataChanged()"
-                                 placeholder="Lọ..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                                 placeholder="Vial..."
+                                 class="w-32 mx-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                         </td>
-                        <td class="py-1.5 px-2">
-                          <input type="text" 
-                                 [(ngModel)]="pt['hamLuong']" 
-                                 (ngModelChange)="onDataChanged()"
-                                 placeholder="Nồng độ..."
-                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                        </td>
+                        @if (isTrifluralin) {
+                          <td class="py-1.5 px-2">
+                            <input type="text" 
+                                   [(ngModel)]="pt['hamLuong']" 
+                                   (ngModelChange)="onDataChanged()"
+                                   placeholder="Nồng độ..."
+                                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                          </td>
+                        }
                       </tr>
                     }
                   </tbody>
@@ -219,6 +318,43 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                 </button>
               </div>
             }
+
+            @if (isFipronil) {
+              <!-- Quick Vial Rack Input for Fipronil (Lọ số nhanh dạng Rack.Vial) -->
+              <div class="flex items-center gap-1.5 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl px-3 py-1.5 text-xs shadow-sm">
+                <span class="font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Nhập Vial nhanh:</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-500 dark:text-slate-400">Khay (Rack):</span>
+                  <input type="number" 
+                         [(ngModel)]="bulkRackStart" 
+                         title="Khay chạy máy (Rack)"
+                         placeholder="Rack" 
+                         class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm">
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-500 dark:text-slate-400">Vial đầu:</span>
+                  <input type="number" 
+                         [(ngModel)]="bulkVialStartFip" 
+                         title="Vial bắt đầu"
+                         placeholder="Vial" 
+                         class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm">
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-500 dark:text-slate-400">Size khay:</span>
+                  <input type="number" 
+                         [(ngModel)]="bulkVialsPerRack" 
+                         title="Số ống vial tối đa trên một khay (Rack)"
+                         placeholder="Tối đa" 
+                         class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm">
+                </div>
+                <button (click)="applyBulkVials()" 
+                        class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition shadow-sm flex items-center gap-1"
+                        title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
+                  <i class="fa-solid fa-check"></i>
+                  <span>Điền nhanh</span>
+                </button>
+              </div>
+            }
           </div>
         </div>
 
@@ -254,7 +390,9 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   </th>
                 }
                 
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs w-24">Lọ số</th>
+                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs w-24">
+                  {{ isFipronil ? 'Vial No.' : 'Lọ số' }}
+                </th>
                 <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[120px]">Mẫu thử</th>
                 
                 <!-- Dynamic active columns -->
@@ -264,7 +402,9 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   </th>
                 }
                 
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Ghi chú</th>
+                @if (!isFipronil) {
+                  <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Ghi chú</th>
+                }
                 <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">Hàng</th>
               </tr>
             </thead>
@@ -426,7 +566,19 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                 @for (sample of run.sampleList; track sample; let rowIdx = $index) {
                   @if (draft.resultData[sample]) {
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
-                      <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold">{{ rowIdx + 1 }}</td>
+                      <td class="py-1 px-2 w-24">
+                        @if (isFipronil) {
+                          <input type="text"
+                                 [(ngModel)]="draft.resultData[sample]['loSo']"
+                                 (ngModelChange)="onDataChanged()"
+                                 [id]="'cell-' + rowIdx + '-loSo'"
+                                 (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                                 placeholder="..."
+                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                        } @else {
+                          <span class="font-mono text-xs text-slate-400 font-bold px-2">{{ rowIdx + 1 }}</span>
+                        }
+                      </td>
                       <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ sample }}</td>
                       
                       <!-- Dynamic active columns inputs -->
@@ -436,22 +588,24 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                                  [(ngModel)]="draft.resultData[sample][col]"
                                  (ngModelChange)="onDataChanged()"
                                  [id]="'cell-' + rowIdx + '-' + col"
-                                 (keydown)="handleGridNavigation($event, rowIdx, col, colIdx)"
+                                 (keydown)="handleGridNavigation($event, rowIdx, col, isFipronil ? colIdx + 1 : colIdx)"
                                  placeholder="..."
                                  class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none text-center">
                         </td>
                       }
                       
                       <!-- Ghi chú -->
-                      <td class="py-1 px-2">
-                        <input type="text"
-                               [(ngModel)]="draft.resultData[sample]['ghiChu']"
-                               (ngModelChange)="onDataChanged()"
-                               [id]="'cell-' + rowIdx + '-ghiChu'"
-                               (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length)"
-                               placeholder="Ghi chú..."
-                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
-                      </td>
+                      @if (!isFipronil) {
+                        <td class="py-1 px-2">
+                          <input type="text"
+                                 [(ngModel)]="draft.resultData[sample]['ghiChu']"
+                                 (ngModelChange)="onDataChanged()"
+                                 [id]="'cell-' + rowIdx + '-ghiChu'"
+                                 (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', isFipronil ? activeColumns.length + 1 : activeColumns.length)"
+                                 placeholder="Ghi chú..."
+                                 class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
+                        </td>
+                      }
 
                       <td class="py-1 px-4 text-center">
                         <button (click)="copyRowToAll(sample)" 
@@ -479,6 +633,7 @@ export class ResultEntryType2Component implements OnInit {
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   isTrifluralin = false;
+  isFipronil = false;
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
 
@@ -490,8 +645,14 @@ export class ResultEntryType2Component implements OnInit {
   bulkVialStart = 1;
   bulkVialEnd = 1;
 
+  // Fipronil specific bulk rack properties
+  bulkRackStart = 6;
+  bulkVialStartFip = 1;
+  bulkVialsPerRack = 54;
+
   ngOnInit() {
     this.isTrifluralin = this.run.sopId === 'SOP-03' || (this.config.columns && this.config.columns.kqTrifluralin !== undefined);
+    this.isFipronil = this.run.sopId === 'SOP-01' || (this.config.columns && this.config.columns.kqFip !== undefined);
 
     // Trích lọc các cột hoạt chất thực sự (loại trừ lọ số, mẫu thử, ghi chú)
     const cols = Object.keys(this.config.columns || {});
@@ -503,6 +664,49 @@ export class ResultEntryType2Component implements OnInit {
         key: key as string,
         label
       }));
+    }
+
+    // Khởi tạo các trường metadata và calibPoints riêng cho Fipronil
+    if (this.isFipronil) {
+      if (!this.draft.page1Data) {
+        this.draft.page1Data = {};
+      }
+      if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
+        this.draft.page1Data['calibPoints'] = [
+          { loSo: 'C0', vialNo: '' },
+          { loSo: 'C1', vialNo: '' },
+          { loSo: 'C2', vialNo: '' },
+          { loSo: 'C3', vialNo: '' },
+          { loSo: 'C4', vialNo: '' }
+        ];
+      }
+      if (this.draft.page1Data['maHoSo'] === undefined) {
+        this.draft.page1Data['maHoSo'] = '';
+      }
+      if (this.draft.page1Data['heSoPhaLoang'] === undefined) {
+        this.draft.page1Data['heSoPhaLoang'] = '1';
+      }
+      if (this.draft.page1Data['loaiMau'] === undefined) {
+        this.draft.page1Data['loaiMau'] = 'Thủy sản';
+      }
+      if (this.draft.page1Data['tinhTrangMau'] === undefined) {
+        this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
+      }
+
+      // Khởi tạo loSo (Vial No) cho từng mẫu kết quả nếu chưa có
+      if (!this.draft.resultData) {
+        this.draft.resultData = {};
+      }
+      (this.run.sampleList || []).forEach((sample: string, idx: number) => {
+        if (!this.draft.resultData[sample]) {
+          this.draft.resultData[sample] = {};
+        }
+        if (this.draft.resultData[sample]['loSo'] === undefined || this.draft.resultData[sample]['loSo'] === '') {
+          this.draft.resultData[sample]['loSo'] = (idx + 1).toString();
+        }
+      });
+
+      this.onDataChanged();
     }
 
     if (this.isTrifluralin) {
@@ -535,6 +739,40 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   applyBulkVials() {
+    if (this.isFipronil) {
+      const rackStart = parseInt(String(this.bulkRackStart), 10);
+      const vialStart = parseInt(String(this.bulkVialStartFip), 10);
+      const perRack = parseInt(String(this.bulkVialsPerRack), 10);
+
+      if (isNaN(rackStart) || isNaN(vialStart) || isNaN(perRack) || perRack <= 0) {
+        return;
+      }
+
+      const visible = this.getVisibleRegularSamples();
+      let currentRack = rackStart;
+      let currentVial = vialStart;
+
+      visible.forEach((sample: string) => {
+        if (currentVial > perRack) {
+          currentRack += 1;
+          currentVial = 1;
+        }
+
+        if (!this.draft.resultData[sample]) {
+          this.draft.resultData[sample] = {
+            loSo: '',
+            selected: true
+          };
+        }
+        this.draft.resultData[sample]['loSo'] = `${currentRack}.${currentVial}`;
+        currentVial += 1;
+      });
+
+      this.onDataChanged();
+      return;
+    }
+
+    // Default Trifluralin handling
     const start = parseInt(String(this.bulkVialStart), 10);
     const end = parseInt(String(this.bulkVialEnd), 10);
     if (isNaN(start) || isNaN(end) || start > end) {
@@ -594,9 +832,22 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   formatColumnName(colKey: string): string {
-    // Chuyển từ kqTrifluralin -> Trifluralin, kqFip -> Fipronil
+    const customNames: Record<string, string> = {
+      'kqFip': 'Fipronil',
+      'kqFipDesl': 'Fipronil desulfinyl',
+      'kqFipSulf': 'Fipronil sulfide',
+      'kqFipSulf2': 'Fipronil sulfone',
+      'kqClp': 'Chlorpyrifos',
+      'kqClpMe': 'Chlorpyrifos methyl',
+      'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl',
+      'kqTrifluralin': 'Trifluralin'
+    };
+    if (customNames[colKey]) {
+      return customNames[colKey];
+    }
+    
+    // Fallback
     let name = colKey.replace(/^kq/, '');
-    // Tách hoa/thường viết hoa từ đầu
     name = name.replace(/([A-Z])/g, ' $1').trim();
     return name.charAt(0).toUpperCase() + name.slice(1);
   }
