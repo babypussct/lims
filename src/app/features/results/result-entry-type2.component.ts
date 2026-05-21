@@ -214,8 +214,31 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
               </div>
             }
 
+            <!-- Left Side: QC configuration (Only for Fipronil) -->
+            @if (isFipronil) {
+              <div class="lg:col-span-4 space-y-4">
+                <div class="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/50 rounded-xl space-y-3 shadow-sm">
+                  <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC
+                  </h5>
+                  
+                  <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition">
+                    <input type="checkbox" 
+                           [(ngModel)]="draft.page1Data['hasCheckSample']" 
+                           (ngModelChange)="onDataChanged()"
+                           class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
+                  </label>
+                  
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                    Mẫu CHECK_SAMPLE thực hiện ở tần suất thấp. Khi được tích chọn, mẫu sẽ tự động xuất hiện tại vị trí Vial 1.9 (ngay sau BLANK & SPIKE) trên lưới nhập liệu và báo cáo xuất bản.
+                  </p>
+                </div>
+              </div>
+            }
+
             <!-- Right Side: Calibration Points Grid -->
-            <div [class]="isTrifluralin ? 'lg:col-span-8' : 'lg:col-span-12'">
+            <div [class]="(isTrifluralin || isFipronil) ? 'lg:col-span-8' : 'lg:col-span-12'">
               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
                 {{ isTrifluralin ? '6 Điểm Đường chuẩn (Calibration Curve Points)' : '5 Điểm Đường chuẩn (Calibration Curve Points)' }}
               </label>
@@ -562,14 +585,16 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   }
                 }
               } @else {
-                <!-- Standard list for other Type 2 SOPs -->
-                @for (sample of run.sampleList; track sample; let rowIdx = $index) {
-                  @if (draft.resultData[sample]) {
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                <!-- Standard list for Fipronil and other Type 2 SOPs -->
+                @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
+                  @if (draft.resultData[row.key]) {
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition"
+                        [class.bg-indigo-50/20]="row.isQC"
+                        [class.dark:bg-indigo-950/10]="row.isQC">
                       <td class="py-1 px-2 w-24">
                         @if (isFipronil) {
                           <input type="text"
-                                 [(ngModel)]="draft.resultData[sample]['loSo']"
+                                 [(ngModel)]="draft.resultData[row.key]['loSo']"
                                  (ngModelChange)="onDataChanged()"
                                  [id]="'cell-' + rowIdx + '-loSo'"
                                  (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
@@ -579,14 +604,14 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                           <span class="font-mono text-xs text-slate-400 font-bold px-2">{{ rowIdx + 1 }}</span>
                         }
                       </td>
-                      <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ sample }}</td>
+                      <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ row.label }}</td>
                       
                       <!-- Dynamic active columns inputs -->
                       @for (col of activeColumns; track col; let colIdx = $index) {
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData[sample][col]"
-                                 (ngModelChange)="onDataChanged()"
+                                 [(ngModel)]="draft.resultData[row.key][col]"
+                                 (ngModelChange)="onCellChanged(row.key)"
                                  [id]="'cell-' + rowIdx + '-' + col"
                                  (keydown)="handleGridNavigation($event, rowIdx, col, isFipronil ? colIdx + 1 : colIdx)"
                                  placeholder="..."
@@ -598,7 +623,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                       @if (!isFipronil) {
                         <td class="py-1 px-2">
                           <input type="text"
-                                 [(ngModel)]="draft.resultData[sample]['ghiChu']"
+                                 [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                                  (ngModelChange)="onDataChanged()"
                                  [id]="'cell-' + rowIdx + '-ghiChu'"
                                  (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', isFipronil ? activeColumns.length + 1 : activeColumns.length)"
@@ -608,11 +633,15 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                       }
 
                       <td class="py-1 px-4 text-center">
-                        <button (click)="copyRowToAll(sample)" 
-                                class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
-                                title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
-                          <i class="fa-solid fa-copy"></i>
-                        </button>
+                        @if (row.isQC) {
+                          <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC {{ row.label }}</span>
+                        } @else {
+                          <button (click)="copyRowToAll(row.key)" 
+                                  class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
+                                  title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
+                            <i class="fa-solid fa-copy"></i>
+                          </button>
+                        }
                       </td>
                     </tr>
                   }
@@ -646,8 +675,8 @@ export class ResultEntryType2Component implements OnInit {
   bulkVialEnd = 1;
 
   // Fipronil specific bulk rack properties
-  bulkRackStart = 6;
-  bulkVialStartFip = 1;
+  bulkRackStart = 1;
+  bulkVialStartFip = 10;
   bulkVialsPerRack = 54;
 
   ngOnInit() {
@@ -673,11 +702,11 @@ export class ResultEntryType2Component implements OnInit {
       }
       if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
         this.draft.page1Data['calibPoints'] = [
-          { loSo: 'C0', vialNo: '' },
-          { loSo: 'C1', vialNo: '' },
-          { loSo: 'C2', vialNo: '' },
-          { loSo: 'C3', vialNo: '' },
-          { loSo: 'C4', vialNo: '' }
+          { loSo: '1.1', vialNo: '1.1' },
+          { loSo: '1.2', vialNo: '1.2' },
+          { loSo: '1.3', vialNo: '1.3' },
+          { loSo: '1.4', vialNo: '1.4' },
+          { loSo: '1.5', vialNo: '1.5' }
         ];
       }
       if (this.draft.page1Data['maHoSo'] === undefined) {
@@ -692,8 +721,11 @@ export class ResultEntryType2Component implements OnInit {
       if (this.draft.page1Data['tinhTrangMau'] === undefined) {
         this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
       }
+      if (this.draft.page1Data['hasCheckSample'] === undefined) {
+        this.draft.page1Data['hasCheckSample'] = false;
+      }
 
-      // Khởi tạo loSo (Vial No) cho từng mẫu kết quả nếu chưa có
+      // Khởi tạo loSo (Vial No) cho từng mẫu kết quả nếu chưa có (mặc định bắt đầu từ vial 1.10)
       if (!this.draft.resultData) {
         this.draft.resultData = {};
       }
@@ -702,7 +734,10 @@ export class ResultEntryType2Component implements OnInit {
           this.draft.resultData[sample] = {};
         }
         if (this.draft.resultData[sample]['loSo'] === undefined || this.draft.resultData[sample]['loSo'] === '') {
-          this.draft.resultData[sample]['loSo'] = (idx + 1).toString();
+          const currentVial = 10 + idx;
+          const rack = 1 + Math.floor((currentVial - 1) / 54);
+          const vial = ((currentVial - 1) % 54) + 1;
+          this.draft.resultData[sample]['loSo'] = `${rack}.${vial}`;
         }
       });
 
@@ -857,7 +892,7 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   onCellChanged(sampleCode: string) {
-    if (this.isTrifluralin) {
+    if (this.isTrifluralin || this.isFipronil) {
       this.updateRecovery(sampleCode);
     }
     this.onDataChanged();
@@ -957,9 +992,123 @@ export class ResultEntryType2Component implements OnInit {
     return list;
   }
 
+  getDisplayRowsForFipronil(): any[] {
+    const list: any[] = [];
+    
+    if (!this.isFipronil) {
+      // Fallback for any other non-Trifluralin non-Fipronil Type 2 SOPs
+      (this.run.sampleList || []).forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          this.draft.resultData[sampleCode] = {
+            loSo: '',
+            selected: true
+          };
+        }
+        list.push({
+          key: sampleCode,
+          type: 'REGULAR',
+          label: sampleCode,
+          isQC: false
+        });
+      });
+      return list;
+    }
+
+    const ensureKey = (key: string, defaultVial: string) => {
+      if (!this.draft.resultData[key]) {
+        this.draft.resultData[key] = {
+          loSo: defaultVial,
+          selected: true
+        };
+      }
+    };
+
+    // 1. BLANK (vial 1.7)
+    ensureKey('QC_BLANK', '1.7');
+    list.push({
+      key: 'QC_BLANK',
+      type: 'QC_BLANK',
+      label: 'BLANK',
+      isQC: true
+    });
+
+    // 2. SPIKE (vial 1.8)
+    ensureKey('QC_SPIKE', '1.8');
+    list.push({
+      key: 'QC_SPIKE',
+      type: 'QC_SPIKE',
+      label: 'SPIKE',
+      isQC: true
+    });
+
+    // 3. CHECK_SAMPLE (vial 1.9, optional)
+    if (this.draft.page1Data['hasCheckSample']) {
+      ensureKey('QC_CHECK_SAMPLE', '1.9');
+      list.push({
+        key: 'QC_CHECK_SAMPLE',
+        type: 'QC_CHECK_SAMPLE',
+        label: 'CHECK_SAMPLE',
+        isQC: true
+      });
+    }
+
+    // 4. REGULAR samples (vials start at 1.10)
+    (this.run.sampleList || []).forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = {
+          loSo: '',
+          selected: true
+        };
+      }
+      list.push({
+        key: sampleCode,
+        type: 'REGULAR',
+        label: sampleCode,
+        isQC: false
+      });
+    });
+
+    // 5. FINAL (vial 1.8)
+    ensureKey('QC_FINAL', '1.8');
+    list.push({
+      key: 'QC_FINAL',
+      type: 'QC_FINAL',
+      label: 'FINAL',
+      isQC: true
+    });
+
+    return list;
+  }
+
   updateRecovery(sampleCode: string) {
     const row = this.draft.resultData[sampleCode];
     if (!row) return;
+
+    if (this.isFipronil) {
+      // Fipronil spike recovery calculation (5 ppb spiked concentration)
+      const isSpike = sampleCode === 'QC_SPIKE' || sampleCode === 'QC_FINAL' || sampleCode === 'QC_CHECK_SAMPLE' || sampleCode.toLowerCase().includes('spike');
+      if (isSpike) {
+        const recoveries: string[] = [];
+        const compounds = ['kqFip', 'kqFipDesl', 'kqFipSulf', 'kqFipSulf2', 'kqClp', 'kqClpMe', 'kqClpMeDes'];
+        compounds.forEach(comp => {
+          const valStr = row[comp];
+          const val = parseFloat(valStr);
+          if (!isNaN(val)) {
+            const rec = (val / 5) * 100;
+            const recFormatted = rec % 1 === 0 ? rec.toFixed(0) : rec.toFixed(1);
+            const cleanName = comp.replace(/^kq/, '');
+            recoveries.push(`${cleanName}: ${recFormatted}%`);
+          }
+        });
+        if (recoveries.length > 0) {
+          row['ghiChu'] = recoveries.join(', ');
+        } else {
+          row['ghiChu'] = '';
+        }
+      }
+      return;
+    }
+
     const spikeName = this.draft.page1Data['spikeName'] || 'Spike';
     
     // Check if row matches spike criteria: sample name contains spike/sp, or is spike row, or is SPIKE_N/FINAL QC row
@@ -1012,7 +1161,7 @@ export class ResultEntryType2Component implements OnInit {
       }
     });
 
-    if (this.isTrifluralin) {
+    if (this.isTrifluralin || this.isFipronil) {
       // Also fill blank/spike and any dynamic QC rows if empty
       Object.keys(this.draft.resultData).forEach(key => {
         if (key.startsWith('QC_')) {
@@ -1049,7 +1198,7 @@ export class ResultEntryType2Component implements OnInit {
       }
     });
 
-    if (this.isTrifluralin) {
+    if (this.isTrifluralin || this.isFipronil) {
       Object.keys(this.draft.resultData).forEach(key => {
         if (key.startsWith('QC_')) {
           const row = this.draft.resultData[key];

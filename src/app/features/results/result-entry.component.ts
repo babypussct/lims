@@ -439,6 +439,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {
     const isTrifluralin = runDoc.sopId === 'SOP-03' || (sopConf.columns && sopConf.columns.kqTrifluralin !== undefined);
+    const isFipronil = runDoc.sopId === 'SOP-01' || (sopConf.columns && sopConf.columns.kqFip !== undefined);
 
     const defaultPage1: Record<string, any> = {
       ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
@@ -458,6 +459,19 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         { loSo: '44', hamLuong: '5.0' },
         { loSo: '45', hamLuong: '10.0' },
         { loSo: '46', hamLuong: '30.0' }
+      ];
+    } else if (isFipronil) {
+      defaultPage1['hasCheckSample'] = false;
+      defaultPage1['maHoSo'] = '';
+      defaultPage1['heSoPhaLoang'] = '1';
+      defaultPage1['loaiMau'] = 'Thủy sản';
+      defaultPage1['tinhTrangMau'] = 'Bình thường';
+      defaultPage1['calibPoints'] = [
+        { loSo: '1.1', vialNo: '1.1' },
+        { loSo: '1.2', vialNo: '1.2' },
+        { loSo: '1.3', vialNo: '1.3' },
+        { loSo: '1.4', vialNo: '1.4' },
+        { loSo: '1.5', vialNo: '1.5' }
       ];
     } else if (sopConf.checkboxLines) {
       // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
@@ -483,6 +497,42 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           selected: true
         };
       });
+    } else if (isFipronil) {
+      const activeCols = Object.keys(sopConf.columns || {}).filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+      
+      // 1. BLANK (vial 1.7)
+      defaultResultData['QC_BLANK'] = { loSo: '1.7', selected: true };
+      activeCols.forEach(col => defaultResultData['QC_BLANK'][col] = '');
+      defaultResultData['QC_BLANK']['ghiChu'] = '';
+
+      // 2. SPIKE (vial 1.8)
+      defaultResultData['QC_SPIKE'] = { loSo: '1.8', selected: true };
+      activeCols.forEach(col => defaultResultData['QC_SPIKE'][col] = '');
+      defaultResultData['QC_SPIKE']['ghiChu'] = '';
+
+      // 3. Optional CHECK_SAMPLE (vial 1.9)
+      defaultResultData['QC_CHECK_SAMPLE'] = { loSo: '1.9', selected: true };
+      activeCols.forEach(col => defaultResultData['QC_CHECK_SAMPLE'][col] = '');
+      defaultResultData['QC_CHECK_SAMPLE']['ghiChu'] = '';
+
+      // 4. Regular samples starting at vial 1.10
+      sampleList.forEach((sampleCode: string, idx: number) => {
+        const currentVial = 10 + idx;
+        const rack = 1 + Math.floor((currentVial - 1) / 54);
+        const vial = ((currentVial - 1) % 54) + 1;
+        
+        defaultResultData[sampleCode] = {
+          loSo: `${rack}.${vial}`,
+          selected: true
+        };
+        activeCols.forEach(col => defaultResultData[sampleCode][col] = '');
+        defaultResultData[sampleCode]['ghiChu'] = '';
+      });
+
+      // 5. FINAL (vial 1.8)
+      defaultResultData['QC_FINAL'] = { loSo: '1.8', selected: true };
+      activeCols.forEach(col => defaultResultData['QC_FINAL'][col] = '');
+      defaultResultData['QC_FINAL']['ghiChu'] = '';
     } else {
       sampleList.forEach((sampleCode: string) => {
         defaultResultData[sampleCode] = {};
@@ -711,6 +761,85 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           }
           const hist = await this.resultService.getHistory(this.requestId);
           this.historyList.set(hist);
+        } else {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+        }
+      } else if (this.configKey() === 'fipronil-chlorpyrifos') {
+        // Luồng tạo báo cáo chuyên biệt cho Fipronil (SOP-01) có kèm theo mẫu QC (BLANK, SPIKE, CHECK_SAMPLE, FINAL)
+        const samplesPayload: any[] = [];
+        
+        const ensureKeyAndGet = (key: string, defaultVial: string, label: string) => {
+          const resObj = currentDraft.resultData[key] || {};
+          const rowData: Record<string, any> = {
+            loSo: resObj['loSo'] || defaultVial,
+            maSoMau: label,
+            ghiChu: resObj['ghiChu'] || ''
+          };
+          Object.keys(currentConf.columns).forEach(col => {
+            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+            }
+          });
+          return rowData;
+        };
+
+        // 1. BLANK (vial 1.7)
+        samplesPayload.push(ensureKeyAndGet('QC_BLANK', '1.7', 'BLANK'));
+
+        // 2. SPIKE (vial 1.8)
+        samplesPayload.push(ensureKeyAndGet('QC_SPIKE', '1.8', 'SPIKE'));
+
+        // 3. CHECK_SAMPLE (vial 1.9, optional)
+        if (currentDraft.page1Data['hasCheckSample']) {
+          samplesPayload.push(ensureKeyAndGet('QC_CHECK_SAMPLE', '1.9', 'CHECK_SAMPLE'));
+        }
+
+        // 4. Regular samples
+        const sampleList = currentRun.sampleList || [];
+        sampleList.forEach((sampleCode: string) => {
+          const resObj = currentDraft.resultData[sampleCode] || {};
+          const rowData: Record<string, any> = {
+            loSo: resObj['loSo'] || '',
+            maSoMau: sampleCode,
+            ghiChu: resObj['ghiChu'] || ''
+          };
+          Object.keys(currentConf.columns).forEach(col => {
+            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+            }
+          });
+          samplesPayload.push(rowData);
+        });
+
+        // 5. FINAL (vial 1.8)
+        samplesPayload.push(ensureKeyAndGet('QC_FINAL', '1.8', 'FINAL'));
+
+        const reportPayload: any = {
+          action: 'generate_pdf',
+          sopId: this.configKey(),
+          metadata: {
+            ...currentDraft.page1Data,
+            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
+            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
+          },
+          samples: samplesPayload
+        };
+
+        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
+        if (result.success) {
+          this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+
+          const hist = await this.resultService.getHistory(this.requestId);
+          this.historyList.set(hist);
+
+          const url = result.pdfViewUrl || result.pdfUrl;
+          if (url && pdfWindow && !pdfWindow.closed) {
+            pdfWindow.location.href = url;
+          } else if (pdfWindow && !pdfWindow.closed) {
+            pdfWindow.close();
+            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
+          }
         } else {
           if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
