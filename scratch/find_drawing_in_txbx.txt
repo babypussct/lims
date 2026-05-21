@@ -1,0 +1,12 @@
+No txbxContent contains nested drawings. The error must be elsewhere.
+
+footnotes.xml has drawing: false
+endnotes.xml has drawing: false
+
+Original doc has OLE object (oleObject1.bin rId16): true
+Original doc has image (image1.wmf rId15): true
+
+In range 147-194:
+  rId15 (image.wmf) references: 0
+  rId16 (oleObject) references: 0
+  All rId references in range: rId17, rId18, rId19

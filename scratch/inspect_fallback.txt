@@ -1,0 +1,22 @@
+
+=== FULL XML Index 157 [w:p] (2347 chars) ===
+No mc:Fallback found.
+
+=== FULL XML Index 159 [w:p] (2935 chars) ===
+No mc:Fallback found.
+
+=== FULL XML Index 178 [w:p] (2040 chars) ===
+No mc:Fallback found.
+
+=== FULL XML Index 193 [w:p] (2187 chars) ===
+No mc:Fallback found.
+
+=== header7.xml: drawing=false txbxContent=false (3516 chars) ===
+
+=== footer5.xml: drawing=false txbxContent=false (3419 chars) ===
+
+=== header5.xml: drawing=false txbxContent=false (3643 chars) ===
+
+=== header6.xml: drawing=false txbxContent=false (3522 chars) ===
+
+=== footer4.xml: drawing=false txbxContent=false (3298 chars) ===

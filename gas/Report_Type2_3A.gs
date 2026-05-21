@@ -401,3 +401,131 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
   };
 }
 
+/**
+ * Hàm xử lý chuyên biệt cho chỉ tiêu Fipronil - Chlorpyrifos (SOP-01)
+ * Thực hiện điền Bảng QC (đúng ô kết quả Đạt/Không Đạt) và Bảng Đường chuẩn
+ */
+function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, samples, folder, fileName, version) {
+  const templateFile = DriveApp.getFileById(templateId);
+  const newFile = templateFile.makeCopy(fileName, folder);
+  const docId = newFile.getId();
+  const doc = DocumentApp.openById(docId);
+  const body = doc.getBody();
+
+  const sopConfig = CONFIG.SOP_CONFIG['fipronil-chlorpyrifos'];
+
+  // 1. Điền các text fields & checkbox chung bằng bộ khung mặc định
+  fillTextFields(body, sopConfig, metadata);
+
+  // 2. Điền Bảng QC (Xử lý ô Checkbox Đạt/Không đạt nằm ở cột 3 của hàng tương ứng)
+  fillQcTableCheckboxes(body, sopConfig, metadata);
+
+  // 3. Tìm và điền bảng đường chuẩn (Table 0: 6 dòng × 4 cột)
+  const tables = body.getTables();
+  let calibrationTable = null;
+  for (let t = 0; t < tables.length; t++) {
+    const candidate = tables[t];
+    if (candidate.getNumRows() === 6) {
+      const cellText = candidate.getRow(0).getCell(0).getText();
+      if (cellText.includes("Điểm chuẩn") || cellText.includes("Vial No")) {
+        calibrationTable = candidate;
+        break;
+      }
+    }
+  }
+
+  if (calibrationTable) {
+    Logger.log(`[FipronilCustom] Tìm thấy bảng đường chuẩn (6 dòng).`);
+    const calibPoints = metadata.calibPoints || [];
+    for (let i = 0; i < 5; i++) {
+      const pt = calibPoints[i] || { vialNo: '', loSo: '' };
+      const rowIdx = 1 + i; // Dòng 0 là header
+      const row = calibrationTable.getRow(rowIdx);
+      // Điền Vial No. (Cột index 3)
+      setCellText(row, 3, pt.vialNo || pt.loSo || '');
+    }
+  } else {
+    Logger.log('[FipronilCustom] CẢNH BÁO: Không tìm thấy bảng đường chuẩn.');
+  }
+
+  // 4. Điền bảng mẫu kết quả chính (sử dụng logic fillSampleTable chuẩn)
+  fillSampleTable(body, sopConfig, samples);
+
+  // 5. Lưu doc
+  doc.saveAndClose();
+
+  // Export PDF
+  const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+  const pdfName = fileName + '.pdf';
+  const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+  const pdfUrl     = pdfFile.getUrl();
+  const docsUrl    = `https://docs.google.com/document/d/${docId}/edit`;
+  const pdfViewUrl = pdfFile.getDownloadUrl();
+
+  return {
+    docId,
+    pdfId:       pdfFile.getId(),
+    docsUrl,
+    pdfUrl,
+    pdfViewUrl,
+    fileName,
+    createdAt:   new Date().toISOString(),
+  };
+}
+
+/**
+ * Xử lý đánh dấu ☑/☐ Đạt hoặc Không đạt trong bảng QC
+ */
+function fillQcTableCheckboxes(body, sopConfig, metadata) {
+  const tables = body.getTables();
+  let qcTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() >= 7) {
+      const headerText = t.getRow(0).getCell(0).getText();
+      if (headerText.includes("Thông số đánh giá")) {
+        qcTable = t;
+        break;
+      }
+    }
+  }
+
+  if (!qcTable) {
+    Logger.log("[QcTable] Không tìm thấy bảng QC để điền!");
+    return;
+  }
+
+  const checkboxLines = sopConfig.checkboxLines;
+  const numRows = qcTable.getNumRows();
+
+  for (let r = 1; r < numRows; r++) {
+    const row = qcTable.getRow(r);
+    const labelText = row.getCell(0).getText().trim();
+    
+    // Tìm key tương ứng trong cấu hình checkboxLines
+    let fieldName = null;
+    for (const [keyText, fName] of Object.entries(checkboxLines)) {
+      if (labelText.includes(keyText) || keyText.includes(labelText)) {
+        fieldName = fName;
+        break;
+      }
+    }
+
+    if (fieldName && metadata[fieldName] !== undefined) {
+      const isPassed = metadata[fieldName] === true;
+      const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
+      
+      const datCheck = isPassed ? "☑ Đạt" : "☐ Đạt";
+      const khongDatCheck = isPassed ? "☐ Không đạt" : "☑ Không đạt";
+
+      // Khớp và thay thế đúng checkbox Đạt/Không đạt
+      evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
+      evalCell.replaceText('[☐□] Đạt', datCheck);
+
+      evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
+      evalCell.replaceText('[☐□] Không đạt', khongDatCheck);
+    }
+  }
+}
+

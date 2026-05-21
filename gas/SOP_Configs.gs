@@ -8,13 +8,14 @@ const CONFIG = {
   // Root folder ID chứa tất cả báo cáo (thư mục "LIMS_Reports" trên Drive)
   ROOT_FOLDER_ID: '1B8KctFU-KDCPAwxrg8N75Sipk5SlGJkE',
 
-  // Template Google Doc IDs cho từng SOP (điền sau khi upload template)
+  // Template Google Doc IDs cho từng SOP (cập nhật sau khi upload file form gốc lên Drive)
+  // Định dạng: 'config-key': 'GOOGLE_DOC_ID'  // SOP-XX | file gốc: <tên file>
   TEMPLATES: {
-    'trifluralin-gcms':       '1FN0onAiYBuSBiQk3DWQQGXTxvhHaI8VSaxD2qgUUAxY',   // filebieumau2
-    'fipronil-chlorpyrifos':  'PASTE_GOOGLE_DOC_ID_HERE',   // filebieumau
-    'dichlorvos-gcms':        'PASTE_GOOGLE_DOC_ID_HERE',   // filebieumau3
-    'chlor-huu-co':           'PASTE_GOOGLE_DOC_ID_HERE',   // filebieumau4
-    'lan-huu-co':             'PASTE_GOOGLE_DOC_ID_HERE',   // filebieumau5
+    'trifluralin-gcms':       '1FN0onAiYBuSBiQk3DWQQGXTxvhHaI8VSaxD2qgUUAxY',   // SOP-03 | FORM_GOC_TRIFLURALIN_9_3.docx
+    'fipronil-chlorpyrifos':  '1LTP7q3pIW9IBIbJPzFmX43Sr3QxGj70MoBLity0HLVw',          // SOP-01 | FORM_GOC_FIP_CHLORFOS_9_21.docx
+    'dichlorvos-gcms':        'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
+    'chlor-huu-co':           'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
+    'lan-huu-co':             'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -57,18 +58,20 @@ const CONFIG = {
         kqClpMeDes:    8, // Chlorpyriphos-methyl-desmethyl
         ghiChu:        9  // Ghi chú
       },
-      headerRows: 1,
+      headerRows: 2,         // Row 0: merged header; Row 1: compound sub-headers
       textReplacements: {},
       checkboxLines: {
-        'Các mẫu thử không phát hiện nhóm Fipronil và Chlorpyrifos': 'checkTatCaND',
-        'Có mẫu thử phát hiện nhóm Fipronil và Chlorpyrifos':        'checkCoMauPhatHien',
-        'Mẫu kiểm tra nội bộ':                                       'qcKiemTraNoiBo',
-        'R2 >= 0.99':                                                'qcR2',
-        'Độ lệch thời gian lưu':                                     'qcThoiGianLuu',
-        'Nhận dạng mẫu nhiễm':                                       'qcNhanDang',
-        'Nhận dạng mẫu thêm chuẩn':                                  'qcThemChuan',
-        'Độ thu hồi IS':                                             'qcThuHoi',
-        'Đánh giá chung':                                            'qcDanhGiaChung'
+        // Khớp đúng text trong form (trang 2, section 9)
+        'Tất cả mẫu thử đều không phát hiện':                          'checkTatCaND',
+        'Có mẫu thử phát hiện':                                         'checkCoMauPhatHien',
+        // Khớp đúng text trong bảng QC (section 8) — col 0 của từng hàng
+        'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
+        'R2 \u2265 0.99':                                               'qcR2',          // ≥ (U+2265)
+        'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
+        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDang',
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcThemChuan',
+        'Độ thu hồi IS':                                                 'qcThuHoi',
+        'Đánh giá chung':                                                'qcDanhGiaChung'
       },
       signaturePlaceholders: {
         'date1': 'ngayNguoiPhanTich',

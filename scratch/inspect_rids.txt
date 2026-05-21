@@ -1,0 +1,24 @@
+=== All Relationships ===
+
+rId17: NOT FOUND
+
+rId18: NOT FOUND
+
+rId19: NOT FOUND
+
+=== Element 148 FULL XML ===
+<w:p w14:paraId="791E9BFD" w14:textId="77777777" w:rsidR="00171F7D" w:rsidRPr="00CF0492" w:rsidRDefault="00171F7D" w:rsidP="00171F7D"><w:pPr><w:pStyle w:val="ListParagraph"/><w:ind w:left="0"/><w:sectPr w:rsidR="00171F7D" w:rsidRPr="00CF0492" w:rsidSect="00ED6EB6"><w:headerReference w:type="default" r:id="rId17"/><w:pgSz w:w="11909" w:h="16834" w:code="9"/><w:pgMar w:top="851" w:right="851" w:bottom="567" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/><w:pgNumType w:start="1"/><w:cols w:space="708"/><w:docGrid w:linePitch="360"/></w:sectPr></w:pPr></w:p>
+
+=== Element 183 FULL XML ===
+<w:p w14:paraId="07B50049" w14:textId="0331FC76" w:rsidR="00DC70E7" w:rsidRPr="00CF0492" w:rsidRDefault="00CF0492" w:rsidP="00F64DEA"><w:pPr><w:pStyle w:val="Title"/><w:sectPr w:rsidR="00DC70E7" w:rsidRPr="00CF0492" w:rsidSect="00ED6EB6"><w:headerReference w:type="first" r:id="rId18"/><w:footerReference w:type="first" r:id="rId19"/><w:pgSz w:w="11909" w:h="16834" w:code="9"/><w:pgMar w:top="851" w:right="851" w:bottom="851" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/><w:cols w:space="708"/><w:docGrid w:linePitch="360"/></w:sectPr></w:pPr><w:r w:rsidRPr="00CF0492"><w:t xml:space="preserve">                   </w:t></w:r></w:p>
+
+=== Element 195 FULL XML ===
+<w:p w14:paraId="0A0CAFB6" w14:textId="77777777" w:rsidR="00DC70E7" w:rsidRPr="00CF0492" w:rsidRDefault="00DC70E7" w:rsidP="00DC70E7"><w:pPr><w:jc w:val="center"/><w:sectPr w:rsidR="00DC70E7" w:rsidRPr="00CF0492" w:rsidSect="00ED6EB6"><w:headerReference w:type="default" r:id="rId20"/><w:footerReference w:type="default" r:id="rId21"/><w:pgSz w:w="16838" w:h="11906" w:orient="landscape" w:code="9"/><w:pgMar w:top="1418" w:right="1134" w:bottom="851" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/><w:cols w:num="2" w:space="720"/><w:docGrid w:linePitch="360"/></w:sectPr></w:pPr></w:p>
+
+=== Clean document rId references ===
+All r:id in clean document: rId20, rId21
+sectPr portion of clean doc:
+<w:sectPr><w:headerReference w:type="default" r:id="rId20"/><w:footerReference w:type="default" r:id="rId21"/><w:pgSz w:w="16838" w:h="11906" w:orient="landscape" w:code="9"/><w:pgMar w:top="1418" w:right="1134" w:bottom="851" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/><w:cols w:num="2" w:space="720"/><w:docGrid w:linePitch="360"/></w:sectPr>
+rId17 occurrences in clean doc: 0
+rId18 occurrences in clean doc: 0
+rId19 occurrences in clean doc: 0

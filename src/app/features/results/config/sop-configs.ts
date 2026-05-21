@@ -1,11 +1,11 @@
-// Anh chỉ cần điền đúng ID thực tế tương ứng với từng SOP trong Firestore tại đây
+// Bảng alias: Firestore SOP document ID → config key nội bộ
+// File form gốc tương ứng ghi chú để tham chiếu khi upload lên Google Drive
 export const SOP_ID_MAP: Record<string, string> = {
-  // Ví dụ — bỏ dấu comment và điền đúng ID thực tế:
-  // 'SOP-01': 'trifluralin-gcms',
-  // 'SOP-02': 'fipronil-chlorpyrifos',
-  'SOP-03': 'trifluralin-gcms',
-  // 'SOP-04': 'chlor-huu-co',
-  // 'SOP-05': 'lan-huu-co',
+  'SOP-01': 'fipronil-chlorpyrifos',  // FORM_GOC_FIP_CHLORFOS_9_21.docx
+  'SOP-03': 'trifluralin-gcms',       // FORM_GOC_TRIFLURALIN_9_3.docx
+  // 'SOP-02': 'dichlorvos-gcms',     // (chưa cấu hình)
+  // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
+  // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)
 };
 
 // ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────

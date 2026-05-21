@@ -1,0 +1,128 @@
+=== ALL TEXT IN CLEAN FORM (SOP-01) ===
+  P0: "XÁC ĐỊNH DƯ LƯỢNG Nhóm fipronil và Chlorpyrifos"
+  P1: "PHƯƠNG PHÁP SẮC KÝ KHÍ GHÉP 2 lần KHỐI PHỔ (GC-MS/MS)"
+  P2: "(Ref. AOAC 2007.01; CLG – PST 5.10)"
+  P3: "1. Mã hồ sơ : ……………………2. Khối lượng mẫu: m = 10.0 ± 0.1 gram"
+  P4: "3. Hệ số pha loãng: □ f= 1;  □ f= …..     4. Loại mẫu: □ Thuỷ sản; □ Khác:…………"
+  P5: "5. Tình trạng mẫu:□ Bình thường; □ Khác: ………………………………………"
+  P6: "6. Tóm tắt quy trình:7. Đường chuẩn:"
+  P7: "Điểm chuẩn"
+  P8: "Nội chuẩn Chlorpyrifos D10, Fipronil 13C215N2"
+  P9: "cần dùng (ng/ml)"
+  P10: "Nồng độ chuẩn cần dùng (ng/ml)"
+  P11: "Vial No."
+  P12: "C0"
+  P13: "20"
+  P14: "0"
+  P16: "C1"
+  P17: "20"
+  P18: "5"
+  P20: "C2"
+  P21: "20"
+  P22: "10"
+  P24: "C3"
+  P25: "20"
+  P26: "20"
+  P28: "C4"
+  P29: "20"
+  P30: "50"
+  P32: "□ m=10 gram; □ m= ……gram"
+  P33: "□ m=10 gram; □ m= ……gram"
+  P34: "- Thêm 20µl IS (6.4)"
+  P35: "- Thêm 10ml ACN đã acid hoá, trộn đều."
+  P36: "- Thêm hỗn hợp A vào mẫu, trộn đều, ly tâm"
+  P37: "- Hút 5ml cho vào hỗn hợp B"
+  P38: "- Trộn đều, ly tâm, hút  0.9 ml lớp trên, thêm 100 µl toluene, trộn đều."
+  P41: "- Thêm 20µl IS (6.4)"
+  P42: "- Thêm 10ml ACN đã acid hoá, trộn đều."
+  P43: "- Thêm hỗn hợp A vào mẫu, trộn đều, ly tâm"
+  P44: "- Hút 5ml cho vào hỗn hợp B"
+  P45: "- Trộn đều, ly tâm, hút  0.9 ml lớp trên, thêm 100 µl toluene, trộn đều."
+  P53: "GC-MS/MS"
+  P54: "GC-MS/MS"
+  P56: "8. Đảm bảo chất lượng:"
+  P57: "Thông số đánh giá"
+  P58: "Tiêu chí chấp nhận"
+  P59: "Đánh giá"
+  P60: "Mẫu kiểm tra nội bộ"
+  P61: "Đáp ứng yêu cầu mục 10"
+  P62: "□ Đạt            □ Không đạt"
+  P63: "Hệ số hồi quy tuyến tính"
+  P64: "R2 ≥ 0.99"
+  P65: "□ Đạt            □ Không đạt"
+  P66: "Độ lệch thời gian lưu"
+  P67: "≤  0.5%"
+  P68: "□ Đạt            □ Không đạt"
+  P69: "Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm"
+  P70: "IPs ≥ 4; ion ratio ± 30%; S/N ≥ 3"
+  P71: "□ Đạt            □ Không đạt"
+  P72: "Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb"
+  P73: "IPs ≥ 3; ion ratio ± 30%; S/N ≥ 3"
+  P75: "□ Đạt            □ Không đạt"
+  P76: "Độ thu hồi IS"
+  P77: "50% ≤ R% ≤ 150%"
+  P78: "□ Đạt            □ Không đạt"
+  P79: "Đánh giá chung"
+  P80: "□ Đạt            □ Không đạt"
+  P82: "9. Kết quả: (kèm theo kết quả này là sắc ký đồ)"
+  P83: "Tất cả mẫu thử đều không phát hiện: □"
+  P84: "Có mẫu thử phát hiện:                          □"
+  P87: "Mã số mẫu"
+  P88: "Vial No."
+  P89: "Kết quả mẫu thử (ng/g)"
+  P92: "Fipronil"
+  P93: "Fipronil desulfinyl"
+  P94: "Fipronil sulfide"
+  P95: "Fipronil sulfone"
+  P96: "Chlorpyrifos"
+  P97: "Chlorpyrifos methyl"
+  P98: "Chlorpyriphos-methyl -desmethyl"
+  P334: "Mã số mẫu"
+  P335: "Vial No."
+  P336: "Kết quả mẫu thử (ng/g)"
+  P339: "Fipronil"
+  P340: "Fipronil desulfinyl"
+  P341: "Fipronil sulfide"
+  P342: "Fipronil sulfone"
+  P343: "Chlorpyrifos"
+  P344: "Chlorpyrifos methyl"
+  P345: "Chlorpyriphos-methyl -desmethyl"
+  P571: "(Chỉ ghi kết quả mẫu phát hiện vào ô kết quả tương ứng)"
+  P572: "Ngày/ Người phân tích                                           Ngày/ Người thẩm tra"
+  P575: "Trang: _____/_____"
+  P576: "Trang: _____/_____"
+
+=== TABLES IN CLEAN FORM ===
+Table 0: 6 rows × 4 cols
+  Header: "Điểm chuẩn | Nội chuẩn  | Chlorpyrifos D10 | ,  | Fipronil 13C | 2 | 15N | 2 | cần dùng  | (ng/ml) | Nồng độ  | chuẩn |   | cần dùng  | (ng/ml) | Vial No."
+Table 1: 8 rows × 3 cols
+  Header: "Thông số đánh giá | Tiêu chí chấp nhận | Đánh giá"
+Table 2: 55 rows × 3 cols
+  Header: "Mã số mẫu   | Vial No. | Kết quả mẫu thử (ng/g)"
+
+=== CHECKBOX LINE COMPATIBILITY CHECK ===
+  ❌ "Các mẫu thử không phát hiện nhóm Fipronil và Chlorpyrifos"
+  ❌ "Có mẫu thử phát hiện nhóm Fipronil và Chlorpyrifos"
+  ✅ "Mẫu kiểm tra nội bộ"
+  ❌ "R2 >= 0.99"
+  ✅ "Độ lệch thời gian lưu"
+  ❌ "Nhận dạng mẫu nhiễm"
+  ❌ "Nhận dạng mẫu thêm chuẩn"
+  ✅ "Độ thu hồi IS"
+  ✅ "Đánh giá chung"
+
+=== SIGNATURE PLACEHOLDER CHECK ===
+  ❌ "date1" present in form
+  ❌ "date2" present in form
+  ❌ "ngayNguoiPhanTich" present in form
+  ❌ "ngayNguoiThamTra" present in form
+  ✅ "Ngày/ Người phân tích" present in form
+  ✅ "Ngày/ Người thẩm tra" present in form
+  ❌ "{{NgayPhanTich}}" present in form
+  ❌ "{{NguoiPhanTich}}" present in form
+
+=== SAMPLE TABLE DETECTION CHECK ===
+  ❌ keyword "Lọ số" present
+  ❌ keyword "Mẫu thử" present
+  ✅ keyword "Mã số mẫu" present
+  ✅ keyword "Vial No" present
