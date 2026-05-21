@@ -63,9 +63,9 @@ import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
                   <!-- Các bản cũ trong lịch sử -->
                   @for (hist of historyList(); track hist.version) {
                     @if (hist.version !== draft()?.version) {
-                      <button (click)="restoreFromVersion(hist.version)"
+                      <button (click)="restoreFromVersion(hist.version, hist.prefix)"
                               class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
-                        <span class="font-bold">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                        <span class="font-bold">Phiên bản v{{ hist.version }} {{ hist.prefix ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
                         <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in: {{ hist.publishedBy }}</span>
                       </button>
                     }
@@ -552,14 +552,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Khôi phục số liệu từ một phiên bản cụ thể
    */
-  async restoreFromVersion(version: number) {
+  async restoreFromVersion(version: number, prefix?: string) {
     if (this.isProcessing()) return;
     
-    const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
+    const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+    const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}${displayName}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
     if (!confirmed) return;
 
     this.isSavingDraft.set(true);
-    const restored = await this.resultService.restoreFromVersion(this.requestId, version);
+    const restored = await this.resultService.restoreFromVersion(this.requestId, version, prefix);
     if (restored) {
       this.draft.set(restored);
       // Reload lịch sử
@@ -849,7 +850,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return `Tạo & In bản v${v} (Tất cả mẫu)`;
     }
     const reports = this.draft()?.reports || {};
-    const reportForFilter = reports[activeFilter] || {};
+    const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
+    const reportForFilter = reports[reportKey] || {};
     const v = (reportForFilter.version || 0) + 1;
     const filterName = activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`;
     return `Tạo & In bản v${v} (${filterName})`;
@@ -862,7 +864,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       url = this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
     } else {
       const reports = this.draft()?.reports || {};
-      const reportForFilter = reports[activeFilter] || {};
+      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
+      const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
     }
     return getSafeGoogleUrl(url, 'pdf');
@@ -894,7 +897,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       url = this.draft()?.docsUrl || null;
     } else {
       const reports = this.draft()?.reports || {};
-      const reportForFilter = reports[activeFilter] || {};
+      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
+      const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.docsUrl || null;
     }
     return getSafeGoogleUrl(url, 'doc');

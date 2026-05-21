@@ -273,7 +273,7 @@ import { ResultService } from './services/result.service';
                           @let report = run.analysisResult?.reports?.[prefix];
                           <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
                             <span class="text-[11px] font-black text-slate-500 dark:text-slate-400 min-w-[85px] truncate">
-                              {{ prefix === '' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
+                              {{ prefix === '' || prefix === '_NO_PREFIX_' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
                             </span>
                             
                             @if (report?.pdfUrl) {

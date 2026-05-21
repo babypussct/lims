@@ -121,7 +121,7 @@ export class ResultService {
   /**
    * Khôi phục số liệu từ một phiên bản in cụ thể (Rollback)
    */
-  async restoreFromVersion(requestId: string, versionNumber: number): Promise<AnalysisResultDraft | null> {
+  async restoreFromVersion(requestId: string, versionNumber: number, prefix?: string): Promise<AnalysisResultDraft | null> {
     try {
       const draft = await this.getDraft(requestId);
       if (!draft) return null;
@@ -129,11 +129,12 @@ export class ResultService {
       let page1DataBackup = null;
       let resultDataBackup = null;
 
-      if (draft.version === versionNumber) {
+      if (draft.version === versionNumber && !prefix) {
         page1DataBackup = draft.publishedBackup?.page1Data || draft.page1Data;
         resultDataBackup = draft.publishedBackup?.resultData || draft.resultData;
       } else {
-        const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${versionNumber}`);
+        const docId = prefix ? `v${versionNumber}_${prefix}` : `v${versionNumber}`;
+        const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', docId);
         const historySnap = await getDoc(historyDocRef);
         if (historySnap.exists()) {
           const histData = historySnap.data();
@@ -149,7 +150,8 @@ export class ResultService {
           status: 'draft'
         };
         await this.saveDraft(requestId, restoredData);
-        this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}!`, 'success');
+        const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+        this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}${displayName}!`, 'success');
         return {
           ...draft,
           ...restoredData,
@@ -157,7 +159,8 @@ export class ResultService {
         } as any;
       }
       
-      this.toast.show(`Không tìm thấy dữ liệu sao lưu cho bản v${versionNumber}!`, 'info');
+      const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
+      this.toast.show(`Không tìm thấy dữ liệu sao lưu cho bản v${versionNumber}${displayName}!`, 'info');
       return null;
     } catch (e: any) {
       console.error('Error restoring version:', e);
@@ -194,7 +197,7 @@ export class ResultService {
       const isPrefixReport = prefix !== undefined && prefix !== null && prefix !== 'ALL';
 
       if (isPrefixReport) {
-        const prefixKey = prefix!;
+        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
         const prefixReport = reports[prefixKey] || {};
         nextVersion = (prefixReport.version || 0) + 1;
       } else {
@@ -214,7 +217,7 @@ export class ResultService {
 
       // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
       if (isPrefixReport) {
-        const prefixKey = prefix!;
+        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
         const prefixReport = reports[prefixKey];
         if (prefixReport && prefixReport.pdfUrl) {
           const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${prefixReport.version}_${prefixKey}`);
@@ -224,7 +227,7 @@ export class ResultService {
             pdfUrl: prefixReport.pdfUrl,
             pdfViewUrl: prefixReport.pdfViewUrl || '',
             docsUrl: prefixReport.docsUrl || '',
-            pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefixKey || 'Không_tiền_tố'}_Bản_v${prefixReport.version}`,
+            pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${prefixReport.version}`,
             publishedAt: prefixReport.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
             publishedBy: currentResult.updatedBy || 'Unknown',
             page1DataBackup: prefixReport.publishedBackup?.page1Data || {},
@@ -258,7 +261,7 @@ export class ResultService {
 
       let finalResult: any;
       if (isPrefixReport) {
-        const prefixKey = prefix!;
+        const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
         const updatedReports = {
           ...reports,
           [prefixKey]: {
