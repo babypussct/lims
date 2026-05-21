@@ -11,10 +11,23 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 
+// Isolated SOP presentational components
+import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
+import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
+import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
+
 @Component({
   selector: 'app-result-entry',
   standalone: true,
-  imports: [CommonModule, ResultEntryType2Component, ResultEntryType3bComponent, SkeletonComponent],
+  imports: [
+    CommonModule, 
+    ResultEntryType2Component, 
+    ResultEntryType3bComponent, 
+    SkeletonComponent,
+    Sop01EntryComponent,
+    Sop03EntryComponent,
+    SopDefaultType2EntryComponent
+  ],
   template: `
     <div class="h-full flex flex-col fade-in">
       <!-- Dynamic Sticky Header -->
@@ -219,13 +232,44 @@ import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
           } 
           <!-- Render Type 2 / 3A Component (Grid spreadsheet) -->
           @else {
-            <app-result-entry-type2 
-              #type2Grid
-              [run]="run()!" 
-              [draft]="draft()!" 
-              [config]="config()!" 
-              (draftChanged)="onDraftChanged($event)">
-            </app-result-entry-type2>
+            @if (ENABLE_MODULAR_SOPS) {
+              <!-- New Modular Strategy Pattern rendering -->
+              @switch (configKey()) {
+                @case ('fipronil-chlorpyrifos') {
+                  <app-sop-01-entry
+                    [run]="run()!"
+                    [draft]="draft()!"
+                    [config]="config()!"
+                    (draftChanged)="onDraftChanged($event)">
+                  </app-sop-01-entry>
+                }
+                @case ('trifluralin-gcms') {
+                  <app-sop-03-entry
+                    [run]="run()!"
+                    [draft]="draft()!"
+                    [config]="config()!"
+                    (draftChanged)="onDraftChanged($event)">
+                  </app-sop-03-entry>
+                }
+                @default {
+                  <app-sop-default-type2-entry
+                    [run]="run()!"
+                    [draft]="draft()!"
+                    [config]="config()!"
+                    (draftChanged)="onDraftChanged($event)">
+                  </app-sop-default-type2-entry>
+                }
+              }
+            } @else {
+              <!-- Fallback to Legacy Monolithic Type 2 Grid -->
+              <app-result-entry-type2 
+                #type2Grid
+                [run]="run()!" 
+                [draft]="draft()!" 
+                [config]="config()!" 
+                (draftChanged)="onDraftChanged($event)">
+              </app-result-entry-type2>
+            }
           }
         } @else {
           <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
@@ -300,6 +344,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isSavingDraft = signal(false);
   isPublishing = signal(false);
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
+
+  // Emergency feature toggle for the new modular strategy architecture
+  readonly ENABLE_MODULAR_SOPS = true;
 
   // Approved request (run)
   run = signal<any | null>(null);
