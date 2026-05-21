@@ -439,7 +439,7 @@ export class Sop01EntryComponent implements OnInit {
       }
     });
     if (this.draft.page1Data['qcNhanDang'] === undefined) {
-      this.draft.page1Data['qcNhanDang'] = undefined;
+      this.draft.page1Data['qcNhanDang'] = null;
     }
 
     if (!this.draft.resultData) {
@@ -467,14 +467,14 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   setQcStatus(key: string, value: boolean | undefined) {
-    this.draft.page1Data[key] = value;
+    this.draft.page1Data[key] = value === undefined ? null : value;
     this.onDataChanged();
   }
 
   onCheckboxChange(changedKey: string) {
     if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
       this.draft.page1Data['checkCoMauPhatHien'] = false;
-      this.draft.page1Data['qcNhanDang'] = undefined; // Reset to N/A
+      this.draft.page1Data['qcNhanDang'] = null; // Reset to N/A
     } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
       this.draft.page1Data['checkTatCaND'] = false;
       this.draft.page1Data['qcNhanDang'] = true; // Auto check "Đạt"
