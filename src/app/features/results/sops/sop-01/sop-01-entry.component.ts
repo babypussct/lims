@@ -312,9 +312,9 @@ import { calculateSop01Recovery } from './sop-01-engine';
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
               @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
                 @if (draft.resultData[row.key]) {
-                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition"
-                      [class.bg-indigo-50/20]="row.isQC"
-                      [class.dark:bg-indigo-950/10]="row.isQC">
+                  <tr [class]="row.isQC 
+                        ? 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition bg-indigo-50/20 dark:bg-indigo-950/10' 
+                        : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition'">
                     <td class="py-1 px-2 w-24">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['loSo']"
