@@ -33,9 +33,11 @@ function fillTextFields(body, sopConfig, metadata) {
       let searchResult = body.findText(lineText);
       while (searchResult) {
         const para = searchResult.getElement().getParent().asParagraph();
-        // Thay thế đúng vị trí [ ] hoặc ☐, không làm hỏng font chữ
+        // Thay thế đúng vị trí [ ] hoặc ☐ hoặc □, không làm hỏng font chữ
         para.replaceText('\\[ \\]', checkChar);
         para.replaceText('☐', checkChar);
+        para.replaceText('□', checkChar);
+        para.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
         
         // Tìm tiếp tục từ kết quả vừa tìm được để xử lý cho các trang sau
         searchResult = body.findText(lineText, searchResult);
