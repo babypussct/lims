@@ -34,18 +34,63 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
           </div>
         </div>
 
-        <!-- Checkbox grid (Dynamic from SOP metadata configuration) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+        <!-- Checkbox & QC segment controls grid (Dynamic from SOP metadata configuration) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
           @for (checkbox of checkboxList; track checkbox.key) {
-            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-slate-100 dark:border-slate-700/30 cursor-pointer select-none transition">
-              <input type="checkbox" 
-                     [(ngModel)]="draft.page1Data[checkbox.key]" 
-                     (ngModelChange)="onCheckboxChange(checkbox.key)"
-                     class="mt-1 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-900 dark:border-slate-700">
-              <div>
-                <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+            @if (isGeneralObservation(checkbox.key)) {
+              <!-- Standard observation checkbox -->
+              <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-slate-100 dark:border-slate-700/30 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
+                <input type="checkbox" 
+                       [(ngModel)]="draft.page1Data[checkbox.key]" 
+                       (ngModelChange)="onCheckboxChange(checkbox.key)"
+                       class="mt-1 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-900 dark:border-slate-700">
+                <div>
+                  <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+                </div>
+              </label>
+            } @else {
+              <!-- QC evaluation with Đạt / Không đạt Segment Control -->
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/50 dark:border-slate-800/80 transition hover:border-slate-300 dark:hover:border-slate-700">
+                <div class="flex-1 min-w-0 pr-1">
+                  <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 leading-snug block break-words">
+                    {{ checkbox.label }}
+                  </span>
+                </div>
+                
+                <!-- Pass / Fail selector -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0">
+                  <!-- Button 'Đạt' (true) -->
+                  <button type="button"
+                          (click)="setQcStatus(checkbox.key, true)"
+                          [class]="draft.page1Data[checkbox.key] === true 
+                            ? 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-500 text-white shadow-sm transition-all duration-200' 
+                            : 'px-2.5 py-1 text-[11px] font-semibold rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors'"
+                          title="Đạt tiêu chí">
+                    Đạt
+                  </button>
+                  
+                  <!-- Button 'Không đạt' (false) -->
+                  <button type="button"
+                          (click)="setQcStatus(checkbox.key, false)"
+                          [class]="draft.page1Data[checkbox.key] === false 
+                            ? 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-rose-500 text-white shadow-sm transition-all duration-200' 
+                            : 'px-2.5 py-1 text-[11px] font-semibold rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors'"
+                          title="Không đạt tiêu chí">
+                    K.Đạt
+                  </button>
+
+                  <!-- Button 'N/A' (undefined) -->
+                  <button type="button"
+                          (click)="setQcStatus(checkbox.key, undefined)"
+                          [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
+                            ? 'px-2 py-1 text-[10px] font-extrabold rounded-md bg-slate-300 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-sm transition-all duration-200' 
+                            : 'px-2 py-1 text-[10px] font-semibold rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 transition-colors'"
+                          title="Chưa đánh giá">
+                    N/A
+                  </button>
+                </div>
               </div>
-            </label>
+            }
           }
         </div>
       </div>
@@ -807,6 +852,15 @@ export class ResultEntryType2Component implements OnInit {
       });
     }
 
+    this.onDataChanged();
+  }
+
+  isGeneralObservation(key: string): boolean {
+    return key === 'checkTatCaND' || key === 'checkCoMauPhatHien';
+  }
+
+  setQcStatus(key: string, value: boolean | undefined) {
+    this.draft.page1Data[key] = value;
     this.onDataChanged();
   }
 
