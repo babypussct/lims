@@ -84,17 +84,72 @@ function fillSampleTable(body, sopConfig, samples) {
 
   const sampleTableIndex = sampleTableIndices[0];
   const sampleTable = tables[sampleTableIndex];
-  
-  // Tính số lượng bảng trên mỗi trang bằng khoảng cách giữa 2 bảng mẫu liên tiếp
-  const tablesPerPage = sampleTableIndices.length > 1 
-    ? (sampleTableIndices[1] - sampleTableIndices[0]) 
-    : tables.length;
-
   const cols  = sopConfig.columns;
   const startRow = sopConfig.headerRows || 1;
   const maxSamplesPerPage = sampleTable.getNumRows() - startRow; // Dung lượng tối đa 1 trang
   const totalPagesNeeded = Math.ceil(samples.length / maxSamplesPerPage);
   
+  // 1.5. ĐỘNG CƠ NHÂN BẢN TRANG TỰ ĐỘNG (DYNAMIC PAGE DUPLICATOR)
+  // Nếu số lượng mẫu nhiều hơn dung lượng của 1 trang, và template chỉ có 1 trang kết quả sẵn có
+  if (totalPagesNeeded > 1 && sampleTableIndices.length === 1) {
+    Logger.log(`[TableFit] Cần ${totalPagesNeeded} trang. Bắt đầu nhân bản trang 2 mẫu...`);
+    
+    // Tìm vị trí của dấu ngắt trang đầu tiên (ngăn cách giữa trang bìa 1 và trang kết quả 2)
+    let firstPageBreakIdx = -1;
+    for (let idx = 0; idx < body.getNumChildren(); idx++) {
+      if (body.getChild(idx).getType() === DocumentApp.ElementType.PAGE_BREAK) {
+        firstPageBreakIdx = idx;
+        break;
+      }
+    }
+    
+    if (firstPageBreakIdx !== -1) {
+      // Lấy tất cả các phần tử thuộc Trang 2 (từ sau dấu ngắt trang đầu tiên đến hết tài liệu)
+      const page2Elements = [];
+      const startCopyIdx = firstPageBreakIdx + 1;
+      const endCopyIdx = body.getNumChildren() - 1;
+      
+      for (let idx = startCopyIdx; idx <= endCopyIdx; idx++) {
+        page2Elements.push(body.getChild(idx));
+      }
+      
+      // Nhân bản thêm các trang mới
+      for (let p = 1; p < totalPagesNeeded; p++) {
+        // Chèn dấu ngắt trang ở cuối
+        body.appendPageBreak();
+        
+        // Chèn bản sao các phần tử
+        for (let j = 0; j < page2Elements.length; j++) {
+          const el = page2Elements[j];
+          const elType = el.getType();
+          
+          if (elType === DocumentApp.ElementType.PAGE_BREAK) continue;
+          
+          if (elType === DocumentApp.ElementType.PARAGRAPH) {
+            body.appendParagraph(el.copy().asParagraph());
+          } else if (elType === DocumentApp.ElementType.TABLE) {
+            body.appendTable(el.copy().asTable());
+          } else if (elType === DocumentApp.ElementType.LIST_ITEM) {
+            body.appendListItem(el.copy().asListItem());
+          }
+        }
+      }
+      
+      // Sau khi nhân bản xong, nạp lại danh sách tables mới
+      Logger.log(`[TableFit] Nhân bản hoàn tất. Tải lại danh sách bảng...`);
+      tables.length = 0; // Clear cũ
+      const freshTables = body.getTables();
+      for (let t = 0; t < freshTables.length; t++) {
+        tables.push(freshTables[t]);
+      }
+    }
+  }
+
+  // Tính số lượng bảng trên mỗi trang bằng khoảng cách giữa 2 bảng mẫu liên tiếp
+  const tablesPerPage = sampleTableIndices.length > 1 
+    ? (sampleTableIndices[1] - sampleTableIndices[0]) 
+    : 1;
+
   Logger.log(`[ReportType2] Đang xử lý: Tổng mẫu: ${samples.length} | Dung lượng 1 trang: ${maxSamplesPerPage} | Số trang cần giữ: ${totalPagesNeeded}`);
 
   // 2. Điền dữ liệu phân đoạn tương ứng cho từng trang cần thiết
