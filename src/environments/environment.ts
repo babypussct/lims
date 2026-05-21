@@ -17,6 +17,6 @@ export const environment = {
     appId: '659051444640'
   },
   // URL Google Apps Script Web App
-  gasReportUrl: 'https://script.google.com/macros/s/AKfycbyLA2yvVEVwcH-kang1kgm50poQu_ManbGU3ZceDrAECtar3oVuIlqF0gWGBq6dJ3vR/exec'
+  gasReportUrl: 'https://script.google.com/macros/s/AKfycbyDK7_HWTaFS3eEdwQDNVPQdQaJ56NnTXi2ew3GUl2XnCe5zAAVUXGbCBQFkKruTTgr/exec'
 };
 
