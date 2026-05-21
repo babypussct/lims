@@ -428,6 +428,7 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
       para.setText(p3Text);
       para.setFontFamily("Times New Roman");
       para.setFontSize(11);
+      para.setUnderline(false);
     }
 
     const fVal = (metadata.heSoPhaLoang || "1").trim();
@@ -449,6 +450,7 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
       para.setText(p4Text);
       para.setFontFamily("Times New Roman");
       para.setFontSize(11);
+      para.setUnderline(false);
     }
 
     const tinhTrangVal = (metadata.tinhTrangMau || "Bình thường").trim();
@@ -464,6 +466,7 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
       para.setText(p5Text);
       para.setFontFamily("Times New Roman");
       para.setFontSize(11);
+      para.setUnderline(false);
     }
   } catch (e) {
     Logger.log(`[FipronilCustom] Lỗi khi điền metadata đầu trang: ${e.toString()}`);
@@ -565,18 +568,33 @@ function fillQcTableCheckboxes(body, sopConfig, metadata) {
     }
 
     if (fieldName && metadata[fieldName] !== undefined) {
-      const isPassed = metadata[fieldName] === true;
+      const val = metadata[fieldName];
       const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
       
-      const datCheck = isPassed ? "☑ Đạt" : "☐ Đạt";
-      const khongDatCheck = isPassed ? "☐ Không đạt" : "☑ Không đạt";
+      let datCheck, khongDatCheck, naCheck;
+      if (val === true) {
+        datCheck = "☑ Đạt";
+        khongDatCheck = "☐ Không đạt";
+        naCheck = "☐ N/A";
+      } else if (val === false) {
+        datCheck = "☐ Đạt";
+        khongDatCheck = "☑ Không đạt";
+        naCheck = "☐ N/A";
+      } else { // null (N/A)
+        datCheck = "☐ Đạt";
+        khongDatCheck = "☐ Không đạt";
+        naCheck = "☑ N/A";
+      }
 
-      // Khớp và thay thế đúng checkbox Đạt/Không đạt
+      // Khớp và thay thế đúng checkbox Đạt/Không đạt/N/A
       evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
-      evalCell.replaceText('[☐□] Đạt', datCheck);
+      evalCell.replaceText('[☐□☑] Đạt', datCheck);
 
       evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
-      evalCell.replaceText('[☐□] Không đạt', khongDatCheck);
+      evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
+
+      evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
+      evalCell.replaceText('[☐□☑] N/A', naCheck);
     }
   }
 }

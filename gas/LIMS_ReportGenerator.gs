@@ -128,7 +128,7 @@ function setCellText(row, colIndex, text, chunkSize) {
   
   // 1. Lưu lại các thuộc tính định dạng của ô gốc (font, rộng cột, canh lề, padding)
   let fontFamily = 'Times New Roman';
-  let fontSize = 11;
+  let fontSize = 9; // Mặc định bảng phòng thí nghiệm là size 9 cực kỳ an toàn và tránh tràn cột
   let originalAlign = DocumentApp.HorizontalAlignment.CENTER;
   let originalWidth = null;
   let originalVerticalAlign = null;
@@ -150,10 +150,24 @@ function setCellText(row, colIndex, text, chunkSize) {
       if (firstP.getAlignment()) {
         originalAlign = firstP.getAlignment();
       }
+      
+      // Lấy từ thuộc tính Paragraph
+      const pAttrs = firstP.getAttributes();
+      if (pAttrs[DocumentApp.Attribute.FONT_FAMILY]) {
+        fontFamily = pAttrs[DocumentApp.Attribute.FONT_FAMILY];
+      }
+      if (pAttrs[DocumentApp.Attribute.FONT_SIZE]) {
+        fontSize = pAttrs[DocumentApp.Attribute.FONT_SIZE];
+      }
+      
+      // Lấy trực tiếp từ ký tự văn bản
       if (firstP.getNumChildren() > 0) {
-        const t = firstP.getChild(0).asText();
-        if (t.getFontFamily()) fontFamily = t.getFontFamily();
-        if (t.getFontSize()) fontSize = t.getFontSize();
+        const child0 = firstP.getChild(0);
+        if (child0.getType() === DocumentApp.ElementType.TEXT) {
+          const t = child0.asText();
+          if (t.getFontFamily()) fontFamily = t.getFontFamily();
+          if (t.getFontSize()) fontSize = t.getFontSize();
+        }
       }
     }
 
