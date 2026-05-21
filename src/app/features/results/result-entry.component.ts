@@ -683,9 +683,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           metadata: {
             ...currentDraft.page1Data,
             prefix: prefixForReport,
-            ngayNguoiPhanTich: currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate(),
-            ngayNguoiThamTra: currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0],
-            ngayBaoCao: currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()
+            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
+            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
           },
           samples: samplesPayload
         };
@@ -756,9 +756,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           sopId: this.configKey(),
           metadata: {
             ...currentDraft.page1Data,
-            ngayNguoiPhanTich: currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate(),
-            ngayNguoiThamTra: currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0],
-            ngayBaoCao: currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()
+            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
+            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
           },
           samples: samplesPayload
         };
