@@ -245,6 +245,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                 }
                 @case ('trifluralin-gcms') {
                   <app-sop-03-entry
+                    #sop03Grid
                     [run]="run()!"
                     [draft]="draft()!"
                     [config]="config()!"
@@ -332,6 +333,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
 })
 export class ResultEntryComponent implements OnInit, OnDestroy {
   @ViewChild('type2Grid') type2Grid?: ResultEntryType2Component;
+  @ViewChild('sop03Grid') sop03Grid?: Sop03EntryComponent;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private state = inject(StateService);
@@ -696,7 +698,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       const isTrifluralin = this.configKey() === 'trifluralin-gcms';
 
       if (isTrifluralin) {
-        const activeFilter = this.type2Grid?.selectedPrefixFilter() !== undefined ? this.type2Grid.selectedPrefixFilter() : 'ALL';
+        const activeFilter = this.getSelectedPrefixFilter() !== undefined ? this.getSelectedPrefixFilter() : 'ALL';
         const sampleList = currentRun.sampleList || [];
         const checkedSamples = sampleList.filter((s: string) => {
           const resObj = currentDraft.resultData[s] || {};
@@ -1043,8 +1045,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
+  getSelectedPrefixFilter(): string | undefined {
+    if (this.configKey() === 'trifluralin-gcms') {
+      return this.sop03Grid?.selectedPrefixFilter();
+    }
+    return this.type2Grid?.selectedPrefixFilter();
+  }
+
   getPrintButtonLabel(): string {
-    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    const activeFilter = this.getSelectedPrefixFilter();
     if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
       const v = (this.draft()?.version || 0) + 1;
       return `Tạo & In bản v${v} (Tất cả mẫu)`;
@@ -1058,7 +1067,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   getCurrentPdfUrl(): string | null {
-    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    const activeFilter = this.getSelectedPrefixFilter();
     let url: string | null = null;
     if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
       url = this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
@@ -1091,7 +1100,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   getCurrentDocsUrl(): string | null {
-    const activeFilter = this.type2Grid?.selectedPrefixFilter();
+    const activeFilter = this.getSelectedPrefixFilter();
     let url: string | null = null;
     if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
       url = this.draft()?.docsUrl || null;

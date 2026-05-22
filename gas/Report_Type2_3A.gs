@@ -66,23 +66,13 @@ function fillTextFields(body, sopConfig, metadata) {
 function fillSampleTable(body, sopConfig, samples) {
   const tables = body.getTables();
   
-  // 1. Tìm tất cả các bảng mẫu trong tài liệu để tính toán tablesPerPage động
-  const sampleTableIndices = [];
-  for (let t = 0; t < tables.length; t++) {
-    const candidate = tables[t];
-    if (candidate.getNumRows() >= 10) {
-      const headerText = candidate.getRow(0).getText();
-      if (headerText.includes('Lọ số') || headerText.includes('Mẫu thử') || headerText.includes('Mã số mẫu')) {
-        sampleTableIndices.push(t);
-      }
-    }
+  // 1. Dùng trực tiếp sampleTableIndex cấu hình từ SOP_Configs (không quét quét động dễ sai lệch)
+  const sampleTableIndex = sopConfig.sampleTableIndex !== undefined ? sopConfig.sampleTableIndex : 2;
+  
+  if (sampleTableIndex >= tables.length) {
+    throw new Error(`Chỉ số bảng mẫu ${sampleTableIndex} vượt quá số lượng bảng hiện có (${tables.length}).`);
   }
 
-  if (sampleTableIndices.length === 0) {
-    throw new Error("Không tìm thấy bảng mẫu điền dữ liệu.");
-  }
-
-  const sampleTableIndex = sampleTableIndices[0];
   const sampleTable = tables[sampleTableIndex];
   const cols = sopConfig.columns;
   const startRow = sopConfig.headerRows || 1;
@@ -103,22 +93,59 @@ function fillSampleTable(body, sopConfig, samples) {
     }
   }
 
-  const maxSamplesPerPage = endSampleRowIdx - startRow; // Dung lượng tối đa thực tế của 1 trang mẫu thử
-  const totalPagesNeeded = Math.ceil(samples.length / maxSamplesPerPage);
-  
-  Logger.log(`[TableFit] endSampleRowIdx=${endSampleRowIdx} | maxSamplesPerPage=${maxSamplesPerPage} | totalPagesNeeded=${totalPagesNeeded}`);
+  // Đếm số hàng mẫu thực sự khả dụng (không tính tiêu đề lặp lại)
+  let usableSlotsPerPage = 0;
+  for (let r = startRow; r < endSampleRowIdx; r++) {
+    const rowText = sampleTable.getRow(r).getText().trim();
+    if (!(rowText.includes("Mã số mẫu") || 
+          rowText.includes("Vial No") || 
+          rowText.includes("Kết quả mẫu thử") || 
+          rowText.includes("Fipronil desulfinyl") || 
+          rowText.includes("Chlorpyrifos methyl"))) {
+      usableSlotsPerPage++;
+    }
+  }
+  if (usableSlotsPerPage === 0) usableSlotsPerPage = 1;
 
-  // 1.5. ĐỘNG CƠ NHÂN BẢN TRANG TỰ ĐỘNG THẾ HỆ MỚI (UNIVERSAL PAGE DUPLICATOR)
-  // Nếu số lượng trang kết quả cần dùng lớn hơn số lượng trang mẫu sẵn có trong template
-  if (totalPagesNeeded > sampleTableIndices.length) {
-    const pagesToClone = totalPagesNeeded - sampleTableIndices.length;
-    Logger.log(`[TableFit] Phát hiện thiếu trang mẫu. Cần: ${totalPagesNeeded} trang | Sẵn có: ${sampleTableIndices.length} trang | Tiến hành nhân bản thêm ${pagesToClone} trang kết quả...`);
-    
-    // Định vị bảng mẫu cuối cùng và chỉ mục của nó trong body
-    const lastTable = tables[sampleTableIndices[sampleTableIndices.length - 1]];
-    const lastTableChildIdx = body.getChildIndex(lastTable);
-    
-    // Tìm vị trí của dấu ngắt trang ngăn cách ngay trước bảng mẫu cuối cùng
+  const totalPagesNeeded = Math.ceil(samples.length / usableSlotsPerPage);
+  
+  Logger.log(`[TableFit] sampleTableIndex=${sampleTableIndex} | endSampleRowIdx=${endSampleRowIdx} | usableSlotsPerPage=${usableSlotsPerPage} | totalPagesNeeded=${totalPagesNeeded}`);
+
+  // Định vị bảng mẫu và chỉ mục của nó trong body để chuẩn bị nhân bản nếu cần
+  const lastTableChildIdx = body.getChildIndex(sampleTable);
+  
+  // =============================================================
+  // XÁC ĐỊNH ĐIỂM BẮT ĐẦU SAO CHÉP TRANG KẾT QUẢ (ROBUST)
+  // =============================================================
+  // Template SOP-01 dùng Section Break (không phải Page Break thông thường)
+  // để ngăn cách Trang 1 (thông tin) với Trang 2 (kết quả).
+  // GAS không nhận diện Section Break là PAGE_BREAK element, nên quét ngược
+  // sẽ không tìm thấy. Giải pháp: quét xuôi từ đầu body để tìm paragraph
+  // đầu tiên chứa các từ khoá đặc trưng của phần đầu trang kết quả,
+  // sau đó lấy index đó làm startCopyIdx.
+  // Nếu không tìm thấy bằng từ khoá, fallback về quét ngược tìm PAGE_BREAK.
+  
+  let startCopyIdx = -1;
+  
+  // Ưu tiên 1: Tìm xuôi — paragraph chứa "9. Kết quả" hoặc các từ khoá đầu trang kết quả
+  const resultPageKeywords = ["9. Kết quả", "Kết quả:", "Tất cả mẫu thử", "Có mẫu thử phát hiện"];
+  for (let idx = 0; idx < lastTableChildIdx; idx++) {
+    const child = body.getChild(idx);
+    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+      const text = child.asParagraph().getText();
+      for (const kw of resultPageKeywords) {
+        if (text.includes(kw)) {
+          startCopyIdx = idx;
+          Logger.log(`[TableFit] Tìm thấy điểm bắt đầu trang kết quả tại idx=${idx} (từ khóa: "${kw}")`);
+          break;
+        }
+      }
+    }
+    if (startCopyIdx !== -1) break;
+  }
+  
+  // Ưu tiên 2: Fallback — quét ngược tìm PAGE_BREAK thông thường
+  if (startCopyIdx === -1) {
     let lastPageBreakIdx = -1;
     for (let idx = lastTableChildIdx - 1; idx >= 0; idx--) {
       const child = body.getChild(idx);
@@ -128,135 +155,159 @@ function fillSampleTable(body, sopConfig, samples) {
       }
       if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
         const para = child.asParagraph();
-        let foundInside = false;
         for (let i = 0; i < para.getNumChildren(); i++) {
           if (para.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
             lastPageBreakIdx = idx;
-            foundInside = true;
             break;
           }
         }
-        if (foundInside) break;
+        if (lastPageBreakIdx !== -1) break;
       }
     }
-    
-    // Xác định chỉ mục bắt đầu sao chép
-    let startCopyIdx = -1;
     if (lastPageBreakIdx !== -1) {
       startCopyIdx = lastPageBreakIdx + 1;
+      Logger.log(`[TableFit] Fallback: Tìm thấy PAGE_BREAK tại idx=${lastPageBreakIdx}, startCopyIdx=${startCopyIdx}`);
     } else {
-      // Fallback nếu hoàn toàn không tìm thấy Page Break nào phía trước bảng
-      startCopyIdx = Math.max(0, lastTableChildIdx - 1);
+      // Ưu tiên 3: Fallback cuối — lấy toàn bộ từ đầu bảng mẫu trở về sau
+      startCopyIdx = lastTableChildIdx;
+      Logger.log(`[TableFit] Fallback cuối: startCopyIdx=${startCopyIdx} (chỉ copy bảng và phần sau)`);
     }
-    
-    const endCopyIdx = body.getNumChildren() - 1;
-    Logger.log(`[TableFit] Phạm vi phần tử trang kết quả cuối cùng: từ index ${startCopyIdx} đến ${endCopyIdx}`);
-    
-    if (startCopyIdx >= 0 && startCopyIdx <= endCopyIdx) {
-      const page2Elements = [];
-      for (let idx = startCopyIdx; idx <= endCopyIdx; idx++) {
-        page2Elements.push(body.getChild(idx));
+  }
+  
+  // Thu thập các phần tử cần copy:
+  // - Tìm endCopyIdx là vị trí phần tử CUỐI CÓ NỘI DUNG (có text hoặc là TABLE)
+  //   để loại bỏ các paragraph rỗng trailing do GAS tự thêm vào cuối document.
+  let endCopyIdx = body.getNumChildren() - 1;
+  while (endCopyIdx > startCopyIdx) {
+    const lastEl = body.getChild(endCopyIdx);
+    const lastType = lastEl.getType();
+    if (lastType === DocumentApp.ElementType.PARAGRAPH) {
+      const txt = lastEl.asParagraph().getText().trim();
+      if (txt === '') {
+        endCopyIdx--;
+        continue;
       }
+    }
+    break;
+  }
+  Logger.log(`[TableFit] Phạm vi phần tử trang kết quả để nhân bản: idx ${startCopyIdx} đến ${endCopyIdx}`);
+
+  // Thu thập các phần tử cần copy:
+  const page2Elements = [];
+  if (startCopyIdx >= 0 && startCopyIdx <= endCopyIdx) {
+    for (let idx = startCopyIdx; idx <= endCopyIdx; idx++) {
+      page2Elements.push(body.getChild(idx));
+    }
+  }
+
+  // Tính số lượng bảng trên mỗi trang bằng cách đếm số bảng trong phạm vi sao chép
+  let tablesPerPage = 0;
+  for (let j = 0; j < page2Elements.length; j++) {
+    if (page2Elements[j].getType() === DocumentApp.ElementType.TABLE) {
+      tablesPerPage++;
+    }
+  }
+  if (tablesPerPage === 0) tablesPerPage = 1;
+  Logger.log(`[TableFit] Số bảng trên mỗi trang kết quả (tablesPerPage) = ${tablesPerPage}`);
+
+  // 1.5. ĐỘNG CƠ NHÂN BẢN TRANG TỰ ĐỘNG THẾ HỆ MỚI (UNIVERSAL PAGE DUPLICATOR)
+  // Nếu số lượng trang kết quả cần dùng lớn hơn 1 (số trang sẵn có trong template)
+  if (totalPagesNeeded > 1) {
+    const pagesToClone = totalPagesNeeded - 1;
+    Logger.log(`[TableFit] Tiến hành nhân bản thêm ${pagesToClone} trang kết quả...`);
+    
+    // Nhân bản thêm số trang còn thiếu
+    for (let p = 0; p < pagesToClone; p++) {
+      Logger.log(`[TableFit] Nhân bản trang ${p + 1}`);
       
-      // Nhân bản thêm số trang còn thiếu
-      for (let p = 0; p < pagesToClone; p++) {
-        // Kiểm tra xem cuối tài liệu đã có ngắt trang chưa để tránh tạo trang trắng thừa
-        // Quét ngược bỏ qua toàn bộ dòng trống để tìm dấu ngắt trang thực tế
-        let needsPageBreak = true;
-        for (let idx = body.getNumChildren() - 1; idx >= 0; idx--) {
-          const el = body.getChild(idx);
-          const elType = el.getType();
+      let firstParagraphCloned = false;
+      let afterTable = false; // Flag đánh dấu đã đi qua bảng mẫu thử
+      let blankAfterTableCount = 0; // Đếm số dòng trống sau bảng
+      
+      // Chèn bản sao các phần tử của trang mẫu
+      for (let j = 0; j < page2Elements.length; j++) {
+        const el = page2Elements[j];
+        const elType = el.getType();
+        
+        if (elType === DocumentApp.ElementType.PAGE_BREAK) continue;
+        
+        if (elType === DocumentApp.ElementType.PARAGRAPH) {
+          const clonedPara = el.copy().asParagraph();
+          // Loại bỏ bất kỳ dấu ngắt trang ẩn nào bên trong đoạn văn copy
+          for (let i = clonedPara.getNumChildren() - 1; i >= 0; i--) {
+            if (clonedPara.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
+              try { clonedPara.removeChild(clonedPara.getChild(i)); } catch(e) {}
+            }
+          }
           
-          if (elType === DocumentApp.ElementType.PAGE_BREAK) {
-            needsPageBreak = false;
-            break;
-          } else if (elType === DocumentApp.ElementType.PARAGRAPH) {
-            const pEl = el.asParagraph();
-            let foundInside = false;
-            for (let cIdx = 0; cIdx < pEl.getNumChildren(); cIdx++) {
-              if (pEl.getChild(cIdx).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-                foundInside = true;
-                break;
-              }
+          // Xử lý paragraph RỖNG (blank)
+          if (clonedPara.getText().trim() === '') {
+            if (!afterTable) {
+              // Bỏ qua các paragraph rỗng nằm TRƯỚC bảng để tránh đẩy bảng xuống
+              continue;
             }
-            if (foundInside) {
-              needsPageBreak = false;
-              break;
-            }
+            // Paragraph rỗng nằm SAU bảng (giữa chữ ký và Trang:):
+            // Cứ giữ nguyên vẹn 100% định dạng nguyên bản của template gốc!
+          }
+          
+          // Paragraph đầu tiên của mỗi trang clone: thêm PAGE_BREAK_BEFORE để bắt đầu trang mới
+          if (!firstParagraphCloned) {
+            try {
+              clonedPara.setAttributes({[DocumentApp.Attribute.PAGE_BREAK_BEFORE]: true});
+              clonedPara.setSpacingBefore(0);
+            } catch(e) {}
+            firstParagraphCloned = true;
+          }
+          
+          body.appendParagraph(clonedPara);
+          
+          // KIỂM TRA & DỌN DẸP dòng trống tự động do GAS chèn ngay sau Table
+          const numChildren = body.getNumChildren();
+          if (numChildren >= 3) {
+            const insertedPara = body.getChild(numChildren - 1);
+            const middlePara = body.getChild(numChildren - 2);
+            const prevTable = body.getChild(numChildren - 3);
             
-            // Nếu đoạn văn này có chứa chữ hoặc phần tử khác, nghĩa là đã quay lại vùng nội dung trang
-            if (pEl.getText().trim() !== "" || pEl.getNumChildren() > 0) {
-              break;
-            }
-          } else if (elType === DocumentApp.ElementType.TABLE) {
-            // Gặp bảng nghĩa là đã quay lại nội dung trang
-            break;
-          }
-        }
-        
-        Logger.log(`[TableFit] Trang nhân bản ${p + 1}: needsPageBreak = ${needsPageBreak}`);
-        if (needsPageBreak) {
-          body.appendPageBreak();
-        }
-        
-        // Chèn bản sao các phần tử của trang mẫu
-        Logger.log(`[TableFit] Đang sao chép ${page2Elements.length} phần tử từ trang gốc...`);
-        for (let j = 0; j < page2Elements.length; j++) {
-          const el = page2Elements[j];
-          const elType = el.getType();
-          
-          Logger.log(`  - Phần tử [${j}]: Type = ${elType} | Text = ${elType === DocumentApp.ElementType.PARAGRAPH || elType === DocumentApp.ElementType.LIST_ITEM ? el.getText().substring(0, 40) : 'N/A'}`);
-          if (elType === DocumentApp.ElementType.PAGE_BREAK) continue;
-          
-          if (elType === DocumentApp.ElementType.PARAGRAPH) {
-            const clonedPara = el.copy().asParagraph();
-            // Loại bỏ bất kỳ dấu ngắt trang ẩn nào bên trong đoạn văn copy để tránh tạo trang trống thừa
-            for (let i = clonedPara.getNumChildren() - 1; i >= 0; i--) {
-              if (clonedPara.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-                try { clonedPara.removeChild(clonedPara.getChild(i)); } catch(e) {}
+            if (middlePara.getType() === DocumentApp.ElementType.PARAGRAPH &&
+                prevTable.getType() === DocumentApp.ElementType.TABLE) {
+              const midP = middlePara.asParagraph();
+              if (midP.getText().trim() === '' && midP.getNumChildren() === 0) {
+                try {
+                  body.removeChild(middlePara);
+                  Logger.log(`[TableFit] Đã dọn dẹp thành công paragraph trống tự động giữa bảng và dòng ghi chú`);
+                } catch(e) {
+                  Logger.log(`[TableFit] Không thể xóa paragraph trống ở giữa: ${e.toString()}`);
+                }
               }
             }
-            body.appendParagraph(clonedPara);
-          } else if (elType === DocumentApp.ElementType.TABLE) {
-            body.appendTable(el.copy().asTable());
-          } else if (elType === DocumentApp.ElementType.LIST_ITEM) {
-            body.appendListItem(el.copy().asListItem());
           }
-        }
-      }
-      
-      // Sau khi nhân bản xong, nạp lại danh sách tables mới nhất từ tài liệu
-      Logger.log(`[TableFit] Đã nhân bản xong ${pagesToClone} trang. Tải lại danh sách bảng...`);
-      tables.length = 0; // Xóa danh sách cũ
-      const freshTables = body.getTables();
-      for (let t = 0; t < freshTables.length; t++) {
-        tables.push(freshTables[t]);
-      }
-    }
-  }
-
-  // Tính số lượng bảng trên mỗi trang bằng khoảng cách giữa 2 bảng mẫu liên tiếp
-  // Lưu ý: Sau khi nhân bản, phải tính lại từ danh sách bảng mới
-  let tablesPerPage = 1;
-  {
-    // Tính lại sampleTableIndices từ danh sách tables đã được cập nhật
-    const freshSampleTableIndices = [];
-    for (let t = 0; t < tables.length; t++) {
-      const candidate = tables[t];
-      if (candidate.getNumRows() >= 10) {
-        const headerText = candidate.getRow(0).getText();
-        if (headerText.includes('Lọ số') || headerText.includes('Mẫu thử') || headerText.includes('Mã số mẫu')) {
-          freshSampleTableIndices.push(t);
+          
+        } else if (elType === DocumentApp.ElementType.TABLE) {
+          if (!firstParagraphCloned) {
+            // Nếu phần tử đầu tiên là bảng (không có paragraph trước), chèn page break trước
+            body.appendPageBreak();
+            firstParagraphCloned = true;
+          }
+          body.appendTable(el.copy().asTable());
+          afterTable = true; // Đánh dấu đã đi qua bảng mẫu thử!
+        } else if (elType === DocumentApp.ElementType.LIST_ITEM) {
+          body.appendListItem(el.copy().asListItem());
         }
       }
     }
-    if (freshSampleTableIndices.length > 1) {
-      tablesPerPage = freshSampleTableIndices[1] - freshSampleTableIndices[0];
+    
+    // Sau khi nhân bản xong, nạp lại danh sách tables mới nhất từ tài liệu
+    Logger.log(`[TableFit] Đã nhân bản xong. Tải lại danh sách bảng...`);
+    tables.length = 0; // Xóa danh sách cũ
+    const freshTables = body.getTables();
+    for (let t = 0; t < freshTables.length; t++) {
+      tables.push(freshTables[t]);
     }
-    Logger.log(`[ReportType2] freshSampleTableIndices=${JSON.stringify(freshSampleTableIndices)} | tablesPerPage=${tablesPerPage}`);
   }
 
-  Logger.log(`[ReportType2] Đang xử lý: Tổng mẫu: ${samples.length} | Dung lượng 1 trang: ${maxSamplesPerPage} | Số trang cần giữ: ${totalPagesNeeded}`);
+  Logger.log(`[ReportType2] Đang xử lý điền dữ liệu: Tổng mẫu: ${samples.length} | Ô khả dụng trên 1 trang: ${usableSlotsPerPage} | Số trang cần dùng: ${totalPagesNeeded}`);
+
+  let sampleIdx = 0;
 
   // 2. Điền dữ liệu phân đoạn tương ứng cho từng trang cần thiết
   for (let p = 0; p < totalPagesNeeded; p++) {
@@ -269,40 +320,26 @@ function fillSampleTable(body, sopConfig, samples) {
     }
     
     const currentTable = tables[currentTableIdx];
-    const pageSamples = samples.slice(p * maxSamplesPerPage, (p + 1) * maxSamplesPerPage);
-    
-    let currentEndSampleRowIdx = startRow + maxSamplesPerPage;
     let rowIdx = startRow;
-    let pageExtraLines = 0;
     
-    for (let i = 0; i < pageSamples.length; i++) {
-      const sample = pageSamples[i];
-      let row = null;
+    // Điền mẫu cho đến khi hết hàng của bảng mẫu trên trang này hoặc hết mẫu thử
+    while (rowIdx < endSampleRowIdx && sampleIdx < samples.length) {
+      const candidateRow = currentTable.getRow(rowIdx);
+      const rowText = candidateRow.getText().trim();
       
       // Bỏ qua tất cả các dòng tiêu đề hoặc dòng đặc biệt trong phạm vi cho phép
-      while (rowIdx < currentEndSampleRowIdx) {
-        const candidateRow = currentTable.getRow(rowIdx);
-        const rowText = candidateRow.getText().trim();
-        
-        if (rowText.includes("Mã số mẫu") || 
-            rowText.includes("Vial No") || 
-            rowText.includes("Kết quả mẫu thử") || 
-            rowText.includes("Fipronil desulfinyl") || 
-            rowText.includes("Chlorpyrifos methyl")) {
-          Logger.log(`[TableFit] Phát hiện dòng tiêu đề lặp lại tại hàng ${rowIdx}. Bỏ qua.`);
-          rowIdx++;
-        } else {
-          row = candidateRow;
-          break;
-        }
+      if (rowText.includes("Mã số mẫu") || 
+          rowText.includes("Vial No") || 
+          rowText.includes("Kết quả mẫu thử") || 
+          rowText.includes("Fipronil desulfinyl") || 
+          rowText.includes("Chlorpyrifos methyl")) {
+        Logger.log(`[TableFit] Phát hiện dòng tiêu đề lặp lại tại hàng ${rowIdx}. Bỏ qua.`);
+        rowIdx++;
+        continue;
       }
       
-      if (!row) {
-        Logger.log(`[TableFit] Cảnh báo: Hết dòng trong khu vực mẫu thử khi đang điền mẫu index ${i}`);
-        break;
-      }
-
-      let rowExtraLines = 0;
+      const sample = samples[sampleIdx];
+      
       // Điền tất cả các cột được cấu hình động
       for (const [colKey, colIdx] of Object.entries(cols)) {
         if (colIdx === undefined || colIdx === null) continue;
@@ -323,16 +360,16 @@ function fillSampleTable(body, sopConfig, samples) {
         
         // Cột mã số mẫu: Áp dụng ngắt dòng tự động dựa trên cấu hình maSoMauChunkSize
         const chunkSize = (colKey === 'maSoMau') ? (sopConfig.maSoMauChunkSize || 0) : 0;
-        const e = setCellText(row, colIdx, textVal, chunkSize);
-        rowExtraLines = Math.max(rowExtraLines, e);
+        setCellText(candidateRow, colIdx, textVal, chunkSize);
       }
       
-      pageExtraLines += rowExtraLines;
+      sampleIdx++;
       rowIdx++;
     }
     
-    // 2.5. Dọn dẹp các dòng trống còn lại trong KHU VỰC mẫu thử (không đụng đến khu vực kết quả bên dưới)
-    while (rowIdx < currentEndSampleRowIdx) {
+    // 2.5. Dọn dẹp các dòng trống còn lại trong KHU VỰC mẫu thử
+    // LƯU Ý: Giữ nguyên form biểu mẫu: CHỈ xóa trắng text, KHÔNG xóa dòng (removeRow)
+    while (rowIdx < endSampleRowIdx) {
       const candidateRow = currentTable.getRow(rowIdx);
       const rowText = candidateRow.getText().trim();
       
@@ -351,146 +388,136 @@ function fillSampleTable(body, sopConfig, samples) {
       }
       rowIdx++;
     }
-    
-    // Tiến hành xóa các dòng trống ở cuối khu vực mẫu thử nếu bị phình dòng ra
-    if (pageExtraLines > 0) {
-      const lastSampleRowIdx = startRow + pageSamples.length - 1;
-      const emptyRowsAvailable = currentEndSampleRowIdx - 1 - lastSampleRowIdx;
-      
-      const rowsToDelete = Math.min(pageExtraLines, emptyRowsAvailable);
-      if (rowsToDelete > 0) {
-        Logger.log(`[TableFit] Phát hiện phình ${pageExtraLines} dòng trên trang ${p + 1}. Tiến hành xóa ${rowsToDelete} dòng trống trong vùng mẫu thử.`);
-        for (let r = 0; r < rowsToDelete; r++) {
-          try {
-            currentTable.removeRow(currentEndSampleRowIdx - 1 - r);
-          } catch(err) {
-            Logger.log(`[TableFit] Lỗi khi xóa dòng trống: ${err.toString()}`);
-          }
-        }
-        // Hiệu chỉnh lại mốc kết thúc sau khi xóa
-        currentEndSampleRowIdx -= rowsToDelete;
+  }
+
+  // 3. CẬP NHẬT TRANG (TRANG: X/Y) TRỰC TIẾP TRÊN BIỂU MẪU GỐC
+  try {
+    const sampleTableBodyIndices = new Set();
+    for (let p2 = 0; p2 < totalPagesNeeded; p2++) {
+      const tIdx = sampleTableIndex + p2 * tablesPerPage;
+      if (tIdx < tables.length) {
+        sampleTableBodyIndices.add(body.getChildIndex(tables[tIdx]));
       }
     }
-  }
-  // 3. TỰ ĐỘNG CẬP NHẬT TRANG (TRANG: X/Y) CHO TẤT CẢ CÁC TRANG KẾT QUẢ
-  // Cấu trúc tài liệu: Trang 1 = trang thông tin (không có "Trang:"), Trang 2+ = các trang kết quả
-  // => Trang kết quả số 1 ứng với currentPageNumber = 2 trong vòng lặp.
-  // => Nhãn cần hiển thị: "Trang: (currentPageNumber - 1)/totalPagesNeeded"
-  try {
-    let currentPageNumber = 1; // bắt đầu từ trang thông tin
-    for (let idx = 0; idx < body.getNumChildren(); idx++) {
-      const child = body.getChild(idx);
-      const type = child.getType();
+    
+    for (let p = 0; p < totalPagesNeeded; p++) {
+      const currentTableIdx = sampleTableIndex + p * tablesPerPage;
+      if (currentTableIdx >= tables.length) break;
       
-      // Dấu ngắt trang độc lập (top-level PAGE_BREAK)
-      if (type === DocumentApp.ElementType.PAGE_BREAK) {
-        currentPageNumber++;
-        continue;
-      }
+      const currentTable = tables[currentTableIdx];
+      const resultPageNum = p + 1;
+      const childIdx = body.getChildIndex(currentTable);
       
-      if (type === DocumentApp.ElementType.PARAGRAPH) {
-        const para = child.asParagraph();
-        // Kiểm tra ngắt trang ẩn bên trong đoạn văn
-        let hasPageBreak = false;
-        for (let i = 0; i < para.getNumChildren(); i++) {
-          if (para.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-            hasPageBreak = true;
+      // Quét xuôi từ sau bảng mẫu để tìm nhãn "Trang:" đầu tiên xuất hiện của trang này
+      let found = false;
+      for (let idx = childIdx + 1; idx < body.getNumChildren(); idx++) {
+        const nextChild = body.getChild(idx);
+        const type = nextChild.getType();
+        
+        // Gặp bảng của trang tiếp theo -> Dừng quét để không lấn sang trang sau
+        if (type === DocumentApp.ElementType.TABLE && sampleTableBodyIndices.has(idx) && idx !== childIdx) {
+          break;
+        }
+        
+        // Gặp paragraph ngắt trang của trang tiếp theo -> Dừng quét
+        if (type === DocumentApp.ElementType.PARAGRAPH) {
+          const para = nextChild.asParagraph();
+          if (para.getAttributes()[DocumentApp.Attribute.PAGE_BREAK_BEFORE] === true) {
             break;
           }
-        }
-        if (hasPageBreak) {
-          currentPageNumber++;
-        }
-        // Chỉ cập nhật từ trang 2 trở đi (trang kết quả đầu tiên)
-        const resultPageNum = currentPageNumber - 1; // trang kết quả số mấy (1-based)
-        if (resultPageNum >= 1 && para.getText().includes("Trang")) {
-          para.replaceText("Trang:? ?[0-9]+ ?/ ?[0-9]+", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
-        }
-      } else if (type === DocumentApp.ElementType.TABLE) {
-        const table = child.asTable();
-        const resultPageNum = currentPageNumber - 1;
-        if (resultPageNum >= 1) {
+          if (para.getText().includes("Trang")) {
+            para.replaceText("Trang:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
+            found = true;
+            break;
+          }
+        } else if (type === DocumentApp.ElementType.TABLE) {
+          const table = nextChild.asTable();
+          let cellFound = false;
           for (let r = 0; r < table.getNumRows(); r++) {
             const row = table.getRow(r);
             for (let c = 0; c < row.getNumCells(); c++) {
               const cell = row.getCell(c);
               if (cell.getText().includes("Trang")) {
-                cell.replaceText("Trang:? ?[0-9]+ ?/ ?[0-9]+", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
+                cell.replaceText("Trang:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
+                cellFound = true;
+                break;
               }
             }
+            if (cellFound) break;
           }
+          if (cellFound) { found = true; break; }
         }
       }
+      if (!found) Logger.log(`[TableFit] Cảnh báo: Không tìm thấy nhãn "Trang:" cho trang kết quả ${resultPageNum}`);
     }
   } catch(e) {
     Logger.log(`[TableFit] Lỗi khi cập nhật số Trang: X/Y: ${e.toString()}`);
   }
 
   // 3.5. TỰ ĐỘNG CẮT (TRUNCATE) CÁC TRANG DƯ THỪA NẾU CÓ TRANG TRỐNG DƯ THỪA TRONG TEMPLATE GỐC
-  const currentTables = body.getTables();
-  const currentSampleTableIndices = [];
-  for (let t = 0; t < currentTables.length; t++) {
-    const candidate = currentTables[t];
-    if (candidate.getNumRows() >= 10) {
-      const headerText = candidate.getRow(0).getText();
-      if (headerText.includes('Lọ số') || headerText.includes('Mẫu thử') || headerText.includes('Mã số mẫu')) {
-        currentSampleTableIndices.push(t);
-      }
+  try {
+    const currentTables = body.getTables();
+    // Tính số lượng bảng mẫu hiện có dựa trên chỉ số bảng mẫu và số bảng mỗi trang
+    const totalSampleTablesFound = [];
+    for (let idx = sampleTableIndex; idx < currentTables.length; idx += tablesPerPage) {
+      totalSampleTablesFound.push(idx);
     }
-  }
 
-  if (totalPagesNeeded < currentSampleTableIndices.length) {
-    const firstExcessTableIdx = currentSampleTableIndices[totalPagesNeeded];
-    const excessTable = currentTables[firstExcessTableIdx];
-    const excessTableChildIdx = body.getChildIndex(excessTable);
-    
-    // Tìm dấu ngắt trang ngay trước bảng thừa này để cắt từ đó
-    let cutIdx = excessTableChildIdx;
-    for (let i = excessTableChildIdx - 1; i >= 0; i--) {
-      const child = body.getChild(i);
-      if (child.getType() === DocumentApp.ElementType.PAGE_BREAK) {
-        cutIdx = i;
-        break;
-      }
-      if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-        const p = child.asParagraph();
-        let hasPB = false;
-        for (let j = 0; j < p.getNumChildren(); j++) {
-          if (p.getChild(j).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-            hasPB = true;
-            break;
-          }
-        }
-        if (hasPB) {
+    if (totalPagesNeeded < totalSampleTablesFound.length) {
+      const firstExcessTableIdx = totalSampleTablesFound[totalPagesNeeded];
+      const excessTable = currentTables[firstExcessTableIdx];
+      const excessTableChildIdx = body.getChildIndex(excessTable);
+      
+      // Tìm dấu ngắt trang ngay trước bảng thừa này để cắt từ đó
+      let cutIdx = excessTableChildIdx;
+      for (let i = excessTableChildIdx - 1; i >= 0; i--) {
+        const child = body.getChild(i);
+        if (child.getType() === DocumentApp.ElementType.PAGE_BREAK) {
           cutIdx = i;
           break;
         }
-      }
-    }
-    
-    Logger.log(`[Autocut] Cắt bỏ trang thừa từ phần tử index ${cutIdx}`);
-    let activeIndex = cutIdx;
-    while (activeIndex < body.getNumChildren()) {
-      const child = body.getChild(activeIndex);
-      try {
-        body.removeChild(child);
-      } catch(e) {
-        try {
-          if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-            child.asParagraph().clear();
-          } else if (child.getType() === DocumentApp.ElementType.TABLE) {
-            const tbl = child.asTable();
-            for (let r = 0; r < tbl.getNumRows(); r++) {
-              const row = tbl.getRow(r);
-              for (let c = 0; c < row.getNumCells(); c++) {
-                row.getCell(c).clear();
-              }
+        if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const p = child.asParagraph();
+          let hasPB = false;
+          for (let j = 0; j < p.getNumChildren(); j++) {
+            if (p.getChild(j).getType() === DocumentApp.ElementType.PAGE_BREAK) {
+              hasPB = true;
+              break;
             }
           }
-        } catch(err) {}
-        activeIndex++;
+          if (hasPB) {
+            cutIdx = i;
+            break;
+          }
+        }
+      }
+      
+      Logger.log(`[Autocut] Cắt bỏ trang thừa từ phần tử index ${cutIdx}`);
+      let activeIndex = cutIdx;
+      while (activeIndex < body.getNumChildren()) {
+        const child = body.getChild(activeIndex);
+        try {
+          body.removeChild(child);
+        } catch(e) {
+          try {
+            if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+              child.asParagraph().clear();
+            } else if (child.getType() === DocumentApp.ElementType.TABLE) {
+              const tbl = child.asTable();
+              for (let r = 0; r < tbl.getNumRows(); r++) {
+                const row = tbl.getRow(r);
+                for (let c = 0; c < row.getNumCells(); c++) {
+                  row.getCell(c).clear();
+                }
+              }
+            }
+          } catch(err) {}
+          activeIndex++;
+        }
       }
     }
+  } catch(e) {
+    Logger.log(`[Autocut] Lỗi khi cắt trang thừa: ${e.toString()}`);
   }
 
   // 4. TIẾN HÀNH DỌN DẸP DẤU NGẮT TRANG & DÒNG TRỐNG THỪA Ở CUỐI TÀI LIỆU ĐÃ CẮT
@@ -534,11 +561,14 @@ function fillSampleTable(body, sopConfig, samples) {
       const lastChild = body.getChild(finalLastIdx);
       if (lastChild.getType() === DocumentApp.ElementType.PARAGRAPH) {
         const p = lastChild.asParagraph();
-        p.clear();
-        p.setFontSize(1);
-        p.setLineSpacing(0.06);
-        p.setSpacingAfter(0);
-        p.setSpacingBefore(0);
+        // Chỉ thu nhỏ paragraph RỖNG cuối cùng — KHÔNG xóa nếu có nội dung (vd: "Trang: 2/2")
+        if (p.getText().trim() === '') {
+          p.clear();
+          p.setFontSize(1);
+          p.setLineSpacing(0.06);
+          p.setSpacingAfter(0);
+          p.setSpacingBefore(0);
+        }
       }
     }
   } catch(e) {}
@@ -686,7 +716,8 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
   try {
     const maHoSoVal = (metadata.maHoSo || "").trim();
     const maHoSoDisplay = maHoSoVal ? maHoSoVal : "……………………";
-    const p3Text = `1. Mã hồ sơ : ${maHoSoDisplay}        2. Khối lượng mẫu: m = 10.0 ± 0.1 gram`;
+    // Thay thế khoảng trắng bằng ký tự Tab \t để kích hoạt tab stop gốc của template
+    const p3Text = `1. Mã hồ sơ : ${maHoSoDisplay}\t2. Khối lượng mẫu: m = 10.0 ± 0.1 gram`;
     let searchResultP3 = body.findText("1\\. Mã hồ sơ");
     if (searchResultP3) {
       const para = searchResultP3.getElement().getParent().asParagraph();
@@ -708,7 +739,8 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
     const loaiMauOtherCheck = !isTS ? "☑" : "☐";
     const loaiMauOtherVal = !isTS ? loaiMauVal : "…………";
 
-    const p4Text = `3. Hệ số pha loãng: ${f1Check} f= 1;  ${fOtherCheck} f= ${fOtherVal}     4. Loại mẫu: ${tsCheck} Thuỷ sản; ${loaiMauOtherCheck} Khác: ${loaiMauOtherVal}`;
+    // Thay thế khoảng trắng bằng ký tự Tab \t để kích hoạt tab stop gốc của template
+    const p4Text = `3. Hệ số pha loãng: ${f1Check} f= 1;  ${fOtherCheck} f= ${fOtherVal}\t4. Loại mẫu: ${tsCheck} Thuỷ sản; ${loaiMauOtherCheck} Khác: ${loaiMauOtherVal}`;
     let searchResultP4 = body.findText("3\\. Hệ số pha loãng");
     if (searchResultP4) {
       const para = searchResultP4.getElement().getParent().asParagraph();
@@ -863,4 +895,3 @@ function fillQcTableCheckboxes(body, sopConfig, metadata) {
     }
   }
 }
-

@@ -126,9 +126,9 @@ function setCellText(row, colIndex, text, chunkSize) {
   if (colIndex >= row.getNumCells()) return 0;
   const cell = row.getCell(colIndex);
   
-  // 1. Lưu lại các thuộc tính định dạng của ô gốc (font, rộng cột, canh lề, padding)
+  // 1. Lưu lại các thuộc tính định dạng của ô gốc
   let fontFamily = 'Times New Roman';
-  let fontSize = 9; // Mặc định bảng phòng thí nghiệm là size 9 cực kỳ an toàn và tránh tràn cột
+  let fontSize = 9;
   let originalAlign = DocumentApp.HorizontalAlignment.CENTER;
   let originalWidth = null;
   let originalVerticalAlign = null;
@@ -136,6 +136,9 @@ function setCellText(row, colIndex, text, chunkSize) {
   let originalPaddingRight = null;
   let originalPaddingTop = null;
   let originalPaddingBottom = null;
+  let originalLineSpacing = null;
+  let originalSpacingBefore = null;
+  let originalSpacingAfter = null;
 
   try {
     let firstP = null;
@@ -147,36 +150,31 @@ function setCellText(row, colIndex, text, chunkSize) {
       }
     }
     if (firstP) {
-      if (firstP.getAlignment()) {
-        originalAlign = firstP.getAlignment();
-      }
+      if (firstP.getAlignment()) originalAlign = firstP.getAlignment();
       
-      // Lấy từ thuộc tính Paragraph
       const pAttrs = firstP.getAttributes();
-      if (pAttrs[DocumentApp.Attribute.FONT_FAMILY]) {
-        fontFamily = pAttrs[DocumentApp.Attribute.FONT_FAMILY];
-      }
-      if (pAttrs[DocumentApp.Attribute.FONT_SIZE]) {
-        fontSize = pAttrs[DocumentApp.Attribute.FONT_SIZE];
-      }
+      if (pAttrs[DocumentApp.Attribute.FONT_FAMILY]) fontFamily = pAttrs[DocumentApp.Attribute.FONT_FAMILY];
+      if (pAttrs[DocumentApp.Attribute.FONT_SIZE])   fontSize   = pAttrs[DocumentApp.Attribute.FONT_SIZE];
+      if (pAttrs[DocumentApp.Attribute.LINE_SPACING]) originalLineSpacing  = pAttrs[DocumentApp.Attribute.LINE_SPACING];
+      if (pAttrs[DocumentApp.Attribute.SPACING_BEFORE]) originalSpacingBefore = pAttrs[DocumentApp.Attribute.SPACING_BEFORE];
+      if (pAttrs[DocumentApp.Attribute.SPACING_AFTER])  originalSpacingAfter  = pAttrs[DocumentApp.Attribute.SPACING_AFTER];
       
-      // Lấy trực tiếp từ ký tự văn bản
       if (firstP.getNumChildren() > 0) {
         const child0 = firstP.getChild(0);
         if (child0.getType() === DocumentApp.ElementType.TEXT) {
           const t = child0.asText();
           if (t.getFontFamily()) fontFamily = t.getFontFamily();
-          if (t.getFontSize()) fontSize = t.getFontSize();
+          if (t.getFontSize())   fontSize   = t.getFontSize();
         }
       }
     }
 
-    originalWidth = cell.getWidth();
-    originalVerticalAlign = cell.getVerticalAlignment();
-    originalPaddingLeft = cell.getPaddingLeft();
-    originalPaddingRight = cell.getPaddingRight();
-    originalPaddingTop = cell.getPaddingTop();
-    originalPaddingBottom = cell.getPaddingBottom();
+    originalWidth          = cell.getWidth();
+    originalVerticalAlign  = cell.getVerticalAlignment();
+    originalPaddingLeft    = cell.getPaddingLeft();
+    originalPaddingRight   = cell.getPaddingRight();
+    originalPaddingTop     = cell.getPaddingTop();
+    originalPaddingBottom  = cell.getPaddingBottom();
   } catch(e) {
     Logger.log(`[setCellText] Lỗi khi lưu thuộc tính ô gốc: ${e.toString()}`);
   }
@@ -191,35 +189,42 @@ function setCellText(row, colIndex, text, chunkSize) {
       p = firstChild.asParagraph();
     }
   }
-  if (!p) {
-    p = cell.appendParagraph();
-  }
+  if (!p) p = cell.appendParagraph('');
   
-  const cleanText = (text !== undefined && text !== null) ? text.toString() : "";
+  const cleanText = (text !== undefined && text !== null) ? text.toString() : '';
   
-  // 3. Xử lý chunk chữ và chèn ngắt dòng (enter) nếu có chunksize
+  // 3. Xử lý chunk chữ và chèn ngắt dòng nếu có chunkSize
   let extraLines = 0;
-  let finalText = cleanText || " ";
   
   if (cleanText && chunkSize && chunkSize > 0) {
     const chunks = [];
     for (let i = 0; i < cleanText.length; i += chunkSize) {
       chunks.push(cleanText.substring(i, i + chunkSize));
     }
-    finalText = chunks.join('\n');
+    p.setText(chunks.join('\n'));
     extraLines = chunks.length - 1;
+  } else if (cleanText) {
+    // Chỉ gọi setText khi có nội dung — setText('') gây lỗi GAS "empty text element"
+    p.setText(cleanText);
   }
+  // Khi cleanText rỗng: để nguyên paragraph trống từ cell.clear(), không gọi setText
   
-  p.setText(finalText);
   p.setAlignment(originalAlign);
   
-  // 4. Khôi phục hoàn hảo độ rộng cột, canh lề dọc và padding
+  // Khôi phục spacing gốc để tránh làm cao hàng bảng
+  try {
+    if (originalLineSpacing !== null)   p.setLineSpacing(originalLineSpacing);
+    if (originalSpacingBefore !== null) p.setSpacingBefore(originalSpacingBefore);
+    if (originalSpacingAfter !== null)  p.setSpacingAfter(originalSpacingAfter);
+  } catch(e) {}
+  
+  // 4. Khôi phục độ rộng cột, canh lề dọc và padding
   try {
     if (originalWidth !== null && originalWidth > 0) cell.setWidth(originalWidth);
     if (originalVerticalAlign !== null) cell.setVerticalAlignment(originalVerticalAlign);
-    if (originalPaddingLeft !== null) cell.setPaddingLeft(originalPaddingLeft);
-    if (originalPaddingRight !== null) cell.setPaddingRight(originalPaddingRight);
-    if (originalPaddingTop !== null) cell.setPaddingTop(originalPaddingTop);
+    if (originalPaddingLeft !== null)   cell.setPaddingLeft(originalPaddingLeft);
+    if (originalPaddingRight !== null)  cell.setPaddingRight(originalPaddingRight);
+    if (originalPaddingTop !== null)    cell.setPaddingTop(originalPaddingTop);
     if (originalPaddingBottom !== null) cell.setPaddingBottom(originalPaddingBottom);
   } catch(e) {
     Logger.log(`[setCellText] Lỗi khi khôi phục cấu trúc TableCell: ${e.toString()}`);
@@ -227,24 +232,10 @@ function setCellText(row, colIndex, text, chunkSize) {
   
   // 5. Định dạng font chữ
   if (cleanText) {
-    let adjustedFontSize = fontSize;
-    if (!chunkSize) {
-      const len = cleanText.length;
-      if (len > 35) {
-        adjustedFontSize = Math.max(8.5, fontSize - 2.5);
-        extraLines = 2;
-      } else if (len > 20) {
-        adjustedFontSize = Math.max(9.0, fontSize - 2.0);
-        extraLines = 1;
-      } else if (len > 12) {
-        adjustedFontSize = Math.max(9.5, fontSize - 1.5);
-      }
-    }
-    
     try {
       const tElement = p.editAsText();
       tElement.setFontFamily(fontFamily);
-      tElement.setFontSize(adjustedFontSize);
+      tElement.setFontSize(fontSize);
     } catch(e) {
       Logger.log(`[setCellText] Lỗi khi áp định dạng font: ${e.toString()}`);
     }
@@ -252,6 +243,7 @@ function setCellText(row, colIndex, text, chunkSize) {
   
   return extraLines;
 }
+
 
 // ── Helper: tạo folder năm/tháng/chỉ tiêu trong ROOT_FOLDER ──────────
 function getOrCreateFolder(date, sopId) {
