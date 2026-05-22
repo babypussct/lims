@@ -47,6 +47,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                   <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                 </div>
               </label>
+            }
           </div>
         }
       </div>
