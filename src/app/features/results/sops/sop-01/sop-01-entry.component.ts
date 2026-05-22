@@ -161,14 +161,6 @@ import { calculateSop01Recovery } from './sop-01-engine';
             }
           }
         </div>
-      </div>">
-                    N/A
-                  </button>
-                </div>
-              </div>
-            }
-          }
-        </div>
       </div>
 
       <!-- 1.5. Section 7 Đường chuẩn -->

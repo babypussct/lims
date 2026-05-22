@@ -47,9 +47,11 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                   <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                 </div>
               </label>
-            }
           </div>
-         <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
+        }
+      </div>
+      
+      <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
           <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
