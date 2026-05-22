@@ -213,9 +213,16 @@ function fillSampleTable(body, sopConfig, samples) {
   Logger.log(`[TableFit] Số bảng trên mỗi trang kết quả (tablesPerPage) = ${tablesPerPage}`);
 
   // 1.5. ĐỘNG CƠ NHÂN BẢN TRANG TỰ ĐỘNG THẾ HỆ MỚI (UNIVERSAL PAGE DUPLICATOR)
-  // Nếu số lượng trang kết quả cần dùng lớn hơn 1 (số trang sẵn có trong template)
-  if (totalPagesNeeded > 1) {
-    const pagesToClone = totalPagesNeeded - 1;
+  let existingSampleTablesCount = 0;
+  const initTables = body.getTables();
+  for (let idx = sampleTableIndex; idx < initTables.length; idx += tablesPerPage) {
+    existingSampleTablesCount++;
+  }
+  if (existingSampleTablesCount === 0) existingSampleTablesCount = 1;
+
+  // Nếu số lượng trang kết quả cần dùng lớn hơn số trang sẵn có trong template
+  if (totalPagesNeeded > existingSampleTablesCount) {
+    const pagesToClone = totalPagesNeeded - existingSampleTablesCount;
     Logger.log(`[TableFit] Tiến hành nhân bản thêm ${pagesToClone} trang kết quả...`);
     
     // Nhân bản thêm số trang còn thiếu
@@ -362,7 +369,7 @@ function fillSampleTable(body, sopConfig, samples) {
         
         // Cột mã số mẫu: Áp dụng ngắt dòng tự động dựa trên cấu hình maSoMauChunkSize
         const chunkSize = (colKey === 'maSoMau') ? (sopConfig.maSoMauChunkSize || 0) : 0;
-        setCellText(candidateRow, colIdx, textVal, chunkSize);
+        setCellText(candidateRow, colIdx, textVal, chunkSize, sopConfig.defaultFontSize);
       }
       
       sampleIdx++;
@@ -386,7 +393,7 @@ function fillSampleTable(body, sopConfig, samples) {
       
       for (const [colKey, colIdx] of Object.entries(cols)) {
         if (colIdx === undefined || colIdx === null) continue;
-        setCellText(candidateRow, colIdx, '');
+        setCellText(candidateRow, colIdx, '', null, sopConfig.defaultFontSize);
       }
       rowIdx++;
     }
@@ -428,7 +435,7 @@ function fillSampleTable(body, sopConfig, samples) {
             break;
           }
           if (para.getText().includes("Trang")) {
-            para.replaceText("Trang:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
+            para.replaceText("Trang\\s*:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
             found = true;
             break;
           }
@@ -440,7 +447,7 @@ function fillSampleTable(body, sopConfig, samples) {
             for (let c = 0; c < row.getNumCells(); c++) {
               const cell = row.getCell(c);
               if (cell.getText().includes("Trang")) {
-                cell.replaceText("Trang:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
+                cell.replaceText("Trang\\s*:[^\\n]*", `Trang: ${resultPageNum}/${totalPagesNeeded}`);
                 cellFound = true;
                 break;
               }
@@ -472,6 +479,8 @@ function fillSampleTable(body, sopConfig, samples) {
       
       // Tìm dấu ngắt trang ngay trước bảng thừa này để cắt từ đó
       let cutIdx = excessTableChildIdx;
+      let pbInsideParagraph = false;
+      
       for (let i = excessTableChildIdx - 1; i >= 0; i--) {
         const child = body.getChild(i);
         if (child.getType() === DocumentApp.ElementType.PAGE_BREAK) {
@@ -489,6 +498,7 @@ function fillSampleTable(body, sopConfig, samples) {
           }
           if (hasPB) {
             cutIdx = i;
+            pbInsideParagraph = true;
             break;
           }
         }
@@ -496,6 +506,24 @@ function fillSampleTable(body, sopConfig, samples) {
       
       Logger.log(`[Autocut] Cắt bỏ trang thừa từ phần tử index ${cutIdx}`);
       let activeIndex = cutIdx;
+      
+      // Nếu PAGE_BREAK nằm chung trong paragraph chữ ký của trang trước, ta chỉ xóa từ PAGE_BREAK trở đi, giữ lại paragraph
+      if (pbInsideParagraph) {
+        const p = body.getChild(cutIdx).asParagraph();
+        let foundPB = false;
+        for (let j = p.getNumChildren() - 1; j >= 0; j--) {
+          const pChild = p.getChild(j);
+          if (pChild.getType() === DocumentApp.ElementType.PAGE_BREAK) {
+            p.removeChild(pChild);
+            foundPB = true;
+            break;
+          } else if (!foundPB) {
+            p.removeChild(pChild);
+          }
+        }
+        activeIndex = cutIdx + 1; // Bỏ qua paragraph này, xóa hoàn toàn các phần tử từ index tiếp theo
+      }
+
       while (activeIndex < body.getNumChildren()) {
         const child = body.getChild(activeIndex);
         try {
@@ -652,10 +680,10 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
       // Nếu có placeholder trong ô 0, thay thế trực tiếp và để ô 1 trống
       calibrationTable.getRow(r2RowIdx).getCell(0).replaceText('\\{\\{R2\\}\\}', r2Val);
       calibrationTable.getRow(r2RowIdx).getCell(0).replaceText('\\{\\{r2\\}\\}', r2Val);
-      setCellText(calibrationTable.getRow(r2RowIdx), 1, '');
+      setCellText(calibrationTable.getRow(r2RowIdx), 1, '', null, sopConfig.defaultFontSize);
     } else {
       // Nếu không, điền vào ô 1 như bình thường
-      setCellText(calibrationTable.getRow(r2RowIdx), 1, r2Val);
+      setCellText(calibrationTable.getRow(r2RowIdx), 1, r2Val, null, sopConfig.defaultFontSize);
     }
 
     // Điền 7 điểm đường chuẩn
@@ -665,8 +693,8 @@ function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, fo
       const pt = calibPoints[i] || { loSo: '', hamLuong: '' };
       const rowIdx = startPtRowIdx + i;
       const row = calibrationTable.getRow(rowIdx);
-      setCellText(row, 0, pt.loSo || '');
-      setCellText(row, 1, pt.hamLuong || '');
+      setCellText(row, 0, pt.loSo || '', null, sopConfig.defaultFontSize);
+      setCellText(row, 1, pt.hamLuong || '', null, sopConfig.defaultFontSize);
     }
   } else {
     Logger.log('[TrifluralinCustom] CẢNH BÁO: Không tìm thấy bảng đường chuẩn.');

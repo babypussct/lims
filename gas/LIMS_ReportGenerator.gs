@@ -122,13 +122,13 @@ function generateReport(sopId, metadata, samples, version) {
 }
 
 // ── Helper: set cell text giữ nguyên font gốc ────────────────────────
-function setCellText(row, colIndex, text, chunkSize) {
+function setCellText(row, colIndex, text, chunkSize, fallbackFontSize) {
   if (colIndex >= row.getNumCells()) return 0;
   const cell = row.getCell(colIndex);
   
   // 1. Lưu lại các thuộc tính định dạng của ô gốc
   let fontFamily = 'Times New Roman';
-  let fontSize = 9;
+  let fontSize = fallbackFontSize || 9;
   let originalAlign = DocumentApp.HorizontalAlignment.CENTER;
   let originalWidth = null;
   let originalVerticalAlign = null;
@@ -139,6 +139,10 @@ function setCellText(row, colIndex, text, chunkSize) {
   let originalLineSpacing = null;
   let originalSpacingBefore = null;
   let originalSpacingAfter = null;
+  
+  let isBold = null;
+  let isItalic = null;
+  let foregroundColor = null;
 
   try {
     let firstP = null;
@@ -165,6 +169,10 @@ function setCellText(row, colIndex, text, chunkSize) {
           const t = child0.asText();
           if (t.getFontFamily()) fontFamily = t.getFontFamily();
           if (t.getFontSize())   fontSize   = t.getFontSize();
+          
+          if (t.isBold !== undefined && t.isBold() !== null) isBold = t.isBold();
+          if (t.isItalic !== undefined && t.isItalic() !== null) isItalic = t.isItalic();
+          if (t.getForegroundColor !== undefined && t.getForegroundColor() !== null) foregroundColor = t.getForegroundColor();
         }
       }
     }
@@ -236,6 +244,9 @@ function setCellText(row, colIndex, text, chunkSize) {
       const tElement = p.editAsText();
       tElement.setFontFamily(fontFamily);
       tElement.setFontSize(fontSize);
+      if (isBold !== null) tElement.setBold(isBold);
+      if (isItalic !== null) tElement.setItalic(isItalic);
+      if (foregroundColor !== null) tElement.setForegroundColor(foregroundColor);
     } catch(e) {
       Logger.log(`[setCellText] Lỗi khi áp định dạng font: ${e.toString()}`);
     }

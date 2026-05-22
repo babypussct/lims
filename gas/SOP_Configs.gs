@@ -23,6 +23,7 @@ const CONFIG = {
     'trifluralin-gcms': {
       folderName: 'Trifluralin (GC-MS)',
       formType: 'type2',
+      defaultFontSize: 13,   // Font mặc định cho các ô trống trong template Trifluralin
       sampleTableIndex: 1,   // table index trong Google Doc (0-based)
       tablesPerPage: 2,      // số lượng bảng trên mỗi trang kết quả (bao gồm bảng đường chuẩn & bảng mẫu)
       columns: {
