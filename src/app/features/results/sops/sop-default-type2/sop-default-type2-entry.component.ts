@@ -11,26 +11,26 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
     <div class="space-y-6 animate-fade-in">
       
       <!-- 1. Metadata Form & Checkboxes -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500"></i> Thông tin chung & Đánh giá (Tiêu chuẩn)
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500 text-sm"></i> Thông tin chung & Đánh giá (Tiêu chuẩn)
         </h4>
 
         <!-- Signature Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người phân tích</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người thẩm tra</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none">
           </div>
         </div>
 
@@ -38,102 +38,100 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
         @if (checkboxList.length > 0) {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
             @for (checkbox of checkboxList; track checkbox.key) {
-              <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-slate-100 dark:border-slate-700/30 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
+              <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data[checkbox.key]" 
                        (ngModelChange)="onCheckboxChange(checkbox.key)"
-                       class="mt-1 w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-900 dark:border-slate-700">
+                       class="mt-0.5 w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
                 <div>
-                  <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                 </div>
               </label>
             }
           </div>
-        }
-      </div>
-
-      <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-3">
-          <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-table-cells mr-1 text-indigo-500"></i> Lưới nhập kết quả sắc ký (Spreadsheet)
+         <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+          <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-table-cells mr-1 text-indigo-500 text-sm"></i> Lưới nhập kết quả sắc ký (Spreadsheet)
           </h4>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
             
             <button (click)="bulkFillND()" 
-                    class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-              <i class="fa-solid fa-pen-clip"></i>
+                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+              <i class="fa-solid fa-pen-clip text-amber-500"></i>
               <span>Điền ND ô trống</span>
             </button>
 
             <button (click)="bulkClearAll()" 
-                    class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-              <i class="fa-solid fa-trash-can"></i>
+                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/20 text-slate-750 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-450 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+              <i class="fa-solid fa-trash-can text-rose-500"></i>
               <span>Xóa hết bảng</span>
             </button>
           </div>
         </div>
 
         <!-- Spreadsheet Table Grid -->
-        <div class="overflow-x-auto custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800">
+        <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
-              <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs w-28">Lọ số</th>
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Mẫu thử</th>
+              <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-255/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">Lọ số</th>
+                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Mẫu thử</th>
                 
                 @for (col of activeColumns; track col) {
-                  <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[120px] uppercase">
+                  <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[120px]">
                     {{ formatColumnName(col) }}
                   </th>
                 }
                 
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Ghi chú</th>
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">Hàng</th>
+                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Ghi chú</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Hàng</th>
               </tr>
             </thead>
             
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
               @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
                 @if (draft.resultData[row.key]) {
-                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
-                    <td class="py-1 px-2 w-28">
+                  <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-indigo-50/10 dark:focus-within:bg-indigo-500/5 border-l-4 border-l-transparent focus-within:border-l-indigo-500 duration-150">
+                    <td class="py-1.5 px-2 w-28">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['loSo']"
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-loSo'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
                              placeholder="..."
-                             class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-indigo-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center shadow-inner">
                     </td>
-                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ row.label }}</td>
+                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all">{{ row.label }}</td>
                     
                     @for (col of activeColumns; track col; let colIdx = $index) {
-                      <td class="py-1 px-2">
+                      <td class="py-1.5 px-2">
                         <input type="text"
                                [(ngModel)]="draft.resultData[row.key][col]"
                                (ngModelChange)="onDataChanged()"
                                [id]="'cell-' + rowIdx + '-' + col"
                                (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
                                placeholder="..."
-                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-indigo-500 outline-none text-center">
+                               class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center shadow-inner">
                       </td>
                     }
                     
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-ghiChu'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length + 1)"
                              placeholder="Ghi chú..."
-                             class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none">
+                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-inner">
                     </td>
-                    <td class="py-1 px-4 text-center">
+                    <td class="py-1.5 px-4 text-center">
                       <button (click)="copyRowToAll(row.key)" 
-                              class="px-2 py-1 bg-indigo-55 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors">
+                              class="w-7 h-7 flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-650 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white text-indigo-600 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 rounded-xl text-xs font-black transition shadow-2xs mx-auto active:scale-90"
+                              title="Sao chép kết quả dòng này cho tất cả các dòng mẫu khác trong bảng">
                         <i class="fa-solid fa-copy"></i>
                       </button>
                     </td>

@@ -30,18 +30,18 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
   ],
   template: `
     <div class="h-full flex flex-col fade-in">
-      <!-- Dynamic Sticky Header -->
-      <div class="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 z-40">
-        <div class="flex items-center gap-3">
+      <!-- Dynamic Sticky Header (Glassmorphism design) -->
+      <div class="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 px-6 py-4 flex items-center justify-between shrink-0 z-40 transition-colors duration-300">
+        <div class="flex items-center gap-3.5">
           <button (click)="goBack()" 
-                  class="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center transition">
+                  class="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center transition active:scale-95 duration-150 border border-slate-200/10 dark:border-slate-700/20">
             <i class="fa-solid fa-arrow-left text-sm"></i>
           </button>
           <div>
-            <span class="text-[10px] font-black uppercase text-fuchsia-600 dark:text-fuchsia-500 tracking-wider">
+            <span class="text-[10px] font-black uppercase text-fuchsia-600 dark:text-fuchsia-450 tracking-wider block mb-0.5">
               {{ run() ? run()?.sopName : 'Đang tải...' }}
             </span>
-            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
               Nhập Dữ Liệu Phân Tích — Mẻ Chạy
             </h3>
           </div>
@@ -54,20 +54,20 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
             @if (historyList().length > 0) {
               <div class="relative group">
                 <button [disabled]="isProcessing()"
-                        class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+                        class="px-4 py-2 text-xs font-bold text-slate-650 dark:text-slate-355 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200/40 dark:border-slate-700/40 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50 active:scale-95 shadow-sm hover:shadow"
                         title="Khôi phục số liệu từ các bản in cũ">
                   <i class="fa-solid fa-clock-rotate-left"></i>
                   <span class="hidden md:inline">Khôi phục bản cũ</span>
-                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                  <i class="fa-solid fa-chevron-down text-[9px] opacity-70"></i>
                 </button>
                 <!-- Tooltip/Dropdown list -->
-                <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
-                  <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Chọn phiên bản khôi phục</div>
+                <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
+                  <div class="px-3 py-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 mb-1">Chọn phiên bản khôi phục</div>
                   
                   <!-- Bản hiện tại vừa in gần nhất -->
                   @if (draft()?.version) {
                     <button (click)="restoreFromVersion(draft()!.version!)"
-                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
                       <span class="font-bold text-indigo-600 dark:text-indigo-400">Bản hiện tại (v{{ draft()?.version }})</span>
                       <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in gần nhất: {{ draft()?.updatedBy }}</span>
                     </button>
@@ -77,7 +77,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                   @for (hist of historyList(); track hist.version) {
                     @if (hist.version !== draft()?.version) {
                       <button (click)="restoreFromVersion(hist.version, hist.prefix)"
-                              class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
+                              class="w-full text-left px-4 py-2 text-xs border-t border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex flex-col gap-0.5 text-slate-700 dark:text-slate-200">
                         <span class="font-bold">Phiên bản v{{ hist.version }} {{ hist.prefix ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
                         <span class="text-[10px] text-slate-400 dark:text-slate-500">Người in: {{ hist.publishedBy }}</span>
                       </button>
@@ -90,7 +90,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
             <!-- Save Draft Button -->
             <button (click)="triggerSaveDraft()" 
                     [disabled]="isProcessing()"
-                    class="px-4 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/30 rounded-xl transition flex items-center gap-2 disabled:opacity-50">
+                    class="px-4 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100/50 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/30 rounded-xl transition flex items-center gap-2 disabled:opacity-50 shadow-sm hover:shadow active:scale-95 duration-150">
               <i class="fa-solid" [class.fa-floppy-disk]="!isSavingDraft()" [class.fa-spinner]="isSavingDraft()" [class.fa-spin]="isSavingDraft()"></i>
               <span>Lưu nháp</span>
             </button>
@@ -98,14 +98,14 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
             <!-- View PDF / Open Docs if available for the active tab -->
             @if (getCurrentPdfUrl()) {
               <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
-                 class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline">
+                 class="px-4 py-2 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span>Xem PDF</span>
               </a>
             }
             @if (getCurrentDocsUrl()) {
               <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                 class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline">
+                 class="px-4 py-2 text-xs font-bold text-blue-605 dark:text-blue-405 bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
                 <i class="fa-brands fa-google-drive"></i>
                 <span>Mở Docs</span>
               </a>
@@ -114,7 +114,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
             <!-- Publish / Generate PDF -->
             <button (click)="triggerPublishReport()" 
                     [disabled]="isProcessing()"
-                    class="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                    class="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-650 hover:from-violet-750 hover:via-fuchsia-750 hover:to-indigo-750 rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
                     [title]="getPrintButtonLabel()">
               <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
               <span>{{ getPrintButtonLabel() }}</span>
@@ -165,55 +165,60 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
           </div>
         } @else if (run() && draft() && config()) {
           <!-- Run Metadata Info Banner -->
-          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm mb-6 overflow-hidden transition-all duration-300">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 overflow-hidden transition-all duration-300">
             <!-- Header Section (Clickable to Toggle) -->
             <div (click)="isMetadataExpanded.set(!isMetadataExpanded())" 
-                 class="px-5 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/40 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 dark:border-slate-700/40">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                 class="px-5 py-4 bg-slate-50/50 dark:bg-slate-850/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/30 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 dark:border-slate-800/50">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500/10 to-fuchsia-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/30">
                   <i class="fa-solid fa-circle-info text-sm"></i>
                 </div>
                 <div>
-                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Thông tin chi tiết mẻ phân tích</h4>
+                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-355">Thông tin chi tiết mẻ phân tích</h4>
                   <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-                    Mã mẻ: <span class="font-mono font-bold text-slate-600 dark:text-slate-400">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+                    Mã mẻ: <span class="font-mono font-bold text-slate-650 dark:text-slate-400 select-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
                   </p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg truncate" title="{{ run()?.sampleList ? formatSampleList(run()!.sampleList!) : '' }}">
+              <div class="flex items-center gap-3">
+                <span class="text-[10px] font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg truncate border border-slate-200/40 dark:border-slate-700/30" title="{{ run()?.sampleList ? formatSampleList(run()!.sampleList!) : '' }}">
                   {{ run()?.sampleList?.length || 0 }} mẫu ({{ run()?.sampleList ? formatSampleList(run()!.sampleList!) : 'Trống' }})
                 </span>
-                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform duration-300"
-                   [class.rotate-180]="isMetadataExpanded()"></i>
+                <div class="w-7 h-7 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 flex items-center justify-center transition">
+                  <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform duration-300"
+                     [class.rotate-180]="isMetadataExpanded()"></i>
+                </div>
               </div>
             </div>
 
             <!-- Body Section (Collapsible) -->
             @if (isMetadataExpanded()) {
-              <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs animate-fade-in">
-                <div>
-                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy (Batch)</span>
-                  <span class="font-mono font-extrabold text-slate-800 dark:text-slate-200 break-all select-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+              <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs bg-slate-50/20 dark:bg-slate-900/10 animate-fade-in">
+                <div class="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                  <span class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy (Batch)</span>
+                  <span class="font-mono font-extrabold text-slate-800 dark:text-slate-200 break-all select-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-barcode text-indigo-500 opacity-60"></i>
+                    {{ run()?.inputs?.['batchCode'] || run()?.id }}
+                  </span>
                 </div>
-                <div>
-                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị phân tích</span>
+                <div class="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                  <span class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị phân tích</span>
                   <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <i class="fa-solid fa-microscope text-slate-400"></i>
+                    <i class="fa-solid fa-microscope text-fuchsia-500 opacity-60"></i>
                     {{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || 'GC-MS/MS / LC-MS/MS' }}
                   </span>
                 </div>
-                <div>
-                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày phân tích</span>
+                <div class="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                  <span class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày phân tích</span>
                   <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <i class="fa-regular fa-calendar text-slate-400"></i>
+                    <i class="fa-regular fa-calendar text-emerald-500 opacity-60"></i>
                     {{ run()?.analysisDate ? formatAnalysisDate(run()!.analysisDate!) : 'Chưa thiết lập' }}
                   </span>
                 </div>
-                <div>
-                  <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người thực hiện (Analyst)</span>
+                <div class="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                  <span class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người thực hiện (Analyst)</span>
                   <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <i class="fa-solid fa-user-ninja text-slate-400"></i>
+                    <i class="fa-solid fa-user text-amber-500 opacity-60"></i>
                     {{ run()?.user || 'Chưa thiết lập' }}
                   </span>
                 </div>

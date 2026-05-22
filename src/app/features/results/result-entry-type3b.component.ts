@@ -11,26 +11,26 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
     <div class="space-y-6 animate-fade-in">
       
       <!-- 1. Metadata Form & Checkboxes -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500"></i> Thông tin chung & Đánh giá (Dạng 3B)
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông tin chung & Đánh giá (Dạng 3B)
         </h4>
 
         <!-- Signature Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người phân tích</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data.ngayNguoiPhanTich" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người thẩm tra</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data.ngayNguoiThamTra" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
         </div>
 
@@ -39,32 +39,32 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
           @for (checkbox of checkboxList; track checkbox.key) {
             @if (isGeneralObservation(checkbox.key)) {
               <!-- Standard observation checkbox -->
-              <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-slate-100 dark:border-slate-700/30 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
+              <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data[checkbox.key]" 
                        (ngModelChange)="onCheckboxChange(checkbox.key)"
-                       class="mt-1 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-900 dark:border-slate-700">
+                       class="mt-0.5 w-4 h-4 rounded text-indigo-650 border-slate-350 dark:border-slate-700 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
                 <div>
-                  <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                 </div>
               </label>
             } @else {
               <!-- QC evaluation with Đạt / Không đạt Segment Control -->
-              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/50 dark:border-slate-800/80 transition hover:border-slate-300 dark:hover:border-slate-700">
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/40 dark:bg-slate-955/40 border border-slate-250/25 dark:border-slate-800/60 transition hover:border-slate-350 dark:hover:border-slate-700 shadow-xs">
                 <div class="flex-1 min-w-0 pr-1">
-                  <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 leading-snug block break-words">
+                  <span class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 leading-snug block break-words">
                     {{ checkbox.label }}
                   </span>
                 </div>
                 
                 <!-- Pass / Fail selector -->
-                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0 select-none">
                   <!-- Button 'Đạt' (true) -->
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, true)"
                           [class]="draft.page1Data[checkbox.key] === true 
-                            ? 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-500 text-white shadow-sm transition-all duration-200' 
-                            : 'px-2.5 py-1 text-[11px] font-semibold rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors'"
+                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                           title="Đạt tiêu chí">
                     Đạt
                   </button>
@@ -73,8 +73,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, false)"
                           [class]="draft.page1Data[checkbox.key] === false 
-                            ? 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-rose-500 text-white shadow-sm transition-all duration-200' 
-                            : 'px-2.5 py-1 text-[11px] font-semibold rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors'"
+                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                           title="Không đạt tiêu chí">
                     K.Đạt
                   </button>
@@ -83,8 +83,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, undefined)"
                           [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
-                            ? 'px-2 py-1 text-[10px] font-extrabold rounded-md bg-slate-300 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-sm transition-all duration-200' 
-                            : 'px-2 py-1 text-[10px] font-semibold rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 transition-colors'"
+                            ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
+                            : 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                           title="Chưa đánh giá">
                     N/A
                   </button>
@@ -96,51 +96,56 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
       </div>
 
       <!-- 2. Sample Navigation Tabs -->
-      <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar py-2 shrink-0">
+      <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar py-2.5 px-3 shrink-0 bg-indigo-50/15 dark:bg-indigo-955/15 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl shadow-2xs">
+        <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mr-1">Danh sách mẫu:</span>
         @for (sampleCode of run.sampleList; track sampleCode; let idx = $index) {
           <button (click)="selectSample(sampleCode)"
                   [class]="activeSampleCode() === sampleCode 
-                    ? 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold shadow-md shadow-fuchsia-200 dark:shadow-none' 
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'"
-                  class="px-5 py-3 rounded-xl text-xs transition flex items-center gap-2 font-semibold shrink-0">
-            <span class="w-4 h-4 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-[10px]">{{ idx + 1 }}</span>
-            <span class="font-mono">{{ sampleCode }}</span>
+                    ? 'bg-fuchsia-600 text-white font-extrabold shadow-sm border border-fuchsia-650 transition shrink-0 active:scale-95' 
+                    : 'bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800/80 transition shrink-0 active:scale-95 shadow-2xs'"
+                  class="px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
+            <span [class]="activeSampleCode() === sampleCode
+                    ? 'w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black text-white'
+                    : 'w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80'">
+              {{ idx + 1 }}
+            </span>
+            <span class="font-mono font-bold">{{ sampleCode }}</span>
           </button>
         }
       </div>
 
       <!-- 3. Compound Checklist & QCs -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
         <!-- Panel Header -->
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
           <div>
-            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">
-              <i class="fa-solid fa-flask-vial mr-2 text-fuchsia-500"></i>
-              Bảng kết quả mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-bold ml-1">{{ activeSampleCode() }}</span>
+            <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-flask-vial mr-2 text-fuchsia-500 text-sm"></i>
+              Bảng kết quả mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-extrabold ml-1 bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">{{ activeSampleCode() }}</span>
             </h4>
-            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 tracking-wide">
               Tổng cộng {{ config.compounds?.length || 0 }} hoạt chất cần kiểm nghiệm.
             </p>
           </div>
 
           <!-- Bulk Actions for the Selected Sample -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Mẫu này:</span>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Mẫu này:</span>
             
             <button (click)="sampleBulkFillND()" 
-                    class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-              <i class="fa-solid fa-pen-nib"></i>
+                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+              <i class="fa-solid fa-pen-nib text-amber-500"></i>
               <span>Đặt tất cả KPH</span>
             </button>
 
             <button (click)="sampleBulkQC()" 
-                    class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-check"></i>
+                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+              <i class="fa-solid fa-circle-check text-emerald-500"></i>
               <span>Tất cả QC Đạt</span>
             </button>
 
             <button (click)="copyActiveSampleToAll()" 
-                    class="px-3 py-1.5 bg-gradient-to-r from-fuchsia-500 to-indigo-500 hover:from-fuchsia-600 hover:to-indigo-600 text-white rounded-lg text-xs font-black shadow-sm transition flex items-center gap-1.5"
+                    class="px-3.5 py-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
                     title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
               <i class="fa-solid fa-copy"></i>
               <span>Sao chép mẫu cho cả mẻ</span>
@@ -149,69 +154,69 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
         </div>
 
         <!-- Compound List Table -->
-        <div class="overflow-x-auto custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl">
+        <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
-              <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs w-12 text-center">STT</th>
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Hoạt chất</th>
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">KPH / ND</th>
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[120px]">Kết quả (µg/kg)</th>
+              <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-255/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-16">STT</th>
+                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Hoạt chất</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">KPH / ND</th>
+                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">Kết quả (µg/kg)</th>
                 
                 <!-- 3 QC Columns -->
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">QC1 (Đường chuẩn)</th>
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">QC2 (Độ thu hồi IS)</th>
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">QC3 (Độ lệch RT)</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC1 (Đường chuẩn)</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC2 (Thu hồi IS)</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC3 (Độ lệch RT)</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
               @for (compound of config.compounds; track compound; let idx = $index) {
-                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150">
                   <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">{{ idx + 1 }}</td>
-                  <td class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-bold text-xs">{{ compound }}</td>
+                  <td class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">{{ compound }}</td>
                   
                   <!-- ND Checkbox -->
                   <td class="py-2.5 px-4 text-center">
                     <input type="checkbox"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_nd']"
                            (ngModelChange)="onNdCheckboxChanged(compound)"
-                           class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 dark:bg-slate-900 dark:border-slate-700">
+                           class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
                   </td>
 
                   <!-- Result Input -->
-                  <td class="py-1 px-2">
+                  <td class="py-1.5 px-2">
                     <input type="text"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound]"
                            (ngModelChange)="onResultInputChanged(compound)"
                            placeholder="ND / Số lượng..."
-                           class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
+                           class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
                   </td>
 
                   <!-- QC1 Dropdown -->
-                  <td class="py-1 px-2">
+                  <td class="py-1.5 px-2">
                     <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>
                   </td>
 
                   <!-- QC2 Dropdown -->
-                  <td class="py-1 px-2">
+                  <td class="py-1.5 px-2">
                     <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>
                   </td>
 
                   <!-- QC3 Dropdown -->
-                  <td class="py-1 px-2">
+                  <td class="py-1.5 px-2">
                     <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 outline-none">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>

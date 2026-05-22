@@ -11,40 +11,113 @@ import { calculateSop03Recovery } from './sop-03-engine';
   template: `
     <div class="space-y-6">
       
+      <!-- 0. Dynamic Quality Control & Stats Dashboard -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+        <!-- Total Samples Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/30 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-flask-vial text-lg"></i>
+          </div>
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tổng số mẫu thử</span>
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().selectedCount }}</span>
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">/ {{ getStats().totalCount }} hoạt động</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry Progress Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-100/50 dark:border-amber-900/30 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-list-check text-lg"></i>
+          </div>
+          <div class="flex-1">
+            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tiến độ nhập sắc ký</span>
+            <div class="flex items-center gap-3">
+              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().progressPct }}%</span>
+              <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" [style.width.%]="getStats().progressPct"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spike Recovery Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-900/30 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-percent text-lg"></i>
+          </div>
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Hiệu suất QC Spike</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().spikeRecovery }}</span>
+              @if (getStats().spikeRecoveryVal > 0) {
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().spikeRecoveryVal >= 70 && getStats().spikeRecoveryVal <= 120,
+                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-450 border border-rose-200/30': getStats().spikeRecoveryVal < 70 || getStats().spikeRecoveryVal > 120
+                      }">
+                  {{ getStats().spikeRecoveryVal >= 70 && getStats().spikeRecoveryVal <= 120 ? 'Đạt QC' : 'Lệch QC' }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Calibration Curve Linearity Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-fuchsia-500/10 to-pink-500/10 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100/50 dark:border-fuchsia-900/30 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-chart-line text-lg"></i>
+          </div>
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Hệ số R² Đường chuẩn</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-mono">{{ getStats().r2Val || 'Chưa nhập' }}</span>
+              @if (getStats().r2Status === 'VALID') {
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-455 border border-fuchsia-200/30 tracking-wider">Tuyến tính</span>
+              } @else if (getStats().r2Status === 'WARNING') {
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-100 text-red-750 dark:bg-red-950/40 dark:text-red-455 border border-red-200/30 tracking-wider">Cảnh báo</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Metadata Form & Checkboxes -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-          <i class="fa-solid fa-file-invoice mr-2 text-indigo-500"></i> Thông tin chung & Đánh giá (SOP-03)
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-805 pb-2.5 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông tin chung & Đánh giá (SOP-03)
         </h4>
 
         <!-- Signature Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người phân tích</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Ngày ký Người thẩm tra</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
             <input type="date" 
                    [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
                    (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
         </div>
 
         <!-- Checkbox & QC evaluation grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
           @for (checkbox of checkboxList; track checkbox.key) {
-            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-slate-100 dark:border-slate-700/30 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
+            <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
               <input type="checkbox" 
                      [(ngModel)]="draft.page1Data[checkbox.key]" 
                      (ngModelChange)="onCheckboxChange(checkbox.key)"
-                     class="mt-1 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-900 dark:border-slate-700">
+                     class="mt-0.5 w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
               <div>
-                <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
               </div>
             </label>
           }
@@ -52,122 +125,121 @@ import { calculateSop03Recovery } from './sop-03-engine';
       </div>
 
       <!-- 1.5. Section 6 Đường chuẩn & QC -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4 animate-fade-in">
-        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-          <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500"></i> Section 6. Khai báo Đường chuẩn & QC
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> Section 6. Khai báo Đường chuẩn & QC
         </h4>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <!-- Left Side: QC configuration & R^2 -->
           <div class="lg:col-span-4 space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Trắng (Blank)</label>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Trắng (Blank)</label>
               <input type="text" 
                      [(ngModel)]="draft.page1Data['blankName']" 
                      (ngModelChange)="onDataChanged()"
                      placeholder="Blank..."
-                     class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
             
             <div>
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Tên mẫu Thêm chuẩn (Spike)</label>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Thêm chuẩn (Spike)</label>
               <input type="text" 
                      [(ngModel)]="draft.page1Data['spikeName']" 
                      (ngModelChange)="onDataChanged()"
                      placeholder="Spike..."
-                     class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Hệ số xác định R²</label>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
               <input type="text" 
                      [(ngModel)]="draft.page1Data['r2']" 
                      (ngModelChange)="onDataChanged()"
                      placeholder="Ví dụ: 0.9992..."
-                     class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
           </div>
 
-          <!-- Calibration Points Grid -->
+          <!-- Calibration Points Grid (Horizontal Card Layout) -->
           <div class="lg:col-span-8">
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">6 Điểm Đường chuẩn (Calibration Curve Points)</label>
-            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-900/50">
-              <table class="w-full text-xs text-left border-collapse">
-                <thead class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-24">Điểm chuẩn</th>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400 text-center w-36">Vial No.</th>
-                    <th class="py-2.5 px-3 font-bold text-slate-500 dark:text-slate-400">Hàm lượng (µg/kg)</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
-                  @for (pt of draft.page1Data['calibPoints']; track $index) {
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition">
-                      <td class="py-2 px-3 font-extrabold text-slate-500 dark:text-slate-400 text-center bg-slate-50/50 dark:bg-slate-900/10">
-                        {{ 'Điểm ' + ($index + 1) }}
-                      </td>
-                      <td class="py-1 px-2 text-center">
-                        <input type="text" 
-                               [(ngModel)]="pt['loSo']" 
-                               (ngModelChange)="onDataChanged()"
-                               placeholder="Vial..."
-                               class="w-32 mx-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                      </td>
-                      <td class="py-1.5 px-2">
-                        <input type="text" 
-                               [(ngModel)]="pt['hamLuong']" 
-                               (ngModelChange)="onDataChanged()"
-                               placeholder="Nồng độ..."
-                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">6 Điểm Đường chuẩn (Calibration Curve Points)</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              @for (pt of draft.page1Data['calibPoints']; track $index) {
+                <div class="bg-slate-50/40 dark:bg-slate-955/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 hover:shadow-xs hover:border-fuchsia-400/50 dark:hover:border-fuchsia-500/40 transition duration-200 group">
+                  <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 group-hover:text-fuchsia-500 transition duration-200">Điểm {{ $index + 1 }}</span>
+                    <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                      'bg-indigo-400': $index === 0,
+                      'bg-sky-400': $index === 1,
+                      'bg-emerald-400': $index === 2,
+                      'bg-amber-400': $index === 3,
+                      'bg-orange-400': $index === 4,
+                      'bg-fuchsia-400': $index === 5
+                    }"></span>
+                  </div>
+                  <div>
+                    <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Vial No.</label>
+                    <input type="text" 
+                           [(ngModel)]="pt['loSo']" 
+                           (ngModelChange)="onDataChanged()"
+                           placeholder="..."
+                           class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Hàm lượng</label>
+                    <input type="text" 
+                           [(ngModel)]="pt['hamLuong']" 
+                           (ngModelChange)="onDataChanged()"
+                           placeholder="..."
+                           class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
       </div>
 
       <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-3">
-          <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500"></i> Lưới nhập kết quả (SOP-03 Spreadsheet)
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center">
+            <i class="fa-solid fa-table-cells mr-2 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả (SOP-03 Spreadsheet)
           </h4>
 
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
             
             <button (click)="bulkFillND()" 
-                    class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                    class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
                     title="Đặt toàn bộ các ô kết quả chưa điền là ND">
               <i class="fa-solid fa-pen-clip"></i>
               <span>Điền ND ô trống</span>
             </button>
 
             <button (click)="bulkClearAll()" 
-                    class="px-3 py-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-900/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                    class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-red-50 dark:hover:bg-red-955/20 text-slate-655 dark:text-slate-455 hover:text-red-655 dark:hover:text-red-400 border border-slate-200/60 dark:border-slate-800 hover:border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
                     title="Xóa toàn bộ các ô kết quả của bảng">
               <i class="fa-solid fa-trash-can"></i>
               <span>Xóa hết bảng</span>
             </button>
 
             <!-- Quick Vial Input -->
-            <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs">
+            <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
               <span class="font-bold text-slate-500 dark:text-slate-400">Lọ số:</span>
               <input type="number" 
                      [(ngModel)]="bulkVialStart" 
                      (ngModelChange)="onBulkVialStartChange()"
                      placeholder="Bắt đầu" 
-                     class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                     class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
               <span class="text-slate-400">-</span>
               <input type="number" 
                      [(ngModel)]="bulkVialEnd" 
                      placeholder="Kết thúc" 
-                     class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                     class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none">
               <button (click)="applyBulkVials()" 
-                      class="px-2.5 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1">
+                      class="px-2.5 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
                 <i class="fa-solid fa-check"></i>
                 <span>Áp dụng</span>
               </button>
@@ -177,15 +249,15 @@ import { calculateSop03Recovery } from './sop-03-engine';
 
         <!-- Prefix Tabs Filter -->
         @if (detectedPrefixes().length > 0) {
-          <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 dark:border-slate-700 pb-2">
+          <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
             <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2">Nhóm tiền tố:</span>
             <button (click)="onPrefixFilterChanged('ALL')"
-                    [class]="selectedPrefixFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition'">
+                    [class]="selectedPrefixFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
               Tất cả mẫu
             </button>
             @for (prefix of detectedPrefixes(); track prefix) {
               <button (click)="onPrefixFilterChanged(prefix)"
-                      [class]="selectedPrefixFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition'">
+                      [class]="selectedPrefixFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
                 {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
               </button>
             }
@@ -193,174 +265,174 @@ import { calculateSop03Recovery } from './sop-03-engine';
         }
 
         <!-- Spreadsheet Table Grid -->
-        <div class="overflow-x-auto custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl">
+        <div class="overflow-x-auto custom-scrollbar border border-slate-200/60 dark:border-slate-800 rounded-xl max-h-[500px]">
           <table class="w-full text-sm border-collapse">
             <thead>
-              <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                <th class="py-3 px-3 text-center w-12">
+              <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 sticky top-0 z-20">
+                <th class="py-3 px-3 text-center w-12 bg-slate-50 dark:bg-slate-900">
                   <input type="checkbox"
                          [checked]="isAllSelected()"
                          (change)="toggleSelectAll($event)"
-                         class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500">
+                         class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 focus:ring-fuchsia-500">
                 </th>
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs w-24">Lọ số</th>
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[120px]">Mẫu thử</th>
+                <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs w-24 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Lọ số</th>
+                <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[140px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Mẫu thử</th>
                 
                 @for (col of activeColumns; track col) {
-                  <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[110px] uppercase">
+                  <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[130px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
                     {{ formatColumnName(col) }} (µg/kg)
                   </th>
                 }
                 
-                <th class="py-3 px-4 text-left font-bold text-slate-500 dark:text-slate-400 text-xs min-w-[150px]">Ghi chú</th>
-                <th class="py-3 px-4 text-center font-bold text-slate-500 dark:text-slate-400 text-xs w-28">Hàng</th>
+                <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú (Recovery %)</th>
+                <th class="py-3 px-4 text-center font-black text-slate-450 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Tác vụ</th>
               </tr>
             </thead>
             
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               @for (row of getDisplayRowsForPrefix(selectedPrefixFilter()); track row.key; let rowIdx = $index) {
                 @if (row.type === 'QC_BLANK') {
-                  <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <tr class="bg-indigo-50/15 dark:bg-indigo-950/5 hover:bg-indigo-50/25 dark:hover:bg-indigo-950/10 transition-colors focus-within:bg-indigo-50/30 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-indigo-500/60 transition-all duration-150">
                     <td class="py-2.5 px-3 text-center">
-                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-350 text-indigo-650 focus:ring-indigo-500">
                     </td>
-                    <td class="py-1 px-2 w-24">
+                    <td class="py-1.5 px-2 w-24">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_BLANK']['loSo']"
                              (ngModelChange)="onDataChanged()"
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
-                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-500 dark:text-slate-400">
-                      {{ draft.page1Data['blankName'] || 'Blank' }}
+                    <td class="py-2.5 px-4">
+                      <span class="font-mono font-bold text-xs text-indigo-650 dark:text-indigo-455 select-all">{{ draft.page1Data['blankName'] || 'Blank' }}</span>
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_BLANK']['kqTrifluralin']"
                              (ngModelChange)="onCellChanged('QC_BLANK')"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                              placeholder="..."
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_BLANK']['ghiChu']"
                              (ngModelChange)="onDataChanged()"
                              placeholder="Ghi chú..."
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition">
                     </td>
-                    <td class="py-1 px-4 text-center">
-                      <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC BLANK</span>
+                    <td class="py-1.5 px-4 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 uppercase shadow-xs border border-indigo-200/30">BLANK</span>
                     </td>
                   </tr>
                 } @else if (row.type === 'QC_SPIKE') {
-                  <tr class="bg-indigo-50/20 dark:bg-indigo-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <tr class="bg-indigo-50/15 dark:bg-indigo-950/5 hover:bg-indigo-50/25 dark:hover:bg-indigo-950/10 transition-colors focus-within:bg-indigo-50/30 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-indigo-500/60 transition-all duration-150">
                     <td class="py-2.5 px-3 text-center">
-                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-355 text-indigo-655 focus:ring-indigo-505">
                     </td>
-                    <td class="py-1 px-2 w-24">
+                    <td class="py-1.5 px-2 w-24">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_SPIKE']['loSo']"
                              (ngModelChange)="onDataChanged()"
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
-                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-500 dark:text-slate-400">
-                      {{ draft.page1Data['spikeName'] || 'Spike' }}
+                    <td class="py-2.5 px-4">
+                      <span class="font-mono font-bold text-xs text-indigo-655 dark:text-indigo-455 select-all">{{ draft.page1Data['spikeName'] || 'Spike' }}</span>
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_SPIKE']['kqTrifluralin']"
                              (ngModelChange)="onCellChanged('QC_SPIKE')"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                              placeholder="..."
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
                              (ngModelChange)="onDataChanged()"
-                             placeholder="Ghi chú..."
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                             placeholder="Tự động tính recovery..."
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition">
                     </td>
-                    <td class="py-1 px-4 text-center">
-                      <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC SPIKE</span>
+                    <td class="py-1.5 px-4 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 uppercase shadow-xs border border-indigo-200/30">SPIKE</span>
                     </td>
                   </tr>
                 } @else if (row.type === 'QC_SPIKE_N' || row.type === 'QC_FINAL') {
-                  <tr class="bg-indigo-50/10 dark:bg-indigo-950/5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <tr class="bg-violet-50/10 dark:bg-violet-950/5 hover:bg-violet-50/20 dark:hover:bg-violet-950/10 transition-colors focus-within:bg-violet-50/25 dark:focus-within:bg-violet-950/15 border-l-4 border-l-violet-500/60 transition-all duration-150">
                     <td class="py-2.5 px-3 text-center">
-                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                      <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-355 text-violet-650 focus:ring-violet-500">
                     </td>
-                    <td class="py-1 px-2 w-24">
+                    <td class="py-1.5 px-2 w-24">
                       <input type="text"
                              [value]="draft.resultData['QC_SPIKE'] ? draft.resultData['QC_SPIKE']['loSo'] : '2'"
                              disabled
-                             class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 font-bold outline-none text-center">
+                             class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-455 font-bold outline-none text-center">
                     </td>
-                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-violet-650 dark:text-violet-405 select-all">
                       {{ row.label }}
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
                              (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                              placeholder="..."
-                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                     </td>
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                              (ngModelChange)="onDataChanged()"
                              placeholder="Ghi chú..."
                              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
                     </td>
-                    <td class="py-1 px-4 text-center">
-                      <span class="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">QC {{ row.label }}</span>
+                    <td class="py-1.5 px-4 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 uppercase shadow-xs border border-indigo-200/30">QC {{ row.label }}</span>
                     </td>
                   </tr>
                 } @else if (row.type === 'REGULAR') {
-                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition" [class.opacity-60]="draft.resultData[row.key]['selected'] === false">
+                  <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/30 transition-colors focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 transition-all duration-150" [class.opacity-60]="draft.resultData[row.key]['selected'] === false">
                     <td class="py-2.5 px-3 text-center">
                       <input type="checkbox"
                              [(ngModel)]="draft.resultData[row.key]['selected']"
                              (ngModelChange)="onDataChanged()"
-                             class="w-4 h-4 rounded text-fuchsia-600 border-slate-300 focus:ring-fuchsia-500">
+                             class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 focus:ring-fuchsia-500">
                     </td>
-                    <td class="py-1 px-2 w-24">
+                    <td class="py-1.5 px-2 w-24">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['loSo']"
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-loSo'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
-                             class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                     </td>
-                    <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-300 break-all">{{ row.key }}</td>
+                    <td class="py-2.5 px-4 font-mono font-black text-xs text-slate-700 dark:text-slate-300 break-all select-all">{{ row.key }}</td>
                     
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['kqTrifluralin']"
                              (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
                              placeholder="..."
-                             class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
+                             class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                     </td>
                     
-                    <td class="py-1 px-2">
+                    <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-ghiChu'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', 2)"
                              placeholder="Ghi chú..."
-                             class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
+                             class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-350 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                     </td>
-                    <td class="py-1 px-4 text-center">
+                    <td class="py-1.5 px-4 text-center">
                       <button (click)="copyRowToAll(row.key)" 
-                              class="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black transition-colors"
+                              class="w-7 h-7 inline-flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-black transition active:scale-95 duration-100 shadow-xs"
                               title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
                         <i class="fa-solid fa-copy"></i>
                       </button>
@@ -392,6 +464,50 @@ export class Sop03EntryComponent implements OnInit {
   // Bulk vial properties
   bulkVialStart = 1;
   bulkVialEnd = 1;
+
+  getStats() {
+    const regularSamples = this.getVisibleRegularSamples();
+    const totalCount = regularSamples.length;
+    const selectedCount = regularSamples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
+    
+    // Fill progress
+    let filledCount = 0;
+    regularSamples.forEach(s => {
+      const row = this.draft.resultData[s];
+      if (row && row['selected'] !== false && row['kqTrifluralin'] && row['kqTrifluralin'].trim() !== '') {
+        filledCount++;
+      }
+    });
+    const progressPct = selectedCount > 0 ? Math.round((filledCount / selectedCount) * 100) : 0;
+    
+    // Spike Recovery
+    const spikeRow = this.draft.resultData['QC_SPIKE'];
+    let spikeRecovery = 'Chưa có';
+    let spikeRecoveryVal = 0;
+    if (spikeRow && spikeRow['kqTrifluralin']) {
+      const val = parseFloat(spikeRow['kqTrifluralin']);
+      if (!isNaN(val)) {
+        spikeRecoveryVal = val * 100;
+        spikeRecovery = `${spikeRecoveryVal % 1 === 0 ? spikeRecoveryVal.toFixed(0) : spikeRecoveryVal.toFixed(1)}%`;
+      }
+    }
+    
+    // R2 Linearity
+    const r2Val = this.draft.page1Data['r2'] || '';
+    const r2Float = parseFloat(r2Val);
+    const r2Status = !isNaN(r2Float) ? (r2Float >= 0.995 ? 'VALID' : 'WARNING') : 'NOT_SET';
+
+    return {
+      totalCount,
+      selectedCount,
+      filledCount,
+      progressPct,
+      spikeRecovery,
+      spikeRecoveryVal,
+      r2Val,
+      r2Status
+    };
+  }
 
   ngOnInit() {
     const cols = Object.keys(this.config.columns || {});

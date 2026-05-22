@@ -23,7 +23,8 @@ const CONFIG = {
     'trifluralin-gcms': {
       folderName: 'Trifluralin (GC-MS)',
       formType: 'type2',
-      sampleTableIndex: 2,   // table index trong Google Doc (0-based)
+      sampleTableIndex: 1,   // table index trong Google Doc (0-based)
+      tablesPerPage: 2,      // số lượng bảng trên mỗi trang kết quả (bao gồm bảng đường chuẩn & bảng mẫu)
       columns: {
         loSo:          0,    // col index "Lọ số"
         maSoMau:       1,    // col index "Mẫu thử"

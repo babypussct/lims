@@ -200,11 +200,13 @@ function fillSampleTable(body, sopConfig, samples) {
     }
   }
 
-  // Tính số lượng bảng trên mỗi trang bằng cách đếm số bảng trong phạm vi sao chép
-  let tablesPerPage = 0;
-  for (let j = 0; j < page2Elements.length; j++) {
-    if (page2Elements[j].getType() === DocumentApp.ElementType.TABLE) {
-      tablesPerPage++;
+  // Tính số lượng bảng trên mỗi trang bằng cách đếm số bảng trong phạm vi sao chép (hoặc dùng cấu hình tĩnh ghi đè)
+  let tablesPerPage = sopConfig.tablesPerPage !== undefined ? sopConfig.tablesPerPage : 0;
+  if (tablesPerPage === 0) {
+    for (let j = 0; j < page2Elements.length; j++) {
+      if (page2Elements[j].getType() === DocumentApp.ElementType.TABLE) {
+        tablesPerPage++;
+      }
     }
   }
   if (tablesPerPage === 0) tablesPerPage = 1;
