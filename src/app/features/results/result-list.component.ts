@@ -12,45 +12,45 @@ import { ResultService } from './services/result.service';
   standalone: true,
   imports: [CommonModule, SkeletonComponent, DateRangeFilterComponent],
   template: `
-    <div class="h-full flex flex-col fade-in relative p-6">
+    <div class="h-full flex flex-col fade-in relative p-6 bg-slate-50/20 dark:bg-slate-950/5">
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 mb-6">
         <div>
-          <h2 class="text-2xl font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-square-poll-vertical text-fuchsia-600 dark:text-fuchsia-500"></i> Nhập Kết Quả Phân Tích
+          <h2 class="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+            <i class="fa-solid fa-square-poll-vertical text-fuchsia-600 dark:text-fuchsia-500 text-xl shadow-sm shadow-fuchsia-500/10"></i> Nhập Kết Quả Phân Tích
           </h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
             Nhập kết quả, điền thông tin kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.
           </p>
         </div>
 
         <!-- Filter Tab -->
-        <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl self-start border border-slate-200 dark:border-slate-700">
+        <div class="flex bg-white dark:bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl self-start border border-slate-150/80 dark:border-slate-800/80 shadow-xs">
           <button (click)="filterStatus.set('all')" 
-                  class="px-4 py-2 text-xs font-bold rounded-lg transition" 
-                  [class]="filterStatus() === 'all' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-            Tất cả @if(filteredCount('all') > 0) { <span class="ml-1 bg-slate-200 dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[9px]">{{filteredCount('all')}}</span> }
+                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
+                  [class]="filterStatus() === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs' : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+            Tất cả @if(filteredCount('all') > 0) { <span class="ml-1 bg-slate-200 dark:bg-slate-950 text-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('all')}}</span> }
           </button>
           <button (click)="filterStatus.set('pending')" 
-                  class="px-4 py-2 text-xs font-bold rounded-lg transition" 
-                  [class]="filterStatus() === 'pending' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-            Chờ nhập @if(filteredCount('pending') > 0) { <span class="ml-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[9px]">{{filteredCount('pending')}}</span> }
+                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
+                  [class]="filterStatus() === 'pending' ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 shadow-2xs border border-amber-100/50 dark:border-amber-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
+            Chờ nhập @if(filteredCount('pending') > 0) { <span class="ml-1 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('pending')}}</span> }
           </button>
           <button (click)="filterStatus.set('draft')" 
-                  class="px-4 py-2 text-xs font-bold rounded-lg transition" 
-                  [class]="filterStatus() === 'draft' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-            Đang nháp @if(filteredCount('draft') > 0) { <span class="ml-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px]">{{filteredCount('draft')}}</span> }
+                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
+                  [class]="filterStatus() === 'draft' ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-405 shadow-2xs border border-indigo-100/50 dark:border-indigo-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
+            Đang nháp @if(filteredCount('draft') > 0) { <span class="ml-1 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('draft')}}</span> }
           </button>
           <button (click)="filterStatus.set('completed')" 
-                  class="px-4 py-2 text-xs font-bold rounded-lg transition" 
-                  [class]="filterStatus() === 'completed' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
-            Đã hoàn thành @if(filteredCount('completed') > 0) { <span class="ml-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px]">{{filteredCount('completed')}}</span> }
+                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
+                  [class]="filterStatus() === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 shadow-2xs border border-emerald-100/50 dark:border-emerald-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
+            Đã hoàn thành @if(filteredCount('completed') > 0) { <span class="ml-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('completed')}}</span> }
           </button>
         </div>
       </div>
 
       <!-- Advanced Filter Panel & Search -->
-      <div class="mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-4 shrink-0 transition-all duration-300">
+      <div class="mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
         <div class="flex flex-col sm:flex-row gap-3">
           <!-- Text Search Box -->
           <div class="relative flex-1">
@@ -61,7 +61,7 @@ import { ResultService } from './services/result.service';
                    [value]="searchText()"
                    (input)="onSearchInput($event)"
                    placeholder="Tìm theo Mã mẻ chạy, SOP, Mã số mẫu, Analyst..." 
-                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 focus:border-fuchsia-500 dark:text-slate-100 font-medium">
+                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold transition">
             @if (searchText()) {
               <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <i class="fa-solid fa-circle-xmark text-xs"></i>
@@ -72,16 +72,21 @@ import { ResultService } from './services/result.service';
           <!-- Advanced Toggle & Clear Buttons -->
           <div class="flex items-center gap-2">
             <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
-                    [class]="showAdvancedFilters() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-900/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="px-4 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                    [class]="showAdvancedFilters() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-450 border-fuchsia-200/50 dark:border-fuchsia-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="px-4 py-2 border rounded-xl text-xs font-black transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 relative active:scale-95 duration-150 shadow-xs">
               <i class="fa-solid fa-sliders text-[10px]"></i>
               <span>Bộ lọc nâng cao</span>
+              @if (activeFiltersCount() > 0) {
+                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-fuchsia-500/30">
+                  {{ activeFiltersCount() }}
+                </span>
+              }
               <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300" [class.rotate-180]="showAdvancedFilters()"></i>
             </button>
             
             @if (hasActiveFilters()) {
               <button (click)="resetAllFilters()" 
-                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-xs">
                 <i class="fa-solid fa-rotate-left text-[10px]"></i>
                 <span>Xóa bộ lọc</span>
               </button>
@@ -91,13 +96,13 @@ import { ResultService } from './services/result.service';
 
         <!-- Collapsible Content -->
         @if (showAdvancedFilters()) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-700/40 text-xs animate-fade-in">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs animate-fade-in">
             <!-- SOP selection -->
             <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Phương pháp (SOP)</label>
+              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Phương pháp (SOP)</label>
               <select [value]="selectedSopId()" 
                       (change)="onSopChange($event)"
-                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-extrabold">
                 <option value="all">Tất cả phương pháp</option>
                 @for (sop of availableSops(); track sop.id) {
                   <option [value]="sop.id">{{ sop.name }}</option>
@@ -107,10 +112,10 @@ import { ResultService } from './services/result.service';
 
             <!-- Analyst selection -->
             <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Người thực hiện (Analyst)</label>
+              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Người thực hiện (Analyst)</label>
               <select [value]="selectedAnalyst()" 
                       (change)="onAnalystChange($event)"
-                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-medium">
+                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-extrabold">
                 <option value="all">Tất cả nhân viên</option>
                 @for (analyst of availableAnalysts(); track analyst) {
                   <option [value]="analyst">{{ analyst }}</option>
@@ -120,7 +125,7 @@ import { ResultService } from './services/result.service';
 
             <!-- Date Range Filter -->
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="font-black text-slate-400 uppercase tracking-wider text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
+              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
               <app-date-range-filter 
                   [initStart]="startDate()" 
                   [initEnd]="endDate()" 
@@ -134,9 +139,9 @@ import { ResultService } from './services/result.service';
       <!-- Main Content Area -->
       <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20">
         @if (isLoading()) {
-          <div class="grid md:grid-cols-2 gap-4">
+          <div class="grid md:grid-cols-2 gap-4 animate-pulse">
             @for (i of [1,2,3,4]; track i) {
-              <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+              <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
                 <app-skeleton width="80px" height="14px"></app-skeleton>
                 <app-skeleton width="200px" height="20px"></app-skeleton>
                 <app-skeleton width="140px" height="14px"></app-skeleton>
@@ -147,53 +152,76 @@ import { ResultService } from './services/result.service';
         } @else {
           <div class="grid md:grid-cols-2 gap-4">
             @for (run of displayedRuns(); track run.id) {
-              <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md transition flex flex-col justify-between relative overflow-hidden group">
+              <!-- CHÚ Ý: Loại bỏ overflow-hidden và thêm z-10 hover:z-30 relative để menu dropdown in ấn hiển thị tràn không bị che -->
+              <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group">
+                <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
+
                 <!-- Top Header Card -->
                 <div>
-                  <div class="flex items-center justify-between mb-3">
-                    <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border">
+                  <div class="flex items-center justify-between mb-3.5">
+                    <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                        'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
+                        'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
+                        'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                      }"></span>
                       {{ getStatusText(run.id) }}
                     </span>
-                    <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">
                       <i class="fa-regular fa-calendar mr-1"></i>
                       {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
                     </span>
                   </div>
 
                   <!-- SOP Title -->
-                  <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
+                  <h3 class="font-extrabold text-slate-800 dark:text-slate-150 text-base mb-1.5 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
                     {{ run.sopName }}
                   </h3>
-                  <div class="text-xs text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
-                    <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">
-                      <i class="fa-solid fa-user text-[9px]"></i>
+                  
+                  <!-- Analyst block (Pastel custom avatar) -->
+                  <div class="text-xs text-slate-500 dark:text-slate-450 mb-4.5 flex items-center gap-2">
+                    <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-3xs select-none">
+                      {{ getAnalystInitials(run.user) }}
                     </div>
-                    <span class="font-bold text-slate-600 dark:text-slate-300">{{ run.user || 'Unknown' }}</span>
+                    <span class="font-bold text-slate-650 dark:text-slate-300">{{ run.user || 'Unknown' }}</span>
                   </div>
 
                   <!-- Sample Codes -->
                   @if (run.sampleList && run.sampleList.length > 0) {
-                    <div class="mb-5 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-start gap-2">
+                    <div class="mb-4 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-start gap-2 max-h-24 overflow-y-auto custom-scrollbar">
                       <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"></i>
-                      <span class="break-all font-mono font-medium leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
+                      <span class="break-all font-mono font-bold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
                     </div>
                   }
+                  
+                  <!-- Progress Bar -->
+                  <div class="mb-5">
+                    <div class="flex justify-between items-center mb-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                      <span>Tiến độ nhập liệu</span>
+                      <span>{{ getRunProgress(run) }}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden border border-slate-200/10">
+                      <div class="h-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-full transition-all duration-500" 
+                           [style.width.%]="getRunProgress(run)"></div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2 relative">
                   <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF hoặc các bản báo cáo theo nhóm) -->
                   @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
                     <div class="flex flex-col gap-2 mb-2">
                       
                       <!-- 1. Báo cáo chung (Tất cả mẫu) - Chỉ hiện khi có pdfUrl ở root -->
                       @if (run.analysisResult?.pdfUrl) {
-                        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                        <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-xl border border-slate-100 dark:border-slate-800/50">
                           <span class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 min-w-[85px] truncate">
                             Tất cả mẫu:
                           </span>
                           
-                          <div class="flex-1 flex items-center relative group">
+                          <div class="flex-1 flex items-center relative group/hist">
                             <!-- Nút Xem PDF chính -->
                             <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
                                     class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-lg text-[11px] font-bold transition"
@@ -209,21 +237,21 @@ import { ResultService } from './services/result.service';
                                 <i class="fa-solid fa-chevron-down text-[8px]"></i>
                               </button>
                               
-                              <!-- Dropdown menu -->
-                              <div class="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto">
-                                <div class="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lịch sử bản in</div>
+                              <!-- Dropdown menu (Lịch sử bản in) -->
+                              <div class="absolute right-0 top-full mt-1.5 w-68 bg-white dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 rounded-xl shadow-xl opacity-0 invisible group-hover/hist:opacity-100 group-hover/hist:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto custom-scrollbar">
+                                <div class="px-3 py-1 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lịch sử bản in</div>
                                 
                                 <!-- Bản hiện tại -->
-                                <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                   <div class="flex flex-col gap-0.5">
                                     <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
-                                    <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                                    <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                                   </div>
                                   <div class="flex gap-1.5">
-                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-600 dark:text-red-400 hover:underline font-bold text-[11px]">PDF</a>
+                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-650 dark:text-red-400 hover:underline font-black text-[11px]">PDF</a>
                                     @if (run.analysisResult?.docsUrl) {
                                       <span class="text-slate-300">|</span>
-                                      <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px]">Doc</a>
+                                      <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-black text-[11px]">Doc</a>
                                     }
                                   </div>
                                 </div>
@@ -237,13 +265,13 @@ import { ResultService } from './services/result.service';
                                   <!-- Các bản trong lịch sử -->
                                   @for (hist of historiesMap()[run.id] || []; track hist.version) {
                                     @if (hist.version !== run.analysisResult?.version) {
-                                      <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                      <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                         <div class="flex flex-col gap-0.5">
-                                          <span class="font-medium text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
-                                          <span class="text-[9px] text-slate-400 dark:text-slate-500">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
+                                          <span class="font-bold text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
+                                          <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
                                         </div>
-                                        <div class="flex gap-1.5 font-bold">
-                                          <a [href]="getSafeGoogleUrl(hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-600 dark:text-red-400 hover:underline text-[11px]">PDF</a>
+                                        <div class="flex gap-1.5 font-black">
+                                          <a [href]="getSafeGoogleUrl(hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-650 dark:text-red-400 hover:underline text-[11px]">PDF</a>
                                           @if (hist.docsUrl) {
                                             <span class="text-slate-300">|</span>
                                             <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</a>
@@ -271,8 +299,8 @@ import { ResultService } from './services/result.service';
                       @if (run.analysisResult?.reports) {
                         @for (prefix of getReportKeys(run.analysisResult?.reports); track prefix) {
                           @let report = run.analysisResult?.reports?.[prefix];
-                          <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
-                            <span class="text-[11px] font-black text-slate-500 dark:text-slate-400 min-w-[85px] truncate">
+                          <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                            <span class="text-[11px] font-black text-slate-500 dark:text-slate-450 min-w-[85px] truncate">
                               {{ prefix === '' || prefix === '_NO_PREFIX_' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
                             </span>
                             
@@ -298,14 +326,14 @@ import { ResultService } from './services/result.service';
 
                   <!-- Enter / Edit Button -->
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold max-w-[120px] sm:max-w-[200px] truncate" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-black max-w-[120px] sm:max-w-[200px] truncate" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
                       {{ run.sampleList?.length || 0 }} mẫu ({{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }})
                     </span>
                     <button (click)="enterResults(run.id)"
                             [class]="runStatusMap()[run.id] === 'completed' 
-                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30'
-                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm'"
-                            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30 shadow-3xs'
+                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-xs active:scale-95 duration-150'"
+                            class="px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2">
                       <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
                       {{ runStatusMap()[run.id] === 'completed' ? 'Chỉnh sửa / In lại' : 'Nhập Kết quả' }}
                     </button>
@@ -313,11 +341,11 @@ import { ResultService } from './services/result.service';
                 </div>
               </div>
             } @empty {
-              <div class="col-span-full text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
-                <div class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-500">
+              <div class="col-span-full text-center py-20 bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
+                <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
                   <i class="fa-solid fa-square-poll-vertical text-3xl"></i>
                 </div>
-                <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">
+                <p class="text-slate-500 dark:text-slate-400 font-bold text-sm">
                   Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
                 </p>
               </div>
@@ -344,6 +372,16 @@ export class ResultListComponent implements OnInit, OnDestroy {
   selectedSopId = signal<string>('all');
   selectedAnalyst = signal<string>('all');
   
+  // Active filters count
+  activeFiltersCount = computed(() => {
+    let count = 0;
+    if (this.searchText().trim()) count++;
+    if (this.selectedSopId() !== 'all') count++;
+    if (this.selectedAnalyst() !== 'all') count++;
+    if (this.startDate() || this.endDate()) count++;
+    return count;
+  });
+
   // Date Filters
   private getInitialThisWeekRange() {
       const today = new Date();
@@ -375,6 +413,57 @@ export class ResultListComponent implements OnInit, OnDestroy {
   getReportKeys(reports: any): string[] {
     if (!reports) return [];
     return Object.keys(reports).sort();
+  }
+
+  // Premium design dynamic helper methods
+  getSopGradientClass(sopId: string): string {
+    if (!sopId) return 'from-slate-400 to-slate-500';
+    if (sopId === 'trifluralin-gcms') {
+      return 'from-fuchsia-500 to-pink-500';
+    }
+    if (sopId === 'fipronil-chlorpyrifos') {
+      return 'from-indigo-500 to-sky-500';
+    }
+    return 'from-violet-500 to-indigo-500';
+  }
+
+  getAnalystInitials(user: string): string {
+    if (!user) return '?';
+    const parts = user.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  }
+
+  getAnalystAvatarClass(user: string): string {
+    if (!user) return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+    const colors = [
+      'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30',
+      'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-450 dark:border-emerald-900/30',
+      'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30',
+      'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/40 dark:text-rose-450 dark:border-rose-900/30',
+      'bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900/30',
+      'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30'
+    ];
+    let sum = 0;
+    for (let i = 0; i < user.length; i++) {
+      sum += user.charCodeAt(i);
+    }
+    return colors[sum % colors.length];
+  }
+
+  getRunProgress(run: any): number {
+    if (!run || !run.sampleList || run.sampleList.length === 0) return 0;
+    const resultData = run.analysisResult?.resultData || {};
+    let filled = 0;
+    run.sampleList.forEach((sample: string) => {
+      const row = resultData[sample];
+      if (row) {
+        const values = Object.keys(row).filter(k => k !== 'selected' && k !== 'loSo' && k !== 'ghiChu');
+        const hasKq = values.some(k => row[k] !== undefined && String(row[k]).trim() !== '');
+        if (hasKq) filled++;
+      }
+    });
+    return Math.round((filled / run.sampleList.length) * 100);
   }
 
   async preloadHistory(requestId: string) {
