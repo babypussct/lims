@@ -338,7 +338,7 @@ import { doc, setDoc } from 'firebase/firestore';
                                     PDF
                                   </a>
                                   @if (run.analysisResult?.docsUrl) {
-                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'docs')" target="_blank" rel="noopener noreferrer"
+                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
                                        class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
                                       Docs
                                     </a>
@@ -349,16 +349,16 @@ import { doc, setDoc } from 'firebase/firestore';
 
                             <!-- 2. Báo cáo theo nhóm (Prefix groups) -->
                             @if (run.analysisResult?.reports) {
-                              @for (grp of run.analysisResult.reports; track grp.prefix) {
+                              @for (grp of (run.analysisResult.reports | keyvalue); track grp.key) {
                                 <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
-                                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-400 truncate">Nhóm {{ grp.prefix }}:</span>
+                                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-400 truncate">Nhóm {{ grp.key }}:</span>
                                   <div class="flex items-center relative gap-1 mt-0.5">
-                                    <a [href]="getSafeGoogleUrl(grp.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                                    <a [href]="getSafeGoogleUrl(grp.value.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
                                        class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-red-50 dark:bg-red-950/25 border border-red-150 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 rounded text-[9px] font-bold transition">
                                       PDF
                                     </a>
-                                    @if (grp.docsUrl) {
-                                      <a [href]="getSafeGoogleUrl(grp.docsUrl, 'docs')" target="_blank" rel="noopener noreferrer"
+                                    @if (grp.value.docsUrl) {
+                                      <a [href]="getSafeGoogleUrl(grp.value.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                                          class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
                                         Docs
                                       </a>
@@ -509,7 +509,7 @@ import { doc, setDoc } from 'firebase/firestore';
                                         <div class="flex items-center gap-1">
                                           <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" class="px-2 py-1 bg-red-50 text-red-700 rounded text-[9px] font-bold border border-red-150">PDF</a>
                                           @if (run.analysisResult?.docsUrl) {
-                                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'docs')" target="_blank" class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[9px] font-bold border border-blue-150">Docs</a>
+                                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[9px] font-bold border border-blue-150">Docs</a>
                                           }
                                         </div>
                                       </div>

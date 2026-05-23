@@ -31,4 +31,8 @@ export interface Request {
   
   // Embed Analysis Result directly in Request to reuse existing collections and rules
   analysisResult?: AnalysisResultDraft;
+
+  // Virtual Master Run details (Option C merging)
+  isVirtualMaster?: boolean;
+  childRequestIds?: string[];
 }
