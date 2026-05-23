@@ -373,6 +373,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   resetConfirmText = signal('');
   isMetadataExpanded = signal(false);
 
+  unsubscribeFromDraft?: () => void;
+
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.requestId) {
@@ -380,115 +382,85 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.router.navigate(['/results']);
       return;
     }
-    this.loadData();
-  }
-
-  ngOnDestroy() {}
-
-  async loadData() {
+    
     this.isLoading.set(true);
 
-    // 1. Fetch Approved request details
-    const approvedList = this.state.approvedRequests();
-    const runDoc = approvedList.find(r => r.id === this.requestId);
-    
-    if (!runDoc) {
-      // Đợi thêm một chút phòng trường hợp data chưa load kịp
-      setTimeout(async () => {
-        const retryRunDoc = this.state.approvedRequests().find(r => r.id === this.requestId);
-        if (!retryRunDoc) {
-          this.isLoading.set(false);
-          return;
-        }
-        this.run.set(retryRunDoc);
-        await this.loadDraftAndConfig(retryRunDoc);
-      }, 800);
-      return;
-    }
+    // Subscribe to real-time changes of the request document
+    this.unsubscribeFromDraft = this.resultService.subscribeToDraft(this.requestId, async (draftDoc, runDoc) => {
+      if (runDoc) {
+        this.run.set(runDoc);
+        
+        const sopObj = this.state.sops().find(s => s.id === runDoc.sopId) || null;
+        const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
+        const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
 
-    this.run.set(runDoc);
-    await this.loadDraftAndConfig(runDoc);
-  }
+        if (sopConf && resolvedKey) {
+          this.config.set(sopConf);
+          this.configKey.set(resolvedKey);
 
-  private async loadDraftAndConfig(runDoc: any) {
-    // 2. Fetch SOP configurations — tra cứu thông minh: sopId → alias → SOP object thực tế từ Firestore
-    //    Tra cứu SOP object từ StateService để dùng tên, category và danh sách targets thực tế
-    const sopObj = this.state.sops().find(s => s.id === runDoc.sopId) || null;
-    const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
-    const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
-    if (!sopConf || !resolvedKey) {
-      const displayName = sopObj?.name || runDoc.sopName || runDoc.sopId;
-      this.toast.show(
-        `Chưa có cấu hình nhập liệu cho chỉ tiêu "${displayName}". ` +
-        `Vui lòng thêm từ khóa tương ứng vào SOP_NAME_MAP trong result-entry.component.ts.`,
-        'info'
-      );
-      this.isLoading.set(false);
-      return;
-    }
-    this.config.set(sopConf);
-    // Lưu resolved config key để dùng khi gửi payload sang GAS
-    this.configKey.set(resolvedKey);
+          if (!draftDoc) {
+            // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
+            draftDoc = this.createDefaultDraft(runDoc, sopConf);
+          } else {
+            // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
+            const isTrifluralin = resolvedKey === 'trifluralin-gcms';
+            if (isTrifluralin) {
+              if (!draftDoc.page1Data) draftDoc.page1Data = {};
+              if (!draftDoc.page1Data['calibPoints'] || draftDoc.page1Data['calibPoints'].length === 0) {
+                draftDoc.page1Data['calibPoints'] = [
+                  { loSo: '41', hamLuong: '0' },
+                  { loSo: '42', hamLuong: '0.5' },
+                  { loSo: '43', hamLuong: '1.0' },
+                  { loSo: '44', hamLuong: '5.0' },
+                  { loSo: '45', hamLuong: '10.0' },
+                  { loSo: '46', hamLuong: '30.0' }
+                ];
+              }
+              if (draftDoc.page1Data['r2'] === undefined || draftDoc.page1Data['r2'] === '') {
+                draftDoc.page1Data['r2'] = '0.999';
+              }
+              if (draftDoc.page1Data['blankName'] === undefined) {
+                draftDoc.page1Data['blankName'] = 'Blank';
+              }
+              if (draftDoc.page1Data['spikeName'] === undefined) {
+                draftDoc.page1Data['spikeName'] = 'Spike';
+              }
 
+              if (!draftDoc.resultData) draftDoc.resultData = {};
+              if (!draftDoc.resultData['QC_BLANK']) {
+                draftDoc.resultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
+              } else {
+                if (!draftDoc.resultData['QC_BLANK']['loSo']) draftDoc.resultData['QC_BLANK']['loSo'] = '47';
+                if (!draftDoc.resultData['QC_BLANK']['kqTrifluralin']) draftDoc.resultData['QC_BLANK']['kqTrifluralin'] = 'ND';
+              }
+              if (!draftDoc.resultData['QC_SPIKE']) {
+                draftDoc.resultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
+              } else {
+                if (!draftDoc.resultData['QC_SPIKE']['loSo']) draftDoc.resultData['QC_SPIKE']['loSo'] = '48';
+              }
+            }
+          }
 
-    // 3. Fetch Draft document from Firestore
-    let draftDoc = await this.resultService.getDraft(this.requestId);
-    
-    // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
-    if (!draftDoc) {
-      draftDoc = this.createDefaultDraft(runDoc, sopConf);
-    } else {
-      // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
-      const isTrifluralin = resolvedKey === 'trifluralin-gcms';
-      if (isTrifluralin) {
-        if (!draftDoc.page1Data) {
-          draftDoc.page1Data = {};
-        }
-        if (!draftDoc.page1Data['calibPoints'] || draftDoc.page1Data['calibPoints'].length === 0) {
-          draftDoc.page1Data['calibPoints'] = [
-            { loSo: '41', hamLuong: '0' },
-            { loSo: '42', hamLuong: '0.5' },
-            { loSo: '43', hamLuong: '1.0' },
-            { loSo: '44', hamLuong: '5.0' },
-            { loSo: '45', hamLuong: '10.0' },
-            { loSo: '46', hamLuong: '30.0' }
-          ];
-        }
-        if (draftDoc.page1Data['r2'] === undefined || draftDoc.page1Data['r2'] === '') {
-          draftDoc.page1Data['r2'] = '0.999';
-        }
-        if (draftDoc.page1Data['blankName'] === undefined) {
-          draftDoc.page1Data['blankName'] = 'Blank';
-        }
-        if (draftDoc.page1Data['spikeName'] === undefined) {
-          draftDoc.page1Data['spikeName'] = 'Spike';
-        }
-
-        // Đảm bảo các lọ QC và ND mặc định
-        if (!draftDoc.resultData) {
-          draftDoc.resultData = {};
-        }
-        if (!draftDoc.resultData['QC_BLANK']) {
-          draftDoc.resultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
-        } else {
-          if (!draftDoc.resultData['QC_BLANK']['loSo']) draftDoc.resultData['QC_BLANK']['loSo'] = '47';
-          if (!draftDoc.resultData['QC_BLANK']['kqTrifluralin']) draftDoc.resultData['QC_BLANK']['kqTrifluralin'] = 'ND';
-        }
-        if (!draftDoc.resultData['QC_SPIKE']) {
-          draftDoc.resultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
-        } else {
-          if (!draftDoc.resultData['QC_SPIKE']['loSo']) draftDoc.resultData['QC_SPIKE']['loSo'] = '48';
+          // Cập nhật draft signal thời gian thực
+          this.draft.set(draftDoc);
         }
       }
-    }
-    
-    this.draft.set(draftDoc);
-    
-    // Nạp danh sách lịch sử in từ sub-collection
+      this.isLoading.set(false);
+    });
+
+    // Tải lịch sử in
+    this.loadHistory();
+  }
+
+  async loadHistory() {
     const hist = await this.resultService.getHistory(this.requestId);
     this.historyList.set(hist);
-    
-    this.isLoading.set(false);
+  }
+
+  ngOnDestroy() {
+    if (this.unsubscribeFromDraft) {
+      this.unsubscribeFromDraft();
+    }
   }
 
   private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {

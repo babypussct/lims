@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService as CoreFirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField, onSnapshot } from 'firebase/firestore';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -18,6 +18,23 @@ export class ResultService {
   private getDocRef(requestId: string) {
     // Tái sử dụng collection 'requests' đã có đầy đủ quyền đọc/ghi trên Production
     return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
+  }
+
+  /**
+   * Đăng ký lắng nghe thay đổi thời gian thực của mẻ chạy (Request document)
+   */
+  subscribeToDraft(requestId: string, callback: (draft: AnalysisResultDraft | null, run: any | null) => void) {
+    const ref = this.getDocRef(requestId);
+    return onSnapshot(ref, (docSnap) => {
+      if (docSnap.exists()) {
+        const reqData = docSnap.data();
+        callback(reqData['analysisResult'] || null, { id: docSnap.id, ...reqData });
+      } else {
+        callback(null, null);
+      }
+    }, (error) => {
+      console.error('Error listening to draft changes:', error);
+    });
   }
 
   /**
