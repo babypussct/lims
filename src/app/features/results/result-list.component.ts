@@ -632,7 +632,7 @@ import { doc, setDoc } from 'firebase/firestore';
                   <i class="fa-solid fa-print mr-1.5 text-fuchsia-500"></i> Các bản in đang hoạt động
                 </h4>
 
-                <!-- Báo cáo chung (Tất cả mẫu) -->
+                <!-- Báo cáo chung (Tất cả mẫu) - Luôn hiển thị nếu có file in -->
                 @if (selectedRequestForReport().analysisResult?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl) {
                   <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                     <div>
@@ -655,40 +655,81 @@ import { doc, setDoc } from 'firebase/firestore';
                   </div>
                 }
 
-                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) -->
-                @if (selectedRequestForReport().analysisResult?.reports) {
-                  @for (grp of (selectedRequestForReport().analysisResult.reports | keyvalue); track grp.key) {
+                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) - CHỈ DÀNH CHO TRIFLURALIN -->
+                @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
+                  @for (pref of getSelectedRunPrefixes(); track pref) {
+                    @const rep = getPrefixReportForSelected(pref);
                     <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                       <div>
                         <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
-                          {{ grp.key === '_NO_PREFIX_' ? 'Không tiền tố' : 'Tiền tố ' + grp.key }}
+                          {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
                         </span>
-                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ asReport(grp.value).version || 1 }}</span>
-                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ asReport(grp.value).pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                        @if (rep) {
+                          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ rep.version || 1 }}</span>
+                          <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ rep.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                        } @else {
+                          <span class="text-[11px] font-bold text-slate-500/70 block mt-1">Phiên bản hiện tại: Chưa có</span>
+                          <span class="text-[10px] text-slate-400 dark:text-slate-500/80 block mt-0.5">Mẫu thuộc nhóm {{ pref === '' ? 'Không tiền tố' : pref }} tồn tại trong mẻ chạy nhưng chưa xuất bản file.</span>
+                        }
                       </div>
                       <div class="flex items-center gap-2">
-                        @if (asReport(grp.value).pdfUrl || asReport(grp.value).pdfViewUrl) {
-                          <a [href]="getSafeGoogleUrl(asReport(grp.value).pdfViewUrl || asReport(grp.value).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                        @if (rep && (rep.pdfUrl || rep.pdfViewUrl)) {
+                          <a [href]="getSafeGoogleUrl(rep.pdfViewUrl || rep.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
                              class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-pdf"></i> XEM PDF
                           </a>
-                        }
-                        @if (asReport(grp.value).docsUrl) {
-                          <a [href]="getSafeGoogleUrl(asReport(grp.value).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                             class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
-                            <i class="fa-solid fa-file-word"></i> MỞ DOCS
-                          </a>
+                          @if (rep.docsUrl) {
+                            <a [href]="getSafeGoogleUrl(rep.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                               class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                              <i class="fa-solid fa-file-word"></i> MỞ DOCS
+                            </a>
+                          }
+                        } @else {
+                          <span class="text-[10px] text-amber-600 dark:text-amber-500 font-extrabold flex items-center gap-1 mr-2">
+                            <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Chưa tạo file
+                          </span>
+                          <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+                                  class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-arrows-rotate animate-spin-slow"></i> TẠO FILE IN
+                          </button>
                         }
                       </div>
                     </div>
                   }
                 }
 
-                @if (!selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.reports) {
-                  <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs">
-                    <i class="fa-solid fa-triangle-exclamation text-lg block mb-1.5 opacity-60"></i>
-                    Mẻ chạy này chưa được xuất bản báo cáo nào.
-                  </div>
+                <!-- Hộp Cảnh báo Không có file in (Chỉ hiển thị cho mẻ KHÔNG PHẢI Trifluralin khi chưa in bất kỳ bản nào) -->
+                @if (selectedRequestForReport().sopId !== 'trifluralin-gcms' && !selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.pdfViewUrl) {
+                  @if (runStatusMap()[selectedRequestForReport().id] === 'completed') {
+                    <div class="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-xs transition">
+                      <div class="space-y-1">
+                        <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-955/50 text-amber-700 dark:text-amber-400 border border-amber-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
+                        <span class="text-[11px] font-bold text-slate-700 dark:text-slate-350 block">Trạng thái: Đã hoàn thành (Chưa có file in)</span>
+                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block font-medium">Bản in của mẻ này chưa được tạo ra trên Google Drive hoặc bị lỗi.</span>
+                      </div>
+                      <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+                              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0">
+                        <i class="fa-solid fa-file-invoice text-sm animate-pulse"></i> TẠO FILE IN
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs">
+                      <i class="fa-solid fa-triangle-exclamation text-lg block mb-1.5 opacity-60"></i>
+                      Mẻ chạy này chưa được xuất bản báo cáo nào.
+                    </div>
+                  }
+                }
+
+                <!-- Hộp Cảnh báo dành riêng cho Trifluralin (Hiển thị ở dưới nếu CHƯA IN BẤT KỲ phân nhóm nào) -->
+                @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
+                  @const prefixes = getSelectedRunPrefixes();
+                  @const hasAnyPrint = prefixes.some(pref => getPrefixReportForSelected(pref) !== null);
+                  @if (!hasAnyPrint) {
+                    <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs bg-slate-50/40 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                      <i class="fa-solid fa-print text-lg block mb-1.5 text-fuchsia-500 opacity-60 animate-pulse"></i>
+                      Mẻ Trifluralin này chưa được xuất bản bất kỳ phân nhóm tiền tố nào.
+                    </div>
+                  }
                 }
               </div>
 
@@ -832,6 +873,27 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   asReport(val: unknown): any {
     return val;
+  }
+
+  getSelectedRunPrefixes(): string[] {
+    const run = this.selectedRequestForReport();
+    if (!run) return [];
+    
+    const prefixes = new Set<string>();
+    (run.sampleList || []).forEach((s: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(s);
+      const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+      prefixes.add(prefix);
+    });
+    
+    return Array.from(prefixes).sort();
+  }
+
+  getPrefixReportForSelected(prefix: string): any {
+    const run = this.selectedRequestForReport();
+    if (!run || !run.analysisResult?.reports) return null;
+    const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix;
+    return run.analysisResult.reports[prefixKey] || null;
   }
 
   averageCompletion = computed(() => {
