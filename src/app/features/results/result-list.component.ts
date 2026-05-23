@@ -658,28 +658,27 @@ import { doc, setDoc } from 'firebase/firestore';
                 <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) - CHỈ DÀNH CHO TRIFLURALIN -->
                 @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
                   @for (pref of getSelectedRunPrefixes(); track pref) {
-                    @const rep = getPrefixReportForSelected(pref);
                     <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                       <div>
                         <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
                           {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
                         </span>
-                        @if (rep) {
-                          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ rep.version || 1 }}</span>
-                          <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ rep.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                        @if (getPrefixReportForSelected(pref)) {
+                          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ getPrefixReportForSelected(pref).version || 1 }}</span>
+                          <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
                         } @else {
                           <span class="text-[11px] font-bold text-slate-500/70 block mt-1">Phiên bản hiện tại: Chưa có</span>
                           <span class="text-[10px] text-slate-400 dark:text-slate-500/80 block mt-0.5">Mẫu thuộc nhóm {{ pref === '' ? 'Không tiền tố' : pref }} tồn tại trong mẻ chạy nhưng chưa xuất bản file.</span>
                         }
                       </div>
                       <div class="flex items-center gap-2">
-                        @if (rep && (rep.pdfUrl || rep.pdfViewUrl)) {
-                          <a [href]="getSafeGoogleUrl(rep.pdfViewUrl || rep.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                        @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).pdfUrl || getPrefixReportForSelected(pref).pdfViewUrl)) {
+                          <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
                              class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-pdf"></i> XEM PDF
                           </a>
-                          @if (rep.docsUrl) {
-                            <a [href]="getSafeGoogleUrl(rep.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                          @if (getPrefixReportForSelected(pref).docsUrl) {
+                            <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                                class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                               <i class="fa-solid fa-file-word"></i> MỞ DOCS
                             </a>
@@ -722,9 +721,7 @@ import { doc, setDoc } from 'firebase/firestore';
 
                 <!-- Hộp Cảnh báo dành riêng cho Trifluralin (Hiển thị ở dưới nếu CHƯA IN BẤT KỲ phân nhóm nào) -->
                 @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
-                  @const prefixes = getSelectedRunPrefixes();
-                  @const hasAnyPrint = prefixes.some(pref => getPrefixReportForSelected(pref) !== null);
-                  @if (!hasAnyPrint) {
+                  @if (!hasAnyPrefixReport()) {
                     <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs bg-slate-50/40 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                       <i class="fa-solid fa-print text-lg block mb-1.5 text-fuchsia-500 opacity-60 animate-pulse"></i>
                       Mẻ Trifluralin này chưa được xuất bản bất kỳ phân nhóm tiền tố nào.
@@ -894,6 +891,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (!run || !run.analysisResult?.reports) return null;
     const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix;
     return run.analysisResult.reports[prefixKey] || null;
+  }
+
+  hasAnyPrefixReport(): boolean {
+    const prefixes = this.getSelectedRunPrefixes();
+    return prefixes.some(pref => this.getPrefixReportForSelected(pref) !== null);
   }
 
   averageCompletion = computed(() => {
