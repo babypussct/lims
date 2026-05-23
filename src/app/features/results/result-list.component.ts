@@ -226,11 +226,8 @@ import { doc, setDoc } from 'firebase/firestore';
           @if (viewMode() === 'grid') {
             <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               @for (run of displayedRuns(); track run.id) {
-                <!-- CHÚ Ý: z-10 hover:z-30 relative để menu dropdown in ấn hiển thị tràn không bị che -->
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group"
-                     [class.ring-1]="run.isVirtualMaster"
-                     [class.ring-fuchsia-500/30]="run.isVirtualMaster"
-                     [class.dark:ring-fuchsia-500/20]="run.isVirtualMaster">
+                     [ngClass]="{'ring-1 ring-fuchsia-500/30 dark:ring-fuchsia-500/20': run.isVirtualMaster}">
                   <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
                   <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
 
@@ -267,6 +264,12 @@ import { doc, setDoc } from 'firebase/firestore';
                     <h3 class="font-extrabold text-slate-800 dark:text-slate-150 text-base mb-1.5 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
                       {{ run.sopName }}
                     </h3>
+
+                    @if (run.isVirtualMaster && run.childRequestIds) {
+                      <div class="text-[10px] text-fuchsia-500 dark:text-fuchsia-400 font-bold mb-3 flex items-center gap-1 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 px-2 py-1 rounded-lg border border-fuchsia-100/30 dark:border-fuchsia-900/20 select-none">
+                        <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
+                      </div>
+                    }
                     
                     <!-- Analyst block (Pastel custom avatar) -->
                     <div class="text-xs text-slate-500 dark:text-slate-450 mb-4 flex items-center gap-2">
@@ -431,6 +434,11 @@ import { doc, setDoc } from 'firebase/firestore';
                             }
                           </div>
                           <div class="text-[10px] text-slate-400 font-mono tracking-tight font-bold">Mã mẻ: {{ run.inputs?.['batchCode'] || run.id }}</div>
+                          @if (run.isVirtualMaster && run.childRequestIds) {
+                            <div class="text-[9px] text-fuchsia-500 dark:text-fuchsia-400 font-bold flex items-center gap-0.5 mt-0.5">
+                              <i class="fa-solid fa-link text-[7px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
+                            </div>
+                          }
                         </td>
 
                         <!-- Analyst -->
