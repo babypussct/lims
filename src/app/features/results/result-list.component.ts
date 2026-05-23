@@ -416,7 +416,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   // Premium design dynamic helper methods
-  getSopGradientClass(sopId: string): string {
+  getSopGradientClass(sopId: string | undefined): string {
     if (!sopId) return 'from-slate-400 to-slate-500';
     if (sopId === 'trifluralin-gcms') {
       return 'from-fuchsia-500 to-pink-500';
@@ -427,14 +427,14 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return 'from-violet-500 to-indigo-500';
   }
 
-  getAnalystInitials(user: string): string {
+  getAnalystInitials(user: string | undefined): string {
     if (!user) return '?';
     const parts = user.trim().split(/\s+/);
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   }
 
-  getAnalystAvatarClass(user: string): string {
+  getAnalystAvatarClass(user: string | undefined): string {
     if (!user) return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
     const colors = [
       'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30',
