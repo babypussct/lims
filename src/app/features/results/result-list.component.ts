@@ -54,68 +54,94 @@ import { doc, setDoc } from 'firebase/firestore';
 
       <!-- Premium Glassmorphic Stats Header -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 shrink-0">
-        <!-- KPI 1: Active Runs -->
+        <!-- KPI 1: Active Runs (Blue Theme, filter-aware) -->
         <div (click)="filterStatus.set('all'); selectedSopId.set('all')"
-             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-          <div class="space-y-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Phân Tích Hoạt Động</span>
-            <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ allApprovedRuns().length }}</span>
-            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-450 flex items-center gap-1 mt-1">
+             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
+             [class]="(filterStatus() === 'all' && selectedSopId() === 'all')
+               ? 'bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/60 dark:border-blue-500/50 shadow-md ring-1 ring-blue-500/30'
+               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-blue-400 dark:hover:border-blue-800/50 hover:shadow-xs'">
+          <div class="space-y-1.5">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Mẻ Phân Tích Hoạt Động</span>
+            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight">{{ allApprovedRuns().length }}</span>
+            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-450 flex items-center gap-1.5 mt-2">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Real-time Sync
             </span>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-fuchsia-500/10 to-pink-500/10 dark:from-fuchsia-500/20 dark:to-pink-500/20 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-400">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 shrink-0"
+               [class]="(filterStatus() === 'all' && selectedSopId() === 'all')
+                 ? 'bg-blue-500/20 text-blue-600 dark:text-blue-450'
+                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-blue-500/10 group-hover:text-blue-500'">
             <i class="fa-solid fa-flask text-lg"></i>
           </div>
         </div>
 
-        <!-- KPI 2: Completion Rate -->
+        <!-- KPI 2: Completion Rate (Emerald Theme, filter-aware) -->
         <div (click)="filterStatus.set('completed')"
-             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-          <div class="space-y-1 flex-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Hiệu Suất Nhập Liệu</span>
-            <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ averageCompletion() }}%</span>
-            <div class="w-full bg-slate-150 dark:bg-slate-800 h-1 rounded-full overflow-hidden mt-2">
-              <div class="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
+             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
+             [class]="filterStatus() === 'completed'
+               ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/60 dark:border-emerald-500/50 shadow-md ring-1 ring-emerald-500/30'
+               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-400 dark:hover:border-emerald-800/50 hover:shadow-xs'">
+          <div class="space-y-1.5 flex-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Hiệu Suất Nhập Liệu</span>
+            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight">{{ averageCompletion() }}%</span>
+            <div class="w-full bg-slate-100 dark:bg-slate-800/80 h-1.5 rounded-full overflow-hidden mt-3 max-w-[140px]">
+              <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
             </div>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ml-4 shrink-0">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 ml-4 shrink-0"
+               [class]="filterStatus() === 'completed'
+                 ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-450'
+                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-emerald-500/10 group-hover:text-emerald-500'">
             <i class="fa-solid fa-chart-line text-lg"></i>
           </div>
         </div>
 
-        <!-- KPI 3: Pending Entry -->
+        <!-- KPI 3: Pending Entry (Amber Theme, filter-aware) -->
         <div (click)="filterStatus.set('pending')"
-             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-          <div class="space-y-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Đang Chờ Nhập</span>
-            <span class="text-2xl font-black text-amber-600 dark:text-amber-500 block">{{ pendingCount() }}</span>
-            <span class="text-[9px] font-bold text-amber-600 dark:text-amber-450 flex items-center gap-1 mt-1">
+             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
+             [class]="filterStatus() === 'pending'
+               ? 'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/60 dark:border-amber-500/50 shadow-md ring-1 ring-amber-500/30'
+               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-amber-400 dark:hover:border-amber-800/50 hover:shadow-xs'">
+          <div class="space-y-1.5">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Mẻ Đang Chờ Nhập</span>
+            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight"
+                  [class.text-amber-500]="pendingCount() > 0">{{ pendingCount() }}</span>
+            <span class="text-[9px] font-bold text-amber-600 dark:text-amber-450 flex items-center gap-1.5 mt-2">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Yêu cầu nhập gấp
             </span>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 shrink-0"
+               [class]="filterStatus() === 'pending'
+                 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-450'
+                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-amber-500/10 group-hover:text-amber-500'">
             <i class="fa-solid fa-clock-rotate-left text-lg"></i>
           </div>
         </div>
 
-        <!-- KPI 4: SOP Ratio -->
-        <div (click)="selectedSopId.set(selectedSopId() === 'trifluralin-gcms' ? 'all' : 'trifluralin-gcms')"
-             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-          <div class="space-y-1 flex-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Phân Bổ Phương Pháp SOP</span>
-            <div class="flex items-center gap-2 mt-1.5">
-              <span class="text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-950/20 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">Trifluralin: {{ sopDistribution().trifluralin }}</span>
-              <span class="text-xs font-black text-slate-550 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">Khác: {{ sopDistribution().others }}</span>
+        <!-- KPI 4: SOP Ratio (Violet/Indigo Theme, cyclic filter-aware) -->
+        <div (click)="selectedSopId.set(selectedSopId() === 'trifluralin-gcms' ? 'fipronil-chlorpyrifos' : selectedSopId() === 'fipronil-chlorpyrifos' ? 'all' : 'trifluralin-gcms')"
+             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
+             [class]="selectedSopId() === 'trifluralin-gcms'
+               ? 'bg-violet-500/5 dark:bg-violet-500/10 border-violet-500/60 dark:border-violet-500/50 shadow-md ring-1 ring-violet-500/30'
+               : selectedSopId() === 'fipronil-chlorpyrifos'
+                 ? 'bg-indigo-500/5 dark:bg-indigo-500/10 border-indigo-500/60 dark:border-indigo-500/50 shadow-md ring-1 ring-indigo-500/30'
+                 : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-violet-400 dark:hover:border-violet-800/50 hover:shadow-xs'">
+          <div class="space-y-1.5 flex-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Phân Bổ Phương Pháp SOP</span>
+            <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span class="text-[10px] font-bold text-violet-650 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-lg">Trifluralin: {{ sopDistribution().trifluralin }}</span>
+              <span class="text-[10px] font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded-lg">Fipronil: {{ sopDistribution().fipronil }}</span>
+              <span class="text-[10px] font-bold text-slate-550 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">Khác: {{ sopDistribution().others }}</span>
             </div>
-            <div class="w-full flex h-1 rounded-full overflow-hidden mt-2 bg-slate-150 dark:bg-slate-800">
-              <div class="bg-fuchsia-500 h-full rounded-l-full" [style.width.%]="allApprovedRuns().length ? (sopDistribution().trifluralin / allApprovedRuns().length) * 100 : 0"></div>
-              <div class="bg-slate-400 h-full rounded-r-full" [style.width.%]="allApprovedRuns().length ? ((sopDistribution().others) / allApprovedRuns().length) * 100 : 0"></div>
+            <div class="w-full flex h-1.5 rounded-full overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800/80 max-w-[200px]">
+              <div class="bg-violet-500 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().trifluralin / allApprovedRuns().length) * 100 : 0"></div>
+              <div class="bg-indigo-500 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().fipronil / allApprovedRuns().length) * 100 : 0"></div>
+              <div class="bg-slate-350 dark:bg-slate-600 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().others / allApprovedRuns().length) * 100 : 0"></div>
             </div>
           </div>
         </div>
       </div>
-
+      
       <!-- Advanced Filter Panel & Search -->
       <div class="mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
         <div class="flex flex-col sm:flex-row gap-3">
@@ -128,7 +154,7 @@ import { doc, setDoc } from 'firebase/firestore';
                    [value]="searchText()"
                    (input)="onSearchInput($event)"
                    placeholder="Tìm theo Mã mẻ chạy, SOP, Mã số mẫu, Analyst..." 
-                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold transition font-sans">
+                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 dark:text-slate-200 font-bold transition font-sans">
             @if (searchText()) {
               <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <i class="fa-solid fa-circle-xmark text-xs"></i>
@@ -141,13 +167,13 @@ import { doc, setDoc } from 'firebase/firestore';
             <!-- View Mode Switcher (iOS Segmented Style) -->
             <div class="flex bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 rounded-xl mr-2 shrink-0">
               <button (click)="viewMode.set('grid')"
-                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350'"
+                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'"
                       class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
                 <i class="fa-solid fa-table-cells text-[10px]"></i>
                 <span>Lưới</span>
               </button>
               <button (click)="viewMode.set('table')"
-                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350'"
+                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'"
                       class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
                 <i class="fa-solid fa-list text-[10px]"></i>
                 <span>Bảng</span>
@@ -156,12 +182,12 @@ import { doc, setDoc } from 'firebase/firestore';
 
             <!-- Advanced Filter Button -->
             <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
-                    [class]="showAdvancedFilters() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-450 border-fuchsia-200/50 dark:border-fuchsia-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-450 border-blue-200/50 dark:border-blue-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
                     class="px-4 py-2 border rounded-xl text-xs font-black transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 relative active:scale-95 duration-150 shadow-xs shrink-0">
               <i class="fa-solid fa-sliders text-[10px]"></i>
               <span>Lọc nâng cao</span>
               @if (activeFiltersCount() > 0) {
-                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-fuchsia-500/30">
+                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-blue-605 dark:bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-blue-500/30">
                   {{ activeFiltersCount() }}
                 </span>
               }
@@ -176,6 +202,7 @@ import { doc, setDoc } from 'firebase/firestore';
               </button>
             }
           </div>
+        </div> <!-- Fixed: Properly close the flex-row layout container -->
 
         <!-- Collapsible Content -->
         @if (showAdvancedFilters()) {
@@ -183,27 +210,33 @@ import { doc, setDoc } from 'firebase/firestore';
             <!-- SOP selection -->
             <div class="flex flex-col gap-1.5">
               <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Phương pháp (SOP)</label>
-              <select [value]="selectedSopId()" 
-                      (change)="onSopChange($event)"
-                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-extrabold">
-                <option value="all">Tất cả phương pháp</option>
-                @for (sop of availableSops(); track sop.id) {
-                  <option [value]="sop.id">{{ sop.name }}</option>
-                }
-              </select>
+              <div class="relative flex items-center">
+                <select [value]="selectedSopId()" 
+                        (change)="onSopChange($event)"
+                        class="w-full appearance-none pr-8 pl-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition duration-150">
+                  <option value="all">Tất cả phương pháp</option>
+                  @for (sop of availableSops(); track sop.id) {
+                    <option [value]="sop.id">{{ sop.name }}</option>
+                  }
+                </select>
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none"></i>
+              </div>
             </div>
 
             <!-- Analyst selection -->
             <div class="flex flex-col gap-1.5">
               <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Người thực hiện (Analyst)</label>
-              <select [value]="selectedAnalyst()" 
-                      (change)="onAnalystChange($event)"
-                      class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-fuchsia-500 text-slate-700 dark:text-slate-200 font-extrabold">
-                <option value="all">Tất cả nhân viên</option>
-                @for (analyst of availableAnalysts(); track analyst) {
-                  <option [value]="analyst">{{ analyst }}</option>
-                }
-              </select>
+              <div class="relative flex items-center">
+                <select [value]="selectedAnalyst()" 
+                        (change)="onAnalystChange($event)"
+                        class="w-full appearance-none pr-8 pl-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition duration-150">
+                  <option value="all">Tất cả nhân viên</option>
+                  @for (analyst of availableAnalysts(); track analyst) {
+                    <option [value]="analyst">{{ analyst }}</option>
+                  }
+                </select>
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none"></i>
+              </div>
             </div>
 
             <!-- Date Range Filter -->
@@ -213,6 +246,11 @@ import { doc, setDoc } from 'firebase/firestore';
                   [initStart]="startDate()" 
                   [initEnd]="endDate()" 
                   (dateChange)="onDateRangeChange($event)">
+              </app-date-range-filter>
+            </div>
+          </div>
+        }
+      </div>(dateChange)="onDateRangeChange($event)">
               </app-date-range-filter>
             </div>
           </div>
@@ -804,7 +842,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   averageCompletion = computed(() => {
     const runs = this.allApprovedRuns();
     if (runs.length === 0) return 0;
-    const total = runs.reduce((sum, run) => sum + this.getRunProgress(run), 0);
+    const total = runs.reduce((sum: number, run: any) => sum + this.getRunProgress(run), 0);
     return Math.round(total / runs.length);
   });
 
@@ -817,7 +855,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     let trifluralin = 0;
     let fipronil = 0;
     let others = 0;
-    runs.forEach(run => {
+    runs.forEach((run: any) => {
       if (run.sopId === 'trifluralin-gcms') trifluralin++;
       else if (run.sopId === 'fipronil-chlorpyrifos') fipronil++;
       else others++;
@@ -912,12 +950,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
   async preloadHistory(requestId: string) {
     if (this.historiesMap()[requestId] || this.loadingHistories()[requestId]) return;
     
-    this.loadingHistories.update(map => ({ ...map, [requestId]: true }));
+    this.loadingHistories.update((map: any) => ({ ...map, [requestId]: true }));
     try {
       const hist = await this.resultService.getHistory(requestId);
-      this.historiesMap.update(map => ({ ...map, [requestId]: hist }));
+      this.historiesMap.update((map: any) => ({ ...map, [requestId]: hist }));
     } finally {
-      this.loadingHistories.update(map => ({ ...map, [requestId]: false }));
+      this.loadingHistories.update((map: any) => ({ ...map, [requestId]: false }));
     }
   }
 
@@ -925,7 +963,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   runStatusMap = computed(() => {
     const statusMap: Record<string, 'pending' | 'draft' | 'completed'> = {};
     const all = this.state.approvedRequests() || [];
-    all.forEach(run => {
+    all.forEach((run: any) => {
       statusMap[run.id] = run.analysisResult?.status || 'pending';
     });
     return statusMap;
@@ -946,7 +984,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   availableSops = computed(() => {
     const runs = this.allApprovedRuns();
     const map = new Map<string, string>(); // sopId -> sopName
-    runs.forEach(run => {
+    runs.forEach((run: any) => {
       if (run.sopId && run.sopName) {
         map.set(run.sopId, run.sopName);
       }
@@ -957,7 +995,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   availableAnalysts = computed(() => {
     const runs = this.allApprovedRuns();
     const set = new Set<string>();
-    runs.forEach(run => {
+    runs.forEach((run: any) => {
       if (run.user) set.add(run.user);
     });
     return Array.from(set).sort();
@@ -970,7 +1008,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     // 1. Filter by Search Text
     const search = this.searchText().trim().toLowerCase();
     if (search) {
-      list = list.filter(run => {
+      list = list.filter((run: any) => {
         const batchCode = (run.inputs?.['batchCode'] || run.id || '').toLowerCase();
         const sopName = (run.sopName || '').toLowerCase();
         const user = (run.user || '').toLowerCase();
@@ -982,20 +1020,20 @@ export class ResultListComponent implements OnInit, OnDestroy {
     // 2. Filter by SOP
     const sopId = this.selectedSopId();
     if (sopId !== 'all') {
-      list = list.filter(run => run.sopId === sopId);
+      list = list.filter((run: any) => run.sopId === sopId);
     }
 
     // 3. Filter by Analyst
     const analyst = this.selectedAnalyst();
     if (analyst !== 'all') {
-      list = list.filter(run => run.user === analyst);
+      list = list.filter((run: any) => run.user === analyst);
     }
 
     // 4. Filter by Date
     const start = this.startDate();
     const end = this.endDate();
     if (start || end) {
-      list = list.filter(run => {
+      list = list.filter((run: any) => {
         const runDate = this.getRunDate(run);
         if (!runDate) return false;
         if (start && runDate < start) return false;
@@ -1008,7 +1046,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const statusFilter = this.filterStatus();
     const statusMap = this.runStatusMap();
     if (statusFilter !== 'all') {
-      list = list.filter(run => (statusMap[run.id] || 'pending') === statusFilter);
+      list = list.filter((run: any) => (statusMap[run.id] || 'pending') === statusFilter);
     }
 
     return list;
@@ -1020,7 +1058,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     
     const search = this.searchText().trim().toLowerCase();
     if (search) {
-      list = list.filter(run => {
+      list = list.filter((run: any) => {
         const batchCode = (run.inputs?.['batchCode'] || run.id || '').toLowerCase();
         const sopName = (run.sopName || '').toLowerCase();
         const user = (run.user || '').toLowerCase();
@@ -1031,18 +1069,18 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
     const sopId = this.selectedSopId();
     if (sopId !== 'all') {
-      list = list.filter(run => run.sopId === sopId);
+      list = list.filter((run: any) => run.sopId === sopId);
     }
 
     const analyst = this.selectedAnalyst();
     if (analyst !== 'all') {
-      list = list.filter(run => run.user === analyst);
+      list = list.filter((run: any) => run.user === analyst);
     }
 
     const start = this.startDate();
     const end = this.endDate();
     if (start || end) {
-      list = list.filter(run => {
+      list = list.filter((run: any) => {
         const runDate = this.getRunDate(run);
         if (!runDate) return false;
         if (start && runDate < start) return false;
@@ -1053,7 +1091,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
     const statusMap = this.runStatusMap();
     if (status === 'all') return list.length;
-    return list.filter(run => (statusMap[run.id] || 'pending') === status).length;
+    return list.filter((run: any) => (statusMap[run.id] || 'pending') === status).length;
   }
 
   getStatusText(requestId: string): string {
@@ -1158,7 +1196,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   getSelectedRuns(): any[] {
     const map = this.selectedRunsMap();
-    return this.allApprovedRuns().filter(run => map[run.id]);
+    return this.allApprovedRuns().filter((run: any) => map[run.id]);
   }
 
   getSelectedSopName(): string {

@@ -179,7 +179,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
       </div>
 
       <!-- Main Form Area -->
-      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 pb-28 bg-slate-50/50 dark:bg-slate-950/20">
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-slate-950/20">
         @if (isLoading()) {
           <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 space-y-6">
             <div class="flex justify-between items-center">
@@ -361,47 +361,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
           </div>
         </div>
       }
-      <!-- Floating Action Dock (SaaS style for easy manipulation) -->
-      @if (run() && draft()) {
-        <div class="fixed bottom-6 right-6 z-45 bg-slate-900/95 dark:bg-slate-950/98 backdrop-blur-md border border-slate-700/30 dark:border-slate-800/80 rounded-2xl shadow-2xl p-3.5 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          
-          <!-- Save Draft Button -->
-          <button (click)="triggerSaveDraft()" 
-                  [disabled]="isProcessing()"
-                  class="px-4.5 py-3 text-xs font-black bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl transition flex items-center gap-2 disabled:opacity-50 active:scale-95 shadow-sm duration-155 border-0 cursor-pointer">
-            <i class="fa-solid" [class.fa-floppy-disk]="!isSavingDraft()" [class.fa-spinner]="isSavingDraft()" [class.fa-spin]="isSavingDraft()"></i>
-            <span>LƯU NHÁP</span>
-          </button>
 
-          <!-- View PDF link -->
-          @if (getCurrentPdfUrl()) {
-            <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
-               class="px-4.5 py-3 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition flex items-center gap-2 shadow-sm active:scale-95 duration-155 no-underline border-0 cursor-pointer">
-              <i class="fa-solid fa-file-pdf"></i>
-              <span>XEM PDF</span>
-            </a>
-          }
-
-          <!-- Open Docs link -->
-          @if (getCurrentDocsUrl()) {
-            <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-               class="px-4.5 py-3 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition flex items-center gap-2 shadow-sm active:scale-95 duration-155 no-underline border-0 cursor-pointer">
-              <i class="fa-brands fa-google-drive"></i>
-              <span>MỞ DOCS</span>
-            </a>
-          }
-
-          <!-- Create & Print Button -->
-          <button (click)="triggerPublishReport()" 
-                  [disabled]="isProcessing()"
-                  class="px-5 py-3.5 text-xs font-black text-white bg-gradient-to-r from-violet-650 via-fuchsia-655 to-indigo-650 hover:from-violet-700 hover:via-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all duration-155 flex items-center gap-2 disabled:opacity-50 border-0 cursor-pointer"
-                  [title]="getPrintButtonLabel()">
-            <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
-            <span>{{ getPrintButtonLabel().toUpperCase() }}</span>
-          </button>
-
-        </div>
-      }
     </div>
 
   `
@@ -456,11 +416,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.isLoading.set(true);
 
     // Subscribe to real-time changes of the request document
-    this.unsubscribeFromDraft = this.resultService.subscribeToDraft(this.requestId, async (draftDoc, runDoc) => {
+    this.unsubscribeFromDraft = this.resultService.subscribeToDraft(this.requestId, async (draftDoc: any, runDoc: any) => {
       if (runDoc) {
         this.run.set(runDoc);
         
-        const sopObj = this.state.sops().find(s => s.id === runDoc.sopId) || null;
+        const sopObj = this.state.sops().find((s: any) => s.id === runDoc.sopId) || null;
         const resolvedKey = resolveConfigKey(runDoc.sopId, runDoc.sopName || '', sopObj);
         const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
 
@@ -948,7 +908,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
         const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
         if (result.success) {
-          this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 
           const hist = await this.resultService.getHistory(this.requestId);
           this.historyList.set(hist);
@@ -1014,7 +974,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
         const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
         if (result.success) {
-          this.draft.update(d => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 
           const hist = await this.resultService.getHistory(this.requestId);
           this.historyList.set(hist);
