@@ -312,63 +312,15 @@ import { doc, setDoc } from 'firebase/firestore';
                       </div>
                     </div>
                   </div>
-
                   <!-- Action Buttons -->
                   <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2.5 relative">
                     <!-- Dropdown in ấn báo cáo dạng Popover -->
                     <div class="relative">
                       @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
-                        <button (click)="activeReportDropdownId.set(activeReportDropdownId() === run.id ? null : run.id); $event.stopPropagation()"
+                        <button (click)="openReportHub(run); $event.stopPropagation()"
                                 class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
-                          <i class="fa-solid fa-file-pdf text-red-500"></i> Báo cáo <i class="fa-solid fa-chevron-down text-[9px] transition-transform" [class.rotate-180]="activeReportDropdownId() === run.id"></i>
+                          <i class="fa-solid fa-file-pdf text-red-500"></i> Báo cáo
                         </button>
-
-                        @if (activeReportDropdownId() === run.id) {
-                          <div class="fixed inset-0 z-40 cursor-default" (click)="activeReportDropdownId.set(null); $event.stopPropagation()"></div>
-                          <div class="absolute left-0 bottom-full mb-2 bg-white dark:bg-slate-900 border border-slate-150/80 dark:border-slate-800 rounded-2xl shadow-xl w-68 p-3 z-50 animate-fade-in text-xs space-y-2 text-left">
-                            <h4 class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] pb-1 border-b border-slate-100 dark:border-slate-800">Danh sách báo cáo</h4>
-                            
-                            <!-- 1. Báo cáo chung (Tất cả mẫu) - pdfUrl ở root -->
-                            @if (run.analysisResult?.pdfUrl) {
-                              <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
-                                <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400">Tất cả mẫu:</span>
-                                <div class="flex items-center relative gap-1 mt-0.5">
-                                  <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
-                                     class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-red-50 dark:bg-red-950/25 border border-red-150 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 rounded text-[9px] font-bold transition">
-                                    PDF
-                                  </a>
-                                  @if (run.analysisResult?.docsUrl) {
-                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
-                                       class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
-                                      Docs
-                                    </a>
-                                  }
-                                </div>
-                              </div>
-                            }
-
-                            <!-- 2. Báo cáo theo nhóm (Prefix groups) -->
-                            @if (run.analysisResult?.reports) {
-                              @for (grp of (run.analysisResult?.reports | keyvalue); track grp.key) {
-                                <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
-                                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-400 truncate">Nhóm {{ grp.key }}:</span>
-                                  <div class="flex items-center relative gap-1 mt-0.5">
-                                    <a [href]="getSafeGoogleUrl(grp.value.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                                       class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-red-50 dark:bg-red-950/25 border border-red-150 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 rounded text-[9px] font-bold transition">
-                                      PDF
-                                    </a>
-                                    @if (grp.value.docsUrl) {
-                                      <a [href]="getSafeGoogleUrl(grp.value.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                                         class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
-                                        Docs
-                                      </a>
-                                    }
-                                  </div>
-                                </div>
-                              }
-                            }
-                          </div>
-                        }
                       } @else {
                         <div class="text-[9px] font-bold text-slate-400 dark:text-slate-550 flex items-center gap-1 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-900/20 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800">
                           <i class="fa-solid fa-lock"></i> Chưa báo cáo
@@ -495,27 +447,11 @@ import { doc, setDoc } from 'firebase/firestore';
                             <!-- Popover report dropdown -->
                             <div class="relative">
                               @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
-                                <button (click)="activeReportDropdownId.set(activeReportDropdownId() === run.id ? null : run.id); $event.stopPropagation()"
-                                        class="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center justify-center border border-slate-200 dark:border-slate-755 shadow-3xs">
+                                <button (click)="openReportHub(run); $event.stopPropagation()"
+                                        class="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center justify-center border border-slate-200 dark:border-slate-755 shadow-3xs"
+                                        title="Quản lý và xem các báo cáo">
                                   <i class="fa-solid fa-file-pdf text-red-500 text-xs"></i>
                                 </button>
-                                @if (activeReportDropdownId() === run.id) {
-                                  <div class="fixed inset-0 z-40" (click)="activeReportDropdownId.set(null); $event.stopPropagation()"></div>
-                                  <div class="absolute right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-2xl shadow-xl w-64 p-3 z-50 animate-fade-in text-xs space-y-2 text-left">
-                                    <h4 class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] pb-1 border-b border-slate-100 dark:border-slate-800">Báo cáo sẵn có</h4>
-                                    @if (run.analysisResult?.pdfUrl) {
-                                      <div class="flex items-center justify-between gap-2 p-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100 dark:border-slate-800">
-                                        <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400">Tất cả:</span>
-                                        <div class="flex items-center gap-1">
-                                          <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" class="px-2 py-1 bg-red-50 text-red-700 rounded text-[9px] font-bold border border-red-150">PDF</a>
-                                          @if (run.analysisResult?.docsUrl) {
-                                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[9px] font-bold border border-blue-150">Docs</a>
-                                          }
-                                        </div>
-                                      </div>
-                                    }
-                                  </div>
-                                }
                               }
                             </div>
 
@@ -627,6 +563,165 @@ import { doc, setDoc } from 'firebase/firestore';
           </div>
         </div>
       }
+
+      <!-- Premium Glassmorphic Report Hub Modal -->
+      @if (showReportHubModal() && selectedRequestForReport()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div class="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 transform scale-100 flex flex-col max-h-[85vh]">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4.5 bg-slate-50/50 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-500/10 to-rose-500/10 text-red-655 dark:text-red-400 flex items-center justify-center border border-red-100/50 dark:border-red-900/30">
+                  <i class="fa-solid fa-file-pdf text-base animate-pulse"></i>
+                </div>
+                <div>
+                  <h3 class="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight m-0">Trung Tâm Quản Lý Báo Cáo</h3>
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold m-0 mt-0.5">Mẻ chạy: {{ selectedRequestForReport().runCode }} — {{ selectedRequestForReport().sopName }}</p>
+                </div>
+              </div>
+              <button (click)="closeReportHub()" 
+                      class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 flex items-center justify-center transition active:scale-90">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+              
+              <!-- 1. CÁC BẢN IN HIỆN TẠI (ACTIVE REPORTS) -->
+              <div class="space-y-3">
+                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/85 pb-2">
+                  <i class="fa-solid fa-print mr-1.5 text-fuchsia-500"></i> Các bản in đang hoạt động
+                </h4>
+
+                <!-- Báo cáo chung (Tất cả mẫu) -->
+                @if (selectedRequestForReport().analysisResult?.pdfUrl) {
+                  <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
+                    <div>
+                      <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
+                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ selectedRequestForReport().analysisResult?.version || 1 }}</span>
+                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ selectedRequestForReport().analysisResult?.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
+                         class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                        <i class="fa-solid fa-file-pdf"></i> XEM PDF
+                      </a>
+                      @if (selectedRequestForReport().analysisResult?.docsUrl) {
+                        <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
+                           class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                          <i class="fa-solid fa-file-word"></i> MỞ DOCS
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) -->
+                @if (selectedRequestForReport().analysisResult?.reports) {
+                  @for (grp of (selectedRequestForReport().analysisResult.reports | keyvalue); track grp.key) {
+                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
+                      <div>
+                        <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
+                          {{ grp.key === '_NO_PREFIX_' ? 'Không tiền tố' : 'Tiền tố ' + grp.key }}
+                        </span>
+                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ grp.value.version || 1 }}</span>
+                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ grp.value.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        @if (grp.value.pdfUrl) {
+                          <a [href]="getSafeGoogleUrl(grp.value.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                             class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                            <i class="fa-solid fa-file-pdf"></i> XEM PDF
+                          </a>
+                        }
+                        @if (grp.value.docsUrl) {
+                          <a [href]="getSafeGoogleUrl(grp.value.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                             class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                            <i class="fa-solid fa-file-word"></i> MỞ DOCS
+                          </a>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+
+                @if (!selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.reports) {
+                  <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs">
+                    <i class="fa-solid fa-triangle-exclamation text-lg block mb-1.5 opacity-60"></i>
+                    Mẻ chạy này chưa được xuất bản báo cáo nào.
+                  </div>
+                }
+              </div>
+
+              <!-- 2. LỊCH SỬ PHIÊN BẢN CŨ (VERSION HISTORY ARCHIVE) -->
+              <div class="space-y-3">
+                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/85 pb-2">
+                  <i class="fa-solid fa-clock-rotate-left mr-1.5 text-slate-500"></i> Lưu trữ lịch sử tất cả phiên bản
+                </h4>
+
+                @if (isLoadingHistory()) {
+                  <div class="flex flex-col items-center justify-center py-8 gap-2">
+                    <i class="fa-solid fa-spinner fa-spin text-lg text-fuchsia-500"></i>
+                    <span class="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">Đang tải lịch sử...</span>
+                  </div>
+                } @else {
+                  @if (selectedRequestHistoryList().length > 0) {
+                    <div class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                      @for (hist of selectedRequestHistoryList(); track hist.version + '_' + hist.prefix) {
+                        <div class="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/60 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                          <div>
+                            <div class="flex items-center gap-1.5">
+                              <span class="font-black text-slate-700 dark:text-slate-350">Bản v{{ hist.version }}</span>
+                              @if (hist.prefix) {
+                                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-bold uppercase">
+                                  {{ hist.prefix === '_NO_PREFIX_' ? 'Không tiền tố' : hist.prefix }}
+                                </span>
+                              }
+                              @if (hist.status === 'archived') {
+                                <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-955/50 text-amber-700 dark:text-amber-400 text-[8px] font-extrabold uppercase border border-amber-200/20">Lưu trữ</span>
+                              }
+                            </div>
+                            <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-1">Người in: {{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                          </div>
+                          <div class="flex items-center gap-1.5 shrink-0">
+                            <a [href]="getSafeGoogleUrl(hist.pdfViewUrl || hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                               class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/30 text-slate-600 hover:text-red-655 dark:text-slate-400 dark:hover:text-red-400 border border-slate-200/40 dark:border-slate-700/40 flex items-center justify-center transition active:scale-90"
+                               title="Xem PDF bản này">
+                              <i class="fa-solid fa-file-pdf text-xs"></i>
+                            </a>
+                            @if (hist.docsUrl) {
+                              <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                                 class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/30 text-slate-600 hover:text-blue-655 dark:text-slate-400 dark:hover:text-blue-400 border border-slate-200/40 dark:border-slate-700/40 flex items-center justify-center transition active:scale-90"
+                                 title="Mở Docs bản này">
+                                <i class="fa-solid fa-file-word text-xs"></i>
+                              </a>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="text-center py-4 text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                      Không có bản in cũ trong lịch sử.
+                    </div>
+                  }
+                }
+              </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50/50 dark:bg-slate-850/50 border-t border-slate-100 dark:border-slate-800/80 flex justify-end shrink-0">
+              <button (click)="closeReportHub()" 
+                      class="px-5 py-2.5 bg-slate-200 hover:bg-slate-350 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition active:scale-95">
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -670,7 +765,33 @@ export class ResultListComponent implements OnInit, OnDestroy {
   viewMode = signal<'grid' | 'table'>('grid');
   activeReportDropdownId = signal<string | null>(null);
 
-  // Stat computations (0 extra Database Reads)
+  // Premium Glassmorphic Report Hub Modal States
+  showReportHubModal = signal<boolean>(false);
+  selectedRequestForReport = signal<any | null>(null);
+  selectedRequestHistoryList = signal<any[]>([]);
+  isLoadingHistory = signal<boolean>(false);
+
+  async openReportHub(run: any) {
+    this.selectedRequestForReport.set(run);
+    this.showReportHubModal.set(true);
+    this.isLoadingHistory.set(true);
+    this.selectedRequestHistoryList.set([]);
+    
+    try {
+      const hist = await this.resultService.getHistory(run.id);
+      this.selectedRequestHistoryList.set(hist || []);
+    } catch (e) {
+      console.error('Error fetching report history:', e);
+    } finally {
+      this.isLoadingHistory.set(false);
+    }
+  }
+
+  closeReportHub() {
+    this.showReportHubModal.set(false);
+    this.selectedRequestForReport.set(null);
+    this.selectedRequestHistoryList.set([]);
+  }
   averageCompletion = computed(() => {
     const runs = this.allApprovedRuns();
     if (runs.length === 0) return 0;
