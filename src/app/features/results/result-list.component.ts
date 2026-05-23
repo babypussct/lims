@@ -626,18 +626,18 @@ import { doc, setDoc } from 'firebase/firestore';
                         <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
                           {{ grp.key === '_NO_PREFIX_' ? 'Không tiền tố' : 'Tiền tố ' + grp.key }}
                         </span>
-                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ grp.value.version || 1 }}</span>
-                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ grp.value.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ asReport(grp.value).version || 1 }}</span>
+                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ asReport(grp.value).pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
                       </div>
                       <div class="flex items-center gap-2">
-                        @if (grp.value.pdfUrl) {
-                          <a [href]="getSafeGoogleUrl(grp.value.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                        @if (asReport(grp.value).pdfUrl) {
+                          <a [href]="getSafeGoogleUrl(asReport(grp.value).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
                              class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-pdf"></i> XEM PDF
                           </a>
                         }
-                        @if (grp.value.docsUrl) {
-                          <a [href]="getSafeGoogleUrl(grp.value.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                        @if (asReport(grp.value).docsUrl) {
+                          <a [href]="getSafeGoogleUrl(asReport(grp.value).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                              class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-word"></i> MỞ DOCS
                           </a>
@@ -792,6 +792,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.selectedRequestForReport.set(null);
     this.selectedRequestHistoryList.set([]);
   }
+
+  asReport(val: unknown): any {
+    return val;
+  }
+
   averageCompletion = computed(() => {
     const runs = this.allApprovedRuns();
     if (runs.length === 0) return 0;
