@@ -509,9 +509,9 @@ export class ResultService {
       }
       if (currentDraft.reports) {
         Object.keys(currentDraft.reports).forEach(prefix => {
-          const rep = currentDraft.reports[prefix];
+          const rep = currentDraft.reports![prefix];
           if (rep.pdfUrl || rep.docsUrl) {
-            filesToArchive.push({ pdfUrl: rep.pdfUrl, docsUrl: rep.docsUrl });
+            filesToArchive.push({ pdfUrl: rep.pdfUrl || undefined, docsUrl: rep.docsUrl || undefined });
           }
         });
       }
@@ -606,9 +606,9 @@ export class ResultService {
       }
       if (currentDraft.reports) {
         Object.keys(currentDraft.reports).forEach(prefix => {
-          const rep = currentDraft.reports[prefix];
+          const rep = currentDraft.reports![prefix];
           if (rep.pdfUrl || rep.docsUrl) {
-            filesToArchive.push({ pdfUrl: rep.pdfUrl, docsUrl: rep.docsUrl });
+            filesToArchive.push({ pdfUrl: rep.pdfUrl || undefined, docsUrl: rep.docsUrl || undefined });
           }
         });
       }

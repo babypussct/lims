@@ -1379,8 +1379,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const masterPayload: any = {
       sopId: curveRun.sopId,
       sopName: curveRun.sopName,
-      items: curveRun.items || [], // inherit standard reagents/materials requested
-      status: 'approved', // must be approved to enter results!
+      items: curveRun.items || [],
       isVirtualMaster: true,
       childRequestIds: sops.map(r => r.id),
       timestamp: new Date(),
