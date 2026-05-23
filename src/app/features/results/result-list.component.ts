@@ -813,7 +813,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       // Validate: Must be same SOP as existing selections (if any)
       const selected = this.getSelectedRuns();
       if (selected.length > 0 && selected[0].sopId !== run.sopId) {
-        this.toast.show('Chỉ cho phép gộp các mẻ chạy có cùng Phương pháp (SOP)!', 'warning');
+        this.toast.show('Chỉ cho phép gộp các mẻ chạy có cùng Phương pháp (SOP)!', 'info');
         return;
       }
       current[run.id] = true;
