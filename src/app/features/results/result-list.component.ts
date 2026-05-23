@@ -8,7 +8,7 @@ import { DateRangeFilterComponent } from '../../shared/components/date-range-fil
 import { ResultService } from './services/result.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 
 @Component({
   selector: 'app-result-list',
@@ -1345,61 +1345,91 @@ export class ResultListComponent implements OnInit, OnDestroy {
     });
     const sampleList = Array.from(allSamples).sort();
 
-    // Prepare resultData: inherit calibration and QC from the selected curve run
-    const resultData: Record<string, any> = {};
-    
-    // Note: resultData now lives in results_details, not in cache.
-    // Virtual Master will be created with empty resultData and page1Data;
-    // analyst must open it and save/publish manually to populate.
-    const curveResult: any = {};
-    const curveResultData: any = {};
-    
-    // 1. No calibration data in cache - leave empty for analyst to fill
-    Object.keys(curveResultData).forEach(key => {
-      if (key.startsWith('CAL_') || key.startsWith('QC_') || key.includes('BLANK') || key.includes('SPIKE') || key.includes('FINAL')) {
-        resultData[key] = { ...curveResultData[key] };
-      }
-    });
-
-    // 2. Sample rows - start empty (analyst will fill via entry screen)
-    sops.forEach(r => {
-      const sourceResultData: any = {};
-      if (r.sampleList) {
-        r.sampleList.forEach((s: string) => {
-          if (sourceResultData[s]) {
-            resultData[s] = { ...sourceResultData[s] };
-          } else {
-            resultData[s] = {}; // Fallback empty row
-          }
-        });
-      }
-    });
-
-    // Create the Virtual Master payload
-    const masterPayload: any = {
-      sopId: curveRun.sopId,
-      sopName: curveRun.sopName,
-      items: curveRun.items || [],
-      isVirtualMaster: true,
-      childRequestIds: sops.map(r => r.id),
-      timestamp: new Date(),
-      lastUpdated: new Date(),
-      approvedAt: new Date(),
-      user: this.state.getCurrentUserName(),
-      inputs: {
-        ...(curveRun.inputs || {}),
-        batchCode: masterId,
-        analysisDate: this.unifiedDateString()
-      },
-      sampleList,
-      status: 'approved' as const
-    };
-
-    // Save directly to Firestore under requests
     try {
       this.isLoading.set(true);
-      const docRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', masterId);
-      await setDoc(docRef, masterPayload);
+
+      // 1. Fetch details of all child runs to merge their data
+      const detailPromises = sops.map(r => getDoc(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', r.id)));
+      const detailSnaps = await Promise.all(detailPromises);
+      const detailMap = new Map<string, any>();
+      sops.forEach((r, i) => {
+        if (detailSnaps[i].exists()) {
+          detailMap.set(r.id, detailSnaps[i].data());
+        }
+      });
+
+      // 2. Prepare grid data for the Virtual Master
+      const resultData: Record<string, any> = {};
+      const curveDetail = detailMap.get(curveRun.id) || {};
+      const curveResultData = curveDetail.resultData || {};
+      const curvePage1Data = curveDetail.page1Data || {};
+      
+      // Copy calibration and QC from the master curve run
+      Object.keys(curveResultData).forEach(key => {
+        if (key.startsWith('CAL_') || key.startsWith('QC_') || key.includes('BLANK') || key.includes('SPIKE') || key.includes('FINAL')) {
+          resultData[key] = { ...curveResultData[key] };
+        }
+      });
+
+      // Copy sample rows from their respective source runs
+      sops.forEach(r => {
+        const sourceDetail = detailMap.get(r.id) || {};
+        const sourceResultData = sourceDetail.resultData || {};
+        if (r.sampleList) {
+          r.sampleList.forEach((s: string) => {
+            if (sourceResultData[s]) {
+              resultData[s] = { ...sourceResultData[s] };
+            } else {
+              resultData[s] = {}; // Fallback empty row
+            }
+          });
+        }
+      });
+
+      // 3. Prepare the Virtual Master payload (requests metadata)
+      const masterPayload: any = {
+        sopId: curveRun.sopId,
+        sopName: curveRun.sopName,
+        items: curveRun.items || [],
+        isVirtualMaster: true,
+        childRequestIds: sops.map(r => r.id),
+        timestamp: new Date(),
+        lastUpdated: new Date(),
+        approvedAt: new Date(),
+        user: this.state.getCurrentUserName(),
+        inputs: {
+          ...(curveRun.inputs || {}),
+          batchCode: masterId,
+          analysisDate: this.unifiedDateString()
+        },
+        sampleList,
+        status: 'approved' as const
+      };
+
+      // 4. Prepare details payload (results_details)
+      const detailPayload: any = {
+        requestId: masterId,
+        sopId: curveRun.sopId,
+        page1Data: {
+          ...(curvePage1Data || {}),
+          ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
+          ngayNguoiThamTra: new Date().toISOString().split('T')[0],
+          checkTatCaND: true,
+          checkCoMauPhatHien: false
+        },
+        resultData,
+        updatedAt: new Date().toISOString(),
+        updatedBy: this.state.getCurrentUserName()
+      };
+
+      // 5. Save directly to Firestore via Batch
+      const batch = writeBatch(this.fb.db);
+      const metaRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', masterId);
+      const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', masterId);
+      
+      batch.set(metaRef, masterPayload);
+      batch.set(detailRef, detailPayload);
+      await batch.commit();
       
       // Close modal and deselect
       this.closeMergeModal();
