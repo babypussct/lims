@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService as CoreFirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -24,60 +24,218 @@ export class ResultService {
    * Đăng ký lắng nghe thay đổi thời gian thực của mẻ chạy (Request document)
    */
   subscribeToDraft(requestId: string, callback: (draft: AnalysisResultDraft | null, run: any | null) => void) {
-    const ref = this.getDocRef(requestId);
-    return onSnapshot(ref, (docSnap) => {
-      if (docSnap.exists()) {
-        const reqData = docSnap.data();
-        callback(reqData['analysisResult'] || null, { id: docSnap.id, ...reqData });
-      } else {
+    const metaRef = this.getDocRef(requestId);
+    const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
+    
+    let lastMeta: any = null;
+    let lastDetail: any = null;
+    
+    const emitMerged = () => {
+      if (!lastMeta) {
         callback(null, null);
+        return;
+      }
+      
+      // Hỗ trợ tương thích ngược cho tài liệu cũ chưa thực hiện di chuyển
+      if (lastMeta['analysisResult']) {
+        callback(lastMeta['analysisResult'], { id: requestId, ...lastMeta });
+        return;
+      }
+      
+      const hasDetail = !!lastDetail;
+      const hasSummary = !!lastMeta['analysisResultSummary'];
+      if (!hasDetail && !hasSummary) {
+        callback(null, { id: requestId, ...lastMeta });
+        return;
+      }
+      
+      const mergedDraft: AnalysisResultDraft = {
+        id: requestId,
+        requestId: requestId,
+        sopId: lastMeta['sopId'],
+        sopName: lastMeta['sopName'],
+        status: lastMeta['status'] || 'draft',
+        page1Data: lastDetail?.['page1Data'] || {},
+        resultData: lastDetail?.['resultData'] || {},
+        publishedBackup: lastDetail?.['publishedBackup'],
+        updatedAt: lastDetail?.['updatedAt'] || new Date().toISOString(),
+        updatedBy: lastDetail?.['updatedBy'] || 'System',
+        version: lastMeta['analysisResultSummary']?.['version'] || 0,
+        pdfUrl: lastMeta['analysisResultSummary']?.['pdfUrl'] || '',
+        pdfViewUrl: lastMeta['analysisResultSummary']?.['pdfViewUrl'] || '',
+        docsUrl: lastMeta['analysisResultSummary']?.['docsUrl'] || '',
+        reports: lastMeta['analysisResultSummary']?.['reports']
+      };
+      
+      callback(mergedDraft, { id: requestId, ...lastMeta });
+    };
+    
+    const unsubMeta = onSnapshot(metaRef, (docSnap) => {
+      if (docSnap.exists()) {
+        lastMeta = docSnap.data();
+        emitMerged();
+      } else {
+        lastMeta = null;
+        emitMerged();
       }
     }, (error) => {
-      console.error('Error listening to draft changes:', error);
+      console.error('Error listening to metadata changes:', error);
     });
+    
+    const unsubDetail = onSnapshot(detailRef, (docSnap) => {
+      if (docSnap.exists()) {
+        lastDetail = docSnap.data();
+      } else {
+        lastDetail = null;
+      }
+      emitMerged();
+    }, (error) => {
+      console.error('Error listening to details changes:', error);
+    });
+    
+    return () => {
+      unsubMeta();
+      unsubDetail();
+    };
   }
 
   /**
-   * Tải bản ghi nháp từ trường analysisResult trong Request document
+   * Tải bản ghi nháp bằng cách gộp song song tài liệu metadata và dữ liệu lưới nặng
    */
   async getDraft(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
-      const docSnap = await getDoc(this.getDocRef(requestId));
-      if (docSnap.exists()) {
-        const reqData = docSnap.data();
-        return reqData['analysisResult'] || null;
+      const metaRef = this.getDocRef(requestId);
+      const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
+      
+      const [metaSnap, detailSnap] = await Promise.all([
+        getDoc(metaRef),
+        getDoc(detailRef)
+      ]);
+      
+      if (!metaSnap.exists()) return null;
+      const metaData = metaSnap.data();
+      
+      // Hỗ trợ tương thích ngược cho dữ liệu cũ chưa tách biệt
+      if (metaData['analysisResult']) {
+        return metaData['analysisResult'];
       }
-      return null;
+      
+      const detailData = detailSnap.exists() ? detailSnap.data() : null;
+      if (!detailData && !metaData['analysisResultSummary']) {
+        return null;
+      }
+      
+      return {
+        id: requestId,
+        requestId: requestId,
+        sopId: metaData['sopId'],
+        sopName: metaData['sopName'],
+        status: metaData['status'] || 'draft',
+        page1Data: detailData?.['page1Data'] || {},
+        resultData: detailData?.['resultData'] || {},
+        publishedBackup: detailData?.['publishedBackup'],
+        updatedAt: detailData?.['updatedAt'] || new Date().toISOString(),
+        updatedBy: detailData?.['updatedBy'] || 'Unknown',
+        version: metaData['analysisResultSummary']?.['version'] || 0,
+        pdfUrl: metaData['analysisResultSummary']?.['pdfUrl'] || '',
+        pdfViewUrl: metaData['analysisResultSummary']?.['pdfViewUrl'] || '',
+        docsUrl: metaData['analysisResultSummary']?.['docsUrl'] || '',
+        reports: metaData['analysisResultSummary']?.['reports']
+      } as any;
     } catch (e: any) {
-      console.error('Error fetching result draft:', e);
+      console.error('Error fetching split draft:', e);
       this.toast.show('Không thể tải dữ liệu nháp: ' + e.message, 'error');
       return null;
     }
   }
 
   /**
-   * Lưu nháp kết quả phân tích vào trường analysisResult trong Request document
+   * Lưu nháp kết quả phân tích: Tách dữ liệu lưới và metadata bằng cách thực hiện nguyên tử qua writeBatch
    */
   async saveDraft(requestId: string, draft: Partial<AnalysisResultDraft>): Promise<boolean> {
     try {
-      const ref = this.getDocRef(requestId);
-      const docSnap = await getDoc(ref);
-      if (!docSnap.exists()) {
+      const metaRef = this.getDocRef(requestId);
+      const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
+      
+      const metaSnap = await getDoc(metaRef);
+      if (!metaSnap.exists()) {
         throw new Error('Mẻ chạy không tồn tại trên hệ thống!');
       }
-
-      const reqData = docSnap.data();
-      const currentResult = reqData['analysisResult'] || {};
-
-      // Merge dữ liệu cũ và mới để tránh mất thông tin
-      const updatedResult = {
-        ...currentResult,
-        ...draft,
-        updatedAt: new Date().toISOString(),
-        updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
+      
+      const metaData = metaSnap.data();
+      const userName = this.auth.currentUser()?.displayName || 'Unknown';
+      const timestampStr = new Date().toISOString();
+      
+      // Nạp dữ liệu lưới chi tiết hiện tại để merge an toàn
+      const detailSnap = await getDoc(detailRef);
+      const currentDetail = detailSnap.exists() ? detailSnap.data() : {};
+      
+      // Hỗ trợ di trú tự động: Đọc phân tách dữ liệu cũ nếu có
+      const legacyResult = metaData['analysisResult'] || {};
+      
+      const mergedPage1Data = {
+        ...(legacyResult['page1Data'] || {}),
+        ...(currentDetail['page1Data'] || {}),
+        ...(draft.page1Data || {})
       };
-
-      await updateDoc(ref, { analysisResult: updatedResult });
+      
+      const mergedResultData = {
+        ...(legacyResult['resultData'] || {}),
+        ...(currentDetail['resultData'] || {}),
+        ...(draft.resultData || {})
+      };
+      
+      const mergedPublishedBackup = draft.publishedBackup || currentDetail['publishedBackup'] || legacyResult['publishedBackup'] || null;
+      
+      const batch = writeBatch(this.fb.db);
+      
+      // 1. Cập nhật tài liệu metadata ( requests )
+      const summaryPayload: any = {
+        version: draft.version !== undefined ? draft.version : (metaData['analysisResultSummary']?.['version'] || legacyResult['version'] || 0),
+        updatedAt: timestampStr,
+        updatedBy: userName
+      };
+      
+      if (draft.pdfUrl !== undefined) summaryPayload.pdfUrl = draft.pdfUrl;
+      else if (metaData['analysisResultSummary']?.['pdfUrl'] !== undefined) summaryPayload.pdfUrl = metaData['analysisResultSummary']['pdfUrl'];
+      else if (legacyResult['pdfUrl'] !== undefined) summaryPayload.pdfUrl = legacyResult['pdfUrl'];
+      
+      if (draft.pdfViewUrl !== undefined) summaryPayload.pdfViewUrl = draft.pdfViewUrl;
+      else if (metaData['analysisResultSummary']?.['pdfViewUrl'] !== undefined) summaryPayload.pdfViewUrl = metaData['analysisResultSummary']['pdfViewUrl'];
+      else if (legacyResult['pdfViewUrl'] !== undefined) summaryPayload.pdfViewUrl = legacyResult['pdfViewUrl'];
+      
+      if (draft.docsUrl !== undefined) summaryPayload.docsUrl = draft.docsUrl;
+      else if (metaData['analysisResultSummary']?.['docsUrl'] !== undefined) summaryPayload.docsUrl = metaData['analysisResultSummary']['docsUrl'];
+      else if (legacyResult['docsUrl'] !== undefined) summaryPayload.docsUrl = legacyResult['docsUrl'];
+      
+      if (draft.reports !== undefined) summaryPayload.reports = draft.reports;
+      else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = metaData['analysisResultSummary']['reports'];
+      else if (legacyResult['reports'] !== undefined) summaryPayload.reports = legacyResult['reports'];
+      
+      batch.update(metaRef, {
+        status: draft.status || metaData['status'] || 'draft',
+        lastUpdated: serverTimestamp(),
+        analysisResultSummary: summaryPayload,
+        // Dọn dẹp trường dữ liệu nặng nguyên khối cũ để giảm tải băng thông
+        analysisResult: deleteField()
+      });
+      
+      // 2. Lưu trữ dữ liệu lưới kết quả chi tiết ( results_details )
+      const detailPayload: any = {
+        requestId,
+        sopId: metaData['sopId'],
+        page1Data: mergedPage1Data,
+        resultData: mergedResultData,
+        updatedAt: timestampStr,
+        updatedBy: userName
+      };
+      if (mergedPublishedBackup) {
+        detailPayload.publishedBackup = mergedPublishedBackup;
+      }
+      
+      batch.set(detailRef, detailPayload, { merge: true });
+      
+      await batch.commit();
       return true;
     } catch (e: any) {
       console.error('Error saving result draft:', e);
@@ -196,19 +354,20 @@ export class ResultService {
     prefix?: string
   ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string }> {
     try {
-      // 1. Lấy thông tin phiên bản hiện tại từ Firestore để xác định số phiên bản tiếp theo
       const ref = this.getDocRef(requestId);
       const docSnap = await getDoc(ref);
       if (!docSnap.exists()) {
         throw new Error('Mẻ chạy không tồn tại!');
       }
 
-      const reqData = docSnap.data();
-      const currentResult = reqData['analysisResult'] || {};
+      const currentDraft = await this.getDraft(requestId);
+      if (!currentDraft) {
+        throw new Error('Không thể nạp dữ liệu nháp của mẻ chạy!');
+      }
       
       let nextVersion = 1;
-      const reports = currentResult.reports || {};
-      const currentVersion = currentResult.version || 0;
+      const reports = currentDraft.reports || {};
+      const currentVersion = currentDraft.version || 0;
 
       // Xác định xem đây là báo cáo theo nhóm tiền tố hay báo cáo chung (Tất cả mẫu)
       const isPrefixReport = prefix !== undefined && prefix !== null && prefix !== 'ALL';
@@ -245,38 +404,39 @@ export class ResultService {
             pdfViewUrl: prefixReport.pdfViewUrl || '',
             docsUrl: prefixReport.docsUrl || '',
             pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${prefixReport.version}`,
-            publishedAt: prefixReport.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-            publishedBy: currentResult.updatedBy || 'Unknown',
+            publishedAt: prefixReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            publishedBy: currentDraft.updatedBy || 'Unknown',
             page1DataBackup: prefixReport.publishedBackup?.page1Data || {},
             resultDataBackup: prefixReport.publishedBackup?.resultData || {},
             status: 'published'
           });
         }
-      } else if (currentResult.pdfUrl) {
+      } else if (currentDraft.pdfUrl) {
         const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${currentVersion}`);
         await setDoc(historyDocRef, {
           version: currentVersion || 1,
-          pdfUrl: currentResult.pdfUrl,
-          pdfViewUrl: currentResult.pdfViewUrl || '',
-          docsUrl: currentResult.docsUrl || '',
-          pdfFileName: currentResult.pdfFileName || `KQ_Bản_v${currentVersion}`,
-          publishedAt: currentResult.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-          publishedBy: currentResult.updatedBy || 'Unknown',
-          page1DataBackup: currentResult.publishedBackup?.page1Data || currentResult.page1Data || {},
-          resultDataBackup: currentResult.publishedBackup?.resultData || currentResult.resultData || {},
+          pdfUrl: currentDraft.pdfUrl,
+          pdfViewUrl: currentDraft.pdfViewUrl || '',
+          docsUrl: currentDraft.docsUrl || '',
+          pdfFileName: currentDraft.pdfFileName || `KQ_Bản_v${currentVersion}`,
+          publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+          publishedBy: currentDraft.updatedBy || 'Unknown',
+          page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
+          resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
           status: 'published'
         });
       }
 
-      // 4. Lưu trạng thái completed + phiên bản mới nhất và dữ liệu backup vào Request document chính
+      // 4. Lưu trạng thái completed + phiên bản mới nhất và dữ liệu backup chi tiết
       const backup = {
-        page1Data: draftData.page1Data,
-        resultData: draftData.resultData,
+        page1Data: draftData.page1Data || currentDraft.page1Data,
+        resultData: draftData.resultData || currentDraft.resultData,
         publishedAt: new Date().toISOString(),
         publishedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
-      let finalResult: any;
+      let updatePayload: Partial<AnalysisResultDraft>;
+
       if (isPrefixReport) {
         const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
         const updatedReports = {
@@ -292,33 +452,29 @@ export class ResultService {
             publishedBackup: backup
           }
         };
-        finalResult = {
-          ...currentResult,
+        updatePayload = {
           ...draftData,
           status: 'completed',
-          reports: updatedReports,
-          updatedAt: new Date().toISOString(),
-          updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
+          reports: updatedReports
         };
       } else {
-        finalResult = {
-          ...currentResult,
+        updatePayload = {
           ...draftData,
           status: 'completed',
           version: nextVersion,
           publishedBackup: backup,
-          // Lưu PDF URLs phiên bản mới nhất để hiển thị nhanh
           pdfUrl: response.pdfUrl || null,
           pdfViewUrl: response.pdfViewUrl || null,
           docsUrl: response.docsUrl || null,
           pdfFileName: response.fileName || null,
-          pdfCreatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
+          pdfCreatedAt: new Date().toISOString()
         };
       }
 
-      await updateDoc(ref, { analysisResult: finalResult });
+      const saved = await this.saveDraft(requestId, updatePayload);
+      if (!saved) {
+        throw new Error('Không thể cập nhật thông tin xuất bản mới vào cơ sở dữ liệu!');
+      }
 
       this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
       return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl };
@@ -334,30 +490,26 @@ export class ResultService {
    */
   async revertToDraft(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
-      const ref = this.getDocRef(requestId);
-      const docSnap = await getDoc(ref);
-      if (!docSnap.exists()) {
+      const currentDraft = await this.getDraft(requestId);
+      if (!currentDraft) {
         throw new Error('Mẻ chạy không tồn tại!');
       }
 
-      const reqData = docSnap.data();
-      const currentResult = reqData['analysisResult'] || {};
-
-      if (currentResult.status !== 'completed') {
+      if (currentDraft.status !== 'completed') {
         this.toast.show('Mẻ chạy chưa xuất bản kết quả!', 'info');
         return null;
       }
 
-      const currentVersion = currentResult.version || 1;
+      const currentVersion = currentDraft.version || 1;
 
       // 1. Gửi yêu cầu sang GAS dọn dẹp các tệp bản completed hiện tại (thu thập cả reports map)
       const filesToArchive: { pdfUrl?: string; docsUrl?: string }[] = [];
-      if (currentResult.pdfUrl || currentResult.docsUrl) {
-        filesToArchive.push({ pdfUrl: currentResult.pdfUrl, docsUrl: currentResult.docsUrl });
+      if (currentDraft.pdfUrl || currentDraft.docsUrl) {
+        filesToArchive.push({ pdfUrl: currentDraft.pdfUrl, docsUrl: currentDraft.docsUrl });
       }
-      if (currentResult.reports) {
-        Object.keys(currentResult.reports).forEach(prefix => {
-          const rep = currentResult.reports[prefix];
+      if (currentDraft.reports) {
+        Object.keys(currentDraft.reports).forEach(prefix => {
+          const rep = currentDraft.reports[prefix];
           if (rep.pdfUrl || rep.docsUrl) {
             filesToArchive.push({ pdfUrl: rep.pdfUrl, docsUrl: rep.docsUrl });
           }
@@ -370,9 +522,9 @@ export class ResultService {
       }
 
       // 2. Sao lưu bản vừa hủy vào Sub-collection history
-      if (currentResult.reports) {
-        for (const prefix of Object.keys(currentResult.reports)) {
-          const rep = currentResult.reports[prefix];
+      if (currentDraft.reports) {
+        for (const prefix of Object.keys(currentDraft.reports)) {
+          const rep = currentDraft.reports[prefix];
           const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${prefix}`);
           await setDoc(historyRef, {
             version: rep.version,
@@ -381,8 +533,8 @@ export class ResultService {
             pdfViewUrl: rep.pdfViewUrl || '',
             docsUrl: rep.docsUrl || '',
             pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${prefix}_Bản_v${rep.version}`,
-            publishedAt: rep.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-            publishedBy: currentResult.updatedBy || 'Unknown',
+            publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            publishedBy: currentDraft.updatedBy || 'Unknown',
             page1DataBackup: rep.publishedBackup?.page1Data || {},
             resultDataBackup: rep.publishedBackup?.resultData || {},
             status: 'archived'
@@ -392,35 +544,36 @@ export class ResultService {
         const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${currentVersion}`);
         await setDoc(historyRef, {
           version: currentVersion,
-          pdfUrl: currentResult.pdfUrl || '',
-          pdfViewUrl: currentResult.pdfViewUrl || '',
-          docsUrl: currentResult.docsUrl || '',
-          pdfFileName: currentResult.pdfFileName || `[HUY]_KQ_Bản_v${currentVersion}`,
-          publishedAt: currentResult.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-          publishedBy: currentResult.updatedBy || 'Unknown',
-          page1DataBackup: currentResult.publishedBackup?.page1Data || currentResult.page1Data || {},
-          resultDataBackup: currentResult.publishedBackup?.resultData || currentResult.resultData || {},
+          pdfUrl: currentDraft.pdfUrl || '',
+          pdfViewUrl: currentDraft.pdfViewUrl || '',
+          docsUrl: currentDraft.docsUrl || '',
+          pdfFileName: currentDraft.pdfFileName || `[HUY]_KQ_Bản_v${currentVersion}`,
+          publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+          publishedBy: currentDraft.updatedBy || 'Unknown',
+          page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
+          resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
           status: 'archived'
         });
       }
 
       // 3. Đưa tài liệu chính về trạng thái nháp (draft), xóa các trường URL in hiện tại
-      const updatedResult = {
-        ...currentResult,
+      const updatedResult: Partial<AnalysisResultDraft> = {
         status: 'draft',
-        pdfUrl: null,
-        pdfViewUrl: null,
-        docsUrl: null,
-        pdfFileName: null,
-        pdfCreatedAt: null,
-        reports: null, // Clear reports map on revert to draft so they start fresh
-        updatedAt: new Date().toISOString(),
-        updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
+        pdfUrl: null as any,
+        pdfViewUrl: null as any,
+        docsUrl: null as any,
+        pdfFileName: null as any,
+        pdfCreatedAt: null as any,
+        reports: null as any
       };
 
-      await updateDoc(ref, { analysisResult: updatedResult });
+      const saved = await this.saveDraft(requestId, updatedResult);
+      if (!saved) {
+        throw new Error('Không thể cập nhật trạng thái nháp của mẻ chạy!');
+      }
+
       this.toast.show('Đã mở khóa kết quả mẻ chạy để chỉnh sửa!', 'success');
-      return updatedResult;
+      return await this.getDraft(requestId);
     } catch (e: any) {
       console.error('Error reverting to draft:', e);
       this.toast.show('Lỗi hủy xuất bản: ' + e.message, 'error');
@@ -440,16 +593,19 @@ export class ResultService {
       }
 
       const reqData = docSnap.data();
-      const currentResult = reqData['analysisResult'] || {};
+      const currentDraft = await this.getDraft(requestId);
+      if (!currentDraft) {
+        throw new Error('Không thể nạp dữ liệu nháp của mẻ chạy!');
+      }
 
       // 1. Thu thập tất cả file in của bản hiện tại + các bản in trong lịch sử
       const filesToArchive: { pdfUrl?: string; docsUrl?: string }[] = [];
-      if (currentResult.pdfUrl || currentResult.docsUrl) {
-        filesToArchive.push({ pdfUrl: currentResult.pdfUrl, docsUrl: currentResult.docsUrl });
+      if (currentDraft.pdfUrl || currentDraft.docsUrl) {
+        filesToArchive.push({ pdfUrl: currentDraft.pdfUrl, docsUrl: currentDraft.docsUrl });
       }
-      if (currentResult.reports) {
-        Object.keys(currentResult.reports).forEach(prefix => {
-          const rep = currentResult.reports[prefix];
+      if (currentDraft.reports) {
+        Object.keys(currentDraft.reports).forEach(prefix => {
+          const rep = currentDraft.reports[prefix];
           if (rep.pdfUrl || rep.docsUrl) {
             filesToArchive.push({ pdfUrl: rep.pdfUrl, docsUrl: rep.docsUrl });
           }
@@ -470,10 +626,10 @@ export class ResultService {
       }
 
       // 3. Nếu bản hiện tại là completed, hãy sao lưu nó vào sub-collection history trước khi xóa sạch
-      if (currentResult.status === 'completed') {
-        if (currentResult.reports) {
-          for (const prefix of Object.keys(currentResult.reports)) {
-            const rep = currentResult.reports[prefix];
+      if (currentDraft.status === 'completed') {
+        if (currentDraft.reports) {
+          for (const prefix of Object.keys(currentDraft.reports)) {
+            const rep = currentDraft.reports[prefix];
             const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${prefix}`);
             await setDoc(historyRef, {
               version: rep.version,
@@ -482,26 +638,26 @@ export class ResultService {
               pdfViewUrl: rep.pdfViewUrl || '',
               docsUrl: rep.docsUrl || '',
               pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${prefix}_Bản_v${rep.version}`,
-              publishedAt: rep.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-              publishedBy: currentResult.updatedBy || 'Unknown',
+              publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+              publishedBy: currentDraft.updatedBy || 'Unknown',
               page1DataBackup: rep.publishedBackup?.page1Data || {},
               resultDataBackup: rep.publishedBackup?.resultData || {},
               status: 'archived'
             });
           }
         } else {
-          const currentVersion = currentResult.version || 1;
+          const currentVersion = currentDraft.version || 1;
           const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${currentVersion}`);
           await setDoc(historyRef, {
             version: currentVersion,
-            pdfUrl: currentResult.pdfUrl || '',
-            pdfViewUrl: currentResult.pdfViewUrl || '',
-            docsUrl: currentResult.docsUrl || '',
-            pdfFileName: currentResult.pdfFileName || `[HUY]_KQ_Bản_v${currentVersion}`,
-            publishedAt: currentResult.pdfCreatedAt || currentResult.updatedAt || new Date().toISOString(),
-            publishedBy: currentResult.updatedBy || 'Unknown',
-            page1DataBackup: currentResult.publishedBackup?.page1Data || currentResult.page1Data || {},
-            resultDataBackup: currentResult.publishedBackup?.resultData || currentResult.resultData || {},
+            pdfUrl: currentDraft.pdfUrl || '',
+            pdfViewUrl: currentDraft.pdfViewUrl || '',
+            docsUrl: currentDraft.docsUrl || '',
+            pdfFileName: currentDraft.pdfFileName || `[HUY]_KQ_Bản_v${currentVersion}`,
+            publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            publishedBy: currentDraft.updatedBy || 'Unknown',
+            page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
+            resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
             status: 'archived'
           });
         }
@@ -515,8 +671,8 @@ export class ResultService {
         checkCoMauPhatHien: false
       };
       
-      if (currentResult.page1Data) {
-        Object.keys(currentResult.page1Data).forEach(key => {
+      if (currentDraft.page1Data) {
+        Object.keys(currentDraft.page1Data).forEach(key => {
           if (key !== 'ngayNguoiPhanTich' && key !== 'ngayNguoiThamTra' && key !== 'checkTatCaND' && key !== 'checkCoMauPhatHien') {
             resetPage1Data[key] = false;
           }
@@ -524,13 +680,13 @@ export class ResultService {
       }
 
       const resetResultData: Record<string, any> = {};
-      const sampleList = reqData['sampleList'] || currentResult.sampleList || [];
+      const sampleList = reqData['sampleList'] || currentDraft.sampleList || [];
       
       let activeCols: string[] = [];
-      if (currentResult.resultData) {
-        const firstSample = Object.keys(currentResult.resultData)[0];
-        if (firstSample && currentResult.resultData[firstSample]) {
-          activeCols = Object.keys(currentResult.resultData[firstSample]);
+      if (currentDraft.resultData) {
+        const firstSample = Object.keys(currentDraft.resultData)[0];
+        if (firstSample && currentDraft.resultData[firstSample]) {
+          activeCols = Object.keys(currentDraft.resultData[firstSample]);
         }
       }
 
@@ -544,8 +700,8 @@ export class ResultService {
       const resetResult: AnalysisResultDraft = {
         id: requestId,
         requestId: requestId,
-        sopId: currentResult.sopId || reqData['sopId'] || '',
-        sopName: currentResult.sopName || reqData['sopName'] || '',
+        sopId: currentDraft.sopId || reqData['sopId'] || '',
+        sopName: currentDraft.sopName || reqData['sopName'] || '',
         status: 'draft',
         version: 0,
         page1Data: resetPage1Data,
@@ -559,7 +715,31 @@ export class ResultService {
         updatedBy: this.auth.currentUser()?.displayName || 'Unknown'
       };
 
-      await updateDoc(ref, { analysisResult: deleteField() });
+      const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
+      
+      const batch = writeBatch(this.fb.db);
+      batch.update(ref, {
+        status: 'draft',
+        lastUpdated: serverTimestamp(),
+        analysisResultSummary: {
+          version: 0,
+          updatedAt: resetResult.updatedAt,
+          updatedBy: resetResult.updatedBy
+        },
+        analysisResult: deleteField()
+      });
+      
+      batch.set(detailRef, {
+        requestId,
+        sopId: resetResult.sopId,
+        page1Data: resetPage1Data,
+        resultData: resetResultData,
+        updatedAt: resetResult.updatedAt,
+        updatedBy: resetResult.updatedBy
+      });
+      
+      await batch.commit();
+
       this.toast.show('Đã reset và xóa toàn bộ số liệu của mẻ chạy thành công!', 'success');
       return resetResult;
     } catch (e: any) {

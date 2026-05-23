@@ -11,7 +11,7 @@ import {
 import { ToastService } from './toast.service';
 import { ConfirmationService } from './confirmation.service';
 import { CalculatorService } from './calculator.service';
-import { DeltaSyncService } from './delta-sync.service';
+import { DeltaSyncService, DeltaSyncConfig } from './delta-sync.service';
 
 // Import Models
 import { InventoryItem, StockHistoryItem } from '../models/inventory.model';
@@ -255,10 +255,19 @@ export class StateService implements OnDestroy {
     // OPTIMIZED: allStandardRequests is now loaded on-demand via loadAllStandardRequests()
     // Call it from statistics.component.ts / standard-requests page as needed
 
-    const approvedQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'approved'), orderBy('approvedAt', 'desc'));
-    const appSub = onSnapshot(approvedQuery, (s) => { 
-        const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.approvedRequests.set(items); 
-    }, handleError('Approved Requests'));
+    const approvedRunsConfig: DeltaSyncConfig = {
+      cacheKey: `lims_approved_requests_cache_${this.fb.APP_ID}`,
+      cursorKey: `lims_approved_requests_cursor_${this.fb.APP_ID}`,
+      collectionPath: `artifacts/${this.fb.APP_ID}/requests`,
+      maxCacheSize: 100, // Safe limit for localStorage
+      orderByField: 'approvedAt',
+      orderDirection: 'desc',
+      queryConstraints: [where('status', '==', 'approved')]
+    };
+
+    const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
+      this.approvedRequests.set(runs);
+    });
     this.listeners.push(appSub);
 
     // 4. Logs Listener — OPTIMIZED: limit 500 → 50

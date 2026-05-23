@@ -180,6 +180,19 @@ import { doc, setDoc } from 'firebase/firestore';
               </button>
             </div>
 
+            <!-- Dynamic Merge Mode Toggle -->
+            <button (click)="toggleMergeMode()"
+                    [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-200/50 dark:border-fuchsia-850' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="px-3.5 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 active:scale-95 duration-150 shadow-xs shrink-0 mr-2">
+              <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
+              <span>Gộp mẻ chạy</span>
+              @if (isMergeModeActive() && selectedRunsCount() > 0) {
+                <span class="w-4.5 h-4.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs ml-1">
+                  {{ selectedRunsCount() }}
+                </span>
+              }
+            </button>
+
             <!-- Advanced Filter Button -->
             <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
                     [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-450 border-blue-200/50 dark:border-blue-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
@@ -277,12 +290,14 @@ import { doc, setDoc } from 'firebase/firestore';
                     <div class="flex items-center justify-between mb-3.5">
                       <div class="flex items-center gap-2.5">
                         <!-- Checkbox gộp mẻ chạy -->
-                        <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
-                          <input type="checkbox"
-                                 [checked]="selectedRunsMap()[run.id]"
-                                 (change)="toggleRunSelection(run)"
-                                 class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
-                        </label>
+                        @if (isMergeModeActive()) {
+                          <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                            <input type="checkbox"
+                                   [checked]="selectedRunsMap()[run.id]"
+                                   (change)="toggleRunSelection(run)"
+                                   class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                          </label>
+                        }
                         <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
                           <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                             'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
@@ -327,41 +342,16 @@ import { doc, setDoc } from 'firebase/firestore';
                         <span class="break-all font-mono font-bold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
                       </div>
                     }
-                    
-                    <!-- Milestone Timeline Indicator -->
-                    <div class="mb-5 px-1 relative">
-                      <div class="absolute top-1.5 left-0 right-0 h-[2px] bg-slate-100 dark:bg-slate-800/80 z-0"></div>
-                      <div class="flex justify-between items-center relative z-10 text-[9px] font-black uppercase tracking-wider text-slate-400">
-                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
-                          <span class="w-3 h-3 rounded-full border-2 border-emerald-500 bg-emerald-500"></span>
-                          <span class="text-emerald-600 dark:text-emerald-450 font-extrabold scale-90">Đã Duyệt</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
-                          <span class="w-3 h-3 rounded-full border-2 transition-all duration-300" 
-                                [class]="runStatusMap()[run.id] === 'draft' || runStatusMap()[run.id] === 'completed' ? 'border-indigo-500 bg-indigo-500' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850'"></span>
-                          <span [class]="runStatusMap()[run.id] === 'draft' || runStatusMap()[run.id] === 'completed' ? 'text-indigo-600 dark:text-indigo-400 font-extrabold' : 'text-slate-400'" class="scale-90">Đang nháp</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
-                          <span class="w-3 h-3 rounded-full border-2 transition-all duration-300"
-                                [class]="runStatusMap()[run.id] === 'completed' ? 'border-fuchsia-500 bg-fuchsia-500 shadow-sm shadow-fuchsia-500/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850'"></span>
-                          <span [class]="runStatusMap()[run.id] === 'completed' ? 'text-fuchsia-600 dark:text-fuchsia-400 font-extrabold' : 'text-slate-400'" class="scale-90">Đã in PDF</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                   <!-- Action Buttons -->
                   <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2.5 relative">
                     <!-- Dropdown in ấn báo cáo dạng Popover -->
                     <div class="relative">
-                      @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                      @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                         <button (click)="openReportHub(run); $event.stopPropagation()"
                                 class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
                           <i class="fa-solid fa-file-pdf text-red-500"></i> Báo cáo
                         </button>
-                      } @else {
-                        <div class="text-[9px] font-bold text-slate-400 dark:text-slate-550 flex items-center gap-1 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-900/20 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800">
-                          <i class="fa-solid fa-lock"></i> Chưa báo cáo
-                        </div>
                       }
                     </div>
 
@@ -394,13 +384,14 @@ import { doc, setDoc } from 'firebase/firestore';
                 <table class="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">
-                      <th class="p-4 w-12 text-center">Chọn</th>
+                      @if (isMergeModeActive()) {
+                        <th class="p-4 w-12 text-center">Chọn</th>
+                      }
                       <th class="p-4">Phương pháp / Mã mẻ</th>
                       <th class="p-4">Phân tích viên</th>
                       <th class="p-4">Ngày chạy</th>
                       <th class="p-4">Mẫu kiểm nghiệm</th>
                       <th class="p-4 text-center">Trạng thái</th>
-                      <th class="p-4">Tiến độ</th>
                       <th class="p-4 text-right">Hành động</th>
                     </tr>
                   </thead>
@@ -408,14 +399,16 @@ import { doc, setDoc } from 'firebase/firestore';
                     @for (run of displayedRuns(); track run.id) {
                       <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
                         <!-- Checkbox -->
-                        <td class="p-4 text-center">
-                          <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
-                            <input type="checkbox"
-                                   [checked]="selectedRunsMap()[run.id]"
-                                   (change)="toggleRunSelection(run)"
-                                   class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
-                          </label>
-                        </td>
+                        @if (isMergeModeActive()) {
+                          <td class="p-4 text-center">
+                            <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                              <input type="checkbox"
+                                     [checked]="selectedRunsMap()[run.id]"
+                                     (change)="toggleRunSelection(run)"
+                                     class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                            </label>
+                          </td>
+                        }
 
                         <!-- Method / Batch Code -->
                         <td class="p-4 space-y-0.5">
@@ -468,22 +461,12 @@ import { doc, setDoc } from 'firebase/firestore';
                           </span>
                         </td>
 
-                        <!-- Progress -->
-                        <td class="p-4 w-32">
-                          <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400 font-black">{{ getRunProgress(run) }}%</span>
-                            <div class="flex-1 bg-slate-100 dark:bg-slate-800/80 h-1 rounded-full overflow-hidden">
-                              <div class="h-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }}" [style.width.%]="getRunProgress(run)"></div>
-                            </div>
-                          </div>
-                        </td>
-
                         <!-- Actions -->
                         <td class="p-4 text-right">
                           <div class="flex items-center justify-end gap-2 relative">
                             <!-- Popover report dropdown -->
                             <div class="relative">
-                              @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                              @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                                 <button (click)="openReportHub(run); $event.stopPropagation()"
                                         class="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center justify-center border border-slate-200 dark:border-slate-755 shadow-3xs"
                                         title="Quản lý và xem các báo cáo">
@@ -501,7 +484,7 @@ import { doc, setDoc } from 'firebase/firestore';
                       </tr>
                     } @empty {
                       <tr>
-                        <td colspan="8" class="text-center py-16 text-slate-450 dark:text-slate-500 font-bold">
+                        <td [attr.colspan]="isMergeModeActive() ? 7 : 6" class="text-center py-16 text-slate-450 dark:text-slate-500 font-bold">
                           Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
                         </td>
                       </tr>
@@ -633,20 +616,20 @@ import { doc, setDoc } from 'firebase/firestore';
                 </h4>
 
                 <!-- Báo cáo chung (Tất cả mẫu) - Luôn hiển thị nếu có file in -->
-                @if (selectedRequestForReport().analysisResult?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl) {
+@if ((selectedRequestForReport().analysisResultSummary?.pdfUrl || selectedRequestForReport().analysisResultSummary?.pdfViewUrl) || (selectedRequestForReport().analysisResult?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl)) {
                   <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                     <div>
                       <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ selectedRequestForReport().analysisResult?.version || 1 }}</span>
-                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ selectedRequestForReport().analysisResult?.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ selectedRequestForReport().analysisResultSummary?.version || selectedRequestForReport().analysisResult?.version || 1 }}</span>
+                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ (selectedRequestForReport().analysisResultSummary?.updatedAt || selectedRequestForReport().analysisResult?.pdfCreatedAt) | date:'HH:mm - dd/MM/yyyy' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.pdfViewUrl || selectedRequestForReport().analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
+                      <a [href]="getSafeGoogleUrl((selectedRequestForReport().analysisResultSummary?.pdfViewUrl || selectedRequestForReport().analysisResultSummary?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl || selectedRequestForReport().analysisResult?.pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
                          class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                         <i class="fa-solid fa-file-pdf"></i> XEM PDF
                       </a>
-                      @if (selectedRequestForReport().analysisResult?.docsUrl) {
-                        <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
+                      @if (selectedRequestForReport().analysisResultSummary?.docsUrl || selectedRequestForReport().analysisResult?.docsUrl) {
+                        <a [href]="getSafeGoogleUrl((selectedRequestForReport().analysisResultSummary?.docsUrl || selectedRequestForReport().analysisResult?.docsUrl), 'doc')" target="_blank" rel="noopener noreferrer"
                            class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                           <i class="fa-solid fa-file-word"></i> MỞ DOCS
                         </a>
@@ -698,7 +681,7 @@ import { doc, setDoc } from 'firebase/firestore';
                 }
 
                 <!-- Hộp Cảnh báo Không có file in (Chỉ hiển thị cho mẻ KHÔNG PHẢI Trifluralin khi chưa in bất kỳ bản nào) -->
-                @if (selectedRequestForReport().sopId !== 'trifluralin-gcms' && !selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.pdfViewUrl) {
+                @if (selectedRequestForReport().sopId !== 'trifluralin-gcms' && !selectedRequestForReport().analysisResultSummary?.pdfUrl && !selectedRequestForReport().analysisResultSummary?.pdfViewUrl && !selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.pdfViewUrl) {
                   @if (runStatusMap()[selectedRequestForReport().id] === 'completed') {
                     <div class="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-xs transition">
                       <div class="space-y-1">
@@ -829,6 +812,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   // Dynamic Multi-day Merging State (Option C)
+  isMergeModeActive = signal<boolean>(false);
   selectedRunsMap = signal<Record<string, boolean>>({});
   selectedRunsCount = computed(() => Object.values(this.selectedRunsMap()).filter(Boolean).length);
   showMergeModal = signal<boolean>(false);
@@ -845,12 +829,23 @@ export class ResultListComponent implements OnInit, OnDestroy {
   selectedRequestForReport = signal<any | null>(null);
   selectedRequestHistoryList = signal<any[]>([]);
   isLoadingHistory = signal<boolean>(false);
+  private reportHubSubscription?: any;
 
   async openReportHub(run: any) {
     this.selectedRequestForReport.set(run);
     this.showReportHubModal.set(true);
     this.isLoadingHistory.set(true);
     this.selectedRequestHistoryList.set([]);
+    
+    // Đăng ký lắng nghe thời gian thực của document mẻ chạy này để luôn có bản in mới nhất
+    if (this.reportHubSubscription) {
+      this.reportHubSubscription();
+    }
+    this.reportHubSubscription = this.resultService.subscribeToDraft(run.id, (draft: any, updatedRun: any) => {
+      if (updatedRun) {
+        this.selectedRequestForReport.set(updatedRun);
+      }
+    });
     
     try {
       const hist = await this.resultService.getHistory(run.id);
@@ -866,6 +861,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.showReportHubModal.set(false);
     this.selectedRequestForReport.set(null);
     this.selectedRequestHistoryList.set([]);
+    
+    if (this.reportHubSubscription) {
+      this.reportHubSubscription();
+      this.reportHubSubscription = undefined;
+    }
   }
 
   asReport(val: unknown): any {
@@ -877,20 +877,34 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (!run) return [];
     
     const prefixes = new Set<string>();
+    
+    // 1. Quét từ danh sách mẫu thực tế
     (run.sampleList || []).forEach((s: string) => {
       const startsWithLetter = /^[a-zA-Z]/.test(s);
       const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
       prefixes.add(prefix);
     });
+
+    // 2. Quét từ các khóa báo cáo đã in trong cơ sở dữ liệu để phòng ngừa lỗi thiếu sót
+    // Post-splitting: report keys are in analysisResultSummary.reports (metadata doc)
+    const summaryReports = run.analysisResult?.reports || run.analysisResultSummary?.reports;
+    if (summaryReports) {
+      Object.keys(summaryReports).forEach(key => {
+        const prefix = key === '_NO_PREFIX_' ? '' : key;
+        prefixes.add(prefix);
+      });
+    }
     
     return Array.from(prefixes).sort();
   }
 
   getPrefixReportForSelected(prefix: string): any {
     const run = this.selectedRequestForReport();
-    if (!run || !run.analysisResult?.reports) return null;
+    if (!run) return null;
+    const reports = run.analysisResultSummary?.reports || run.analysisResult?.reports;
+    if (!reports) return null;
     const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix;
-    return run.analysisResult.reports[prefixKey] || null;
+    return reports[prefixKey] || null;
   }
 
   hasAnyPrefixReport(): boolean {
@@ -923,15 +937,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   // Date Filters
-  private getInitialThisWeekRange() {
+  private getInitialThisMonthRange() {
       const today = new Date();
-      const start = new Date();
-      const day = today.getDay(); 
-      const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
-      start.setDate(diffToMon);
-      
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6); // Sunday
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of month
       
       const toStr = (d: Date) => {
           const offset = d.getTimezoneOffset();
@@ -941,7 +950,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       
       return { start: toStr(start), end: toStr(end) };
   }
-  private initialDates = this.getInitialThisWeekRange();
+  private initialDates = this.getInitialThisMonthRange();
   startDate = signal<string>(this.initialDates.start);
   endDate = signal<string>(this.initialDates.end);
   showAdvancedFilters = signal<boolean>(false);
@@ -992,18 +1001,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   getRunProgress(run: any): number {
-    if (!run || !run.sampleList || run.sampleList.length === 0) return 0;
-    const resultData = run.analysisResult?.resultData || {};
-    let filled = 0;
-    run.sampleList.forEach((sample: string) => {
-      const row = resultData[sample];
-      if (row) {
-        const values = Object.keys(row).filter(k => k !== 'selected' && k !== 'loSo' && k !== 'ghiChu');
-        const hasKq = values.some(k => row[k] !== undefined && String(row[k]).trim() !== '');
-        if (hasKq) filled++;
-      }
-    });
-    return Math.round((filled / run.sampleList.length) * 100);
+    // resultData is now in results_details (not cached). Use completion status as proxy.
+    const status = this.runStatusMap()[run.id] || 'pending';
+    if (status === 'completed') return 100;
+    if (status === 'draft') return 50;
+    return 0;
   }
 
   async preloadHistory(requestId: string) {
@@ -1018,12 +1020,20 @@ export class ResultListComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Đọc động trạng thái mẻ chạy từ StateService của Requests (Đã có sẵn cơ chế DeltaSync thời gian thực)
   runStatusMap = computed(() => {
     const statusMap: Record<string, 'pending' | 'draft' | 'completed'> = {};
-    const all = this.state.approvedRequests() || [];
+    const all = this.state.approvedRequests() || [];\r
     all.forEach((run: any) => {
-      statusMap[run.id] = run.analysisResult?.status || 'pending';
+      // Post-Document-Splitting: saveDraft() writes status to root of requests doc
+      // ('draft' | 'completed'). Root status='approved' means no entry done yet.
+      // Legacy backward compat: also check analysisResult.status for old docs.
+      const rootStatus: string = run.status || 'approved';
+      if (rootStatus === 'draft' || rootStatus === 'completed') {
+        statusMap[run.id] = rootStatus as 'draft' | 'completed';
+      } else {
+        // 'approved' or unknown → check legacy analysisResult field
+        statusMap[run.id] = run.analysisResult?.status || 'pending';
+      }
     });
     return statusMap;
   });
@@ -1032,7 +1042,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.isLoading.set(false);
   }
 
-  ngOnDestroy() {}
+  ngOnDestroy() {
+    if (this.reportHubSubscription) {
+      this.reportHubSubscription();
+    }
+  }
 
   // Danh sách các mẻ đã duyệt thành công
   allApprovedRuns = computed(() => {
@@ -1218,20 +1232,28 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.endDate.set(range.end);
   }
 
+  toggleMergeMode() {
+    const nextVal = !this.isMergeModeActive();
+    this.isMergeModeActive.set(nextVal);
+    if (!nextVal) {
+      this.selectedRunsMap.set({});
+    }
+  }
+
   hasActiveFilters(): boolean {
     return this.searchText() !== '' || 
            this.selectedSopId() !== 'all' || 
            this.selectedAnalyst() !== 'all' || 
-           this.startDate() !== '' || 
-           this.endDate() !== '';
+           this.startDate() !== this.initialDates.start || 
+           this.endDate() !== this.initialDates.end;
   }
 
   resetAllFilters() {
     this.searchText.set('');
     this.selectedSopId.set('all');
     this.selectedAnalyst.set('all');
-    this.startDate.set('');
-    this.endDate.set('');
+    this.startDate.set(this.initialDates.start);
+    this.endDate.set(this.initialDates.end);
   }
 
   // Option C selection and merging handlers
@@ -1272,7 +1294,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (runs.length < 2) return;
     
     // Choose default master curve (first one with existing calibration if available)
-    const defaultCurve = runs.find(r => r.analysisResult?.resultData && Object.keys(r.analysisResult.resultData).some(k => k.startsWith('CAL_'))) || runs[0];
+    // resultData lives in results_details (not in cache) — pick the oldest run as default master
+    const defaultCurve = runs[0];
     this.masterCurveRunId.set(defaultCurve.id);
     
     // Auto-generate date range
@@ -1325,20 +1348,22 @@ export class ResultListComponent implements OnInit, OnDestroy {
     // Prepare resultData: inherit calibration and QC from the selected curve run
     const resultData: Record<string, any> = {};
     
-    // Inherit calibration curve and other metadata from selected curveRun
-    const curveResult = curveRun.analysisResult || {};
-    const curveResultData = curveResult.resultData || {};
+    // Note: resultData now lives in results_details, not in cache.
+    // Virtual Master will be created with empty resultData and page1Data;
+    // analyst must open it and save/publish manually to populate.
+    const curveResult: any = {};
+    const curveResultData: any = {};
     
-    // 1. Copy calibration points and standard QC rows
+    // 1. No calibration data in cache - leave empty for analyst to fill
     Object.keys(curveResultData).forEach(key => {
       if (key.startsWith('CAL_') || key.startsWith('QC_') || key.includes('BLANK') || key.includes('SPIKE') || key.includes('FINAL')) {
         resultData[key] = { ...curveResultData[key] };
       }
     });
 
-    // 2. Copy sample rows from their respective source runs
+    // 2. Sample rows - start empty (analyst will fill via entry screen)
     sops.forEach(r => {
-      const sourceResultData = r.analysisResult?.resultData || {};
+      const sourceResultData: any = {};
       if (r.sampleList) {
         r.sampleList.forEach((s: string) => {
           if (sourceResultData[s]) {
@@ -1368,18 +1393,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
         analysisDate: this.unifiedDateString()
       },
       sampleList,
-      analysisResult: {
-        status: 'draft',
-        version: 0,
-        resultData,
-        page1Data: {
-          ...(curveResult.page1Data || {}),
-          ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
-          ngayNguoiThamTra: new Date().toISOString().split('T')[0],
-          checkTatCaND: true,
-          checkCoMauPhatHien: false
-        }
-      }
+      // Post-splitting: status is top-level; grid data goes to results_details
+      status: 'approved'
     };
 
     // Save directly to Firestore under requests
