@@ -610,7 +610,29 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    this.syncQcValues();
     this.draftChanged.emit(this.draft);
+  }
+
+  syncQcValues() {
+    if (!this.draft || !this.draft.resultData) return;
+    const allFinalKey = `QC_FINAL_QC_`;
+    const sourceFinal = this.draft.resultData[allFinalKey];
+    if (sourceFinal) {
+      const prefixes = this.detectedPrefixes() || [];
+      prefixes.forEach(p => {
+        if (p && p !== 'ALL') {
+          const targetKey = `QC_FINAL_QC_${p}`;
+          if (!this.draft.resultData[targetKey]) {
+            this.draft.resultData[targetKey] = {};
+          }
+          this.draft.resultData[targetKey]['loSo'] = sourceFinal['loSo'] || '';
+          this.draft.resultData[targetKey]['kqTrifluralin'] = sourceFinal['kqTrifluralin'] || '';
+          this.draft.resultData[targetKey]['ghiChu'] = sourceFinal['ghiChu'] || '';
+          this.draft.resultData[targetKey]['selected'] = sourceFinal['selected'] !== false;
+        }
+      });
+    }
   }
 
   onCheckboxChange(changedKey: string) {
@@ -636,11 +658,13 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   getSpikeNKey(n: number, prefix: string): string {
-    return `QC_SPIKE_${n}`;
+    const p = prefix === 'ALL' ? '' : prefix;
+    return `QC_SPIKE_${n}_QC_${p}`;
   }
 
   getFinalKey(prefix: string): string {
-    return `QC_FINAL`;
+    const p = prefix === 'ALL' ? '' : prefix;
+    return `QC_FINAL_QC_${p}`;
   }
 
   getDisplayRowsForPrefix(prefix: string): any[] {

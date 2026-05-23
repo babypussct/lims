@@ -888,7 +888,31 @@ export class ResultEntryType2Component implements OnInit {
   }
 
   onDataChanged() {
+    this.syncQcValues();
     this.draftChanged.emit(this.draft);
+  }
+
+  syncQcValues() {
+    if (!this.draft || !this.draft.resultData) return;
+    const allFinalKey = `QC_FINAL_QC_`;
+    const sourceFinal = this.draft.resultData[allFinalKey];
+    if (sourceFinal) {
+      const prefixes = this.detectedPrefixes() || [];
+      prefixes.forEach(p => {
+        if (p && p !== 'ALL') {
+          const targetKey = `QC_FINAL_QC_${p}`;
+          if (!this.draft.resultData[targetKey]) {
+            this.draft.resultData[targetKey] = {};
+          }
+          this.draft.resultData[targetKey]['loSo'] = sourceFinal['loSo'] || '';
+          this.activeColumns.forEach(col => {
+            this.draft.resultData[targetKey][col] = sourceFinal[col] || '';
+          });
+          this.draft.resultData[targetKey]['ghiChu'] = sourceFinal['ghiChu'] || '';
+          this.draft.resultData[targetKey]['selected'] = sourceFinal['selected'] !== false;
+        }
+      });
+    }
   }
 
   onCellChanged(sampleCode: string) {

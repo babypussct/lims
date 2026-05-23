@@ -28,7 +28,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
   'trifluralin-gcms': {
     formType: 'type2',
     columns: { loSo: 0, maSoMau: 1, kqTrifluralin: 2, ghiChu: 3 },
-    maSoMauChunkSize: 7,
+    maSoMauChunkSize: 9,
     checkboxLines: {
       'Các mẫu thử không phát hiện Trifluralin': 'checkTatCaND',
       'Có mẫu thử phát hiện Trifluralin': 'checkCoMauPhatHien'

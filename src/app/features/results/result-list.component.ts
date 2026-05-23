@@ -52,6 +52,66 @@ import { doc, setDoc } from 'firebase/firestore';
         </div>
       </div>
 
+      <!-- Premium Glassmorphic Stats Header -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 shrink-0">
+        <!-- KPI 1: Active Runs -->
+        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+          <div class="space-y-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Phân Tích Hoạt Động</span>
+            <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ allApprovedRuns().length }}</span>
+            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-450 flex items-center gap-1 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Real-time Sync
+            </span>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-fuchsia-500/10 to-pink-500/10 dark:from-fuchsia-500/20 dark:to-pink-500/20 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-400">
+            <i class="fa-solid fa-flask text-lg"></i>
+          </div>
+        </div>
+
+        <!-- KPI 2: Completion Rate -->
+        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+          <div class="space-y-1 flex-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Hiệu Suất Nhập Liệu</span>
+            <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ averageCompletion() }}%</span>
+            <div class="w-full bg-slate-150 dark:bg-slate-800 h-1 rounded-full overflow-hidden mt-2">
+              <div class="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ml-4 shrink-0">
+            <i class="fa-solid fa-chart-line text-lg"></i>
+          </div>
+        </div>
+
+        <!-- KPI 3: Pending Entry -->
+        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+          <div class="space-y-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Đang Chờ Nhập</span>
+            <span class="text-2xl font-black text-amber-600 dark:text-amber-500 block">{{ pendingCount() }}</span>
+            <span class="text-[9px] font-bold text-amber-600 dark:text-amber-450 flex items-center gap-1 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Yêu cầu nhập gấp
+            </span>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+          </div>
+        </div>
+
+        <!-- KPI 4: SOP Ratio -->
+        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+          <div class="space-y-1 flex-1">
+            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Phân Bổ Phương Pháp SOP</span>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-950/20 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">Trifluralin: {{ sopDistribution().trifluralin }}</span>
+              <span class="text-xs font-black text-slate-550 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">Khác: {{ sopDistribution().others }}</span>
+            </div>
+            <div class="w-full flex h-1 rounded-full overflow-hidden mt-2 bg-slate-150 dark:bg-slate-800">
+              <div class="bg-fuchsia-500 h-full rounded-l-full" [style.width.%]="allApprovedRuns().length ? (sopDistribution().trifluralin / allApprovedRuns().length) * 100 : 0"></div>
+              <div class="bg-slate-400 h-full rounded-r-full" [style.width.%]="allApprovedRuns().length ? ((sopDistribution().others) / allApprovedRuns().length) * 100 : 0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Advanced Filter Panel & Search -->
       <div class="mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
         <div class="flex flex-col sm:flex-row gap-3">
@@ -64,7 +124,7 @@ import { doc, setDoc } from 'firebase/firestore';
                    [value]="searchText()"
                    (input)="onSearchInput($event)"
                    placeholder="Tìm theo Mã mẻ chạy, SOP, Mã số mẫu, Analyst..." 
-                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold transition">
+                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold transition font-sans">
             @if (searchText()) {
               <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <i class="fa-solid fa-circle-xmark text-xs"></i>
@@ -72,13 +132,30 @@ import { doc, setDoc } from 'firebase/firestore';
             }
           </div>
 
-          <!-- Advanced Toggle & Clear Buttons -->
-          <div class="flex items-center gap-2">
+          <!-- Advanced Toggle, View Switcher & Clear Buttons -->
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <!-- View Mode Switcher (iOS Segmented Style) -->
+            <div class="flex bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 rounded-xl mr-2 shrink-0">
+              <button (click)="viewMode.set('grid')"
+                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350'"
+                      class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                <i class="fa-solid fa-table-cells text-[10px]"></i>
+                <span>Lưới</span>
+              </button>
+              <button (click)="viewMode.set('table')"
+                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350'"
+                      class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
+                <i class="fa-solid fa-list text-[10px]"></i>
+                <span>Bảng</span>
+              </button>
+            </div>
+
+            <!-- Advanced Filter Button -->
             <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
                     [class]="showAdvancedFilters() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-450 border-fuchsia-200/50 dark:border-fuchsia-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="px-4 py-2 border rounded-xl text-xs font-black transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 relative active:scale-95 duration-150 shadow-xs">
+                    class="px-4 py-2 border rounded-xl text-xs font-black transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 relative active:scale-95 duration-150 shadow-xs shrink-0">
               <i class="fa-solid fa-sliders text-[10px]"></i>
-              <span>Bộ lọc nâng cao</span>
+              <span>Lọc nâng cao</span>
               @if (activeFiltersCount() > 0) {
                 <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-fuchsia-500/30">
                   {{ activeFiltersCount() }}
@@ -89,13 +166,12 @@ import { doc, setDoc } from 'firebase/firestore';
             
             @if (hasActiveFilters()) {
               <button (click)="resetAllFilters()" 
-                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-xs">
+                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-xs shrink-0">
                 <i class="fa-solid fa-rotate-left text-[10px]"></i>
-                <span>Xóa bộ lọc</span>
+                <span>Xóa lọc</span>
               </button>
             }
           </div>
-        </div>
 
         <!-- Collapsible Content -->
         @if (showAdvancedFilters()) {
@@ -135,15 +211,9 @@ import { doc, setDoc } from 'firebase/firestore';
                   (dateChange)="onDateRangeChange($event)">
               </app-date-range-filter>
             </div>
-          </div>
-        }
-      </div>
-
-      <!-- Main Content Area -->
-      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-20">
-        @if (isLoading()) {
-          <div class="grid md:grid-cols-2 gap-4 animate-pulse">
-            @for (i of [1,2,3,4]; track i) {
+                  @if (isLoading()) {
+          <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
+            @for (i of [1,2,3,4,5,6]; track i) {
               <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
                 <app-skeleton width="80px" height="14px"></app-skeleton>
                 <app-skeleton width="200px" height="20px"></app-skeleton>
@@ -153,216 +223,309 @@ import { doc, setDoc } from 'firebase/firestore';
             }
           </div>
         } @else {
-          <div class="grid md:grid-cols-2 gap-4">
-            @for (run of displayedRuns(); track run.id) {
-              <!-- CHÚ Ý: Loại bỏ overflow-hidden và thêm z-10 hover:z-30 relative để menu dropdown in ấn hiển thị tràn không bị che -->
-              <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group">
-                <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
-                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
+          @if (viewMode() === 'grid') {
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              @for (run of displayedRuns(); track run.id) {
+                <!-- CHÚ Ý: z-10 hover:z-30 relative để menu dropdown in ấn hiển thị tràn không bị che -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group"
+                     [class.ring-1]="run.isVirtualMaster"
+                     [class.ring-fuchsia-500/30]="run.isVirtualMaster"
+                     [class.dark:ring-fuchsia-500/20]="run.isVirtualMaster">
+                  <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
+                  <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
 
-                <!-- Top Header Card -->
-                <div>
-                  <div class="flex items-center justify-between mb-3.5">
-                    <div class="flex items-center gap-2.5">
-                      <!-- Checkbox gộp mẻ chạy -->
-                      <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
-                        <input type="checkbox"
-                               [checked]="selectedRunsMap()[run.id]"
-                               (change)="toggleRunSelection(run)"
-                               class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
-                      </label>
-                      <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                          'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
-                          'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
-                          'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
-                        }"></span>
-                        {{ getStatusText(run.id) }}
+                  <!-- Top Header Card -->
+                  <div>
+                    <div class="flex items-center justify-between mb-3.5">
+                      <div class="flex items-center gap-2.5">
+                        <!-- Checkbox gộp mẻ chạy -->
+                        <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                          <input type="checkbox"
+                                 [checked]="selectedRunsMap()[run.id]"
+                                 (change)="toggleRunSelection(run)"
+                                 class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                        </label>
+                        <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
+                          <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                            'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
+                            'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
+                            'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                          }"></span>
+                          {{ getStatusText(run.id) }}
+                        </span>
+                        @if (run.isVirtualMaster) {
+                          <span class="px-2 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase tracking-widest animate-pulse">Master ảo</span>
+                        }
+                      </div>
+                      <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">
+                        <i class="fa-regular fa-calendar mr-1"></i>
+                        {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
                       </span>
                     </div>
-                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">
-                      <i class="fa-regular fa-calendar mr-1"></i>
-                      {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
-                    </span>
+
+                    <!-- SOP Title -->
+                    <h3 class="font-extrabold text-slate-800 dark:text-slate-150 text-base mb-1.5 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
+                      {{ run.sopName }}
+                    </h3>
+                    
+                    <!-- Analyst block (Pastel custom avatar) -->
+                    <div class="text-xs text-slate-500 dark:text-slate-450 mb-4 flex items-center gap-2">
+                      <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-3xs select-none">
+                        {{ getAnalystInitials(run.user) }}
+                      </div>
+                      <span class="font-bold text-slate-655 dark:text-slate-300">{{ run.user || 'Unknown' }}</span>
+                    </div>
+
+                    <!-- Sample Codes -->
+                    @if (run.sampleList && run.sampleList.length > 0) {
+                      <div class="mb-4 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-start gap-2 max-h-20 overflow-y-auto custom-scrollbar">
+                        <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"></i>
+                        <span class="break-all font-mono font-bold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
+                      </div>
+                    }
+                    
+                    <!-- Milestone Timeline Indicator -->
+                    <div class="mb-5 px-1 relative">
+                      <div class="absolute top-1.5 left-0 right-0 h-[2px] bg-slate-100 dark:bg-slate-800/80 z-0"></div>
+                      <div class="flex justify-between items-center relative z-10 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
+                          <span class="w-3 h-3 rounded-full border-2 border-emerald-500 bg-emerald-500"></span>
+                          <span class="text-emerald-600 dark:text-emerald-450 font-extrabold scale-90">Đã Duyệt</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
+                          <span class="w-3 h-3 rounded-full border-2 transition-all duration-300" 
+                                [class]="runStatusMap()[run.id] === 'draft' || runStatusMap()[run.id] === 'completed' ? 'border-indigo-500 bg-indigo-500' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850'"></span>
+                          <span [class]="runStatusMap()[run.id] === 'draft' || runStatusMap()[run.id] === 'completed' ? 'text-indigo-600 dark:text-indigo-400 font-extrabold' : 'text-slate-400'" class="scale-90">Đang nháp</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 px-1">
+                          <span class="w-3 h-3 rounded-full border-2 transition-all duration-300"
+                                [class]="runStatusMap()[run.id] === 'completed' ? 'border-fuchsia-500 bg-fuchsia-500 shadow-sm shadow-fuchsia-500/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850'"></span>
+                          <span [class]="runStatusMap()[run.id] === 'completed' ? 'text-fuchsia-600 dark:text-fuchsia-400 font-extrabold' : 'text-slate-400'" class="scale-90">Đã in PDF</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <!-- SOP Title -->
-                  <h3 class="font-extrabold text-slate-800 dark:text-slate-150 text-base mb-1.5 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
-                    {{ run.sopName }}
-                  </h3>
-                  
-                  <!-- Analyst block (Pastel custom avatar) -->
-                  <div class="text-xs text-slate-500 dark:text-slate-450 mb-4.5 flex items-center gap-2">
-                    <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-3xs select-none">
-                      {{ getAnalystInitials(run.user) }}
-                    </div>
-                    <span class="font-bold text-slate-650 dark:text-slate-300">{{ run.user || 'Unknown' }}</span>
-                  </div>
+                  <!-- Action Buttons -->
+                  <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2.5 relative">
+                    <!-- Dropdown in ấn báo cáo dạng Popover -->
+                    <div class="relative">
+                      @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                        <button (click)="activeReportDropdownId.set(activeReportDropdownId() === run.id ? null : run.id); $event.stopPropagation()"
+                                class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
+                          <i class="fa-solid fa-file-pdf text-red-500"></i> Báo cáo <i class="fa-solid fa-chevron-down text-[9px] transition-transform" [class.rotate-180]="activeReportDropdownId() === run.id"></i>
+                        </button>
 
-                  <!-- Sample Codes -->
-                  @if (run.sampleList && run.sampleList.length > 0) {
-                    <div class="mb-4 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-start gap-2 max-h-24 overflow-y-auto custom-scrollbar">
-                      <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"></i>
-                      <span class="break-all font-mono font-bold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
-                    </div>
-                  }
-                  
-                  <!-- Progress Bar -->
-                  <div class="mb-5">
-                    <div class="flex justify-between items-center mb-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                      <span>Tiến độ nhập liệu</span>
-                      <span>{{ getRunProgress(run) }}%</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden border border-slate-200/10">
-                      <div class="h-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-full transition-all duration-500" 
-                           [style.width.%]="getRunProgress(run)"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2 relative">
-                  <!-- PDF / Docs Buttons (chỉ hiện khi đã có PDF hoặc các bản báo cáo theo nhóm) -->
-                  @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
-                    <div class="flex flex-col gap-2 mb-2">
-                      
-                      <!-- 1. Báo cáo chung (Tất cả mẫu) - Chỉ hiện khi có pdfUrl ở root -->
-                      @if (run.analysisResult?.pdfUrl) {
-                        <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                          <span class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 min-w-[85px] truncate">
-                            Tất cả mẫu:
-                          </span>
-                          
-                          <div class="flex-1 flex items-center relative group/hist">
-                            <!-- Nút Xem PDF chính -->
-                            <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
-                                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-l-lg text-[11px] font-bold transition"
-                                    [class.rounded-r-lg]="(run.analysisResult?.version || 0) <= 1"
-                                    title="Mở file PDF phiên bản mới nhất (v{{ run.analysisResult?.version || 1 }})">
-                              <i class="fa-solid fa-file-pdf"></i> PDF (v{{ run.analysisResult?.version || 1 }})
-                            </a>
+                        @if (activeReportDropdownId() === run.id) {
+                          <div class="fixed inset-0 z-40 cursor-default" (click)="activeReportDropdownId.set(null); $event.stopPropagation()"></div>
+                          <div class="absolute left-0 bottom-full mb-2 bg-white dark:bg-slate-900 border border-slate-150/80 dark:border-slate-800 rounded-2xl shadow-xl w-68 p-3 z-50 animate-fade-in text-xs space-y-2 text-left">
+                            <h4 class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] pb-1 border-b border-slate-100 dark:border-slate-800">Danh sách báo cáo</h4>
                             
-                            <!-- Nút Dropdown lịch sử nếu có -->
-                            @if ((run.analysisResult?.version || 0) > 1) {
-                              <button (mouseenter)="preloadHistory(run.id)"
-                                      class="px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border-t border-b border-r border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-r-lg text-[10px] font-bold transition flex items-center justify-center">
-                                <i class="fa-solid fa-chevron-down text-[8px]"></i>
-                              </button>
-                              
-                              <!-- Dropdown menu (Lịch sử bản in) -->
-                              <div class="absolute right-0 top-full mt-1.5 w-68 bg-white dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 rounded-xl shadow-xl opacity-0 invisible group-hover/hist:opacity-100 group-hover/hist:visible transition-all duration-200 z-50 py-1.5 max-h-60 overflow-y-auto custom-scrollbar">
-                                <div class="px-3 py-1 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lịch sử bản in</div>
-                                
-                                <!-- Bản hiện tại -->
-                                <div class="px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                  <div class="flex flex-col gap-0.5">
-                                    <span class="font-bold text-slate-700 dark:text-slate-200">Bản hiện tại (v{{ run.analysisResult?.version }})</span>
-                                    <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold">{{ run.analysisResult?.pdfCreatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                                  </div>
-                                  <div class="flex gap-1.5">
-                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-650 dark:text-red-400 hover:underline font-black text-[11px]">PDF</a>
-                                    @if (run.analysisResult?.docsUrl) {
-                                      <span class="text-slate-300">|</span>
-                                      <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-black text-[11px]">Doc</a>
+                            <!-- 1. Báo cáo chung (Tất cả mẫu) - pdfUrl ở root -->
+                            @if (run.analysisResult?.pdfUrl) {
+                              <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
+                                <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400">Tất cả mẫu:</span>
+                                <div class="flex items-center relative gap-1 mt-0.5">
+                                  <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
+                                     class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-red-50 dark:bg-red-950/25 border border-red-150 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 rounded text-[9px] font-bold transition">
+                                    PDF
+                                  </a>
+                                  @if (run.analysisResult?.docsUrl) {
+                                    <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'docs')" target="_blank" rel="noopener noreferrer"
+                                       class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
+                                      Docs
+                                    </a>
+                                  }
+                                </div>
+                              </div>
+                            }
+
+                            <!-- 2. Báo cáo theo nhóm (Prefix groups) -->
+                            @if (run.analysisResult?.reports) {
+                              @for (grp of run.analysisResult.reports; track grp.prefix) {
+                                <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
+                                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-400 truncate">Nhóm {{ grp.prefix }}:</span>
+                                  <div class="flex items-center relative gap-1 mt-0.5">
+                                    <a [href]="getSafeGoogleUrl(grp.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                                       class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-red-50 dark:bg-red-950/25 border border-red-150 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 rounded text-[9px] font-bold transition">
+                                      PDF
+                                    </a>
+                                    @if (grp.docsUrl) {
+                                      <a [href]="getSafeGoogleUrl(grp.docsUrl, 'docs')" target="_blank" rel="noopener noreferrer"
+                                         class="flex-1 flex items-center justify-center gap-0.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/25 border border-blue-150 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 text-[9px] font-bold transition rounded">
+                                        Docs
+                                      </a>
                                     }
                                   </div>
                                 </div>
-                                
-                                <!-- Spinner loading -->
-                                @if (loadingHistories()[run.id]) {
-                                  <div class="px-4 py-3 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700/50">
-                                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải...
-                                  </div>
-                                } @else {
-                                  <!-- Các bản trong lịch sử -->
-                                  @for (hist of historiesMap()[run.id] || []; track hist.version) {
-                                    @if (hist.version !== run.analysisResult?.version) {
-                                      <div class="px-4 py-2 text-xs flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                        <div class="flex flex-col gap-0.5">
-                                          <span class="font-bold text-slate-700 dark:text-slate-200">Phiên bản v{{ hist.version }} {{ hist.status === 'archived' ? '(Đã hủy)' : '' }}</span>
-                                          <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold">{{ hist.publishedAt | date:'dd/MM/yyyy HH:mm' }} - {{ hist.publishedBy }}</span>
-                                        </div>
-                                        <div class="flex gap-1.5 font-black">
-                                          <a [href]="getSafeGoogleUrl(hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer" class="text-red-650 dark:text-red-400 hover:underline text-[11px]">PDF</a>
-                                          @if (hist.docsUrl) {
-                                            <span class="text-slate-300">|</span>
-                                            <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px]">Doc</a>
+                              }
+                            }
+                          </div>
+                        }
+                      } @else {
+                        <div class="text-[9px] font-bold text-slate-400 dark:text-slate-550 flex items-center gap-1 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-900/20 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                          <i class="fa-solid fa-lock"></i> Chưa báo cáo
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Enter/Edit Action Button -->
+                    <button (click)="enterResults(run.id)"
+                            [class]="runStatusMap()[run.id] === 'completed' 
+                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30 shadow-3xs'
+                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-xs active:scale-95 duration-155'"
+                            class="px-4 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-3xs active:scale-95">
+                      <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
+                      {{ runStatusMap()[run.id] === 'completed' ? 'Sửa/In lại' : 'Nhập kết quả' }}
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <div class="col-span-full text-center py-20 bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
+                  <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
+                    <i class="fa-solid fa-square-poll-vertical text-3xl"></i>
+                  </div>
+                  <p class="text-slate-500 dark:text-slate-400 font-bold text-sm">
+                    Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
+                  </p>
+                </div>
+              }
+            </div>
+          } @else if (viewMode() === 'table') {
+            <!-- Compact Table List View -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">
+                      <th class="p-4 w-12 text-center">Chọn</th>
+                      <th class="p-4">Phương pháp / Mã mẻ</th>
+                      <th class="p-4">Phân tích viên</th>
+                      <th class="p-4">Ngày chạy</th>
+                      <th class="p-4">Mẫu kiểm nghiệm</th>
+                      <th class="p-4 text-center">Trạng thái</th>
+                      <th class="p-4">Tiến độ</th>
+                      <th class="p-4 text-right">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    @for (run of displayedRuns(); track run.id) {
+                      <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
+                        <!-- Checkbox -->
+                        <td class="p-4 text-center">
+                          <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                            <input type="checkbox"
+                                   [checked]="selectedRunsMap()[run.id]"
+                                   (change)="toggleRunSelection(run)"
+                                   class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                          </label>
+                        </td>
+
+                        <!-- Method / Batch Code -->
+                        <td class="p-4 space-y-0.5">
+                          <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }}"></span>
+                            <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs sm:text-sm">{{ run.sopName }}</span>
+                            @if (run.isVirtualMaster) {
+                              <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
+                            }
+                          </div>
+                          <div class="text-[10px] text-slate-400 font-mono tracking-tight font-bold">Mã mẻ: {{ run.inputs?.['batchCode'] || run.id }}</div>
+                        </td>
+
+                        <!-- Analyst -->
+                        <td class="p-4">
+                          <div class="flex items-center gap-2">
+                            <div [class]="getAnalystAvatarClass(run.user)" class="w-5 h-5 rounded-full border flex items-center justify-center text-[8px] font-black uppercase shadow-3xs">
+                              {{ getAnalystInitials(run.user) }}
+                            </div>
+                            <span class="text-xs">{{ run.user || 'Unknown' }}</span>
+                          </div>
+                        </td>
+
+                        <!-- Date -->
+                        <td class="p-4 text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                          {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
+                        </td>
+
+                        <!-- Sample list -->
+                        <td class="p-4 max-w-[200px]">
+                          <div class="truncate text-[11px] font-mono text-slate-500 dark:text-slate-450" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
+                            {{ run.sampleList?.length || 0 }} mẫu ({{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }})
+                          </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="p-4 text-center">
+                          <span [class]="getStatusClass(run.id)" class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1 justify-center">
+                            <span class="w-1.2 h-1.2 rounded-full" [ngClass]="{
+                              'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
+                              'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
+                              'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                            }"></span>
+                            {{ getStatusText(run.id) }}
+                          </span>
+                        </td>
+
+                        <!-- Progress -->
+                        <td class="p-4 w-32">
+                          <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400 font-black">{{ getRunProgress(run) }}%</span>
+                            <div class="flex-1 bg-slate-100 dark:bg-slate-800/80 h-1 rounded-full overflow-hidden">
+                              <div class="h-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }}" [style.width.%]="getRunProgress(run)"></div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="p-4 text-right">
+                          <div class="flex items-center justify-end gap-2 relative">
+                            <!-- Popover report dropdown -->
+                            <div class="relative">
+                              @if (run.analysisResult?.reports || run.analysisResult?.pdfUrl || run.analysisResult?.docsUrl) {
+                                <button (click)="activeReportDropdownId.set(activeReportDropdownId() === run.id ? null : run.id); $event.stopPropagation()"
+                                        class="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center justify-center border border-slate-200 dark:border-slate-755 shadow-3xs">
+                                  <i class="fa-solid fa-file-pdf text-red-500 text-xs"></i>
+                                </button>
+                                @if (activeReportDropdownId() === run.id) {
+                                  <div class="fixed inset-0 z-40" (click)="activeReportDropdownId.set(null); $event.stopPropagation()"></div>
+                                  <div class="absolute right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-2xl shadow-xl w-64 p-3 z-50 animate-fade-in text-xs space-y-2 text-left">
+                                    <h4 class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] pb-1 border-b border-slate-100 dark:border-slate-800">Báo cáo sẵn có</h4>
+                                    @if (run.analysisResult?.pdfUrl) {
+                                      <div class="flex items-center justify-between gap-2 p-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100 dark:border-slate-800">
+                                        <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400">Tất cả:</span>
+                                        <div class="flex items-center gap-1">
+                                          <a [href]="getSafeGoogleUrl(run.analysisResult!.pdfUrl!, 'pdf')" target="_blank" class="px-2 py-1 bg-red-50 text-red-700 rounded text-[9px] font-bold border border-red-150">PDF</a>
+                                          @if (run.analysisResult?.docsUrl) {
+                                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'docs')" target="_blank" class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[9px] font-bold border border-blue-150">Docs</a>
                                           }
                                         </div>
                                       </div>
                                     }
-                                  }
+                                  </div>
                                 }
-                              </div>
-                            }
+                              }
+                            </div>
+
+                            <button (click)="enterResults(run.id)"
+                                    class="px-3 py-1.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 rounded-xl text-[11px] font-black transition active:scale-95 duration-100 flex items-center gap-1 shadow-3xs">
+                              <i class="fa-solid fa-arrow-right"></i>
+                            </button>
                           </div>
-
-                          @if (run.analysisResult?.docsUrl) {
-                            <a [href]="getSafeGoogleUrl(run.analysisResult!.docsUrl!, 'doc')" target="_blank" rel="noopener noreferrer"
-                                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
-                                    title="Mở bản Google Docs gốc">
-                              <i class="fa-brands fa-google-drive"></i> Docs
-                            </a>
-                          }
-                        </div>
-                      }
-
-                      <!-- 2. Các báo cáo phân theo nhóm tiền tố -->
-                      @if (run.analysisResult?.reports) {
-                        @for (prefix of getReportKeys(run.analysisResult?.reports); track prefix) {
-                          @let report = run.analysisResult?.reports?.[prefix];
-                          <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                            <span class="text-[11px] font-black text-slate-500 dark:text-slate-450 min-w-[85px] truncate">
-                              {{ prefix === '' || prefix === '_NO_PREFIX_' ? 'Không tiền tố' : 'Nhóm ' + prefix }}:
-                            </span>
-                            
-                            @if (report?.pdfUrl) {
-                              <a [href]="getSafeGoogleUrl(report?.pdfUrl || '', 'pdf')" target="_blank" rel="noopener noreferrer"
-                                      class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg text-[11px] font-bold transition"
-                                      title="Xem PDF bản v{{ report?.version || 1 }}">
-                                <i class="fa-solid fa-file-pdf"></i> PDF (v{{ report?.version || 1 }})
-                              </a>
-                            }
-                            @if (report?.docsUrl) {
-                              <a [href]="getSafeGoogleUrl(report?.docsUrl || '', 'doc')" target="_blank" rel="noopener noreferrer"
-                                      class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded-lg text-[11px] font-bold transition"
-                                      title="Mở Google Docs">
-                                <i class="fa-brands fa-google-drive"></i> Docs
-                              </a>
-                            }
-                          </div>
-                        }
-                      }
-                    </div>
-                  }
-
-                  <!-- Enter / Edit Button -->
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-black max-w-[120px] sm:max-w-[200px] truncate" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
-                      {{ run.sampleList?.length || 0 }} mẫu ({{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }})
-                    </span>
-                    <button (click)="enterResults(run.id)"
-                            [class]="runStatusMap()[run.id] === 'completed' 
-                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30 shadow-3xs'
-                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-xs active:scale-95 duration-150'"
-                            class="px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2">
-                      <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
-                      {{ runStatusMap()[run.id] === 'completed' ? 'Chỉnh sửa / In lại' : 'Nhập Kết quả' }}
-                    </button>
-                  </div>
-                </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="8" class="text-center py-16 text-slate-450 dark:text-slate-500 font-bold">
+                          Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
-            } @empty {
-              <div class="col-span-full text-center py-20 bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
-                <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
-                  <i class="fa-solid fa-square-poll-vertical text-3xl"></i>
-                </div>
-                <p class="text-slate-500 dark:text-slate-400 font-bold text-sm">
-                  Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
-                </p>
-              </div>
-            }
-          </div>
+            </div>
+          }
         }
       </div>
 
@@ -491,6 +654,35 @@ export class ResultListComponent implements OnInit, OnDestroy {
   masterCurveRunId = signal<string>('');
   unifiedDateString = signal<string>('');
   customMasterId = signal<string>('');
+
+  // Premium Dashboard & View Mode States
+  viewMode = signal<'grid' | 'table'>('grid');
+  activeReportDropdownId = signal<string | null>(null);
+
+  // Stat computations (0 extra Database Reads)
+  averageCompletion = computed(() => {
+    const runs = this.allApprovedRuns();
+    if (runs.length === 0) return 0;
+    const total = runs.reduce((sum, run) => sum + this.getRunProgress(run), 0);
+    return Math.round(total / runs.length);
+  });
+
+  pendingCount = computed(() => {
+    return this.filteredCount('pending');
+  });
+
+  sopDistribution = computed(() => {
+    const runs = this.allApprovedRuns();
+    let trifluralin = 0;
+    let fipronil = 0;
+    let others = 0;
+    runs.forEach(run => {
+      if (run.sopId === 'trifluralin-gcms') trifluralin++;
+      else if (run.sopId === 'fipronil-chlorpyrifos') fipronil++;
+      else others++;
+    });
+    return { trifluralin, fipronil, others };
+  });
 
   // Date Filters
   private getInitialThisWeekRange() {
