@@ -41,13 +41,21 @@ export interface AnalysisResultDraft {
   
   // Danh sách báo cáo theo tiền tố (cho SOP-03)
   reports?: Record<string, {
-    pdfUrl: string;
-    pdfViewUrl?: string;
-    docsUrl?: string;
-    pdfFileName: string;
-    publishedAt: string;
-    publishedBy: string;
+    pdfUrl: string | null;
+    pdfViewUrl?: string | null;
+    docsUrl?: string | null;
+    pdfFileName: string | null;
+    pdfCreatedAt?: string;
+    publishedAt?: string;
+    publishedBy?: string;
     version: number;
+    status?: string;
+    publishedBackup?: {
+      page1Data: any;
+      resultData: any;
+      publishedAt?: string;
+      publishedBy?: string;
+    };
   }>;
   
   // URLs PDF đã tạo — lưu để xem lại bất cứ lúc nào

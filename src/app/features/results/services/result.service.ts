@@ -451,22 +451,22 @@ export class ResultService {
             status: 'completed',
             publishedBackup: backup
           }
-        };
+        } as AnalysisResultDraft['reports'];
         updatePayload = {
           ...draftData,
-          status: 'completed',
+          status: 'completed' as const,
           reports: updatedReports
         };
       } else {
         updatePayload = {
           ...draftData,
-          status: 'completed',
+          status: 'completed' as const,
           version: nextVersion,
           publishedBackup: backup,
-          pdfUrl: response.pdfUrl || null,
-          pdfViewUrl: response.pdfViewUrl || null,
-          docsUrl: response.docsUrl || null,
-          pdfFileName: response.fileName || null,
+          pdfUrl: response.pdfUrl || undefined,
+          pdfViewUrl: response.pdfViewUrl || undefined,
+          docsUrl: response.docsUrl || undefined,
+          pdfFileName: response.fileName || undefined,
           pdfCreatedAt: new Date().toISOString()
         };
       }
@@ -522,9 +522,10 @@ export class ResultService {
       }
 
       // 2. Sao lưu bản vừa hủy vào Sub-collection history
-      if (currentDraft.reports) {
-        for (const prefix of Object.keys(currentDraft.reports)) {
-          const rep = currentDraft.reports[prefix];
+      const currentReports = currentDraft.reports || {};
+      if (Object.keys(currentReports).length > 0) {
+        for (const prefix of Object.keys(currentReports)) {
+          const rep = currentReports[prefix];
           const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${prefix}`);
           await setDoc(historyRef, {
             version: rep.version,
@@ -627,9 +628,10 @@ export class ResultService {
 
       // 3. Nếu bản hiện tại là completed, hãy sao lưu nó vào sub-collection history trước khi xóa sạch
       if (currentDraft.status === 'completed') {
-        if (currentDraft.reports) {
-          for (const prefix of Object.keys(currentDraft.reports)) {
-            const rep = currentDraft.reports[prefix];
+        const currentReports2 = currentDraft.reports || {};
+        if (Object.keys(currentReports2).length > 0) {
+          for (const prefix of Object.keys(currentReports2)) {
+            const rep = currentReports2[prefix];
             const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${prefix}`);
             await setDoc(historyRef, {
               version: rep.version,
@@ -680,7 +682,7 @@ export class ResultService {
       }
 
       const resetResultData: Record<string, any> = {};
-      const sampleList = reqData['sampleList'] || currentDraft.sampleList || [];
+      const sampleList = reqData['sampleList'] || [];
       
       let activeCols: string[] = [];
       if (currentDraft.resultData) {

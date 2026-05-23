@@ -1022,7 +1022,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   runStatusMap = computed(() => {
     const statusMap: Record<string, 'pending' | 'draft' | 'completed'> = {};
-    const all = this.state.approvedRequests() || [];\r
+    const all = this.state.approvedRequests() || [];
     all.forEach((run: any) => {
       // Post-Document-Splitting: saveDraft() writes status to root of requests doc
       // ('draft' | 'completed'). Root status='approved' means no entry done yet.
@@ -1393,8 +1393,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         analysisDate: this.unifiedDateString()
       },
       sampleList,
-      // Post-splitting: status is top-level; grid data goes to results_details
-      status: 'approved'
+      status: 'approved' as const
     };
 
     // Save directly to Firestore under requests
