@@ -211,7 +211,11 @@ import { doc, setDoc } from 'firebase/firestore';
                   (dateChange)="onDateRangeChange($event)">
               </app-date-range-filter>
             </div>
-                  @if (isLoading()) {
+          </div>
+        }
+      </div>
+
+      @if (isLoading()) {
           <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
             @for (i of [1,2,3,4,5,6]; track i) {
               <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
@@ -535,7 +539,6 @@ import { doc, setDoc } from 'firebase/firestore';
             </div>
           }
         }
-      </div>
 
       <!-- Floating Merge Action Bar -->
       @if (selectedRunsCount() >= 2) {
