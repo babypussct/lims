@@ -349,7 +349,7 @@ import { doc, setDoc } from 'firebase/firestore';
 
                             <!-- 2. Báo cáo theo nhóm (Prefix groups) -->
                             @if (run.analysisResult?.reports) {
-                              @for (grp of (run.analysisResult.reports | keyvalue); track grp.key) {
+                              @for (grp of (run.analysisResult?.reports | keyvalue); track grp.key) {
                                 <div class="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150/30 dark:border-slate-800/40">
                                   <span class="text-[9px] font-black text-slate-400 dark:text-slate-400 truncate">Nhóm {{ grp.key }}:</span>
                                   <div class="flex items-center relative gap-1 mt-0.5">
