@@ -55,7 +55,8 @@ import { doc, setDoc } from 'firebase/firestore';
       <!-- Premium Glassmorphic Stats Header -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 shrink-0">
         <!-- KPI 1: Active Runs -->
-        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+        <div (click)="filterStatus.set('all'); selectedSopId.set('all')"
+             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
           <div class="space-y-1">
             <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Phân Tích Hoạt Động</span>
             <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ allApprovedRuns().length }}</span>
@@ -69,7 +70,8 @@ import { doc, setDoc } from 'firebase/firestore';
         </div>
 
         <!-- KPI 2: Completion Rate -->
-        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+        <div (click)="filterStatus.set('completed')"
+             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
           <div class="space-y-1 flex-1">
             <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Hiệu Suất Nhập Liệu</span>
             <span class="text-2xl font-black text-slate-800 dark:text-slate-100 block">{{ averageCompletion() }}%</span>
@@ -83,7 +85,8 @@ import { doc, setDoc } from 'firebase/firestore';
         </div>
 
         <!-- KPI 3: Pending Entry -->
-        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+        <div (click)="filterStatus.set('pending')"
+             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
           <div class="space-y-1">
             <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Mẻ Đang Chờ Nhập</span>
             <span class="text-2xl font-black text-amber-600 dark:text-amber-500 block">{{ pendingCount() }}</span>
@@ -97,7 +100,8 @@ import { doc, setDoc } from 'firebase/firestore';
         </div>
 
         <!-- KPI 4: SOP Ratio -->
-        <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 transition-all duration-300">
+        <div (click)="selectedSopId.set(selectedSopId() === 'trifluralin-gcms' ? 'all' : 'trifluralin-gcms')"
+             class="cursor-pointer bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between relative group hover:border-fuchsia-350 dark:hover:border-fuchsia-800/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
           <div class="space-y-1 flex-1">
             <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Phân Bổ Phương Pháp SOP</span>
             <div class="flex items-center gap-2 mt-1.5">
@@ -596,7 +600,7 @@ import { doc, setDoc } from 'firebase/firestore';
                 </h4>
 
                 <!-- Báo cáo chung (Tất cả mẫu) -->
-                @if (selectedRequestForReport().analysisResult?.pdfUrl) {
+                @if (selectedRequestForReport().analysisResult?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl) {
                   <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                     <div>
                       <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
@@ -604,7 +608,7 @@ import { doc, setDoc } from 'firebase/firestore';
                       <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ selectedRequestForReport().analysisResult?.pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
+                      <a [href]="getSafeGoogleUrl(selectedRequestForReport().analysisResult!.pdfViewUrl || selectedRequestForReport().analysisResult!.pdfUrl!, 'pdf')" target="_blank" rel="noopener noreferrer"
                          class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                         <i class="fa-solid fa-file-pdf"></i> XEM PDF
                       </a>
@@ -630,8 +634,8 @@ import { doc, setDoc } from 'firebase/firestore';
                         <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ asReport(grp.value).pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
                       </div>
                       <div class="flex items-center gap-2">
-                        @if (asReport(grp.value).pdfUrl) {
-                          <a [href]="getSafeGoogleUrl(asReport(grp.value).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
+                        @if (asReport(grp.value).pdfUrl || asReport(grp.value).pdfViewUrl) {
+                          <a [href]="getSafeGoogleUrl(asReport(grp.value).pdfViewUrl || asReport(grp.value).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
                              class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-pdf"></i> XEM PDF
                           </a>

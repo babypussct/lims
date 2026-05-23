@@ -120,29 +120,58 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
               <span>{{ getPrintButtonLabel() }}</span>
             </button>
 
-            <!-- Thao tác khác Dropdown -->
+            <!-- Thao tác khác Dropdown (Premium SaaS Dropdown) -->
             <div class="relative group/actions">
               <button [disabled]="isProcessing()"
-                      class="px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1 disabled:opacity-50">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
+                      class="px-3.5 py-2 text-xs font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 duration-150">
+                <i class="fa-solid fa-gear"></i>
+                <span>THAO TÁC</span>
                 <i class="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
               </button>
               
-              <div class="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 invisible group-hover/actions:opacity-100 group-hover/actions:visible transition-all duration-200 z-50 py-1">
+              <div class="absolute right-0 top-full mt-2 w-64 bg-white/98 dark:bg-slate-900/98 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-2xl p-2 opacity-0 invisible group-hover/actions:opacity-100 group-hover/actions:visible transition-all duration-200 z-50 flex flex-col gap-1">
+                
+                <!-- Section 1: Tài liệu & Báo cáo -->
+                @if (getCurrentPdfUrl() || getCurrentDocsUrl()) {
+                  <div class="px-2.5 py-1 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Báo cáo & Tài liệu
+                  </div>
+                  @if (getCurrentPdfUrl()) {
+                    <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
+                       class="px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-2.5 no-underline">
+                      <i class="fa-solid fa-file-pdf"></i>
+                      <span>Xem PDF phiên bản này</span>
+                    </a>
+                  }
+                  @if (getCurrentDocsUrl()) {
+                    <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                       class="px-3 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-2.5 no-underline">
+                      <i class="fa-brands fa-google-drive"></i>
+                      <span>Mở Docs phiên bản này</span>
+                    </a>
+                  }
+                  <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                }
+
+                <!-- Section 2: Quản lý mẻ chạy -->
+                <div class="px-2.5 py-1 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Quản trị mẻ chạy
+                </div>
                 @if (draft()?.status === 'completed') {
                   <button (click)="triggerRevertToDraft()" 
                           [disabled]="isProcessing()"
-                          class="w-full text-left px-4 py-2.5 text-xs text-amber-600 dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                          class="w-full text-left px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
                     <i class="fa-solid fa-unlock"></i>
                     <span>Hủy xuất bản kết quả</span>
                   </button>
                 }
                 <button (click)="openResetModal()"
                         [disabled]="isProcessing()"
-                        class="w-full text-left px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/50">
+                        class="w-full text-left px-3 py-2 text-xs font-bold text-red-600 dark:text-red-450 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
                   <i class="fa-solid fa-trash-can"></i>
                   <span>Xóa hoàn toàn kết quả</span>
                 </button>
+
               </div>
             </div>
           </div>
