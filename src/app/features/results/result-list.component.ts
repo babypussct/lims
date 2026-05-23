@@ -250,11 +250,6 @@ import { doc, setDoc } from 'firebase/firestore';
             </div>
           </div>
         }
-      </div>(dateChange)="onDateRangeChange($event)">
-              </app-date-range-filter>
-            </div>
-          </div>
-        }
       </div>
 
       @if (isLoading()) {
