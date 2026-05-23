@@ -6,6 +6,9 @@ import { formatSampleList, getSafeGoogleUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ResultService } from './services/result.service';
+import { FirebaseService } from '../../core/services/firebase.service';
+import { ToastService } from '../../core/services/toast.service';
+import { doc, setDoc } from 'firebase/firestore';
 
 @Component({
   selector: 'app-result-list',
@@ -160,14 +163,23 @@ import { ResultService } from './services/result.service';
                 <!-- Top Header Card -->
                 <div>
                   <div class="flex items-center justify-between mb-3.5">
-                    <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                        'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
-                        'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
-                        'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
-                      }"></span>
-                      {{ getStatusText(run.id) }}
-                    </span>
+                    <div class="flex items-center gap-2.5">
+                      <!-- Checkbox gộp mẻ chạy -->
+                      <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                        <input type="checkbox"
+                               [checked]="selectedRunsMap()[run.id]"
+                               (change)="toggleRunSelection(run)"
+                               class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                      </label>
+                      <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                          'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
+                          'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
+                          'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                        }"></span>
+                        {{ getStatusText(run.id) }}
+                      </span>
+                    </div>
                     <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">
                       <i class="fa-regular fa-calendar mr-1"></i>
                       {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
@@ -353,6 +365,94 @@ import { ResultService } from './services/result.service';
           </div>
         }
       </div>
+
+      <!-- Floating Merge Action Bar -->
+      @if (selectedRunsCount() >= 2) {
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-slate-950/95 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-700/50 backdrop-blur-md animate-fade-in z-50">
+          <div class="flex flex-col">
+            <span class="text-xs font-black text-slate-100">Đã chọn {{ selectedRunsCount() }} mẻ chạy để gộp kết quả</span>
+            <span class="text-[9px] font-bold text-slate-400 mt-0.5">Phương pháp: {{ getSelectedSopName() }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="cancelSelection()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition">
+              Hủy
+            </button>
+            <button (click)="openMergeModal()" class="px-4 py-1.5 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-md shadow-fuchsia-500/20">
+              Gộp mẻ chạy
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Glassmorphic Merge Modal -->
+      @if (showMergeModal()) {
+        <div class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full border border-slate-100 dark:border-slate-800/80 shadow-2xl p-6 space-y-5">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Cấu hình Gộp mẻ chạy</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-450 mt-1">Hợp nhất mẫu từ nhiều mẻ chạy khác ngày vào 1 phiếu duy nhất.</p>
+              </div>
+              <button (click)="closeMergeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fa-solid fa-circle-xmark text-lg"></i>
+              </button>
+            </div>
+
+            <!-- Configuration Form -->
+            <div class="space-y-4 text-xs">
+              <!-- Choosing Master Curve -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Mẻ lấy đường chuẩn chính</label>
+                <div class="space-y-2">
+                  @for (run of getSelectedRuns(); track run.id) {
+                    <label class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-150 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/20 transition">
+                      <input type="radio" 
+                             name="masterCurve" 
+                             [value]="run.id"
+                             [checked]="masterCurveRunId() === run.id"
+                             (change)="masterCurveRunId.set(run.id)"
+                             class="text-fuchsia-600 focus:ring-fuchsia-500">
+                      <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-700 dark:text-slate-250">{{ run.sopName }} (v{{ run.analysisResult?.version || 1 }})</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-0.5">Mã mẻ: {{ run.inputs?.['batchCode'] || run.id }} - Người nhập: {{ run.user }}</span>
+                      </div>
+                    </label>
+                  }
+                </div>
+              </div>
+
+              <!-- Unified Date Range -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Ngày phân tích hiển thị trên phiếu</label>
+                <input type="text"
+                       [value]="unifiedDateString()"
+                       (input)="onUnifiedDateChange($event)"
+                       placeholder="Ví dụ: 22/05/2026 - 23/05/2026"
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold">
+              </div>
+
+              <!-- Custom Master Run Code -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Mã mẻ gộp Master (Custom ID)</label>
+                <input type="text"
+                       [value]="customMasterId()"
+                       (input)="onCustomMasterIdChange($event)"
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-mono font-bold uppercase">
+              </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <button (click)="closeMergeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition">
+                Hủy
+              </button>
+              <button (click)="executeMerge()" class="px-5 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition shadow-md shadow-fuchsia-500/10">
+                Tạo mẻ gộp
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -360,6 +460,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private router = inject(Router);
   private resultService = inject(ResultService);
+  private fb = inject(FirebaseService);
+  private toast = inject(ToastService);
 
   formatSampleList = formatSampleList;
   getSafeGoogleUrl = getSafeGoogleUrl;
@@ -381,6 +483,14 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (this.startDate() || this.endDate()) count++;
     return count;
   });
+
+  // Dynamic Multi-day Merging State (Option C)
+  selectedRunsMap = signal<Record<string, boolean>>({});
+  selectedRunsCount = computed(() => Object.values(this.selectedRunsMap()).filter(Boolean).length);
+  showMergeModal = signal<boolean>(false);
+  masterCurveRunId = signal<string>('');
+  unifiedDateString = signal<string>('');
+  customMasterId = signal<string>('');
 
   // Date Filters
   private getInitialThisWeekRange() {
@@ -692,6 +802,175 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.selectedAnalyst.set('all');
     this.startDate.set('');
     this.endDate.set('');
+  }
+
+  // Option C selection and merging handlers
+  toggleRunSelection(run: any) {
+    const current = { ...this.selectedRunsMap() };
+    const checked = !current[run.id];
+    
+    if (checked) {
+      // Validate: Must be same SOP as existing selections (if any)
+      const selected = this.getSelectedRuns();
+      if (selected.length > 0 && selected[0].sopId !== run.sopId) {
+        this.toast.show('Chỉ cho phép gộp các mẻ chạy có cùng Phương pháp (SOP)!', 'warning');
+        return;
+      }
+      current[run.id] = true;
+    } else {
+      delete current[run.id];
+    }
+    this.selectedRunsMap.set(current);
+  }
+
+  getSelectedRuns(): any[] {
+    const map = this.selectedRunsMap();
+    return this.allApprovedRuns().filter(run => map[run.id]);
+  }
+
+  getSelectedSopName(): string {
+    const runs = this.getSelectedRuns();
+    return runs.length > 0 ? runs[0].sopName : '';
+  }
+
+  cancelSelection() {
+    this.selectedRunsMap.set({});
+  }
+
+  openMergeModal() {
+    const runs = this.getSelectedRuns();
+    if (runs.length < 2) return;
+    
+    // Choose default master curve (first one with existing calibration if available)
+    const defaultCurve = runs.find(r => r.analysisResult?.resultData && Object.keys(r.analysisResult.resultData).some(k => k.startsWith('CAL_'))) || runs[0];
+    this.masterCurveRunId.set(defaultCurve.id);
+    
+    // Auto-generate date range
+    const dates = runs.map(r => this.getRunDate(r)).filter(Boolean).map(d => this.formatAnalysisDate(d));
+    const uniqueDates = Array.from(new Set(dates)).sort();
+    if (uniqueDates.length === 1) {
+      this.unifiedDateString.set(uniqueDates[0]);
+    } else if (uniqueDates.length > 1) {
+      this.unifiedDateString.set(`${uniqueDates[0]} - ${uniqueDates[uniqueDates.length - 1]}`);
+    } else {
+      this.unifiedDateString.set(this.formatAnalysisDate(new Date().toISOString().split('T')[0]));
+    }
+    
+    // Auto-generate custom master ID
+    const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const sopShort = runs[0].sopId === 'trifluralin-gcms' ? 'TRIFLURALIN' : 'SOP';
+    this.customMasterId.set(`GOP-${sopShort}-${todayStr}`);
+    
+    this.showMergeModal.set(true);
+  }
+
+  closeMergeModal() {
+    this.showMergeModal.set(false);
+  }
+
+  onUnifiedDateChange(event: Event) {
+    this.unifiedDateString.set((event.target as HTMLInputElement).value);
+  }
+
+  onCustomMasterIdChange(event: Event) {
+    this.customMasterId.set((event.target as HTMLInputElement).value.toUpperCase());
+  }
+
+  async executeMerge() {
+    const sops = this.getSelectedRuns();
+    if (sops.length < 2) return;
+    const masterId = this.customMasterId().trim().toUpperCase() || `GOP-${Date.now()}`;
+    const masterCurveId = this.masterCurveRunId();
+    const curveRun = sops.find(r => r.id === masterCurveId) || sops[0];
+    
+    // Combine sample lists uniquely
+    const allSamples = new Set<string>();
+    sops.forEach(r => {
+      if (r.sampleList) {
+        r.sampleList.forEach((s: string) => allSamples.add(s));
+      }
+    });
+    const sampleList = Array.from(allSamples).sort();
+
+    // Prepare resultData: inherit calibration and QC from the selected curve run
+    const resultData: Record<string, any> = {};
+    
+    // Inherit calibration curve and other metadata from selected curveRun
+    const curveResult = curveRun.analysisResult || {};
+    const curveResultData = curveResult.resultData || {};
+    
+    // 1. Copy calibration points and standard QC rows
+    Object.keys(curveResultData).forEach(key => {
+      if (key.startsWith('CAL_') || key.startsWith('QC_') || key.includes('BLANK') || key.includes('SPIKE') || key.includes('FINAL')) {
+        resultData[key] = { ...curveResultData[key] };
+      }
+    });
+
+    // 2. Copy sample rows from their respective source runs
+    sops.forEach(r => {
+      const sourceResultData = r.analysisResult?.resultData || {};
+      if (r.sampleList) {
+        r.sampleList.forEach((s: string) => {
+          if (sourceResultData[s]) {
+            resultData[s] = { ...sourceResultData[s] };
+          } else {
+            resultData[s] = {}; // Fallback empty row
+          }
+        });
+      }
+    });
+
+    // Create the Virtual Master payload
+    const masterPayload: any = {
+      sopId: curveRun.sopId,
+      sopName: curveRun.sopName,
+      items: curveRun.items || [], // inherit standard reagents/materials requested
+      status: 'approved', // must be approved to enter results!
+      isVirtualMaster: true,
+      childRequestIds: sops.map(r => r.id),
+      timestamp: new Date(),
+      lastUpdated: new Date(),
+      approvedAt: new Date(),
+      user: this.state.getCurrentUserName(),
+      inputs: {
+        ...(curveRun.inputs || {}),
+        batchCode: masterId,
+        analysisDate: this.unifiedDateString()
+      },
+      sampleList,
+      analysisResult: {
+        status: 'draft',
+        version: 0,
+        resultData,
+        page1Data: {
+          ...(curveResult.page1Data || {}),
+          ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
+          ngayNguoiThamTra: new Date().toISOString().split('T')[0],
+          checkTatCaND: true,
+          checkCoMauPhatHien: false
+        }
+      }
+    };
+
+    // Save directly to Firestore under requests
+    try {
+      this.isLoading.set(true);
+      const docRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', masterId);
+      await setDoc(docRef, masterPayload);
+      
+      // Close modal and deselect
+      this.closeMergeModal();
+      this.cancelSelection();
+      this.toast.show(`Đã khởi tạo mẻ gộp Master "${masterId}" thành công!`, 'success');
+      
+      // Navigate immediately to entry grid!
+      this.router.navigate(['/results', masterId]);
+    } catch (e: any) {
+      console.error('Error creating virtual master run:', e);
+      this.toast.show('Không thể tạo mẻ gộp: ' + e.message, 'error');
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   enterResults(requestId: string) {
