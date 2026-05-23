@@ -32,7 +32,7 @@ const CONFIG = {
         kqTrifluralin: 2,    // col index "KQ Trifluralin (µg/kg)"
         ghiChu:        3,    // col index "Ghi chú"
       },
-      maSoMauChunkSize: 7,   // Tự động ngắt dòng cột mã số mẫu sau mỗi 7 ký tự (chỉ áp dụng cho Trifluralin)
+      maSoMauChunkSize: 9,   // Tự động ngắt dòng cột mã số mẫu sau mỗi 9 ký tự (chỉ áp dụng cho Trifluralin)
       headerRows: 1,         // số hàng header không điền data
       textReplacements: {},
       checkboxLines: {

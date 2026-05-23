@@ -636,13 +636,11 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   getSpikeNKey(n: number, prefix: string): string {
-    const p = prefix === 'ALL' ? '' : prefix;
-    return `QC_SPIKE_${n}_QC_${p}`;
+    return `QC_SPIKE_${n}`;
   }
 
   getFinalKey(prefix: string): string {
-    const p = prefix === 'ALL' ? '' : prefix;
-    return `QC_FINAL_QC_${p}`;
+    return `QC_FINAL`;
   }
 
   getDisplayRowsForPrefix(prefix: string): any[] {
