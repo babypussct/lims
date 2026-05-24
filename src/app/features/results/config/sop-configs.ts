@@ -21,7 +21,7 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
 export const ANGULAR_SOP_CONFIG: Record<string, {
   formType: 'type2' | 'type3a' | 'type3b';
   columns: Record<string, number>;
-  checkboxLines: Record<string, string>;
+  checkboxLines?: Record<string, string>;
   signaturePlaceholders: Record<string, string>;
   maSoMauChunkSize?: number;
   compounds?: string[]; // Dành riêng cho Dạng 3B
