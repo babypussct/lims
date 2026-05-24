@@ -13,6 +13,7 @@ import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 
 // Isolated SOP presentational components
 import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
+import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-1767857760184-entry.component';
 import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
 import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
 
@@ -25,6 +26,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
     ResultEntryType3bComponent, 
     SkeletonComponent,
     Sop01EntryComponent,
+    Sop1767857760184EntryComponent,
     Sop03EntryComponent,
     SopDefaultType2EntryComponent
   ],
@@ -296,6 +298,15 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                     (draftChanged)="onDraftChanged($event)">
                   </app-sop-01-entry>
                 }
+                @case ('dichlorvos-gcms') {
+                  <app-sop-1767857760184-entry
+                    [activeFilter]="activeFilter()"
+                    [run]="filteredRun()!"
+                    [draft]="draft()!"
+                    [config]="config()!"
+                    (draftChanged)="onDraftChanged($event)">
+                  </app-sop-1767857760184-entry>
+                }
                 @case ('trifluralin-gcms') {
                   <app-sop-03-entry
                     #sop03Grid
@@ -554,6 +565,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private createDefaultDraft(runDoc: any, sopConf: any): AnalysisResultDraft {
     const isTrifluralin = runDoc.sopId === 'SOP-03' || (sopConf.columns && sopConf.columns.kqTrifluralin !== undefined);
     const isFipronil = runDoc.sopId === 'SOP-01' || (sopConf.columns && sopConf.columns.kqFip !== undefined);
+    const isDichlorvos = runDoc.sopId === 'sop_1767857760184' || (sopConf.columns && sopConf.columns.kqDichlorvos !== undefined);
 
     const defaultPage1: Record<string, any> = {
       ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
@@ -573,6 +585,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         { loSo: '44', hamLuong: '5.0' },
         { loSo: '45', hamLuong: '10.0' },
         { loSo: '46', hamLuong: '30.0' }
+      ];
+    } else if (isDichlorvos) {
+      defaultPage1['r2'] = '0.999';
+      defaultPage1['calibPoints'] = [
+        { loSo: '1', hamLuong: '0.1' },
+        { loSo: '2', hamLuong: '0.2' },
+        { loSo: '3', hamLuong: '0.5' },
+        { loSo: '4', hamLuong: '1.0' },
+        { loSo: '5', hamLuong: '2.0' },
+        { loSo: '6', hamLuong: '5.0' }
       ];
     } else if (isFipronil) {
       defaultPage1['hasCheckSample'] = false;
@@ -610,6 +632,19 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           ghiChu: '',
           selected: true
         };
+      });
+    } else if (isDichlorvos) {
+      sampleList.forEach((sampleCode: string, idx: number) => {
+        defaultResultData[sampleCode] = {
+          loSo: String(idx + 1),
+          selected: true
+        };
+        Object.keys(sopConf.columns || {}).forEach((col: string) => {
+          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+            defaultResultData[sampleCode][col] = '';
+          }
+        });
+        defaultResultData[sampleCode]['ghiChu'] = '';
       });
     } else if (isFipronil) {
       const activeCols = Object.keys(sopConf.columns || {}).filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');

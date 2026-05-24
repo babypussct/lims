@@ -82,12 +82,12 @@ const CONFIG = {
     'dichlorvos-gcms': {
       folderName: 'Dichlorvos (GC-MS)',
       formType: 'type3a',
-      sampleTableIndex: 2,
+      sampleTableIndex: 1,
       columns: {
         maSoMau:       0, // Mã số mẫu
         khoiLuong:     1, // Khối lượng (g)
         heSoPhaLoang:  2, // Hệ số pha loãng F
-        soVial:        3, // Số vial
+        loSo:          3, // Số vial / Lọ số
         kqDichlorvos:  4  // Kết quả (ng/g)
       },
       headerRows: 1,
