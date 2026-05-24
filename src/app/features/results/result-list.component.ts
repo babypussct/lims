@@ -616,20 +616,20 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                 </h4>
 
                 <!-- Báo cáo chung (Tất cả mẫu) - Luôn hiển thị nếu có file in -->
-@if ((selectedRequestForReport().analysisResultSummary?.pdfUrl || selectedRequestForReport().analysisResultSummary?.pdfViewUrl) || (selectedRequestForReport().analysisResult?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl)) {
+                @if (unifiedAllSamplesReport()) {
                   <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                     <div>
                       <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ selectedRequestForReport().analysisResultSummary?.version || selectedRequestForReport().analysisResult?.version || 1 }}</span>
-                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ (selectedRequestForReport().analysisResultSummary?.updatedAt || selectedRequestForReport().analysisResult?.pdfCreatedAt) | date:'HH:mm - dd/MM/yyyy' }}</span>
+                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ unifiedAllSamplesReport().version }}</span>
+                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ unifiedAllSamplesReport().updatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <a [href]="getSafeGoogleUrl((selectedRequestForReport().analysisResultSummary?.pdfViewUrl || selectedRequestForReport().analysisResultSummary?.pdfUrl || selectedRequestForReport().analysisResult?.pdfViewUrl || selectedRequestForReport().analysisResult?.pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
+                      <a [href]="getSafeGoogleUrl((unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
                          class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                         <i class="fa-solid fa-file-pdf"></i> XEM PDF
                       </a>
-                      @if (selectedRequestForReport().analysisResultSummary?.docsUrl || selectedRequestForReport().analysisResult?.docsUrl) {
-                        <a [href]="getSafeGoogleUrl((selectedRequestForReport().analysisResultSummary?.docsUrl || selectedRequestForReport().analysisResult?.docsUrl), 'doc')" target="_blank" rel="noopener noreferrer"
+                      @if (unifiedAllSamplesReport().docsUrl) {
+                        <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                            class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                           <i class="fa-solid fa-file-word"></i> MỞ DOCS
                         </a>
@@ -638,8 +638,8 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   </div>
                 }
 
-                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) - CHỈ DÀNH CHO TRIFLURALIN -->
-                @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
+                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) - CHỈ DÀNH CHO TRIFLURALIN KHI CÓ NHIỀU NHÓM -->
+                @if (shouldShowPrefixLoop()) {
                   @for (pref of getSelectedRunPrefixes(); track pref) {
                     <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
                       <div>
@@ -670,7 +670,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                           <span class="text-[10px] text-amber-600 dark:text-amber-500 font-extrabold flex items-center gap-1 mr-2">
                             <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Chưa tạo file
                           </span>
-                          <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+                          <button (click)="enterResults(selectedRequestForReport().id, pref); closeReportHub()"
                                   class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95">
                             <i class="fa-solid fa-arrows-rotate animate-spin-slow"></i> TẠO FILE IN
                           </button>
@@ -680,8 +680,8 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   }
                 }
 
-                <!-- Hộp Cảnh báo Không có file in (Chỉ hiển thị cho mẻ KHÔNG PHẢI Trifluralin khi chưa in bất kỳ bản nào) -->
-                @if (selectedRequestForReport().sopId !== 'trifluralin-gcms' && !selectedRequestForReport().analysisResultSummary?.pdfUrl && !selectedRequestForReport().analysisResultSummary?.pdfViewUrl && !selectedRequestForReport().analysisResult?.pdfUrl && !selectedRequestForReport().analysisResult?.pdfViewUrl) {
+                <!-- Hộp Cảnh báo Không có file in (Chỉ hiển thị cho mẻ KHÔNG phân nhóm tiền tố) -->
+                @if (!shouldShowPrefixLoop() && !unifiedAllSamplesReport()) {
                   @if (runStatusMap()[selectedRequestForReport().id] === 'completed') {
                     <div class="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-xs transition">
                       <div class="space-y-1">
@@ -698,16 +698,6 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                     <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs">
                       <i class="fa-solid fa-triangle-exclamation text-lg block mb-1.5 opacity-60"></i>
                       Mẻ chạy này chưa được xuất bản báo cáo nào.
-                    </div>
-                  }
-                }
-
-                <!-- Hộp Cảnh báo dành riêng cho Trifluralin (Hiển thị ở dưới nếu CHƯA IN BẤT KỲ phân nhóm nào) -->
-                @if (selectedRequestForReport().sopId === 'trifluralin-gcms') {
-                  @if (!hasAnyPrefixReport()) {
-                    <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs bg-slate-50/40 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                      <i class="fa-solid fa-print text-lg block mb-1.5 text-fuchsia-500 opacity-60 animate-pulse"></i>
-                      Mẻ Trifluralin này chưa được xuất bản bất kỳ phân nhóm tiền tố nào.
                     </div>
                   }
                 }
@@ -910,6 +900,49 @@ export class ResultListComponent implements OnInit, OnDestroy {
   hasAnyPrefixReport(): boolean {
     const prefixes = this.getSelectedRunPrefixes();
     return prefixes.some(pref => this.getPrefixReportForSelected(pref) !== null);
+  }
+
+  // Helper for Report Hub: Get the unified 'All Samples' report object
+  unifiedAllSamplesReport(): any {
+    const run = this.selectedRequestForReport();
+    if (!run) return null;
+    
+    // 1. Check if there is a root 'All Samples' report
+    if (run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.pdfUrl || run.analysisResult?.pdfViewUrl) {
+      return {
+        version: run.analysisResultSummary?.version || run.analysisResult?.version || 1,
+        updatedAt: run.analysisResultSummary?.updatedAt || run.analysisResult?.pdfCreatedAt,
+        pdfUrl: run.analysisResultSummary?.pdfUrl || run.analysisResult?.pdfUrl,
+        pdfViewUrl: run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.pdfViewUrl,
+        docsUrl: run.analysisResultSummary?.docsUrl || run.analysisResult?.docsUrl
+      };
+    }
+    
+    // 2. If no root report, check if this is a single prefix scenario (any single prefix)
+    const prefixes = this.getSelectedRunPrefixes();
+    if (prefixes.length === 1) {
+      const singlePrefixReport = this.getPrefixReportForSelected(prefixes[0]);
+      if (singlePrefixReport) {
+        return {
+          version: singlePrefixReport.version || 1,
+          updatedAt: singlePrefixReport.pdfCreatedAt,
+          pdfUrl: singlePrefixReport.pdfUrl,
+          pdfViewUrl: singlePrefixReport.pdfViewUrl,
+          docsUrl: singlePrefixReport.docsUrl
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  // Helper for Report Hub: Hide the prefix list if it's completely redundant (1 or 0 prefixes)
+  shouldShowPrefixLoop(): boolean {
+    const run = this.selectedRequestForReport();
+    if (!run) return false;
+    const prefixes = this.getSelectedRunPrefixes();
+    if (prefixes.length <= 1) return false;
+    return true;
   }
 
   averageCompletion = computed(() => {
@@ -1446,8 +1479,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
     }
   }
 
-  enterResults(requestId: string) {
-    this.router.navigate(['/results', requestId]);
+  enterResults(requestId: string, prefix?: string) {
+    if (prefix !== undefined) {
+      this.router.navigate(['/results', requestId], { queryParams: { prefix } });
+    } else {
+      this.router.navigate(['/results', requestId]);
+    }
   }
 
   openUrl(url: string) {

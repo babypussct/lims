@@ -247,22 +247,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
           </div>
         </div>
 
-        <!-- Prefix Tabs Filter -->
-        @if (detectedPrefixes().length > 0) {
-          <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2">Nhóm tiền tố:</span>
-            <button (click)="onPrefixFilterChanged('ALL')"
-                    [class]="selectedPrefixFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
-              Tất cả mẫu
-            </button>
-            @for (prefix of detectedPrefixes(); track prefix) {
-              <button (click)="onPrefixFilterChanged(prefix)"
-                      [class]="selectedPrefixFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
-                {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
-              </button>
-            }
-          </div>
-        }
+        <!-- Prefix Tabs Filter has been moved to ResultEntryComponent (Global) -->
 
         <!-- Spreadsheet Table Grid -->
         <div class="overflow-x-auto custom-scrollbar border border-slate-200/60 dark:border-slate-800 rounded-xl max-h-[500px]">
@@ -290,7 +275,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
             </thead>
             
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-              @for (row of getDisplayRowsForPrefix(selectedPrefixFilter()); track row.key; let rowIdx = $index) {
+              @for (row of getDisplayRowsForPrefix(activeFilter); track row.key; let rowIdx = $index) {
                 @if (row.type === 'QC_BLANK') {
                   <tr class="bg-indigo-50/15 dark:bg-indigo-950/5 hover:bg-indigo-50/25 dark:hover:bg-indigo-950/10 transition-colors focus-within:bg-indigo-50/30 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-indigo-500/60 transition-all duration-150">
                     <td class="py-2.5 px-3 text-center">
@@ -451,15 +436,12 @@ export class Sop03EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() activeFilter: string = 'ALL';
 
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
-
-  // Prefix filtering state
-  selectedPrefixFilter = signal<string>('ALL');
-  detectedPrefixes = signal<string[]>([]);
 
   // Bulk vial properties
   bulkVialStart = 1;
@@ -520,22 +502,6 @@ export class Sop03EntryComponent implements OnInit {
       }));
     }
 
-    this.detectPrefixes();
-    this.onBulkVialStartChange();
-  }
-
-  detectPrefixes() {
-    const prefixes = new Set<string>();
-    (this.run.sampleList || []).forEach((sample: string) => {
-      const startsWithLetter = /^[a-zA-Z]/.test(sample);
-      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
-      prefixes.add(prefix);
-    });
-    this.detectedPrefixes.set(Array.from(prefixes).sort());
-  }
-
-  onPrefixFilterChanged(prefix: string) {
-    this.selectedPrefixFilter.set(prefix);
     this.onBulkVialStartChange();
   }
 
@@ -548,16 +514,8 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   getVisibleRegularSamples(): string[] {
-    const filter = this.selectedPrefixFilter();
-    const samples = this.run.sampleList || [];
-    if (filter === 'ALL') {
-      return samples;
-    }
-    return samples.filter((sample: string) => {
-      const startsWithLetter = /^[a-zA-Z]/.test(sample);
-      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
-      return prefix === filter;
-    });
+    // The run object is already filtered by ResultEntryComponent based on activeFilter
+    return this.run.sampleList || [];
   }
 
   isAllSelected(): boolean {
@@ -619,17 +577,13 @@ export class Sop03EntryComponent implements OnInit {
     const allFinalKey = `QC_FINAL_QC_`;
     const sourceFinal = this.draft.resultData[allFinalKey];
     if (sourceFinal) {
-      const prefixes = this.detectedPrefixes() || [];
-      prefixes.forEach(p => {
-        if (p && p !== 'ALL') {
-          const targetKey = `QC_FINAL_QC_${p}`;
-          if (!this.draft.resultData[targetKey]) {
-            this.draft.resultData[targetKey] = {};
-          }
-          this.draft.resultData[targetKey]['loSo'] = sourceFinal['loSo'] || '';
-          this.draft.resultData[targetKey]['kqTrifluralin'] = sourceFinal['kqTrifluralin'] || '';
-          this.draft.resultData[targetKey]['ghiChu'] = sourceFinal['ghiChu'] || '';
-          this.draft.resultData[targetKey]['selected'] = sourceFinal['selected'] !== false;
+      // Find all target prefix keys that exist in resultData
+      Object.keys(this.draft.resultData).forEach(key => {
+        if (key.startsWith('QC_FINAL_QC_') && key !== allFinalKey) {
+          this.draft.resultData[key]['loSo'] = sourceFinal['loSo'] || '';
+          this.draft.resultData[key]['kqTrifluralin'] = sourceFinal['kqTrifluralin'] || '';
+          this.draft.resultData[key]['ghiChu'] = sourceFinal['ghiChu'] || '';
+          this.draft.resultData[key]['selected'] = sourceFinal['selected'] !== false;
         }
       });
     }

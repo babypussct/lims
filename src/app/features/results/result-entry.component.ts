@@ -255,10 +255,29 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
             }
           </div>
 
+          <!-- Prefix Tabs Filter (Global for all SOPs) -->
+          @if (detectedPrefixes().length > 1) {
+            <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/20 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-filter text-fuchsia-500 opacity-70"></i> Lọc tiền tố:
+              </span>
+              <button (click)="activeFilter.set('ALL')"
+                      [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs border border-fuchsia-200/50 dark:border-fuchsia-900/30' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
+                Tất cả mẫu
+              </button>
+              @for (prefix of detectedPrefixes(); track prefix) {
+                <button (click)="activeFilter.set(prefix)"
+                        [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs border border-fuchsia-200/50 dark:border-fuchsia-900/30' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
+                  {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
+                </button>
+              }
+            </div>
+          }
+
           <!-- Render Type 3B Component (Vertical Lists per sample) -->
           @if (config()?.formType === 'type3b') {
             <app-result-entry-type3b 
-              [run]="run()!" 
+              [run]="filteredRun()!" 
               [draft]="draft()!" 
               [config]="config()!" 
               (draftChanged)="onDraftChanged($event)">
@@ -271,7 +290,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
               @switch (configKey()) {
                 @case ('fipronil-chlorpyrifos') {
                   <app-sop-01-entry
-                    [run]="run()!"
+                    [run]="filteredRun()!"
                     [draft]="draft()!"
                     [config]="config()!"
                     (draftChanged)="onDraftChanged($event)">
@@ -280,7 +299,8 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                 @case ('trifluralin-gcms') {
                   <app-sop-03-entry
                     #sop03Grid
-                    [run]="run()!"
+                    [activeFilter]="activeFilter()"
+                    [run]="filteredRun()!"
                     [draft]="draft()!"
                     [config]="config()!"
                     (draftChanged)="onDraftChanged($event)">
@@ -288,7 +308,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                 }
                 @default {
                   <app-sop-default-type2-entry
-                    [run]="run()!"
+                    [run]="filteredRun()!"
                     [draft]="draft()!"
                     [config]="config()!"
                     (draftChanged)="onDraftChanged($event)">
@@ -299,7 +319,7 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
               <!-- Fallback to Legacy Monolithic Type 2 Grid -->
               <app-result-entry-type2 
                 #type2Grid
-                [run]="run()!" 
+                [run]="filteredRun()!" 
                 [draft]="draft()!" 
                 [config]="config()!" 
                 (draftChanged)="onDraftChanged($event)">
@@ -403,6 +423,37 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   resetConfirmText = signal('');
   isMetadataExpanded = signal(false);
 
+  // Global Prefix Filtering
+  activeFilter = signal<string>('ALL');
+  
+  detectedPrefixes = computed(() => {
+    const r = this.run();
+    if (!r) return [];
+    const prefixes = new Set<string>();
+    (r.sampleList || []).forEach((sample: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(sample);
+      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+      prefixes.add(prefix);
+    });
+    return Array.from(prefixes).sort();
+  });
+
+  filteredRun = computed(() => {
+    const r = this.run();
+    if (!r) return null;
+    const filter = this.activeFilter();
+    if (filter === 'ALL') return r;
+    
+    return {
+      ...r,
+      sampleList: (r.sampleList || []).filter((sample: string) => {
+        const startsWithLetter = /^[a-zA-Z]/.test(sample);
+        const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+        return prefix === filter;
+      })
+    };
+  });
+
   unsubscribeFromDraft?: () => void;
 
   ngOnInit() {
@@ -413,6 +464,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
     
+    // Read prefix from route query params
+    this.route.queryParams.subscribe(params => {
+      if (params['prefix'] !== undefined) {
+        this.activeFilter.set(params['prefix']);
+      }
+    });
+
     this.isLoading.set(true);
 
     // Subscribe to real-time changes of the request document
@@ -705,7 +763,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       const isTrifluralin = this.configKey() === 'trifluralin-gcms';
 
       if (isTrifluralin) {
-        const activeFilter = this.getSelectedPrefixFilter() !== undefined ? this.getSelectedPrefixFilter() : 'ALL';
+        const activeFilter = this.activeFilter();
         const sampleList = currentRun.sampleList || [];
         const checkedSamples = sampleList.filter((s: string) => {
           const resObj = currentDraft.resultData[s] || {};
@@ -821,6 +879,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else if (this.configKey() === 'fipronil-chlorpyrifos') {
+        const activeFilter = this.activeFilter();
+        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+        
         // Luồng tạo báo cáo chuyên biệt cho Fipronil (SOP-01) có kèm theo mẫu QC (BLANK, SPIKE, CHECK_SAMPLE, FINAL)
         const samplesPayload: any[] = [];
         
@@ -854,7 +915,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         }
 
         // 4. Regular samples & dynamic SP_N every 10 samples
-        const sampleList = currentRun.sampleList || [];
+        const sampleList = this.filteredRun()?.sampleList || [];
         let regularCount = 0;
         sampleList.forEach((sampleCode: string) => {
           const resObj = currentDraft.resultData[sampleCode] || {};
@@ -924,9 +985,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else {
+        const activeFilter = this.activeFilter();
+        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+        
         // Luồng tạo báo cáo tiêu chuẩn cho các SOP khác
         const samplesPayload: any[] = [];
-        const sampleList = currentRun.sampleList || [];
+        const sampleList = this.filteredRun()?.sampleList || [];
 
         sampleList.forEach((sampleCode: string, idx: number) => {
           const resObj = currentDraft.resultData[sampleCode] || {};
@@ -965,6 +1029,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           sopId: this.configKey(),
           metadata: {
             ...currentDraft.page1Data,
+            prefix: prefixForReport,
             ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
             ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
             ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
@@ -972,7 +1037,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           samples: samplesPayload
         };
 
-        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
+        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
         if (result.success) {
           this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 
@@ -1052,16 +1117,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
-  getSelectedPrefixFilter(): string | undefined {
-    if (this.configKey() === 'trifluralin-gcms') {
-      return this.sop03Grid?.selectedPrefixFilter();
-    }
-    return this.type2Grid?.selectedPrefixFilter();
-  }
-
   getPrintButtonLabel(): string {
-    const activeFilter = this.getSelectedPrefixFilter();
-    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+    const activeFilter = this.activeFilter();
+    if (activeFilter === 'ALL') {
       const v = (this.draft()?.version || 0) + 1;
       return `Tạo & In bản v${v} (Tất cả mẫu)`;
     }
@@ -1074,9 +1132,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   getCurrentPdfUrl(): string | null {
-    const activeFilter = this.getSelectedPrefixFilter();
+    const activeFilter = this.activeFilter();
     let url: string | null = null;
-    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+    if (activeFilter === 'ALL') {
       url = this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
     } else {
       const reports = this.draft()?.reports || {};
@@ -1107,9 +1165,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   getCurrentDocsUrl(): string | null {
-    const activeFilter = this.getSelectedPrefixFilter();
+    const activeFilter = this.activeFilter();
     let url: string | null = null;
-    if (activeFilter === undefined || activeFilter === 'ALL' || this.configKey() !== 'trifluralin-gcms') {
+    if (activeFilter === 'ALL') {
       url = this.draft()?.docsUrl || null;
     } else {
       const reports = this.draft()?.reports || {};
