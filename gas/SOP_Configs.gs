@@ -92,10 +92,7 @@ const CONFIG = {
       },
       headerRows: 1,
       textReplacements: {},
-      checkboxLines: {
-        'Các mẫu thử không phát hiện Dichlorvos': 'checkTatCaND',
-        'Có mẫu thử phát hiện Dichlorvos':        'checkCoMauPhatHien',
-      },
+      checkboxLines: {},
       signaturePlaceholders: {
         'date1': 'ngayNguoiPhanTich',
         'date2': 'ngayNguoiThamTra',

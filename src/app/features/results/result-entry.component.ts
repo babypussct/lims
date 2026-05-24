@@ -588,13 +588,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       ];
     } else if (isDichlorvos) {
       defaultPage1['r2'] = '0.999';
+      defaultPage1['dichlorvosMethod'] = 'GC/MS';
+      defaultPage1['hasFinal'] = false;
+      defaultPage1['blankName'] = 'Blank';
+      defaultPage1['spikeName'] = 'Spike';
       defaultPage1['calibPoints'] = [
-        { loSo: '1', hamLuong: '0.1' },
-        { loSo: '2', hamLuong: '0.2' },
-        { loSo: '3', hamLuong: '0.5' },
-        { loSo: '4', hamLuong: '1.0' },
-        { loSo: '5', hamLuong: '2.0' },
-        { loSo: '6', hamLuong: '5.0' }
+        { loSo: '51', hamLuong: '0' },
+        { loSo: '52', hamLuong: '5' },
+        { loSo: '53', hamLuong: '10' },
+        { loSo: '54', hamLuong: '20' },
+        { loSo: '55', hamLuong: '30' },
+        { loSo: '56', hamLuong: '40' }
       ];
     } else if (isFipronil) {
       defaultPage1['hasCheckSample'] = false;
@@ -1003,6 +1007,85 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         };
 
         const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
+        if (result.success) {
+          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+
+          const hist = await this.resultService.getHistory(this.requestId);
+          this.historyList.set(hist);
+
+          const url = result.pdfViewUrl || result.pdfUrl;
+          if (url && pdfWindow && !pdfWindow.closed) {
+            pdfWindow.location.href = url;
+          } else if (pdfWindow && !pdfWindow.closed) {
+            pdfWindow.close();
+            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
+          }
+        } else {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+        }
+      } else if (this.configKey() === 'dichlorvos-gcms') {
+        const activeFilter = this.activeFilter();
+        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+        
+        const samplesPayload: any[] = [];
+        
+        const getQcRow = (key: string, label: string) => {
+          const resObj = currentDraft.resultData[key] || {};
+          const rowData: Record<string, any> = {
+            loSo: resObj['loSo'] || '',
+            maSoMau: label,
+            ghiChu: resObj['ghiChu'] || ''
+          };
+          Object.keys(currentConf.columns).forEach(col => {
+            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+            }
+          });
+          return rowData;
+        };
+
+        // 1. Blank
+        samplesPayload.push(getQcRow('QC_BLANK', 'Blank'));
+
+        // 2. Spike
+        samplesPayload.push(getQcRow('QC_SPIKE', 'Spike'));
+
+        // 3. Regular samples
+        const sampleList = this.filteredRun()?.sampleList || [];
+        sampleList.forEach((sampleCode: string) => {
+          const resObj = currentDraft.resultData[sampleCode] || {};
+          const rowData: Record<string, any> = {
+            loSo: resObj['loSo'] || '',
+            maSoMau: sampleCode,
+            ghiChu: resObj['ghiChu'] || ''
+          };
+          Object.keys(currentConf.columns).forEach(col => {
+            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+            }
+          });
+          samplesPayload.push(rowData);
+        });
+
+        // 4. FINAL (optional)
+        if (currentDraft.page1Data['hasFinal']) {
+          samplesPayload.push(getQcRow('QC_FINAL', 'FINAL'));
+        }
+
+        const reportPayload: any = {
+          action: 'generate_pdf',
+          sopId: this.configKey(),
+          metadata: {
+            ...currentDraft.page1Data,
+            prefix: prefixForReport,
+            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
+            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
+          },
+          samples: samplesPayload
+        };
+
+        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
         if (result.success) {
           this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 

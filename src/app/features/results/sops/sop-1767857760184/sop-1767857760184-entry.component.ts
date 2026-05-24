@@ -11,7 +11,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
     <div class="space-y-6">
       
       <!-- 0. Quality Control & Stats Dashboard -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fade-in">
         <!-- Total Samples Card -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
           <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500/10 to-blue-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-100/50 dark:border-cyan-900/30 group-hover:scale-110 transition-transform duration-300">
@@ -59,6 +59,50 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
             </div>
           </div>
         </div>
+
+        <!-- Spike Recovery Card -->
+        @if (getStats().spikeRecovery !== null) {
+          <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-900/30 group-hover:scale-110 transition-transform duration-300">
+              <i class="fa-solid fa-shield-heart text-lg"></i>
+            </div>
+            <div>
+              <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">QC Spike Recovery</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().spikeRecovery }}%</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().spikeQcStatus === 'PASS',
+                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 border border-rose-200/30': getStats().spikeQcStatus === 'FAIL'
+                      }">
+                  {{ getStats().spikeQcStatus === 'PASS' ? 'Đạt' : 'Lệch' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Final Recovery Card -->
+        @if (draft.page1Data['hasFinal'] && getStats().finalRecovery !== null) {
+          <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-violet-500/10 to-purple-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-100/50 dark:border-violet-900/30 group-hover:scale-110 transition-transform duration-300">
+              <i class="fa-solid fa-flag-checkered text-lg"></i>
+            </div>
+            <div>
+              <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">QC Final Recovery</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().finalRecovery }}%</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().finalQcStatus === 'PASS',
+                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 border border-rose-200/30': getStats().finalQcStatus === 'FAIL'
+                      }">
+                  {{ getStats().finalQcStatus === 'PASS' ? 'Đạt' : 'Lệch' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
       </div>
 
       <!-- 1. Metadata Form & Checkboxes -->
@@ -66,6 +110,57 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
         <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
           <i class="fa-solid fa-file-invoice mr-2 text-cyan-500 text-sm"></i> Thông tin chung & Đánh giá (SOP: {{ run?.sopCode || 'sop_1767857760184' }})
         </h4>
+
+        <!-- Method Toggle & FINAL option -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-widest">Thiết bị phân tích</label>
+            <div class="flex gap-2">
+              <button type="button" 
+                      (click)="setMethod('GC/MS')" 
+                      [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                      [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                      [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                      [class.bg-slate-50]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      [class.dark:bg-slate-955]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      [class.text-slate-700]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                      class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-microscope text-sm"></i>
+                <span>GC/MS</span>
+              </button>
+              
+              <button type="button" 
+                      (click)="setMethod('GC/MSMS')" 
+                      [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                      [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                      [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                      [class.bg-slate-50]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      [class.dark:bg-slate-955]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      [class.text-slate-700]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                      class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-flask-vials text-sm"></i>
+                <span>GC/MS/MS</span>
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-widest">Kiểm soát chất lượng (QC) mẫu</label>
+            <label class="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850 h-[42px]">
+              <input type="checkbox" 
+                     [(ngModel)]="draft.page1Data['hasFinal']" 
+                     (ngModelChange)="onFinalToggled()"
+                     class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+              <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
+            </label>
+          </div>
+        </div>
 
         <!-- Signature Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -84,21 +179,6 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                    class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 transition outline-none">
           </div>
         </div>
-
-        <!-- Checkbox & QC evaluation grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          @for (checkbox of checkboxList; track checkbox.key) {
-            <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
-              <input type="checkbox" 
-                     [(ngModel)]="draft.page1Data[checkbox.key]" 
-                     (ngModelChange)="onCheckboxChange(checkbox.key)"
-                     class="mt-0.5 w-4 h-4 rounded text-cyan-600 border-slate-300 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
-              <div>
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
-              </div>
-            </label>
-          }
-        </div>
       </div>
 
       <!-- 1.5. Calibration curves configuration -->
@@ -116,7 +196,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                      [(ngModel)]="draft.page1Data['r2']" 
                      (ngModelChange)="onDataChanged()"
                      placeholder="Ví dụ: 0.9992..."
-                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-650 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 transition outline-none">
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 transition outline-none">
             </div>
             <div class="text-[10.5px] text-slate-400 leading-relaxed font-medium">
               <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i> Giá trị này sẽ được tự động điền vào hàng cuối cùng của bảng đường chuẩn trong báo cáo xuất bản.
@@ -125,12 +205,14 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
 
           <!-- Calibration Points Grid -->
           <div class="lg:col-span-9">
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">6 Điểm Đường chuẩn (Calibration Curve Points)</label>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">
+              Các Điểm Đường chuẩn (Calibration Curve Points)
+            </label>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               @for (pt of draft.page1Data['calibPoints']; track $index) {
                 <div class="bg-slate-50/40 dark:bg-slate-955/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 hover:shadow-xs hover:border-cyan-400/50 dark:hover:border-cyan-500/40 transition duration-200 group">
                   <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                    <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 group-hover:text-cyan-500 transition duration-200">Điểm {{ $index + 1 }}</span>
+                    <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 group-hover:text-cyan-500 transition duration-200">Chuẩn C{{ $index }}</span>
                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                   </div>
                   <div>
@@ -168,21 +250,21 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
             
             <button (click)="bulkFillND()" 
                     class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
-                    title="Đặt các ô kết quả trống thành ND">
+                    title="Đặt toàn bộ các ô kết quả chưa điền là ND">
               <i class="fa-solid fa-pen-clip"></i>
               <span>Điền ND ô trống</span>
             </button>
 
             <button (click)="bulkClearAll()" 
                     class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-red-50 dark:hover:bg-red-955/20 text-slate-655 dark:text-slate-455 hover:text-red-655 dark:hover:text-red-400 border border-slate-200/60 dark:border-slate-800 hover:border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
-                    title="Xóa kết quả của bảng">
+                    title="Xóa toàn bộ các ô kết quả của bảng">
               <i class="fa-solid fa-trash-can"></i>
               <span>Xóa hết bảng</span>
             </button>
 
             <!-- Quick Vial Input -->
             <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
-              <span class="font-bold text-slate-500 dark:text-slate-400">Số vial:</span>
+              <span class="font-bold text-slate-500 dark:text-slate-400">Lọ số:</span>
               <input type="number" 
                      [(ngModel)]="bulkVialStart" 
                      (ngModelChange)="onBulkVialStartChange()"
@@ -213,23 +295,27 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                          (change)="toggleSelectAll($event)"
                          class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500">
                 </th>
-                <th class="py-3 px-4 text-center font-black text-slate-450 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Số vial</th>
-                <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[150px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Mẫu thử</th>
+                <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Lọ số</th>
+                <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[140px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Mẫu thử</th>
                 
                 @for (col of activeColumns; track col) {
-                  <th class="py-3 px-4 text-center font-black text-slate-450 dark:text-slate-500 text-xs min-w-[140px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
-                    {{ formatColumnName(col) }} (ng/g)
+                  <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[130px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
+                    {{ getColumnLabel(col) }}
                   </th>
                 }
                 
-                <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú</th>
-                <th class="py-3 px-4 text-center font-black text-slate-450 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Tác vụ</th>
+                <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú</th>
+                <th class="py-3 px-4 text-center font-black text-slate-455 dark:text-slate-500 text-xs w-24 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Tác vụ</th>
               </tr>
             </thead>
             
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
-                <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/30 transition-colors focus-within:bg-cyan-50/10 dark:focus-within:bg-cyan-500/5 border-l-4 border-l-transparent focus-within:border-l-cyan-500 transition-all duration-150" [class.opacity-60]="draft.resultData[row.key]['selected'] === false">
+                <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/30 transition-colors focus-within:bg-cyan-50/10 dark:focus-within:bg-cyan-500/5 border-l-4 border-l-transparent focus-within:border-l-cyan-500 transition-all duration-150" 
+                    [class.opacity-60]="draft.resultData[row.key]['selected'] === false"
+                    [ngClass]="{
+                      'bg-indigo-50/15 dark:bg-indigo-955/5 border-l-indigo-500/60': row.key.startsWith('QC_')
+                    }">
                   <td class="py-2.5 px-3 text-center">
                     <input type="checkbox"
                            [(ngModel)]="draft.resultData[row.key]['selected']"
@@ -241,17 +327,26 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                            [(ngModel)]="draft.resultData[row.key]['loSo']"
                            (ngModelChange)="onDataChanged()"
                            [id]="'cell-' + rowIdx + '-loSo'"
+                           [disabled]="row.key === 'QC_FINAL'"
                            (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
                            placeholder="Vial..."
-                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition">
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
                   </td>
-                  <td class="py-2.5 px-4 font-mono font-black text-xs text-slate-750 dark:text-slate-300 break-all select-all">{{ row.key }}</td>
+                  <td class="py-2.5 px-4">
+                    @if (row.key.startsWith('QC_')) {
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-955 dark:text-indigo-400 uppercase shadow-xs border border-indigo-200/30">
+                        {{ row.label }}
+                      </span>
+                    } @else {
+                      <span class="font-mono font-black text-xs text-slate-750 dark:text-slate-300 break-all select-all">{{ row.key }}</span>
+                    }
+                  </td>
                   
                   @for (col of activeColumns; track col; let colIdx = $index) {
                     <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key][col]"
-                             (ngModelChange)="onDataChanged()"
+                             (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-' + col"
                              (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
                              placeholder="..."
@@ -294,7 +389,6 @@ export class Sop1767857760184EntryComponent implements OnInit {
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   activeColumns: string[] = [];
-  checkboxList: { key: string; label: string }[] = [];
 
   // Bulk vial properties
   bulkVialStart = 1;
@@ -328,13 +422,27 @@ export class Sop1767857760184EntryComponent implements OnInit {
     const r2Float = parseFloat(r2Val);
     const r2Status = !isNaN(r2Float) ? (r2Float >= 0.995 ? 'VALID' : 'WARNING') : 'NOT_SET';
 
+    // Spike Recovery
+    const spikeVal = parseFloat(this.draft.resultData['QC_SPIKE']?.['kqDichlorvos'] || '');
+    const spikeRecovery = !isNaN(spikeVal) ? Math.round((spikeVal / 10.0) * 100) : null;
+    const spikeQcStatus = spikeRecovery !== null ? (spikeRecovery >= 70 && spikeRecovery <= 120 ? 'PASS' : 'FAIL') : 'NONE';
+
+    // Final Recovery
+    const finalVal = parseFloat(this.draft.resultData['QC_FINAL']?.['kqDichlorvos'] || '');
+    const finalRecovery = !isNaN(finalVal) ? Math.round((finalVal / 10.0) * 100) : null;
+    const finalQcStatus = finalRecovery !== null ? (finalRecovery >= 70 && finalRecovery <= 120 ? 'PASS' : 'FAIL') : 'NONE';
+
     return {
       totalCount,
       selectedCount,
       filledCount,
       progressPct,
       r2Val,
-      r2Status
+      r2Status,
+      spikeRecovery,
+      spikeQcStatus,
+      finalRecovery,
+      finalQcStatus
     };
   }
 
@@ -342,11 +450,25 @@ export class Sop1767857760184EntryComponent implements OnInit {
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
 
-    if (this.config.checkboxLines) {
-      this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({
-        key: key as string,
-        label
-      }));
+    // Ensure dichlorvosMethod is initialized
+    if (!this.draft.page1Data['dichlorvosMethod']) {
+      this.draft.page1Data['dichlorvosMethod'] = 'GC/MS';
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '51', hamLuong: '0' },
+        { loSo: '52', hamLuong: '5' },
+        { loSo: '53', hamLuong: '10' },
+        { loSo: '54', hamLuong: '20' },
+        { loSo: '55', hamLuong: '30' },
+        { loSo: '56', hamLuong: '40' }
+      ];
+      this.bulkVialStart = 1;
+    } else {
+      // Set bulk start based on current method if not set
+      if (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS') {
+        this.bulkVialStart = 9;
+      } else {
+        this.bulkVialStart = 1;
+      }
     }
 
     this.onBulkVialStartChange();
@@ -401,68 +523,196 @@ export class Sop1767857760184EntryComponent implements OnInit {
     this.onDataChanged();
   }
 
+  setMethod(method: 'GC/MS' | 'GC/MSMS') {
+    if (this.draft.page1Data['dichlorvosMethod'] === method) return;
+    this.draft.page1Data['dichlorvosMethod'] = method;
+    
+    // Switch default configurations
+    if (method === 'GC/MS') {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '51', hamLuong: '0' },
+        { loSo: '52', hamLuong: '5' },
+        { loSo: '53', hamLuong: '10' },
+        { loSo: '54', hamLuong: '20' },
+        { loSo: '55', hamLuong: '30' },
+        { loSo: '56', hamLuong: '40' }
+      ];
+      this.bulkVialStart = 1;
+      
+      // Update vials for QC rows directly in resultData
+      if (this.draft.resultData['QC_BLANK']) this.draft.resultData['QC_BLANK']['loSo'] = '57';
+      if (this.draft.resultData['QC_SPIKE']) this.draft.resultData['QC_SPIKE']['loSo'] = '58';
+      if (this.draft.resultData['QC_FINAL']) this.draft.resultData['QC_FINAL']['loSo'] = '58';
+    } else {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '1', hamLuong: '0' },
+        { loSo: '2', hamLuong: '5' },
+        { loSo: '3', hamLuong: '10' },
+        { loSo: '4', hamLuong: '20' },
+        { loSo: '5', hamLuong: '50' }
+      ];
+      this.bulkVialStart = 9;
+      
+      // Update vials for QC rows directly in resultData
+      if (this.draft.resultData['QC_BLANK']) this.draft.resultData['QC_BLANK']['loSo'] = '7';
+      if (this.draft.resultData['QC_SPIKE']) this.draft.resultData['QC_SPIKE']['loSo'] = '8';
+      if (this.draft.resultData['QC_FINAL']) this.draft.resultData['QC_FINAL']['loSo'] = '8';
+    }
+    
+    this.onBulkVialStartChange();
+    this.onDataChanged();
+  }
+
+  onFinalToggled() {
+    if (this.draft.page1Data['hasFinal']) {
+      const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS' ? '8' : '58');
+      this.draft.resultData['QC_FINAL'] = {
+        loSo: spikeVial,
+        kqDichlorvos: '',
+        ghiChu: '',
+        selected: true
+      };
+    } else {
+      delete this.draft.resultData['QC_FINAL'];
+    }
+    this.onDataChanged();
+  }
+
+  getColumnLabel(colKey: string): string {
+    if (colKey === 'khoiLuong') return 'Khối lượng (g)';
+    if (colKey === 'heSoPhaLoang') return 'Hệ số pha loãng F';
+    if (colKey === 'kqDichlorvos') return 'Dichlorvos (ng/g)';
+    return this.formatColumnName(colKey);
+  }
+
   formatColumnName(colKey: string): string {
     let name = colKey.replace(/^kq/, '');
     name = name.replace(/([A-Z])/g, ' $1').trim();
     return name.charAt(0).toUpperCase() + name.slice(1);
   }
 
-  onDataChanged() {
-    this.draftChanged.emit(this.draft);
+  updateDichlorvosRecovery(key: string) {
+    const row = this.draft.resultData[key];
+    if (!row) return;
+    const val = parseFloat(row['kqDichlorvos'] || '');
+    if (!isNaN(val)) {
+      const rec = Math.round((val / 10.0) * 100);
+      row['ghiChu'] = `${rec}%`;
+    } else {
+      row['ghiChu'] = '';
+    }
   }
 
-  onCheckboxChange(changedKey: string) {
-    if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
-      this.draft.page1Data['checkCoMauPhatHien'] = false;
-    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
-      this.draft.page1Data['checkTatCaND'] = false;
+  onCellChanged(key: string) {
+    if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
+      this.updateDichlorvosRecovery(key);
     }
     this.onDataChanged();
   }
 
+  onDataChanged() {
+    // Sync FINAL vial from SPIKE vial
+    if (this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';
+    }
+    this.updateDichlorvosRecovery('QC_SPIKE');
+    this.updateDichlorvosRecovery('QC_FINAL');
+    this.draftChanged.emit(this.draft);
+  }
+
   getDisplayRows(): any[] {
     const list: any[] = [];
+    
+    // Determine method and vials
+    const isMSMS = this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS';
+    const blankVial = isMSMS ? '7' : '57';
+    const spikeVial = isMSMS ? '8' : '58';
+    
+    // Ensure QC_BLANK and QC_SPIKE exist
+    if (!this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK'] = { loSo: blankVial, kqDichlorvos: 'ND', ghiChu: '', selected: true };
+    } else {
+      this.draft.resultData['QC_BLANK']['loSo'] = this.draft.resultData['QC_BLANK']['loSo'] || blankVial;
+    }
+    
+    if (!this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE'] = { loSo: spikeVial, kqDichlorvos: '', ghiChu: '', selected: true };
+    } else {
+      this.draft.resultData['QC_SPIKE']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || spikeVial;
+    }
+
+    list.push({
+      key: 'QC_BLANK',
+      type: 'QC_BLANK',
+      label: 'Blank'
+    });
+
+    list.push({
+      key: 'QC_SPIKE',
+      type: 'QC_SPIKE',
+      label: 'Spike'
+    });
+
+    // Regular samples
     this.getVisibleRegularSamples().forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode] = {
           loSo: '',
           selected: true
         };
+        this.activeColumns.forEach(col => {
+          this.draft.resultData[sampleCode][col] = '';
+        });
       }
       list.push({
         key: sampleCode,
+        type: 'REGULAR',
         label: sampleCode
       });
     });
+
+    // Optional FINAL QC
+    if (this.draft.page1Data['hasFinal']) {
+      const finalVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || spikeVial;
+      if (!this.draft.resultData['QC_FINAL']) {
+        this.draft.resultData['QC_FINAL'] = { loSo: finalVial, kqDichlorvos: '', ghiChu: '', selected: true };
+      } else {
+        this.draft.resultData['QC_FINAL']['loSo'] = finalVial;
+      }
+      list.push({
+        key: 'QC_FINAL',
+        type: 'QC_FINAL',
+        label: 'FINAL'
+      });
+    }
+
     return list;
   }
 
   bulkFillND() {
-    const visible = this.getVisibleRegularSamples();
-    visible.forEach((sampleCode: string) => {
-      const row = this.draft.resultData[sampleCode];
-      if (row && row['selected'] !== false) {
+    const displayRows = this.getDisplayRows();
+    displayRows.forEach(row => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData && rowData['selected'] !== false) {
         this.activeColumns.forEach(col => {
-          if (!row[col] || row[col]?.trim() === '') {
-            row[col] = 'ND';
+          if (!rowData[col] || rowData[col]?.trim() === '') {
+            rowData[col] = 'ND';
           }
         });
       }
     });
-    this.draft.page1Data['checkTatCaND'] = true;
-    this.draft.page1Data['checkCoMauPhatHien'] = false;
     this.onDataChanged();
   }
 
   bulkClearAll() {
-    const visible = this.getVisibleRegularSamples();
-    visible.forEach((sampleCode: string) => {
-      const row = this.draft.resultData[sampleCode];
-      if (row) {
+    const displayRows = this.getDisplayRows();
+    displayRows.forEach(row => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData) {
         this.activeColumns.forEach(col => {
-          row[col] = '';
+          rowData[col] = '';
         });
-        row['ghiChu'] = '';
+        rowData['ghiChu'] = '';
       }
     });
     this.onDataChanged();

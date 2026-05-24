@@ -42,12 +42,18 @@ function generateCustomReport_dichlorvos_gcms(templateId, metadata, samples, fol
     const calibPoints = metadata.calibPoints || [];
     const startPtRowIdx = numRows - 7; // Thường bảng gồm: Header, 6 dòng điểm, và 1 dòng R2
     for (let i = 0; i < 6; i++) {
-      const pt = calibPoints[i] || { loSo: '', hamLuong: '' };
       const rowIdx = startPtRowIdx + i;
       const row = calibrationTable.getRow(rowIdx);
-      setCellText(row, 0, `Điểm ${i + 1}`, null, sopConfig.defaultFontSize);
-      setCellText(row, 1, pt.loSo || '', null, sopConfig.defaultFontSize);
-      setCellText(row, 2, pt.hamLuong || '', null, sopConfig.defaultFontSize);
+      if (i < calibPoints.length) {
+        const pt = calibPoints[i];
+        setCellText(row, 0, `C${i}`, null, sopConfig.defaultFontSize);
+        setCellText(row, 1, pt.loSo || '', null, sopConfig.defaultFontSize);
+        setCellText(row, 2, pt.hamLuong || '', null, sopConfig.defaultFontSize);
+      } else {
+        setCellText(row, 0, '', null, sopConfig.defaultFontSize);
+        setCellText(row, 1, '', null, sopConfig.defaultFontSize);
+        setCellText(row, 2, '', null, sopConfig.defaultFontSize);
+      }
     }
   } else {
     Logger.log('[DichlorvosCustom] CẢNH BÁO: Không tìm thấy bảng đường chuẩn.');

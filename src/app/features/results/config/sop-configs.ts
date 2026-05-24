@@ -58,10 +58,6 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
   'dichlorvos-gcms': {
     formType: 'type3a',
     columns: { maSoMau: 0, khoiLuong: 1, heSoPhaLoang: 2, loSo: 3, kqDichlorvos: 4 },
-    checkboxLines: {
-      'Các mẫu thử không phát hiện Dichlorvos': 'checkTatCaND',
-      'Có mẫu thử phát hiện Dichlorvos': 'checkCoMauPhatHien'
-    },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
   },
   'chlor-huu-co': {
