@@ -476,7 +476,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     let hasChanges = false;
     this.getVisibleRegularSamples().forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
-        const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+        const randW = (10.01 + Math.random() * 0.09).toFixed(2);
         this.draft.resultData[sampleCode] = {
           loSo: '',
           selected: true,
@@ -486,7 +486,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
         hasChanges = true;
       } else {
         if (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '') {
-          const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+          const randW = (10.01 + Math.random() * 0.09).toFixed(2);
           this.draft.resultData[sampleCode]['khoiLuong'] = randW;
           hasChanges = true;
         }
@@ -501,7 +501,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     const qcKeys = ['QC_BLANK', 'QC_SPIKE'];
     qcKeys.forEach(key => {
       if (!this.draft.resultData[key]) {
-        const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+        const randW = (10.01 + Math.random() * 0.09).toFixed(2);
         this.draft.resultData[key] = {
           loSo: key === 'QC_BLANK' ? (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS' ? '7' : '57') : (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS' ? '8' : '58'),
           kqDichlorvos: key === 'QC_BLANK' ? 'ND' : '',
@@ -513,7 +513,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
         hasChanges = true;
       } else {
         if (this.draft.resultData[key]['khoiLuong'] === undefined || this.draft.resultData[key]['khoiLuong'] === '') {
-          const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+          const randW = (10.01 + Math.random() * 0.09).toFixed(2);
           this.draft.resultData[key]['khoiLuong'] = randW;
           hasChanges = true;
         }
@@ -704,23 +704,23 @@ export class Sop1767857760184EntryComponent implements OnInit {
     
     // Ensure QC_BLANK and QC_SPIKE exist
     if (!this.draft.resultData['QC_BLANK']) {
-      const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+      const randW = (10.01 + Math.random() * 0.09).toFixed(2);
       this.draft.resultData['QC_BLANK'] = { loSo: blankVial, kqDichlorvos: 'ND', ghiChu: '', selected: true, khoiLuong: randW, heSoPhaLoang: '1' };
     } else {
       this.draft.resultData['QC_BLANK']['loSo'] = this.draft.resultData['QC_BLANK']['loSo'] || blankVial;
       if (this.draft.resultData['QC_BLANK']['khoiLuong'] === undefined || this.draft.resultData['QC_BLANK']['khoiLuong'] === '') {
-        this.draft.resultData['QC_BLANK']['khoiLuong'] = (9.90 + Math.random() * 0.20).toFixed(2);
+        this.draft.resultData['QC_BLANK']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
       }
       this.draft.resultData['QC_BLANK']['heSoPhaLoang'] = this.draft.resultData['QC_BLANK']['heSoPhaLoang'] || '1';
     }
     
     if (!this.draft.resultData['QC_SPIKE']) {
-      const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+      const randW = (10.01 + Math.random() * 0.09).toFixed(2);
       this.draft.resultData['QC_SPIKE'] = { loSo: spikeVial, kqDichlorvos: '', selected: true, ghiChu: '', khoiLuong: randW, heSoPhaLoang: '1' };
     } else {
       this.draft.resultData['QC_SPIKE']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || spikeVial;
       if (this.draft.resultData['QC_SPIKE']['khoiLuong'] === undefined || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '') {
-        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (9.90 + Math.random() * 0.20).toFixed(2);
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
       }
       this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] = this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] || '1';
     }
@@ -740,7 +740,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     // Regular samples
     this.getVisibleRegularSamples().forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
-        const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+        const randW = (10.01 + Math.random() * 0.09).toFixed(2);
         this.draft.resultData[sampleCode] = {
           loSo: '',
           selected: true,
@@ -764,7 +764,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     if (this.draft.page1Data['hasFinal']) {
       const spike = this.draft.resultData['QC_SPIKE'];
       const finalVial = spike?.['loSo'] || spikeVial;
-      const finalW = spike?.['khoiLuong'] || (9.90 + Math.random() * 0.20).toFixed(2);
+      const finalW = spike?.['khoiLuong'] || (10.01 + Math.random() * 0.09).toFixed(2);
       const finalF = spike?.['heSoPhaLoang'] || '1';
       if (!this.draft.resultData['QC_FINAL']) {
         this.draft.resultData['QC_FINAL'] = { loSo: finalVial, kqDichlorvos: '', ghiChu: '', selected: true, khoiLuong: finalW, heSoPhaLoang: finalF };
