@@ -3,6 +3,7 @@
 export const SOP_ID_MAP: Record<string, string> = {
   'SOP-01': 'fipronil-chlorpyrifos',  // FORM_GOC_FIP_CHLORFOS_9_21.docx
   'SOP-03': 'trifluralin-gcms',       // FORM_GOC_TRIFLURALIN_9_3.docx
+  'sop_1767857760184': 'dichlorvos-gcms', // Dichlorvos/Dipterex(Trichlorfon) (GC-MS & GC-MS/MS)
   // 'SOP-02': 'dichlorvos-gcms',     // (chưa cấu hình)
   // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
   // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)

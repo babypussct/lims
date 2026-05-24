@@ -13,7 +13,7 @@ const CONFIG = {
   TEMPLATES: {
     'trifluralin-gcms':       '1FN0onAiYBuSBiQk3DWQQGXTxvhHaI8VSaxD2qgUUAxY',   // SOP-03 | FORM_GOC_TRIFLURALIN_9_3.docx
     'fipronil-chlorpyrifos':  '1LTP7q3pIW9IBIbJPzFmX43Sr3QxGj70MoBLity0HLVw',          // SOP-01 | FORM_GOC_FIP_CHLORFOS_9_21.docx
-    'dichlorvos-gcms':        'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
+    'dichlorvos-gcms':        '15Vg_kdrEx1DQ-LyLuZVo8sKnjW7JFV7mQDAEE3xKywY',   // Dichlorvos/Dipterex(Trichlorfon)
     'chlor-huu-co':           'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
     'lan-huu-co':             'PASTE_GOOGLE_DOC_ID_HERE',   // (chưa có file form)
   },
