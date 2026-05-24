@@ -783,7 +783,7 @@ export class Sop03EntryComponent implements OnInit {
     let targetRowIdx = rowIdx;
     let targetColIdx = colIdx;
 
-    const rows = this.getDisplayRowsForPrefix(this.selectedPrefixFilter());
+    const rows = this.getDisplayRowsForPrefix(this.activeFilter);
     const colsCount = this.activeColumns.length + 3; // checkbox + loSo + active cols + ghiChu
 
     if (key === 'ArrowUp') {
