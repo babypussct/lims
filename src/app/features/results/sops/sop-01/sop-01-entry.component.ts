@@ -179,7 +179,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
               <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data['hasCheckSample']" 
-                       (ngModelChange)="onDataChanged()"
+                       (ngModelChange)="onHasCheckSampleChange()"
                        class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
                 <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
               </label>
@@ -453,7 +453,6 @@ export class Sop01EntryComponent implements OnInit {
 
     // Khởi tạo đánh giá chất lượng (QC checklist) mặc định Đạt (true), ngoại trừ qcNhanDang là undefined (N/A)
     const qcKeys = [
-      'qcKiemTraNoiBo',
       'qcR2',
       'qcThoiGianLuu',
       'qcThemChuan',
@@ -465,6 +464,9 @@ export class Sop01EntryComponent implements OnInit {
         this.draft.page1Data[k] = true;
       }
     });
+    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined) {
+      this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
+    }
     if (this.draft.page1Data['qcNhanDang'] === undefined) {
       this.draft.page1Data['qcNhanDang'] = null;
     }
@@ -505,6 +507,15 @@ export class Sop01EntryComponent implements OnInit {
     } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
       this.draft.page1Data['checkTatCaND'] = false;
       this.draft.page1Data['qcNhanDang'] = true; // Auto check "Đạt"
+    }
+    this.onDataChanged();
+  }
+
+  onHasCheckSampleChange() {
+    if (this.draft.page1Data['hasCheckSample']) {
+      this.draft.page1Data['qcKiemTraNoiBo'] = true;
+    } else {
+      this.draft.page1Data['qcKiemTraNoiBo'] = null;
     }
     this.onDataChanged();
   }
