@@ -471,6 +471,35 @@ export class Sop1767857760184EntryComponent implements OnInit {
       }
     }
 
+    // Auto fill defaults for existing samples if they are empty
+    let hasChanges = false;
+    this.getVisibleRegularSamples().forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+        this.draft.resultData[sampleCode] = {
+          loSo: '',
+          selected: true,
+          khoiLuong: randW,
+          heSoPhaLoang: '1'
+        };
+        hasChanges = true;
+      } else {
+        if (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '') {
+          const randW = (9.90 + Math.random() * 0.20).toFixed(2);
+          this.draft.resultData[sampleCode]['khoiLuong'] = randW;
+          hasChanges = true;
+        }
+        if (this.draft.resultData[sampleCode]['heSoPhaLoang'] === undefined || this.draft.resultData[sampleCode]['heSoPhaLoang'] === '') {
+          this.draft.resultData[sampleCode]['heSoPhaLoang'] = '1';
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      this.onDataChanged();
+    }
+
     this.onBulkVialStartChange();
   }
 
@@ -656,12 +685,17 @@ export class Sop1767857760184EntryComponent implements OnInit {
     // Regular samples
     this.getVisibleRegularSamples().forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
+        const randW = (9.90 + Math.random() * 0.20).toFixed(2);
         this.draft.resultData[sampleCode] = {
           loSo: '',
-          selected: true
+          selected: true,
+          khoiLuong: randW,
+          heSoPhaLoang: '1'
         };
         this.activeColumns.forEach(col => {
-          this.draft.resultData[sampleCode][col] = '';
+          if (col !== 'khoiLuong' && col !== 'heSoPhaLoang') {
+            this.draft.resultData[sampleCode][col] = '';
+          }
         });
       }
       list.push({
@@ -694,11 +728,9 @@ export class Sop1767857760184EntryComponent implements OnInit {
     displayRows.forEach(row => {
       const rowData = this.draft.resultData[row.key];
       if (rowData && rowData['selected'] !== false) {
-        this.activeColumns.forEach(col => {
-          if (!rowData[col] || rowData[col]?.trim() === '') {
-            rowData[col] = 'ND';
-          }
-        });
+        if (!rowData['kqDichlorvos'] || rowData['kqDichlorvos']?.trim() === '') {
+          rowData['kqDichlorvos'] = 'ND';
+        }
       }
     });
     this.onDataChanged();
