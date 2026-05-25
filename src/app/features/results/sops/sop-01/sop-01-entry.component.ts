@@ -464,8 +464,8 @@ export class Sop01EntryComponent implements OnInit {
         this.draft.page1Data[k] = true;
       }
     });
-    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === null || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
-      this.draft.page1Data['qcKiemTraNoiBo'] = true;
+    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
+      this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
     }
     if (this.draft.page1Data['qcNhanDang'] === undefined) {
       this.draft.page1Data['qcNhanDang'] = null;

@@ -619,7 +619,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       defaultPage1['qcThemChuan'] = true;
       defaultPage1['qcThuHoi'] = true;
       defaultPage1['qcDanhGiaChung'] = true;
-      defaultPage1['qcKiemTraNoiBo'] = true;
+      defaultPage1['qcKiemTraNoiBo'] = defaultPage1['hasCheckSample'] ? true : null;
       defaultPage1['qcNhanDang'] = null; // Exception: qcNhanDang starts as N/A
     } else if (sopConf.checkboxLines) {
       // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
