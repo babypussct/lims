@@ -406,11 +406,13 @@ export class PrintPreviewModalComponent {
               this.isPrinting.set(true);
               this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
               
-              // Tải tệp từ Google Drive dưới dạng Blob thông qua OAuth token
+              // Tự động xác thực tài khoản Google Drive (tái sử dụng token nếu có, hoặc hiển thị đăng nhập)
+              await this.googleDriveService.ensureAuthenticated();
+              
+              // Tải tệp và in ẩn trực tiếp tại trang
               const blob = await this.googleDriveService.downloadFile(id);
               const blobUrl = URL.createObjectURL(blob);
               
-              // Tạo một iframe ẩn để in trực tiếp không cần mở tab mới
               const iframe = document.createElement('iframe');
               iframe.style.position = 'fixed';
               iframe.style.right = '0';
@@ -426,7 +428,6 @@ export class PrintPreviewModalComponent {
                   iframe.contentWindow?.focus();
                   iframe.contentWindow?.print();
                   
-                  // Dọn dẹp iframe và blob URL sau khi hộp thoại in đóng
                   setTimeout(() => {
                       document.body.removeChild(iframe);
                       URL.revokeObjectURL(blobUrl);
@@ -435,10 +436,10 @@ export class PrintPreviewModalComponent {
               
               this.isPrinting.set(false);
           } catch (err: any) {
-              console.error('[Print] Direct printing failed:', err);
+              console.error('[Print] Direct printing failed, falling back to preview tab:', err);
               this.isPrinting.set(false);
               
-              // Fallback nếu tải hoặc in trực tiếp thất bại
+              // Fallback an toàn nếu người dùng đóng cửa sổ đăng nhập hoặc bị chặn popup
               window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
               this.toast.show('Đang mở trang xem trước. Vui lòng nhấn biểu tượng Máy in ở góc trên bên phải.', 'info');
           }
