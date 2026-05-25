@@ -474,11 +474,11 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                   <span>Phân tích viên:</span>
                   <strong class="text-white">{{ draft()?.updatedBy || 'Chưa rõ' }}</strong>
                 </span>
-                @if (draft()?.lastUpdated) {
+                @if (draft()?.updatedAt) {
                   <span class="flex items-center gap-1">
                     <i class="fa-solid fa-clock text-blue-300"></i>
                     <span>In lúc:</span>
-                    <strong class="text-white">{{ formatPublishDate(draft()?.lastUpdated) }}</strong>
+                    <strong class="text-white">{{ formatPublishDate(draft()?.updatedAt) }}</strong>
                   </span>
                 }
               </div>
