@@ -658,24 +658,27 @@ export class Sop01EntryComponent implements OnInit {
 
       regularCount++;
       if (regularCount % 10 === 0) {
-        const n = regularCount / 10;
-        const spikeNKey = this.getSpikeNKey(n);
-        const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
-        if (!this.draft.resultData[spikeNKey]) {
-          this.draft.resultData[spikeNKey] = {
-            loSo: spikeVial,
-            selected: true
-          };
-        } else {
-          this.draft.resultData[spikeNKey]['loSo'] = spikeVial;
+        const isLastSample = regularCount === (this.run.sampleList || []).length;
+        if (!isLastSample) {
+          const n = regularCount / 10;
+          const spikeNKey = this.getSpikeNKey(n);
+          const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
+          if (!this.draft.resultData[spikeNKey]) {
+            this.draft.resultData[spikeNKey] = {
+              loSo: spikeVial,
+              selected: true
+            };
+          } else {
+            this.draft.resultData[spikeNKey]['loSo'] = spikeVial;
+          }
+          list.push({
+            key: spikeNKey,
+            type: 'QC_SPIKE_N',
+            label: `SP_${n}`,
+            isQC: true,
+            n: n
+          });
         }
-        list.push({
-          key: spikeNKey,
-          type: 'QC_SPIKE_N',
-          label: `SP_${n}`,
-          isQC: true,
-          n: n
-        });
       }
     });
 

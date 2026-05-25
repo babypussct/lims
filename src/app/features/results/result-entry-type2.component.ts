@@ -988,16 +988,20 @@ export class ResultEntryType2Component implements OnInit {
       if (isSelected) {
         selectedCount++;
         if (selectedCount % 10 === 0) {
-          const n = selectedCount / 10;
-          const spikeNKey = this.getSpikeNKey(n, prefix);
-          ensureKey(spikeNKey, true);
-          list.push({
-            key: spikeNKey,
-            type: 'QC_SPIKE_N',
-            label: `SPIKE_${n}`,
-            isQC: true,
-            n: n
-          });
+          const totalSelected = samples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
+          const isLastSelected = selectedCount === totalSelected;
+          if (!isLastSelected) {
+            const n = selectedCount / 10;
+            const spikeNKey = this.getSpikeNKey(n, prefix);
+            ensureKey(spikeNKey, true);
+            list.push({
+              key: spikeNKey,
+              type: 'QC_SPIKE_N',
+              label: `SPIKE_${n}`,
+              isQC: true,
+              n: n
+            });
+          }
         }
       }
     });
