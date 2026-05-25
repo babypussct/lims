@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
+﻿import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
@@ -10,11 +10,6 @@ import { calculateSop03Recovery } from './sop-03-engine';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="space-y-6">
-      
- </div>
-          </div>
-        </div>
-      </div>
 
       <!-- 1. Metadata Form & Checkboxes -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
