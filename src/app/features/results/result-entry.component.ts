@@ -394,6 +394,51 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
         </div>
       }
 
+      <!-- Modern PDF Preview Modal -->
+      @if (showPdfModal()) {
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 fade-in" (click)="closePdfModal()">
+          <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-violet-650 via-fuchsia-650 to-indigo-700 text-white px-5 py-3.5 flex justify-between items-center shrink-0">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <i class="fa-solid fa-file-pdf text-sm"></i>
+                </div>
+                <div>
+                  <span class="text-[9px] font-black uppercase text-fuchsia-200 tracking-wider block mb-0.5">LIMS Báo cáo Kết quả</span>
+                  <h4 class="text-xs font-black m-0 tracking-tight">{{ pdfModalTitle() }}</h4>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <!-- Open in Drive Button -->
+                <a [href]="rawPdfUrl()" target="_blank" rel="noopener noreferrer"
+                   class="px-3 py-1.5 text-[10px] font-black text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  <span>MỞ DRIVE</span>
+                </a>
+                <!-- Close Button -->
+                <button (click)="closePdfModal()" 
+                        class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 duration-150 border border-white/10">
+                  <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="flex-1 bg-slate-100 dark:bg-slate-950 relative">
+              @if (pdfModalSafeUrl()) {
+                <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl"></iframe>
+              } @else {
+                <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-500"></i>
+                  <span class="text-xs font-bold uppercase tracking-wider">Đang tải báo cáo...</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
     </div>
 
   `
