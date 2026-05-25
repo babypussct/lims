@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { ResultService } from './services/result.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
@@ -99,11 +100,11 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
 
             <!-- View PDF / Open Docs if available for the active tab -->
             @if (getCurrentPdfUrl()) {
-              <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
-                 class="px-4 py-2 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
+              <button (click)="openPdfPreview(getCurrentPdfUrl())"
+                 class="px-4 py-2 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:shadow active:scale-95 duration-150">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span>Xem PDF</span>
-              </a>
+              </button>
             }
             @if (getCurrentDocsUrl()) {
               <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
@@ -139,11 +140,11 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
                     Báo cáo & Tài liệu
                   </div>
                   @if (getCurrentPdfUrl()) {
-                    <a [href]="getCurrentPdfUrl()" target="_blank" rel="noopener noreferrer"
-                       class="px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-2.5 no-underline">
+                    <button (click)="openPdfPreview(getCurrentPdfUrl())"
+                       class="w-full text-left px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
                       <i class="fa-solid fa-file-pdf"></i>
                       <span>Xem PDF phiên bản này</span>
-                    </a>
+                    </button>
                   }
                   @if (getCurrentDocsUrl()) {
                     <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
@@ -405,6 +406,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private resultService = inject(ResultService);
   private toast = inject(ToastService);
+  private sanitizer = inject(DomSanitizer);
 
   requestId = '';
   
@@ -412,6 +414,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isSavingDraft = signal(false);
   isPublishing = signal(false);
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
+
+  // PDF Preview Modal States
+  showPdfModal = signal(false);
+  pdfModalTitle = signal('');
+  pdfModalSafeUrl = signal<SafeResourceUrl | null>(null);
+  rawPdfUrl = signal('');
 
   // Emergency feature toggle for the new modular strategy architecture
   readonly ENABLE_MODULAR_SOPS = true;
@@ -793,20 +801,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const currentConf = this.config();
     if (!currentDraft || !currentRun || !currentConf) return;
 
-    // ── Mở cửa sổ trống NGAY LẬP TỨC (trước async) để tránh popup blocker ──
-    const pdfWindow = window.open('', '_blank');
-    if (pdfWindow) {
-      pdfWindow.document.write(`
-        <html><head><title>Đang tạo PDF...</title></head>
-        <body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;">
-          <div style="text-align:center;color:#64748b;">
-            <div style="font-size:48px;margin-bottom:16px">⏳</div>
-            <div style="font-size:18px;font-weight:bold;margin-bottom:8px">Đang tạo báo cáo PDF...</div>
-            <div style="font-size:14px">Vui lòng đợi, trang sẽ tự chuyển sang PDF sau vài giây.</div>
-          </div>
-        </body></html>`);
-    }
-
     this.isPublishing.set(true);
 
     try {
@@ -826,7 +820,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
         if (checkedSamples.length === 0) {
           this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
           this.isPublishing.set(false);
           return;
         }
@@ -913,11 +906,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           success = true;
           const url = result.pdfViewUrl || result.pdfUrl;
           if (url) {
-            if (pdfWindow && !pdfWindow.closed) {
-              pdfWindow.location.href = url;
-            } else {
-              window.open(url, '_blank');
-            }
+            this.openPdfPreview(url);
           }
         }
 
@@ -928,8 +917,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           }
           const hist = await this.resultService.getHistory(this.requestId);
           this.historyList.set(hist);
-        } else {
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else if (this.configKey() === 'fipronil-chlorpyrifos') {
         const activeFilter = this.activeFilter();
@@ -1031,14 +1018,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           this.historyList.set(hist);
 
           const url = result.pdfViewUrl || result.pdfUrl;
-          if (url && pdfWindow && !pdfWindow.closed) {
-            pdfWindow.location.href = url;
-          } else if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.close();
+          if (url) {
+            this.openPdfPreview(url);
+          } else {
             this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
           }
-        } else {
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else if (this.configKey() === 'dichlorvos-gcms') {
         const activeFilter = this.activeFilter();
@@ -1136,14 +1120,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           this.historyList.set(hist);
 
           const url = result.pdfViewUrl || result.pdfUrl;
-          if (url && pdfWindow && !pdfWindow.closed) {
-            pdfWindow.location.href = url;
-          } else if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.close();
+          if (url) {
+            this.openPdfPreview(url);
+          } else {
             this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
           }
-        } else {
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       } else {
         const activeFilter = this.activeFilter();
@@ -1237,14 +1218,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           this.historyList.set(hist);
 
           const url = result.pdfViewUrl || result.pdfUrl;
-          if (url && pdfWindow && !pdfWindow.closed) {
-            pdfWindow.location.href = url;
-          } else if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.close();
+          if (url) {
+            this.openPdfPreview(url);
+          } else {
             this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
           }
-        } else {
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
         }
       }
     } finally {
@@ -1386,5 +1364,48 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   goBack() {
     this.router.navigate(['/results']);
   }
+
+  openPdfPreview(url: string | null | undefined) {
+    if (!url) return;
+    this.rawPdfUrl.set(url);
+    const previewUrl = getGoogleDrivePreviewUrl(url);
+    this.pdfModalSafeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl));
+    
+    const activeFilter = this.activeFilter();
+    const filterName = activeFilter === 'ALL' ? 'Tất cả mẫu' : (activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`);
+    this.pdfModalTitle.set(`Báo cáo kết quả — ${this.run()?.sopName || ''} (${filterName})`);
+    
+    this.showPdfModal.set(true);
+  }
+
+  closePdfModal() {
+    this.showPdfModal.set(false);
+    this.pdfModalSafeUrl.set(null);
+    this.rawPdfUrl.set('');
+  }
+}
+
+/**
+ * Trích xuất Google Drive File ID và chuyển đổi sang dạng URL preview an toàn cho iframe nhúng
+ */
+function getGoogleDrivePreviewUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileDMatch && fileDMatch[1]) {
+    return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
+  }
+  try {
+    const urlObj = new URL(url);
+    const id = urlObj.searchParams.get('id');
+    if (id) {
+      return `https://drive.google.com/file/d/${id}/preview`;
+    }
+  } catch (e) {
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+    }
+  }
+  return url;
 }
 
