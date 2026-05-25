@@ -979,6 +979,26 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     return getSafeGoogleUrl(url, 'doc');
   }
 
+  hasAnyActiveReports(): boolean {
+    const d = this.draft();
+    if (!d) return false;
+    if (d.pdfUrl || d.pdfViewUrl) return true;
+    const reports = d.reports || {};
+    return Object.values(reports).some((r: any) => r && (r.pdfUrl || r.pdfViewUrl));
+  }
+
+  getPrefixReport(prefix: string): any | null {
+    const reports = this.draft()?.reports || {};
+    const reportKey = prefix === '' ? '_NO_PREFIX_' : prefix;
+    const report = reports[reportKey];
+    if (report && (report.pdfUrl || report.pdfViewUrl)) {
+      return report;
+    }
+    return null;
+  }
+
+  getSafeGoogleUrl = getSafeGoogleUrl;
+
   openUrl(url: string | null) {
     if (url) window.open(url, '_blank');
   }
