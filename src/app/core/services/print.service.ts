@@ -34,6 +34,15 @@ export class PrintService {
   isPreviewOpen = signal<boolean>(false);
   previewJobs = signal<PrintJob[]>([]);
   
+  // NEW PDF VIEWING STATE
+  isPreviewPdfOpen = signal<boolean>(false);
+  pdfUrl = signal<string | null>(null);
+  pdfTitle = signal<string>('');
+  pdfVersion = signal<number>(1);
+  pdfAnalyst = signal<string>('Chưa rõ');
+  pdfPublishDate = signal<any>(null);
+  onRepublishCallback = signal<(() => Promise<void>) | null>(null);
+
   // Default Options
   defaultOptions: PrintOptions = {
       showHeader: true,
@@ -55,6 +64,25 @@ export class PrintService {
   closePreview() {
       this.isPreviewOpen.set(false);
       this.previewJobs.set([]);
+  }
+
+  // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
+  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>) {
+      this.pdfUrl.set(url);
+      this.pdfTitle.set(title);
+      this.pdfVersion.set(version);
+      this.pdfAnalyst.set(analyst);
+      this.pdfPublishDate.set(publishDate);
+      if (onRepublish) {
+          this.onRepublishCallback.set(onRepublish);
+      }
+      this.isPreviewPdfOpen.set(true);
+  }
+
+  closePdfPreview() {
+      this.isPreviewPdfOpen.set(false);
+      this.pdfUrl.set(null);
+      this.onRepublishCallback.set(null);
   }
 
   // NOTE: Actual printing/PDF generation logic is now handled by 

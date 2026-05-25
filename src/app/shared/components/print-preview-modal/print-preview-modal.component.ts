@@ -1,7 +1,7 @@
-
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
 import { PrintLayoutComponent } from '../print-layout/print-layout.component';
 import { ToastService } from '../../../core/services/toast.service';
@@ -11,6 +11,7 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, PrintLayoutComponent],
   template: `
+    <!-- Chế Độ 1: Xem trước & In ấn Phiếu chạy A4 Cục bộ -->
     @if (printService.isPreviewOpen()) {
         <div class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 fade-in print-modal-overlay" (click)="close()">
             <div class="bg-white w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-bounce-in relative print-modal-content" (click)="$event.stopPropagation()">
@@ -78,14 +79,139 @@ import { ToastService } from '../../../core/services/toast.service';
                     </div>
 
                     <!-- RIGHT: Preview Canvas -->
-                    <!-- 'id="print-area"' is used for PDF generation -->
                     <div class="flex-1 bg-slate-200 overflow-auto flex justify-center p-8 relative custom-scrollbar print-scale-reset">
                         <div id="print-area" class="origin-top transition-transform duration-200 ease-out shadow-2xl bg-white print-scale-reset"
                              [style.transform]="'scale(' + (zoomLevel()/100) + ')'">
-                             <!-- This Component is what gets printed -->
                              <app-print-layout [jobs]="printService.previewJobs()" [options]="options"></app-print-layout>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Chế Độ 2: Trình Quản Lý & Xem Báo Cáo PDF Drive (Cloud PDF Viewer) -->
+    @if (printService.isPreviewPdfOpen()) {
+        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[150] p-4 fade-in" (click)="closePdfModal()">
+            <div class="relative bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 transition-all duration-300 ease-out"
+                [class.w-full]="isFullscreen()" [class.h-full]="isFullscreen()" [class.max-w-none]="isFullscreen()" [class.rounded-none]="isFullscreen()"
+                [class.max-w-6xl]="!isFullscreen()" [class.w-full]="!isFullscreen()" [class.h-[90vh]]="!isFullscreen()" [class.rounded-2xl]="!isFullscreen()"
+                (click)="$event.stopPropagation()">
+                
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-6 py-4 flex flex-col shrink-0 border-b border-indigo-500/20 shadow-md">
+                    <div class="flex justify-between items-center w-full gap-4 flex-wrap sm:flex-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
+                                <i class="fa-solid fa-file-pdf text-lg text-red-400"></i>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold uppercase text-indigo-300 tracking-widest block mb-0.5">LIMS Báo cáo Kết quả</span>
+                                <h4 class="text-sm sm:text-base font-extrabold m-0 tracking-tight text-white">{{ printService.pdfTitle() }}</h4>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Side Actions -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <!-- Open in New Tab Button -->
+                            <a [href]="rawPdfUrl()" target="_blank" rel="noopener noreferrer"
+                               class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                <span>MỞ TAB MỚI</span>
+                            </a>
+
+                            <!-- Print Button -->
+                            <button (click)="printPdf()" 
+                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                <i class="fa-solid fa-print"></i>
+                                <span>IN NHANH</span>
+                            </button>
+
+                            <!-- Download Button -->
+                            <button (click)="downloadPdf()" 
+                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                <i class="fa-solid fa-download"></i>
+                                <span>TẢI PDF</span>
+                            </button>
+
+                            <!-- Copy Link Button -->
+                            <button (click)="copyPdfLink()" 
+                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
+                                <span>{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
+                            </button>
+
+                            <!-- Re-generate / Re-publish Button -->
+                            @if (printService.onRepublishCallback()) {
+                                <button (click)="triggerRepublishFromModal()" 
+                                        [disabled]="isPublishing()"
+                                        class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800/40 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                    <i class="fa-solid" [class.fa-arrows-rotate]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
+                                    <span>TẠO LẠI BẢN MỚI</span>
+                                </button>
+                            }
+
+                            <div class="h-6 w-[1px] bg-white/20 mx-1 hidden sm:block"></div>
+
+                            <!-- Maximize Toggle Button -->
+                            <button (click)="toggleFullscreen()" 
+                                    class="w-9 h-9 rounded-xl hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border-none cursor-pointer">
+                                <i class="fa-solid" [class.fa-expand]="!isFullscreen()" [class.fa-compress]="isFullscreen()"></i>
+                            </button>
+
+                            <!-- Close Button -->
+                            <button (click)="closePdfModal()" 
+                                    class="w-9 h-9 rounded-xl hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10 cursor-pointer">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sub-header: Metadata badge row -->
+                    <div class="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-slate-300">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
+                            <span>Phiên bản:</span>
+                            <strong class="text-white bg-fuchsia-600/60 px-2 py-0.5 rounded-lg font-extrabold text-[11px]">v{{ printService.pdfVersion() }}</strong>
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-user text-indigo-400"></i>
+                            <span>Phân tích viên:</span>
+                            <strong class="text-white font-bold">{{ printService.pdfAnalyst() }}</strong>
+                        </span>
+                        @if (printService.pdfPublishDate()) {
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock text-blue-400"></i>
+                                <span>In lúc:</span>
+                                <strong class="text-white font-bold">{{ formatPublishDate(printService.pdfPublishDate()) }}</strong>
+                            </span>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="flex-1 bg-slate-100 dark:bg-slate-950 relative">
+                    <!-- Inline loading overlay when recreating a report from inside the modal -->
+                    @if (isPublishing()) {
+                        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white gap-3 z-50 animate-in fade-in duration-200">
+                            <i class="fa-solid fa-arrows-rotate fa-spin text-4xl text-indigo-400"></i>
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-200">Đang tạo lại bản báo cáo v{{ printService.pdfVersion() + 1 }}...</span>
+                            <span class="text-[10px] text-slate-400">Vui lòng đợi trong giây lát, bảng xem trước sẽ tự cập nhật.</span>
+                        </div>
+                    }
+
+                    @if (pdfModalSafeUrl()) {
+                        <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl bg-white"></iframe>
+                    } @else {
+                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
+                            <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
+                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải báo cáo...</span>
+                            <p class="text-xs text-slate-500 text-center max-w-md leading-relaxed">
+                                Nếu tài liệu không hiển thị do giới hạn bảo mật trình duyệt, vui lòng nhấp nút 
+                                <strong class="text-indigo-500">MỞ TAB MỚI</strong> ở phía trên góc phải để xem trực tiếp.
+                            </p>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -95,15 +221,30 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PrintPreviewModalComponent {
   printService = inject(PrintService);
   toast = inject(ToastService);
+  private sanitizer = inject(DomSanitizer);
   
+  // HTML A4 Print options & levels
   zoomLevel = signal(75); // %
   isGeneratingPdf = signal(false);
-  
-  // Local options state
   options: PrintOptions = { ...this.printService.defaultOptions };
 
+  // Cloud PDF reporting panel states
+  isFullscreen = signal(false);
+  isCopying = signal(false);
+  isPublishing = signal(false);
+
+  // Safe resource computed URL
+  pdfModalSafeUrl = computed(() => {
+    const url = this.printService.pdfUrl();
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
+
+  // Raw raw URL for tab bypass
+  rawPdfUrl = computed(() => this.printService.pdfUrl() || '');
+
   constructor() {
-      // Reset options when opened
+      // Reset options when HTML preview is opened
       effect(() => {
           if (this.printService.isPreviewOpen()) {
               this.options = { ...this.printService.defaultOptions };
@@ -112,22 +253,16 @@ export class PrintPreviewModalComponent {
       });
   }
 
+  // --- 1. LOCAL A4 PRINT HANDLERS ---
   close() { this.printService.closePreview(); }
   zoomIn() { this.zoomLevel.update(v => Math.min(v + 10, 150)); }
   zoomOut() { this.zoomLevel.update(v => Math.max(v - 10, 25)); }
 
-  /**
-   * Helper: Clones the app-print-layout content into a target container.
-   * Crucially, it redraws Canvases (QR Codes) because cloneNode() does not copy canvas content.
-   */
   private cloneContentToContainer(targetContainer: HTMLElement): void {
       const source = document.querySelector('app-print-layout');
       if (!source) throw new Error('Preview element not found');
 
-      // 1. Clone DOM
       const clone = source.cloneNode(true) as HTMLElement;
-      
-      // 2. Fix Canvas Elements (QR Codes)
       const sourceCanvases = source.querySelectorAll('canvas');
       const cloneCanvases = clone.querySelectorAll('canvas');
       
@@ -135,86 +270,65 @@ export class PrintPreviewModalComponent {
           if (cloneCanvases[index]) {
               const destCanvas = cloneCanvases[index];
               const ctx = destCanvas.getContext('2d');
-              // Copy the image data
               if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
           }
       });
 
-      // 3. Normalize Width/Styles for Print/PDF
       clone.style.width = '210mm'; 
-      clone.style.margin = '0'; // CHANGED: Reset margin to 0 for print
-      clone.style.transform = 'none'; // Ensure no scaling
+      clone.style.margin = '0';
+      clone.style.transform = 'none';
       clone.style.boxShadow = 'none';
 
       targetContainer.innerHTML = '';
       targetContainer.appendChild(clone);
   }
 
-  // --- 1. DIRECT BROWSER PRINT (WYSIWYG) ---
   doPrint() {
       const printContainer = document.getElementById('print-container');
       if (!printContainer) {
           this.toast.show('Lỗi: Không tìm thấy container in.', 'error');
           return;
       }
-
       try {
-          // Clone content to the print container
           this.cloneContentToContainer(printContainer);
-          
-          // Execute Print
           setTimeout(() => {
               window.print();
-              // Optional: Cleanup after print
-              // setTimeout(() => printContainer.innerHTML = '', 2000); 
           }, 50);
-
       } catch (e) {
           console.error(e);
           this.toast.show('Lỗi chuẩn bị in.', 'error');
       }
   }
 
-  // --- 2. HIGH-RES PDF EXPORT (Image-based) ---
   async doPdf() {
       this.isGeneratingPdf.set(true);
       this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
-      
       let tempContainer: HTMLElement | null = null;
-
       try {
-          // 1. Setup a hidden container for PDF generation
-          // We can't use the on-screen preview because it might be zoomed/scrolled.
           tempContainer = document.createElement('div');
           tempContainer.style.position = 'fixed';
           tempContainer.style.top = '0';
           tempContainer.style.left = '0';
-          // tempContainer.style.visibility = 'hidden'; // html2canvas sometimes needs visibility. Use z-index instead.
           tempContainer.style.zIndex = '-10000';
-          tempContainer.style.width = '210mm'; // Force A4 width
+          tempContainer.style.width = '210mm';
           tempContainer.style.background = 'white';
           document.body.appendChild(tempContainer);
 
-          // 2. Clone content
           this.cloneContentToContainer(tempContainer);
           const elementToCapture = tempContainer.firstChild as HTMLElement;
-
-          // 3. Wait for DOM update
           await new Promise(r => setTimeout(r, 150));
 
           const { jsPDF } = await import('jspdf');
           const html2canvas = (await import('html2canvas')).default;
 
-          // 4. Capture at 2x Scale for Sharpness
           const canvas = await html2canvas(elementToCapture, {
               scale: 2, 
               useCORS: true,
               logging: false,
               backgroundColor: '#ffffff',
-              windowWidth: 1200 // Ensure layout doesn't break
+              windowWidth: 1200
           });
 
-          // 5. Generate PDF
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
           const pdfWidth = 210;
           const pdfHeight = 297;
@@ -226,11 +340,9 @@ export class PrintPreviewModalComponent {
           let heightLeft = pdfImgHeight;
           let position = 0;
 
-          // Page 1
           doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
           heightLeft -= pdfHeight;
 
-          // Subsequent Pages
           while (heightLeft > 0) {
             position = heightLeft - pdfImgHeight;
             doc.addPage();
@@ -241,7 +353,6 @@ export class PrintPreviewModalComponent {
           const fileName = `LIMS_Phieu_${new Date().toISOString().slice(0,10)}.pdf`;
           doc.save(fileName);
           this.toast.show('Tải PDF thành công!', 'success');
-
       } catch (e: any) {
           console.error(e);
           this.toast.show('Lỗi tạo PDF: ' + e.message, 'error');
@@ -251,5 +362,84 @@ export class PrintPreviewModalComponent {
           }
           this.isGeneratingPdf.set(false);
       }
+  }
+
+  // --- 2. CLOUD PDF REPORTING PANEL HANDLERS ---
+  closePdfModal() {
+      this.printService.closePdfPreview();
+      this.isFullscreen.set(false);
+  }
+
+  toggleFullscreen() {
+      this.isFullscreen.update(v => !v);
+  }
+
+  getFileId(url: string | null): string | null {
+      if (!url) return null;
+      const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      return match ? match[1] : null;
+  }
+
+  printPdf() {
+      const id = this.getFileId(this.printService.pdfUrl());
+      if (id) {
+          window.open(`https://drive.google.com/file/d/${id}/print`, '_blank');
+      } else {
+          this.toast.show('Không thể in: Thiếu File ID', 'error');
+      }
+  }
+
+  downloadPdf() {
+      const id = this.getFileId(this.printService.pdfUrl());
+      if (id) {
+          window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');
+      } else {
+          this.toast.show('Không thể tải: Thiếu File ID', 'error');
+      }
+  }
+
+  async copyPdfLink() {
+      const url = this.printService.pdfUrl();
+      if (url) {
+          try {
+              this.isCopying.set(true);
+              await navigator.clipboard.writeText(url);
+              this.toast.show('Đã sao chép liên kết báo cáo PDF vào clipboard!', 'success');
+              setTimeout(() => this.isCopying.set(false), 1500);
+          } catch (err) {
+              this.toast.show('Không thể sao chép liên kết', 'error');
+          }
+      }
+  }
+
+  async triggerRepublishFromModal() {
+      const callback = this.printService.onRepublishCallback();
+      if (callback) {
+          this.isPublishing.set(true);
+          try {
+              await callback();
+              this.toast.show('Đã tạo lại bản báo cáo mới thành công!', 'success');
+          } catch (err: any) {
+              this.toast.show('Lỗi tạo lại báo cáo: ' + (err.message || err), 'error');
+          } finally {
+              this.isPublishing.set(false);
+          }
+      } else {
+          this.toast.show('Không thể tạo lại: Thiếu callback xử lý', 'error');
+      }
+  }
+
+  formatPublishDate(timestamp: any): string {
+      if (!timestamp) return 'Chưa rõ';
+      if (timestamp && typeof timestamp.toDate === 'function') {
+          return timestamp.toDate().toLocaleString('vi-VN');
+      }
+      if (timestamp instanceof Date) {
+          return timestamp.toLocaleString('vi-VN');
+      }
+      if (typeof timestamp === 'number' || typeof timestamp === 'string') {
+          return new Date(timestamp).toLocaleString('vi-VN');
+      }
+      return 'Vừa xong';
   }
 }
