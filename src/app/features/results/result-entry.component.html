@@ -67,23 +67,23 @@
         <!-- View PDF / Open Docs if available for the active tab -->
         @if (getCurrentPdfUrl()) {
           <button (click)="openPdfPreview(getCurrentPdfUrl())"
-             class="px-4 py-2 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:shadow active:scale-95 duration-150">
+             class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:shadow active:scale-95 duration-150">
             <i class="fa-solid fa-file-pdf"></i>
             <span>Xem PDF</span>
           </button>
         }
         @if (getCurrentDocsUrl()) {
           <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-             class="px-4 py-2 text-xs font-bold text-blue-605 dark:text-blue-405 bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
+             class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
             <i class="fa-brands fa-google-drive"></i>
             <span>Mở Docs</span>
           </a>
         }
-
+ 
         <!-- Publish / Generate PDF -->
         <button (click)="triggerPublishReport()" 
                 [disabled]="isProcessing()"
-                class="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-650 hover:from-violet-750 hover:via-fuchsia-750 hover:to-indigo-750 rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
+                class="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
                 [title]="getPrintButtonLabel()">
           <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
           <span>{{ getPrintButtonLabel() }}</span>

@@ -75,7 +75,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
                       (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
                       [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
                         ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
-                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-605 dark:text-slate-405 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                       title="Chọn Thủy sản">
                 Thủy sản
               </button>
@@ -95,7 +95,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
                       (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
                       [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
                         ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
-                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-605 dark:text-slate-405 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                       title="Chọn Bình thường">
                 Bình thường
               </button>

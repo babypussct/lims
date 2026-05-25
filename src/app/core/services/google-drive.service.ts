@@ -75,7 +75,7 @@ export class GoogleDriveService {
     // Primary: popup mode
     this.tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: config.clientId,
-      scope: 'https://www.googleapis.com/auth/drive.file',
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
       callback: (response: any) => {
           if (this.currentCallback) this.currentCallback(response);
       },
@@ -367,7 +367,7 @@ export class GoogleDriveService {
           client_id: config.clientId,
           redirect_uri: redirectUri,
           response_type: 'token',
-          scope: 'https://www.googleapis.com/auth/drive.file',
+          scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
           include_granted_scopes: 'true',
           prompt: 'consent',
       });

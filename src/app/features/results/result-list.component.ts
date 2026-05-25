@@ -200,7 +200,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
               <i class="fa-solid fa-sliders text-[10px]"></i>
               <span>Lọc nâng cao</span>
               @if (activeFiltersCount() > 0) {
-                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-blue-605 dark:bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-blue-500/30">
+                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-blue-600 dark:bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-blue-500/30">
                   {{ activeFiltersCount() }}
                 </span>
               }
@@ -625,12 +625,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                     </div>
                     <div class="flex items-center gap-2">
                       <a [href]="getSafeGoogleUrl((unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
-                         class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                         class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                         <i class="fa-solid fa-file-pdf"></i> XEM PDF
                       </a>
                       @if (unifiedAllSamplesReport().docsUrl) {
                         <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                           class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                           <i class="fa-solid fa-file-word"></i> MỞ DOCS
                         </a>
                       }
@@ -657,12 +657,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       <div class="flex items-center gap-2">
                         @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).pdfUrl || getPrefixReportForSelected(pref).pdfViewUrl)) {
                           <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                             class="px-4 py-2.5 bg-red-605 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                             class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                             <i class="fa-solid fa-file-pdf"></i> XEM PDF
                           </a>
                           @if (getPrefixReportForSelected(pref).docsUrl) {
                             <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                               class="px-4 py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
+                               class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
                               <i class="fa-solid fa-file-word"></i> MỞ DOCS
                             </a>
                           }
