@@ -15,13 +15,13 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
+import { PrintService } from '../../core/services/print.service';
 
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
 import { StandardsImportDataModalComponent, StandardsImportUsageModalComponent } from './components/standards-import-modal.component';
 import { StandardsHistoryModalComponent } from './components/standards-history-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
-import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
 import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-modal.component';
 import { StandardsToolbarComponent } from './components/standards-toolbar.component';
 import { StandardsFilterComponent } from './components/standards-filter.component';
@@ -31,7 +31,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
   templateUrl: './standards.component.html'
 })
 export class StandardsComponent implements OnInit, OnDestroy {
@@ -44,6 +44,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   sanitizer: DomSanitizer = inject(DomSanitizer); 
   router = inject(Router);
   googleDriveService = inject(GoogleDriveService);
+  printService = inject(PrintService);
   Math = Math;
   isLoading = signal(true);
   quickUploadStdId = signal<string>(''); // Track which std is being quick-uploaded
@@ -236,11 +237,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
   userList = signal<UserProfile[]>([]);
   
   showPrintModal = signal(false);
-    
-  previewUrl = signal<SafeResourceUrl | null>(null);
-  previewImgUrl = signal<string>('');
-  previewType = signal<'iframe' | 'image'>('iframe');
-  previewRawUrl = signal<string>('');
 
   // Bulk CoA Upload State
   bulkCoaItems = signal<CoaMatchItem[]>([]);
@@ -750,23 +746,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
   }
 
   openCoaPreview(url: string, event: Event) {
-      event.stopPropagation(); 
-      if (!url) return; 
-      this.previewRawUrl.set(url);
-      const cleanUrl = url.split('?')[0].toLowerCase();
-      const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
-      if (isImage) { 
-          this.previewType.set('image'); 
-          this.previewImgUrl.set(url); 
-      } else { 
-          this.previewType.set('iframe'); 
-          this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); 
-      }
-  }
-
-  closeCoaPreview() { 
-      this.previewUrl.set(null); 
-      this.previewImgUrl.set(''); 
+      event.stopPropagation();
+      this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
   }
 
   async runRecalculateInventory() {

@@ -15,8 +15,8 @@ import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryCl
 import { StandardsFormModalComponent } from './components/standards-form-modal.component';
 import { StandardsPrintModalComponent } from './components/standards-print-modal.component';
 import { StandardsPurchaseModalComponent } from './components/standards-purchase-modal.component';
-import { StandardsCoaModalComponent } from './components/standards-coa-modal.component';
 import { StandardsAssignModalComponent } from './components/standards-assign-modal.component';
+import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -25,7 +25,7 @@ import { writeBatch, doc, deleteField, serverTimestamp } from 'firebase/firestor
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsCoaModalComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent],
   templateUrl: './standard-detail.component.html'
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
@@ -40,6 +40,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     location = inject(Location);
     confirmationService = inject(ConfirmationService);
     sanitizer = inject(DomSanitizer);
+    printService = inject(PrintService);
     googleDriveService = inject(GoogleDriveService);
     notificationService = inject(NotificationService);
 
@@ -73,11 +74,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     isAssignMode = signal(true);
     userList = signal<UserProfile[]>([]);
 
-    // CoA Preview state
-    previewUrl = signal<SafeResourceUrl | null>(null);
-    previewImgUrl = signal<string>('');
-    previewType = signal<'iframe' | 'image'>('iframe');
-    previewRawUrl = signal<string>('');
+
 
     isUploadingCoa = signal(false);
 
@@ -349,22 +346,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openCoaPreview(url: string) {
-        if (!url) return;
-        this.previewRawUrl.set(url);
-        const cleanUrl = url.split('?')[0].toLowerCase();
-        const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
-        if (isImage) { 
-            this.previewType.set('image'); 
-            this.previewImgUrl.set(url); 
-        } else { 
-            this.previewType.set('iframe'); 
-            this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url)); 
-        }
-    }
-
-    closeCoaPreview() { 
-        this.previewUrl.set(null); 
-        this.previewImgUrl.set(''); 
+        this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
     }
 
 

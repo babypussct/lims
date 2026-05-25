@@ -487,6 +487,28 @@ export class GoogleDriveService {
   }
 
   /**
+   * Download a file from Google Drive as a Blob.
+   * Uses OAuth token for authorized download to bypass CORS restrictions.
+   */
+  async downloadFile(fileId: string): Promise<Blob> {
+      await this.ensureInitialized();
+      const token = await this.requestAccessToken();
+      
+      const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+          {
+              headers: { Authorization: `Bearer ${token}` }
+          }
+      );
+      
+      if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody?.error?.message || `HTTP ${res.status}`);
+      }
+      return await res.blob();
+  }
+
+  /**
    * Generate a clean, auto-named filename for CoA files.
    * Pattern: CoA_{StandardName}_{LotNumber}.{ext}
    * Handles Vietnamese characters by transliterating diacritics.

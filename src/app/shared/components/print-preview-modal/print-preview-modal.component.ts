@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
 import { PrintLayoutComponent } from '../print-layout/print-layout.component';
 import { ToastService } from '../../../core/services/toast.service';
+import { GoogleDriveService } from '../../../core/services/google-drive.service';
 
 @Component({
   selector: 'app-print-preview-modal',
@@ -106,7 +107,9 @@ import { ToastService } from '../../../core/services/toast.service';
                                 <i class="fa-solid fa-file-pdf text-lg text-red-400"></i>
                             </div>
                             <div>
-                                <span class="text-[10px] font-bold uppercase text-indigo-300 tracking-widest block mb-0.5">LIMS Báo cáo Kết quả</span>
+                                <span class="text-[10px] font-bold uppercase text-indigo-300 tracking-widest block mb-0.5">
+                                    {{ printService.pdfVersion() === 0 ? 'Chứng chỉ chất lượng (CoA)' : 'LIMS Báo cáo Kết quả' }}
+                                </span>
                                 <h4 class="text-sm sm:text-base font-extrabold m-0 tracking-tight text-white">{{ printService.pdfTitle() }}</h4>
                             </div>
                         </div>
@@ -121,17 +124,22 @@ import { ToastService } from '../../../core/services/toast.service';
                             </a>
 
                             <!-- Print Button -->
-                            <button (click)="printPdf()" 
-                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                <i class="fa-solid fa-print"></i>
-                                <span>IN NHANH</span>
+                            <button (click)="printPdf()" [disabled]="isPrinting()"
+                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                @if (isPrinting()) {
+                                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                    <span>ĐANG CHUẨN BỊ...</span>
+                                } @else {
+                                    <i class="fa-solid fa-print"></i>
+                                    <span>IN NHANH</span>
+                                }
                             </button>
 
                             <!-- Download Button -->
                             <button (click)="downloadPdf()" 
                                     class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
                                 <i class="fa-solid fa-download"></i>
-                                <span>TẢI PDF</span>
+                                <span>TẢI TÀI LIỆU</span>
                             </button>
 
                             <!-- Copy Link Button -->
@@ -168,25 +176,27 @@ import { ToastService } from '../../../core/services/toast.service';
                     </div>
 
                     <!-- Sub-header: Metadata badge row -->
-                    <div class="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-slate-300">
-                        <span class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
-                            <span>Phiên bản:</span>
-                            <strong class="text-white bg-fuchsia-600/60 px-2 py-0.5 rounded-lg font-extrabold text-[11px]">v{{ printService.pdfVersion() }}</strong>
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-user text-indigo-400"></i>
-                            <span>Phân tích viên:</span>
-                            <strong class="text-white font-bold">{{ printService.pdfAnalyst() }}</strong>
-                        </span>
-                        @if (printService.pdfPublishDate()) {
+                    @if (printService.pdfVersion() > 0) {
+                        <div class="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-slate-300">
                             <span class="flex items-center gap-1.5">
-                                <i class="fa-solid fa-clock text-blue-400"></i>
-                                <span>In lúc:</span>
-                                <strong class="text-white font-bold">{{ formatPublishDate(printService.pdfPublishDate()) }}</strong>
+                                <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
+                                <span>Phiên bản:</span>
+                                <strong class="text-white bg-fuchsia-600/60 px-2 py-0.5 rounded-lg font-extrabold text-[11px]">v{{ printService.pdfVersion() }}</strong>
                             </span>
-                        }
-                    </div>
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-user text-indigo-400"></i>
+                                <span>Phân tích viên:</span>
+                                <strong class="text-white font-bold">{{ printService.pdfAnalyst() }}</strong>
+                            </span>
+                            @if (printService.pdfPublishDate()) {
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock text-blue-400"></i>
+                                    <span>In lúc:</span>
+                                    <strong class="text-white font-bold">{{ formatPublishDate(printService.pdfPublishDate()) }}</strong>
+                                </span>
+                            }
+                        </div>
+                    }
                 </div>
                 
                 <!-- Modal Body -->
@@ -201,11 +211,17 @@ import { ToastService } from '../../../core/services/toast.service';
                     }
 
                     @if (pdfModalSafeUrl()) {
-                        <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl bg-white"></iframe>
+                        @if (printService.pdfPreviewType() === 'image') {
+                            <div class="w-full h-full flex items-center justify-center overflow-auto bg-slate-950 p-4">
+                                <img [src]="rawPdfUrl()" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg animate-in zoom-in-95 duration-200">
+                            </div>
+                        } @else {
+                            <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl bg-white"></iframe>
+                        }
                     } @else {
                         <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
                             <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
-                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải báo cáo...</span>
+                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu...</span>
                             <p class="text-xs text-slate-500 text-center max-w-md leading-relaxed">
                                 Nếu tài liệu không hiển thị do giới hạn bảo mật trình duyệt, vui lòng nhấp nút 
                                 <strong class="text-indigo-500">MỞ TAB MỚI</strong> ở phía trên góc phải để xem trực tiếp.
@@ -221,6 +237,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PrintPreviewModalComponent {
   printService = inject(PrintService);
   toast = inject(ToastService);
+  googleDriveService = inject(GoogleDriveService);
   private sanitizer = inject(DomSanitizer);
   
   // HTML A4 Print options & levels
@@ -232,6 +249,7 @@ export class PrintPreviewModalComponent {
   isFullscreen = signal(false);
   isCopying = signal(false);
   isPublishing = signal(false);
+  isPrinting = signal(false);
 
   // Safe resource computed URL
   pdfModalSafeUrl = computed(() => {
@@ -380,12 +398,54 @@ export class PrintPreviewModalComponent {
       return match ? match[1] : null;
   }
 
-  printPdf() {
-      const id = this.getFileId(this.printService.pdfUrl());
+  async printPdf() {
+      const url = this.printService.pdfUrl();
+      const id = this.getFileId(url);
       if (id) {
-          window.open(`https://drive.google.com/file/d/${id}/print`, '_blank');
+          try {
+              this.isPrinting.set(true);
+              this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
+              
+              // Tải tệp từ Google Drive dưới dạng Blob thông qua OAuth token
+              const blob = await this.googleDriveService.downloadFile(id);
+              const blobUrl = URL.createObjectURL(blob);
+              
+              // Tạo một iframe ẩn để in trực tiếp không cần mở tab mới
+              const iframe = document.createElement('iframe');
+              iframe.style.position = 'fixed';
+              iframe.style.right = '0';
+              iframe.style.bottom = '0';
+              iframe.style.width = '0';
+              iframe.style.height = '0';
+              iframe.style.border = '0';
+              iframe.src = blobUrl;
+              
+              document.body.appendChild(iframe);
+              
+              iframe.onload = () => {
+                  iframe.contentWindow?.focus();
+                  iframe.contentWindow?.print();
+                  
+                  // Dọn dẹp iframe và blob URL sau khi hộp thoại in đóng
+                  setTimeout(() => {
+                      document.body.removeChild(iframe);
+                      URL.revokeObjectURL(blobUrl);
+                  }, 60000);
+              };
+              
+              this.isPrinting.set(false);
+          } catch (err: any) {
+              console.error('[Print] Direct printing failed:', err);
+              this.isPrinting.set(false);
+              
+              // Fallback nếu tải hoặc in trực tiếp thất bại
+              window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
+              this.toast.show('Đang mở trang xem trước. Vui lòng nhấn biểu tượng Máy in ở góc trên bên phải.', 'info');
+          }
       } else {
-          this.toast.show('Không thể in: Thiếu File ID', 'error');
+          // Fallback cho liên kết không phải Google Drive
+          window.open(this.rawPdfUrl(), '_blank');
+          this.toast.show('Đang mở tài liệu. Vui lòng nhấn Ctrl + P để in.', 'info');
       }
   }
 

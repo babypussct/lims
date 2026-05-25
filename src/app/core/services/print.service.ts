@@ -41,6 +41,7 @@ export class PrintService {
   pdfVersion = signal<number>(1);
   pdfAnalyst = signal<string>('Chưa rõ');
   pdfPublishDate = signal<any>(null);
+  pdfPreviewType = signal<'iframe' | 'image'>('iframe');
   onRepublishCallback = signal<(() => Promise<void>) | null>(null);
 
   // Default Options
@@ -67,16 +68,35 @@ export class PrintService {
   }
 
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
-  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>) {
+  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe') {
       this.pdfUrl.set(url);
       this.pdfTitle.set(title);
       this.pdfVersion.set(version);
       this.pdfAnalyst.set(analyst);
       this.pdfPublishDate.set(publishDate);
+      this.pdfPreviewType.set(previewType);
       if (onRepublish) {
           this.onRepublishCallback.set(onRepublish);
+      } else {
+          this.onRepublishCallback.set(null);
       }
       this.isPreviewPdfOpen.set(true);
+  }
+
+  // --- 3. ENTRY POINT: OPEN COA PREVIEW ---
+  openCoaPreview(url: string, title: string = 'Certificate of Analysis') {
+      if (!url) return;
+      const cleanUrl = url.split('?')[0].toLowerCase();
+      const isImage = /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(cleanUrl);
+      this.openPdfPreview(
+          url,
+          title,
+          0,
+          'Hệ thống',
+          null,
+          undefined,
+          isImage ? 'image' : 'iframe'
+      );
   }
 
   closePdfPreview() {

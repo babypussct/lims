@@ -144,8 +144,6 @@
       <!-- HISTORY MODAL -->
       <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
 
-      <!-- COA PREVIEW MODAL -->
-      <app-standards-coa-modal [previewUrl]="previewUrl()" [previewImgUrl]="previewImgUrl()" [previewType]="previewType()" [previewRawUrl]="previewRawUrl()" (closeModal)="closeCoaPreview()"></app-standards-coa-modal>
       <!-- PURCHASE REQUEST MODAL -->
       <app-standards-purchase-modal [isOpen]="showPurchaseRequestModal()" [selectedStd]="selectedPurchaseStd()" (closeModal)="closePurchaseRequestModal()"></app-standards-purchase-modal>
 
