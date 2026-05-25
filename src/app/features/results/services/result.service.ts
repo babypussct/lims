@@ -676,7 +676,14 @@ export class ResultService {
       if (currentDraft.page1Data) {
         Object.keys(currentDraft.page1Data).forEach(key => {
           if (key !== 'ngayNguoiPhanTich' && key !== 'ngayNguoiThamTra' && key !== 'checkTatCaND' && key !== 'checkCoMauPhatHien') {
-            resetPage1Data[key] = false;
+            // Khôi phục mặc định Đạt (true) cho dynamic QC checklist của Fipronil (SOP-01)
+            if (key === 'qcR2' || key === 'qcThoiGianLuu' || key === 'qcThemChuan' || key === 'qcThuHoi' || key === 'qcDanhGiaChung' || key === 'qcKiemTraNoiBo') {
+              resetPage1Data[key] = true;
+            } else if (key === 'qcNhanDang') {
+              resetPage1Data[key] = null;
+            } else {
+              resetPage1Data[key] = false;
+            }
           }
         });
       }

@@ -451,7 +451,7 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['spikeName'] === undefined) this.draft.page1Data['spikeName'] = 'SPIKE';
     if (this.draft.page1Data['checkSampleName'] === undefined) this.draft.page1Data['checkSampleName'] = 'CHECK_SAMPLE';
 
-    // Khởi tạo đánh giá chất lượng (QC checklist) mặc định Đạt (true), ngoại trừ qcNhanDang là undefined (N/A)
+    // Khởi tạo đánh giá chất lượng (QC checklist) mặc định Đạt (true), ngoại trừ qcNhanDang là N/A (null)
     const qcKeys = [
       'qcR2',
       'qcThoiGianLuu',
@@ -460,12 +460,12 @@ export class Sop01EntryComponent implements OnInit {
       'qcDanhGiaChung'
     ];
     qcKeys.forEach(k => {
-      if (this.draft.page1Data[k] === undefined) {
+      if (this.draft.page1Data[k] === undefined || this.draft.page1Data[k] === null || this.draft.page1Data[k] === '') {
         this.draft.page1Data[k] = true;
       }
     });
-    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined) {
-      this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
+    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === null || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
+      this.draft.page1Data['qcKiemTraNoiBo'] = true;
     }
     if (this.draft.page1Data['qcNhanDang'] === undefined) {
       this.draft.page1Data['qcNhanDang'] = null;

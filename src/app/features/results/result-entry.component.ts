@@ -613,6 +613,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         { loSo: '1.4', vialNo: '1.4' },
         { loSo: '1.5', vialNo: '1.5' }
       ];
+      // Explicitly set dynamic QC checklist defaults to true
+      defaultPage1['qcR2'] = true;
+      defaultPage1['qcThoiGianLuu'] = true;
+      defaultPage1['qcThemChuan'] = true;
+      defaultPage1['qcThuHoi'] = true;
+      defaultPage1['qcDanhGiaChung'] = true;
+      defaultPage1['qcKiemTraNoiBo'] = true;
+      defaultPage1['qcNhanDang'] = null; // Exception: qcNhanDang starts as N/A
     } else if (sopConf.checkboxLines) {
       // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
       Object.values(sopConf.checkboxLines).forEach((field: any) => {
@@ -856,15 +864,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           selectedCount++;
           if (selectedCount % 10 === 0) {
-            const n = selectedCount / 10;
-            const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
-            const spikeNObj = currentDraft.resultData[spikeNKey] || {};
-            samplesPayload.push({
-              loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
-              maSoMau: `SPIKE_${n}`,
-              kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
-              ghiChu: spikeNObj['ghiChu'] || ''
-            });
+            const isLastSelected = selectedCount === prefixSamples.length;
+            if (!isLastSelected) {
+              const n = selectedCount / 10;
+              const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
+              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
+              samplesPayload.push({
+                loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
+                maSoMau: `SPIKE_${n}`,
+                kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
+                ghiChu: spikeNObj['ghiChu'] || ''
+              });
+            }
           }
         });
 
@@ -972,22 +983,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           regularCount++;
           if (regularCount % 10 === 0) {
-            const n = regularCount / 10;
-            const spikeNKey = `QC_SPIKE_${n}`;
-            const spikeNObj = currentDraft.resultData[spikeNKey] || {};
-            const spikeVial = currentDraft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
-            
-            const spRowData: Record<string, any> = {
-              loSo: spikeNObj['loSo'] || spikeVial,
-              maSoMau: `SP_${n}`,
-              ghiChu: spikeNObj['ghiChu'] || ''
-            };
-            Object.keys(currentConf.columns).forEach(col => {
-              if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-                spRowData[col] = spikeNObj[col] !== undefined ? spikeNObj[col] : '';
-              }
-            });
-            samplesPayload.push(spRowData);
+            const isLastSample = regularCount === sampleList.length;
+            if (!isLastSample) {
+              const n = regularCount / 10;
+              const spikeNKey = `QC_SPIKE_${n}`;
+              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
+              const spikeVial = currentDraft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
+              
+              const spRowData: Record<string, any> = {
+                loSo: spikeNObj['loSo'] || spikeVial,
+                maSoMau: `SP_${n}`,
+                ghiChu: spikeNObj['ghiChu'] || ''
+              };
+              Object.keys(currentConf.columns).forEach(col => {
+                if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+                  spRowData[col] = spikeNObj[col] !== undefined ? spikeNObj[col] : '';
+                }
+              });
+              samplesPayload.push(spRowData);
+            }
           }
         });
 
