@@ -671,7 +671,7 @@ export class Sop03EntryComponent implements OnInit {
       if (isSelected) {
         selectedCount++;
         if (selectedCount % 10 === 0) {
-          const totalSelected = samples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
+          const totalSelected = samples.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
           const isLastSelected = selectedCount === totalSelected;
           if (!isLastSelected) {
             const n = selectedCount / 10;
