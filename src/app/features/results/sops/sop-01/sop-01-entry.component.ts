@@ -347,6 +347,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-loSo'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner">
                     </td>
@@ -370,6 +371,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
                                (ngModelChange)="onCellChanged(row.key)"
                                [id]="'cell-' + rowIdx + '-' + col"
                                (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
+                               (focus)="$any($event.target).select()"
                                placeholder="..."
                                class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
                       </td>
@@ -447,8 +449,8 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
 
     // Khởi tạo tên tuỳ chỉnh cho các mẫu QC
-    if (this.draft.page1Data['blankName'] === undefined) this.draft.page1Data['blankName'] = 'BLANK';
-    if (this.draft.page1Data['spikeName'] === undefined) this.draft.page1Data['spikeName'] = 'SPIKE';
+    if (this.draft.page1Data['blankName'] === undefined) this.draft.page1Data['blankName'] = '';
+    if (this.draft.page1Data['spikeName'] === undefined) this.draft.page1Data['spikeName'] = '';
     if (this.draft.page1Data['checkSampleName'] === undefined) this.draft.page1Data['checkSampleName'] = 'CHECK_SAMPLE';
 
     // Khởi tạo đánh giá chất lượng (QC checklist) mặc định Đạt (true), ngoại trừ qcNhanDang là N/A (null)

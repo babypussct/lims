@@ -18,6 +18,12 @@ import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
 import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-1767857760184-entry.component';
 import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
 import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
+import { 
+  buildTrifluralinPdfPayload, 
+  buildFipronilPdfPayload, 
+  buildDichlorvosPdfPayload, 
+  buildDefaultSopPdfPayload 
+} from './result-pdf-helper';
 
 @Component({
   selector: 'app-result-entry',
@@ -139,44 +145,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           if (!draftDoc) {
             // Nếu chưa có nháp, tạo bản nháp mặc định ban đầu
             draftDoc = this.createDefaultDraft(runDoc, sopConf);
-          } else {
-            // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
-            const isTrifluralin = resolvedKey === 'trifluralin-gcms';
-            if (isTrifluralin) {
-              if (!draftDoc.page1Data) draftDoc.page1Data = {};
-              if (!draftDoc.page1Data['calibPoints'] || draftDoc.page1Data['calibPoints'].length === 0) {
-                draftDoc.page1Data['calibPoints'] = [
-                  { loSo: '41', hamLuong: '0' },
-                  { loSo: '42', hamLuong: '0.5' },
-                  { loSo: '43', hamLuong: '1.0' },
-                  { loSo: '44', hamLuong: '5.0' },
-                  { loSo: '45', hamLuong: '10.0' },
-                  { loSo: '46', hamLuong: '30.0' }
-                ];
-              }
-              if (draftDoc.page1Data['r2'] === undefined || draftDoc.page1Data['r2'] === '') {
-                draftDoc.page1Data['r2'] = '0.999';
-              }
-              if (draftDoc.page1Data['blankName'] === undefined) {
-                draftDoc.page1Data['blankName'] = 'Blank';
-              }
-              if (draftDoc.page1Data['spikeName'] === undefined) {
-                draftDoc.page1Data['spikeName'] = 'Spike';
-              }
-
-              if (!draftDoc.resultData) draftDoc.resultData = {};
-              if (!draftDoc.resultData['QC_BLANK']) {
-                draftDoc.resultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
-              } else {
-                if (!draftDoc.resultData['QC_BLANK']['loSo']) draftDoc.resultData['QC_BLANK']['loSo'] = '47';
-                if (!draftDoc.resultData['QC_BLANK']['kqTrifluralin']) draftDoc.resultData['QC_BLANK']['kqTrifluralin'] = 'ND';
-              }
-              if (!draftDoc.resultData['QC_SPIKE']) {
-                draftDoc.resultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
-              } else {
-                if (!draftDoc.resultData['QC_SPIKE']['loSo']) draftDoc.resultData['QC_SPIKE']['loSo'] = '48';
-              }
-            }
           }
 
           // Cập nhật draft signal thời gian thực
@@ -215,8 +183,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     if (isTrifluralin) {
       defaultPage1['r2'] = '0.999';
-      defaultPage1['blankName'] = 'Blank';
-      defaultPage1['spikeName'] = 'Spike';
+      defaultPage1['blankName'] = '';
+      defaultPage1['spikeName'] = '';
       defaultPage1['calibPoints'] = [
         { loSo: '41', hamLuong: '0' },
         { loSo: '42', hamLuong: '0.5' },
@@ -229,8 +197,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       defaultPage1['r2'] = '0.999';
       defaultPage1['dichlorvosMethod'] = 'GC/MS';
       defaultPage1['hasFinal'] = false;
-      defaultPage1['blankName'] = 'Blank';
-      defaultPage1['spikeName'] = 'Spike';
+      defaultPage1['blankName'] = '';
+      defaultPage1['spikeName'] = '';
       defaultPage1['calibPoints'] = [
         { loSo: '51', hamLuong: '0' },
         { loSo: '52', hamLuong: '5' },
@@ -435,425 +403,75 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.isPublishing.set(true);
 
     try {
-      const isTrifluralin = this.configKey() === 'trifluralin-gcms';
+      const activeFilter = this.activeFilter();
+      const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+      const key = this.configKey();
+      let reportPayload: any;
 
-      if (isTrifluralin) {
-        const activeFilter = this.activeFilter();
+      if (key === 'trifluralin-gcms') {
         const sampleList = currentRun.sampleList || [];
-        const checkedSamples = sampleList.filter((s: string) => {
+        const hasSelected = sampleList.some((s: string) => {
           const resObj = currentDraft.resultData[s] || {};
           const startsWithLetter = /^[a-zA-Z]/.test(s);
           const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
           const isSelected = resObj['selected'] !== false;
-          const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
-          return isSelected && matchesFilter;
+          return isSelected && (activeFilter === 'ALL' || prefix === activeFilter);
         });
 
-        if (checkedSamples.length === 0) {
+        if (!hasSelected) {
           this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
           this.isPublishing.set(false);
           return;
         }
 
-        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
-        const prefixSamples = checkedSamples;
-
-        const samplesPayload: any[] = [];
-
-        // 1. Thêm Blank vào đầu danh sách
-        const blankObj = currentDraft.resultData['QC_BLANK'] || {};
-        samplesPayload.push({
-          loSo: blankObj['loSo'] || '1',
-          maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
-          kqTrifluralin: blankObj['kqTrifluralin'] || '',
-          ghiChu: blankObj['ghiChu'] || ''
-        });
-
-        // 2. Thêm Spike vào vị trí thứ 2
-        const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
-        samplesPayload.push({
-          loSo: spikeObj['loSo'] || '2',
-          maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
-          kqTrifluralin: spikeObj['kqTrifluralin'] || '',
-          ghiChu: spikeObj['ghiChu'] || ''
-        });
-
-        // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
-        let selectedCount = 0;
-        prefixSamples.forEach((sampleCode: string) => {
-          const resObj = currentDraft.resultData[sampleCode] || {};
-          samplesPayload.push({
-            loSo: resObj['loSo'] || '',
-            maSoMau: sampleCode,
-            kqTrifluralin: resObj['kqTrifluralin'] || '',
-            ghiChu: resObj['ghiChu'] || ''
-          });
-
-          selectedCount++;
-          if (selectedCount % 10 === 0) {
-            const isLastSelected = selectedCount === prefixSamples.length;
-            if (!isLastSelected) {
-              const n = selectedCount / 10;
-              const spikeNKey = `QC_SPIKE_${n}_QC_${prefixForReport}`;
-              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
-              samplesPayload.push({
-                loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
-                maSoMau: `SPIKE_${n}`,
-                kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
-                ghiChu: spikeNObj['ghiChu'] || ''
-              });
-            }
-          }
-        });
-
-        // 4. FINAL row
-        if (selectedCount > 0) {
-          const finalKey = `QC_FINAL_QC_${prefixForReport}`;
-          const finalObj = currentDraft.resultData[finalKey] || {};
-          samplesPayload.push({
-            loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
-            maSoMau: 'FINAL',
-            kqTrifluralin: finalObj['kqTrifluralin'] || '',
-            ghiChu: finalObj['ghiChu'] || ''
-          });
-        }
-
-        const reportPayload: any = {
-          action: 'generate_pdf',
-          sopId: this.configKey(),
-          metadata: {
-            ...currentDraft.page1Data,
-            prefix: prefixForReport,
-            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
-            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
-            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
-          },
-          samples: samplesPayload
-        };
-
-        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
-        let success = false;
-        if (result.success) {
-          success = true;
-          const url = result.pdfViewUrl || result.pdfUrl;
-          if (url) {
-            this.openPdfPreview(url);
-          }
-        }
-
-        if (success) {
-          const latestDraft = await this.resultService.getDraft(this.requestId);
-          if (latestDraft) {
-            this.draft.set(latestDraft);
-          }
-          const hist = await this.resultService.getHistory(this.requestId);
-          this.historyList.set(hist);
-        }
-      } else if (this.configKey() === 'fipronil-chlorpyrifos') {
-        const activeFilter = this.activeFilter();
-        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
-        
-        // Luồng tạo báo cáo chuyên biệt cho Fipronil (SOP-01) có kèm theo mẫu QC (BLANK, SPIKE, CHECK_SAMPLE, FINAL)
-        const samplesPayload: any[] = [];
-        
-        const ensureKeyAndGet = (key: string, defaultVial: string, label: string) => {
-          const resObj = currentDraft.resultData[key] || {};
-          const rowData: Record<string, any> = {
-            loSo: resObj['loSo'] || defaultVial,
-            maSoMau: label,
-            ghiChu: resObj['ghiChu'] || ''
-          };
-          Object.keys(currentConf.columns).forEach(col => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-            }
-          });
-          return rowData;
-        };
-
-        // 1. BLANK (vial 1.7)
-        const blankName = currentDraft.page1Data['blankName'] || 'BLANK';
-        samplesPayload.push(ensureKeyAndGet('QC_BLANK', '1.7', blankName));
-
-        // 2. SPIKE (vial 1.8)
-        const spikeName = currentDraft.page1Data['spikeName'] || 'SPIKE';
-        samplesPayload.push(ensureKeyAndGet('QC_SPIKE', '1.8', spikeName));
-
-        // 3. CHECK_SAMPLE (vial 1.9, optional)
-        if (currentDraft.page1Data['hasCheckSample']) {
-          const checkSampleName = currentDraft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
-          samplesPayload.push(ensureKeyAndGet('QC_CHECK_SAMPLE', '1.9', checkSampleName));
-        }
-
-        // 4. Regular samples & dynamic SP_N every 10 samples
-        const sampleList = this.filteredRun()?.sampleList || [];
-        let regularCount = 0;
-        sampleList.forEach((sampleCode: string) => {
-          const resObj = currentDraft.resultData[sampleCode] || {};
-          const rowData: Record<string, any> = {
-            loSo: resObj['loSo'] || '',
-            maSoMau: sampleCode,
-            ghiChu: resObj['ghiChu'] || ''
-          };
-          Object.keys(currentConf.columns).forEach(col => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-            }
-          });
-          samplesPayload.push(rowData);
-
-          regularCount++;
-          if (regularCount % 10 === 0) {
-            const isLastSample = regularCount === sampleList.length;
-            if (!isLastSample) {
-              const n = regularCount / 10;
-              const spikeNKey = `QC_SPIKE_${n}`;
-              const spikeNObj = currentDraft.resultData[spikeNKey] || {};
-              const spikeVial = currentDraft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
-              
-              const spRowData: Record<string, any> = {
-                loSo: spikeNObj['loSo'] || spikeVial,
-                maSoMau: `SP_${n}`,
-                ghiChu: spikeNObj['ghiChu'] || ''
-              };
-              Object.keys(currentConf.columns).forEach(col => {
-                if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-                  spRowData[col] = spikeNObj[col] !== undefined ? spikeNObj[col] : '';
-                }
-              });
-              samplesPayload.push(spRowData);
-            }
-          }
-        });
-
-        // 5. FINAL (vial 1.8)
-        samplesPayload.push(ensureKeyAndGet('QC_FINAL', '1.8', 'FINAL'));
-
-        const reportPayload: any = {
-          action: 'generate_pdf',
-          sopId: this.configKey(),
-          metadata: {
-            ...currentDraft.page1Data,
-            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
-            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
-            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
-          },
-          samples: samplesPayload
-        };
-
-        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload);
-        if (result.success) {
-          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
-
-          const hist = await this.resultService.getHistory(this.requestId);
-          this.historyList.set(hist);
-
-          const url = result.pdfViewUrl || result.pdfUrl;
-          if (url) {
-            this.openPdfPreview(url);
-          } else {
-            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
-          }
-        }
-      } else if (this.configKey() === 'dichlorvos-gcms') {
-        const activeFilter = this.activeFilter();
-        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
-        
-        const samplesPayload: any[] = [];
-        
-        const getQcRow = (key: string, label: string) => {
-          const resObj = currentDraft.resultData[key] || {};
-          const rowData: Record<string, any> = {
-            loSo: resObj['loSo'] || '',
-            maSoMau: label,
-            ghiChu: resObj['ghiChu'] || ''
-          };
-          Object.keys(currentConf.columns).forEach((col: string) => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              if (col === 'kqDichlorvos') {
-                let mergedVal = resObj['kqDichlorvos'] || '';
-                let note = (resObj['ghiChu'] || '').trim();
-                if (note) {
-                  if (!note.startsWith('(') || !note.endsWith(')')) {
-                    note = `(${note})`;
-                  }
-                  mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
-                }
-                rowData[col] = mergedVal;
-              } else {
-                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-              }
-            }
-          });
-          return rowData;
-        };
-
-        // 1. Blank
-        const blankName = currentDraft.page1Data['blankName'] || 'Blank';
-        samplesPayload.push(getQcRow('QC_BLANK', blankName));
-
-        // 2. Spike
-        const spikeName = currentDraft.page1Data['spikeName'] || 'Spike';
-        samplesPayload.push(getQcRow('QC_SPIKE', spikeName));
-
-        // 3. Regular samples
-        const sampleList = this.filteredRun()?.sampleList || [];
-        sampleList.forEach((sampleCode: string) => {
-          const resObj = currentDraft.resultData[sampleCode] || {};
-          const rowData: Record<string, any> = {
-            loSo: resObj['loSo'] || '',
-            maSoMau: sampleCode,
-            ghiChu: resObj['ghiChu'] || ''
-          };
-          Object.keys(currentConf.columns).forEach((col: string) => {
-            if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              if (col === 'kqDichlorvos') {
-                let mergedVal = resObj['kqDichlorvos'] || '';
-                let note = (resObj['ghiChu'] || '').trim();
-                if (note) {
-                  if (!note.startsWith('(') || !note.endsWith(')')) {
-                    note = `(${note})`;
-                  }
-                  mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
-                }
-                rowData[col] = mergedVal;
-              } else {
-                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-              }
-            }
-          });
-          samplesPayload.push(rowData);
-        });
-
-        // 4. FINAL (optional)
-        if (currentDraft.page1Data['hasFinal']) {
-          samplesPayload.push(getQcRow('QC_FINAL', 'FINAL'));
-        }
-
-        const reportPayload: any = {
-          action: 'generate_pdf',
-          sopId: this.configKey(),
-          metadata: {
-            ...currentDraft.page1Data,
-            prefix: prefixForReport,
-            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
-            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
-            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
-          },
-          samples: samplesPayload
-        };
-
-        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
-        if (result.success) {
-          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
-
-          const hist = await this.resultService.getHistory(this.requestId);
-          this.historyList.set(hist);
-
-          const url = result.pdfViewUrl || result.pdfUrl;
-          if (url) {
-            this.openPdfPreview(url);
-          } else {
-            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
-          }
-        }
+        reportPayload = buildTrifluralinPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      } else if (key === 'fipronil-chlorpyrifos') {
+        reportPayload = buildFipronilPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      } else if (key === 'dichlorvos-gcms') {
+        reportPayload = buildDichlorvosPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
       } else {
-        const activeFilter = this.activeFilter();
-        const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
-        
-        // Luồng tạo báo cáo tiêu chuẩn cho các SOP khác
-        const samplesPayload: any[] = [];
-        const sampleList = this.filteredRun()?.sampleList || [];
+        reportPayload = buildDefaultSopPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      }
 
-        sampleList.forEach((sampleCode: string, idx: number) => {
-          const resObj = currentDraft.resultData[sampleCode] || {};
-          
-          if (currentConf.formType === 'type3b') {
-            const rowData: Record<string, any> = {
-              maSoMau: sampleCode
-            };
-            
-            const chlorMap: Record<string, string> = {
-              'BHC-alpha': 'BHCa',
-              'BHC-beta': 'BHCb',
-              'BHC-delta': 'BHCd',
-              'BHC-epsilon': 'BHCe',
-              'BHC-gamma': 'BHCg',
-              'Chlordane-cis': 'Chlordane_cis',
-              'Chlordane-oxy': 'Chlordane_oxy',
-              'Chlordane-trans': 'Chlordane_trans',
-              'DDD-o,p': 'DDD_op',
-              'DDD-p,p': 'DDD_pp',
-              'DDE-o,p': 'DDE_op',
-              'DDE-p,p': 'DDE_pp',
-              'DDT-o,p': 'DDT_op',
-              'DDT-p,p': 'DDT_pp',
-              'Endosulfan-I': 'Endosulfan1',
-              'Endosulfan-II': 'Endosulfan2',
-              'Endosulfan-sulfate': 'EndosulfanS',
-              'Heptachlor-epoxide-trans': 'HeptachlorA',
-              'Heptachlor-epoxide-cis': 'HeptachlorB',
-              'Hexachlorobenzene': 'HCB'
-            };
-            
-            const mapCompoundToKey = (c: string): string => {
-              if (chlorMap[c]) return chlorMap[c];
-              if (c === 'Parathion-ethyl') return 'Parathion';
-              if (c === 'Ipobenfos') return 'Iprobenfos';
-              return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-            };
+      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
+      if (result.success) {
+        this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 
-            currentConf.compounds.forEach((c: string) => {
-              const backendKey = mapCompoundToKey(c);
-              rowData[backendKey] = resObj[c] || 'KPH';
-              rowData[`${backendKey}_nd`] = resObj[`${c}_nd`] === true;
-              rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || 'Đạt';
-              rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || 'Đạt';
-              rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || 'Đạt';
-            });
-            
-            samplesPayload.push(rowData);
-          } else {
-            const rowData: Record<string, any> = {
-              loSo: String(idx + 1),
-              maSoMau: sampleCode,
-              ghiChu: resObj['ghiChu'] || ''
-            };
-            Object.keys(currentConf.columns).forEach(col => {
-              if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-              }
-            });
-            samplesPayload.push(rowData);
-          }
-        });
+        const hist = await this.resultService.getHistory(this.requestId);
+        this.historyList.set(hist);
 
-        const reportPayload: any = {
-          action: 'generate_pdf',
-          sopId: this.configKey(),
-          metadata: {
-            ...currentDraft.page1Data,
-            prefix: prefixForReport,
-            ngayNguoiPhanTich: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate()),
-            ngayNguoiThamTra: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
-            ngayBaoCao: this.formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || this.getRunDate())
-          },
-          samples: samplesPayload
-        };
-
-        const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
-        if (result.success) {
-          this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
-
-          const hist = await this.resultService.getHistory(this.requestId);
-          this.historyList.set(hist);
-
-          const url = result.pdfViewUrl || result.pdfUrl;
-          if (url) {
-            this.openPdfPreview(url);
-          } else {
-            this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
-          }
+        const url = result.pdfViewUrl || result.pdfUrl;
+        if (url) {
+          this.openPdfPreview(url);
+        } else {
+          this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
         }
       }
     } finally {

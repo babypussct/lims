@@ -190,7 +190,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   <input type="text" 
                          [(ngModel)]="draft.page1Data['blankName']" 
                          (ngModelChange)="onDataChanged()"
-                         placeholder="Blank..."
+                         (focus)="$any($event.target).select()"
+                         placeholder="BLANK"
                          class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
                 </div>
                 
@@ -199,7 +200,8 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                   <input type="text" 
                          [(ngModel)]="draft.page1Data['spikeName']" 
                          (ngModelChange)="onDataChanged()"
-                         placeholder="Spike..."
+                         (focus)="$any($event.target).select()"
+                         placeholder="SPIKE"
                          class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
                 </div>
 

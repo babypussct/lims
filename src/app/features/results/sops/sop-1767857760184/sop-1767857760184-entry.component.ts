@@ -10,100 +10,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
   template: `
     <div class="space-y-6">
       
-      <!-- 0. Quality Control & Stats Dashboard -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fade-in">
-        <!-- Total Samples Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500/10 to-blue-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-100/50 dark:border-cyan-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-flask-vial text-lg"></i>
-          </div>
-          <div>
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tổng số mẫu thử</span>
-            <div class="flex items-baseline gap-1.5">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().selectedCount }}</span>
-              <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">/ {{ getStats().totalCount }} hoạt động</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- Entry Progress Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-100/50 dark:border-amber-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-list-check text-lg"></i>
-          </div>
-          <div class="flex-1">
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tiến độ nhập sắc ký</span>
-            <div class="flex items-center gap-3">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().progressPct }}%</span>
-              <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" [style.width.%]="getStats().progressPct"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Calibration Curve Linearity Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-fuchsia-500/10 to-pink-500/10 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100/50 dark:border-fuchsia-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-chart-line text-lg"></i>
-          </div>
-          <div>
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Hệ số R² Đường chuẩn</span>
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-mono">{{ getStats().r2Val || 'Chưa nhập' }}</span>
-              @if (getStats().r2Status === 'VALID') {
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-455 border border-fuchsia-200/30 tracking-wider">Tuyến tính</span>
-              } @else if (getStats().r2Status === 'WARNING') {
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 border border-rose-200/30 tracking-wider">Cảnh báo R²</span>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Spike Recovery Card -->
-        @if (getStats().spikeRecovery !== null) {
-          <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-900/30 group-hover:scale-110 transition-transform duration-300">
-              <i class="fa-solid fa-shield-heart text-lg"></i>
-            </div>
-            <div>
-              <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">QC Spike Recovery</span>
-              <div class="flex items-center gap-2">
-                <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().spikeRecovery }}%</span>
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
-                      [ngClass]="{
-                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().spikeQcStatus === 'PASS',
-                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 border border-rose-200/30': getStats().spikeQcStatus === 'FAIL'
-                      }">
-                  {{ getStats().spikeQcStatus === 'PASS' ? 'Đạt' : 'Lệch' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Final Recovery Card -->
-        @if (draft.page1Data['hasFinal'] && getStats().finalRecovery !== null) {
-          <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-violet-500/10 to-purple-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-100/50 dark:border-violet-900/30 group-hover:scale-110 transition-transform duration-300">
-              <i class="fa-solid fa-flag-checkered text-lg"></i>
-            </div>
-            <div>
-              <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">QC Final Recovery</span>
-              <div class="flex items-center gap-2">
-                <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().finalRecovery }}%</span>
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
-                      [ngClass]="{
-                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().finalQcStatus === 'PASS',
-                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 border border-rose-200/30': getStats().finalQcStatus === 'FAIL'
-                      }">
-                  {{ getStats().finalQcStatus === 'PASS' ? 'Đạt' : 'Lệch' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
 
       <!-- 1. Metadata Form & Checkboxes -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
@@ -195,8 +102,9 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
               <input type="text" 
                      [(ngModel)]="draft.page1Data['blankName']" 
                      (ngModelChange)="onDataChanged()"
-                     placeholder="Blank..."
-                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+                     (focus)="$any($event.target).select()"
+                     placeholder="BLANK"
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
             </div>
             
             <div>
@@ -204,7 +112,8 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
               <input type="text" 
                      [(ngModel)]="draft.page1Data['spikeName']" 
                      (ngModelChange)="onDataChanged()"
-                     placeholder="Spike..."
+                     (focus)="$any($event.target).select()"
+                     placeholder="SPIKE"
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
             </div>
 
@@ -213,6 +122,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
               <input type="text" 
                      [(ngModel)]="draft.page1Data['r2']" 
                      (ngModelChange)="onDataChanged()"
+                     (focus)="$any($event.target).select()"
                      placeholder="Ví dụ: 0.9992..."
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
             </div>
@@ -238,6 +148,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                     <input type="text" 
                            [(ngModel)]="pt['loSo']" 
                            (ngModelChange)="onDataChanged()"
+                           (focus)="$any($event.target).select()"
                            placeholder="..."
                            class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition">
                   </div>
@@ -246,6 +157,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                     <input type="text" 
                            [(ngModel)]="pt['hamLuong']" 
                            (ngModelChange)="onDataChanged()"
+                           (focus)="$any($event.target).select()"
                            placeholder="..."
                            class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition">
                   </div>
@@ -347,6 +259,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                            [id]="'cell-' + rowIdx + '-loSo'"
                            [disabled]="row.key === 'QC_FINAL'"
                            (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                           (focus)="$any($event.target).select()"
                            placeholder="Vial..."
                            class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
                   </td>
@@ -368,6 +281,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                              [id]="'cell-' + rowIdx + '-' + col"
                              [disabled]="row.key === 'QC_FINAL' && col !== 'kqDichlorvos'"
                              (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
                     </td>
@@ -379,6 +293,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                            (ngModelChange)="onDataChanged()"
                            [id]="'cell-' + rowIdx + '-ghiChu'"
                            (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length + 1)"
+                           (focus)="$any($event.target).select()"
                            placeholder="Ghi chú..."
                            class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-355 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
                   </td>
@@ -418,20 +333,12 @@ export class Sop1767857760184EntryComponent implements OnInit {
     const totalCount = regularSamples.length;
     const selectedCount = regularSamples.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
     
-    // Fill progress
+    // Fill progress (leaving blank means ND, which is a completed result)
     let filledCount = 0;
     regularSamples.forEach((s: string) => {
       const row = this.draft.resultData[s];
       if (row && row['selected'] !== false) {
-        let allFilled = true;
-        this.activeColumns.forEach((col: string) => {
-          if (!row[col] || row[col].trim() === '') {
-            allFilled = false;
-          }
-        });
-        if (allFilled && this.activeColumns.length > 0) {
-          filledCount++;
-        }
+        filledCount++;
       }
     });
     const progressPct = selectedCount > 0 ? Math.round((filledCount / selectedCount) * 100) : 0;
@@ -471,10 +378,10 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
     // Ensure blankName and spikeName are initialized
     if (this.draft.page1Data['blankName'] === undefined) {
-      this.draft.page1Data['blankName'] = 'Blank';
+      this.draft.page1Data['blankName'] = '';
     }
     if (this.draft.page1Data['spikeName'] === undefined) {
-      this.draft.page1Data['spikeName'] = 'Spike';
+      this.draft.page1Data['spikeName'] = '';
     }
 
     // Ensure dichlorvosMethod is initialized

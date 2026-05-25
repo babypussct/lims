@@ -11,75 +11,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
   template: `
     <div class="space-y-6">
       
-      <!-- 0. Dynamic Quality Control & Stats Dashboard -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
-        <!-- Total Samples Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-flask-vial text-lg"></i>
-          </div>
-          <div>
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tổng số mẫu thử</span>
-            <div class="flex items-baseline gap-1.5">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().selectedCount }}</span>
-              <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold">/ {{ getStats().totalCount }} hoạt động</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Entry Progress Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-100/50 dark:border-amber-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-list-check text-lg"></i>
-          </div>
-          <div class="flex-1">
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Tiến độ nhập sắc ký</span>
-            <div class="flex items-center gap-3">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().progressPct }}%</span>
-              <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" [style.width.%]="getStats().progressPct"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Spike Recovery Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-percent text-lg"></i>
-          </div>
-          <div>
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Hiệu suất QC Spike</span>
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200">{{ getStats().spikeRecovery }}</span>
-              @if (getStats().spikeRecoveryVal > 0) {
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
-                      [ngClass]="{
-                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-450 border border-emerald-200/30': getStats().spikeRecoveryVal >= 70 && getStats().spikeRecoveryVal <= 120,
-                        'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-450 border border-rose-200/30': getStats().spikeRecoveryVal < 70 || getStats().spikeRecoveryVal > 120
-                      }">
-                  {{ getStats().spikeRecoveryVal >= 70 && getStats().spikeRecoveryVal <= 120 ? 'Đạt QC' : 'Lệch QC' }}
-                </span>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Calibration Curve Linearity Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 group">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-fuchsia-500/10 to-pink-500/10 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100/50 dark:border-fuchsia-900/30 group-hover:scale-110 transition-transform duration-300">
-            <i class="fa-solid fa-chart-line text-lg"></i>
-          </div>
-          <div>
-            <span class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Hệ số R² Đường chuẩn</span>
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-mono">{{ getStats().r2Val || 'Chưa nhập' }}</span>
-              @if (getStats().r2Status === 'VALID') {
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-455 border border-fuchsia-200/30 tracking-wider">Tuyến tính</span>
-              } @else if (getStats().r2Status === 'WARNING') {
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-100 text-red-750 dark:bg-red-950/40 dark:text-red-455 border border-red-200/30 tracking-wider">Cảnh báo</span>
-              }
-            </div>
+ </div>
           </div>
         </div>
       </div>
@@ -138,7 +70,8 @@ import { calculateSop03Recovery } from './sop-03-engine';
               <input type="text" 
                      [(ngModel)]="draft.page1Data['blankName']" 
                      (ngModelChange)="onDataChanged()"
-                     placeholder="Blank..."
+                     (focus)="$any($event.target).select()"
+                     placeholder="BLANK"
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
             
@@ -147,7 +80,8 @@ import { calculateSop03Recovery } from './sop-03-engine';
               <input type="text" 
                      [(ngModel)]="draft.page1Data['spikeName']" 
                      (ngModelChange)="onDataChanged()"
-                     placeholder="Spike..."
+                     (focus)="$any($event.target).select()"
+                     placeholder="SPIKE"
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
 
@@ -156,6 +90,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
               <input type="text" 
                      [(ngModel)]="draft.page1Data['r2']" 
                      (ngModelChange)="onDataChanged()"
+                     (focus)="$any($event.target).select()"
                      placeholder="Ví dụ: 0.9992..."
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
@@ -183,6 +118,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                     <input type="text" 
                            [(ngModel)]="pt['loSo']" 
                            (ngModelChange)="onDataChanged()"
+                           (focus)="$any($event.target).select()"
                            placeholder="..."
                            class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                   </div>
@@ -191,6 +127,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                     <input type="text" 
                            [(ngModel)]="pt['hamLuong']" 
                            (ngModelChange)="onDataChanged()"
+                           (focus)="$any($event.target).select()"
                            placeholder="..."
                            class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                   </div>
@@ -285,6 +222,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_BLANK']['loSo']"
                              (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
                     <td class="py-2.5 px-4">
@@ -296,6 +234,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onCellChanged('QC_BLANK')"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
@@ -303,6 +242,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_BLANK']['ghiChu']"
                              (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
                              placeholder="Ghi chú..."
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition">
                     </td>
@@ -319,6 +259,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_SPIKE']['loSo']"
                              (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
                     <td class="py-2.5 px-4">
@@ -330,6 +271,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onCellChanged('QC_SPIKE')"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-center transition">
                     </td>
@@ -337,6 +279,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                       <input type="text"
                              [(ngModel)]="draft.resultData['QC_SPIKE']['ghiChu']"
                              (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
                              placeholder="Tự động tính recovery..."
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition">
                     </td>
@@ -364,6 +307,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-fuchsia-500 outline-none text-center">
                     </td>
@@ -371,6 +315,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                              (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
                              placeholder="Ghi chú..."
                              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
                     </td>
@@ -392,6 +337,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-loSo'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                             (focus)="$any($event.target).select()"
                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                     </td>
                     <td class="py-2.5 px-4 font-mono font-black text-xs text-slate-700 dark:text-slate-300 break-all select-all">{{ row.key }}</td>
@@ -402,6 +348,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-kqTrifluralin'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'kqTrifluralin', 1)"
+                             (focus)="$any($event.target).select()"
                              placeholder="..."
                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none text-center transition">
                     </td>
@@ -412,6 +359,7 @@ import { calculateSop03Recovery } from './sop-03-engine';
                              (ngModelChange)="onDataChanged()"
                              [id]="'cell-' + rowIdx + '-ghiChu'"
                              (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', 2)"
+                             (focus)="$any($event.target).select()"
                              placeholder="Ghi chú..."
                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-350 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none transition">
                     </td>
@@ -452,11 +400,11 @@ export class Sop03EntryComponent implements OnInit {
     const totalCount = regularSamples.length;
     const selectedCount = regularSamples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
     
-    // Fill progress
+    // Fill progress (leaving blank means ND, which is a completed result)
     let filledCount = 0;
     regularSamples.forEach(s => {
       const row = this.draft.resultData[s];
-      if (row && row['selected'] !== false && row['kqTrifluralin'] && row['kqTrifluralin'].trim() !== '') {
+      if (row && row['selected'] !== false) {
         filledCount++;
       }
     });
@@ -500,6 +448,41 @@ export class Sop03EntryComponent implements OnInit {
         key: key as string,
         label
       }));
+    }
+
+    // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
+    if (!this.draft.page1Data) this.draft.page1Data = {};
+    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length === 0) {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '41', hamLuong: '0' },
+        { loSo: '42', hamLuong: '0.5' },
+        { loSo: '43', hamLuong: '1.0' },
+        { loSo: '44', hamLuong: '5.0' },
+        { loSo: '45', hamLuong: '10.0' },
+        { loSo: '46', hamLuong: '30.0' }
+      ];
+    }
+    if (this.draft.page1Data['r2'] === undefined || this.draft.page1Data['r2'] === '') {
+      this.draft.page1Data['r2'] = '0.999';
+    }
+    if (this.draft.page1Data['blankName'] === undefined) {
+      this.draft.page1Data['blankName'] = '';
+    }
+    if (this.draft.page1Data['spikeName'] === undefined) {
+      this.draft.page1Data['spikeName'] = '';
+    }
+
+    if (!this.draft.resultData) this.draft.resultData = {};
+    if (!this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK'] = { loSo: '47', kqTrifluralin: 'ND', ghiChu: '', selected: true };
+    } else {
+      if (!this.draft.resultData['QC_BLANK']['loSo']) this.draft.resultData['QC_BLANK']['loSo'] = '47';
+      if (!this.draft.resultData['QC_BLANK']['kqTrifluralin']) this.draft.resultData['QC_BLANK']['kqTrifluralin'] = 'ND';
+    }
+    if (!this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE'] = { loSo: '48', kqTrifluralin: '', ghiChu: '', selected: true };
+    } else {
+      if (!this.draft.resultData['QC_SPIKE']['loSo']) this.draft.resultData['QC_SPIKE']['loSo'] = '48';
     }
 
     this.onBulkVialStartChange();
