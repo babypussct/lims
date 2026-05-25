@@ -4,7 +4,7 @@ import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExportModalComponent } from '../../../shared/components/export-modal/export-modal.component';
 import { StandardService } from '../standard.service';
-import { UsageLog } from '../../../core/models/standard.model';
+import { UsageLog, ReferenceStandard } from '../../../core/models/standard.model';
 import { Unsubscribe, QueryDocumentSnapshot } from 'firebase/firestore';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -53,6 +53,8 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
   isExporting = signal(false);
   exportCompleted = signal(false);
 
+  allStandards = signal<ReferenceStandard[]>([]);
+  private unregisterLiveListener?: () => void;
   private sub!: Unsubscribe;
   searchSubject = new Subject<string>();
 
@@ -197,6 +199,17 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
       if (params['user']) this.userFilter.set(params['user']);
       if (params['action']) this.actionFilter.set(params['action'] as any);
 
+      // Load reference standards for enriched exports
+      const stds = this.stdService.getAllStandardsFromCache();
+      if (stds && stds.length > 0) {
+          this.allStandards.set(stds);
+      }
+      this.unregisterLiveListener = this.stdService.listenToStandards((stdsList) => {
+          if (stdsList) {
+              this.allStandards.set([...stdsList]);
+          }
+      });
+
       // Start stream if not in date query mode
       if (!this.fromDate() || !this.toDate()) {
           this.startRealTimeStream();
@@ -205,6 +218,7 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
       if (this.sub) this.sub();
+      if (this.unregisterLiveListener) this.unregisterLiveListener();
       this.searchSubject.complete();
   }
 
@@ -343,20 +357,38 @@ export class StandardUsageComponent implements OnInit, OnDestroy {
           if (this.exportType() === 'raw') {
               // Background batching for thousands of rows to prevent UI block
               // Actually for now we just process it directly since it's already in memory
-              const exportData = logs.map((log, index) => ({
-                  'STT': index + 1,
-                  'Ngày sử dụng': this.datePipe.transform(log.timestamp, 'dd/MM/yyyy HH:mm'),
-                  'Nhân viên': log.user,
-                  'Tên chất chuẩn': log.standardName || 'N/A',
-                  'Lot Number': log.lotNumber || '',
-                  'Mã phòng Lab': log.internalId || '',
-                  'Số CAS': log.cas_number || '',
-                  'Hãng sản xuất': log.manufacturer || '',
-                  'Lượng dùng': log.amount_used,
-                  'Đơn vị': log.unit || 'mg',
-                  'Mục đích / Ghi chú': log.purpose || ''
-              }));
+              const exportData = logs.map((log, index) => {
+                  const std = this.allStandards().find(s => s.id === log.standardId);
+                  return {
+                      'STT': index + 1,
+                      'Ngày sử dụng': this.datePipe.transform(log.timestamp, 'dd/MM/yyyy HH:mm'),
+                      'Nhân viên': log.user,
+                      'Tên chất chuẩn': log.standardName || 'N/A',
+                      'Tên hóa học': std?.chemical_name || '',
+                      'Số CAS': log.cas_number || std?.cas_number || '',
+                      'Mã quản lý': log.internalId || std?.internal_id || '',
+                      'Mã Catalog (Product Code)': std?.product_code || '',
+                      'Lot Number': log.lotNumber || std?.lot_number || '',
+                      'Độ tinh khiết': std?.purity || '',
+                      'Hãng sản xuất': log.manufacturer || std?.manufacturer || '',
+                      'Quy cách đóng gói': std?.pack_size || '',
+                      'Lượng dùng': log.amount_used,
+                      'Đơn vị': log.unit || std?.unit || 'mg',
+                      'Hạn sử dụng': std?.expiry_date || '',
+                      'Ngày mở nắp': std?.date_opened || '',
+                      'Vị trí lưu trữ': std?.location || '',
+                      'Điều kiện bảo quản': std?.storage_condition || '',
+                      'Link CoA / Chứng chỉ': std?.certificate_ref || '',
+                      'Số hợp đồng': std?.contract_ref || '',
+                      'Mục đích / Ghi chú': log.purpose || ''
+                  };
+              });
               const ws = XLSX.utils.json_to_sheet(exportData);
+              // Auto-width columns for dynamic clean look
+              const colWidths = Object.keys(exportData[0]).map(key => ({
+                  wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key] || '').length)) + 2
+              }));
+              ws['!cols'] = colWidths;
               XLSX.utils.book_append_sheet(wb, ws, 'Raw Data');
           } 
           else if (this.exportType() === 'standard') {

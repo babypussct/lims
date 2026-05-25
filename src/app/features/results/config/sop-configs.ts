@@ -65,17 +65,22 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     columns: {},
     checkboxLines: {
       'Các mẫu thử không phát hiện': 'checkTatCaND',
-      'Có mẫu thử phát hiện': 'checkCoMauPhatHien'
+      'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
+      'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
+      'Độ thu hồi mẫu kiểm soát': 'qcThuHoiMauKiemSoat',
+      'Độ thu hồi IS': 'qcThuHoiIS',
+      'Độ lệch thời gian lưu': 'qcThoiGianLuu',
+      'Đánh giá xu hướng mẫu kiểm soát': 'qcDanhGiaXuHuong',
+      'Đánh giá chung': 'qcDanhGiaChung'
     },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
     compounds: [
-      'Aldrin', 'BHC-alpha', 'BHC-beta', 'BHC-delta', 'BHC-gamma',
-      'Chlordane-cis', 'Chlordane-trans', 'DDD-o,p', 'DDD-p,p',
-      'DDE-o,p', 'DDE-p,p', 'DDT-o,p', 'DDT-p,p', 'Dieldrin',
-      'Endosulfan-I', 'Endosulfan-II', 'Endosulfan-sulfate', 'Endrin',
-      'Endrin-aldehyde', 'Endrin-ketone', 'Heptachlor', 'Heptachlor-epoxide-cis',
-      'Heptachlor-epoxide-trans', 'Hexachlorobenzene', 'Isodrin',
-      'Methoxychlor', 'Mirex', 'Pendimethalin'
+      'Aldrin', 'BHC-alpha', 'BHC-beta', 'BHC-delta', 'BHC-epsilon', 'BHC-gamma',
+      'Chlordane-cis', 'Chlordane-oxy', 'Chlordane-trans',
+      'DDD-o,p', 'DDD-p,p', 'DDE-o,p', 'DDE-p,p', 'DDT-o,p', 'DDT-p,p',
+      'Dieldrin', 'Endosulfan-I', 'Endosulfan-II', 'Endosulfan-sulfate', 'Endrin',
+      'Heptachlor', 'Heptachlor-epoxide-trans', 'Heptachlor-epoxide-cis',
+      'Hexachlorobenzene', 'Isodrin', 'Methoxychlor', 'Mirex', 'Pendimethalin'
     ]
   },
   'lan-huu-co': {

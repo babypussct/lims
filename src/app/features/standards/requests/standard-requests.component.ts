@@ -583,10 +583,14 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
               const exportData = reqs.map((r, i) => ({
                   'STT': i + 1,
                   'Tên chuẩn': r.standardName,
+                  'Tên hóa học': r.standardDetails?.chemical_name || '',
                   'Số lô (Lot)': r.lotNumber || '',
                   'Mã quản lý': r.standardDetails?.internal_id || '',
+                  'Mã Catalog (Product Code)': r.standardDetails?.product_code || '',
                   'Số CAS': r.standardDetails?.cas_number || '',
+                  'Độ tinh khiết': r.standardDetails?.purity || '',
                   'Hãng sản xuất': r.standardDetails?.manufacturer || '',
+                  'Quy cách đóng gói': r.standardDetails?.pack_size || '',
                   'Người yêu cầu': r.requestedByName,
                   'Ngày yêu cầu': this.datePipe.transform(r.requestDate, 'dd/MM/yyyy HH:mm'),
                   'Mục đích': r.purpose || '',
@@ -599,6 +603,12 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
                   'Ngày trả': r.returnDate ? this.datePipe.transform(r.returnDate, 'dd/MM/yyyy HH:mm') : '',
                   'Người nhận lại': r.receivedByName || '',
                   'Đã hết chuẩn': r.reportedDepleted ? 'Có' : '',
+                  'Hạn sử dụng': r.standardDetails?.expiry_date || '',
+                  'Ngày nhận': r.standardDetails?.received_date || '',
+                  'Ngày mở nắp': r.standardDetails?.date_opened || '',
+                  'Vị trí lưu trữ': r.standardDetails?.location || '',
+                  'Điều kiện bảo quản': r.standardDetails?.storage_condition || '',
+                  'Link CoA / Chứng chỉ': r.standardDetails?.certificate_ref || '',
                   'Lý do từ chối': r.rejectionReason || '',
                   'Lý do hủy/tiêu hủy': r.disposalReason || ''
               }));

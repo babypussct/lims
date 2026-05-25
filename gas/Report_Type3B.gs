@@ -108,8 +108,73 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         element.replaceText(`{{KQ_${key}}}`, kqVal);
         element.replaceText(`{{ND_${key}}}`, ndVal);
         element.replaceText(`{{QC1_${key}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{QC1_KD_${key}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
         element.replaceText(`{{QC2_${key}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{QC2_KD_${key}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
         element.replaceText(`{{QC3_${key}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{QC3_KD_${key}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
+      }
+    }
+    
+    // 6. Xử lý đánh dấu ☑/☐ Đạt hoặc Không đạt trong bảng QC của từng mẫu
+    let tables = [];
+    if (element.getType() === DocumentApp.ElementType.TABLE) {
+      tables.push(element.asTable());
+    } else if (typeof element.getTables === 'function') {
+      tables = element.getTables();
+    }
+    
+    for (let i = 0; i < tables.length; i++) {
+      const t = tables[i];
+      if (t.getNumRows() >= 6) {
+        const headerText = t.getRow(0).getCell(0).getText();
+        if (headerText.includes("Thông số đánh giá")) {
+          const checkboxLines = sopConfig.checkboxLines;
+          if (checkboxLines) {
+            const numRows = t.getNumRows();
+            for (let r = 1; r < numRows; r++) {
+              const row = t.getRow(r);
+              const labelText = row.getCell(0).getText().trim();
+              
+              let fieldName = null;
+              for (const [keyText, fName] of Object.entries(checkboxLines)) {
+                if (labelText.includes(keyText) || keyText.includes(labelText)) {
+                  fieldName = fName;
+                  break;
+                }
+              }
+
+              if (fieldName && allFields[fieldName] !== undefined) {
+                const val = allFields[fieldName];
+                const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
+                
+                let datCheck, khongDatCheck, naCheck;
+                if (val === true) {
+                  datCheck = "☑ Đạt";
+                  khongDatCheck = "☐ Không đạt";
+                  naCheck = "☐ N/A";
+                } else if (val === false) {
+                  datCheck = "☐ Đạt";
+                  khongDatCheck = "☑ Không đạt";
+                  naCheck = "☐ N/A";
+                } else { // null (N/A)
+                  datCheck = "☐ Đạt";
+                  khongDatCheck = "☐ Không đạt";
+                  naCheck = "☑ N/A";
+                }
+
+                evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
+                evalCell.replaceText('[☐□☑] Đạt', datCheck);
+
+                evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
+                evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
+
+                evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
+                evalCell.replaceText('[☐□☑] N/A', naCheck);
+              }
+            }
+          }
+        }
       }
     }
   }

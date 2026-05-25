@@ -103,11 +103,12 @@ const CONFIG = {
       formType: 'type3b',
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
       checkboxLines: {
-        'Mẫu kiểm tra nội bộ':                                       'qcKiemTraNoiBo',
-        'Độ thu hồi R%':                                             'qcThuHoiR',
-        'Hệ số tuyến tính R2':                                       'qcR2',
+        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':          'qcNhanDang',
+        'Độ thu hồi mẫu kiểm soát':                                   'qcThuHoiMauKiemSoat',
+        'Độ thu hồi IS':                                             'qcThuHoiIS',
         'Độ lệch thời gian lưu':                                     'qcThoiGianLuu',
-        'S/N':                                                       'qcSN',
+        'Đánh giá xu hướng mẫu kiểm soát':                            'qcDanhGiaXuHuong',
+        'Đánh giá chung':                                            'qcDanhGiaChung'
       },
       signaturePlaceholders: {
         'date1': 'ngayNguoiPhanTich',
