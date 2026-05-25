@@ -397,35 +397,104 @@ import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-defa
       <!-- Modern PDF Preview Modal -->
       @if (showPdfModal()) {
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 fade-in" (click)="closePdfModal()">
-          <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+          <div class="relative bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 transition-all duration-300 ease-out"
+               [class.w-full]="isFullscreen()" [class.h-full]="isFullscreen()" [class.max-w-none]="isFullscreen()" [class.rounded-none]="isFullscreen()"
+               [class.max-w-6xl]="!isFullscreen()" [class.w-full]="!isFullscreen()" [class.h-[90vh]]="!isFullscreen()" [class.rounded-2xl]="!isFullscreen()"
+               (click)="$event.stopPropagation()">
+            
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-violet-650 via-fuchsia-650 to-indigo-700 text-white px-5 py-3.5 flex justify-between items-center shrink-0">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                  <i class="fa-solid fa-file-pdf text-sm"></i>
+            <div class="bg-gradient-to-r from-violet-650 via-fuchsia-650 to-indigo-700 text-white px-5 py-3 flex flex-col shrink-0">
+              <div class="flex justify-between items-center w-full">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <i class="fa-solid fa-file-pdf text-sm text-red-200"></i>
+                  </div>
+                  <div>
+                    <span class="text-[9px] font-black uppercase text-fuchsia-200 tracking-wider block mb-0.5">LIMS Báo cáo Kết quả</span>
+                    <h4 class="text-xs font-black m-0 tracking-tight">{{ pdfModalTitle() }}</h4>
+                  </div>
                 </div>
-                <div>
-                  <span class="text-[9px] font-black uppercase text-fuchsia-200 tracking-wider block mb-0.5">LIMS Báo cáo Kết quả</span>
-                  <h4 class="text-xs font-black m-0 tracking-tight">{{ pdfModalTitle() }}</h4>
+                
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-2">
+                  <!-- Print Button -->
+                  <button (click)="printPdf()" 
+                          class="px-2.5 py-1.5 text-[10px] font-bold text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1 active:scale-95 border-none cursor-pointer">
+                    <i class="fa-solid fa-print"></i>
+                    <span>IN NHANH</span>
+                  </button>
+
+                  <!-- Download Button -->
+                  <button (click)="downloadPdf()" 
+                          class="px-2.5 py-1.5 text-[10px] font-bold text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1 active:scale-95 border-none cursor-pointer">
+                    <i class="fa-solid fa-download"></i>
+                    <span>TẢI PDF</span>
+                  </button>
+
+                  <!-- Copy Link Button -->
+                  <button (click)="copyPdfLink()" 
+                          class="px-2.5 py-1.5 text-[10px] font-bold text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1 active:scale-95 border-none cursor-pointer">
+                    <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
+                    <span>{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
+                  </button>
+
+                  <!-- Re-generate / Re-publish Button -->
+                  <button (click)="triggerRepublishFromModal()" 
+                          [disabled]="isPublishing()"
+                          class="px-2.5 py-1.5 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800/40 rounded-lg transition-all duration-150 flex items-center gap-1 active:scale-95 border-none cursor-pointer">
+                    <i class="fa-solid" [class.fa-arrows-rotate]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
+                    <span>TẠO LẠI BẢN MỚI</span>
+                  </button>
+
+                  <div class="h-5 w-[1px] bg-white/20 mx-1"></div>
+
+                  <!-- Maximize Toggle Button -->
+                  <button (click)="toggleFullscreen()" 
+                          class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border-none cursor-pointer">
+                    <i class="fa-solid" [class.fa-expand]="!isFullscreen()" [class.fa-compress]="isFullscreen()"></i>
+                  </button>
+
+                  <!-- Close Button -->
+                  <button (click)="closePdfModal()" 
+                          class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                  </button>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <!-- Open in Drive Button -->
-                <a [href]="rawPdfUrl()" target="_blank" rel="noopener noreferrer"
-                   class="px-3 py-1.5 text-[10px] font-black text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                  <span>MỞ DRIVE</span>
-                </a>
-                <!-- Close Button -->
-                <button (click)="closePdfModal()" 
-                        class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 duration-150 border border-white/10">
-                  <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
+
+              <!-- Sub-header: Metadata badge row -->
+              <div class="flex items-center gap-4 mt-2 pt-2 border-t border-white/10 text-[10px] text-white/70">
+                <span class="flex items-center gap-1">
+                  <i class="fa-solid fa-code-branch text-fuchsia-300"></i>
+                  <span>Phiên bản:</span>
+                  <strong class="text-white bg-fuchsia-600/50 px-1.5 py-0.5 rounded font-black">v{{ draft()?.version || 1 }}</strong>
+                </span>
+                <span class="flex items-center gap-1">
+                  <i class="fa-solid fa-user text-indigo-300"></i>
+                  <span>Phân tích viên:</span>
+                  <strong class="text-white">{{ draft()?.updatedBy || 'Chưa rõ' }}</strong>
+                </span>
+                @if (draft()?.lastUpdated) {
+                  <span class="flex items-center gap-1">
+                    <i class="fa-solid fa-clock text-blue-300"></i>
+                    <span>In lúc:</span>
+                    <strong class="text-white">{{ formatPublishDate(draft()?.lastUpdated) }}</strong>
+                  </span>
+                }
               </div>
             </div>
             
             <!-- Modal Body -->
             <div class="flex-1 bg-slate-100 dark:bg-slate-950 relative">
+              <!-- Inline loading overlay when recreating a report from inside the modal -->
+              @if (isPublishing()) {
+                <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white gap-3 z-50 animate-in fade-in duration-200">
+                  <i class="fa-solid fa-arrows-rotate fa-spin text-4xl text-indigo-400"></i>
+                  <span class="text-xs font-bold uppercase tracking-widest text-indigo-200">Đang tạo lại bản báo cáo v{{ (draft()?.version || 0) + 1 }}...</span>
+                  <span class="text-[10px] text-slate-400">Vui lòng đợi trong giây lát, bảng xem trước sẽ tự cập nhật.</span>
+                </div>
+              }
+
               @if (pdfModalSafeUrl()) {
                 <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl"></iframe>
               } @else {
@@ -465,6 +534,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   pdfModalTitle = signal('');
   pdfModalSafeUrl = signal<SafeResourceUrl | null>(null);
   rawPdfUrl = signal('');
+  isFullscreen = signal(false);
+  isCopying = signal(false);
 
   // Emergency feature toggle for the new modular strategy architecture
   readonly ENABLE_MODULAR_SOPS = true;
@@ -1427,6 +1498,86 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.showPdfModal.set(false);
     this.pdfModalSafeUrl.set(null);
     this.rawPdfUrl.set('');
+    this.isFullscreen.set(false);
+  }
+
+  toggleFullscreen() {
+    this.isFullscreen.update(f => !f);
+  }
+
+  copyPdfLink() {
+    const url = this.rawPdfUrl();
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      this.isCopying.set(true);
+      this.toast.show('Đã sao chép liên kết báo cáo PDF vào clipboard!', 'success');
+      setTimeout(() => this.isCopying.set(false), 1500);
+    }).catch(err => {
+      this.toast.show('Không thể sao chép liên kết, vui lòng thử lại.', 'error');
+    });
+  }
+
+  downloadPdf() {
+    const url = this.rawPdfUrl();
+    if (!url) return;
+    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    let id = '';
+    if (fileDMatch && fileDMatch[1]) {
+      id = fileDMatch[1];
+    } else {
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) id = idMatch[1];
+    }
+    if (id) {
+      window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  printPdf() {
+    const url = this.rawPdfUrl();
+    if (!url) return;
+    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    let id = '';
+    if (fileDMatch && fileDMatch[1]) {
+      id = fileDMatch[1];
+    } else {
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) id = idMatch[1];
+    }
+    if (id) {
+      window.open(`https://drive.google.com/file/d/${id}/print`, '_blank');
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  formatPublishDate(ts: any): string {
+    if (!ts) return '';
+    try {
+      let date: Date;
+      if (ts.seconds) {
+        date = new Date(ts.seconds * 1000);
+      } else if (ts.toDate) {
+        date = ts.toDate();
+      } else {
+        date = new Date(ts);
+      }
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async triggerRepublishFromModal() {
+    await this.triggerPublishReport();
   }
 }
 
