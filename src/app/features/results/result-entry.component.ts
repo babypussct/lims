@@ -647,12 +647,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       });
     } else if (isDichlorvos) {
       sampleList.forEach((sampleCode: string, idx: number) => {
+        const randW = (10.01 + Math.random() * 0.09).toFixed(2);
         defaultResultData[sampleCode] = {
           loSo: String(idx + 1),
-          selected: true
+          selected: true,
+          khoiLuong: randW,
+          heSoPhaLoang: '1'
         };
         Object.keys(sopConf.columns || {}).forEach((col: string) => {
-          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu' && col !== 'khoiLuong' && col !== 'heSoPhaLoang') {
             defaultResultData[sampleCode][col] = '';
           }
         });
@@ -1050,19 +1053,30 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             maSoMau: label,
             ghiChu: resObj['ghiChu'] || ''
           };
-          Object.keys(currentConf.columns).forEach(col => {
+          Object.keys(currentConf.columns).forEach((col: string) => {
             if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+              if (col === 'kqDichlorvos') {
+                let mergedVal = resObj['kqDichlorvos'] || '';
+                const note = (resObj['ghiChu'] || '').trim();
+                if (note) {
+                  mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
+                }
+                rowData[col] = mergedVal;
+              } else {
+                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+              }
             }
           });
           return rowData;
         };
 
         // 1. Blank
-        samplesPayload.push(getQcRow('QC_BLANK', 'Blank'));
+        const blankName = currentDraft.page1Data['blankName'] || 'Blank';
+        samplesPayload.push(getQcRow('QC_BLANK', blankName));
 
         // 2. Spike
-        samplesPayload.push(getQcRow('QC_SPIKE', 'Spike'));
+        const spikeName = currentDraft.page1Data['spikeName'] || 'Spike';
+        samplesPayload.push(getQcRow('QC_SPIKE', spikeName));
 
         // 3. Regular samples
         const sampleList = this.filteredRun()?.sampleList || [];
@@ -1073,9 +1087,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             maSoMau: sampleCode,
             ghiChu: resObj['ghiChu'] || ''
           };
-          Object.keys(currentConf.columns).forEach(col => {
+          Object.keys(currentConf.columns).forEach((col: string) => {
             if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-              rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+              if (col === 'kqDichlorvos') {
+                let mergedVal = resObj['kqDichlorvos'] || '';
+                const note = (resObj['ghiChu'] || '').trim();
+                if (note) {
+                  mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
+                }
+                rowData[col] = mergedVal;
+              } else {
+                rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+              }
             }
           });
           samplesPayload.push(rowData);

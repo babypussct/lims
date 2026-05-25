@@ -188,15 +188,33 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
         </h4>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <!-- Left Side: R^2 -->
-          <div class="lg:col-span-3 space-y-4">
+          <!-- Left Side: R^2, Blank Name, Spike Name -->
+          <div class="lg:col-span-4 space-y-4">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Trắng (Blank)</label>
+              <input type="text" 
+                     [(ngModel)]="draft.page1Data['blankName']" 
+                     (ngModelChange)="onDataChanged()"
+                     placeholder="Blank..."
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+            </div>
+            
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Thêm chuẩn (Spike)</label>
+              <input type="text" 
+                     [(ngModel)]="draft.page1Data['spikeName']" 
+                     (ngModelChange)="onDataChanged()"
+                     placeholder="Spike..."
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+            </div>
+
             <div>
               <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
               <input type="text" 
                      [(ngModel)]="draft.page1Data['r2']" 
                      (ngModelChange)="onDataChanged()"
                      placeholder="Ví dụ: 0.9992..."
-                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 transition outline-none">
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
             </div>
             <div class="text-[10.5px] text-slate-400 leading-relaxed font-medium">
               <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i> Giá trị này sẽ được tự động điền vào hàng cuối cùng của bảng đường chuẩn trong báo cáo xuất bản.
@@ -204,7 +222,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
           </div>
 
           <!-- Calibration Points Grid -->
-          <div class="lg:col-span-9">
+          <div class="lg:col-span-8">
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">
               Các Điểm Đường chuẩn (Calibration Curve Points)
             </label>
@@ -398,15 +416,15 @@ export class Sop1767857760184EntryComponent implements OnInit {
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
     const totalCount = regularSamples.length;
-    const selectedCount = regularSamples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
+    const selectedCount = regularSamples.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
     
     // Fill progress
     let filledCount = 0;
-    regularSamples.forEach(s => {
+    regularSamples.forEach((s: string) => {
       const row = this.draft.resultData[s];
       if (row && row['selected'] !== false) {
         let allFilled = true;
-        this.activeColumns.forEach(col => {
+        this.activeColumns.forEach((col: string) => {
           if (!row[col] || row[col].trim() === '') {
             allFilled = false;
           }
@@ -449,7 +467,15 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
   ngOnInit() {
     const cols = Object.keys(this.config.columns || {});
-    this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+    this.activeColumns = cols.filter((c: string) => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+
+    // Ensure blankName and spikeName are initialized
+    if (this.draft.page1Data['blankName'] === undefined) {
+      this.draft.page1Data['blankName'] = 'Blank';
+    }
+    if (this.draft.page1Data['spikeName'] === undefined) {
+      this.draft.page1Data['spikeName'] = 'Spike';
+    }
 
     // Ensure dichlorvosMethod is initialized
     if (!this.draft.page1Data['dichlorvosMethod']) {
@@ -499,7 +525,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
     // Auto fill weight and dilution for QC_BLANK and QC_SPIKE
     const qcKeys = ['QC_BLANK', 'QC_SPIKE'];
-    qcKeys.forEach(key => {
+    qcKeys.forEach((key: string) => {
       if (!this.draft.resultData[key]) {
         const randW = (10.01 + Math.random() * 0.09).toFixed(2);
         this.draft.resultData[key] = {
@@ -561,13 +587,13 @@ export class Sop1767857760184EntryComponent implements OnInit {
   isAllSelected(): boolean {
     const visible = this.getVisibleRegularSamples();
     if (visible.length === 0) return false;
-    return visible.every(s => this.draft.resultData[s]?.['selected'] !== false);
+    return visible.every((s: string) => this.draft.resultData[s]?.['selected'] !== false);
   }
 
   toggleSelectAll(event: any) {
     const checked = event.target.checked;
     const visible = this.getVisibleRegularSamples();
-    visible.forEach(s => {
+    visible.forEach((s: string) => {
       if (!this.draft.resultData[s]) {
         this.draft.resultData[s] = {};
       }
@@ -728,13 +754,13 @@ export class Sop1767857760184EntryComponent implements OnInit {
     list.push({
       key: 'QC_BLANK',
       type: 'QC_BLANK',
-      label: 'Blank'
+      label: this.draft.page1Data['blankName'] || 'Blank'
     });
 
     list.push({
       key: 'QC_SPIKE',
       type: 'QC_SPIKE',
-      label: 'Spike'
+      label: this.draft.page1Data['spikeName'] || 'Spike'
     });
 
     // Regular samples
@@ -747,11 +773,19 @@ export class Sop1767857760184EntryComponent implements OnInit {
           khoiLuong: randW,
           heSoPhaLoang: '1'
         };
-        this.activeColumns.forEach(col => {
+        this.activeColumns.forEach((col: string) => {
           if (col !== 'khoiLuong' && col !== 'heSoPhaLoang') {
             this.draft.resultData[sampleCode][col] = '';
           }
         });
+      } else {
+        if (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '') {
+          const randW = (10.01 + Math.random() * 0.09).toFixed(2);
+          this.draft.resultData[sampleCode]['khoiLuong'] = randW;
+        }
+        if (this.draft.resultData[sampleCode]['heSoPhaLoang'] === undefined || this.draft.resultData[sampleCode]['heSoPhaLoang'] === '') {
+          this.draft.resultData[sampleCode]['heSoPhaLoang'] = '1';
+        }
       }
       list.push({
         key: sampleCode,
@@ -785,7 +819,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
   bulkFillND() {
     const displayRows = this.getDisplayRows();
-    displayRows.forEach(row => {
+    displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
       if (rowData && rowData['selected'] !== false) {
         if (!rowData['kqDichlorvos'] || rowData['kqDichlorvos']?.trim() === '') {
@@ -798,10 +832,10 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
   bulkClearAll() {
     const displayRows = this.getDisplayRows();
-    displayRows.forEach(row => {
+    displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
       if (rowData) {
-        this.activeColumns.forEach(col => {
+        this.activeColumns.forEach((col: string) => {
           rowData[col] = '';
         });
         rowData['ghiChu'] = '';
@@ -820,7 +854,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
         if (!this.draft.resultData[targetKey]) {
           this.draft.resultData[targetKey] = { selected: true };
         }
-        this.activeColumns.forEach(col => {
+        this.activeColumns.forEach((col: string) => {
           this.draft.resultData[targetKey][col] = source[col];
         });
       }
