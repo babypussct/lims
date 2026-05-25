@@ -1057,8 +1057,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
               if (col === 'kqDichlorvos') {
                 let mergedVal = resObj['kqDichlorvos'] || '';
-                const note = (resObj['ghiChu'] || '').trim();
+                let note = (resObj['ghiChu'] || '').trim();
                 if (note) {
+                  if (!note.startsWith('(') || !note.endsWith(')')) {
+                    note = `(${note})`;
+                  }
                   mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
                 }
                 rowData[col] = mergedVal;
@@ -1091,8 +1094,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
               if (col === 'kqDichlorvos') {
                 let mergedVal = resObj['kqDichlorvos'] || '';
-                const note = (resObj['ghiChu'] || '').trim();
+                let note = (resObj['ghiChu'] || '').trim();
                 if (note) {
+                  if (!note.startsWith('(') || !note.endsWith(')')) {
+                    note = `(${note})`;
+                  }
                   mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
                 }
                 rowData[col] = mergedVal;
