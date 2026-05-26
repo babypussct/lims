@@ -122,7 +122,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           .filter(r => r.status === 'PENDING_APPROVAL').length;
       return myPendingSopReqs + myPendingStdReqs;
   });
-  recentLogs = computed(() => this.state.logs().slice(0, 6)); 
+  recentLogs = computed(() => this.state.logs().slice(0, 12)); 
   todayActivityCount = computed(() => {
       const todayStr = new Date().toISOString().split('T')[0];
       return this.state.logs().filter(l => {

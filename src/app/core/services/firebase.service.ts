@@ -279,6 +279,10 @@ export class FirebaseService {
         if (item.timestamp && typeof item.timestamp === 'string') {
             item.timestamp = Timestamp.fromDate(new Date(item.timestamp));
         }
+        // Ensure lastUpdated is set for delta sync compatibility
+        if (!item.lastUpdated) {
+            item.lastUpdated = item.timestamp || serverTimestamp();
+        }
 
         batch.set(ref, item, { merge: true });
         opCount++;

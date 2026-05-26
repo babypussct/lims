@@ -269,13 +269,20 @@ export class StateService implements OnDestroy {
     });
     this.listeners.push(appSub);
 
-    // 4. Logs Listener — OPTIMIZED: limit 500 → 50
-    const logQuery = query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'), orderBy('timestamp', 'desc'), limit(50));
-    const logSub = onSnapshot(logQuery, (s) => {
-      const items: Log[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Log));
+    // 4. Logs Listener — OPTIMIZED: migrated to DeltaSyncService singleton listener (caching 200 logs)
+    const logsSyncConfig: DeltaSyncConfig = {
+      cacheKey: `lims_logs_cache_${this.fb.APP_ID}`,
+      cursorKey: `lims_logs_cursor_${this.fb.APP_ID}`,
+      collectionPath: `artifacts/${this.fb.APP_ID}/logs`,
+      maxCacheSize: 200,
+      orderByField: 'timestamp',
+      orderDirection: 'desc'
+    };
+
+    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
       this.logs.set(items);
       this.printableLogs.set(items.filter(l => l.printable === true));
-    }, handleError('Logs'));
+    });
     this.listeners.push(logSub);
 
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
