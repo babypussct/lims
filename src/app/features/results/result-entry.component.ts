@@ -18,6 +18,7 @@ import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
 import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-1767857760184-entry.component';
 import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
 import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
+import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry.component';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -36,7 +37,8 @@ import {
     Sop01EntryComponent,
     Sop1767857760184EntryComponent,
     Sop03EntryComponent,
-    SopDefaultType2EntryComponent
+    SopDefaultType2EntryComponent,
+    SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -139,7 +141,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         const sopConf = resolvedKey ? ANGULAR_SOP_CONFIG[resolvedKey] : null;
 
         if (sopConf && resolvedKey) {
-          this.config.set(sopConf);
+          this.config.set({ ...sopConf, id: resolvedKey });
           this.configKey.set(resolvedKey);
 
           if (!draftDoc) {

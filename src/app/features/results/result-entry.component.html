@@ -350,12 +350,21 @@
 
       <!-- Render Type 3B Component (Vertical Lists per sample) -->
       @if (config()?.formType === 'type3b') {
-        <app-result-entry-type3b 
-          [run]="filteredRun()!" 
-          [draft]="draft()!" 
-          [config]="config()!" 
-          (draftChanged)="onDraftChanged($event)">
-        </app-result-entry-type3b>
+        @if (ENABLE_MODULAR_SOPS && configKey() === 'chlor-huu-co') {
+          <app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry
+            [run]="filteredRun()!"
+            [draft]="draft()!"
+            [config]="config()!"
+            (draftChanged)="onDraftChanged($event)">
+          </app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry>
+        } @else {
+          <app-result-entry-type3b 
+            [run]="filteredRun()!" 
+            [draft]="draft()!" 
+            [config]="config()!" 
+            (draftChanged)="onDraftChanged($event)">
+          </app-result-entry-type3b>
+        }
       } 
       <!-- Render Type 2 / 3A Component (Grid spreadsheet) -->
       @else {

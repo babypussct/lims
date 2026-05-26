@@ -4,6 +4,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   'SOP-01': 'fipronil-chlorpyrifos',  // FORM_GOC_FIP_CHLORFOS_9_21.docx
   'SOP-03': 'trifluralin-gcms',       // FORM_GOC_TRIFLURALIN_9_3.docx
   'sop_1767857760184': 'dichlorvos-gcms', // Dichlorvos/Dipterex(Trichlorfon) (GC-MS & GC-MS/MS)
+  'nhom_lan_huu_co_gc-msms_copy_1768036876719': 'chlor-huu-co', // Nhóm Chlor hữu cơ (GC-MS/MS) (filebieumau_FORM_TRANG4.docx)
   // 'SOP-02': 'dichlorvos-gcms',     // (chưa cấu hình)
   // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
   // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)
