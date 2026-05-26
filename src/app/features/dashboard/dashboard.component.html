@@ -151,9 +151,9 @@
         </div>
 
         <!-- SECTION 2: ANALYTICS & FEED -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style="max-height: none">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Left: Analytics (2/3) -->
-            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
+            <div class="lg:col-span-2 relative bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-5 overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700 lg:h-[480px] h-auto">
                 @if(!auth.canViewReports()) {
                     <div class="absolute inset-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
                         <i class="fa-solid fa-lock text-4xl mb-3"></i>
@@ -189,7 +189,7 @@
                     </div>
 
                     <!-- KPIs Row -->
-                    <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="grid grid-cols-3 gap-4 mb-4">
                         <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
                             <p class="text-[10px] font-bold text-slate-500 uppercase">Tổng số mẫu</p>
                             <h4 class="text-xl font-black text-indigo-600 dark:text-indigo-400">{{chartKpis().totalSamples}}</h4>
@@ -205,15 +205,15 @@
                     </div>
 
                     <!-- Charts Area -->
-                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[250px]">
-                        <div class="md:col-span-2 relative w-full h-full min-h-[200px] bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
+                        <div class="md:col-span-2 relative w-full h-[220px] md:h-full bg-gradient-to-b from-transparent to-gray-50/30 dark:to-slate-800/30 rounded-xl">
                             @if(isLoading()) {
                                 <div class="flex items-center justify-center h-full"><app-skeleton width="100%" height="100%" shape="rect"></app-skeleton></div>
                             } @else {
                                 <canvas #activityChart class="w-full h-full"></canvas>
                             }
                         </div>
-                        <div class="relative w-full h-full min-h-[200px] flex flex-col items-center justify-center">
+                        <div class="relative w-full h-[200px] md:h-full flex flex-col items-center justify-center">
                             <h6 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider text-center w-full">Phân bổ SOP</h6>
                             @if(isLoading()) {
                                 <div class="flex items-center justify-center h-full w-full"><app-skeleton width="150px" height="150px" shape="circle"></app-skeleton></div>
@@ -228,7 +228,7 @@
             </div>
 
             <!-- Right Column -->
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-4 lg:h-[480px] h-[360px]">
                 <!-- Activity Feed -->
                 <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
                     <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base mb-3 shrink-0">Hoạt động gần đây</h6>
