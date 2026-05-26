@@ -238,10 +238,12 @@
                             <div class="relative pl-6">
                                 <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
                                      [ngClass]="{
-                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE') && !log.action.includes('STANDARD'),
+                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE') && !log.action.includes('STANDARD') && !log.action.includes('RESULT'),
                                          'bg-blue-500 dark:bg-blue-400': log.action.includes('STOCK'),
                                          'bg-orange-500 dark:bg-orange-400': log.action.includes('STANDARD'),
-                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK') && !log.action.includes('STANDARD')
+                                         'bg-emerald-500 dark:bg-emerald-400': log.action === 'PUBLISH_RESULT_REPORT',
+                                         'bg-cyan-500 dark:bg-cyan-400': log.action.includes('RESULT') && log.action !== 'PUBLISH_RESULT_REPORT',
+                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK') && !log.action.includes('STANDARD') && !log.action.includes('RESULT')
                                      }">
                                 </div>
                                 <div class="flex flex-col">

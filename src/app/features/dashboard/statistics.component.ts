@@ -38,6 +38,13 @@ export class StatisticsComponent {
   getAvatarUrl = getAvatarUrl;
   
   getLogActionText(action: string): string {
+      if (action === 'SAVE_RESULT_DRAFT') return 'Lưu nháp kết quả';
+      if (action === 'PUBLISH_RESULT_REPORT') return 'Xuất bản báo cáo';
+      if (action === 'REVERT_RESULT_DRAFT') return 'Hủy xuất bản báo cáo';
+      if (action === 'RESET_RESULT_DATA') return 'Reset số liệu mẻ';
+      if (action === 'RESTORE_RESULT_BACKUP') return 'Khôi phục từ bản backup';
+      if (action === 'RESTORE_RESULT_VERSION') return 'Rollback phiên bản cũ';
+
       if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'Yêu cầu mượn chuẩn';
       if (action === 'APPROVE_STANDARD_REQUEST') return 'Duyệt mượn chuẩn';
       if (action === 'REJECT_STANDARD_REQUEST') return 'Từ chối mượn chuẩn';
@@ -594,6 +601,12 @@ export class StatisticsComponent {
   });
 
   getLogActionIcon(action: string): string {
+    if (action === 'SAVE_RESULT_DRAFT') return 'fa-solid fa-floppy-disk text-cyan-500';
+    if (action === 'PUBLISH_RESULT_REPORT') return 'fa-solid fa-file-pdf text-emerald-500';
+    if (action === 'REVERT_RESULT_DRAFT') return 'fa-solid fa-unlock text-amber-500';
+    if (action === 'RESET_RESULT_DATA') return 'fa-solid fa-trash-arrow-up text-red-500';
+    if (action === 'RESTORE_RESULT_BACKUP' || action === 'RESTORE_RESULT_VERSION') return 'fa-solid fa-clock-rotate-left text-violet-500';
+
     if (action.includes('DELETE')) return 'fa-solid fa-trash-can text-red-500';
     if (action.includes('REJECT')) return 'fa-solid fa-circle-xmark text-rose-500';
     if (action.includes('REVOKE')) return 'fa-solid fa-hand-holding-hand text-amber-500';
@@ -815,7 +828,7 @@ export class StatisticsComponent {
           const inDate = d >= start && d <= end;
           if (!inDate) return false;
           if (sopId === 'all') return true;
-          return log.printData?.sop?.id === sopId;
+          return log.printData?.sop?.id === sopId || (log as any).sopId === sopId;
       });
   });
 

@@ -108,10 +108,12 @@
                                         <td class="px-6 py-4">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border"
                                                 [ngClass]="{
-                                                    'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800': log.action.includes('APPROVE'),
-                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800': log.action.includes('STOCK_IN') || log.action.includes('UPDATE') || log.action.includes('CREATE') || log.action.includes('RETURN_STANDARD'),
-                                                    'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800': log.action.includes('STOCK_OUT') || log.action.includes('REQUEST_STANDARD') || log.action.includes('ASSIGN_STANDARD'),
-                                                    'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800': log.action.includes('DELETE') || log.action.includes('REVOKE') || log.action.includes('REJECT')
+                                                    'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800': log.action.includes('APPROVE') && !log.action.includes('RESULT'),
+                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800': (log.action.includes('STOCK_IN') || log.action.includes('UPDATE') || log.action.includes('CREATE') || log.action.includes('RETURN_STANDARD') || log.action === 'PUBLISH_RESULT_REPORT') && !log.action.includes('DELETE') && !log.action.includes('REJECT'),
+                                                    'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800': log.action.includes('STOCK_OUT') || log.action.includes('REQUEST_STANDARD') || log.action.includes('ASSIGN_STANDARD') || log.action === 'REVERT_RESULT_DRAFT',
+                                                    'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800': log.action.includes('DELETE') || log.action.includes('REVOKE') || log.action.includes('REJECT') || log.action === 'RESET_RESULT_DATA',
+                                                    'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800': log.action === 'SAVE_RESULT_DRAFT',
+                                                    'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800': log.action === 'RESTORE_RESULT_BACKUP' || log.action === 'RESTORE_RESULT_VERSION'
                                                 }">
                                                 {{getLogActionText(log.action)}}
                                             </span>

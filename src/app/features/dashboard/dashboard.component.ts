@@ -649,6 +649,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   getLogActionText(action: string): string {
+      if (action === 'SAVE_RESULT_DRAFT') return 'đã lưu nháp kết quả';
+      if (action === 'PUBLISH_RESULT_REPORT') return 'đã xuất bản báo cáo';
+      if (action === 'REVERT_RESULT_DRAFT') return 'đã hủy xuất bản báo cáo';
+      if (action === 'RESET_RESULT_DATA') return 'đã reset số liệu kết quả';
+      if (action === 'RESTORE_RESULT_BACKUP') return 'đã khôi phục số liệu lưu trữ';
+      if (action === 'RESTORE_RESULT_VERSION') return 'đã khôi phục phiên bản cũ';
+
       if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'đã yêu cầu mượn chuẩn';
       if (action === 'APPROVE_STANDARD_REQUEST') return 'đã duyệt mượn chuẩn';
       if (action === 'REJECT_STANDARD_REQUEST') return 'đã từ chối mượn chuẩn';

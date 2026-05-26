@@ -20,6 +20,38 @@ export class ResultService {
     return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
   }
 
+  private async logActivity(
+    action: string,
+    details: string,
+    requestId: string,
+    sopId: string,
+    sopName: string
+  ): Promise<void> {
+    try {
+      const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+      await setDoc(logRef, {
+        id: logRef.id,
+        action,
+        details,
+        timestamp: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+        user: this.auth.currentUser()?.displayName || 'Hệ thống',
+        targetId: requestId,
+        requestId,
+        sopId,
+        printable: false,
+        printData: {
+          sop: {
+            id: sopId,
+            name: sopName
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Lỗi khi ghi nhật ký hoạt động kết quả:', e);
+    }
+  }
+
   /**
    * Đăng ký lắng nghe thay đổi thời gian thực của mẻ chạy (Request document)
    */
@@ -152,7 +184,7 @@ export class ResultService {
   /**
    * Lưu nháp kết quả phân tích: Tách dữ liệu lưới và metadata bằng cách thực hiện nguyên tử qua writeBatch
    */
-  async saveDraft(requestId: string, draft: Partial<AnalysisResultDraft>): Promise<boolean> {
+  async saveDraft(requestId: string, draft: Partial<AnalysisResultDraft>, isManualSave = false): Promise<boolean> {
     try {
       const metaRef = this.getDocRef(requestId);
       const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
@@ -236,6 +268,19 @@ export class ResultService {
       batch.set(detailRef, detailPayload, { merge: true });
       
       await batch.commit();
+
+      if (isManualSave) {
+        const sopId = metaData['sopId'] || legacyResult['sopId'] || '';
+        const sopName = metaData['sopName'] || legacyResult['sopName'] || '';
+        await this.logActivity(
+          'SAVE_RESULT_DRAFT',
+          `Lưu nháp kết quả phân tích mẻ chạy: ${sopName} (ID: ${requestId})`,
+          requestId,
+          sopId,
+          sopName
+        );
+      }
+
       return true;
     } catch (e: any) {
       console.error('Error saving result draft:', e);
@@ -259,6 +304,15 @@ export class ResultService {
         };
         await this.saveDraft(requestId, restoredData);
         this.toast.show('Đã khôi phục dữ liệu từ bản xuất bản gần nhất!', 'success');
+
+        await this.logActivity(
+          'RESTORE_RESULT_BACKUP',
+          `Khôi phục kết quả từ bản backup gần nhất: ${draft.sopName} (ID: ${requestId})`,
+          requestId,
+          draft.sopId || '',
+          draft.sopName || ''
+        );
+
         return {
           ...draft,
           ...restoredData,
@@ -327,6 +381,15 @@ export class ResultService {
         await this.saveDraft(requestId, restoredData);
         const displayName = prefix ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
         this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}${displayName}!`, 'success');
+
+        await this.logActivity(
+          'RESTORE_RESULT_VERSION',
+          `Rollback kết quả về bản v${versionNumber}${displayName}: ${draft.sopName} (ID: ${requestId})`,
+          requestId,
+          draft.sopId || '',
+          draft.sopName || ''
+        );
+
         return {
           ...draft,
           ...restoredData,
@@ -476,6 +539,18 @@ export class ResultService {
         throw new Error('Không thể cập nhật thông tin xuất bản mới vào cơ sở dữ liệu!');
       }
 
+      const displayName = prefix !== undefined && prefix !== null && prefix !== 'ALL'
+        ? (prefix === '' ? ' (Không tiền tố)' : ` (nhóm ${prefix})`)
+        : ' (Tất cả mẫu)';
+
+      await this.logActivity(
+        'PUBLISH_RESULT_REPORT',
+        `Xuất bản báo cáo kết quả bản v${nextVersion}${displayName}: ${currentDraft.sopName} (ID: ${requestId})`,
+        requestId,
+        currentDraft.sopId || '',
+        currentDraft.sopName || ''
+      );
+
       this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
       return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl };
     } catch (e: any) {
@@ -572,6 +647,14 @@ export class ResultService {
       if (!saved) {
         throw new Error('Không thể cập nhật trạng thái nháp của mẻ chạy!');
       }
+
+      await this.logActivity(
+        'REVERT_RESULT_DRAFT',
+        `Hủy xuất bản báo cáo kết quả mẻ chạy: ${currentDraft.sopName} (ID: ${requestId})`,
+        requestId,
+        currentDraft.sopId || '',
+        currentDraft.sopName || ''
+      );
 
       this.toast.show('Đã mở khóa kết quả mẻ chạy để chỉnh sửa!', 'success');
       return await this.getDraft(requestId);
@@ -749,6 +832,14 @@ export class ResultService {
       });
       
       await batch.commit();
+
+      await this.logActivity(
+        'RESET_RESULT_DATA',
+        `Reset toàn bộ dữ liệu kết quả mẻ chạy: ${currentDraft.sopName || reqData['sopName']} (ID: ${requestId})`,
+        requestId,
+        currentDraft.sopId || reqData['sopId'] || '',
+        currentDraft.sopName || reqData['sopName'] || ''
+      );
 
       this.toast.show('Đã reset và xóa toàn bộ số liệu của mẻ chạy thành công!', 'success');
       return resetResult;

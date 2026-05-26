@@ -351,7 +351,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   async triggerSaveDraft() {
     if (!this.draft()) return;
     this.isSavingDraft.set(true);
-    const success = await this.resultService.saveDraft(this.requestId, this.draft()!);
+    const success = await this.resultService.saveDraft(this.requestId, this.draft()!, true);
     if (success) {
       this.toast.show('Đã lưu bản nháp kết quả phân tích thành công!', 'success');
     }
