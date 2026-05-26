@@ -153,9 +153,6 @@ export class ResultService {
       }
       
       const detailData = detailSnap.exists() ? detailSnap.data() : null;
-      if (!detailData && !metaData['analysisResultSummary']) {
-        return null;
-      }
       
       return {
         id: requestId,
