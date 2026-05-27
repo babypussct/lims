@@ -23,6 +23,7 @@ const CONFIG = {
     'trifluralin-gcms': {
       folderName: 'Trifluralin (GC-MS)',
       formType: 'type2',
+      defaultFontSize: 13,
       sampleTableIndex: 1,   // table index trong Google Doc (0-based)
       tablesPerPage: 2,      // số lượng bảng trên mỗi trang kết quả (bao gồm bảng đường chuẩn & bảng mẫu)
       columns: {
@@ -46,6 +47,7 @@ const CONFIG = {
     'fipronil-chlorpyrifos': {
       folderName: 'Fipronil - Chlorpyrifos',
       formType: 'type2',
+      defaultFontSize: 9,
       sampleTableIndex: 2,
       columns: {
         maSoMau:       0, // Mã số mẫu
@@ -81,6 +83,7 @@ const CONFIG = {
     'dichlorvos-gcms': {
       folderName: 'Dichlorvos (GC-MS)',
       formType: 'type3a',
+      defaultFontSize: 13,
       sampleTableIndex: 1,
       columns: {
         maSoMau:       0, // Mã số mẫu
@@ -100,6 +103,7 @@ const CONFIG = {
     'chlor-huu-co': {
       folderName: 'Chlor hữu cơ (Type 3B)',
       formType: 'type3b',
+      defaultFontSize: 13,
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
       checkboxLines: {
         'Các mẫu thử không phát hiện':                               'checkTatCaND',
@@ -127,6 +131,7 @@ const CONFIG = {
     'lan-huu-co': {
       folderName: 'Lân hữu cơ (Type 3B)',
       formType: 'type3b',
+      defaultFontSize: 13,
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
       checkboxLines: {
         'Mẫu kiểm tra nội bộ':                                       'qcKiemTraNoiBo',
