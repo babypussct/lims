@@ -153,6 +153,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);

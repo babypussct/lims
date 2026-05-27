@@ -381,6 +381,7 @@ export class Sop03EntryComponent implements OnInit {
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
   @Input() activeFilter: string = 'ALL';
+  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
