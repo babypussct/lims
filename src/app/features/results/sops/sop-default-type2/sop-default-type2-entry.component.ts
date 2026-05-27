@@ -87,7 +87,7 @@ import { MasterTargetService } from '../../../targets/master-target.service';
                 
                 @for (col of activeColumns; track col) {
                   <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[120px]">
-                    {{ formatColumnName(col) }}
+                    {{ columnDisplayNames()[col] || col }}
                   </th>
                 }
                 
@@ -157,6 +157,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
+  columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
 
@@ -170,6 +171,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
 
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+    this.buildColumnDisplayNames();
 
     if (this.config.checkboxLines) {
       this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({
@@ -213,6 +215,14 @@ export class SopDefaultType2EntryComponent implements OnInit {
     name = name.replace(/([A-Z])/g, ' $1').trim();
     const defaultName = name.charAt(0).toUpperCase() + name.slice(1);
     return this.getCompoundDisplayName(defaultName);
+  }
+
+  buildColumnDisplayNames() {
+    const map: Record<string, string> = {};
+    for (const col of this.activeColumns) {
+      map[col] = this.formatColumnName(col);
+    }
+    this.columnDisplayNames.set(map);
   }
 
   onDataChanged() {

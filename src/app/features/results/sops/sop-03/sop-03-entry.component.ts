@@ -198,7 +198,7 @@ import { MasterTargetService } from '../../../targets/master-target.service';
                 
                 @for (col of activeColumns; track col) {
                   <th class="py-3 px-4 text-left font-black text-slate-450 dark:text-slate-500 text-xs min-w-[130px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
-                    {{ formatColumnName(col) }} (µg/kg)
+                    {{ columnDisplayNames()[col] || col }} (µg/kg)
                   </th>
                 }
                 
@@ -385,6 +385,7 @@ export class Sop03EntryComponent implements OnInit {
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
+  columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
 
@@ -446,6 +447,7 @@ export class Sop03EntryComponent implements OnInit {
 
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+    this.buildColumnDisplayNames();
 
     if (this.config.checkboxLines) {
       this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({
@@ -582,6 +584,14 @@ export class Sop03EntryComponent implements OnInit {
     };
     const defaultName = customNames[colKey] || colKey;
     return this.getCompoundDisplayName(defaultName);
+  }
+
+  buildColumnDisplayNames() {
+    const map: Record<string, string> = {};
+    for (const col of this.activeColumns) {
+      map[col] = this.formatColumnName(col);
+    }
+    this.columnDisplayNames.set(map);
   }
 
   onDataChanged() {

@@ -179,9 +179,9 @@ import { MasterTargetService } from '../../../targets/master-target.service';
                   <td class="py-2.5 px-4 font-extrabold text-xs flex items-center">
                     @if (!isTargetAssigned(activeSampleCode(), compound)) {
                       <i class="fa-solid fa-lock text-[10px] text-slate-400/80 dark:text-slate-600 mr-1.5" title="Không thuộc chỉ tiêu kiểm nghiệm của mẫu này"></i>
-                      <span class="text-slate-400 dark:text-slate-550 line-through decoration-slate-250 dark:decoration-slate-800/60">{{ getCompoundDisplayName(compound) }}</span>
+                      <span class="text-slate-400 dark:text-slate-550 line-through decoration-slate-250 dark:decoration-slate-800/60">{{ compoundDisplayNames()[compound] || compound }}</span>
                     } @else {
-                      <span class="text-slate-700 dark:text-slate-200">{{ getCompoundDisplayName(compound) }}</span>
+                      <span class="text-slate-700 dark:text-slate-200">{{ compoundDisplayNames()[compound] || compound }}</span>
                     }
                   </td>
                   
@@ -317,6 +317,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
+  compoundDisplayNames = signal<Record<string, string>>({});
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
 
@@ -335,10 +336,20 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     try {
       const analytes = await this.masterTargetService.getAll();
       this.masterTargets.set(analytes);
+      this.buildDisplayNameMap();
     } catch (e) {
       console.warn('Failed to load master analytes', e);
     }
     this.prefillUnassignedTargets();
+  }
+
+  buildDisplayNameMap() {
+    if (!this.config.compounds) return;
+    const map: Record<string, string> = {};
+    for (const compound of this.config.compounds) {
+      map[compound] = this.getCompoundDisplayName(compound);
+    }
+    this.compoundDisplayNames.set(map);
   }
 
   getCompoundDisplayName(compound: string): string {

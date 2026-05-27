@@ -231,7 +231,7 @@ import { MasterTargetService } from '../../../targets/master-target.service';
                 
                 @for (col of activeColumns; track col) {
                   <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[130px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
-                    {{ getColumnLabel(col) }}
+                    {{ columnDisplayNames()[col] || getColumnLabel(col) }}
                   </th>
                 }
                 
@@ -324,6 +324,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
+  columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
 
   // Bulk vial properties
@@ -384,6 +385,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter((c: string) => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
+    this.buildColumnDisplayNames();
 
     // Ensure blankName and spikeName are initialized
     if (this.draft.page1Data['blankName'] === undefined) {
@@ -633,6 +635,14 @@ export class Sop1767857760184EntryComponent implements OnInit {
     name = name.replace(/([A-Z])/g, ' $1').trim();
     const defaultName = name.charAt(0).toUpperCase() + name.slice(1);
     return this.getCompoundDisplayName(defaultName);
+  }
+
+  buildColumnDisplayNames() {
+    const map: Record<string, string> = {};
+    for (const col of this.activeColumns) {
+      map[col] = this.getColumnLabel(col);
+    }
+    this.columnDisplayNames.set(map);
   }
 
   updateDichlorvosRecovery(key: string) {
