@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
+import { MasterTargetService } from '../../../targets/master-target.service';
 
 @Component({
   selector: 'app-sop-default-type2-entry',
@@ -153,12 +154,19 @@ export class SopDefaultType2EntryComponent implements OnInit {
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
 
-  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
-
+  private masterTargetService = inject(MasterTargetService);
+  masterTargets = signal<any[]>([]);
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
 
-  ngOnInit() {
+  async ngOnInit() {
+    try {
+      const analytes = await this.masterTargetService.getAll();
+      this.masterTargets.set(analytes);
+    } catch (e) {
+      console.warn('Failed to load master analytes', e);
+    }
+
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
 
@@ -170,10 +178,38 @@ export class SopDefaultType2EntryComponent implements OnInit {
     }
   }
 
+  getCompoundDisplayName(compound: string): string {
+    const analytes = this.masterTargets();
+    if (analytes.length === 0) return compound;
+
+    const getFingerprint = (s: string): string => {
+      if (!s) return '';
+      const lower = s.toLowerCase().trim();
+      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+      return parts.sort().join('');
+    };
+
+    const targetFingerprint = getFingerprint(compound);
+
+    const matched = analytes.find(a => {
+      const assignedFingerprint = getFingerprint(a.id);
+      const nameFingerprint = getFingerprint(a.name);
+      return assignedFingerprint === targetFingerprint || 
+             assignedFingerprint.includes(targetFingerprint) || 
+             targetFingerprint.includes(assignedFingerprint) ||
+             nameFingerprint === targetFingerprint ||
+             nameFingerprint.includes(targetFingerprint) ||
+             targetFingerprint.includes(nameFingerprint);
+    });
+
+    return matched ? matched.name : compound;
+  }
+
   formatColumnName(colKey: string): string {
     let name = colKey.replace(/^kq/, '');
     name = name.replace(/([A-Z])/g, ' $1').trim();
-    return name.charAt(0).toUpperCase() + name.slice(1);
+    const defaultName = name.charAt(0).toUpperCase() + name.slice(1);
+    return this.getCompoundDisplayName(defaultName);
   }
 
   onDataChanged() {

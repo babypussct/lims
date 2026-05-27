@@ -105,42 +105,58 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
     const assignedTargetIds = sampleTargetMap[sampleCode];
     if (!assignedTargetIds) return true;
     
-    const targetIdToBackendKey = {
-      'Aldrin': 'Aldrin',
-      'BHC-alpha': 'BHCa',
-      'BHC-beta': 'BHCb',
-      'BHC-delta': 'BHCd',
-      'BHC-epsilon': 'BHCe',
-      'BHC-gamma': 'BHCg',
-      'Chlordane-cis': 'Chlordane_cis',
-      'Chlordane-oxy': 'Chlordane_oxy',
-      'Chlordane-trans': 'Chlordane_trans',
-      'DDD-o,p': 'DDD_op',
-      'DDD-p,p': 'DDD_pp',
-      'DDE-o,p': 'DDE_op',
-      'DDE-p,p': 'DDE_pp',
-      'DDT-o,p': 'DDT_op',
-      'DDT-p,p': 'DDT_pp',
-      'Dieldrin': 'Dieldrin',
-      'Endosulfan-I': 'Endosulfan1',
-      'Endosulfan-II': 'Endosulfan2',
-      'Endosulfan-sulfate': 'EndosulfanS',
-      'Endrin': 'Endrin',
-      'Heptachlor': 'Heptachlor',
-      'Heptachlor-epoxide-trans': 'HeptachlorA',
-      'Heptachlor-epoxide-cis': 'HeptachlorB',
-      'Hexachlorobenzene': 'HCB',
-      'Isodrin': 'Isodrin',
-      'Methoxychlor': 'Methoxychlor',
-      'Mirex': 'Mirex',
-      'Pendimethalin': 'Pendimethalin'
+    const getFingerprint = function(s) {
+      if (!s) return '';
+      var lower = s.toLowerCase().trim();
+      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
+      if (lower === 'lindane') return 'alphabhcgamma';
+      
+      var parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+      var mappedParts = parts.map(function(p) {
+        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
+        return p;
+      });
+      return mappedParts.sort().join('');
     };
+
+    const targetFingerprint = getFingerprint(colKey);
     
-    const assignedBackendKeys = assignedTargetIds.map(function(tId) {
-      return targetIdToBackendKey[tId] || tId;
-    }).map(function(k) { return k.toLowerCase(); });
-    
-    return assignedBackendKeys.indexOf(colKey.toLowerCase()) !== -1;
+    const backendKeyToTargets = {
+      'BHCa': ['bhc', 'alpha'],
+      'BHCb': ['bhc', 'beta'],
+      'BHCd': ['bhc', 'delta'],
+      'BHCe': ['bhc', 'epsilon'],
+      'BHCg': ['bhc', 'gamma'],
+      'Chlordane_cis': ['chlordane', 'cis'],
+      'Chlordane_oxy': ['chlordane', 'oxy'],
+      'Chlordane_trans': ['chlordane', 'trans'],
+      'DDD_op': ['ddd', 'o', 'p'],
+      'DDD_pp': ['ddd', 'p', 'p'],
+      'DDE_op': ['dde', 'o', 'p'],
+      'DDE_pp': ['dde', 'p', 'p'],
+      'DDT_op': ['ddt', 'o', 'p'],
+      'DDT_pp': ['ddt', 'p', 'p'],
+      'Endosulfan1': ['endosulfan', 'i'],
+      'Endosulfan2': ['endosulfan', 'ii'],
+      'EndosulfanS': ['endosulfan', 'sulfate'],
+      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
+      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
+      'HCB': ['hexachlorobenzene']
+    };
+
+    var targetFingerprints = [targetFingerprint];
+    if (backendKeyToTargets[colKey]) {
+      targetFingerprints.push(backendKeyToTargets[colKey].sort().join(''));
+    }
+
+    return assignedTargetIds.some(function(tId) {
+      const assignedFingerprint = getFingerprint(tId);
+      return targetFingerprints.some(function(tf) {
+        return assignedFingerprint === tf || 
+               assignedFingerprint.indexOf(tf) !== -1 || 
+               tf.indexOf(assignedFingerprint) !== -1;
+      });
+    });
   };
   
   for (const element of elements) {

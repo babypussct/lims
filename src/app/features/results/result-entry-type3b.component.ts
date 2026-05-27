@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
+import { MasterTargetService } from '../targets/master-target.service';
 
 @Component({
   selector: 'app-result-entry-type3b',
@@ -184,7 +185,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
                     }
                   </td>
                   <td [class.line-through]="!isAssigned" class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
-                    {{ compound }}
+                    {{ getCompoundDisplayName(compound) }}
                   </td>
                   
                   <!-- ND Checkbox -->
@@ -258,10 +259,12 @@ export class ResultEntryType3bComponent implements OnInit {
 
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
+  private masterTargetService = inject(MasterTargetService);
+  masterTargets = signal<any[]>([]);
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
 
-  ngOnInit() {
+  async ngOnInit() {
     if (this.run.sampleList && this.run.sampleList.length > 0) {
       this.activeSampleCode.set(this.run.sampleList[0]);
     }
@@ -273,8 +276,78 @@ export class ResultEntryType3bComponent implements OnInit {
       }));
     }
 
+    try {
+      const analytes = await this.masterTargetService.getAll();
+      this.masterTargets.set(analytes);
+    } catch (e) {
+      console.warn('Failed to load master analytes', e);
+    }
+
     // Auto-prefill unassigned compounds during grid bootstrap
     this.prefillUnassignedTargets();
+  }
+
+  getCompoundDisplayName(compound: string): string {
+    const analytes = this.masterTargets();
+    if (analytes.length === 0) return compound;
+
+    const getFingerprint = (s: string): string => {
+      if (!s) return '';
+      const lower = s.toLowerCase().trim();
+      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
+      if (lower === 'lindane') return 'alphabhcgamma';
+      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+      const mappedParts = parts.map(p => {
+        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
+        return p;
+      });
+      return mappedParts.sort().join('');
+    };
+
+    const targetFingerprint = getFingerprint(compound);
+    
+    const backendKeyToTargets: Record<string, string[]> = {
+      'BHCa': ['bhc', 'alpha'],
+      'BHCb': ['bhc', 'beta'],
+      'BHCd': ['bhc', 'delta'],
+      'BHCe': ['bhc', 'epsilon'],
+      'BHCg': ['bhc', 'gamma'],
+      'Chlordane_cis': ['chlordane', 'cis'],
+      'Chlordane_oxy': ['chlordane', 'oxy'],
+      'Chlordane_trans': ['chlordane', 'trans'],
+      'DDD_op': ['ddd', 'o', 'p'],
+      'DDD_pp': ['ddd', 'p', 'p'],
+      'DDE_op': ['dde', 'o', 'p'],
+      'DDE_pp': ['dde', 'p', 'p'],
+      'DDT_op': ['ddt', 'o', 'p'],
+      'DDT_pp': ['ddt', 'p', 'p'],
+      'Endosulfan1': ['endosulfan', 'i'],
+      'Endosulfan2': ['endosulfan', 'ii'],
+      'EndosulfanS': ['endosulfan', 'sulfate'],
+      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
+      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
+      'HCB': ['hexachlorobenzene']
+    };
+
+    const targetFingerprints = [targetFingerprint];
+    if (backendKeyToTargets[compound]) {
+      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
+    }
+
+    const matched = analytes.find(a => {
+      const assignedFingerprint = getFingerprint(a.id);
+      const nameFingerprint = getFingerprint(a.name);
+      return targetFingerprints.some(tf => 
+        assignedFingerprint === tf || 
+        assignedFingerprint.includes(tf) || 
+        tf.includes(assignedFingerprint) ||
+        nameFingerprint === tf ||
+        nameFingerprint.includes(tf) ||
+        tf.includes(nameFingerprint)
+      );
+    });
+
+    return matched ? matched.name : compound;
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
@@ -282,10 +355,57 @@ export class ResultEntryType3bComponent implements OnInit {
     const assigned = this.run.sampleTargetMap[sampleCode];
     if (!assigned) return true;
     
-    const normalize = (s: string) => s.toLowerCase().replace(/[-_,\s']/g, '').trim();
-    const normalizedComp = normalize(compound);
+    const getFingerprint = (s: string): string => {
+      if (!s) return '';
+      const lower = s.toLowerCase().trim();
+      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
+      if (lower === 'lindane') return 'alphabhcgamma';
+      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+      const mappedParts = parts.map(p => {
+        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
+        return p;
+      });
+      return mappedParts.sort().join('');
+    };
+
+    const targetFingerprint = getFingerprint(compound);
     
-    return assigned.some((tId: string) => normalize(tId) === normalizedComp);
+    const backendKeyToTargets: Record<string, string[]> = {
+      'BHCa': ['bhc', 'alpha'],
+      'BHCb': ['bhc', 'beta'],
+      'BHCd': ['bhc', 'delta'],
+      'BHCe': ['bhc', 'epsilon'],
+      'BHCg': ['bhc', 'gamma'],
+      'Chlordane_cis': ['chlordane', 'cis'],
+      'Chlordane_oxy': ['chlordane', 'oxy'],
+      'Chlordane_trans': ['chlordane', 'trans'],
+      'DDD_op': ['ddd', 'o', 'p'],
+      'DDD_pp': ['ddd', 'p', 'p'],
+      'DDE_op': ['dde', 'o', 'p'],
+      'DDE_pp': ['dde', 'p', 'p'],
+      'DDT_op': ['ddt', 'o', 'p'],
+      'DDT_pp': ['ddt', 'p', 'p'],
+      'Endosulfan1': ['endosulfan', 'i'],
+      'Endosulfan2': ['endosulfan', 'ii'],
+      'EndosulfanS': ['endosulfan', 'sulfate'],
+      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
+      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
+      'HCB': ['hexachlorobenzene']
+    };
+
+    const targetFingerprints = [targetFingerprint];
+    if (backendKeyToTargets[compound]) {
+      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
+    }
+
+    return assigned.some((tId: string) => {
+      const assignedFingerprint = getFingerprint(tId);
+      return targetFingerprints.some(tf => 
+        assignedFingerprint === tf || 
+        assignedFingerprint.includes(tf) || 
+        tf.includes(assignedFingerprint)
+      );
+    });
   }
 
   prefillUnassignedTargets() {

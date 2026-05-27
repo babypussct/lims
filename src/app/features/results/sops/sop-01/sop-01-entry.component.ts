@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { calculateSop01Recovery } from './sop-01-engine';
+import { MasterTargetService } from '../../../targets/master-target.service';
 
 @Component({
   selector: 'app-sop-01-entry',
@@ -406,8 +407,8 @@ export class Sop01EntryComponent implements OnInit {
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
 
-  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
-
+  private masterTargetService = inject(MasterTargetService);
+  masterTargets = signal<any[]>([]);
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
 
@@ -416,7 +417,13 @@ export class Sop01EntryComponent implements OnInit {
   bulkVialStartFip = 10;
   bulkVialsPerRack = 54;
 
-  ngOnInit() {
+  async ngOnInit() {
+    try {
+      const analytes = await this.masterTargetService.getAll();
+      this.masterTargets.set(analytes);
+    } catch (e) {
+      console.warn('Failed to load master analytes', e);
+    }
     // Trích lọc các hoạt chất thực sự
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter(c => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
@@ -554,6 +561,33 @@ export class Sop01EntryComponent implements OnInit {
     this.onDataChanged();
   }
 
+  getCompoundDisplayName(compound: string): string {
+    const analytes = this.masterTargets();
+    if (analytes.length === 0) return compound;
+
+    const getFingerprint = (s: string): string => {
+      if (!s) return '';
+      const lower = s.toLowerCase().trim();
+      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+      return parts.sort().join('');
+    };
+
+    const targetFingerprint = getFingerprint(compound);
+
+    const matched = analytes.find(a => {
+      const assignedFingerprint = getFingerprint(a.id);
+      const nameFingerprint = getFingerprint(a.name);
+      return assignedFingerprint === targetFingerprint || 
+             assignedFingerprint.includes(targetFingerprint) || 
+             targetFingerprint.includes(assignedFingerprint) ||
+             nameFingerprint === targetFingerprint ||
+             nameFingerprint.includes(targetFingerprint) ||
+             targetFingerprint.includes(nameFingerprint);
+    });
+
+    return matched ? matched.name : compound;
+  }
+
   formatColumnName(colKey: string): string {
     const customNames: Record<string, string> = {
       'kqFip': 'Fipronil',
@@ -564,7 +598,8 @@ export class Sop01EntryComponent implements OnInit {
       'kqClpMe': 'Chlorpyrifos methyl',
       'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
     };
-    return customNames[colKey] || colKey;
+    const defaultName = customNames[colKey] || colKey;
+    return this.getCompoundDisplayName(defaultName);
   }
 
   onDataChanged() {
