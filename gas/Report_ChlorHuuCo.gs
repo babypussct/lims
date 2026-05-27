@@ -195,6 +195,85 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       }
     }
     
+    // 4.5. Xử lý điền các ô checkbox loại mẫu, khối lượng, tình trạng mẫu và kết quả chung
+    try {
+      // a. Khối lượng mẫu
+      const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+      let kl10Check = '☐';
+      let klOtherText = '………';
+      if (khoiLuongVal === '10.0' || khoiLuongVal === '10') {
+        kl10Check = '☑';
+      } else {
+        klOtherText = khoiLuongVal;
+      }
+      element.replaceText('m\\s*=\\s*[☐□☑]?\\s*10\\.0', 'm = ' + kl10Check + ' 10.0');
+      if (klOtherText !== '………') {
+        element.replaceText('10\\.0\\s*;\\s*[…\\.]+', '10.0 ; ' + klOtherText);
+      }
+
+      // b. Loại mẫu
+      const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
+      let isTuoi = loaiMauVal === 'Nông sản tươi';
+      let isKho = loaiMauVal === 'Nông sản khô';
+      let isThuySan = (loaiMauVal === 'Thuỷ sản' || loaiMauVal === 'Thủy sản');
+      let isLmKhac = !isTuoi && !isKho && !isThuySan;
+      let lmKhacText = isLmKhac ? loaiMauVal : '………';
+      
+      const tuoiCheck = isTuoi ? '☑' : '☐';
+      const khoCheck = isKho ? '☑' : '☐';
+      const thuySanCheck = isThuySan ? '☑' : '☐';
+      const lmKhacCheck = isLmKhac ? '☑' : '☐';
+
+      element.replaceText('[☐□☑]\\s*Nông sản tươi', tuoiCheck + ' Nông sản tươi');
+      element.replaceText('[☐□☑]\\s*Nông sản khô', khoCheck + ' Nông sản khô');
+      element.replaceText('[☐□☑]\\s*Thuỷ sản', thuySanCheck + ' Thuỷ sản');
+      element.replaceText('[☐□☑]\\s*Thủy sản', thuySanCheck + ' Thủy sản');
+      element.replaceText('[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', lmKhacCheck + ' Khác: ' + lmKhacText);
+
+      // c. Tình trạng mẫu
+      const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
+      let isBinhThuong = ttMauVal === 'Bình thường';
+      let isTtKhac = !isBinhThuong;
+      let ttKhacText = isTtKhac ? ttMauVal : '………';
+      
+      const btCheck = isBinhThuong ? '☑' : '☐';
+      const ttKhacCheck = isTtKhac ? '☑' : '☐';
+
+      element.replaceText('[☐□☑]\\s*Bình thường', btCheck + ' Bình thường');
+      element.replaceText('[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', ttKhacCheck + ' Khác: ' + ttKhacText);
+
+      // d. Kết quả phát hiện/không phát hiện
+      let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
+      let isKhongPhatHien = sample.checkTatCaND === true || metadata.checkTatCaND === true;
+      
+      if (!isPhatHien && !isKhongPhatHien) {
+        let hasAnyResult = false;
+        for (const [key, val] of Object.entries(sample)) {
+          if (key.indexOf('_nd') === -1 && key !== 'maSoMau' && val !== null && val !== undefined && val.toString().trim() !== '' && val.toString().trim() !== 'N/A' && val.toString().trim() !== '—') {
+            hasAnyResult = true;
+            break;
+          }
+          if (key.indexOf('_nd') !== -1 && val === true) {
+            hasAnyResult = true;
+            break;
+          }
+        }
+        if (hasAnyResult) {
+          isPhatHien = true;
+        } else {
+          isKhongPhatHien = true;
+        }
+      }
+      
+      const phCheck = isPhatHien ? '☑' : '☐';
+      const kphCheck = isKhongPhatHien ? '☑' : '☐';
+
+      element.replaceText('[☐□☑]\\s*Phát hiện', phCheck + ' Phát hiện');
+      element.replaceText('[☐□☑]\\s*Không phát hiện', kphCheck + ' Không phát hiện');
+    } catch (e) {
+      Logger.log('[Report ChlorHuuCo] Lỗi điền metadata: ' + e.toString());
+    }
+    
     // 5. Điền trực tiếp kết quả kết luận vào bảng hoạt chất theo tọa độ ô và tên hoạt chất (KHÔNG CẦN PLACEHOLDER)
     fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssignedForGas);
     
@@ -429,9 +508,18 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
       } else {
         const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
         const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
-        const qc1Val = sample[key + '_qc1'] || '☐';
-        const qc2Val = sample[key + '_qc2'] || '☐';
-        const qc3Val = sample[key + '_qc3'] || '☐';
+        
+        const isDetected = (kqVal !== '' || ndVal === '☑');
+        
+        let qc1Val = '☐';
+        let qc2Val = '☐';
+        let qc3Val = '☐';
+        
+        if (isDetected) {
+          qc1Val = sample[key + '_qc1'] || '☐';
+          qc2Val = sample[key + '_qc2'] || '☐';
+          qc3Val = sample[key + '_qc3'] || '☐';
+        }
         
         const qc1Dat = (qc1Val === 'Đạt' || qc1Val === '☑') ? '☑' : '☐';
         const qc1Kd = (qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt') ? '☑' : '☐';
@@ -442,7 +530,8 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
         const qc3Dat = (qc3Val === 'Đạt' || qc3Val === '☑') ? '☑' : '☐';
         const qc3Kd = (qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt') ? '☑' : '☐';
         
-        setCellText(row, 1, `${kqVal}    ${ndVal} ND`, 0, sopConfig.defaultFontSize || 9);
+        const prefix = kqVal ? kqVal : '………';
+        setCellText(row, 1, `${prefix}    ${ndVal} ND`, 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 2, `${qc1Dat} Đ           ${qc1Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 3, `${qc2Dat} Đ           ${qc2Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 4, `${qc3Dat} Đ           ${qc3Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
