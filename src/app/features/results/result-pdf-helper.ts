@@ -363,12 +363,12 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           rowData[`${backendKey}_qc2`] = 'N/A';
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
-          // Chỉ tiêu có thực hiện -> Luôn tự động tích ND và không điền chữ KPH vào ô kết quả
+          // Chỉ tiêu có thực hiện -> Sử dụng đúng giá trị thực tế nhập từ giao diện UI
           rowData[backendKey] = val;
-          rowData[`${backendKey}_nd`] = true;
-          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || 'Đạt';
-          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || 'Đạt';
-          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || 'Đạt';
+          rowData[`${backendKey}_nd`] = resObj[`${c}_nd`] === true;
+          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
+          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
+          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';
         }
       });
 
