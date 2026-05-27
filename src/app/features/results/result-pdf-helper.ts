@@ -305,13 +305,71 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
       };
 
+      const sampleTargetMap = currentRun.sampleTargetMap || {};
+
+      const isAssigned = (sampleCode: string, compound: string): boolean => {
+        const assigned = sampleTargetMap[sampleCode];
+        if (!assigned) return true; // Default to true if not specified
+        
+        const backendKeyToTargets: Record<string, string[]> = {
+          'BHCa': ['bhc', 'alpha'],
+          'BHCb': ['bhc', 'beta'],
+          'BHCd': ['bhc', 'delta'],
+          'BHCe': ['bhc', 'epsilon'],
+          'BHCg': ['bhc', 'gamma'],
+          'Chlordane_cis': ['chlordane', 'cis'],
+          'Chlordane_oxy': ['chlordane', 'oxy'],
+          'Chlordane_trans': ['chlordane', 'trans'],
+          'DDD_op': ['ddd', 'o,p\'', 'o,p'],
+          'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
+          'DDE_op': ['dde', 'o,p\'', 'o,p'],
+          'DDE_pp': ['dde', 'p,p\'', 'p,p'],
+          'DDT_op': ['ddt', 'o,p\'', 'o,p'],
+          'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
+          'Endosulfan1': ['endosulfan', 'i', 'alpha'],
+          'Endosulfan2': ['endosulfan', 'ii', 'beta'],
+          'EndosulfanS': ['endosulfan', 'sulfate'],
+          'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
+          'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
+          'HCB': ['hexachlorobenzene', 'hcb']
+        };
+        
+        const backendKey = mapCompoundToKey(compound);
+        const searchTokens = backendKeyToTargets[backendKey] || 
+          compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+        const minScore = searchTokens.length === 1 ? 1 : 2;
+        
+        return assigned.some((tId: string) => {
+          if (tId === compound) return true;
+          const haystack = tId.toLowerCase();
+          let score = 0;
+          for (const token of searchTokens) {
+            if (haystack.includes(token)) score++;
+          }
+          return score >= minScore;
+        });
+      };
+
       currentConf.compounds.forEach((c: string) => {
         const backendKey = mapCompoundToKey(c);
-        rowData[backendKey] = resObj[c] || 'KPH';
-        rowData[`${backendKey}_nd`] = resObj[`${c}_nd`] === true;
-        rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || 'Đạt';
-        rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || 'Đạt';
-        rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || 'Đạt';
+        const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
+        const assigned = isAssigned(sampleCode, c);
+        
+        if (!assigned) {
+          // Chỉ tiêu không thực hiện -> Giữ nguyên định dạng gốc của form bằng cách để trống
+          rowData[backendKey] = '';
+          rowData[`${backendKey}_nd`] = false;
+          rowData[`${backendKey}_qc1`] = 'N/A';
+          rowData[`${backendKey}_qc2`] = 'N/A';
+          rowData[`${backendKey}_qc3`] = 'N/A';
+        } else {
+          // Chỉ tiêu có thực hiện -> Luôn tự động tích ND và không điền chữ KPH vào ô kết quả
+          rowData[backendKey] = val;
+          rowData[`${backendKey}_nd`] = true;
+          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || 'Đạt';
+          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || 'Đạt';
+          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || 'Đạt';
+        }
       });
 
       samplesPayload.push(rowData);
