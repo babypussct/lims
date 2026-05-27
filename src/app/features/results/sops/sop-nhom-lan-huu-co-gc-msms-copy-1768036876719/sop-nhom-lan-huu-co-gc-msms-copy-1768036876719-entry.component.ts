@@ -388,14 +388,14 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   }
 
   /**
-   * Đồng bộ khi nhấn check KPH/ND: tự điền 'KPH' vào ô kết quả
+   * Đồng bộ khi nhấn check KPH/ND: tự để trống ô kết quả và đánh Đạt cho QC
    */
   onNdCheckboxChanged(compound: string) {
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
       if (row[`${compound}_nd`]) {
-        row[compound] = 'KPH';
+        row[compound] = '';
         row[`${compound}_qc1`] = 'Đạt';
         row[`${compound}_qc2`] = 'Đạt';
         row[`${compound}_qc3`] = 'Đạt';
@@ -413,10 +413,11 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
-      const val = row[compound];
-      if (val && val !== 'KPH' && val !== 'ND') {
+      const rawVal = row[compound];
+      const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
+      if (val.trim() !== '') {
         row[`${compound}_nd`] = false;
-      } else if (!val || val === 'KPH' || val === 'ND') {
+      } else {
         row[`${compound}_nd`] = true;
       }
     }
@@ -424,7 +425,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   }
 
   /**
-   * Bulk Action: Đặt tất cả hoạt chất của mẫu đang mở là KPH (Không phát hiện)
+   * Bulk Action: Đặt tất cả hoạt chất của mẫu đang mở là KPH (để trống ô kết quả, check ND)
    */
   sampleBulkFillND() {
     const active = this.activeSampleCode();
@@ -432,7 +433,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
         if (this.isTargetAssigned(active, c)) {
-          row[c] = 'KPH';
+          row[c] = '';
           row[`${c}_nd`] = true;
           row[`${c}_qc1`] = 'Đạt';
           row[`${c}_qc2`] = 'Đạt';
