@@ -146,6 +146,7 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
   for (const element of elements) {
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
+    element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
     
     // 2. Thay thế chữ ký và ngày tháng
     if (sopConfig.signaturePlaceholders) {
@@ -158,13 +159,12 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       }
     }
     
-    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐
+    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
         const isChecked = metadata[fieldName] === true;
         const checkChar = isChecked ? '☑' : '☐';
-        element.replaceText('\\[ \\]', checkChar);
-        element.replaceText('☐', checkChar);
+        replaceCheckboxInElementRecursive(element, lineText, checkChar);
       }
     }
     
@@ -179,40 +179,8 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       }
     }
     
-    // 5. Thay thế kết quả kết luận cho từng hoạt chất riêng biệt
-    if (sopConfig.resultColumns) {
-      for (const col of sopConfig.resultColumns) {
-        const key = col.key;
-        
-        if (!isTargetAssignedForGas(sample.maSoMau, key)) {
-          // Chỉ tiêu không được phân tích cho mẫu này: thay thế bằng nét gạch N/A
-          element.replaceText(`{{KQ_${key}}}`, '—');
-          element.replaceText(`{{ND_${key}}}`, '☐');
-          element.replaceText(`{{QC1_${key}}}`, '☐');
-          element.replaceText(`{{QC1_KD_${key}}}`, '☐');
-          element.replaceText(`{{QC2_${key}}}`, '☐');
-          element.replaceText(`{{QC2_KD_${key}}}`, '☐');
-          element.replaceText(`{{QC3_${key}}}`, '☐');
-          element.replaceText(`{{QC3_KD_${key}}}`, '☐');
-        } else {
-          // Chỉ tiêu được phân tích bình thường
-          const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
-          const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
-          const qc1Val = sample[key + '_qc1'] || '☐';
-          const qc2Val = sample[key + '_qc2'] || '☐';
-          const qc3Val = sample[key + '_qc3'] || '☐';
-          
-          element.replaceText(`{{KQ_${key}}}`, kqVal);
-          element.replaceText(`{{ND_${key}}}`, ndVal);
-          element.replaceText(`{{QC1_${key}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
-          element.replaceText(`{{QC1_KD_${key}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
-          element.replaceText(`{{QC2_${key}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
-          element.replaceText(`{{QC2_KD_${key}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
-          element.replaceText(`{{QC3_${key}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
-          element.replaceText(`{{QC3_KD_${key}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
-        }
-      }
-    }
+    // 5. Điền trực tiếp kết quả kết luận vào bảng hoạt chất theo tọa độ ô và tên hoạt chất (KHÔNG CẦN PLACEHOLDER)
+    fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssignedForGas);
     
     // 6. Xử lý đánh dấu ☑/☐ Đạt hoặc Không đạt trong bảng QC của từng mẫu
     let tables = [];
@@ -295,3 +263,157 @@ function cleanChlorHuuCoLastPageBreak(body) {
     Logger.log(`[Autocut ChlorHuuCo] Không thể dọn dẹp PageBreak cuối: ${e.toString()}`);
   }
 }
+
+/**
+ * Helper đệ quy chọn lọc để tìm và thay thế checkbox trong đoạn văn hoặc ô chứa nhãn text tương ứng
+ */
+function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
+  const type = element.getType();
+  if (type === DocumentApp.ElementType.PARAGRAPH) {
+    const para = element.asParagraph();
+    if (para.getText().includes(lineText)) {
+      para.replaceText('\\[ \\]', checkChar);
+      para.replaceText('☐', checkChar);
+      para.replaceText('□', checkChar);
+      para.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+    }
+  } else if (type === DocumentApp.ElementType.TABLE) {
+    const table = element.asTable();
+    for (let r = 0; r < table.getNumRows(); r++) {
+      const row = table.getRow(r);
+      for (let c = 0; c < row.getNumCells(); c++) {
+        const cell = row.getCell(c);
+        if (cell.getText().includes(lineText)) {
+          cell.replaceText('\\[ \\]', checkChar);
+          cell.replaceText('☐', checkChar);
+          cell.replaceText('□', checkChar);
+          cell.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+        }
+      }
+    }
+  } else if (element.getNumChildren && element.getNumChildren() > 0) {
+    const numChildren = element.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      replaceCheckboxInElementRecursive(element.getChild(i), lineText, checkChar);
+    }
+  }
+}
+
+/**
+ * Điền bảng kết quả cho hoạt chất theo tọa độ ô mà KHÔNG cần bất kỳ placeholder nào (dựa trên tên hoạt chất ở cột 0)
+ */
+function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssignedForGas) {
+  let tables = [];
+  if (element.getType() === DocumentApp.ElementType.TABLE) {
+    tables.push(element.asTable());
+  } else if (typeof element.getTables === 'function') {
+    tables = element.getTables();
+  }
+  
+  let resultsTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() >= 10) {
+      // Dò tìm bảng kết quả dựa trên tên hoạt chất phổ biến "Aldrin" ở hàng 1 hoặc 2 cột 0
+      const cell0Text = t.getRow(1).getCell(0).getText();
+      const cell1Text = t.getRow(2).getCell(0).getText();
+      if (cell0Text.includes("Aldrin") || cell1Text.includes("Aldrin")) {
+        resultsTable = t;
+        break;
+      }
+    }
+  }
+  
+  if (!resultsTable) {
+    Logger.log("[Type3B Direct] Không tìm thấy bảng kết quả hoạt chất để điền trực tiếp!");
+    return false;
+  }
+  
+  const numRows = resultsTable.getNumRows();
+  
+  // Bản đồ chuẩn hóa tên hiển thị thô trong bảng sang Backend Key của LIMS
+  const tableTextToKey = {
+    'aldrin': 'Aldrin',
+    'bhca': 'BHCa', 'bhc-alpha': 'BHCa', 'alpha-bhc': 'BHCa', 'α-bhc': 'BHCa',
+    'bhcb': 'BHCb', 'bhc-beta': 'BHCb', 'beta-bhc': 'BHCb', 'β-bhc': 'BHCb',
+    'bhcd': 'BHCd', 'bhc-delta': 'BHCd', 'delta-bhc': 'BHCd', 'δ-bhc': 'BHCd',
+    'bhce': 'BHCe', 'bhc-epsilon': 'BHCe', 'epsilon-bhc': 'BHCe', 'ε-bhc': 'BHCe',
+    'bhcg': 'BHCg', 'bhc-gamma': 'BHCg', 'gamma-bhc': 'BHCg', 'γ-bhc': 'BHCg', 'lindane': 'BHCg',
+    'chlordane_cis': 'Chlordane_cis', 'chlordane-cis': 'Chlordane_cis', 'cis-chlordane': 'Chlordane_cis',
+    'chlordane_oxy': 'Chlordane_oxy', 'chlordane-oxy': 'Chlordane_oxy', 'oxy-chlordane': 'Chlordane_oxy',
+    'chlordane_trans': 'Chlordane_trans', 'chlordane-trans': 'Chlordane_trans', 'trans-chlordane': 'Chlordane_trans',
+    'ddd_op': 'DDD_op', 'ddd-o,p': 'DDD_op', 'o,p-ddd': 'DDD_op', 'o,p\'-ddd': 'DDD_op',
+    'ddd_pp': 'DDD_pp', 'ddd-p,p': 'DDD_pp', 'p,p-ddd': 'DDD_pp', 'p,p\'-ddd': 'DDD_pp',
+    'dde_op': 'DDE_op', 'dde-o,p': 'DDE_op', 'o,p-dde': 'DDE_op', 'o,p\'-dde': 'DDE_op',
+    'dde_pp': 'DDE_pp', 'dde-p,p': 'DDE_pp', 'p,p-dde': 'DDE_pp', 'p,p\'-dde': 'DDE_pp',
+    'ddt_op': 'DDT_op', 'ddt-o,p': 'DDT_op', 'o,p-ddt': 'DDT_op', 'o,p\'-ddt': 'DDT_op',
+    'ddt_pp': 'DDT_pp', 'ddt-p,p': 'DDT_pp', 'p,p-ddt': 'DDT_pp', 'p,p\'-ddt': 'DDT_pp',
+    'dieldrin': 'Dieldrin',
+    'endosulfan1': 'Endosulfan1', 'endosulfan-i': 'Endosulfan1', 'alpha-endosulfan': 'Endosulfan1',
+    'endosulfan2': 'Endosulfan2', 'endosulfan-ii': 'Endosulfan2', 'beta-endosulfan': 'Endosulfan2',
+    'endosulfans': 'EndosulfanS', 'endosulfan-sulfate': 'EndosulfanS',
+    'endrin': 'Endrin',
+    'heptachlor': 'Heptachlor',
+    'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor epoxide trans': 'HeptachlorA',
+    'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor epoxide cis': 'HeptachlorB',
+    'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
+    'isodrin': 'Isodrin',
+    'methoxychlor': 'Methoxychlor',
+    'mirex': 'Mirex',
+    'pendimethalin': 'Pendimethalin'
+  };
+  
+  for (let r = 0; r < numRows; r++) {
+    const row = resultsTable.getRow(r);
+    const cell0Text = row.getCell(0).getText().toLowerCase().replace(/[\s\-\'\’\_]/g, '');
+    
+    // Tìm key khớp từ cell0Text
+    let matchedKey = null;
+    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+      const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
+      if (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text)) {
+        matchedKey = key;
+        break;
+      }
+    }
+    
+    if (matchedKey) {
+      const key = matchedKey;
+      const isAssigned = isTargetAssignedForGas(sample.maSoMau, key);
+      
+      const cell1 = row.getCell(1); // Cột Kết quả & ND
+      const cell2 = row.getCell(2); // Cột QC1
+      const cell3 = row.getCell(3); // Cột QC2
+      const cell4 = row.getCell(4); // Cột QC3
+      
+      if (!isAssigned) {
+        setCellText(row, 1, "—    ☐ ND", 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 2, "☐ Đ           ☐ KĐ", 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 3, "☐ Đ           ☐ KĐ", 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 4, "☐ Đ           ☐ KĐ", 0, sopConfig.defaultFontSize || 9);
+      } else {
+        const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
+        const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
+        const qc1Val = sample[key + '_qc1'] || '☐';
+        const qc2Val = sample[key + '_qc2'] || '☐';
+        const qc3Val = sample[key + '_qc3'] || '☐';
+        
+        const qc1Dat = (qc1Val === 'Đạt' || qc1Val === '☑') ? '☑' : '☐';
+        const qc1Kd = (qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt') ? '☑' : '☐';
+        
+        const qc2Dat = (qc2Val === 'Đạt' || qc2Val === '☑') ? '☑' : '☐';
+        const qc2Kd = (qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt') ? '☑' : '☐';
+        
+        const qc3Dat = (qc3Val === 'Đạt' || qc3Val === '☑') ? '☑' : '☐';
+        const qc3Kd = (qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt') ? '☑' : '☐';
+        
+        setCellText(row, 1, `${kqVal}    ${ndVal} ND`, 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 2, `${qc1Dat} Đ           ${qc1Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 3, `${qc2Dat} Đ           ${qc2Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 4, `${qc3Dat} Đ           ${qc3Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
+      }
+    }
+  }
+  return true;
+}
+

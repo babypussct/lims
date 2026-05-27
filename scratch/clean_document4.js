@@ -151,19 +151,21 @@ function processXml(isTemplate, destXmlPath) {
                     break;
                 }
             }
-            
+            const idx = r - 1;
             const newCell1 = `<w:tc><w:tcPr><w:tcW w:w="1379" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:vAlign w:val="center"/></w:tcPr>` +
                 `<w:p><w:pPr><w:jc w:val="center"/><w:rPr><w:color w:val="000000"/><w:sz w:val="20"/></w:rPr></w:pPr>` +
-                `<w:r><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>{{KQ_${compoundKey}}}</w:t></w:r>` +
+                `<w:r><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>{{K${idx}}}</w:t></w:r>` +
                 `<w:r><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t xml:space="preserve">    </w:t></w:r>` +
-                `<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>{{ND_${compoundKey}}}</w:t></w:r>` +
+                `<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>{{N${idx}}}</w:t></w:r>` +
                 `<w:r><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t xml:space="preserve"> ND</w:t></w:r>` +
                 `</w:p></w:tc>`;
             
             const newCellQC = (colIdx) => {
                 const wVal = colIdx === 2 ? "1701" : colIdx === 3 ? "1843" : "1843";
-                const placeholderDat = `{{QC${colIdx - 1}_${compoundKey}}}`;
-                const placeholderKd = `{{QC${colIdx - 1}_KD_${compoundKey}}}`;
+                const qcLetters = {2: ['A', 'B'], 3: ['C', 'D'], 4: ['E', 'F']};
+                const [letterDat, letterKd] = qcLetters[colIdx];
+                const placeholderDat = `{{${letterDat}${idx}}}`;
+                const placeholderKd = `{{${letterKd}${idx}}}`;
                 return `<w:tc><w:tcPr><w:tcW w:w="${wVal}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="auto"/><w:vAlign w:val="center"/></w:tcPr>` +
                     `<w:p><w:pPr><w:jc w:val="center"/><w:rPr><w:color w:val="000000"/><w:sz w:val="20"/></w:rPr></w:pPr>` +
                     `<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>${placeholderDat}</w:t></w:r>` +

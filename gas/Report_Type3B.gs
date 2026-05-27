@@ -62,6 +62,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
   for (const element of elements) {
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
+    element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
     
     // 2. Thay thế chữ ký và ngày tháng
     if (sopConfig.signaturePlaceholders) {
@@ -74,13 +75,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
     
-    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐
+    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
         const isChecked = metadata[fieldName] === true;
         const checkChar = isChecked ? '☑' : '☐';
-        element.replaceText('\\[ \\]', checkChar);
-        element.replaceText('☐', checkChar);
+        replaceCheckboxInElementRecursive(element, lineText, checkChar);
       }
     }
     
@@ -95,9 +95,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
     
-    // 5. Thay thế kết quả kết luận cho từng hoạt chất riêng biệt
+    // 5. Thay thế kết quả kết luận cho từng hoạt chất riêng biệt bằng mã hóa gọn (K1, N1, A1...)
     if (sopConfig.resultColumns) {
-      for (const col of sopConfig.resultColumns) {
+      for (let idx = 1; idx <= sopConfig.resultColumns.length; idx++) {
+        const col = sopConfig.resultColumns[idx - 1];
         const key = col.key;
         const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
         const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
@@ -105,14 +106,14 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         const qc2Val = sample[key + '_qc2'] || '☐';
         const qc3Val = sample[key + '_qc3'] || '☐';
         
-        element.replaceText(`{{KQ_${key}}}`, kqVal);
-        element.replaceText(`{{ND_${key}}}`, ndVal);
-        element.replaceText(`{{QC1_${key}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC1_KD_${key}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
-        element.replaceText(`{{QC2_${key}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC2_KD_${key}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
-        element.replaceText(`{{QC3_${key}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC3_KD_${key}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
+        element.replaceText(`{{K${idx}}}`, kqVal);
+        element.replaceText(`{{N${idx}}}`, ndVal);
+        element.replaceText(`{{A${idx}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{B${idx}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
+        element.replaceText(`{{C${idx}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{D${idx}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
+        element.replaceText(`{{E${idx}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
+        element.replaceText(`{{F${idx}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
       }
     }
     
@@ -197,3 +198,39 @@ function cleanLastPageBreak(body) {
     Logger.log(`[Autocut 3B] Không thể dọn dẹp PageBreak cuối: ${e.toString()}`);
   }
 }
+
+/**
+ * Helper đệ quy chọn lọc để tìm và thay thế checkbox trong đoạn văn hoặc ô chứa nhãn text tương ứng
+ */
+function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
+  const type = element.getType();
+  if (type === DocumentApp.ElementType.PARAGRAPH) {
+    const para = element.asParagraph();
+    if (para.getText().includes(lineText)) {
+      para.replaceText('\\[ \\]', checkChar);
+      para.replaceText('☐', checkChar);
+      para.replaceText('□', checkChar);
+      para.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+    }
+  } else if (type === DocumentApp.ElementType.TABLE) {
+    const table = element.asTable();
+    for (let r = 0; r < table.getNumRows(); r++) {
+      const row = table.getRow(r);
+      for (let c = 0; c < row.getNumCells(); c++) {
+        const cell = row.getCell(c);
+        if (cell.getText().includes(lineText)) {
+          cell.replaceText('\\[ \\]', checkChar);
+          cell.replaceText('☐', checkChar);
+          cell.replaceText('□', checkChar);
+          cell.replaceText('[\\[\\(] ?[\\]\\)]', checkChar);
+        }
+      }
+    }
+  } else if (element.getNumChildren && element.getNumChildren() > 0) {
+    const numChildren = element.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      replaceCheckboxInElementRecursive(element.getChild(i), lineText, checkChar);
+    }
+  }
+}
+
