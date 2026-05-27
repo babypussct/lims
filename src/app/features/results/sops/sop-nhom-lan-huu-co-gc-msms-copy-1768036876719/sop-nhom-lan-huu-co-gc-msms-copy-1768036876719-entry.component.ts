@@ -333,6 +333,26 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       }));
     }
 
+    if (!this.draft.page1Data) {
+      this.draft.page1Data = {};
+    }
+
+    // Set default value for qcNhanDang if not set (default NA / null)
+    if (this.draft.page1Data['qcNhanDang'] === undefined) {
+      this.draft.page1Data['qcNhanDang'] = null;
+    }
+
+    // Set other evaluation checkboxes to true (Đạt) if not set
+    if (this.checkboxList) {
+      this.checkboxList.forEach(cb => {
+        if (cb.key !== 'checkTatCaND' && cb.key !== 'checkCoMauPhatHien' && cb.key !== 'qcNhanDang') {
+          if (this.draft.page1Data[cb.key] === undefined) {
+            this.draft.page1Data[cb.key] = true;
+          }
+        }
+      });
+    }
+
     try {
       const analytes = await this.masterTargetService.getAll();
       this.masterTargets.set(analytes);
@@ -419,8 +439,10 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   onCheckboxChange(changedKey: string) {
     if (changedKey === 'checkTatCaND' && this.draft.page1Data.checkTatCaND) {
       this.draft.page1Data.checkCoMauPhatHien = false;
+      this.draft.page1Data.qcNhanDang = null; // Reset to N/A
     } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data.checkCoMauPhatHien) {
       this.draft.page1Data.checkTatCaND = false;
+      this.draft.page1Data.qcNhanDang = true; // Auto check "Đạt"
     }
     this.onDataChanged();
   }
