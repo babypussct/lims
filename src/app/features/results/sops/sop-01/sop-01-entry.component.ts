@@ -149,7 +149,7 @@ import { calculateSop01Recovery } from './sop-01-engine';
                   </button>
 
                   <button type="button"
-                          (click)="setQcStatus(checkbox.key, undefined)"
+                          (click)="setQcStatus(checkbox.key, null)"
                           [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
                             ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
                             : 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
@@ -497,8 +497,8 @@ export class Sop01EntryComponent implements OnInit {
     return key === 'checkTatCaND' || key === 'checkCoMauPhatHien';
   }
 
-  setQcStatus(key: string, value: boolean | undefined) {
-    this.draft.page1Data[key] = value === undefined ? null : value;
+  setQcStatus(key: string, value: boolean | null) {
+    this.draft.page1Data[key] = value;
     this.onDataChanged();
   }
 
