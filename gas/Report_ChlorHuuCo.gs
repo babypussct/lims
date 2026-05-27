@@ -98,6 +98,51 @@ function fillChlorHuuCoSample(body, sopConfig, metadata, sample) {
 function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
   const allFields = { ...metadata, ...sample };
   
+  // Build dynamic sampleTargetMap resolver
+  const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
+  const isTargetAssignedForGas = function(sampleCode, colKey) {
+    if (!sampleTargetMap) return true;
+    const assignedTargetIds = sampleTargetMap[sampleCode];
+    if (!assignedTargetIds) return true;
+    
+    const targetIdToBackendKey = {
+      'Aldrin': 'Aldrin',
+      'BHC-alpha': 'BHCa',
+      'BHC-beta': 'BHCb',
+      'BHC-delta': 'BHCd',
+      'BHC-epsilon': 'BHCe',
+      'BHC-gamma': 'BHCg',
+      'Chlordane-cis': 'Chlordane_cis',
+      'Chlordane-oxy': 'Chlordane_oxy',
+      'Chlordane-trans': 'Chlordane_trans',
+      'DDD-o,p': 'DDD_op',
+      'DDD-p,p': 'DDD_pp',
+      'DDE-o,p': 'DDE_op',
+      'DDE-p,p': 'DDE_pp',
+      'DDT-o,p': 'DDT_op',
+      'DDT-p,p': 'DDT_pp',
+      'Dieldrin': 'Dieldrin',
+      'Endosulfan-I': 'Endosulfan1',
+      'Endosulfan-II': 'Endosulfan2',
+      'Endosulfan-sulfate': 'EndosulfanS',
+      'Endrin': 'Endrin',
+      'Heptachlor': 'Heptachlor',
+      'Heptachlor-epoxide-trans': 'HeptachlorA',
+      'Heptachlor-epoxide-cis': 'HeptachlorB',
+      'Hexachlorobenzene': 'HCB',
+      'Isodrin': 'Isodrin',
+      'Methoxychlor': 'Methoxychlor',
+      'Mirex': 'Mirex',
+      'Pendimethalin': 'Pendimethalin'
+    };
+    
+    const assignedBackendKeys = assignedTargetIds.map(function(tId) {
+      return targetIdToBackendKey[tId] || tId;
+    }).map(function(k) { return k.toLowerCase(); });
+    
+    return assignedBackendKeys.indexOf(colKey.toLowerCase()) !== -1;
+  };
+  
   for (const element of elements) {
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
@@ -138,20 +183,34 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
     if (sopConfig.resultColumns) {
       for (const col of sopConfig.resultColumns) {
         const key = col.key;
-        const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
-        const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
-        const qc1Val = sample[key + '_qc1'] || '☐';
-        const qc2Val = sample[key + '_qc2'] || '☐';
-        const qc3Val = sample[key + '_qc3'] || '☐';
         
-        element.replaceText(`{{KQ_${key}}}`, kqVal);
-        element.replaceText(`{{ND_${key}}}`, ndVal);
-        element.replaceText(`{{QC1_${key}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC1_KD_${key}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
-        element.replaceText(`{{QC2_${key}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC2_KD_${key}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
-        element.replaceText(`{{QC3_${key}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
-        element.replaceText(`{{QC3_KD_${key}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
+        if (!isTargetAssignedForGas(sample.maSoMau, key)) {
+          // Chỉ tiêu không được phân tích cho mẫu này: thay thế bằng nét gạch N/A
+          element.replaceText(`{{KQ_${key}}}`, '—');
+          element.replaceText(`{{ND_${key}}}`, '☐');
+          element.replaceText(`{{QC1_${key}}}`, '☐');
+          element.replaceText(`{{QC1_KD_${key}}}`, '☐');
+          element.replaceText(`{{QC2_${key}}}`, '☐');
+          element.replaceText(`{{QC2_KD_${key}}}`, '☐');
+          element.replaceText(`{{QC3_${key}}}`, '☐');
+          element.replaceText(`{{QC3_KD_${key}}}`, '☐');
+        } else {
+          // Chỉ tiêu được phân tích bình thường
+          const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
+          const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
+          const qc1Val = sample[key + '_qc1'] || '☐';
+          const qc2Val = sample[key + '_qc2'] || '☐';
+          const qc3Val = sample[key + '_qc3'] || '☐';
+          
+          element.replaceText(`{{KQ_${key}}}`, kqVal);
+          element.replaceText(`{{ND_${key}}}`, ndVal);
+          element.replaceText(`{{QC1_${key}}}`, qc1Val === 'Đạt' || qc1Val === '☑' ? '☑' : '☐');
+          element.replaceText(`{{QC1_KD_${key}}}`, qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt' ? '☑' : '☐');
+          element.replaceText(`{{QC2_${key}}}`, qc2Val === 'Đạt' || qc2Val === '☑' ? '☑' : '☐');
+          element.replaceText(`{{QC2_KD_${key}}}`, qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt' ? '☑' : '☐');
+          element.replaceText(`{{QC3_${key}}}`, qc3Val === 'Đạt' || qc3Val === '☑' ? '☑' : '☐');
+          element.replaceText(`{{QC3_KD_${key}}}`, qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt' ? '☑' : '☐');
+        }
       }
     }
     

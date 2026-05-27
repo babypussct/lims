@@ -561,6 +561,7 @@ export class StateService implements OnDestroy {
 
       if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
       if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
+      if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
 
       await addDoc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), reqData);
       this.toast.show('Đã gửi yêu cầu duyệt!', 'success');
@@ -612,6 +613,7 @@ export class StateService implements OnDestroy {
 
         if (formInputs.sampleList) reqData.sampleList = formInputs.sampleList;
         if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
+        if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
 
         transaction.set(reqRef, reqData);
 
@@ -711,6 +713,7 @@ export class StateService implements OnDestroy {
           const extendedInputs = { ...req.inputs };
           if (req.sampleList) extendedInputs.sampleList = req.sampleList;
           if (req.targetIds) extendedInputs.targetIds = req.targetIds;
+          if (req.sampleTargetMap) extendedInputs.sampleTargetMap = req.sampleTargetMap;
 
           const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
           const printData: PrintData = {

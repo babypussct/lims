@@ -171,32 +171,49 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
               @for (compound of config.compounds; track compound; let idx = $index) {
-                <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150">
-                  <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">{{ idx + 1 }}</td>
-                  <td class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">{{ compound }}</td>
+                @let isAssigned = isTargetAssigned(activeSampleCode(), compound);
+                <tr [class]="isAssigned 
+                      ? 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150' 
+                      : 'bg-slate-50/50 dark:bg-slate-955/20 opacity-60 text-slate-400 select-none border-l-4 border-l-slate-200 dark:border-l-slate-800'"
+                    class="transition-all duration-155">
+                  <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">
+                    @if (isAssigned) {
+                      {{ idx + 1 }}
+                    } @else {
+                      <i class="fa-solid fa-lock text-[10px] text-slate-450 dark:text-slate-500" title="Chỉ tiêu không được phân tích cho mẫu này"></i>
+                    }
+                  </td>
+                  <td [class.line-through]="!isAssigned" class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
+                    {{ compound }}
+                  </td>
                   
                   <!-- ND Checkbox -->
                   <td class="py-2.5 px-4 text-center">
                     <input type="checkbox"
+                           [disabled]="!isAssigned"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_nd']"
                            (ngModelChange)="onNdCheckboxChanged(compound)"
-                           class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
+                           class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900 disabled:opacity-50">
                   </td>
 
                   <!-- Result Input -->
                   <td class="py-1.5 px-2">
                     <input type="text"
+                           [readonly]="!isAssigned"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound]"
                            (ngModelChange)="onResultInputChanged(compound)"
-                           placeholder="ND / Số lượng..."
-                           class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
+                           placeholder="{{ isAssigned ? 'ND / Số lượng...' : 'N/A' }}"
+                           class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner transition
+                                  {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
                   </td>
 
                   <!-- QC1 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
+                    <select [disabled]="!isAssigned"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
+                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
+                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>
@@ -204,9 +221,11 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 
                   <!-- QC2 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
+                    <select [disabled]="!isAssigned"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
+                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
+                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>
@@ -214,9 +233,11 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 
                   <!-- QC3 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
+                    <select [disabled]="!isAssigned"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs">
+                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
+                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
                     </select>
@@ -251,6 +272,43 @@ export class ResultEntryType3bComponent implements OnInit {
         label
       }));
     }
+
+    // Auto-prefill unassigned compounds during grid bootstrap
+    this.prefillUnassignedTargets();
+  }
+
+  isTargetAssigned(sampleCode: string, compound: string): boolean {
+    if (!this.run || !this.run.sampleTargetMap) return true;
+    const assigned = this.run.sampleTargetMap[sampleCode];
+    if (!assigned) return true;
+    
+    const normalize = (s: string) => s.toLowerCase().replace(/[-_,\s']/g, '').trim();
+    const normalizedComp = normalize(compound);
+    
+    return assigned.some((tId: string) => normalize(tId) === normalizedComp);
+  }
+
+  prefillUnassignedTargets() {
+    if (!this.run || !this.run.sampleTargetMap || !this.config.compounds) return;
+    
+    const sampleList = this.run.sampleList || [];
+    sampleList.forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = { selected: true };
+      }
+      
+      const row = this.draft.resultData[sampleCode];
+      this.config.compounds.forEach((c: string) => {
+        if (!this.isTargetAssigned(sampleCode, c)) {
+          // Pre-fill to prevent validator/checking side effects
+          row[c] = 'N/A';
+          row[`${c}_nd`] = false;
+          row[`${c}_qc1`] = 'Đạt';
+          row[`${c}_qc2`] = 'Đạt';
+          row[`${c}_qc3`] = 'Đạt';
+        }
+      });
+    });
   }
 
   selectSample(sampleCode: string) {
@@ -311,8 +369,10 @@ export class ResultEntryType3bComponent implements OnInit {
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
-        row[c] = 'KPH';
-        row[`${c}_nd`] = true;
+        if (this.isTargetAssigned(active, c)) {
+          row[c] = 'KPH';
+          row[`${c}_nd`] = true;
+        }
       });
     }
     this.onDataChanged();
@@ -326,9 +386,11 @@ export class ResultEntryType3bComponent implements OnInit {
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
-        row[`${c}_qc1`] = 'Đạt';
-        row[`${c}_qc2`] = 'Đạt';
-        row[`${c}_qc3`] = 'Đạt';
+        if (this.isTargetAssigned(active, c)) {
+          row[`${c}_qc1`] = 'Đạt';
+          row[`${c}_qc2`] = 'Đạt';
+          row[`${c}_qc3`] = 'Đạt';
+        }
       });
     }
     this.onDataChanged();
@@ -347,13 +409,15 @@ export class ResultEntryType3bComponent implements OnInit {
       if (sampleCode !== sourceSample) {
         const destRow = this.draft.resultData[sampleCode];
         if (destRow) {
-          // Sao chép từng hoạt chất kết quả và cờ QC, ND
           this.config.compounds.forEach((c: string) => {
-            destRow[c] = sourceData[c] || 'KPH';
-            destRow[`${c}_nd`] = sourceData[`${c}_nd`] !== false;
-            destRow[`${c}_qc1`] = sourceData[`${c}_qc1`] || 'Đạt';
-            destRow[`${c}_qc2`] = sourceData[`${c}_qc2`] || 'Đạt';
-            destRow[`${c}_qc3`] = sourceData[`${c}_qc3`] || 'Đạt';
+            // Sao chép chỉ khi hoạt chất đó được gán chung trên cả 2 mẫu nguồn và đích
+            if (this.isTargetAssigned(sourceSample, c) && this.isTargetAssigned(sampleCode, c)) {
+              destRow[c] = sourceData[c] || 'KPH';
+              destRow[`${c}_nd`] = sourceData[`${c}_nd`] !== false;
+              destRow[`${c}_qc1`] = sourceData[`${c}_qc1`] || 'Đạt';
+              destRow[`${c}_qc2`] = sourceData[`${c}_qc2`] || 'Đạt';
+              destRow[`${c}_qc3`] = sourceData[`${c}_qc3`] || 'Đạt';
+            }
           });
         }
       }

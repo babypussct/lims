@@ -984,11 +984,30 @@ export class SmartBatchComponent {
           try {
               for (const batch of this.batches()) {
                   const todayStr = new Date().toISOString().split('T')[0];
+                  
+                  const sampleTargetMap: Record<string, string[]> = {};
+                  if (batch.tasks && batch.tasks.length > 0) {
+                      batch.tasks.forEach(t => {
+                          if (!sampleTargetMap[t.sample]) {
+                              sampleTargetMap[t.sample] = [];
+                          }
+                          if (!sampleTargetMap[t.sample].includes(t.targetId)) {
+                              sampleTargetMap[t.sample].push(t.targetId);
+                          }
+                      });
+                  } else {
+                      const allTargetIds = batch.targets.map(t => t.id);
+                      Array.from(batch.samples).forEach(s => {
+                          sampleTargetMap[s] = allTargetIds;
+                      });
+                  }
+
                   const finalInputs = { 
                       ...batch.inputValues, 
                       safetyMargin: Number(batch.safetyMargin), 
                       sampleList: Array.from(batch.samples),
                       targetIds: batch.targets.map(t => t.id),
+                      sampleTargetMap,
                       analysisDate: batch.inputValues['analysisDate'] || todayStr
                   };
                   const res = await this.state.directApproveAndPrint(batch.sop, batch.resourceImpact, finalInputs, inventoryMap);

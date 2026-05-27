@@ -30,6 +30,8 @@ export interface Request {
   // New Feature: Sample & Target Tracking
   sampleList?: string[]; // List of Sample IDs
   targetIds?: string[];  // List of Selected Target IDs
+  sampleTargetMap?: Record<string, string[]>; // Maps sample ID -> assigned Target IDs
+
   
   // Legacy: Embed Analysis Result directly in Request (pre-Document-Splitting)
   analysisResult?: AnalysisResultDraft;

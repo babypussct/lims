@@ -171,54 +171,71 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
               @for (compound of config.compounds; track compound; let idx = $index) {
-                <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-violet-50/10 dark:focus-within:bg-violet-500/5 border-l-4 border-l-transparent focus-within:border-l-violet-500 duration-150">
+                <tr [class]="!isTargetAssigned(activeSampleCode(), compound)
+                      ? 'bg-slate-50/50 dark:bg-slate-950/20 text-slate-400/80 dark:text-slate-600 transition-all border-l-4 border-l-transparent duration-150'
+                      : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-violet-50/10 dark:focus-within:bg-violet-500/5 border-l-4 border-l-transparent focus-within:border-l-violet-500 duration-150'">
                   <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">{{ idx + 1 }}</td>
-                  <td class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">{{ compound }}</td>
+                  <td class="py-2.5 px-4 font-extrabold text-xs flex items-center">
+                    @if (!isTargetAssigned(activeSampleCode(), compound)) {
+                      <i class="fa-solid fa-lock text-[10px] text-slate-400/80 dark:text-slate-600 mr-1.5" title="Không thuộc chỉ tiêu kiểm nghiệm của mẫu này"></i>
+                      <span class="text-slate-400 dark:text-slate-550 line-through decoration-slate-250 dark:decoration-slate-800/60">{{ compound }}</span>
+                    } @else {
+                      <span class="text-slate-700 dark:text-slate-200">{{ compound }}</span>
+                    }
+                  </td>
                   
                   <!-- ND Checkbox -->
                   <td class="py-2.5 px-4 text-center">
                     <input type="checkbox"
+                           [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_nd']"
                            (ngModelChange)="onNdCheckboxChanged(compound)"
-                           class="w-4 h-4 rounded text-violet-600 border-slate-350 dark:border-slate-700 focus:ring-violet-500 dark:bg-slate-900">
+                           class="w-4 h-4 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500 dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed">
                   </td>
 
                   <!-- Result Input -->
                   <td class="py-1.5 px-2">
                     <input type="text"
+                           [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
                            [(ngModel)]="draft.resultData[activeSampleCode()][compound]"
                            (ngModelChange)="onResultInputChanged(compound)"
                            placeholder="ND / Số lượng..."
-                           class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-center shadow-inner">
+                           class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-center shadow-inner disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                   </td>
 
                   <!-- QC1 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
+                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
+                      <option value="N/A">N/A</option>
                     </select>
                   </td>
 
                   <!-- QC2 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
+                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
+                      <option value="N/A">N/A</option>
                     </select>
                   </td>
 
                   <!-- QC3 Dropdown -->
                   <td class="py-1.5 px-2">
-                    <select [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
+                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
+                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
                             (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs">
+                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                       <option value="Đạt">Đạt</option>
                       <option value="Không đạt">Không đạt</option>
+                      <option value="N/A">N/A</option>
                     </select>
                   </td>
                 </tr>
@@ -251,6 +268,8 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         label
       }));
     }
+
+    this.prefillUnassignedTargets();
   }
 
   selectSample(sampleCode: string) {
@@ -270,13 +289,51 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     this.onDataChanged();
   }
 
+  isTargetAssigned(sampleCode: string, compound: string): boolean {
+    if (!this.run || !this.run.sampleTargetMap) return true;
+    const assigned = this.run.sampleTargetMap[sampleCode];
+    if (!assigned) return true;
+
+    const normalized = compound.toLowerCase().trim();
+    return assigned.some((tId: string) => tId.toLowerCase().trim() === normalized);
+  }
+
+  prefillUnassignedTargets() {
+    if (!this.run || !this.run.sampleTargetMap || !this.config.compounds) return;
+    const sampleList = this.run.sampleList || [];
+    let changed = false;
+
+    sampleList.forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = {};
+      }
+      const row = this.draft.resultData[sampleCode];
+      this.config.compounds.forEach((c: string) => {
+        if (!this.isTargetAssigned(sampleCode, c)) {
+          if (row[c] !== 'N/A' && row[c] !== '—') {
+            row[c] = 'N/A';
+            row[`${c}_nd`] = false;
+            row[`${c}_qc1`] = 'N/A';
+            row[`${c}_qc2`] = 'N/A';
+            row[`${c}_qc3`] = 'N/A';
+            changed = true;
+          }
+        }
+      });
+    });
+
+    if (changed) {
+      this.onDataChanged();
+    }
+  }
+
   /**
    * Đồng bộ khi nhấn check KPH/ND: tự điền 'KPH' vào ô kết quả
    */
   onNdCheckboxChanged(compound: string) {
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
-    if (row) {
+    if (row && this.isTargetAssigned(active, compound)) {
       if (row[`${compound}_nd`]) {
         row[compound] = 'KPH';
       } else {
@@ -292,7 +349,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   onResultInputChanged(compound: string) {
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
-    if (row) {
+    if (row && this.isTargetAssigned(active, compound)) {
       const val = row[compound];
       if (val && val !== 'KPH' && val !== 'ND') {
         row[`${compound}_nd`] = false;
@@ -311,8 +368,10 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
-        row[c] = 'KPH';
-        row[`${c}_nd`] = true;
+        if (this.isTargetAssigned(active, c)) {
+          row[c] = 'KPH';
+          row[`${c}_nd`] = true;
+        }
       });
     }
     this.onDataChanged();
@@ -326,9 +385,11 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
-        row[`${c}_qc1`] = 'Đạt';
-        row[`${c}_qc2`] = 'Đạt';
-        row[`${c}_qc3`] = 'Đạt';
+        if (this.isTargetAssigned(active, c)) {
+          row[`${c}_qc1`] = 'Đạt';
+          row[`${c}_qc2`] = 'Đạt';
+          row[`${c}_qc3`] = 'Đạt';
+        }
       });
     }
     this.onDataChanged();
@@ -347,13 +408,20 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       if (sampleCode !== sourceSample) {
         const destRow = this.draft.resultData[sampleCode];
         if (destRow) {
-          // Sao chép từng hoạt chất kết quả và cờ QC, ND
           this.config.compounds.forEach((c: string) => {
-            destRow[c] = sourceData[c] || 'KPH';
-            destRow[`${c}_nd`] = sourceData[`${c}_nd`] !== false;
-            destRow[`${c}_qc1`] = sourceData[`${c}_qc1`] || 'Đạt';
-            destRow[`${c}_qc2`] = sourceData[`${c}_qc2`] || 'Đạt';
-            destRow[`${c}_qc3`] = sourceData[`${c}_qc3`] || 'Đạt';
+            if (this.isTargetAssigned(sampleCode, c)) {
+              const sourceValue = this.isTargetAssigned(sourceSample, c) ? sourceData[c] : 'KPH';
+              const sourceNd = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_nd`] : true;
+              const sourceQc1 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc1`] : 'Đạt';
+              const sourceQc2 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc2`] : 'Đạt';
+              const sourceQc3 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc3`] : 'Đạt';
+
+              destRow[c] = sourceValue || 'KPH';
+              destRow[`${c}_nd`] = sourceNd !== false;
+              destRow[`${c}_qc1`] = sourceQc1 || 'Đạt';
+              destRow[`${c}_qc2`] = sourceQc2 || 'Đạt';
+              destRow[`${c}_qc3`] = sourceQc3 || 'Đạt';
+            }
           });
         }
       }
