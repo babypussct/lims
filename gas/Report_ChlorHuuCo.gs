@@ -381,13 +381,32 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
   
   for (let r = 0; r < numRows; r++) {
     const row = resultsTable.getRow(r);
-    const cell0Text = row.getCell(0).getText().toLowerCase().replace(/[\s\-\'\’\_]/g, '');
+    const cell0TextRaw = row.getCell(0).getText().trim();
+    const cell0Text = cell0TextRaw.toLowerCase().replace(/[\s\-\'\’\_]/g, '');
+    
+    // Bỏ qua các dòng trống hoặc dòng tiêu đề, đánh giá QC ở cuối bảng
+    if (!cell0Text || cell0Text.length < 3) {
+      continue;
+    }
+    
+    if (cell0Text.includes("đảmbảochấtlượng") || 
+        cell0Text.includes("độthuhồi") || 
+        cell0Text.includes("hệsốtuyếntính") || 
+        cell0Text.includes("kếtluận") ||
+        cell0Text.includes("thôngsốđánhgiá") ||
+        cell0Text.includes("đánhgiáchung") ||
+        cell0Text.includes("mẫukiểmtranộibộ") ||
+        cell0Text.includes("độlệchthờigianlưu") ||
+        cell0Text.includes("đápsố") ||
+        cell0Text.includes("hiệuchuẩn")) {
+      continue;
+    }
     
     // Tìm key khớp từ cell0Text
     let matchedKey = null;
     for (const [rawText, key] of Object.entries(tableTextToKey)) {
       const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
-      if (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text)) {
+      if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
         matchedKey = key;
         break;
       }
