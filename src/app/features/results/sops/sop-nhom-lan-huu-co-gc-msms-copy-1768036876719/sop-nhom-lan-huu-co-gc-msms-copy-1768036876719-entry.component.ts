@@ -437,12 +437,12 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   }
 
   onCheckboxChange(changedKey: string) {
-    if (changedKey === 'checkTatCaND' && this.draft.page1Data.checkTatCaND) {
-      this.draft.page1Data.checkCoMauPhatHien = false;
-      this.draft.page1Data.qcNhanDang = null; // Reset to N/A
-    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data.checkCoMauPhatHien) {
-      this.draft.page1Data.checkTatCaND = false;
-      this.draft.page1Data.qcNhanDang = true; // Auto check "Đạt"
+    if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
+      this.draft.page1Data['checkCoMauPhatHien'] = false;
+      this.draft.page1Data['qcNhanDang'] = null; // Reset to N/A
+    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
+      this.draft.page1Data['checkTatCaND'] = false;
+      this.draft.page1Data['qcNhanDang'] = true; // Auto check "Đạt"
     }
     this.onDataChanged();
   }
