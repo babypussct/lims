@@ -203,40 +203,100 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-center shadow-inner disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                   </td>
 
-                  <!-- QC1 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                      <option value="N/A">N/A</option>
-                    </select>
+                  <!-- QC1 Toggle Button Group -->
+                  <td class="py-1 px-1.5 text-center">
+                    <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
+                         [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
+                         [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc1', 'Đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        Đạt
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc1', 'Không đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Không đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        KĐ
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc1', 'N/A')"
+                              [class]="!draft.resultData[activeSampleCode()][compound + '_qc1'] || draft.resultData[activeSampleCode()][compound + '_qc1'] === 'N/A'
+                                ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
+                              class="min-w-[24px]">
+                        N/A
+                      </button>
+                    </div>
                   </td>
 
-                  <!-- QC2 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                      <option value="N/A">N/A</option>
-                    </select>
+                  <!-- QC2 Toggle Button Group -->
+                  <td class="py-1 px-1.5 text-center">
+                    <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
+                         [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
+                         [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc2', 'Đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        Đạt
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc2', 'Không đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Không đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        KĐ
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc2', 'N/A')"
+                              [class]="!draft.resultData[activeSampleCode()][compound + '_qc2'] || draft.resultData[activeSampleCode()][compound + '_qc2'] === 'N/A'
+                                ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-355 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
+                              class="min-w-[24px]">
+                        N/A
+                      </button>
+                    </div>
                   </td>
 
-                  <!-- QC3 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isTargetAssigned(activeSampleCode(), compound)"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none shadow-2xs disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                      <option value="N/A">N/A</option>
-                    </select>
+                  <!-- QC3 Toggle Button Group -->
+                  <td class="py-1 px-1.5 text-center">
+                    <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
+                         [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
+                         [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc3', 'Đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        Đạt
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc3', 'Không đạt')"
+                              [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Không đạt'
+                                ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              class="min-w-[32px]">
+                        KĐ
+                      </button>
+                      <button type="button"
+                              (click)="setCompoundQc(compound, 'qc3', 'N/A')"
+                              [class]="!draft.resultData[activeSampleCode()][compound + '_qc3'] || draft.resultData[activeSampleCode()][compound + '_qc3'] === 'N/A'
+                                ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-355 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
+                                : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
+                              class="min-w-[24px]">
+                        N/A
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
@@ -336,6 +396,9 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     if (row && this.isTargetAssigned(active, compound)) {
       if (row[`${compound}_nd`]) {
         row[compound] = 'KPH';
+        row[`${compound}_qc1`] = 'Đạt';
+        row[`${compound}_qc2`] = 'Đạt';
+        row[`${compound}_qc3`] = 'Đạt';
       } else {
         row[compound] = '';
       }
@@ -371,6 +434,9 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         if (this.isTargetAssigned(active, c)) {
           row[c] = 'KPH';
           row[`${c}_nd`] = true;
+          row[`${c}_qc1`] = 'Đạt';
+          row[`${c}_qc2`] = 'Đạt';
+          row[`${c}_qc3`] = 'Đạt';
         }
       });
     }
@@ -436,5 +502,14 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   setQcStatus(key: string, value: boolean | null) {
     this.draft.page1Data[key] = value;
     this.onDataChanged();
+  }
+
+  setCompoundQc(compound: string, qcKey: 'qc1' | 'qc2' | 'qc3', status: 'Đạt' | 'Không đạt' | 'N/A') {
+    const active = this.activeSampleCode();
+    const row = this.draft.resultData[active];
+    if (row && this.isTargetAssigned(active, compound)) {
+      row[`${compound}_${qcKey}`] = status;
+      this.onDataChanged();
+    }
   }
 }
