@@ -345,21 +345,11 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
 
-    const getFingerprint = (s: string): string => {
-      if (!s) return '';
-      const lower = s.toLowerCase().trim();
-      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
-      if (lower === 'lindane') return 'alphabhcgamma';
-      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      const mappedParts = parts.map(p => {
-        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
-        return p;
-      });
-      return mappedParts.sort().join('');
-    };
+    // 1. Exact id match (fastest path)
+    const exactMatch = analytes.find(a => a.id === compound);
+    if (exactMatch) return exactMatch.name;
 
-    const targetFingerprint = getFingerprint(compound);
-    
+    // 2. Build search tokens from backendKeyToTargets synonym map
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -369,39 +359,42 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o', 'p'],
-      'DDD_pp': ['ddd', 'p', 'p'],
-      'DDE_op': ['dde', 'o', 'p'],
-      'DDE_pp': ['dde', 'p', 'p'],
-      'DDT_op': ['ddt', 'o', 'p'],
-      'DDT_pp': ['ddt', 'p', 'p'],
-      'Endosulfan1': ['endosulfan', 'i'],
-      'Endosulfan2': ['endosulfan', 'ii'],
+      'DDD_op': ['ddd', 'o,p\'', 'o,p'],
+      'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
+      'DDE_op': ['dde', 'o,p\'', 'o,p'],
+      'DDE_pp': ['dde', 'p,p\'', 'p,p'],
+      'DDT_op': ['ddt', 'o,p\'', 'o,p'],
+      'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
+      'Endosulfan1': ['endosulfan', 'i', 'alpha'],
+      'Endosulfan2': ['endosulfan', 'ii', 'beta'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene']
+      'HCB': ['hexachlorobenzene', 'hcb']
     };
 
-    const targetFingerprints = [targetFingerprint];
-    if (backendKeyToTargets[compound]) {
-      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
+    const searchTokens = backendKeyToTargets[compound] || 
+      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+
+    // 3. Score each master target by how many search tokens appear in its id+name
+    let bestMatch: any = null;
+    let bestScore = 0;
+
+    for (const a of analytes) {
+      const haystack = `${a.id} ${a.name}`.toLowerCase();
+      let score = 0;
+      for (const token of searchTokens) {
+        if (haystack.includes(token)) score++;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = a;
+      }
     }
 
-    const matched = analytes.find(a => {
-      const assignedFingerprint = getFingerprint(a.id);
-      const nameFingerprint = getFingerprint(a.name);
-      return targetFingerprints.some(tf => 
-        assignedFingerprint === tf || 
-        assignedFingerprint.includes(tf) || 
-        tf.includes(assignedFingerprint) ||
-        nameFingerprint === tf ||
-        nameFingerprint.includes(tf) ||
-        tf.includes(nameFingerprint)
-      );
-    });
-
-    return matched ? matched.name : compound;
+    // Require at least 2 tokens matched (or all tokens if only 1 token) to avoid false positives
+    const minScore = searchTokens.length === 1 ? 1 : 2;
+    return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
   }
 
   selectSample(sampleCode: string) {
@@ -426,22 +419,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const assigned = this.run.sampleTargetMap[sampleCode];
     if (!assigned) return true;
 
-    const getFingerprint = (s: string): string => {
-      if (!s) return '';
-      const lower = s.toLowerCase().trim();
-      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
-      if (lower === 'lindane') return 'alphabhcgamma';
-      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      const mappedParts = parts.map(p => {
-        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
-        return p;
-      });
-      return mappedParts.sort().join('');
-    };
-
-    const targetFingerprint = getFingerprint(compound);
-    
-    // Support matching backend keys
+    // Build search tokens for this compound
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -451,32 +429,34 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o', 'p'],
-      'DDD_pp': ['ddd', 'p', 'p'],
-      'DDE_op': ['dde', 'o', 'p'],
-      'DDE_pp': ['dde', 'p', 'p'],
-      'DDT_op': ['ddt', 'o', 'p'],
-      'DDT_pp': ['ddt', 'p', 'p'],
-      'Endosulfan1': ['endosulfan', 'i'],
-      'Endosulfan2': ['endosulfan', 'ii'],
+      'DDD_op': ['ddd', 'o,p\'', 'o,p'],
+      'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
+      'DDE_op': ['dde', 'o,p\'', 'o,p'],
+      'DDE_pp': ['dde', 'p,p\'', 'p,p'],
+      'DDT_op': ['ddt', 'o,p\'', 'o,p'],
+      'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
+      'Endosulfan1': ['endosulfan', 'i', 'alpha'],
+      'Endosulfan2': ['endosulfan', 'ii', 'beta'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene']
+      'HCB': ['hexachlorobenzene', 'hcb']
     };
 
-    const targetFingerprints = [targetFingerprint];
-    if (backendKeyToTargets[compound]) {
-      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
-    }
+    const searchTokens = backendKeyToTargets[compound] || 
+      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+    const minScore = searchTokens.length === 1 ? 1 : 2;
 
     return assigned.some((tId: string) => {
-      const assignedFingerprint = getFingerprint(tId);
-      return targetFingerprints.some(tf => 
-        assignedFingerprint === tf || 
-        assignedFingerprint.includes(tf) || 
-        tf.includes(assignedFingerprint)
-      );
+      // Exact match
+      if (tId === compound) return true;
+      // Token scoring
+      const haystack = tId.toLowerCase();
+      let score = 0;
+      for (const token of searchTokens) {
+        if (haystack.includes(token)) score++;
+      }
+      return score >= minScore;
     });
   }
 

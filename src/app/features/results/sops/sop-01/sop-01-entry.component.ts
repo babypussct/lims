@@ -566,27 +566,29 @@ export class Sop01EntryComponent implements OnInit {
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
 
-    const getFingerprint = (s: string): string => {
-      if (!s) return '';
-      const lower = s.toLowerCase().trim();
-      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      return parts.sort().join('');
-    };
+    // 1. Exact id match
+    const exactMatch = analytes.find(a => a.id === compound);
+    if (exactMatch) return exactMatch.name;
 
-    const targetFingerprint = getFingerprint(compound);
+    // 2. Token-scoring: split compound into tokens and find best match
+    const searchTokens = compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+    let bestMatch: any = null;
+    let bestScore = 0;
 
-    const matched = analytes.find(a => {
-      const assignedFingerprint = getFingerprint(a.id);
-      const nameFingerprint = getFingerprint(a.name);
-      return assignedFingerprint === targetFingerprint || 
-             assignedFingerprint.includes(targetFingerprint) || 
-             targetFingerprint.includes(assignedFingerprint) ||
-             nameFingerprint === targetFingerprint ||
-             nameFingerprint.includes(targetFingerprint) ||
-             targetFingerprint.includes(nameFingerprint);
-    });
+    for (const a of analytes) {
+      const haystack = `${a.id} ${a.name}`.toLowerCase();
+      let score = 0;
+      for (const token of searchTokens) {
+        if (haystack.includes(token)) score++;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = a;
+      }
+    }
 
-    return matched ? matched.name : compound;
+    const minScore = searchTokens.length === 1 ? 1 : 2;
+    return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
   }
 
   formatColumnName(colKey: string): string {
