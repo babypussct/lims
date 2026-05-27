@@ -401,6 +401,9 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         row[`${compound}_qc3`] = 'Đạt';
       } else {
         row[compound] = '';
+        row[`${compound}_qc1`] = 'N/A';
+        row[`${compound}_qc2`] = 'N/A';
+        row[`${compound}_qc3`] = 'N/A';
       }
     }
     this.onDataChanged();
@@ -417,8 +420,15 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
       if (val.trim() !== '') {
         row[`${compound}_nd`] = false;
+        row[`${compound}_qc1`] = 'N/A';
+        row[`${compound}_qc2`] = 'N/A';
+        row[`${compound}_qc3`] = 'N/A';
       } else {
-        row[`${compound}_nd`] = true;
+        // Khi xóa trống kết quả: Đưa về trạng thái ban đầu tinh khiết (chưa điền kết quả, chưa tích ND, QCs = N/A)
+        row[`${compound}_nd`] = false;
+        row[`${compound}_qc1`] = 'N/A';
+        row[`${compound}_qc2`] = 'N/A';
+        row[`${compound}_qc3`] = 'N/A';
       }
     }
     this.onDataChanged();
