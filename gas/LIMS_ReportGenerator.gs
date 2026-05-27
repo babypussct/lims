@@ -126,9 +126,9 @@ function setCellText(row, colIndex, text, chunkSize, fallbackFontSize) {
   if (colIndex >= row.getNumCells()) return 0;
   const cell = row.getCell(colIndex);
   
-  // 1. Lưu lại các thuộc tính định dạng của ô gốc
+  // 1. Lưu lại các thuộc tính định dạng của ô gốc TRƯỚC KHI XÓA NỘI DUNG
   let fontFamily = 'Times New Roman';
-  let fontSize = fallbackFontSize || 9;
+  let fontSize = null; // Sẽ đọc từ template gốc, KHÔNG hardcode mặc định
   let originalAlign = DocumentApp.HorizontalAlignment.CENTER;
   let originalWidth = null;
   let originalVerticalAlign = null;
@@ -156,19 +156,44 @@ function setCellText(row, colIndex, text, chunkSize, fallbackFontSize) {
     if (firstP) {
       if (firstP.getAlignment()) originalAlign = firstP.getAlignment();
       
+      // Ưu tiên đọc font size từ editAsText() — hoạt động cả khi ô trống
+      try {
+        const editText = firstP.editAsText();
+        const readFs = editText.getFontSize(0);
+        if (readFs !== null && readFs !== undefined) fontSize = readFs;
+        const readFf = editText.getFontFamily(0);
+        if (readFf) fontFamily = readFf;
+        
+        // Đọc bold/italic/color từ text element
+        const readBold = editText.isBold(0);
+        if (readBold !== null && readBold !== undefined) isBold = readBold;
+        const readItalic = editText.isItalic(0);
+        if (readItalic !== null && readItalic !== undefined) isItalic = readItalic;
+        const readColor = editText.getForegroundColor(0);
+        if (readColor) foregroundColor = readColor;
+      } catch(innerE) {
+        // editAsText có thể fail trên paragraph hoàn toàn rỗng — dùng paragraph attributes
+      }
+
+      // Fallback: đọc từ paragraph attributes nếu editAsText không trả được
       const pAttrs = firstP.getAttributes();
-      if (pAttrs[DocumentApp.Attribute.FONT_FAMILY]) fontFamily = pAttrs[DocumentApp.Attribute.FONT_FAMILY];
-      if (pAttrs[DocumentApp.Attribute.FONT_SIZE])   fontSize   = pAttrs[DocumentApp.Attribute.FONT_SIZE];
+      if (!fontFamily || fontFamily === 'Times New Roman') {
+        if (pAttrs[DocumentApp.Attribute.FONT_FAMILY]) fontFamily = pAttrs[DocumentApp.Attribute.FONT_FAMILY];
+      }
+      if (fontSize === null) {
+        if (pAttrs[DocumentApp.Attribute.FONT_SIZE]) fontSize = pAttrs[DocumentApp.Attribute.FONT_SIZE];
+      }
       if (pAttrs[DocumentApp.Attribute.LINE_SPACING]) originalLineSpacing  = pAttrs[DocumentApp.Attribute.LINE_SPACING];
       if (pAttrs[DocumentApp.Attribute.SPACING_BEFORE]) originalSpacingBefore = pAttrs[DocumentApp.Attribute.SPACING_BEFORE];
       if (pAttrs[DocumentApp.Attribute.SPACING_AFTER])  originalSpacingAfter  = pAttrs[DocumentApp.Attribute.SPACING_AFTER];
       
+      // Fallback cuối cùng: đọc từ child text element (ô có text sẵn)
       if (firstP.getNumChildren() > 0) {
         const child0 = firstP.getChild(0);
         if (child0.getType() === DocumentApp.ElementType.TEXT) {
           const t = child0.asText();
           if (t.getFontFamily()) fontFamily = t.getFontFamily();
-          if (t.getFontSize())   fontSize   = t.getFontSize();
+          if (t.getFontSize() !== null && t.getFontSize() !== undefined) fontSize = t.getFontSize();
           
           if (t.isBold !== undefined && t.isBold() !== null) isBold = t.isBold();
           if (t.isItalic !== undefined && t.isItalic() !== null) isItalic = t.isItalic();
@@ -176,6 +201,9 @@ function setCellText(row, colIndex, text, chunkSize, fallbackFontSize) {
         }
       }
     }
+
+    // Nếu sau tất cả vẫn null → dùng fallbackFontSize từ config, cuối cùng mới dùng 9
+    if (fontSize === null) fontSize = fallbackFontSize || 9;
 
     originalWidth          = cell.getWidth();
     originalVerticalAlign  = cell.getVerticalAlignment();
