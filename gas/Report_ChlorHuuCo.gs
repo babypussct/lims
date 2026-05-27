@@ -224,11 +224,11 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       const thuySanCheck = isThuySan ? '☑' : '☐';
       const lmKhacCheck = isLmKhac ? '☑' : '☐';
 
-      element.replaceText('[☐□☑]\\s*Nông sản tươi', tuoiCheck + ' Nông sản tươi');
-      element.replaceText('[☐□☑]\\s*Nông sản khô', khoCheck + ' Nông sản khô');
-      element.replaceText('[☐□☑]\\s*Thuỷ sản', thuySanCheck + ' Thuỷ sản');
-      element.replaceText('[☐□☑]\\s*Thủy sản', thuySanCheck + ' Thủy sản');
-      element.replaceText('[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', lmKhacCheck + ' Khác: ' + lmKhacText);
+      element.replaceText('Loại mẫu:\\s*[☐□☑]\\s*Nông sản tươi', 'Loại mẫu: ' + tuoiCheck + ' Nông sản tươi');
+      element.replaceText('tươi\\s*;\\s*[☐□☑]\\s*Nông sản khô', 'tươi; ' + khoCheck + ' Nông sản khô');
+      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thuỷ sản', 'khô; ' + thuySanCheck + ' Thuỷ sản');
+      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thủy sản', 'khô; ' + thuySanCheck + ' Thủy sản');
+      element.replaceText('sản\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'sản; ' + lmKhacCheck + ' Khác: ' + lmKhacText);
 
       // c. Tình trạng mẫu
       const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
@@ -239,8 +239,8 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       const btCheck = isBinhThuong ? '☑' : '☐';
       const ttKhacCheck = isTtKhac ? '☑' : '☐';
 
-      element.replaceText('[☐□☑]\\s*Bình thường', btCheck + ' Bình thường');
-      element.replaceText('[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', ttKhacCheck + ' Khác: ' + ttKhacText);
+      element.replaceText('Tình trạng mẫu:\\s*[☐□☑]\\s*Bình thường', 'Tình trạng mẫu: ' + btCheck + ' Bình thường');
+      element.replaceText('thường\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'thường; ' + ttKhacCheck + ' Khác: ' + ttKhacText);
 
       // d. Kết quả phát hiện/không phát hiện
       let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
@@ -276,6 +276,9 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
     
     // 5. Điền trực tiếp kết quả kết luận vào bảng hoạt chất theo tọa độ ô và tên hoạt chất (KHÔNG CẦN PLACEHOLDER)
     fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssignedForGas);
+    
+    // 5.5. Điền trực tiếp sắc ký đồ vào bảng sắc ký đồ mẫu (mục 9)
+    fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssignedForGas);
     
     // 6. Xử lý đánh dấu ☑/☐ Đạt hoặc Không đạt trong bảng QC của từng mẫu
     let tables = [];
@@ -412,7 +415,9 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
       // Dò tìm bảng kết quả dựa trên tên hoạt chất phổ biến "Aldrin" ở hàng 1 hoặc 2 cột 0
       const cell0Text = t.getRow(1).getCell(0).getText();
       const cell1Text = t.getRow(2).getCell(0).getText();
-      if (cell0Text.includes("Aldrin") || cell1Text.includes("Aldrin")) {
+      const numCols = t.getRow(0).getNumCells();
+      const headerText = t.getRow(0).getText();
+      if (numCols === 5 && !headerText.includes("sắc ký") && !headerText.includes("Sắc ký") && !headerText.includes("mẫu nền") && (cell0Text.includes("Aldrin") || cell1Text.includes("Aldrin"))) {
         resultsTable = t;
         break;
       }
@@ -535,6 +540,128 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
         setCellText(row, 2, `${qc1Dat} Đ           ${qc1Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 3, `${qc2Dat} Đ           ${qc2Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 4, `${qc3Dat} Đ           ${qc3Kd} KĐ`, 0, sopConfig.defaultFontSize || 9);
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Điền trực tiếp các trạng thái tích chọn sắc ký đồ vào bảng mục 9 (cột index 1: Mẫu thử, 2: Mẫu nền, 3: Mẫu thu hồi)
+ */
+function fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssignedForGas) {
+  let tables = [];
+  if (element.getType() === DocumentApp.ElementType.TABLE) {
+    tables.push(element.asTable());
+  } else if (typeof element.getTables === 'function') {
+    tables = element.getTables();
+  }
+  
+  let chromTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() >= 10) {
+      const numCols = t.getRow(0).getNumCells();
+      const cell0Text = t.getRow(1).getCell(0).getText();
+      const cell1Text = t.getRow(2).getCell(0).getText();
+      if (numCols === 4 && (cell0Text.includes("Aldrin") || cell1Text.includes("Aldrin"))) {
+        chromTable = t;
+        break;
+      }
+    }
+  }
+  
+  if (!chromTable) {
+    Logger.log("[Type3B Direct] Không tìm thấy bảng sắc ký đồ hoạt chất mục 9!");
+    return false;
+  }
+  
+  const numRows = chromTable.getNumRows();
+  
+  const tableTextToKey = {
+    'aldrin': 'Aldrin',
+    'bhca': 'BHCa', 'bhc-alpha': 'BHCa', 'alpha-bhc': 'BHCa', 'α-bhc': 'BHCa',
+    'bhcb': 'BHCb', 'bhc-beta': 'BHCb', 'beta-bhc': 'BHCb', 'β-bhc': 'BHCb',
+    'bhcd': 'BHCd', 'bhc-delta': 'BHCd', 'delta-bhc': 'BHCd', 'δ-bhc': 'BHCd',
+    'bhce': 'BHCe', 'bhc-epsilon': 'BHCe', 'epsilon-bhc': 'BHCe', 'ε-bhc': 'BHCe',
+    'bhcg': 'BHCg', 'bhc-gamma': 'BHCg', 'gamma-bhc': 'BHCg', 'γ-bhc': 'BHCg', 'lindane': 'BHCg',
+    'chlordane_cis': 'Chlordane_cis', 'chlordane-cis': 'Chlordane_cis', 'cis-chlordane': 'Chlordane_cis',
+    'chlordane_oxy': 'Chlordane_oxy', 'chlordane-oxy': 'Chlordane_oxy', 'oxy-chlordane': 'Chlordane_oxy',
+    'chlordane_trans': 'Chlordane_trans', 'chlordane-trans': 'Chlordane_trans', 'trans-chlordane': 'Chlordane_trans',
+    'ddd_op': 'DDD_op', 'ddd-o,p': 'DDD_op', 'o,p-ddd': 'DDD_op', 'o,p\'-ddd': 'DDD_op',
+    'ddd_pp': 'DDD_pp', 'ddd-p,p': 'DDD_pp', 'p,p-ddd': 'DDD_pp', 'p,p\'-ddd': 'DDD_pp',
+    'dde_op': 'DDE_op', 'dde-o,p': 'DDE_op', 'o,p-dde': 'DDE_op', 'o,p\'-dde': 'DDE_op',
+    'dde_pp': 'DDE_pp', 'dde-p,p': 'DDE_pp', 'p,p-dde': 'DDE_pp', 'p,p\'-dde': 'DDE_pp',
+    'ddt_op': 'DDT_op', 'ddt-o,p': 'DDT_op', 'o,p-ddt': 'DDT_op', 'o,p\'-ddt': 'DDT_op',
+    'ddt_pp': 'DDT_pp', 'ddt-p,p': 'DDT_pp', 'p,p-ddt': 'DDT_pp', 'p,p\'-ddt': 'DDT_pp',
+    'dieldrin': 'Dieldrin',
+    'endosulfan1': 'Endosulfan1', 'endosulfan-i': 'Endosulfan1', 'endosulfan-1': 'Endosulfan1',
+    'endosulfan2': 'Endosulfan2', 'endosulfan-ii': 'Endosulfan2', 'endosulfan-2': 'Endosulfan2',
+    'endosulfans': 'EndosulfanS', 'endosulfan-sulfate': 'EndosulfanS', 'endosulfansulfate': 'EndosulfanS',
+    'endrin': 'Endrin',
+    'endrin_aldehyde': 'Endrin_aldehyde', 'endrin-aldehyde': 'Endrin_aldehyde',
+    'endrin_ketone': 'Endrin_ketone', 'endrin-ketone': 'Endrin_ketone',
+    'heptachlor': 'Heptachlor',
+    'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor-epoxide-b': 'HeptachlorA', 'trans-heptachlor-epoxide': 'HeptachlorA',
+    'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor-epoxide-a': 'HeptachlorB', 'cis-heptachlor-epoxide': 'HeptachlorB',
+    'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
+    'methoxychlor': 'Methoxychlor',
+    'isodrin': 'Isodrin'
+  };
+  
+  for (let r = 0; r < numRows; r++) {
+    const row = chromTable.getRow(r);
+    const cell0TextRaw = row.getCell(0).getText().trim();
+    const cell0Text = cell0TextRaw.toLowerCase().replace(/[\s\-\'\’\_]/g, '');
+    
+    // Bỏ qua các dòng trống hoặc dòng tiêu đề, đánh giá QC ở cuối bảng
+    if (!cell0Text || cell0Text.length < 3) {
+      continue;
+    }
+    
+    if (cell0Text.includes("đảmbảochấtlượng") || 
+        cell0Text.includes("độthuhồi") || 
+        cell0Text.includes("hệsốtuyếntính") || 
+        cell0Text.includes("kếtluận") ||
+        cell0Text.includes("thôngsốđánhgiá") ||
+        cell0Text.includes("đánhgiáchung") ||
+        cell0Text.includes("mẫukiểmtranộibộ") ||
+        cell0Text.includes("độlệchthờigianlưu") ||
+        cell0Text.includes("đápsố") ||
+        cell0Text.includes("hiệuchuẩn")) {
+      continue;
+    }
+    
+    // Tìm key khớp từ cell0Text
+    let matchedKey = null;
+    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+      const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
+      if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
+        matchedKey = key;
+        break;
+      }
+    }
+    
+    if (matchedKey) {
+      const key = matchedKey;
+      const isAssigned = isTargetAssignedForGas(sample.maSoMau, key);
+      
+      if (!isAssigned) {
+        setCellText(row, 1, "—", 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 2, "—", 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 3, "—", 0, sopConfig.defaultFontSize || 9);
+      } else {
+        const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
+        const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
+        const isDetected = (kqVal !== '' || ndVal === '☑');
+        
+        const mauThuText = isDetected ? "☑ ND" : "☐ ND";
+        const mauNenText = "☐ ND";
+        const mauThuHoiText = "☑ Đ";
+        
+        setCellText(row, 1, mauThuText, 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 2, mauNenText, 0, sopConfig.defaultFontSize || 9);
+        setCellText(row, 3, mauThuHoiText, 0, sopConfig.defaultFontSize || 9);
       }
     }
   }
