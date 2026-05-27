@@ -1,52 +1,123 @@
 
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
+import { DeltaSyncService, DeltaSyncConfig } from '../../core/services/delta-sync.service';
 import { 
-  collection, doc, getDocs, setDoc, deleteDoc, 
-  query, orderBy, serverTimestamp, getDoc, writeBatch
+  collection, doc, setDoc, deleteDoc, 
+  serverTimestamp, getDoc, writeBatch
 } from 'firebase/firestore';
 import { MasterAnalyte } from '../../core/models/sop.model';
 
 @Injectable({ providedIn: 'root' })
 export class MasterTargetService {
   private fb = inject(FirebaseService);
+  private deltaSync = inject(DeltaSyncService);
 
-  private get collectionRef() {
-    return collection(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes`);
+  /** Reactive signal cho components subscribe trực tiếp */
+  readonly analytes = signal<MasterAnalyte[]>([]);
+
+  private singletonStarted = false;
+
+  private get collectionPath() {
+    return `artifacts/${this.fb.APP_ID}/master_analytes`;
   }
 
+  private get collectionRef() {
+    return collection(this.fb.db, this.collectionPath);
+  }
+
+  private readonly SYNC_CONFIG: DeltaSyncConfig = {
+    cacheKey: 'delta_master_analytes',
+    cursorKey: 'delta_master_analytes_cursor',
+    collectionPath: '', // set dynamically in ensureSingleton()
+    orderByField: 'lastUpdated',
+    orderDirection: 'desc',
+    maxCacheSize: 500
+  };
+
+  /**
+   * Khởi tạo singleton DeltaSync listener (chỉ gọi 1 lần).
+   * Tất cả SOP components chỉ cần gọi getAll() — nếu singleton chưa chạy sẽ tự start.
+   */
+  private ensureSingleton(): void {
+    if (this.singletonStarted) return;
+    this.singletonStarted = true;
+
+    const config: DeltaSyncConfig = {
+      ...this.SYNC_CONFIG,
+      collectionPath: this.collectionPath
+    };
+
+    this.deltaSync.startSingletonListener<MasterAnalyte>(config, (data) => {
+      // Sort by name cho hiển thị
+      const sorted = [...data].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      this.analytes.set(sorted);
+    });
+  }
+
+  /**
+   * Trả về danh sách master analytes.
+   * - Lần đầu: start singleton listener, trả cache hoặc đợi fetch
+   * - Lần sau: trả từ memCache (0 reads)
+   */
   async getAll(): Promise<MasterAnalyte[]> {
-    const q = query(this.collectionRef, orderBy('name'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MasterAnalyte));
+    this.ensureSingleton();
+
+    // Nếu signal đã có data → trả ngay (0 reads)
+    const current = this.analytes();
+    if (current.length > 0) return current;
+
+    // Chưa có data → đọc từ DeltaSync cache (localStorage)
+    const cached = this.deltaSync.getCache<MasterAnalyte>('delta_master_analytes');
+    if (cached.length > 0) {
+      const sorted = [...cached].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      this.analytes.set(sorted);
+      return sorted;
+    }
+
+    // Cache hoàn toàn rỗng → đợi singleton fetch xong (chỉ lần đầu tiên)
+    return new Promise<MasterAnalyte[]>((resolve) => {
+      const check = setInterval(() => {
+        const data = this.analytes();
+        if (data.length > 0) {
+          clearInterval(check);
+          resolve(data);
+        }
+      }, 100);
+      // Timeout sau 5s → trả rỗng
+      setTimeout(() => { clearInterval(check); resolve([]); }, 5000);
+    });
   }
 
   async getById(id: string): Promise<MasterAnalyte | undefined> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${id}`);
+    // Thử từ cache trước
+    const cached = this.analytes();
+    const found = cached.find(a => a.id === id);
+    if (found) return found;
+
+    // Fallback: đọc trực tiếp từ Firestore
+    const ref = doc(this.fb.db, `${this.collectionPath}/${id}`);
     const snap = await getDoc(ref);
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as MasterAnalyte) : undefined;
   }
 
   async save(item: MasterAnalyte): Promise<void> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${item.id}`);
+    const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
     await setDoc(ref, { ...item, lastUpdated: serverTimestamp() });
     await this.fb.updateMetadata('master_analytes');
+    // DeltaSync listener sẽ tự nhận thay đổi và cập nhật analytes signal
   }
 
-  // NEW: Batch Save for Import
   async saveBatch(items: MasterAnalyte[]): Promise<void> {
-    const batch = writeBatch(this.fb.db);
-    const MAX_BATCH_SIZE = 450; // Firestore limit is 500
-    
+    const MAX_BATCH_SIZE = 450;
     let opCount = 0;
-    let currentBatch = batch;
+    let currentBatch = writeBatch(this.fb.db);
 
     for (const item of items) {
-        const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${item.id}`);
+        const ref = doc(this.fb.db, `${this.collectionPath}/${item.id}`);
         currentBatch.set(ref, { ...item, lastUpdated: serverTimestamp() });
         opCount++;
 
-        // Commit and start new batch if limit reached
         if (opCount >= MAX_BATCH_SIZE) {
             await currentBatch.commit();
             currentBatch = writeBatch(this.fb.db);
@@ -58,11 +129,13 @@ export class MasterTargetService {
         await currentBatch.commit();
     }
     await this.fb.updateMetadata('master_analytes');
+    // DeltaSync listener sẽ tự nhận thay đổi
   }
 
   async delete(id: string): Promise<void> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/master_analytes/${id}`);
+    const ref = doc(this.fb.db, `${this.collectionPath}/${id}`);
     await deleteDoc(ref);
     await this.fb.updateMetadata('master_analytes');
+    // DeltaSync listener sẽ tự nhận thay đổi
   }
 }
