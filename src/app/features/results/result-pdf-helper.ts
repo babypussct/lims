@@ -216,7 +216,16 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
 
   // 3. Regular samples
   const sampleList = currentRun.sampleList || [];
-  sampleList.forEach((sampleCode: string) => {
+  const filteredSamples = sampleList.filter((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(s);
+    const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter;
+  });
+
+  filteredSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
     const rowData: Record<string, any> = {
       loSo: resObj['loSo'] || '',
@@ -267,7 +276,16 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
 
-  sampleList.forEach((sampleCode: string, idx: number) => {
+  const filteredSamples = sampleList.filter((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(s);
+    const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter;
+  });
+
+  filteredSamples.forEach((sampleCode: string, idx: number) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
 
     if (currentConf.formType === 'type3b') {
