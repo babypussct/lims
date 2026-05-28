@@ -309,28 +309,48 @@ export class ResultEntryType3bComponent implements OnInit {
     );
     if (exactMatch) return exactMatch.name;
 
-    // 2. Token-scoring match
+    // 2. Token-scoring match with explicit synonym map
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
       'BHCd': ['bhc', 'delta'],
       'BHCe': ['bhc', 'epsilon'],
       'BHCg': ['bhc', 'gamma'],
+      'BHC-alpha': ['bhc', 'alpha'],
+      'BHC-beta': ['bhc', 'beta'],
+      'BHC-delta': ['bhc', 'delta'],
+      'BHC-epsilon': ['bhc', 'epsilon'],
+      'BHC-gamma': ['bhc', 'gamma'],
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
+      'Chlordane-cis': ['chlordane', 'cis'],
+      'Chlordane-oxy': ['chlordane', 'oxy'],
+      'Chlordane-trans': ['chlordane', 'trans'],
       'DDD_op': ['ddd', 'o', 'p'],
       'DDD_pp': ['ddd', 'p', 'p'],
+      'DDD-o,p': ['ddd', 'o', 'p'],
+      'DDD-p,p': ['ddd', 'p', 'p'],
       'DDE_op': ['dde', 'o', 'p'],
       'DDE_pp': ['dde', 'p', 'p'],
+      'DDE-o,p': ['dde', 'o', 'p'],
+      'DDE-p,p': ['dde', 'p', 'p'],
       'DDT_op': ['ddt', 'o', 'p'],
       'DDT_pp': ['ddt', 'p', 'p'],
+      'DDT-o,p': ['ddt', 'o', 'p'],
+      'DDT-p,p': ['ddt', 'p', 'p'],
       'Endosulfan1': ['endosulfan', 'i'],
       'Endosulfan2': ['endosulfan', 'ii'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
+      'Endosulfan-I': ['endosulfan', 'i'],
+      'Endosulfan-II': ['endosulfan', 'ii'],
+      'Endosulfan-sulfate': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene']
+      'Heptachlor-epoxide-trans': ['heptachlor', 'epoxide', 'trans'],
+      'Heptachlor-epoxide-cis': ['heptachlor', 'epoxide', 'cis'],
+      'HCB': ['hexachlorobenzene'],
+      'Hexachlorobenzene': ['hexachlorobenzene']
     };
 
     const searchTokens = backendKeyToTargets[compound] || 
@@ -340,6 +360,15 @@ export class ResultEntryType3bComponent implements OnInit {
     let bestScore = 0;
 
     for (const a of analytes) {
+      const haystackTokens = `${a.id} ${a.name}`.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+      
+      // Prevent false-positive matching of simple compounds against specific isomers/epoxides
+      const qualifiers = ['epoxide', 'sulfate', 'cis', 'trans', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'o', 'p', 'op', 'pp', 'i', 'ii'];
+      const hasUnmatchedQualifier = qualifiers.some(q => 
+        haystackTokens.includes(q) && !searchTokens.includes(q)
+      );
+      if (hasUnmatchedQualifier) continue;
+
       const haystack = `${a.id} ${a.name}`.toLowerCase();
       let score = 0;
       for (const token of searchTokens) {
@@ -371,21 +400,41 @@ export class ResultEntryType3bComponent implements OnInit {
       'BHCd': ['bhc', 'delta'],
       'BHCe': ['bhc', 'epsilon'],
       'BHCg': ['bhc', 'gamma'],
+      'BHC-alpha': ['bhc', 'alpha'],
+      'BHC-beta': ['bhc', 'beta'],
+      'BHC-delta': ['bhc', 'delta'],
+      'BHC-epsilon': ['bhc', 'epsilon'],
+      'BHC-gamma': ['bhc', 'gamma'],
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
+      'Chlordane-cis': ['chlordane', 'cis'],
+      'Chlordane-oxy': ['chlordane', 'oxy'],
+      'Chlordane-trans': ['chlordane', 'trans'],
       'DDD_op': ['ddd', 'o', 'p'],
       'DDD_pp': ['ddd', 'p', 'p'],
+      'DDD-o,p': ['ddd', 'o', 'p'],
+      'DDD-p,p': ['ddd', 'p', 'p'],
       'DDE_op': ['dde', 'o', 'p'],
       'DDE_pp': ['dde', 'p', 'p'],
+      'DDE-o,p': ['dde', 'o', 'p'],
+      'DDE-p,p': ['dde', 'p', 'p'],
       'DDT_op': ['ddt', 'o', 'p'],
       'DDT_pp': ['ddt', 'p', 'p'],
+      'DDT-o,p': ['ddt', 'o', 'p'],
+      'DDT-p,p': ['ddt', 'p', 'p'],
       'Endosulfan1': ['endosulfan', 'i'],
       'Endosulfan2': ['endosulfan', 'ii'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
+      'Endosulfan-I': ['endosulfan', 'i'],
+      'Endosulfan-II': ['endosulfan', 'ii'],
+      'Endosulfan-sulfate': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene']
+      'Heptachlor-epoxide-trans': ['heptachlor', 'epoxide', 'trans'],
+      'Heptachlor-epoxide-cis': ['heptachlor', 'epoxide', 'cis'],
+      'HCB': ['hexachlorobenzene'],
+      'Hexachlorobenzene': ['hexachlorobenzene']
     };
 
     const searchTokens = backendKeyToTargets[compound] || 
