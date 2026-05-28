@@ -1080,11 +1080,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   lastSelectedRequestId = signal<string | null>(null);
+  currentScrollTop = 0;
+  private scrollListenerRef?: any;
 
   saveState() {
     try {
       const scrollContainer = document.querySelector('main .overflow-y-auto');
-      const scrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+      const scrollTop = (scrollContainer && scrollContainer.scrollTop > 0) ? scrollContainer.scrollTop : this.currentScrollTop;
 
       const stateToSave = {
         viewMode: this.viewMode(),
@@ -1120,6 +1122,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         if (state.endDate) this.endDate.set(state.endDate);
         if (state.isMergeModeActive !== undefined) this.isMergeModeActive.set(state.isMergeModeActive);
         if (state.selectedRunsMap) this.selectedRunsMap.set(state.selectedRunsMap);
+        if (state.scrollTop) this.currentScrollTop = state.scrollTop;
       }
       
       const lastId = sessionStorage.getItem('lims_last_selected_request_id');
@@ -1144,6 +1147,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
           const scrollContainer = document.querySelector('main .overflow-y-auto');
           if (scrollContainer) {
             scrollContainer.scrollTop = state.scrollTop;
+            this.currentScrollTop = state.scrollTop;
           }
         }
       }
@@ -1156,14 +1160,27 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.restoreState();
     this.isLoading.set(false);
     
-    // Khôi phục scroll position sau khi DOM đã render
+    // Bind scroll listener dynamically to track scrolling in real-time
     setTimeout(() => {
+      const container = document.querySelector('main .overflow-y-auto');
+      if (container) {
+        this.scrollListenerRef = () => {
+          this.currentScrollTop = container.scrollTop;
+        };
+        container.addEventListener('scroll', this.scrollListenerRef, { passive: true });
+      }
       this.restoreScrollPosition();
     }, 100);
   }
 
   ngOnDestroy() {
     this.saveState();
+    if (this.scrollListenerRef) {
+      const container = document.querySelector('main .overflow-y-auto');
+      if (container) {
+        container.removeEventListener('scroll', this.scrollListenerRef);
+      }
+    }
     if (this.reportHubSubscription) {
       this.reportHubSubscription();
     }
