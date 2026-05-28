@@ -298,6 +298,54 @@ export class ResultEntryType3bComponent implements OnInit {
     this.compoundDisplayNames.set(map);
   }
 
+  /** Maps SOP config compound keys → exact Firestore document IDs (verified from master_analytes) */
+  private readonly COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
+    // BHC isomers (IDs contain full descriptors in database)
+    'BHCa':            'bhc-alpha_benzene_hexachloride',
+    'BHCb':            'bhc-beta',
+    'BHCd':            'bhc-delta',
+    'BHCe':            'bhc-epsilon',
+    'BHCg':            'bhc-gamma_lindane_gamma_hch',
+    'BHC-alpha':       'bhc-alpha_benzene_hexachloride',
+    'BHC-beta':        'bhc-beta',
+    'BHC-delta':       'bhc-delta',
+    'BHC-epsilon':     'bhc-epsilon',
+    'BHC-gamma':       'bhc-gamma_lindane_gamma_hch',
+    // Chlordane (IDs contain alpha/gamma qualifiers in database)
+    'Chlordane_cis':   'chlordane-cis_alpha',
+    'Chlordane_oxy':   'chlordane-oxy',
+    'Chlordane_trans': 'chlordane-trans_gamma',
+    'Chlordane-cis':   'chlordane-cis_alpha',
+    'Chlordane-oxy':   'chlordane-oxy',
+    'Chlordane-trans': 'chlordane-trans_gamma',
+    // DDD / DDE / DDT (IDs use short "op"/"pp" form without commas)
+    'DDD_op':  'ddd-op',   'DDD-o,p': 'ddd-op',
+    'DDD_pp':  'ddd-pp',   'DDD-p,p': 'ddd-pp',
+    'DDE_op':  'dde-op',   'DDE-o,p': 'dde-op',
+    'DDE_pp':  'dde-pp',   'DDE-p,p': 'dde-pp',
+    'DDT_op':  'ddt-op',   'DDT-o,p': 'ddt-op',
+    'DDT_pp':  'ddt-pp',   'DDT-p,p': 'ddt-pp',
+    // Endosulfan (IDs contain alpha/beta isomer descriptors)
+    'Endosulfan1':        'endosulfan_i_alpha_isomer',
+    'Endosulfan2':        'endosulfan_ii_beta_isomer',
+    'EndosulfanS':        'endosulfan_sulfate',
+    'Endosulfan-I':       'endosulfan_i_alpha_isomer',
+    'Endosulfan-II':      'endosulfan_ii_beta_isomer',
+    'Endosulfan-sulfate': 'endosulfan_sulfate',
+    // Heptachlor epoxide isomers (endo=isomer A, exo=isomer B)
+    'HeptachlorA':              'heptachlor_endo-epoxide_isomer_a',
+    'HeptachlorB':              'heptachlor_exo-epoxide_isomer_b',
+    'Heptachlor-epoxide-trans': 'heptachlor_endo-epoxide_isomer_a',
+    'Heptachlor-epoxide-cis':   'heptachlor_exo-epoxide_isomer_b',
+    // Hexachlorobenzene / HCB
+    'HCB': 'hexachlorobenzene',
+    // Methoxychlor
+    'Methoxychlor': 'methoxychlor_pp-',
+    // Lân hữu cơ — keys that don't exact-match database IDs
+    'Ethoprophos':     'ethoprophos_ethoprop',
+    'Isofenphos-methyl': 'isofenphos_methyl',
+  };
+
   getCompoundDisplayName(compound: string): string {
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
@@ -309,79 +357,15 @@ export class ResultEntryType3bComponent implements OnInit {
     );
     if (exactMatch) return exactMatch.name;
 
-    // 2. Token-scoring match with explicit synonym map
-    const backendKeyToTargets: Record<string, string[]> = {
-      'BHCa': ['bhc', 'alpha'],
-      'BHCb': ['bhc', 'beta'],
-      'BHCd': ['bhc', 'delta'],
-      'BHCe': ['bhc', 'epsilon'],
-      'BHCg': ['bhc', 'gamma'],
-      'BHC-alpha': ['bhc', 'alpha'],
-      'BHC-beta': ['bhc', 'beta'],
-      'BHC-delta': ['bhc', 'delta'],
-      'BHC-epsilon': ['bhc', 'epsilon'],
-      'BHC-gamma': ['bhc', 'gamma'],
-      'Chlordane_cis': ['chlordane', 'cis'],
-      'Chlordane_oxy': ['chlordane', 'oxy'],
-      'Chlordane_trans': ['chlordane', 'trans'],
-      'Chlordane-cis': ['chlordane', 'cis'],
-      'Chlordane-oxy': ['chlordane', 'oxy'],
-      'Chlordane-trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o', 'p'],
-      'DDD_pp': ['ddd', 'p', 'p'],
-      'DDD-o,p': ['ddd', 'o', 'p'],
-      'DDD-p,p': ['ddd', 'p', 'p'],
-      'DDE_op': ['dde', 'o', 'p'],
-      'DDE_pp': ['dde', 'p', 'p'],
-      'DDE-o,p': ['dde', 'o', 'p'],
-      'DDE-p,p': ['dde', 'p', 'p'],
-      'DDT_op': ['ddt', 'o', 'p'],
-      'DDT_pp': ['ddt', 'p', 'p'],
-      'DDT-o,p': ['ddt', 'o', 'p'],
-      'DDT-p,p': ['ddt', 'p', 'p'],
-      'Endosulfan1': ['endosulfan', 'i'],
-      'Endosulfan2': ['endosulfan', 'ii'],
-      'EndosulfanS': ['endosulfan', 'sulfate'],
-      'Endosulfan-I': ['endosulfan', 'i'],
-      'Endosulfan-II': ['endosulfan', 'ii'],
-      'Endosulfan-sulfate': ['endosulfan', 'sulfate'],
-      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
-      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'Heptachlor-epoxide-trans': ['heptachlor', 'epoxide', 'trans'],
-      'Heptachlor-epoxide-cis': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene'],
-      'Hexachlorobenzene': ['hexachlorobenzene']
-    };
-
-    const searchTokens = backendKeyToTargets[compound] || 
-      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-
-    let bestMatch: any = null;
-    let bestScore = 0;
-
-    for (const a of analytes) {
-      const haystackTokens = `${a.id} ${a.name}`.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-      
-      // Prevent false-positive matching of simple compounds against specific isomers/epoxides
-      const qualifiers = ['epoxide', 'sulfate', 'cis', 'trans', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'o', 'p', 'op', 'pp', 'i', 'ii'];
-      const hasUnmatchedQualifier = qualifiers.some(q => 
-        haystackTokens.includes(q) && !searchTokens.includes(q)
-      );
-      if (hasUnmatchedQualifier) continue;
-
-      const haystack = `${a.id} ${a.name}`.toLowerCase();
-      let score = 0;
-      for (const token of searchTokens) {
-        if (haystack.includes(token)) score++;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = a;
-      }
+    // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
+    const firestoreId = this.COMPOUND_TO_FIRESTORE_ID[compound];
+    if (firestoreId) {
+      const found = analytes.find(a => a.id === firestoreId);
+      if (found) return found.name;
     }
 
-    const minScore = searchTokens.length === 1 ? 1 : 2;
-    return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
+    // 3. Fallback: return the raw compound key as-is
+    return compound;
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
@@ -389,62 +373,17 @@ export class ResultEntryType3bComponent implements OnInit {
     const assigned = this.run.sampleTargetMap[sampleCode];
     if (!assigned) return true;
 
-    // 1. Exact ID match (case-insensitive)
-    const hasExactMatch = assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase());
-    if (hasExactMatch) return true;
+    // 1. Exact ID match (compound key matches assigned target ID directly)
+    if (assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase())) return true;
 
-    // 2. Exact token-matching
-    const backendKeyToTargets: Record<string, string[]> = {
-      'BHCa': ['bhc', 'alpha'],
-      'BHCb': ['bhc', 'beta'],
-      'BHCd': ['bhc', 'delta'],
-      'BHCe': ['bhc', 'epsilon'],
-      'BHCg': ['bhc', 'gamma'],
-      'BHC-alpha': ['bhc', 'alpha'],
-      'BHC-beta': ['bhc', 'beta'],
-      'BHC-delta': ['bhc', 'delta'],
-      'BHC-epsilon': ['bhc', 'epsilon'],
-      'BHC-gamma': ['bhc', 'gamma'],
-      'Chlordane_cis': ['chlordane', 'cis'],
-      'Chlordane_oxy': ['chlordane', 'oxy'],
-      'Chlordane_trans': ['chlordane', 'trans'],
-      'Chlordane-cis': ['chlordane', 'cis'],
-      'Chlordane-oxy': ['chlordane', 'oxy'],
-      'Chlordane-trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o', 'p'],
-      'DDD_pp': ['ddd', 'p', 'p'],
-      'DDD-o,p': ['ddd', 'o', 'p'],
-      'DDD-p,p': ['ddd', 'p', 'p'],
-      'DDE_op': ['dde', 'o', 'p'],
-      'DDE_pp': ['dde', 'p', 'p'],
-      'DDE-o,p': ['dde', 'o', 'p'],
-      'DDE-p,p': ['dde', 'p', 'p'],
-      'DDT_op': ['ddt', 'o', 'p'],
-      'DDT_pp': ['ddt', 'p', 'p'],
-      'DDT-o,p': ['ddt', 'o', 'p'],
-      'DDT-p,p': ['ddt', 'p', 'p'],
-      'Endosulfan1': ['endosulfan', 'i'],
-      'Endosulfan2': ['endosulfan', 'ii'],
-      'EndosulfanS': ['endosulfan', 'sulfate'],
-      'Endosulfan-I': ['endosulfan', 'i'],
-      'Endosulfan-II': ['endosulfan', 'ii'],
-      'Endosulfan-sulfate': ['endosulfan', 'sulfate'],
-      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
-      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'Heptachlor-epoxide-trans': ['heptachlor', 'epoxide', 'trans'],
-      'Heptachlor-epoxide-cis': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene'],
-      'Hexachlorobenzene': ['hexachlorobenzene']
-    };
+    // 2. Lookup the canonical Firestore ID for this compound key, then check assigned list
+    const firestoreId = this.COMPOUND_TO_FIRESTORE_ID[compound];
+    if (firestoreId) {
+      return assigned.some((tId: string) => tId.toLowerCase() === firestoreId.toLowerCase());
+    }
 
-    const searchTokens = backendKeyToTargets[compound] || 
-      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-
-    return assigned.some((tId: string) => {
-      const assignedTokens = tId.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-      if (assignedTokens.length !== searchTokens.length) return false;
-      return searchTokens.every(st => assignedTokens.includes(st));
-    });
+    // 3. Fallback: not found
+    return false;
   }
 
   prefillUnassignedTargets() {

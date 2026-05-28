@@ -327,46 +327,43 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
 
       const isAssigned = (sampleCode: string, compound: string): boolean => {
         const assigned = sampleTargetMap[sampleCode];
-        if (!assigned) return true; // Default to true if not specified
-        
-        const backendKeyToTargets: Record<string, string[]> = {
-          'BHCa': ['bhc', 'alpha'],
-          'BHCb': ['bhc', 'beta'],
-          'BHCd': ['bhc', 'delta'],
-          'BHCe': ['bhc', 'epsilon'],
-          'BHCg': ['bhc', 'gamma'],
-          'Chlordane_cis': ['chlordane', 'cis'],
-          'Chlordane_oxy': ['chlordane', 'oxy'],
-          'Chlordane_trans': ['chlordane', 'trans'],
-          'DDD_op': ['ddd', 'o,p\'', 'o,p'],
-          'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
-          'DDE_op': ['dde', 'o,p\'', 'o,p'],
-          'DDE_pp': ['dde', 'p,p\'', 'p,p'],
-          'DDT_op': ['ddt', 'o,p\'', 'o,p'],
-          'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
-          'Endosulfan1': ['endosulfan', 'i', 'alpha'],
-          'Endosulfan2': ['endosulfan', 'ii', 'beta'],
-          'EndosulfanS': ['endosulfan', 'sulfate'],
-          'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
-          'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-          'HCB': ['hexachlorobenzene', 'hcb']
-        };
-        
-        const backendKey = mapCompoundToKey(compound);
-        const searchTokens = backendKeyToTargets[backendKey] || 
-          compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-        const minScore = searchTokens.length === 1 ? 1 : 2;
-        
-        // 1. Exact ID match (case-insensitive)
-        const hasExactMatch = assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase());
-        if (hasExactMatch) return true;
+        if (!assigned) return true;
 
-        // 2. Exact token-matching
-        return assigned.some((tId: string) => {
-          const assignedTokens = tId.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-          if (assignedTokens.length !== searchTokens.length) return false;
-          return searchTokens.every(st => assignedTokens.includes(st));
-        });
+        // Direct Firestore ID map (verified against actual master_analytes database)
+        const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
+          'BHCa':            'bhc-alpha_benzene_hexachloride',
+          'BHCb':            'bhc-beta',
+          'BHCd':            'bhc-delta',
+          'BHCe':            'bhc-epsilon',
+          'BHCg':            'bhc-gamma_lindane_gamma_hch',
+          'Chlordane_cis':   'chlordane-cis_alpha',
+          'Chlordane_oxy':   'chlordane-oxy',
+          'Chlordane_trans': 'chlordane-trans_gamma',
+          'DDD_op':  'ddd-op',  'DDD_pp':  'ddd-pp',
+          'DDE_op':  'dde-op',  'DDE_pp':  'dde-pp',
+          'DDT_op':  'ddt-op',  'DDT_pp':  'ddt-pp',
+          'Endosulfan1':  'endosulfan_i_alpha_isomer',
+          'Endosulfan2':  'endosulfan_ii_beta_isomer',
+          'EndosulfanS':  'endosulfan_sulfate',
+          'HeptachlorA':  'heptachlor_endo-epoxide_isomer_a',
+          'HeptachlorB':  'heptachlor_exo-epoxide_isomer_b',
+          'HCB':          'hexachlorobenzene',
+        };
+
+        // Map the frontend compound key to its backend PDF key, then to the Firestore ID
+        const backendKey = mapCompoundToKey(compound);
+
+        // 1. Exact match: assigned target ID matches the compound key or backend key directly
+        if (assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase())) return true;
+        if (assigned.some((tId: string) => tId.toLowerCase() === backendKey.toLowerCase())) return true;
+
+        // 2. Firestore ID lookup: check if the canonical Firestore ID is in the assigned list
+        const firestoreId = COMPOUND_TO_FIRESTORE_ID[backendKey];
+        if (firestoreId) {
+          return assigned.some((tId: string) => tId.toLowerCase() === firestoreId.toLowerCase());
+        }
+
+        return false;
       };
 
       currentConf.compounds.forEach((c: string) => {

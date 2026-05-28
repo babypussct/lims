@@ -93,16 +93,37 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
     compounds: [
-      'Acephate', 'Anilofos', 'Cadusafos', 'Chlorfenvinphos', 'Chlorfenvinphos-methyl',
-      'Chlorpyrifos', 'Chlorpyrifos-methyl', 'Demeton-S-methyl', 'Diazinon',
-      'Dichlorvos', 'Dimethoate', 'Disulfoton', 'Edifenphos', 'Ethion',
-      'Ethoprophos', 'Etrimfos', 'Fenamiphos', 'Fenitrothion', 'Fenthion',
-      'Fenthion-sulfone', 'Fenthion-sulfoxide', 'Fonofos', 'Ipobenfos',
-      'Isazofos', 'Malathion', 'Methacrifos', 'Methamidophos', 'Methidathion',
-      'Monocrotophos', 'Omethoate', 'Parathion-ethyl', 'Parathion-methyl',
-      'Phenthoate', 'Phorate', 'Phosalone', 'Phosphamidon', 'Prothiofos',
-      'Quinalphos', 'Sulfotep', 'Terbufos', 'Tetrachlorvinphos', 'Triazophos',
-      'Isofenphos-methyl'
+      // Verified against master_analytes Firestore database (2026-05-28)
+      'Acephate',        // acephate
+      'Azinphos-methyl', // azinphos-methyl
+      'Cadusafos',       // cadusafos
+      'Chlorfenvinphos', // chlorfenvinphos
+      'Chlorpyrifos',    // chlorpyrifos
+      'Chlorpyrifos-methyl', // chlorpyrifos-methyl
+      'Diazinon',        // diazinon
+      'Dimethoate',      // dimethoate
+      'Edifenphos',      // edifenphos
+      'Ethion',          // ethion
+      'Ethoprophos',     // ethoprophos_ethoprop
+      'Fenitrothion',    // fenitrothion
+      'Fenthion',        // fenthion
+      'Iprobenfos',      // iprobenfos (was incorrectly 'Ipobenfos')
+      'Isofenphos-methyl', // isofenphos_methyl
+      'Malathion',       // malathion
+      'Mecarbam',        // mecarbam
+      'Methacrifos',     // methacrifos
+      'Methidathion',    // methidathion
+      'Monocrotophos',   // monocrotophos
+      'Omethoate',       // omethoate
+      'Parathion',       // parathion (was incorrectly 'Parathion-ethyl')
+      'Parathion-methyl', // parathion-methyl
+      'Phenthoate',      // phenthoate
+      'Phorate',         // phorate
+      'Phosphamidon',    // phosphamidon
+      'Profenofos',      // profenofos
+      'Quinalphos',      // quinalphos
+      'Triazophos',      // triazophos
+      'Vamidothion'      // vamidothion
     ]
   }
 };

@@ -568,29 +568,32 @@ export class Sop01EntryComponent implements OnInit {
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
 
-    // 1. Exact id match
-    const exactMatch = analytes.find(a => a.id === compound);
+    // 1. Exact match by ID or Name (case-insensitive)
+    const exactMatch = analytes.find(a =>
+      a.id.toLowerCase() === compound.toLowerCase() ||
+      a.name.toLowerCase() === compound.toLowerCase()
+    );
     if (exactMatch) return exactMatch.name;
 
-    // 2. Token-scoring: split compound into tokens and find best match
-    const searchTokens = compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-    let bestMatch: any = null;
-    let bestScore = 0;
-
-    for (const a of analytes) {
-      const haystack = `${a.id} ${a.name}`.toLowerCase();
-      let score = 0;
-      for (const token of searchTokens) {
-        if (haystack.includes(token)) score++;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = a;
-      }
+    // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
+    const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
+      // Fipronil group
+      'Fipronil':               'fipronil',
+      'Fipronil desulfinyl':    'fipronil-desulfinyl',
+      'Fipronil sulfide':       'fipronil-sulfide',
+      'Fipronil sulfone':       'fipronil-sulfone',
+      'Chlorpyrifos':           'chlorpyrifos',
+      'Chlorpyrifos methyl':    'chlorpyrifos-methyl',
+      'Chlorpyriphos-methyl-desmethyl': 'chlorpyrifos-methyl-desmethyl',
+    };
+    const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
+    if (firestoreId) {
+      const found = analytes.find(a => a.id === firestoreId);
+      if (found) return found.name;
     }
 
-    const minScore = searchTokens.length === 1 ? 1 : 2;
-    return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
+    // 3. Fallback: return compound key as-is
+    return compound;
   }
 
   formatColumnName(colKey: string): string {
