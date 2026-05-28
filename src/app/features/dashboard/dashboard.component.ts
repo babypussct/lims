@@ -73,8 +73,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   userPhotoMap = signal<Record<string, string>>({});
   
   // Date Filters
-  startDate = signal<string>(this.getToday());
+  startDate = signal<string>(this.getThisWeekStart());
   endDate = signal<string>(this.getToday());
+
+  // Custom SOP distribution list for charts legend
+  sopDistribution = signal<{ name: string, count: number, percent: number, color: string }[]>([]);
 
   // Modal State
   selectedSopDetails = signal<KanbanColumn | null>(null);
@@ -394,6 +397,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private getToday(): string { return new Date().toISOString().split('T')[0]; }
+  private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
+  private getThisWeekStart(): string {
+      const today = new Date();
+      const day = today.getDay();
+      const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(today);
+      start.setDate(diffToMon);
+      return start.toISOString().split('T')[0];
+  }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
       this.startDate.set(range.start);
@@ -443,6 +455,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
       
+      const origStart = new Date(start);
+      const origEnd = new Date(end);
+
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
@@ -503,7 +518,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                   sampleData[idx] += samples; 
                   
                   // SOP Distribution (only for the actually selected range, not the whole week if they only selected 1 day)
-                  if (d >= start && d <= end) {
+                  if (d >= origStart && d <= origEnd) {
                       const sopName = req.sopName || 'Unknown';
                       sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
                   }
@@ -566,10 +581,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
       });
 
-      // Doughnut Chart
+      // Doughnut Chart & Custom Legend calculation
       const sopLabels = Array.from(sopCounts.keys());
       const sopData = Array.from(sopCounts.values());
       const bgColors = ['#cb0c9f', '#3a416f', '#17c1e8', '#82d616', '#ea0606', '#ff9800', '#9c27b0', '#00bcd4'];
+
+      const totalSopSamples = sopData.reduce((a, b) => a + b, 0);
+      const dist = sopLabels.map((name, i) => {
+          const count = sopData[i];
+          const percent = totalSopSamples > 0 ? Math.round((count / totalSopSamples) * 100) : 0;
+          const color = bgColors[i % bgColors.length];
+          return { name, count, percent, color };
+      });
+      dist.sort((a, b) => b.count - a.count);
+      this.sopDistribution.set(dist);
 
       this.doughnutChartInstance = new Chart(dCtx, {
           type: 'doughnut',
@@ -593,16 +618,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
                       bodyColor: '#1e293b', 
                       borderColor: '#e2e8f0', 
                       borderWidth: 1, 
-                      padding: 10, 
-                      displayColors: true, 
+                      padding: 6, 
+                      displayColors: false, 
                       usePointStyle: true,
                       callbacks: {
+                          title: () => '',
                           label: (context: any) => {
-                              const label = context.label || '';
                               const value = context.raw || 0;
                               const total = context.chart._metasets[context.datasetIndex].total;
                               const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                              return `${label}: ${value} mẫu (${percentage}%)`;
+                              return `${value} mẫu (${percentage}%)`;
                           }
                       }
                   }
