@@ -125,52 +125,58 @@ function fillSampleTable(body, sopConfig, samples) {
   // sau đó lấy index đó làm startCopyIdx.
   // Nếu không tìm thấy bằng từ khoá, fallback về quét ngược tìm PAGE_BREAK.
   
+  const isTrifluralin = sopConfig.folderName && sopConfig.folderName.includes('Trifluralin');
   let startCopyIdx = -1;
   
-  // Ưu tiên 1: Tìm xuôi — paragraph chứa "9. Kết quả" hoặc các từ khoá đầu trang kết quả
-  const resultPageKeywords = ["9. Kết quả", "Kết quả:", "Tất cả mẫu thử", "Có mẫu thử phát hiện"];
-  for (let idx = 0; idx < lastTableChildIdx; idx++) {
-    const child = body.getChild(idx);
-    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-      const text = child.asParagraph().getText();
-      for (const kw of resultPageKeywords) {
-        if (text.includes(kw)) {
-          startCopyIdx = idx;
-          Logger.log(`[TableFit] Tìm thấy điểm bắt đầu trang kết quả tại idx=${idx} (từ khóa: "${kw}")`);
-          break;
-        }
-      }
-    }
-    if (startCopyIdx !== -1) break;
-  }
-  
-  // Ưu tiên 2: Fallback — quét ngược tìm PAGE_BREAK thông thường
-  if (startCopyIdx === -1) {
-    let lastPageBreakIdx = -1;
-    for (let idx = lastTableChildIdx - 1; idx >= 0; idx--) {
+  if (isTrifluralin) {
+    startCopyIdx = 0;
+    Logger.log(`[TableFit] Phát hiện Trifluralin (biểu mẫu 1 trang). Nhân bản TOÀN BỘ trang từ index 0.`);
+  } else {
+    // Ưu tiên 1: Tìm xuôi — paragraph chứa "9. Kết quả" hoặc các từ khoá đầu trang kết quả
+    const resultPageKeywords = ["9. Kết quả", "Kết quả:", "Tất cả mẫu thử", "Có mẫu thử phát hiện"];
+    for (let idx = 0; idx < lastTableChildIdx; idx++) {
       const child = body.getChild(idx);
-      if (child.getType() === DocumentApp.ElementType.PAGE_BREAK) {
-        lastPageBreakIdx = idx;
-        break;
-      }
       if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-        const para = child.asParagraph();
-        for (let i = 0; i < para.getNumChildren(); i++) {
-          if (para.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
-            lastPageBreakIdx = idx;
+        const text = child.asParagraph().getText();
+        for (const kw of resultPageKeywords) {
+          if (text.includes(kw)) {
+            startCopyIdx = idx;
+            Logger.log(`[TableFit] Tìm thấy điểm bắt đầu trang kết quả tại idx=${idx} (từ khóa: "${kw}")`);
             break;
           }
         }
-        if (lastPageBreakIdx !== -1) break;
       }
+      if (startCopyIdx !== -1) break;
     }
-    if (lastPageBreakIdx !== -1) {
-      startCopyIdx = lastPageBreakIdx + 1;
-      Logger.log(`[TableFit] Fallback: Tìm thấy PAGE_BREAK tại idx=${lastPageBreakIdx}, startCopyIdx=${startCopyIdx}`);
-    } else {
-      // Ưu tiên 3: Fallback cuối — lấy toàn bộ từ đầu bảng mẫu trở về sau
-      startCopyIdx = lastTableChildIdx;
-      Logger.log(`[TableFit] Fallback cuối: startCopyIdx=${startCopyIdx} (chỉ copy bảng và phần sau)`);
+    
+    // Ưu tiên 2: Fallback — quét ngược tìm PAGE_BREAK thông thường
+    if (startCopyIdx === -1) {
+      let lastPageBreakIdx = -1;
+      for (let idx = lastTableChildIdx - 1; idx >= 0; idx--) {
+        const child = body.getChild(idx);
+        if (child.getType() === DocumentApp.ElementType.PAGE_BREAK) {
+          lastPageBreakIdx = idx;
+          break;
+        }
+        if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const para = child.asParagraph();
+          for (let i = 0; i < para.getNumChildren(); i++) {
+            if (para.getChild(i).getType() === DocumentApp.ElementType.PAGE_BREAK) {
+              lastPageBreakIdx = idx;
+              break;
+            }
+          }
+          if (lastPageBreakIdx !== -1) break;
+        }
+      }
+      if (lastPageBreakIdx !== -1) {
+        startCopyIdx = lastPageBreakIdx + 1;
+        Logger.log(`[TableFit] Fallback: Tìm thấy PAGE_BREAK tại idx=${lastPageBreakIdx}, startCopyIdx=${startCopyIdx}`);
+      } else {
+        // Ưu tiên 3: Fallback cuối — lấy toàn bộ từ đầu bảng mẫu trở về sau
+        startCopyIdx = lastTableChildIdx;
+        Logger.log(`[TableFit] Fallback cuối: startCopyIdx=${startCopyIdx} (chỉ copy bảng và phần sau)`);
+      }
     }
   }
   
@@ -251,7 +257,7 @@ function fillSampleTable(body, sopConfig, samples) {
           
           // Xử lý paragraph RỖNG (blank)
           if (clonedPara.getText().trim() === '') {
-            if (!afterTable) {
+            if (!afterTable && !isTrifluralin) {
               // Bỏ qua các paragraph rỗng nằm TRƯỚC bảng để tránh đẩy bảng xuống
               continue;
             }

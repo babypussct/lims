@@ -12,6 +12,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { PrintService } from '../../core/services/print.service';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 // Isolated SOP presentational components
 import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
@@ -59,6 +61,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isSavingDraft = signal(false);
   isPublishing = signal(false);
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
+
+  // Auto-save state
+  autoSaveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
+  private draftChangeSubject = new Subject<AnalysisResultDraft>();
+  private autoSaveSub?: Subscription;
 
   // Emergency feature toggle for the new modular strategy architecture
   readonly ENABLE_MODULAR_SOPS = true;
@@ -121,6 +128,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.router.navigate(['/results']);
       return;
     }
+
+    // Initialize auto-save subscription with 1.5s debounce
+    this.autoSaveSub = this.draftChangeSubject.pipe(
+      debounceTime(1500)
+    ).subscribe(async (updatedDraft) => {
+      this.autoSaveStatus.set('saving');
+      const success = await this.resultService.saveDraft(this.requestId, updatedDraft, false);
+      if (success) {
+        this.autoSaveStatus.set('saved');
+        setTimeout(() => {
+          if (this.autoSaveStatus() === 'saved') {
+            this.autoSaveStatus.set('idle');
+          }
+        }, 3000);
+      } else {
+        this.autoSaveStatus.set('idle');
+      }
+    });
     
     // Read prefix from route query params
     this.route.queryParams.subscribe(params => {
@@ -168,6 +193,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.unsubscribeFromDraft) {
       this.unsubscribeFromDraft();
+    }
+    if (this.autoSaveSub) {
+      this.autoSaveSub.unsubscribe();
     }
   }
 
@@ -345,6 +373,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
     this.draft.set(updatedDraft);
+    this.draftChangeSubject.next(updatedDraft);
   }
 
   /**

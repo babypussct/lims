@@ -281,7 +281,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
             <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               @for (run of displayedRuns(); track run.id) {
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group"
-                     [ngClass]="{'ring-1 ring-fuchsia-500/30 dark:ring-fuchsia-500/20': run.isVirtualMaster}">
+                     [class.ring-2]="lastSelectedRequestId() === run.id"
+                     [class.ring-fuchsia-500]="lastSelectedRequestId() === run.id"
+                     [class.animate-pulse]="lastSelectedRequestId() === run.id"
+                     [class.border-fuchsia-500]="lastSelectedRequestId() === run.id"
+                     [class.shadow-md]="lastSelectedRequestId() === run.id"
+                     [ngClass]="{'ring-1 ring-fuchsia-500/30 dark:ring-fuchsia-500/20': run.isVirtualMaster && lastSelectedRequestId() !== run.id}">
                   <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
                   <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
 
@@ -397,7 +402,11 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                     @for (run of displayedRuns(); track run.id) {
-                      <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
+                      <tr [class.bg-fuchsia-50/20]="lastSelectedRequestId() === run.id"
+                          [class.dark:bg-fuchsia-950/10]="lastSelectedRequestId() === run.id"
+                          [class.border-l-4]="lastSelectedRequestId() === run.id"
+                          [class.border-l-fuchsia-500]="lastSelectedRequestId() === run.id"
+                          class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
                         <!-- Checkbox -->
                         @if (isMergeModeActive()) {
                           <td class="p-4 text-center">
@@ -1071,11 +1080,91 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return statusMap;
   });
 
+  lastSelectedRequestId = signal<string | null>(null);
+
+  saveState() {
+    try {
+      const scrollContainer = document.querySelector('main .overflow-y-auto');
+      const scrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
+      const stateToSave = {
+        viewMode: this.viewMode(),
+        filterStatus: this.filterStatus(),
+        searchText: this.searchText(),
+        selectedSopId: this.selectedSopId(),
+        selectedAnalyst: this.selectedAnalyst(),
+        showAdvancedFilters: this.showAdvancedFilters(),
+        startDate: this.startDate(),
+        endDate: this.endDate(),
+        isMergeModeActive: this.isMergeModeActive(),
+        selectedRunsMap: this.selectedRunsMap(),
+        scrollTop
+      };
+      sessionStorage.setItem('lims_results_list_state', JSON.stringify(stateToSave));
+    } catch (e) {
+      console.error('Error saving results list state:', e);
+    }
+  }
+
+  restoreState() {
+    try {
+      const saved = sessionStorage.getItem('lims_results_list_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.viewMode) this.viewMode.set(state.viewMode);
+        if (state.filterStatus) this.filterStatus.set(state.filterStatus);
+        if (state.searchText !== undefined) this.searchText.set(state.searchText);
+        if (state.selectedSopId) this.selectedSopId.set(state.selectedSopId);
+        if (state.selectedAnalyst) this.selectedAnalyst.set(state.selectedAnalyst);
+        if (state.showAdvancedFilters !== undefined) this.showAdvancedFilters.set(state.showAdvancedFilters);
+        if (state.startDate) this.startDate.set(state.startDate);
+        if (state.endDate) this.endDate.set(state.endDate);
+        if (state.isMergeModeActive !== undefined) this.isMergeModeActive.set(state.isMergeModeActive);
+        if (state.selectedRunsMap) this.selectedRunsMap.set(state.selectedRunsMap);
+      }
+      
+      const lastId = sessionStorage.getItem('lims_last_selected_request_id');
+      if (lastId) {
+        this.lastSelectedRequestId.set(lastId);
+        sessionStorage.removeItem('lims_last_selected_request_id');
+        setTimeout(() => {
+          this.lastSelectedRequestId.set(null);
+        }, 4000); // Highlight for 4 seconds then fade out
+      }
+    } catch (e) {
+      console.error('Error restoring results list state:', e);
+    }
+  }
+
+  restoreScrollPosition() {
+    try {
+      const saved = sessionStorage.getItem('lims_results_list_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.scrollTop) {
+          const scrollContainer = document.querySelector('main .overflow-y-auto');
+          if (scrollContainer) {
+            scrollContainer.scrollTop = state.scrollTop;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error restoring scroll position:', e);
+    }
+  }
+
   ngOnInit() {
+    this.restoreState();
     this.isLoading.set(false);
+    
+    // Khôi phục scroll position sau khi DOM đã render
+    setTimeout(() => {
+      this.restoreScrollPosition();
+    }, 100);
   }
 
   ngOnDestroy() {
+    this.saveState();
     if (this.reportHubSubscription) {
       this.reportHubSubscription();
     }
@@ -1469,6 +1558,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.cancelSelection();
       this.toast.show(`Đã khởi tạo mẻ gộp Master "${masterId}" thành công!`, 'success');
       
+      // Save state before navigating
+      try {
+        sessionStorage.setItem('lims_last_selected_request_id', masterId);
+        this.saveState();
+      } catch (e) {}
+      
       // Navigate immediately to entry grid!
       this.router.navigate(['/results', masterId]);
     } catch (e: any) {
@@ -1480,6 +1575,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   enterResults(requestId: string, prefix?: string) {
+    try {
+      sessionStorage.setItem('lims_last_selected_request_id', requestId);
+      this.saveState();
+    } catch (e) {}
     if (prefix !== undefined) {
       this.router.navigate(['/results', requestId], { queryParams: { prefix } });
     } else {
