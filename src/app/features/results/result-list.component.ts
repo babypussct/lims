@@ -224,45 +224,52 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 
         <!-- Collapsible Content -->
         @if (showAdvancedFilters()) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs animate-fade-in">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-150 dark:border-slate-800/80 text-xs animate-fade-in">
             <!-- SOP selection -->
             <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Phương pháp (SOP)</label>
-              <div class="relative flex items-center">
+              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Phương pháp (SOP)</label>
+              <div class="relative flex items-center group/select">
+                <span class="absolute left-3 text-slate-400 dark:text-slate-500 transition-colors group-hover/select:text-blue-500 group-focus-within/select:text-blue-500">
+                  <i class="fa-solid fa-flask text-xs"></i>
+                </span>
                 <select [value]="selectedSopId()" 
                         (change)="onSopChange($event)"
-                        class="w-full appearance-none pr-8 pl-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition duration-150">
+                        class="w-full appearance-none pr-8 pl-9 py-2 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-950/20 dark:hover:bg-slate-900/30 border border-slate-200/60 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-750 dark:text-slate-250 font-extrabold text-xs transition duration-150 cursor-pointer">
                   <option value="all">Tất cả phương pháp</option>
                   @for (sop of availableSops(); track sop.id) {
                     <option [value]="sop.id">{{ sop.name }}</option>
                   }
                 </select>
-                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none"></i>
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none text-slate-400 dark:text-slate-500 transition-transform duration-200 group-focus-within/select:rotate-180"></i>
               </div>
             </div>
 
             <!-- Analyst selection -->
             <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Người thực hiện (Analyst)</label>
-              <div class="relative flex items-center">
+              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Người thực hiện (Analyst)</label>
+              <div class="relative flex items-center group/select">
+                <span class="absolute left-3 text-slate-400 dark:text-slate-500 transition-colors group-hover/select:text-blue-500 group-focus-within/select:text-blue-500">
+                  <i class="fa-solid fa-user-circle text-xs"></i>
+                </span>
                 <select [value]="selectedAnalyst()" 
                         (change)="onAnalystChange($event)"
-                        class="w-full appearance-none pr-8 pl-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition duration-150">
+                        class="w-full appearance-none pr-8 pl-9 py-2 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-950/20 dark:hover:bg-slate-900/30 border border-slate-200/60 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-750 dark:text-slate-250 font-extrabold text-xs transition duration-150 cursor-pointer">
                   <option value="all">Tất cả nhân viên</option>
                   @for (analyst of availableAnalysts(); track analyst) {
                     <option [value]="analyst">{{ analyst }}</option>
                   }
                 </select>
-                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none"></i>
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none text-slate-400 dark:text-slate-500 transition-transform duration-200 group-focus-within/select:rotate-180"></i>
               </div>
             </div>
 
             <!-- Date Range Filter -->
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
+              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
               <app-date-range-filter 
                   [initStart]="startDate()" 
                   [initEnd]="endDate()" 
+                  containerClass="bg-transparent p-0 border-0 shadow-none w-full gap-3"
                   (dateChange)="onDateRangeChange($event)">
               </app-date-range-filter>
             </div>
@@ -810,7 +817,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (this.searchText().trim()) count++;
     if (this.selectedSopId() !== 'all') count++;
     if (this.selectedAnalyst() !== 'all') count++;
-    if (this.startDate() || this.endDate()) count++;
+    if (this.startDate() !== this.initialDates.start || this.endDate() !== this.initialDates.end) count++;
     return count;
   });
 
@@ -1013,7 +1020,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private getInitialThisMonthRange() {
       const today = new Date();
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of month
       
       const toStr = (d: Date) => {
           const offset = d.getTimezoneOffset();
@@ -1021,7 +1027,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
           return local.toISOString().split('T')[0];
       };
       
-      return { start: toStr(start), end: toStr(end) };
+      return { start: toStr(start), end: toStr(today) };
   }
   private initialDates = this.getInitialThisMonthRange();
   startDate = signal<string>(this.initialDates.start);

@@ -10,12 +10,12 @@ export type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' 
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative group/filter">
+    <div [class]="'flex flex-col sm:flex-row gap-2 items-start sm:items-center rounded-xl relative group/filter ' + containerClass()">
         
         <!-- Preset Dropdown -->
         <div class="relative">
             <button (click)="toggleDropdown($event)" 
-                    class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition border border-slate-200 dark:border-slate-700 min-w-[140px] justify-between active:scale-95">
+                    class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition border border-slate-200 dark:border-slate-700 min-w-[140px] justify-between active:scale-95">
                 <span class="flex items-center gap-2">
                     <i class="fa-solid fa-calendar-day text-blue-500"></i>
                     {{ currentLabel() }}
@@ -49,7 +49,7 @@ export type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' 
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
-
+ 
                     <button (click)="selectPreset('this_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
                         <span>Tháng này</span>
                         @if(activePreset() === 'this_month') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
@@ -60,7 +60,7 @@ export type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' 
                     </button>
                     
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
-
+ 
                     <button (click)="selectPreset('this_quarter')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition flex justify-between items-center">
                         <span>Quý này</span>
                         @if(activePreset() === 'this_quarter') { <i class="fa-solid fa-check text-blue-600 dark:text-blue-400"></i> }
@@ -75,9 +75,9 @@ export type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' 
                 <div class="fixed inset-0 z-40 bg-transparent" (click)="isOpen.set(false)"></div>
             }
         </div>
-
+ 
         <!-- Date Inputs -->
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
+        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
             <div class="flex flex-col">
                 <label class="text-[8px] font-bold text-slate-400 uppercase leading-none">Từ ngày</label>
                 <input type="date" [ngModel]="startDate()" (ngModelChange)="onManualDateChange('start', $event)" 
@@ -97,6 +97,7 @@ export class DateRangeFilterComponent {
   // Inputs/Outputs
   initStart = input<string>(''); 
   initEnd = input<string>('');
+  containerClass = input<string>('bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shadow-sm');
   dateChange = output<{ start: string, end: string, label: string }>();
 
   // State
