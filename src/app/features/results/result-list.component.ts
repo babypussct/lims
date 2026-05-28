@@ -402,10 +402,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                     @for (run of displayedRuns(); track run.id) {
-                      <tr [class.bg-fuchsia-50/20]="lastSelectedRequestId() === run.id"
-                          [class.dark:bg-fuchsia-950/10]="lastSelectedRequestId() === run.id"
-                          [class.border-l-4]="lastSelectedRequestId() === run.id"
-                          [class.border-l-fuchsia-500]="lastSelectedRequestId() === run.id"
+                      <tr [ngClass]="{
+                            'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-4 border-l-fuchsia-500': lastSelectedRequestId() === run.id
+                          }"
                           class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
                         <!-- Checkbox -->
                         @if (isMergeModeActive()) {
