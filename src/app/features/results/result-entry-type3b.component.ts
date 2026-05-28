@@ -185,7 +185,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                     }
                   </td>
                   <td [class.line-through]="!isAssigned" class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
-                    {{ getCompoundDisplayName(compound) }}
+                    {{ compoundDisplayNames()[compound] || compound }}
                   </td>
                   
                   <!-- ND Checkbox -->
@@ -261,6 +261,7 @@ export class ResultEntryType3bComponent implements OnInit {
 
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
+  compoundDisplayNames = signal<Record<string, string>>({});
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
 
@@ -279,6 +280,7 @@ export class ResultEntryType3bComponent implements OnInit {
     try {
       const analytes = await this.masterTargetService.getAll();
       this.masterTargets.set(analytes);
+      this.buildDisplayNameMap();
     } catch (e) {
       console.warn('Failed to load master analytes', e);
     }
@@ -287,25 +289,27 @@ export class ResultEntryType3bComponent implements OnInit {
     this.prefillUnassignedTargets();
   }
 
+  buildDisplayNameMap() {
+    if (!this.config.compounds) return;
+    const map: Record<string, string> = {};
+    for (const compound of this.config.compounds) {
+      map[compound] = this.getCompoundDisplayName(compound);
+    }
+    this.compoundDisplayNames.set(map);
+  }
+
   getCompoundDisplayName(compound: string): string {
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
 
-    const getFingerprint = (s: string): string => {
-      if (!s) return '';
-      const lower = s.toLowerCase().trim();
-      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
-      if (lower === 'lindane') return 'alphabhcgamma';
-      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      const mappedParts = parts.map(p => {
-        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
-        return p;
-      });
-      return mappedParts.sort().join('');
-    };
+    // 1. Exact match (by ID or Name case-insensitively)
+    const exactMatch = analytes.find(a => 
+      a.id.toLowerCase() === compound.toLowerCase() ||
+      a.name.toLowerCase() === compound.toLowerCase()
+    );
+    if (exactMatch) return exactMatch.name;
 
-    const targetFingerprint = getFingerprint(compound);
-    
+    // 2. Token-scoring match
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -329,47 +333,38 @@ export class ResultEntryType3bComponent implements OnInit {
       'HCB': ['hexachlorobenzene']
     };
 
-    const targetFingerprints = [targetFingerprint];
-    if (backendKeyToTargets[compound]) {
-      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
+    const searchTokens = backendKeyToTargets[compound] || 
+      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+
+    let bestMatch: any = null;
+    let bestScore = 0;
+
+    for (const a of analytes) {
+      const haystack = `${a.id} ${a.name}`.toLowerCase();
+      let score = 0;
+      for (const token of searchTokens) {
+        if (haystack.includes(token)) score++;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = a;
+      }
     }
 
-    const matched = analytes.find(a => {
-      const assignedFingerprint = getFingerprint(a.id);
-      const nameFingerprint = getFingerprint(a.name);
-      return targetFingerprints.some(tf => 
-        assignedFingerprint === tf || 
-        assignedFingerprint.includes(tf) || 
-        tf.includes(assignedFingerprint) ||
-        nameFingerprint === tf ||
-        nameFingerprint.includes(tf) ||
-        tf.includes(nameFingerprint)
-      );
-    });
-
-    return matched ? matched.name : compound;
+    const minScore = searchTokens.length === 1 ? 1 : 2;
+    return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
     if (!this.run || !this.run.sampleTargetMap) return true;
     const assigned = this.run.sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    
-    const getFingerprint = (s: string): string => {
-      if (!s) return '';
-      const lower = s.toLowerCase().trim();
-      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
-      if (lower === 'lindane') return 'alphabhcgamma';
-      const parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      const mappedParts = parts.map(p => {
-        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
-        return p;
-      });
-      return mappedParts.sort().join('');
-    };
 
-    const targetFingerprint = getFingerprint(compound);
-    
+    // 1. Exact ID match (case-insensitive)
+    const hasExactMatch = assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase());
+    if (hasExactMatch) return true;
+
+    // 2. Exact token-matching
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -393,18 +388,13 @@ export class ResultEntryType3bComponent implements OnInit {
       'HCB': ['hexachlorobenzene']
     };
 
-    const targetFingerprints = [targetFingerprint];
-    if (backendKeyToTargets[compound]) {
-      targetFingerprints.push(backendKeyToTargets[compound].sort().join(''));
-    }
+    const searchTokens = backendKeyToTargets[compound] || 
+      compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
 
     return assigned.some((tId: string) => {
-      const assignedFingerprint = getFingerprint(tId);
-      return targetFingerprints.some(tf => 
-        assignedFingerprint === tf || 
-        assignedFingerprint.includes(tf) || 
-        tf.includes(assignedFingerprint)
-      );
+      const assignedTokens = tId.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+      if (assignedTokens.length !== searchTokens.length) return false;
+      return searchTokens.every(st => assignedTokens.includes(st));
     });
   }
 

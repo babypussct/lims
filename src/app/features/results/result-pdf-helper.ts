@@ -357,14 +357,15 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
         const minScore = searchTokens.length === 1 ? 1 : 2;
         
+        // 1. Exact ID match (case-insensitive)
+        const hasExactMatch = assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase());
+        if (hasExactMatch) return true;
+
+        // 2. Exact token-matching
         return assigned.some((tId: string) => {
-          if (tId === compound) return true;
-          const haystack = tId.toLowerCase();
-          let score = 0;
-          for (const token of searchTokens) {
-            if (haystack.includes(token)) score++;
-          }
-          return score >= minScore;
+          const assignedTokens = tId.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+          if (assignedTokens.length !== searchTokens.length) return false;
+          return searchTokens.every(st => assignedTokens.includes(st));
         });
       };
 

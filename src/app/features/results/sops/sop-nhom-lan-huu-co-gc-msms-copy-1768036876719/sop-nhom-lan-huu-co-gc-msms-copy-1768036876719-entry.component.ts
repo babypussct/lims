@@ -470,11 +470,14 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const analytes = this.masterTargets();
     if (analytes.length === 0) return compound;
 
-    // 1. Exact id match (fastest path)
-    const exactMatch = analytes.find(a => a.id === compound);
+    // 1. Exact match (by ID or Name case-insensitively)
+    const exactMatch = analytes.find(a => 
+      a.id.toLowerCase() === compound.toLowerCase() ||
+      a.name.toLowerCase() === compound.toLowerCase()
+    );
     if (exactMatch) return exactMatch.name;
 
-    // 2. Build search tokens from backendKeyToTargets synonym map
+    // 2. Token-scoring match
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -484,24 +487,23 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o,p\'', 'o,p'],
-      'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
-      'DDE_op': ['dde', 'o,p\'', 'o,p'],
-      'DDE_pp': ['dde', 'p,p\'', 'p,p'],
-      'DDT_op': ['ddt', 'o,p\'', 'o,p'],
-      'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
-      'Endosulfan1': ['endosulfan', 'i', 'alpha'],
-      'Endosulfan2': ['endosulfan', 'ii', 'beta'],
+      'DDD_op': ['ddd', 'o', 'p'],
+      'DDD_pp': ['ddd', 'p', 'p'],
+      'DDE_op': ['dde', 'o', 'p'],
+      'DDE_pp': ['dde', 'p', 'p'],
+      'DDT_op': ['ddt', 'o', 'p'],
+      'DDT_pp': ['ddt', 'p', 'p'],
+      'Endosulfan1': ['endosulfan', 'i'],
+      'Endosulfan2': ['endosulfan', 'ii'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene', 'hcb']
+      'HCB': ['hexachlorobenzene']
     };
 
     const searchTokens = backendKeyToTargets[compound] || 
       compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
 
-    // 3. Score each master target by how many search tokens appear in its id+name
     let bestMatch: any = null;
     let bestScore = 0;
 
@@ -517,7 +519,6 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       }
     }
 
-    // Require at least 2 tokens matched (or all tokens if only 1 token) to avoid false positives
     const minScore = searchTokens.length === 1 ? 1 : 2;
     return (bestMatch && bestScore >= minScore) ? bestMatch.name : compound;
   }
@@ -546,7 +547,11 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const assigned = this.run.sampleTargetMap[sampleCode];
     if (!assigned) return true;
 
-    // Build search tokens for this compound
+    // 1. Exact ID match (case-insensitive)
+    const hasExactMatch = assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase());
+    if (hasExactMatch) return true;
+
+    // 2. Exact token-matching
     const backendKeyToTargets: Record<string, string[]> = {
       'BHCa': ['bhc', 'alpha'],
       'BHCb': ['bhc', 'beta'],
@@ -556,34 +561,27 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       'Chlordane_cis': ['chlordane', 'cis'],
       'Chlordane_oxy': ['chlordane', 'oxy'],
       'Chlordane_trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o,p\'', 'o,p'],
-      'DDD_pp': ['ddd', 'p,p\'', 'p,p'],
-      'DDE_op': ['dde', 'o,p\'', 'o,p'],
-      'DDE_pp': ['dde', 'p,p\'', 'p,p'],
-      'DDT_op': ['ddt', 'o,p\'', 'o,p'],
-      'DDT_pp': ['ddt', 'p,p\'', 'p,p'],
-      'Endosulfan1': ['endosulfan', 'i', 'alpha'],
-      'Endosulfan2': ['endosulfan', 'ii', 'beta'],
+      'DDD_op': ['ddd', 'o', 'p'],
+      'DDD_pp': ['ddd', 'p', 'p'],
+      'DDE_op': ['dde', 'o', 'p'],
+      'DDE_pp': ['dde', 'p', 'p'],
+      'DDT_op': ['ddt', 'o', 'p'],
+      'DDT_pp': ['ddt', 'p', 'p'],
+      'Endosulfan1': ['endosulfan', 'i'],
+      'Endosulfan2': ['endosulfan', 'ii'],
       'EndosulfanS': ['endosulfan', 'sulfate'],
       'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
       'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene', 'hcb']
+      'HCB': ['hexachlorobenzene']
     };
 
     const searchTokens = backendKeyToTargets[compound] || 
       compound.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-    const minScore = searchTokens.length === 1 ? 1 : 2;
 
     return assigned.some((tId: string) => {
-      // Exact match
-      if (tId === compound) return true;
-      // Token scoring
-      const haystack = tId.toLowerCase();
-      let score = 0;
-      for (const token of searchTokens) {
-        if (haystack.includes(token)) score++;
-      }
-      return score >= minScore;
+      const assignedTokens = tId.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
+      if (assignedTokens.length !== searchTokens.length) return false;
+      return searchTokens.every(st => assignedTokens.includes(st));
     });
   }
 
