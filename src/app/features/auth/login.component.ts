@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
@@ -41,6 +41,30 @@ declare let QRious: any;
                     <h1 class="text-2xl font-black text-gray-700 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
                     <p class="text-gray-500 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
                 </div>
+
+                <!-- LOGOUT REASON NOTIFICATION -->
+                @if (logoutReason()) {
+                  <div class="relative z-10 mb-6 p-4 rounded-2xl bg-amber-50/90 backdrop-blur-sm border border-amber-200 text-amber-800 text-[13px] font-medium animate-fade-in-up flex gap-3 shadow-[0_4px_12px_rgba(217,119,6,0.08)]">
+                    <div class="shrink-0 text-amber-500 text-base mt-0.5">
+                      <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                      <div class="font-bold text-amber-900 mb-0.5">Thông báo hệ thống</div>
+                      <div>
+                        @if (logoutReason() === 'idle') {
+                          Phiên đăng nhập đã hết hạn do hệ thống không hoạt động trong 30 phút. Vui lòng đăng nhập lại.
+                        } @else if (logoutReason() === 'permission-denied') {
+                          Tài khoản của bạn đã bị từ chối truy cập bởi hệ thống. Vui lòng liên hệ Admin.
+                        } @else {
+                          Bạn đã được đăng xuất khỏi hệ thống.
+                        }
+                      </div>
+                    </div>
+                    <button (click)="logoutReason.set(null)" class="text-amber-400 hover:text-amber-600 transition shrink-0 self-start active:scale-90 p-0.5">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                }
 
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
@@ -224,15 +248,24 @@ declare let QRious: any;
     .animation-delay-4000 { animation-delay: 4s; }
   `]
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   toast = inject(ToastService);
   
   mode = signal<'google' | 'password' | 'qr'>('google');
+  logoutReason = signal<string | null>(null);
   
   email = '';
   password = '';
   errorMsg = signal('');
+
+  ngOnInit() {
+    const reason = localStorage.getItem('lims_logout_reason');
+    if (reason) {
+      this.logoutReason.set(reason);
+      localStorage.removeItem('lims_logout_reason');
+    }
+  }
   isLoading = signal(false);
   isGoogleLoading = signal(false);
   year = new Date().getFullYear();

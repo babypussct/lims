@@ -250,6 +250,7 @@ export class AuthService {
         // getting stuck on the login page in a half-authenticated state.
         if (error.code === 'permission-denied') {
             console.warn("User access denied by Firestore Rules. Forcing logout.");
+            localStorage.setItem('lims_logout_reason', 'permission-denied');
         }
         
         await this.logout(); // This will trigger onAuthStateChanged(null) and clean up state safely
