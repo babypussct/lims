@@ -186,69 +186,102 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
 
     if (samples.length === 0) return '';
 
-    samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    interface SampleParts {
+        prefix: string;
+        middleStr: string;
+        middleVal: number;
+        suffix: string;
+        isStandard: boolean;
+    }
 
-    const isSequential = (prev: string, curr: string): boolean => {
-        if (!prev || !curr) return false;
-
-        // Tách chuỗi thành các phần text và number
-        // FIX: Tạo regex mới cho mỗi lần gọi getParts để tránh lỗi shared lastIndex
-        const getParts = (s: string) => {
-            const splitRegex = /(\d+)/g;
-            const parts: string[] = [];
-            let lastIdx = 0;
-            let m;
-            while ((m = splitRegex.exec(s)) !== null) {
-                parts.push(s.substring(lastIdx, m.index));
-                parts.push(m[1]);
-                lastIdx = splitRegex.lastIndex;
-            }
-            parts.push(s.substring(lastIdx));
-            return parts;
-        };
-
-        const prevParts = getParts(prev);
-        const currParts = getParts(curr);
-
-        if (prevParts.length !== currParts.length) return false;
-
-        let diffCount = 0;
-        let isSeq = false;
-
-        for (let i = 0; i < prevParts.length; i++) {
-            if (i % 2 === 0) { // Text parts must be exactly equal
-                if (prevParts[i] !== currParts[i]) return false;
-            } else { // Number parts
-                if (prevParts[i] !== currParts[i]) {
-                    diffCount++;
-                    const prevNum = parseInt(prevParts[i], 10);
-                    const currNum = parseInt(currParts[i], 10);
-                    if (currNum === prevNum + 1) {
-                        isSeq = true;
-                    } else {
-                        return false;
-                    }
-                }
+    const parseSampleName = (s: string): SampleParts => {
+        // Case A: Standard LIMS format ending in 2-digit suffix (e.g. U0123 -> prefix "U", middle "01", suffix "23")
+        if (s.length >= 3 && /^\d{2}$/.test(s.slice(-2))) {
+            const suffix = s.slice(-2);
+            const rest = s.slice(0, -2);
+            const match = rest.match(/^([a-zA-Z]*)(\d+)$/);
+            if (match) {
+                return {
+                    prefix: match[1],
+                    middleStr: match[2],
+                    middleVal: parseInt(match[2], 10),
+                    suffix: suffix,
+                    isStandard: true
+                };
             }
         }
-        
-        return diffCount === 1 && isSeq;
+
+        // Case B: Simple sequential ending in digits (e.g. U1 -> prefix "U", middle "1", suffix "")
+        const match = s.match(/^([a-zA-Z]*)(\d+)$/);
+        if (match) {
+            return {
+                prefix: match[1],
+                middleStr: match[2],
+                middleVal: parseInt(match[2], 10),
+                suffix: '',
+                isStandard: true
+            };
+        }
+
+        // Case C: Fallback for non-standard labels
+        return {
+            prefix: s,
+            middleStr: '',
+            middleVal: NaN,
+            suffix: '',
+            isStandard: false
+        };
+    };
+
+    const parsed = samples.map(s => ({
+        orig: s,
+        parts: parseSampleName(s)
+    }));
+
+    // Sort parsed samples: Standard first (by prefix, then suffix, then middleVal numerically), then non-standard naturally
+    parsed.sort((a, b) => {
+        const ap = a.parts;
+        const bp = b.parts;
+        if (ap.isStandard && bp.isStandard) {
+            if (ap.prefix !== bp.prefix) {
+                return ap.prefix.localeCompare(bp.prefix);
+            }
+            if (ap.suffix !== bp.suffix) {
+                return ap.suffix.localeCompare(bp.suffix);
+            }
+            return ap.middleVal - bp.middleVal;
+        }
+        if (ap.isStandard !== bp.isStandard) {
+            return ap.isStandard ? -1 : 1;
+        }
+        return a.orig.localeCompare(b.orig, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    const isSequential = (prev: typeof parsed[0], curr: typeof parsed[0]): boolean => {
+        const pp = prev.parts;
+        const cp = curr.parts;
+        if (pp.isStandard && cp.isStandard) {
+            return pp.prefix === cp.prefix &&
+                   pp.suffix === cp.suffix &&
+                   cp.middleVal === pp.middleVal + 1;
+        }
+        return false;
     };
 
     const ranges: string[] = [];
-    let start = samples[0];
-    let prev = samples[0];
+    let start = parsed[0];
+    let prev = parsed[0];
     let count = 1;
 
-    for (let i = 1; i < samples.length; i++) {
-        const curr = samples[i];
+    for (let i = 1; i < parsed.length; i++) {
+        const curr = parsed[i];
         if (isSequential(prev, curr)) {
             prev = curr;
             count++;
         } else {
-            if (count === 1) { ranges.push(start); } 
-            else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
-            else { ranges.push(`${start} -> ${prev}`); } 
+            if (count === 1) { ranges.push(start.orig); } 
+            else if (count === 2) { ranges.push(`${start.orig}, ${prev.orig}`); } 
+            else { ranges.push(`${start.orig} -> ${prev.orig}`); } 
             
             start = curr;
             prev = curr;
@@ -256,9 +289,9 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
         }
     }
 
-    if (count === 1) { ranges.push(start); } 
-    else if (count === 2) { ranges.push(`${start}, ${prev}`); } 
-    else { ranges.push(`${start} -> ${prev}`); } 
+    if (count === 1) { ranges.push(start.orig); } 
+    else if (count === 2) { ranges.push(`${start.orig}, ${prev.orig}`); } 
+    else { ranges.push(`${start.orig} -> ${prev.orig}`); } 
     
     return ranges.join(', ');
 }
