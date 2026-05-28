@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { MasterTargetService } from '../../../targets/master-target.service';
+import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
 
 @Component({
   selector: 'app-sop-1767857760184-entry',
@@ -602,30 +603,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
   }
 
   getCompoundDisplayName(compound: string): string {
-    const analytes = this.masterTargets();
-    if (analytes.length === 0) return compound;
-
-    // 1. Exact match by ID or Name (case-insensitive)
-    const exactMatch = analytes.find(a =>
-      a.id.toLowerCase() === compound.toLowerCase() ||
-      a.name.toLowerCase() === compound.toLowerCase()
-    );
-    if (exactMatch) return exactMatch.name;
-
-    // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
-    const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
-      'Dichlorvos': 'trichlorfondipterexdichlorvos',
-      'Trichlorfon': 'trichlorfondipterexdichlorvos',
-      'Trichlorfon(Dipterex)/Dichlorvos': 'trichlorfondipterexdichlorvos',
-    };
-    const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
-    if (firestoreId) {
-      const found = analytes.find(a => a.id === firestoreId);
-      if (found) return found.name;
-    }
-
-    // 3. Fallback
-    return compound;
+    return resolveCompoundDisplayName(compound, this.masterTargets());
   }
 
   formatColumnName(colKey: string): string {

@@ -2,6 +2,7 @@
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
+import { isCompoundAssigned } from './shared/compound-id-resolver';
 
 export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
   const sampleList = currentRun.sampleList || [];
@@ -328,42 +329,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
       const isAssigned = (sampleCode: string, compound: string): boolean => {
         const assigned = sampleTargetMap[sampleCode];
         if (!assigned) return true;
-
-        // Direct Firestore ID map (verified against actual master_analytes database)
-        const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
-          'BHCa':            'bhc-alpha_benzene_hexachloride',
-          'BHCb':            'bhc-beta',
-          'BHCd':            'bhc-delta',
-          'BHCe':            'bhc-epsilon',
-          'BHCg':            'bhc-gamma_lindane_gamma_hch',
-          'Chlordane_cis':   'chlordane-cis_alpha',
-          'Chlordane_oxy':   'chlordane-oxy',
-          'Chlordane_trans': 'chlordane-trans_gamma',
-          'DDD_op':  'ddd-op',  'DDD_pp':  'ddd-pp',
-          'DDE_op':  'dde-op',  'DDE_pp':  'dde-pp',
-          'DDT_op':  'ddt-op',  'DDT_pp':  'ddt-pp',
-          'Endosulfan1':  'endosulfan_i_alpha_isomer',
-          'Endosulfan2':  'endosulfan_ii_beta_isomer',
-          'EndosulfanS':  'endosulfan_sulfate',
-          'HeptachlorA':  'heptachlor_endo-epoxide_isomer_a',
-          'HeptachlorB':  'heptachlor_exo-epoxide_isomer_b',
-          'HCB':          'hexachlorobenzene',
-        };
-
-        // Map the frontend compound key to its backend PDF key, then to the Firestore ID
-        const backendKey = mapCompoundToKey(compound);
-
-        // 1. Exact match: assigned target ID matches the compound key or backend key directly
-        if (assigned.some((tId: string) => tId.toLowerCase() === compound.toLowerCase())) return true;
-        if (assigned.some((tId: string) => tId.toLowerCase() === backendKey.toLowerCase())) return true;
-
-        // 2. Firestore ID lookup: check if the canonical Firestore ID is in the assigned list
-        const firestoreId = COMPOUND_TO_FIRESTORE_ID[backendKey];
-        if (firestoreId) {
-          return assigned.some((tId: string) => tId.toLowerCase() === firestoreId.toLowerCase());
-        }
-
-        return false;
+        return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
       };
 
       currentConf.compounds.forEach((c: string) => {
