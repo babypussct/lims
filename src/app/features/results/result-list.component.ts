@@ -118,25 +118,30 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
           </div>
         </div>
 
-        <!-- KPI 4: SOP Ratio (Violet/Indigo Theme, cyclic filter-aware) -->
-        <div (click)="selectedSopId.set(selectedSopId() === 'trifluralin-gcms' ? 'fipronil-chlorpyrifos' : selectedSopId() === 'fipronil-chlorpyrifos' ? 'all' : 'trifluralin-gcms')"
-             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
-             [class]="selectedSopId() === 'trifluralin-gcms'
-               ? 'bg-violet-500/5 dark:bg-violet-500/10 border-violet-500/60 dark:border-violet-500/50 shadow-md ring-1 ring-violet-500/30'
-               : selectedSopId() === 'fipronil-chlorpyrifos'
-                 ? 'bg-indigo-500/5 dark:bg-indigo-500/10 border-indigo-500/60 dark:border-indigo-500/50 shadow-md ring-1 ring-indigo-500/30'
-                 : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-violet-400 dark:hover:border-violet-800/50 hover:shadow-xs'">
+        <!-- KPI 4: SOP Ratio (Dynamic HSL Theme, dynamic active filters) -->
+        <div class="backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-violet-400 dark:hover:border-violet-850 hover:shadow-xs">
           <div class="space-y-1.5 flex-1">
             <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Phân Bổ Phương Pháp SOP</span>
             <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-              <span class="text-[10px] font-bold text-violet-650 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-lg">Trifluralin: {{ sopDistribution().trifluralin }}</span>
-              <span class="text-[10px] font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded-lg">Fipronil: {{ sopDistribution().fipronil }}</span>
-              <span class="text-[10px] font-bold text-slate-550 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">Khác: {{ sopDistribution().others }}</span>
+              @for (item of sopDistribution(); track item.id) {
+                <span class="text-[10px] font-bold cursor-pointer transition-all duration-150 px-2 py-0.5 rounded-lg border {{ item.textClass }} {{ item.bgClass }} hover:scale-105 active:scale-95"
+                      (click)="selectedSopId.set(selectedSopId() === item.id ? 'all' : item.id)"
+                      [class.ring-2]="selectedSopId() === item.id"
+                      [class.ring-violet-500]="selectedSopId() === item.id"
+                      [class.border-violet-500]="selectedSopId() === item.id">
+                  {{ item.name }}: {{ item.count }}
+                </span>
+              } @empty {
+                <span class="text-[10px] font-bold text-slate-450 dark:text-slate-500">Chưa có mẻ chạy</span>
+              }
             </div>
-            <div class="w-full flex h-1.5 rounded-full overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800/80 max-w-[200px]">
-              <div class="bg-violet-500 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().trifluralin / allApprovedRuns().length) * 100 : 0"></div>
-              <div class="bg-indigo-500 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().fipronil / allApprovedRuns().length) * 100 : 0"></div>
-              <div class="bg-slate-350 dark:bg-slate-600 h-full transition-all duration-300" [style.width.%]="allApprovedRuns().length ? (sopDistribution().others / allApprovedRuns().length) * 100 : 0"></div>
+            <div class="w-full flex h-1.5 rounded-full overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800/80 max-w-[240px]">
+              @for (item of sopDistribution(); track item.id) {
+                <div class="{{ item.barColor }} h-full transition-all duration-300"
+                     [style.width.%]="allApprovedRuns().length ? (item.count / allApprovedRuns().length) * 100 : 0"
+                     [title]="item.name + ': ' + item.count + ' mẻ'">
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -966,15 +971,42 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   sopDistribution = computed(() => {
     const runs = this.allApprovedRuns();
-    let trifluralin = 0;
-    let fipronil = 0;
-    let others = 0;
+    const distribution: Record<string, { count: number; name: string }> = {};
+    
+    // Aesthetic dynamic color palette
+    const colorPalette = [
+      { bg: 'bg-violet-50/70 dark:bg-violet-950/20', text: 'text-violet-650 dark:text-violet-400 border-violet-200/40 dark:border-violet-900/30', bar: 'bg-violet-500' },
+      { bg: 'bg-indigo-50/70 dark:bg-indigo-950/20', text: 'text-indigo-650 dark:text-indigo-400 border-indigo-200/40 dark:border-indigo-900/30', bar: 'bg-indigo-500' },
+      { bg: 'bg-pink-50/70 dark:bg-pink-950/20', text: 'text-pink-650 dark:text-pink-400 border-pink-200/40 dark:border-pink-900/30', bar: 'bg-pink-500' },
+      { bg: 'bg-cyan-50/70 dark:bg-cyan-950/20', text: 'text-cyan-650 dark:text-cyan-400 border-cyan-200/40 dark:border-cyan-900/30', bar: 'bg-cyan-500' },
+      { bg: 'bg-amber-50/70 dark:bg-amber-950/20', text: 'text-amber-650 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30', bar: 'bg-amber-500' },
+      { bg: 'bg-emerald-50/70 dark:bg-emerald-950/20', text: 'text-emerald-650 dark:text-emerald-450 border-emerald-200/40 dark:border-emerald-900/30', bar: 'bg-emerald-500' },
+    ];
+
     runs.forEach((run: any) => {
-      if (run.sopId === 'trifluralin-gcms') trifluralin++;
-      else if (run.sopId === 'fipronil-chlorpyrifos') fipronil++;
-      else others++;
+      const sopId = run.sopId || 'unknown';
+      const sopName = run.sopName || 'Khác';
+      
+      if (!distribution[sopId]) {
+        distribution[sopId] = {
+          count: 0,
+          name: sopName
+        };
+      }
+      distribution[sopId].count++;
     });
-    return { trifluralin, fipronil, others };
+
+    return Object.entries(distribution).map(([id, data], index) => {
+      const palette = colorPalette[index % colorPalette.length];
+      return {
+        id,
+        count: data.count,
+        name: data.name,
+        bgClass: palette.bg,
+        textClass: palette.text,
+        barColor: palette.bar
+      };
+    }).sort((a, b) => b.count - a.count);
   });
 
   // Date Filters

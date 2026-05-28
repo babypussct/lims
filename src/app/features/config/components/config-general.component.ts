@@ -140,6 +140,7 @@ service cloud.firestore {
         match /stats/{docId}                { allow read: if isAuth(); allow write: if isAuth(); }
         match /config/{docId}               { allow read: if isAuth(); allow write: if isManager(); }
         match /master_targets/{docId}       { allow read, write: if isAuth(); }
+        match /master_analytes/{docId}      { allow read, write: if isAuth(); }
         match /target_groups/{docId}        { allow read, write: if isAuth(); }
         match /results_details/{docId}      { allow read, write: if isAuth(); }
 
