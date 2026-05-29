@@ -234,13 +234,13 @@ export class TraceabilityComponent implements OnInit {
   }
 
   getSampleTargetMap(): Record<string, string[]> | null {
-      const log = this.logData();
+      const log = this.logData() as any;
       if (!log) return null;
       
       const targetMap = log.sampleTargetMap 
-          || (log.inputs && (log.inputs as any).sampleTargetMap)
-          || (log.printData && (log.printData as any).sampleTargetMap)
-          || (log.printData?.inputs && (log.printData.inputs as any).sampleTargetMap);
+          || log.inputs?.sampleTargetMap
+          || log.printData?.sampleTargetMap
+          || log.printData?.inputs?.sampleTargetMap;
           
       if (targetMap && typeof targetMap === 'object' && !Array.isArray(targetMap)) {
           return targetMap as Record<string, string[]>;
