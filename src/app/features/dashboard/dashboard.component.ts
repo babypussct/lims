@@ -82,6 +82,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Modal State
   selectedSopDetails = signal<KanbanColumn | null>(null);
 
+  // Active SOP Filter
+  selectedSopFilter = signal<string | null>(null);
+
   // LIVE DATA COMPUTED
   // Phân nhánh logic đếm theo từng quyền cụ thể:
   // - canApprove (SOP): đếm SOP requests đang pending
@@ -147,7 +150,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
-      const history = this.state.approvedRequests();
+      let history = this.state.approvedRequests();
+      const filter = this.selectedSopFilter();
+      if (filter) {
+          history = history.filter(r => r.sopName === filter);
+      }
       
       const currentStart = new Date(this.startDate()); currentStart.setHours(0,0,0,0);
       const currentEnd = new Date(this.endDate()); currentEnd.setHours(23,59,59,999);
@@ -304,14 +311,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
           col.history.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime());
           return col;
       });
-      
-      return result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); 
+      const filter = this.selectedSopFilter();
+      const sorted = result.sort((a, b) => b.lastRun.getTime() - a.lastRun.getTime()); 
+      if (filter) {
+          return sorted.filter(col => col.sopName === filter);
+      }
+      return sorted;
   });
 
   chartKpis = computed(() => {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-      const history = this.state.approvedRequests();
+      let history = this.state.approvedRequests();
+      
+      const filter = this.selectedSopFilter();
+      if (filter) {
+          history = history.filter(req => req.sopName === filter);
+      }
+      
       let totalSamples = 0;
       let totalBatches = 0;
 
@@ -344,6 +361,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           const reqs = this.state.approvedRequests();
           const start = this.startDate();
           const end = this.endDate();
+          const filter = this.selectedSopFilter();
+          const isDark = this.state.darkMode();
           if (reqs.length >= 0 && !this.isLoading()) {
               setTimeout(() => this.initChart(), 300);
           }
@@ -412,6 +431,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.endDate.set(range.end);
   }
 
+  toggleSopFilter(sopName: string) {
+      if (this.selectedSopFilter() === sopName) {
+          this.selectedSopFilter.set(null);
+      } else {
+          this.selectedSopFilter.set(sopName);
+      }
+  }
+
+  navTo(path: string) {
+      this.router.navigate([`/${path}`]);
+  }
+
   formatDateShort(date: Date): string {
       return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + 
              date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
@@ -447,6 +478,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const ctx = canvas.getContext('2d');
       const dCtx = dCanvas.getContext('2d');
       if (!ctx || !dCtx) return;
+
+      // Dark Mode adaptation colors
+      const isDark = this.state.darkMode();
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9';
+      const tooltipBg = isDark ? '#1e293b' : '#fff';
+      const tooltipTitleColor = isDark ? '#f1f5f9' : '#1e293b';
+      const tooltipBodyColor = isDark ? '#cbd5e1' : '#1e293b';
+      const tooltipBorderColor = isDark ? '#334155' : '#e2e8f0';
+      const barBg = isDark ? '#3b82f6' : '#3a416f';
 
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
       gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); 
@@ -502,6 +542,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const sopCounts = new Map<string, number>();
 
       const history = this.state.approvedRequests();
+      const filter = this.selectedSopFilter();
+
       history.forEach(req => {
           const d = this.parseRequestDate(req);
           
@@ -510,22 +552,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
               const mapKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
               const idx = dateMap.get(mapKey);
               if (idx !== undefined) {
-                  runData[idx]++;
-                  let samples = 0;
-                  if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-                  else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-                  else samples = 1;
-                  sampleData[idx] += samples; 
-                  
-                  // SOP Distribution (only for the actually selected range, not the whole week if they only selected 1 day)
+                  // 1. SOP Distribution (always computed globally for the selected range to serve as selector legend)
                   if (d >= origStart && d <= origEnd) {
                       const sopName = req.sopName || 'Unknown';
+                      let samples = 0;
+                      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+                      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+                      else samples = 1;
                       sopCounts.set(sopName, (sopCounts.get(sopName) || 0) + samples);
                   }
-                  
-                  // Daily details
-                  const sopName = req.sopName || 'Unknown';
-                  dailyDetails[idx][sopName] = (dailyDetails[idx][sopName] || 0) + samples;
+
+                  // 2. Line/Bar Data (filtered by selectedSopFilter)
+                  if (!filter || req.sopName === filter) {
+                      runData[idx]++;
+                      let samples = 0;
+                      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+                      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+                      else samples = 1;
+                      sampleData[idx] += samples; 
+                      
+                      // Daily details
+                      const sopName = req.sopName || 'Unknown';
+                      dailyDetails[idx][sopName] = (dailyDetails[idx][sopName] || 0) + samples;
+                  }
               }
           }
       });
@@ -541,7 +590,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                       pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
                   },
                   { 
-                      label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: '#3a416f', borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
+                      label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barBg, borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
                   }
               ]
           },
@@ -550,10 +599,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
               plugins: { 
                   legend: { display: false }, 
                   tooltip: { 
-                      backgroundColor: '#fff', 
-                      titleColor: '#1e293b', 
-                      bodyColor: '#1e293b', 
-                      borderColor: '#e2e8f0', 
+                      backgroundColor: tooltipBg, 
+                      titleColor: tooltipTitleColor, 
+                      bodyColor: tooltipBodyColor, 
+                      borderColor: tooltipBorderColor, 
                       borderWidth: 1, 
                       padding: 10, 
                       displayColors: true, 
@@ -575,7 +624,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               interaction: { mode: 'index', intersect: false },
               scales: { 
                   x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' } }, 
-                  y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: '#f1f5f9' }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
+                  y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: gridColor }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
                   y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
               } 
           }
@@ -610,13 +659,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
           options: {
               responsive: true, maintainAspectRatio: false,
               cutout: '70%',
+              onClick: (event, elements, chart) => {
+                  if (elements && elements.length > 0) {
+                      const index = elements[0].index;
+                      const label = chart.data.labels[index] as string;
+                      this.toggleSopFilter(label);
+                  }
+              },
               plugins: {
                   legend: { display: false },
                   tooltip: { 
-                      backgroundColor: '#fff', 
-                      titleColor: '#1e293b', 
-                      bodyColor: '#1e293b', 
-                      borderColor: '#e2e8f0', 
+                      backgroundColor: tooltipBg, 
+                      titleColor: tooltipTitleColor, 
+                      bodyColor: tooltipBodyColor, 
+                      borderColor: tooltipBorderColor, 
                       borderWidth: 1, 
                       padding: 6, 
                       displayColors: false, 
