@@ -817,7 +817,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (this.searchText().trim()) count++;
     if (this.selectedSopId() !== 'all') count++;
     if (this.selectedAnalyst() !== 'all') count++;
-    if (this.startDate() !== this.initialDates.start || this.endDate() !== this.initialDates.end) count++;
+    if (this.startDate() || this.endDate()) count++;
     return count;
   });
 
@@ -1029,9 +1029,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
       
       return { start: toStr(start), end: toStr(today) };
   }
-  private initialDates = this.getInitialThisMonthRange();
-  startDate = signal<string>(this.initialDates.start);
-  endDate = signal<string>(this.initialDates.end);
+  startDate = signal<string>('');
+  endDate = signal<string>('');
   showAdvancedFilters = signal<boolean>(false);
 
   // Dynamic history loading states
@@ -1420,16 +1419,16 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return this.searchText() !== '' || 
            this.selectedSopId() !== 'all' || 
            this.selectedAnalyst() !== 'all' || 
-           this.startDate() !== this.initialDates.start || 
-           this.endDate() !== this.initialDates.end;
+           this.startDate() !== '' || 
+           this.endDate() !== '';
   }
 
   resetAllFilters() {
     this.searchText.set('');
     this.selectedSopId.set('all');
     this.selectedAnalyst.set('all');
-    this.startDate.set(this.initialDates.start);
-    this.endDate.set(this.initialDates.end);
+    this.startDate.set('');
+    this.endDate.set('');
   }
 
   // Option C selection and merging handlers
