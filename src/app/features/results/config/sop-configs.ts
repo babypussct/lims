@@ -93,37 +93,44 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
     compounds: [
-      // Verified against master_analytes Firestore database (2026-05-28)
-      'Acephate',        // acephate
-      'Azinphos-methyl', // azinphos-methyl
-      'Cadusafos',       // cadusafos
-      'Chlorfenvinphos', // chlorfenvinphos
-      'Chlorpyrifos',    // chlorpyrifos
-      'Chlorpyrifos-methyl', // chlorpyrifos-methyl
-      'Diazinon',        // diazinon
-      'Dimethoate',      // dimethoate
-      'Edifenphos',      // edifenphos
-      'Ethion',          // ethion
-      'Ethoprophos',     // ethoprophos_ethoprop
-      'Fenitrothion',    // fenitrothion
-      'Fenthion',        // fenthion
-      'Iprobenfos',      // iprobenfos (was incorrectly 'Ipobenfos')
-      'Isofenphos-methyl', // isofenphos_methyl
-      'Malathion',       // malathion
-      'Mecarbam',        // mecarbam
-      'Methacrifos',     // methacrifos
-      'Methidathion',    // methidathion
-      'Monocrotophos',   // monocrotophos
-      'Omethoate',       // omethoate
-      'Parathion',       // parathion (was incorrectly 'Parathion-ethyl')
-      'Parathion-methyl', // parathion-methyl
-      'Phenthoate',      // phenthoate
-      'Phorate',         // phorate
-      'Phosphamidon',    // phosphamidon
-      'Profenofos',      // profenofos
-      'Quinalphos',      // quinalphos
-      'Triazophos',      // triazophos
-      'Vamidothion'      // vamidothion
+      'Acephate',
+      'Azinphos-methyl',
+      'Cadusafos',
+      'Chlorpyrifos',
+      'Chlorpyrifos-methyl',
+      'Diazinon',
+      'Dimethoate',
+      'Edifenphos',
+      'Ethion',
+      'Ethoprophos',
+      'Fenitrothion',
+      'Fenthion',
+      'Fipronil',
+      'Fipronil sulfide',
+      'Fipronil sulfone',
+      'Fipronil desulfinyl',
+      'Iprobenfos',
+      'Malathion',
+      'Mefenoxam',
+      'Metalaxyl',
+      'Methacrifos',
+      'Methidathion',
+      'Monocrotophos',
+      'Omethoate',
+      'Parathion',
+      'Parathion-methyl',
+      'Phenthoate',
+      'Phorate',
+      'Phosmet',
+      'Phosphamidon',
+      'Pirimiphos-methyl',
+      'Profenofos',
+      'Quinalphos',
+      'Ronnel',
+      'Triazophos',
+      'Vamidothion',
+      'Chlorfenvinphos',
+      'Isofenphos-methyl'
     ]
   }
 };

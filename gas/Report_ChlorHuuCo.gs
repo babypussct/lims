@@ -486,9 +486,11 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
     'endosulfan2': 'Endosulfan2', 'endosulfan-ii': 'Endosulfan2', 'beta-endosulfan': 'Endosulfan2',
     'endosulfans': 'EndosulfanS', 'endosulfan-sulfate': 'EndosulfanS',
     'endrin': 'Endrin',
-    'heptachlor': 'Heptachlor',
+    'heptachlorendoepoxideisomera': 'HeptachlorA', 'heptachlor epoxide isomer a': 'HeptachlorA', 'heptachlorepoxideisomera': 'HeptachlorA',
+    'heptachlorexoepoxideisomerb': 'HeptachlorB', 'heptachlor epoxide isomer b': 'HeptachlorB', 'heptachlorepoxideisomerb': 'HeptachlorB',
     'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor epoxide trans': 'HeptachlorA',
     'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor epoxide cis': 'HeptachlorB',
+    'heptachlor': 'Heptachlor',
     'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
     'isodrin': 'Isodrin',
     'methoxychlor': 'Methoxychlor',
@@ -519,9 +521,14 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
       continue;
     }
     
-    // Tìm key khớp từ cell0Text
+    // Tìm key khớp từ cell0Text (sắp xếp theo chiều dài giảm dần để ưu tiên khớp isomer đặc thù trước)
     let matchedKey = null;
-    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+    const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
+      return b[0].length - a[0].length;
+    });
+    for (const entry of sortedEntries) {
+      const rawText = entry[0];
+      const key = entry[1];
       const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
       if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
         matchedKey = key;
@@ -634,9 +641,11 @@ function fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssig
     'endrin': 'Endrin',
     'endrin_aldehyde': 'Endrin_aldehyde', 'endrin-aldehyde': 'Endrin_aldehyde',
     'endrin_ketone': 'Endrin_ketone', 'endrin-ketone': 'Endrin_ketone',
-    'heptachlor': 'Heptachlor',
+    'heptachlorendoepoxideisomera': 'HeptachlorA', 'heptachlor epoxide isomer a': 'HeptachlorA', 'heptachlorepoxideisomera': 'HeptachlorA',
+    'heptachlorexoepoxideisomerb': 'HeptachlorB', 'heptachlor epoxide isomer b': 'HeptachlorB', 'heptachlorepoxideisomerb': 'HeptachlorB',
     'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor-epoxide-b': 'HeptachlorA', 'trans-heptachlor-epoxide': 'HeptachlorA',
     'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor-epoxide-a': 'HeptachlorB', 'cis-heptachlor-epoxide': 'HeptachlorB',
+    'heptachlor': 'Heptachlor',
     'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
     'methoxychlor': 'Methoxychlor',
     'isodrin': 'Isodrin'
@@ -665,9 +674,14 @@ function fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssig
       continue;
     }
     
-    // Tìm key khớp từ cell0Text
+    // Tìm key khớp từ cell0Text (sắp xếp theo chiều dài giảm dần để ưu tiên khớp isomer đặc thù trước)
     let matchedKey = null;
-    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+    const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
+      return b[0].length - a[0].length;
+    });
+    for (const entry of sortedEntries) {
+      const rawText = entry[0];
+      const key = entry[1];
       const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
       if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
         matchedKey = key;
