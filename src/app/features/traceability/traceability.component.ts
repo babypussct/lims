@@ -6,6 +6,8 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { formatDate, formatNum, formatSampleList } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
+import { MasterTargetService } from '../targets/master-target.service';
+import { resolveCompoundDisplayName } from '../results/shared/compound-id-resolver';
 
 declare let QRious: any;
 
@@ -109,7 +111,7 @@ declare let QRious: any;
                                         <span class="text-xs text-slate-500 block mb-1">Thông số đầu vào</span>
                                         <div class="flex flex-wrap gap-2">
                                             @for(key of objectKeys(logData()?.printData?.inputs); track key) {
-                                                @if(key !== 'sampleList' && key !== 'targetIds') {
+                                                @if(key !== 'sampleList' && key !== 'targetIds' && key !== 'sampleTargetMap') {
                                                     <span class="bg-white px-2 py-1 rounded border border-slate-200 text-xs font-mono text-slate-600">
                                                         {{key}}: <b>{{logData()?.printData?.inputs[key]}}</b>
                                                     </span>
@@ -125,6 +127,29 @@ declare let QRious: any;
                                        <span class="text-xs text-slate-500 block">Danh sách mẫu</span>
                                        <span class="font-bold text-slate-800 break-words font-mono text-sm leading-snug">{{ formatSampleList(logData()?.printData?.inputs?.sampleList) }}</span>
                                    </div>
+                                }
+
+                                <!-- Target Map -->
+                                @if(getSampleTargetMap()) {
+                                    <div class="pt-2">
+                                        <span class="text-xs text-slate-500 block mb-2 font-bold uppercase tracking-wider text-slate-400">Chỉ tiêu phân tích theo từng mẫu</span>
+                                        <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                                            @for(sample of objectKeys(getSampleTargetMap()!); track sample) {
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
+                                                    <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ sample }}</span>
+                                                    <div class="flex flex-wrap gap-1.5 justify-end">
+                                                        @for(tId of getSampleTargetMap()![sample]; track tId) {
+                                                            <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                                                                {{ resolveCompoundName(tId) }}
+                                                            </span>
+                                                        } @empty {
+                                                            <span class="text-xs text-slate-400 dark:text-slate-500 italic">Không có chỉ tiêu</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
                                 }
 
                                 @if(logData()?.printData?.analysisDate) {
@@ -175,23 +200,52 @@ export class TraceabilityComponent implements OnInit {
 
   fb = inject(FirebaseService);
   toast = inject(ToastService);
+  private masterTargetService = inject(MasterTargetService);
+  
   formatDate = formatDate;
   formatNum = formatNum;
   formatSampleList = formatSampleList;
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);
+  masterTargets = signal<any[]>([]);
   isLoading = signal(false);
   errorMsg = signal('');
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
 
-  ngOnInit() {
+  async ngOnInit() {
       if (this.id) {
           this.loadData(this.id);
       } else {
           this.errorMsg.set('Không có mã ID được cung cấp.');
       }
+
+      try {
+          const analytes = await this.masterTargetService.getAll();
+          this.masterTargets.set(analytes);
+      } catch (e) {
+          console.warn('Failed to load master analytes in TraceabilityComponent', e);
+      }
+  }
+
+  resolveCompoundName(compoundId: string): string {
+      return resolveCompoundDisplayName(compoundId, this.masterTargets());
+  }
+
+  getSampleTargetMap(): Record<string, string[]> | null {
+      const log = this.logData();
+      if (!log) return null;
+      
+      const targetMap = log.sampleTargetMap 
+          || (log.inputs && (log.inputs as any).sampleTargetMap)
+          || (log.printData && (log.printData as any).sampleTargetMap)
+          || (log.printData?.inputs && (log.printData.inputs as any).sampleTargetMap);
+          
+      if (targetMap && typeof targetMap === 'object' && !Array.isArray(targetMap)) {
+          return targetMap as Record<string, string[]>;
+      }
+      return null;
   }
 
   async loadData(id: string) {
@@ -262,7 +316,8 @@ export class TraceabilityComponent implements OnInit {
                       inputs: { 
                           ...reqData.inputs, 
                           sampleList: reqData.sampleList,
-                          targetIds: reqData.targetIds
+                          targetIds: reqData.targetIds,
+                          sampleTargetMap: reqData.sampleTargetMap
                       },
                       items: mappedItems,
                       margin: reqData.margin,
