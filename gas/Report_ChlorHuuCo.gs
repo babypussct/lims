@@ -104,57 +104,90 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
     if (!sampleTargetMap) return true;
     const assignedTargetIds = sampleTargetMap[sampleCode];
     if (!assignedTargetIds) return true;
-    
-    const getFingerprint = function(s) {
-      if (!s) return '';
-      var lower = s.toLowerCase().trim();
-      if (lower === 'hcb' || lower === 'hexachlorobenzene') return 'hexachlorobenzene';
-      if (lower === 'lindane') return 'alphabhcgamma';
-      
-      var parts = lower.split(/[^a-z0-9]+/g).filter(Boolean);
-      var mappedParts = parts.map(function(p) {
-        if (p === 'bhca' || p === 'bhcb' || p === 'bhcd' || p === 'bhce' || p === 'bhcg') return 'bhc';
-        return p;
-      });
-      return mappedParts.sort().join('');
+
+    const COMPOUND_TO_FIRESTORE_ID = {
+      'Aldrin': 'aldrin',
+      'BHCa': 'bhc-alpha_benzene_hexachloride',
+      'BHCb': 'bhc-beta',
+      'BHCd': 'bhc-delta',
+      'BHCe': 'bhc-epsilon',
+      'BHCg': 'bhc-gamma_lindane_gamma_hch',
+      'BHC-alpha': 'bhc-alpha_benzene_hexachloride',
+      'BHC-beta': 'bhc-beta',
+      'BHC-delta': 'bhc-delta',
+      'BHC-epsilon': 'bhc-epsilon',
+      'BHC-gamma': 'bhc-gamma_lindane_gamma_hch',
+      'Chlordane_cis': 'chlordane-cis_alpha',
+      'Chlordane_oxy': 'chlordane-oxy',
+      'Chlordane_trans': 'chlordane-trans_gamma',
+      'Chlordane-cis': 'chlordane-cis_alpha',
+      'Chlordane-oxy': 'chlordane-oxy',
+      'Chlordane-trans': 'chlordane-trans_gamma',
+      'DDD_op': 'ddd-op',
+      'DDD-o,p': 'ddd-op',
+      'DDD_pp': 'ddd-pp',
+      'DDD-p,p': 'ddd-pp',
+      'DDE_op': 'dde-op',
+      'DDE-o,p': 'dde-op',
+      'DDE_pp': 'dde-pp',
+      'DDE-p,p': 'dde-pp',
+      'DDT_op': 'ddt-op',
+      'DDT-o,p': 'ddt-op',
+      'DDT_pp': 'ddt-pp',
+      'DDT-p,p': 'ddt-pp',
+      'Dieldrin': 'dieldrin',
+      'Endosulfan1': 'endosulfan_i_alpha_isomer',
+      'Endosulfan2': 'endosulfan_ii_beta_isomer',
+      'EndosulfanS': 'endosulfan_sulfate',
+      'Endosulfan-I': 'endosulfan_i_alpha_isomer',
+      'Endosulfan-II': 'endosulfan_ii_beta_isomer',
+      'Endosulfan-sulfate': 'endosulfan_sulfate',
+      'Endrin': 'endrin',
+      'Heptachlor': 'heptachlor',
+      'HeptachlorA': 'heptachlor_endo-epoxide_isomer_a',
+      'HeptachlorB': 'heptachlor_exo-epoxide_isomer_b',
+      'Heptachlor-epoxide-trans': 'heptachlor_endo-epoxide_isomer_a',
+      'Heptachlor-epoxide-cis': 'heptachlor_exo-epoxide_isomer_b',
+      'HCB': 'hexachlorobenzene',
+      'Hexachlorobenzene': 'hexachlorobenzene',
+      'Isodrin': 'isodrin',
+      'Methoxychlor': 'methoxychlor_pp-',
+      'Mirex': 'mirex',
+      'Pendimethalin': 'pendimethalin'
     };
 
-    const targetFingerprint = getFingerprint(colKey);
-    
-    const backendKeyToTargets = {
-      'BHCa': ['bhc', 'alpha'],
-      'BHCb': ['bhc', 'beta'],
-      'BHCd': ['bhc', 'delta'],
-      'BHCe': ['bhc', 'epsilon'],
-      'BHCg': ['bhc', 'gamma'],
-      'Chlordane_cis': ['chlordane', 'cis'],
-      'Chlordane_oxy': ['chlordane', 'oxy'],
-      'Chlordane_trans': ['chlordane', 'trans'],
-      'DDD_op': ['ddd', 'o', 'p'],
-      'DDD_pp': ['ddd', 'p', 'p'],
-      'DDE_op': ['dde', 'o', 'p'],
-      'DDE_pp': ['dde', 'p', 'p'],
-      'DDT_op': ['ddt', 'o', 'p'],
-      'DDT_pp': ['ddt', 'p', 'p'],
-      'Endosulfan1': ['endosulfan', 'i'],
-      'Endosulfan2': ['endosulfan', 'ii'],
-      'EndosulfanS': ['endosulfan', 'sulfate'],
-      'HeptachlorA': ['heptachlor', 'epoxide', 'trans'],
-      'HeptachlorB': ['heptachlor', 'epoxide', 'cis'],
-      'HCB': ['hexachlorobenzene']
+    const aliases = {
+      'BHCa': ['BHCa', 'BHC-alpha'],
+      'BHCb': ['BHCb', 'BHC-beta'],
+      'BHCd': ['BHCd', 'BHC-delta'],
+      'BHCe': ['BHCe', 'BHC-epsilon'],
+      'BHCg': ['BHCg', 'BHC-gamma', 'lindane'],
+      'Chlordane_cis': ['Chlordane_cis', 'Chlordane-cis'],
+      'Chlordane_oxy': ['Chlordane_oxy', 'Chlordane-oxy'],
+      'Chlordane_trans': ['Chlordane_trans', 'Chlordane-trans'],
+      'DDD_op': ['DDD_op', 'DDD-o,p'],
+      'DDD_pp': ['DDD_pp', 'DDD-p,p'],
+      'DDE_op': ['DDE_op', 'DDE-o,p'],
+      'DDE_pp': ['DDE_pp', 'DDE-p,p'],
+      'DDT_op': ['DDT_op', 'DDT-o,p'],
+      'DDT_pp': ['DDT_pp', 'DDT-p,p'],
+      'Endosulfan1': ['Endosulfan1', 'Endosulfan-I'],
+      'Endosulfan2': ['Endosulfan2', 'Endosulfan-II'],
+      'EndosulfanS': ['EndosulfanS', 'Endosulfan-sulfate'],
+      'HeptachlorA': ['HeptachlorA', 'Heptachlor-epoxide-trans'],
+      'HeptachlorB': ['HeptachlorB', 'Heptachlor-epoxide-cis'],
+      'HCB': ['HCB', 'Hexachlorobenzene']
     };
 
-    var targetFingerprints = [targetFingerprint];
-    if (backendKeyToTargets[colKey]) {
-      targetFingerprints.push(backendKeyToTargets[colKey].sort().join(''));
-    }
+    const searchKeys = aliases[colKey] ? aliases[colKey] : [colKey];
 
     return assignedTargetIds.some(function(tId) {
-      const assignedFingerprint = getFingerprint(tId);
-      return targetFingerprints.some(function(tf) {
-        return assignedFingerprint === tf || 
-               assignedFingerprint.indexOf(tf) !== -1 || 
-               tf.indexOf(assignedFingerprint) !== -1;
+      const lowerTId = tId.toLowerCase().trim();
+      return searchKeys.some(function(key) {
+        if (key.toLowerCase().trim() === lowerTId) return true;
+        const firestoreId = COMPOUND_TO_FIRESTORE_ID[key];
+        if (firestoreId && firestoreId.toLowerCase().trim() === lowerTId) return true;
+        return false;
       });
     });
   };

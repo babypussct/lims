@@ -304,14 +304,17 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
-    if (!this.run || !this.run.sampleTargetMap) return true;
-    const assigned = this.run.sampleTargetMap[sampleCode];
+    if (!this.run) return true;
+    const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return true;
+    const assigned = targetMap[sampleCode];
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound);
   }
 
   prefillUnassignedTargets() {
-    if (!this.run || !this.run.sampleTargetMap || !this.config.compounds) return;
+    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+    if (!this.run || !targetMap || !this.config.compounds) return;
     
     const sampleList = this.run.sampleList || [];
     sampleList.forEach((sampleCode: string) => {

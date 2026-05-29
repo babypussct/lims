@@ -324,7 +324,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
       };
 
-      const sampleTargetMap = currentRun.sampleTargetMap || {};
+      const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
       const isAssigned = (sampleCode: string, compound: string): boolean => {
         const assigned = sampleTargetMap[sampleCode];
@@ -346,8 +346,9 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           // Chỉ tiêu có thực hiện -> Sử dụng đúng giá trị thực tế nhập từ giao diện UI
-          rowData[backendKey] = val;
-          rowData[`${backendKey}_nd`] = resObj[`${c}_nd`] === true;
+          const isNd = resObj[`${c}_nd`] === true;
+          rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+          rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
           rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';

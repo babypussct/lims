@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -21,6 +21,7 @@ import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-176
 import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
 import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
 import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry.component';
+import { isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -120,6 +121,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   });
 
   unsubscribeFromDraft?: () => void;
+
+  constructor() {
+    effect(() => {
+      const prefixes = this.detectedPrefixes();
+      if (prefixes.length === 1) {
+        this.activeFilter.set(prefixes[0]);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
@@ -339,13 +349,28 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         defaultResultData[sampleCode] = {};
         
         if (sopConf.formType === 'type3b') {
-          // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt
+          // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt chỉ cho các hoạt chất được phân công
+          const sampleTargetMap = runDoc.sampleTargetMap || (runDoc.inputs && runDoc.inputs.sampleTargetMap) || {};
+          const isAssigned = (sCode: string, compound: string): boolean => {
+            const assigned = sampleTargetMap[sCode];
+            if (!assigned) return true;
+            return isCompoundAssigned(assigned, compound);
+          };
+
           sopConf.compounds.forEach((c: string) => {
-            defaultResultData[sampleCode][c] = 'KPH';
-            defaultResultData[sampleCode][`${c}_nd`] = true;
-            defaultResultData[sampleCode][`${c}_qc1`] = 'Đạt';
-            defaultResultData[sampleCode][`${c}_qc2`] = 'Đạt';
-            defaultResultData[sampleCode][`${c}_qc3`] = 'Đạt';
+            if (isAssigned(sampleCode, c)) {
+              defaultResultData[sampleCode][c] = '';
+              defaultResultData[sampleCode][`${c}_nd`] = true;
+              defaultResultData[sampleCode][`${c}_qc1`] = 'Đạt';
+              defaultResultData[sampleCode][`${c}_qc2`] = 'Đạt';
+              defaultResultData[sampleCode][`${c}_qc3`] = 'Đạt';
+            } else {
+              defaultResultData[sampleCode][c] = 'N/A';
+              defaultResultData[sampleCode][`${c}_nd`] = false;
+              defaultResultData[sampleCode][`${c}_qc1`] = 'N/A';
+              defaultResultData[sampleCode][`${c}_qc2`] = 'N/A';
+              defaultResultData[sampleCode][`${c}_qc3`] = 'N/A';
+            }
           });
         } else {
           // Cho dạng 2 / 3A: Cột hoạt chất rỗng

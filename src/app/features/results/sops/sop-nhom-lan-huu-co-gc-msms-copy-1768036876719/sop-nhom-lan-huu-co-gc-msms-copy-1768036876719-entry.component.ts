@@ -491,14 +491,17 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
-    if (!this.run || !this.run.sampleTargetMap) return true;
-    const assigned = this.run.sampleTargetMap[sampleCode];
+    if (!this.run) return true;
+    const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return true;
+    const assigned = targetMap[sampleCode];
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound);
   }
 
   prefillUnassignedTargets() {
-    if (!this.run || !this.run.sampleTargetMap || !this.config.compounds) return;
+    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+    if (!this.run || !targetMap || !this.config.compounds) return;
     const sampleList = this.run.sampleList || [];
     let changed = false;
 
@@ -626,13 +629,13 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         if (destRow) {
           this.config.compounds.forEach((c: string) => {
             if (this.isTargetAssigned(sampleCode, c)) {
-              const sourceValue = this.isTargetAssigned(sourceSample, c) ? sourceData[c] : 'KPH';
+              const sourceValue = this.isTargetAssigned(sourceSample, c) ? sourceData[c] : '';
               const sourceNd = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_nd`] : true;
               const sourceQc1 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc1`] : 'Đạt';
               const sourceQc2 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc2`] : 'Đạt';
               const sourceQc3 = this.isTargetAssigned(sourceSample, c) ? sourceData[`${c}_qc3`] : 'Đạt';
 
-              destRow[c] = sourceValue || 'KPH';
+              destRow[c] = sourceValue || '';
               destRow[`${c}_nd`] = sourceNd !== false;
               destRow[`${c}_qc1`] = sourceQc1 || 'Đạt';
               destRow[`${c}_qc2`] = sourceQc2 || 'Đạt';
