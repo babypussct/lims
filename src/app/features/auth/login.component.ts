@@ -356,22 +356,45 @@ export class LoginComponent implements OnInit, OnDestroy {
   async handleApproval(encryptedData: string) {
       this.qrStatus.set('approved');
       
+      const sessionIdToClose = this.currentSessionId;
+      
+      // Stop listener and timer immediately to avoid duplicate triggers
+      if (this.sessionSub) { this.sessionSub(); this.sessionSub = undefined; }
+      if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
+      
       try {
           const [userEmail, cipherText] = encryptedData.split('|');
           if (!this.currentSecretKey) throw new Error("Missing key");
           
           const decryptedPass = this.xorDecrypt(cipherText, this.currentSecretKey);
           
+          if (!decryptedPass) {
+              throw new Error("Không thể giải mã thông tin mật khẩu.");
+          }
+          
           if (userEmail && decryptedPass) {
               await this.auth.login(userEmail, decryptedPass);
               this.toast.show('Đăng nhập qua QR thành công!', 'success');
+              
+              if (sessionIdToClose) {
+                  this.auth.deleteAuthSession(sessionIdToClose).catch(() => {});
+              }
+              if (this.currentSessionId === sessionIdToClose) {
+                  this.currentSessionId = null;
+              }
           }
       } catch (e) {
           console.error(e);
-          this.toast.show('Lỗi giải mã phiên đăng nhập.', 'error');
-          this.generateSession(); // Retry
-      } finally {
-          this.cleanupSession();
+          this.toast.show('Lỗi xác thực phiên đăng nhập.', 'error');
+          
+          if (sessionIdToClose) {
+              this.auth.deleteAuthSession(sessionIdToClose).catch(() => {});
+          }
+          if (this.currentSessionId === sessionIdToClose) {
+              this.currentSessionId = null;
+          }
+          
+          this.generateSession(); // Retry safely
       }
   }
 

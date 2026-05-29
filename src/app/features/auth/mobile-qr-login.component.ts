@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, effect, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -50,8 +50,8 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
                     <div class="text-green-500 text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
 
-                <!-- Input is hidden if credentials found -->
-                @if (!hasCachedCreds()) {
+                <!-- Input is hidden if credentials found or if Google user -->
+                @if (!hasCachedCreds() && !isGoogleUser()) {
                     <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                         <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Nhập mật khẩu để xác nhận</label>
                         <div class="relative">
@@ -65,7 +65,7 @@ import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanne
                 <div class="w-full max-w-sm flex gap-3 mt-auto mb-6">
                     <button (click)="cancel()" class="flex-1 py-4 rounded-xl border border-slate-200 font-bold text-slate-600 bg-white hover:bg-slate-50 transition">Hủy</button>
                     
-                    <button (click)="approve()" [disabled]="(!confirmPassword && !hasCachedCreds()) || isProcessing()" 
+                    <button (click)="approve()" [disabled]="(!confirmPassword && !hasCachedCreds() && !isGoogleUser()) || isProcessing()" 
                             class="flex-[2] py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-base">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                         @else { <i class="fa-solid fa-fingerprint"></i> }
@@ -91,6 +91,7 @@ export class MobileQrLoginComponent implements OnInit {
   confirmPassword = '';
   isProcessing = signal(false);
   hasCachedCreds = signal(false);
+  isGoogleUser = computed(() => this.auth.isGoogleUser());
 
   constructor() {
       // Check for cached credentials immediately
@@ -135,8 +136,6 @@ export class MobileQrLoginComponent implements OnInit {
   }
 
   async approve() {
-      if (!this.confirmPassword) return;
-      
       const data = this.scanData();
       const currentUser = this.auth.currentUser();
       
@@ -144,9 +143,33 @@ export class MobileQrLoginComponent implements OnInit {
 
       this.isProcessing.set(true);
       try {
+          let passToEncrypt = this.confirmPassword;
+          
+          if (this.isGoogleUser()) {
+              passToEncrypt = this.auth.generateDeterministicPassword(currentUser.uid);
+          }
+
+          if (!passToEncrypt) {
+              this.toast.show('Vui lòng nhập mật khẩu.', 'error');
+              this.isProcessing.set(false);
+              return;
+          }
+
+          // Verify password first (either cached or manual, bypass for Google users)
+          if (!this.hasCachedCreds() && !this.isGoogleUser()) {
+              try {
+                  await this.auth.verifyPassword(currentUser.email, passToEncrypt);
+              } catch (verifyErr: any) {
+                  console.error("Re-authentication failed:", verifyErr);
+                  this.toast.show('Mật khẩu xác nhận không chính xác!', 'error');
+                  this.isProcessing.set(false);
+                  return;
+              }
+          }
+
           // Encrypt Password using the Key from QR (XOR for client-side demo)
           // Note: The key comes from the Desktop's QR code.
-          const encrypted = this.xorEncrypt(this.confirmPassword, data.key);
+          const encrypted = this.xorEncrypt(passToEncrypt, data.key);
           
           await this.auth.approveAuthSession(
               data.sessionId, 
@@ -156,7 +179,11 @@ export class MobileQrLoginComponent implements OnInit {
           );
           
           this.toast.show('Đã gửi xác nhận đăng nhập!', 'success');
-          // If using cached creds, maybe update them? No need if login worked.
+          // If the password was typed manually, let's also cache it locally so they don't have to type it next time!
+          if (!this.hasCachedCreds() && !this.isGoogleUser()) {
+              this.auth.saveLocalCredentials(currentUser.email, this.confirmPassword);
+              this.hasCachedCreds.set(true);
+          }
           
           setTimeout(() => this.router.navigate(['/dashboard']), 1000);
       } catch (e) {

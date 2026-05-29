@@ -10,6 +10,9 @@ import {
   GoogleAuthProvider,
   setPersistence,
   browserLocalPersistence,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  linkWithCredential,
   type User,
   type Auth
 } from 'firebase/auth';
@@ -210,6 +213,11 @@ export class AuthService {
     if (this.userUnsub) { this.userUnsub(); }
     const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${firebaseUser.uid}`);
     
+    // Automatically link password provider in background for Google Auth users
+    this.linkPasswordProviderIfNeeded(firebaseUser).catch(err => {
+        console.warn("[Auth] linkPasswordProviderIfNeeded error:", err);
+    });
+    
     this.userUnsub = onSnapshot(userRef, async (snap) => {
         try {
             if (snap.exists()) {
@@ -292,6 +300,40 @@ export class AuthService {
           deviceInfo: deviceName,
           timestamp: serverTimestamp()
       }, { merge: true });
+  }
+
+  async verifyPassword(email: string, pass: string): Promise<boolean> {
+      const authObj = getAuth(this.fb.app);
+      if (authObj.currentUser) {
+          const credential = EmailAuthProvider.credential(email, pass);
+          await reauthenticateWithCredential(authObj.currentUser, credential);
+          return true;
+      }
+      return false;
+  }
+
+  isGoogleUser(): boolean {
+      const authObj = getAuth(this.fb.app);
+      return authObj.currentUser?.providerData?.some(p => p.providerId === 'google.com') || false;
+  }
+
+  generateDeterministicPassword(uid: string): string {
+      const salt = "lims_secure_salt_2026_nafiqpm6";
+      return btoa(uid + salt).substring(0, 30);
+  }
+
+  async linkPasswordProviderIfNeeded(user: User) {
+      try {
+          const hasPassword = user.providerData.some(p => p.providerId === 'password');
+          if (!hasPassword && user.email) {
+              const pass = this.generateDeterministicPassword(user.uid);
+              const credential = EmailAuthProvider.credential(user.email, pass);
+              await linkWithCredential(user, credential);
+              console.log("[Auth] Successfully linked background password provider for QR login.");
+          }
+      } catch (e) {
+          console.warn("[Auth] Failed to link password provider (provider might already be linked or error):", e);
+      }
   }
 
   // --- Permission Checks ---

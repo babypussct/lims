@@ -521,18 +521,38 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
       continue;
     }
     
-    // Tìm key khớp từ cell0Text (sắp xếp theo chiều dài giảm dần để ưu tiên khớp isomer đặc thù trước)
+    // Tìm key khớp từ cell0Text
     let matchedKey = null;
-    const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
-      return b[0].length - a[0].length;
-    });
-    for (const entry of sortedEntries) {
-      const rawText = entry[0];
-      const key = entry[1];
-      const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
-      if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
+    const matchSearchKey = cell0TextRaw.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+    
+    // Bước 1: Khớp chính xác hoàn toàn (Tuyệt đối an toàn)
+    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+      const normalizedRawText = rawText.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+      if (normalizedRawText && matchSearchKey === normalizedRawText) {
         matchedKey = key;
         break;
+      }
+    }
+    
+    // Bước 2: Khớp substring có bảo vệ (Chỉ chạy nếu Bước 1 không tìm thấy)
+    if (!matchedKey) {
+      const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
+        return b[0].length - a[0].length;
+      });
+      for (const entry of sortedEntries) {
+        const rawText = entry[0];
+        const key = entry[1];
+        const normalizedRawText = rawText.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+        if (normalizedRawText) {
+          // Bảo vệ: Quyết không cho Heptachlor mẹ khớp vào epoxide của nó
+          if (normalizedRawText === 'heptachlor' && matchSearchKey.indexOf('epoxide') !== -1) {
+            continue;
+          }
+          if (matchSearchKey.indexOf(normalizedRawText) !== -1 || normalizedRawText.indexOf(matchSearchKey) !== -1) {
+            matchedKey = key;
+            break;
+          }
+        }
       }
     }
     
@@ -674,18 +694,38 @@ function fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssig
       continue;
     }
     
-    // Tìm key khớp từ cell0Text (sắp xếp theo chiều dài giảm dần để ưu tiên khớp isomer đặc thù trước)
+    // Tìm key khớp từ cell0Text
     let matchedKey = null;
-    const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
-      return b[0].length - a[0].length;
-    });
-    for (const entry of sortedEntries) {
-      const rawText = entry[0];
-      const key = entry[1];
-      const normalizedRawText = rawText.replace(/[\s\-\'\’\_]/g, '');
-      if (normalizedRawText && (cell0Text.includes(normalizedRawText) || normalizedRawText.includes(cell0Text))) {
+    const matchSearchKey = cell0TextRaw.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+    
+    // Bước 1: Khớp chính xác hoàn toàn (Tuyệt đối an toàn)
+    for (const [rawText, key] of Object.entries(tableTextToKey)) {
+      const normalizedRawText = rawText.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+      if (normalizedRawText && matchSearchKey === normalizedRawText) {
         matchedKey = key;
         break;
+      }
+    }
+    
+    // Bước 2: Khớp substring có bảo vệ (Chỉ chạy nếu Bước 1 không tìm thấy)
+    if (!matchedKey) {
+      const sortedEntries = Object.entries(tableTextToKey).sort(function(a, b) {
+        return b[0].length - a[0].length;
+      });
+      for (const entry of sortedEntries) {
+        const rawText = entry[0];
+        const key = entry[1];
+        const normalizedRawText = rawText.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+        if (normalizedRawText) {
+          // Bảo vệ: Quyết không cho Heptachlor mẹ khớp vào epoxide của nó
+          if (normalizedRawText === 'heptachlor' && matchSearchKey.indexOf('epoxide') !== -1) {
+            continue;
+          }
+          if (matchSearchKey.indexOf(normalizedRawText) !== -1 || normalizedRawText.indexOf(matchSearchKey) !== -1) {
+            matchedKey = key;
+            break;
+          }
+        }
       }
     }
     
