@@ -206,7 +206,7 @@
                             </div>
                             <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block"><i class="fa-solid fa-flask-vial mr-1"></i> Ngày mở nắp</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.date_opened ? (std.date_opened | date:'dd/MM/yyyy') : 'Chưa mở nắp'}}</div>
+                                <div class="font-bold text-slate-700 dark:text-slate-200">{{effectiveOpenDate() ? (effectiveOpenDate() | date:'dd/MM/yyyy') : 'Chưa mở nắp'}}</div>
                             </div>
                             @if(std.contract_ref) {
                                 <div class="col-span-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">

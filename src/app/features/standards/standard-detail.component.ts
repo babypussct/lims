@@ -82,6 +82,23 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     private routeSub: any;
 
     // Computed Properties
+    effectiveOpenDate = computed(() => {
+        const std = this.standard();
+        if (!std) return null;
+        if (std.date_opened) return std.date_opened;
+        
+        const logs = this.usageLogs();
+        if (logs && logs.length > 0) {
+            const earliestLog = logs.reduce((min, log) => {
+                const logTime = new Date(log.date).getTime();
+                const minTime = new Date(min.date).getTime();
+                return logTime < minTime ? log : min;
+            }, logs[0]);
+            return earliestLog.date;
+        }
+        return null;
+    });
+
     statusInfo = computed(() => {
         const std = this.standard();
         if (!std) return { label: '', class: '' };
