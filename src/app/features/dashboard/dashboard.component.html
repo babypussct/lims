@@ -234,12 +234,7 @@
                                             @for (item of sopDistribution(); track item.name) {
                                                 <div (click)="toggleSopFilter(item.name)"
                                                      class="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1 px-1.5 rounded-lg border border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer transition-all last:border-b-0"
-                                                     [class.bg-indigo-50/80]="selectedSopFilter() === item.name"
-                                                     [class.dark:bg-indigo-950/40]="selectedSopFilter() === item.name"
-                                                     [class.border-indigo-200]="selectedSopFilter() === item.name"
-                                                     [class.dark:border-indigo-800/40]="selectedSopFilter() === item.name"
-                                                     [class.text-indigo-600]="selectedSopFilter() === item.name"
-                                                     [class.dark:text-indigo-400]="selectedSopFilter() === item.name">
+                                                     [ngClass]="{ 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/40 text-indigo-600 dark:text-indigo-400': selectedSopFilter() === item.name }">
                                                     <div class="flex items-center gap-1.5 truncate mr-2">
                                                         <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" [style.backgroundColor]="item.color"></span>
                                                         <span class="truncate" [title]="item.name">{{item.name}}</span>
@@ -312,7 +307,6 @@
                     </div>
                 </div>
             </div>
-        </div>
         </div>
 
         <!-- SECTION 3: SMART KANBAN -->

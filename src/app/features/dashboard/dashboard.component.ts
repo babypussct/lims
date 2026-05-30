@@ -662,7 +662,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               onClick: (event, elements, chart) => {
                   if (elements && elements.length > 0) {
                       const index = elements[0].index;
-                      const label = chart.data.labels[index] as string;
+                      const label = chart.data.labels?.[index] as string;
                       this.toggleSopFilter(label);
                   }
               },
@@ -702,7 +702,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.priorityStandard.set({ name: std.name, daysLeft, date: std.expiry_date, status });
   }
 
-  navTo(path: string) { this.router.navigate(['/' + path]); }
+
   denyAccess() { this.toast.show('Bạn không có quyền truy cập chức năng này!', 'error'); }
 
   handlePendingRequestsClick() {
