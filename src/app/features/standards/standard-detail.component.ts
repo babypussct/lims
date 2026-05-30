@@ -20,7 +20,7 @@ import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { writeBatch, doc, deleteField, serverTimestamp } from 'firebase/firestore';
+import { writeBatch, doc, deleteField, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 @Component({
   selector: 'app-standard-detail',
@@ -232,10 +232,35 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         try {
             const logs = await this.stdService.getUsageHistory(id);
             this.usageLogs.set(logs);
+
+            // SELF-HEALING (Cách 1): Cập nhật ngầm ngày mở nắp nếu chưa có
+            const std = this.standard();
+            if (std && !std.date_opened && logs.length > 0) {
+                const earliestLog = logs.reduce((min, log) => {
+                    const logTime = new Date(log.date).getTime();
+                    const minTime = new Date(min.date).getTime();
+                    return logTime < minTime ? log : min;
+                }, logs[0]);
+                
+                this.autoHealDateOpened(std.id, earliestLog.date);
+            }
         } catch (error) {
             console.error('Failed to load history:', error);
         } finally {
             this.loadingHistory.set(false);
+        }
+    }
+
+    async autoHealDateOpened(id: string, date: string) {
+        try {
+            const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, id);
+            await updateDoc(ref, { date_opened: date, lastUpdated: serverTimestamp() });
+            
+            // Cập nhật lại UI local (dù delta sync cũng sẽ bắt được nhưng cập nhật luôn cho mượt)
+            this.standard.update(s => s ? { ...s, date_opened: date } : s);
+            console.log(`[Self-Heal] Đã cập nhật ngầm date_opened thành ${date} cho chuẩn ${id}`);
+        } catch (e) {
+            console.warn('Lỗi khi tự động cập nhật date_opened', e);
         }
     }
 

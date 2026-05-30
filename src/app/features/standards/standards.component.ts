@@ -13,7 +13,7 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
-import { Unsubscribe } from 'firebase/firestore';
+import { Unsubscribe, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { PrintService } from '../../core/services/print.service';
 
@@ -748,6 +748,70 @@ export class StandardsComponent implements OnInit, OnDestroy {
   openCoaPreview(url: string, event: Event) {
       event.stopPropagation();
       this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
+  }
+
+  async runFixDateOpened() {
+      if (!this.auth.canEditStandards() || this.isProcessing()) return;
+
+      this.confirmationService.confirm({
+          message: 'Hệ thống sẽ quét toàn bộ kho chuẩn và tự động điền "Ngày mở nắp" dựa vào lần sử dụng đầu tiên nếu lọ chuẩn đó chưa có ngày mở nắp.\n\nTiến trình này sẽ lưu trực tiếp vào CSDL. Bạn có chắc chắn muốn thực hiện?',
+          confirmText: 'Bắt đầu Chuẩn hóa',
+          cancelText: 'Hủy',
+          isDangerous: false
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              this.isRecalculating.set(true);
+              this.recalcCurrent.set(0);
+              
+              try {
+                  const all = this.allStandards();
+                  this.recalcTotal.set(all.length);
+                  let count = 0;
+                  
+                  let currentBatch = writeBatch(this.firebaseService.db);
+                  let opsCount = 0;
+
+                  for (let i = 0; i < all.length; i++) {
+                      const std = all[i];
+                      this.recalcCurrent.set(i + 1);
+                      
+                      if (!std.date_opened) {
+                          const logs = await this.stdService.getUsageHistory(std.id);
+                          if (logs.length > 0) {
+                              const earliestLog = logs.reduce((min, log) => {
+                                  const logTime = new Date(log.date).getTime();
+                                  const minTime = new Date(min.date).getTime();
+                                  return logTime < minTime ? log : min;
+                              }, logs[0]);
+                              
+                              const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, std.id);
+                              currentBatch.update(ref, { date_opened: earliestLog.date, lastUpdated: serverTimestamp() });
+                              opsCount++;
+                              count++;
+                              
+                              if (opsCount >= 400) { // Firestore batch limit is 500, using 400 to be safe
+                                  await currentBatch.commit();
+                                  currentBatch = writeBatch(this.firebaseService.db);
+                                  opsCount = 0;
+                              }
+                          }
+                      }
+                  }
+                  
+                  if (opsCount > 0) {
+                      await currentBatch.commit();
+                  }
+                  
+                  this.toast.show(`Hoàn tất! Đã cập nhật ngày mở nắp cho ${count} chuẩn.`, 'success');
+              } catch(e: any) {
+                  this.toast.show('Lỗi chuẩn hóa: ' + e.message, 'error');
+              } finally {
+                  this.isProcessing.set(false);
+                  this.isRecalculating.set(false);
+              }
+          }
+      });
   }
 
   async runRecalculateInventory() {
