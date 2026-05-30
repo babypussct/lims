@@ -23,14 +23,14 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from './shared/compoun
           <div>
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
             <input type="date" 
-                   [(ngModel)]="draft.page1Data.ngayNguoiPhanTich" 
+                   [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
                    (ngModelChange)="onDataChanged()"
                    class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
           <div>
             <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
             <input type="date" 
-                   [(ngModel)]="draft.page1Data.ngayNguoiThamTra" 
+                   [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
                    (ngModelChange)="onDataChanged()"
                    class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
           </div>
@@ -345,10 +345,10 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   onCheckboxChange(changedKey: string) {
-    if (changedKey === 'checkTatCaND' && this.draft.page1Data.checkTatCaND) {
-      this.draft.page1Data.checkCoMauPhatHien = false;
-    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data.checkCoMauPhatHien) {
-      this.draft.page1Data.checkTatCaND = false;
+    if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
+      this.draft.page1Data['checkCoMauPhatHien'] = false;
+    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
+      this.draft.page1Data['checkTatCaND'] = false;
     }
     this.onDataChanged();
   }

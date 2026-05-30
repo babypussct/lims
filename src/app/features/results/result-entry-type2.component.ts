@@ -159,7 +159,7 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 
                   <!-- Button 'N/A' (undefined) -->
                   <button type="button"
-                          (click)="setQcStatus(checkbox.key, undefined)"
+                          (click)="setQcStatus(checkbox.key, null)"
                           [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
                             ? 'px-2 py-1 text-[10px] font-extrabold rounded-md bg-slate-300 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-sm transition-all duration-200' 
                             : 'px-2 py-1 text-[10px] font-semibold rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 transition-colors'"
@@ -1289,7 +1289,7 @@ export class ResultEntryType2Component implements OnInit {
     return key === 'checkTatCaND' || key === 'checkCoMauPhatHien';
   }
 
-  setQcStatus(key: string, value: boolean | undefined) {
+  setQcStatus(key: string, value: boolean | null) {
     this.draft.page1Data[key] = value;
     this.onDataChanged();
   }
