@@ -84,9 +84,7 @@ export class IdleTimeoutService {
     // Check if user is actually somewhat logged in before showing message
     if (this.auth.currentUser()) {
         localStorage.setItem('lims_logout_reason', 'idle');
-        this.auth.logout().then(() => {
-            this.toast.show('Phiên đăng nhập đã hết hạn do không hoạt động trong 30 phút.', 'error', true);
-        });
+        this.auth.logout();
     }
   }
 }
