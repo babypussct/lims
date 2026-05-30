@@ -148,7 +148,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
       </div>
       
       <!-- Advanced Filter Panel & Search -->
-      <div class="mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
+      <div class="relative z-40 mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
         <div class="flex flex-col sm:flex-row gap-3">
           <!-- Text Search Box -->
           <div class="relative flex-1">
