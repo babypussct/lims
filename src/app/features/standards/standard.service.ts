@@ -154,9 +154,6 @@ export class StandardService {
   async fixHistoricalUsageLogsUsers(): Promise<void> {
     return this.usage.fixHistoricalUsageLogsUsers();
   }
-  async recalculateInventoryFromLogs(onProgress?: (current: number, total: number) => void): Promise<number> {
-    return this.usage.recalculateInventoryFromLogs(onProgress);
-  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // REQUESTS

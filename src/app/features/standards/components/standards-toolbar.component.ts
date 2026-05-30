@@ -40,12 +40,6 @@ import { CommonModule } from '@angular/common';
                    <button (click)="usageLogFileInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
                        <i class="fa-solid fa-book-open text-teal-500 w-4"></i> Import Nhật ký
                    </button>
-                   <button (click)="recalculateInventory.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                       <i class="fa-solid fa-calculator text-orange-500 w-4"></i> Cân đối lại tồn kho
-                   </button>
-                   <button (click)="fixDateOpened.emit()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
-                       <i class="fa-solid fa-wand-magic-sparkles text-pink-500 w-4"></i> Chuẩn hóa Ngày mở nắp
-                   </button>
                    <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                    <div class="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload CoA Hàng loạt</div>
                    <button (click)="bulkCoaFolderInput.click()" class="text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2">
@@ -75,8 +69,6 @@ export class StandardsToolbarComponent {
   importStandardsFile = output<any>();
   importUsageLogFile = output<any>();
   bulkCoaSelect = output<any>();
-  recalculateInventory = output<void>();
-  fixDateOpened = output<void>();
 
   onFileSelect(event: any, inputEl: HTMLInputElement, type: 'standards' | 'usageLogs') {
     if (type === 'standards') {

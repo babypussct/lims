@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem } from '../../../core/models/standard.model';
 import { generateSlug, parseQuantityInput, getStandardizedAmount } from '../../../shared/utils/utils';
+import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
 
@@ -20,6 +21,7 @@ export class StandardImportService {
   private fb = inject(FirebaseService);
   private cache = inject(StandardCacheService);
   private crud = inject(StandardCrudService);
+  private progressService = inject(ProgressService);
 
   // ─── Excel Date Parser ────────────────────────────────────────────────────────
   parseExcelDate(val: unknown): string {
@@ -241,11 +243,20 @@ export class StandardImportService {
 
   async saveImportedData(data: ImportPreviewItem[]): Promise<void> {
     if (!data || data.length === 0) return;
+    
+    this.progressService.start('Đang lưu Chuẩn Đối Chiếu', 'Vui lòng không đóng trình duyệt', data.length);
+    
     let batch = writeBatch(this.fb.db);
     let opCount = 0;
     const MAX_BATCH_SIZE = 400;
-    for (const item of data) {
-      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`);
+    let processed = 0;
+    
+    try {
+      for (const item of data) {
+        processed++;
+        this.progressService.update(processed, `Đang xử lý dòng ${processed}/${data.length}`);
+        
+        const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${item.parsed.id}`);
       batch.set(stdRef, { ...item.parsed, lastUpdated: serverTimestamp() });
       opCount++;
       if (item.logs && item.logs.length > 0) {
@@ -265,6 +276,12 @@ export class StandardImportService {
     }
     if (opCount > 0) await batch.commit();
     await this.fb.updateMetadata('standards');
+    
+    this.progressService.complete();
+    } catch (err) {
+      this.progressService.stop();
+      throw err;
+    }
   }
 
   // ─── Parse Usage Log Excel ────────────────────────────────────────────────────
@@ -384,9 +401,16 @@ export class StandardImportService {
       if (!logsByStandard.has(stdId)) logsByStandard.set(stdId, { standard: item.standard!, logs: [] });
       logsByStandard.get(stdId)!.logs.push(item.log);
     }
+    
+    this.progressService.start('Đang lưu Nhật Ký Sử Dụng', 'Vui lòng không đóng trình duyệt', logsByStandard.size);
+    let processed = 0;
 
-    for (const [stdId, { standard, logs }] of logsByStandard.entries()) {
-      const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
+    try {
+      for (const [stdId, { standard, logs }] of logsByStandard.entries()) {
+        processed++;
+        this.progressService.update(processed, `Đang xử lý ${logs.length} log của ${standard.name}`);
+        
+        const stdRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}`);
       let totalAmountDeducted = 0;
       for (const log of logs) {
         const logsCollRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${stdId}/logs`);
@@ -404,5 +428,11 @@ export class StandardImportService {
       if (opCount >= MAX_BATCH_SIZE) { await batch.commit(); batch = writeBatch(this.fb.db); opCount = 0; }
     }
     if (opCount > 0) await batch.commit();
+    
+    this.progressService.complete();
+    } catch (err) {
+      this.progressService.stop();
+      throw err;
+    }
   }
 }
