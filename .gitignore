@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Security / Secrets
+*firebase-adminsdk*.json
+*-service-account*.json
+*.env

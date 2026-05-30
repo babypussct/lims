@@ -86,7 +86,7 @@ declare let QRious: any;
                             <div>
                                 <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Hành động</h4>
                                 <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                                    <div class="font-bold text-blue-800 text-lg mb-1">{{logData()?.action}}</div>
+                                    <div class="font-bold text-blue-800 text-lg mb-1">{{getActionLabel(logData()?.action)}}</div>
                                     <p class="text-sm text-blue-600">{{logData()?.details}}</p>
                                 </div>
                             </div>
@@ -233,6 +233,32 @@ export class TraceabilityComponent implements OnInit {
       return resolveCompoundDisplayName(compoundId, this.masterTargets());
   }
 
+  getActionLabel(action: string | undefined): string {
+      if (!action) return 'Không xác định';
+      const map: Record<string, string> = {
+          'PENDING_REQUEST': 'Yêu cầu chờ duyệt',
+          'APPROVED_REQUEST': 'Yêu cầu đã duyệt',
+          'PRINT_JOB_RECORD': 'Lưu trữ phiếu in',
+          'DIRECT_APPROVE': 'Duyệt & In trực tiếp',
+          'APPROVE_REQUEST': 'Duyệt yêu cầu',
+          'REVOKE_APPROVE': 'Hoàn tác phê duyệt',
+          'CREATE_STANDARD_REQUEST': 'Yêu cầu mượn chuẩn',
+          'APPROVE_STANDARD_REQUEST': 'Duyệt mượn chuẩn',
+          'REJECT_STANDARD_REQUEST': 'Từ chối mượn chuẩn',
+          'RETURN_STANDARD': 'Hoàn trả chuẩn',
+          'SAVE_RESULT_DRAFT': 'Lưu nháp kết quả',
+          'PUBLISH_RESULT_REPORT': 'Xuất bản báo cáo kết quả',
+          'generate_pdf': 'Tạo tệp PDF',
+          'archive_reports': 'Lưu trữ báo cáo'
+      };
+      if (map[action]) return map[action];
+      if (action.includes('APPROVE')) return 'Phê duyệt';
+      if (action.includes('CREATE')) return 'Tạo mới';
+      if (action.includes('UPDATE')) return 'Cập nhật';
+      if (action.includes('DELETE')) return 'Xóa';
+      return action;
+  }
+
   getSampleTargetMap(): Record<string, string[]> | null {
       const log = this.logData() as any;
       if (!log) return null;
@@ -301,7 +327,7 @@ export class TraceabilityComponent implements OnInit {
 
               const mockLog: Log = {
                   id: reqSnap.id,
-                  action: reqData.status === 'approved' ? 'APPROVED_REQUEST' : 'PENDING_REQUEST',
+                  action: reqData.status !== 'pending' ? 'APPROVED_REQUEST' : 'PENDING_REQUEST',
                   details: `Yêu cầu phân tích: ${reqData.sopName}`,
                   timestamp: reqData.approvedAt || reqData.timestamp,
                   user: reqData.user || 'Unknown',

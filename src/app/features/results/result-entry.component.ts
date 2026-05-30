@@ -94,13 +94,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   
   detectedPrefixes = computed(() => {
     const r = this.run();
+    const d = this.draft();
     if (!r) return [];
     const prefixes = new Set<string>();
+    
+    // 1. Scan from actual sample list
     (r.sampleList || []).forEach((sample: string) => {
       const startsWithLetter = /^[a-zA-Z]/.test(sample);
       const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
       prefixes.add(prefix);
     });
+
+    // 2. Scan from existing reports in draft to avoid missing generated reports
+    if (d && d.reports) {
+      Object.keys(d.reports).forEach(key => {
+        const prefix = key === '_NO_PREFIX_' ? '' : key;
+        prefixes.add(prefix);
+      });
+    }
+    
     return Array.from(prefixes).sort();
   });
 
