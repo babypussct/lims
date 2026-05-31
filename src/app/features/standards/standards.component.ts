@@ -218,6 +218,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
   errorUsageLogsCount = computed(() => this.importUsageLogPreviewData().filter(i => !i.isValid && !i.isDuplicate).length);
 
   selectedStd = signal<ReferenceStandard | null>(null);
+  selectedStandardsToPrint = signal<ReferenceStandard[]>([]);
 
   historyStd = signal<ReferenceStandard | null>(null);
   historyLogs = signal<UsageLog[]>([]);
@@ -704,6 +705,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   openPrintModal(std: ReferenceStandard) {
       this.selectedStd.set(std);
+      this.selectedStandardsToPrint.set([]);
+      this.showPrintModal.set(true);
+  }
+
+  openBatchPrintModal() {
+      const ids = Array.from(this.selectedIds());
+      const list = this.allStandards().filter(s => s.id && ids.includes(s.id));
+      if (list.length === 0) return;
+      this.selectedStd.set(null);
+      this.selectedStandardsToPrint.set(list);
       this.showPrintModal.set(true);
   }
 

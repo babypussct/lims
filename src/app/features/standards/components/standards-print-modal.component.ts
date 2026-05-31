@@ -41,8 +41,22 @@ interface RollPreset {
                                  <i class="fa-solid fa-print text-lg animate-pulse"></i>
                              </div>
                              <div>
-                                 <h3 class="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight">Cài Đặt In Nhãn</h3>
-                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words max-w-[340px]" [title]="std()?.name">{{std()?.name}}</p>
+                                 <h3 class="font-black text-xl text-slate-800 dark:text-slate-100 leading-tight">
+                                     @if (standardsToPrint().length > 1) {
+                                         In Hàng Loạt Nhãn
+                                     } @else {
+                                         Cài Đặt In Nhãn
+                                     }
+                                 </h3>
+                                 @if (standardsToPrint().length > 1) {
+                                     <p class="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold mt-0.5 animate-pulse">
+                                         Đã chọn {{ standardsToPrint().length }} chất chuẩn để in
+                                     </p>
+                                 } @else {
+                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words max-w-[340px]" [title]="standardsToPrint()[0]?.name || ''">
+                                         {{ standardsToPrint()[0]?.name || 'Chưa chọn chất chuẩn' }}
+                                     </p>
+                                 }
                              </div>
                          </div>
 
@@ -186,7 +200,7 @@ interface RollPreset {
                                              <div class="flex items-center gap-1.5">
                                                  <button (click)="gridStartIndex.set(Math.max(1, gridStartIndex() - 1))" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-minus"></i></button>
                                                  <input type="number" [ngModel]="gridStartIndex()" (ngModelChange)="onStartIndexInputChange($event)" min="1" [max]="getGridPreset().rows * getGridPreset().cols" class="w-12 text-center bg-transparent border-none font-bold text-xs p-0 text-slate-800 dark:text-slate-100 focus:ring-0">
-                                                 <button (click)="gridStartIndex.set(Math.min(getGridPreset().rows * getGridPreset().cols, gridStartIndex() + 1))" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-650 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
+                                                 <button (click)="gridStartIndex.set(Math.min(getGridPreset().rows * getGridPreset().cols, gridStartIndex() + 1))" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-655 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
                                              </div>
                                          </div>
                                          
@@ -255,8 +269,8 @@ interface RollPreset {
                              <!-- Copies -->
                              <div class="flex items-center justify-between">
                                  <div>
-                                     <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Số bản in nhãn</label>
-                                     <span class="text-[10px] text-slate-400 leading-none">Tổng cộng: {{ printCopies() }} nhãn chuẩn</span>
+                                     <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Số bản in mỗi loại</label>
+                                     <span class="text-[10px] text-slate-400 leading-none">Tổng cộng: {{ standardsToPrint().length * printCopies() }} nhãn chuẩn</span>
                                  </div>
                                  <div class="flex items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl">
                                      <button (click)="printCopies.set(Math.max(1, printCopies() - 1))" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition shadow-sm border border-slate-250/20"><i class="fa-solid fa-minus text-xs"></i></button>
@@ -270,7 +284,7 @@ interface RollPreset {
                      <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
                          <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
                          <button (click)="printLabel()" class="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 text-white font-extrabold text-xs rounded-xl hover:shadow-lg hover:opacity-95 shadow-md shadow-indigo-150 dark:shadow-none transition flex items-center gap-2">
-                             <i class="fa-solid fa-print"></i> Tiến Hành In Nhãn ({{printCopies()}})
+                             <i class="fa-solid fa-print"></i> Tiến Hành In Nhãn ({{ standardsToPrint().length * printCopies() }})
                          </button>
                      </div>
                  </div>
@@ -288,14 +302,14 @@ interface RollPreset {
                               [style.height.mm]="printHeight()"
                               [style.transform]="'scale(' + getPreviewScale() + ')'"
                               style="transform-origin: center center; transition: all 0.3s ease;">
-                              <ng-container *ngTemplateOutlet="labelTemplate; context: { fontSize: printFontSize(), width: printWidth(), height: printHeight(), isPrint: false }"></ng-container>
+                              <ng-container *ngTemplateOutlet="labelTemplate; context: { std: standardsToPrint()[0], fontSize: printFontSize(), width: printWidth(), height: printHeight(), isPrint: false }"></ng-container>
                          </div>
                      } @else {
                          <!-- Grid Mode Preview -->
                          <div class="w-full flex flex-col items-center gap-2 animate-fade-in">
                              <!-- Single Label Zoomed (so user can read the text) -->
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5">
-                                 <i class="fa-solid fa-magnifying-glass-plus text-indigo-500"></i> Độ nét thực tế nhãn đơn
+                                 <i class="fa-solid fa-magnifying-glass-plus text-indigo-500"></i> Độ nét thực tế nhãn đơn mẫu
                              </div>
                              
                              <div class="bg-white shadow-xl border border-slate-350 overflow-hidden relative"
@@ -303,7 +317,7 @@ interface RollPreset {
                                   [style.height.mm]="getGridPreset().height"
                                   [style.transform]="'scale(' + (getGridPreset().width <= 40 ? 2.5 : 1.9) + ')'"
                                   style="transform-origin: center center; margin: 15px 0;">
-                                  <ng-container *ngTemplateOutlet="labelTemplate; context: { fontSize: getGridPreset().fontSize, width: getGridPreset().width, height: getGridPreset().height, isPrint: false }"></ng-container>
+                                  <ng-container *ngTemplateOutlet="labelTemplate; context: { std: standardsToPrint()[0], fontSize: getGridPreset().fontSize, width: getGridPreset().width, height: getGridPreset().height, isPrint: false }"></ng-container>
                              </div>
                              
                              <!-- A4 Layout Sheet -->
@@ -333,22 +347,22 @@ interface RollPreset {
                                                    <!-- Skipped cell -->
                                                    <div (click)="gridStartIndex.set(slotIndex)"
                                                         title="Click để chọn làm ô bắt đầu"
-                                                        class="border border-dashed border-slate-250 bg-slate-100 flex items-center justify-center text-[10px] text-slate-350 cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-300 transition-all"
+                                                        class="border border-dashed border-slate-250 bg-slate-100 flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-300 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
                                                    </div>
-                                               } @else if (slotIndex >= gridStartIndex() && slotIndex < gridStartIndex() + printCopies()) {
+                                               } @else if (slotIndex >= gridStartIndex() && slotIndex < gridStartIndex() + (standardsToPrint().length * printCopies())) {
                                                    <!-- Printed label cell -->
                                                    <div (click)="gridStartIndex.set(slotIndex)"
                                                         title="Đang chọn in ở đây"
                                                         class="bg-indigo-50 border border-indigo-305 text-indigo-700 font-semibold cursor-pointer hover:bg-indigo-100 transition-all relative flex flex-col justify-between overflow-hidden"
                                                         style="box-sizing: border-box; padding: 1mm; line-height: 1.15;">
                                                         <div style="font-size: 7.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1e1b4b;">
-                                                            {{ std()?.name }}
+                                                            {{ getStandardForSlot(slotIndex)?.name }}
                                                         </div>
                                                         <div style="font-size: 5px; color: #3730a3; display: flex; justify-content: space-between;">
-                                                            <span>L: {{ std()?.lot_number || 'N/A' }}</span>
-                                                            <span>E: {{ std()?.expiry_date ? (std()?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span>
+                                                            <span>L: {{ getStandardForSlot(slotIndex)?.lot_number || 'N/A' }}</span>
+                                                            <span>E: {{ getStandardForSlot(slotIndex)?.expiry_date ? (getStandardForSlot(slotIndex)?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span>
                                                         </div>
                                                         <div class="absolute right-0.5 bottom-0.5 bg-indigo-650 text-white rounded-[2px] text-[5px] font-bold px-0.5 flex items-center justify-center" style="transform: scale(0.85);">
                                                             {{ slotIndex }}
@@ -358,7 +372,7 @@ interface RollPreset {
                                                    <!-- Unused label cell -->
                                                    <div (click)="gridStartIndex.set(slotIndex)"
                                                         title="Click để chọn làm ô bắt đầu"
-                                                        class="border border-dashed border-slate-205 bg-white flex items-center justify-center text-[10px] text-slate-350 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                                                        class="border border-dashed border-slate-205 bg-white flex items-center justify-center text-[10px] text-slate-355 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
                                                         style="box-sizing: border-box;">
                                                         {{ slotIndex }}
                                                    </div>
@@ -379,7 +393,7 @@ interface RollPreset {
       }
 
       <!-- Reusable HTML Label Template -->
-      <ng-template #labelTemplate let-fontSize="fontSize" let-width="width" let-height="height" let-isPrint="isPrint">
+      <ng-template #labelTemplate let-std="std" let-fontSize="fontSize" let-width="width" let-height="height" let-isPrint="isPrint">
           <div class="bg-white text-black overflow-hidden relative flex flex-col justify-between"
                [style.width.mm]="width"
                [style.height.mm]="height"
@@ -394,18 +408,18 @@ interface RollPreset {
                            @if (printIncludeName()) { 
                                <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
                                     [style.font-size.pt]="fontSize + 1.2">
-                                   {{ std()?.name }}
+                                   {{ std?.name }}
                                </div> 
                            }
-                           @if (printIncludeLot()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Lot: <span style="font-weight: bold;">{{ std()?.lot_number || 'N/A' }}</span></div> }
-                           @if (printIncludePurity()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Pur: <span style="font-weight: bold;">{{ std()?.purity || 'N/A' }}</span></div> }
-                           @if (printIncludeOpened()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Opn: <span style="font-weight: bold;">{{ std()?.date_opened ? (std()?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></div> }
-                           @if (printIncludeExpiry()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Exp: <span style="font-weight: bold;">{{ std()?.expiry_date ? (std()?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span></div> }
-                           @if (printIncludeStorage()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Store: <span style="font-weight: bold;">{{ std()?.storage_condition || 'N/A' }}</span></div> }
+                           @if (printIncludeLot()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Lot: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></div> }
+                           @if (printIncludePurity()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></div> }
+                           @if (printIncludeOpened()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Opn: <span style="font-weight: bold;">{{ std?.date_opened ? (std?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></div> }
+                           @if (printIncludeExpiry()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Exp: <span style="font-weight: bold;">{{ std?.expiry_date ? (std?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span></div> }
+                           @if (printIncludeStorage()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Store: <span style="font-weight: bold;">{{ std?.storage_condition || 'N/A' }}</span></div> }
                        </div>
                        <!-- Right QR Code Column (Dynamic width based on label height) -->
                        <div [style.width.mm]="height - 3.5" [style.height.mm]="height - 3.5" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                           <img [src]="getQrCodeUrl()" style="width: 100%; height: 100%; object-fit: contain;" />
+                           <img [src]="getQrCodeUrl(std)" style="width: 100%; height: 100%; object-fit: contain;" />
                        </div>
                    </div>
                } @else {
@@ -414,36 +428,36 @@ interface RollPreset {
                        @if (printIncludeName()) { 
                            <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
                                 [style.font-size.pt]="fontSize + 1.2">
-                               {{ std()?.name }}
+                               {{ std?.name }}
                            </div> 
                        }
                        
                        @if (printTemplate() === 'detailed') {
                            @if (printIncludeCas() || printIncludeManufacturer()) {
                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
-                                   @if (printIncludeCas()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">CAS: <span style="font-weight: bold;">{{ std()?.cas_number || 'N/A' }}</span></span> }
-                                   @if (printIncludeManufacturer()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Mfr: <span style="font-weight: bold;">{{ std()?.manufacturer || 'N/A' }}</span></span> }
+                                   @if (printIncludeCas()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">CAS: <span style="font-weight: bold;">{{ std?.cas_number || 'N/A' }}</span></span> }
+                                   @if (printIncludeManufacturer()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Mfr: <span style="font-weight: bold;">{{ std?.manufacturer || 'N/A' }}</span></span> }
                                </div>
                            }
                        }
 
                        @if (printIncludeLot() || printIncludePurity()) {
                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
-                               @if (printIncludeLot()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Lot: <span style="font-weight: bold;">{{ std()?.lot_number || 'N/A' }}</span></span> }
-                               @if (printIncludePurity()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Pur: <span style="font-weight: bold;">{{ std()?.purity || 'N/A' }}</span></span> }
+                               @if (printIncludeLot()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Lot: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></span> }
+                               @if (printIncludePurity()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></span> }
                            </div>
                        }
                        
                        @if (printIncludeOpened() || printIncludeExpiry()) {
                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
-                               @if (printIncludeOpened()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Opn: <span style="font-weight: bold;">{{ std()?.date_opened ? (std()?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></span> }
-                               @if (printIncludeExpiry()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Exp: <span style="font-weight: bold;">{{ std()?.expiry_date ? (std()?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span></span> }
+                               @if (printIncludeOpened()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Opn: <span style="font-weight: bold;">{{ std?.date_opened ? (std?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></span> }
+                               @if (printIncludeExpiry()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Exp: <span style="font-weight: bold;">{{ std?.expiry_date ? (std?.expiry_date | date:'dd/MM/yy') : 'N/A' }}</span></span> }
                            </div>
                        }
 
                        @if (printIncludeStorage()) {
                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">
-                               Store: <span style="font-weight: bold;">{{ std()?.storage_condition || 'N/A' }}</span>
+                               Store: <span style="font-weight: bold;">{{ std?.storage_condition || 'N/A' }}</span>
                            </div>
                        }
                    </div>
@@ -451,11 +465,13 @@ interface RollPreset {
           </div>
       </ng-template>
 
-      <!-- Hidden DOM for Print Cloning -->
+      <!-- Hidden DOM for Print Reference (Supports multi-standard cloning) -->
       <div id="print-reference-container" style="display: none;">
-          <div class="single-print-ref">
-              <ng-container *ngTemplateOutlet="labelTemplate; context: { fontSize: printLayoutMode() === 'roll' ? printFontSize() : getGridPreset().fontSize, width: printLayoutMode() === 'roll' ? printWidth() : getGridPreset().width, height: printLayoutMode() === 'roll' ? printHeight() : getGridPreset().height, isPrint: true }"></ng-container>
-          </div>
+          @for (stdItem of standardsToPrint(); track stdItem.id) {
+              <div [attr.id]="'print-ref-' + stdItem.id">
+                  <ng-container *ngTemplateOutlet="labelTemplate; context: { std: stdItem, fontSize: printLayoutMode() === 'roll' ? printFontSize() : getGridPreset().fontSize, width: printLayoutMode() === 'roll' ? printWidth() : getGridPreset().width, height: printLayoutMode() === 'roll' ? printHeight() : getGridPreset().height, isPrint: true }"></ng-container>
+              </div>
+          }
       </div>
   `,
   styles: [`
@@ -470,6 +486,7 @@ interface RollPreset {
             background-color: white !important;
             width: 100% !important;
             height: 100% !important;
+            overflow: hidden !important;
         }
         body > *:not(#print-area) { display: none !important; }
         #print-area { display: block !important; }
@@ -478,6 +495,7 @@ interface RollPreset {
 })
 export class StandardsPrintModalComponent {
   std = input<ReferenceStandard | null>(null);
+  standards = input<ReferenceStandard[]>([]);
   isOpen = input<boolean>(false);
   closeModal = output<void>();
 
@@ -492,7 +510,7 @@ export class StandardsPrintModalComponent {
   Math = Math;
 
   // A4 Grid settings
-  a4PaperType = signal<'fullsheet' | 'precut'>('fullsheet'); // Default to full sheet stickers
+  a4PaperType = signal<'fullsheet' | 'precut'>('fullsheet'); // Default to A4 full sticker sheets
   gridPreset = signal<string>('tomy_145');
   gridStartIndex = signal<number>(1);
   
@@ -500,7 +518,7 @@ export class StandardsPrintModalComponent {
   fullSheetPreset = signal<'large' | 'medium' | 'small' | 'custom'>('medium');
   fullSheetCols = signal<number>(4);
   fullSheetRows = signal<number>(8);
-  printShowCropMarks = signal<boolean>(true); // Guide borders
+  printShowCropMarks = signal<boolean>(true); // Cutting guide lines
 
   // Toggleable Print Fields
   printIncludeName = signal(true);
@@ -511,6 +529,13 @@ export class StandardsPrintModalComponent {
   printIncludeStorage = signal(true);
   printIncludeManufacturer = signal(true);
   printIncludeCas = signal(true);
+
+  standardsToPrint = computed(() => {
+    const list = this.standards();
+    if (list && list.length > 0) return list;
+    const single = this.std();
+    return single ? [single] : [];
+  });
 
   // Pre-cut Presets mapping (Tomy)
   GRID_PRESETS: Record<string, GridPreset> = {
@@ -618,8 +643,8 @@ export class StandardsPrintModalComponent {
         fontSize = estHeight < 16 ? 4.5 : estHeight < 25 ? 6 : 7.5;
       }
 
-      const margin = 10; // 10mm margins for printer safe zone
-      const gap = 1.5;   // 1.5mm gap between cutting lines
+      const margin = 10; // 10mm safe print border
+      const gap = 1.5;   // 1.5mm space between stickers
       
       const width = (210 - (margin * 2) - (cols - 1) * gap) / cols;
       const height = (297 - (margin * 2) - (rows - 1) * gap) / rows;
@@ -655,16 +680,28 @@ export class StandardsPrintModalComponent {
 
   getRequiredA4Sheets(): number {
     const preset = this.getGridPreset();
-    const totalSlots = (this.gridStartIndex() - 1) + this.printCopies();
+    const totalSlots = (this.gridStartIndex() - 1) + (this.standardsToPrint().length * this.printCopies());
     const labelsPerPage = preset.rows * preset.cols;
     return Math.ceil(totalSlots / labelsPerPage);
   }
 
-  getQrCodeUrl(): string {
-    const stdData = this.std();
-    if (!stdData) return '';
+  getStandardForSlot(slotIndex: number): ReferenceStandard | null {
+    const startIndex = this.gridStartIndex();
+    const copies = this.printCopies();
+    const list = this.standardsToPrint();
+    
+    if (slotIndex < startIndex || slotIndex >= startIndex + (list.length * copies)) {
+      return null;
+    }
+    const relativeIndex = slotIndex - startIndex;
+    const stdIndex = Math.floor(relativeIndex / copies);
+    return list[stdIndex] || null;
+  }
+
+  getQrCodeUrl(std: ReferenceStandard | null): string {
+    if (!std || !std.id) return '';
     const originUrl = window.location.origin;
-    const url = `${originUrl}/#/standards/${stdData.id}`;
+    const url = `${originUrl}/#/standards/${std.id}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
   }
 
@@ -732,10 +769,9 @@ export class StandardsPrintModalComponent {
   }
 
   printLabel() {
-    const singleRef = document.querySelector('.single-print-ref > div');
-    if (!singleRef) return;
-
+    const list = this.standardsToPrint();
     const copies = this.printCopies();
+    if (list.length === 0) return;
     
     // Create print block wrapper
     const printArea = document.createElement('div');
@@ -754,22 +790,37 @@ export class StandardsPrintModalComponent {
         printArea.style.flexDirection = 'column';
         printArea.style.alignItems = 'flex-start';
         
-        for (let i = 0; i < copies; i++) {
-            const clonedNode = singleRef.cloneNode(true) as HTMLElement;
-            clonedNode.style.boxShadow = 'none';
-            clonedNode.style.border = 'none';
-            clonedNode.style.transform = 'none';
-            clonedNode.style.pageBreakAfter = 'always';
-            clonedNode.style.breakAfter = 'page';
-            printArea.appendChild(clonedNode);
+        for (const stdItem of list) {
+            const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
+            if (!ref) continue;
+            
+            for (let i = 0; i < copies; i++) {
+                const clonedNode = ref.cloneNode(true) as HTMLElement;
+                clonedNode.style.boxShadow = 'none';
+                clonedNode.style.border = 'none';
+                clonedNode.style.transform = 'none';
+                clonedNode.style.pageBreakAfter = 'always';
+                clonedNode.style.breakAfter = 'page';
+                printArea.appendChild(clonedNode);
+            }
         }
     } else {
         // A4 decal sheets
         const preset = this.getGridPreset();
         const labelsPerPage = preset.rows * preset.cols;
         const startIndex = this.gridStartIndex();
-        const totalSlots = (startIndex - 1) + copies;
+        
+        // Form sequential label printing queue
+        const labelQueue: ReferenceStandard[] = [];
+        for (const stdItem of list) {
+            for (let c = 0; c < copies; c++) {
+                labelQueue.push(stdItem);
+            }
+        }
+
+        const totalSlots = (startIndex - 1) + labelQueue.length;
         const totalPages = Math.ceil(totalSlots / labelsPerPage);
+        let queueIndex = 0;
 
         for (let p = 0; p < totalPages; p++) {
             const pageEl = document.createElement('div');
@@ -799,9 +850,14 @@ export class StandardsPrintModalComponent {
                 }
 
                 // Add labels for page 1
-                const firstPageLabels = Math.min(copies, labelsPerPage - (startIndex - 1));
+                const firstPageSlotsAvailable = labelsPerPage - (startIndex - 1);
+                const firstPageLabels = Math.min(labelQueue.length, firstPageSlotsAvailable);
                 for (let c = 0; c < firstPageLabels; c++) {
-                    const clone = singleRef.cloneNode(true) as HTMLElement;
+                    const stdItem = labelQueue[queueIndex++];
+                    const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
+                    if (!ref) continue;
+                    
+                    const clone = ref.cloneNode(true) as HTMLElement;
                     clone.style.boxShadow = 'none';
                     clone.style.width = `${preset.width}mm`;
                     clone.style.height = `${preset.height}mm`;
@@ -820,13 +876,16 @@ export class StandardsPrintModalComponent {
                     pageEl.appendChild(clone);
                 }
             } else {
-                // Subsequent pages: no offset
-                const printedSoFar = (labelsPerPage - (startIndex - 1)) + (p - 1) * labelsPerPage;
-                const remaining = copies - printedSoFar;
+                // Subsequent pages
+                const remaining = labelQueue.length - queueIndex;
                 const pageKLabels = Math.min(remaining, labelsPerPage);
                 
                 for (let c = 0; c < pageKLabels; c++) {
-                    const clone = singleRef.cloneNode(true) as HTMLElement;
+                    const stdItem = labelQueue[queueIndex++];
+                    const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
+                    if (!ref) continue;
+                    
+                    const clone = ref.cloneNode(true) as HTMLElement;
                     clone.style.boxShadow = 'none';
                     clone.style.width = `${preset.width}mm`;
                     clone.style.height = `${preset.height}mm`;

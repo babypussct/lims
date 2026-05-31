@@ -17,10 +17,15 @@ import { CommonModule } from '@angular/common';
       </div>
       
       <div class="flex gap-2 items-center">
-         @if(selectedCount() > 0 && canEditStandards()) {
-              <button (click)="deleteSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
-                  @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-eye-slash"></i> } Ẩn {{selectedCount()}} mục
+         @if(selectedCount() > 0) {
+              <button (click)="printSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
+                  <i class="fa-solid fa-print"></i> In {{selectedCount()}} nhãn
               </button>
+              @if (canEditStandards()) {
+                  <button (click)="deleteSelected.emit()" [disabled]="isProcessing()" class="px-3 py-1.5 bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg shadow-sm shadow-red-200 dark:shadow-none transition font-bold text-[11px] flex items-center gap-1.5 animate-bounce-in disabled:opacity-50">
+                      @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-eye-slash"></i> } Ẩn {{selectedCount()}} mục
+                  </button>
+              }
               <div class="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
          }
 
@@ -65,6 +70,7 @@ export class StandardsToolbarComponent {
   canEditStandards = input<boolean>(true);
 
   deleteSelected = output<void>();
+  printSelected = output<void>();
   openAddModal = output<void>();
   importStandardsFile = output<any>();
   importUsageLogFile = output<any>();

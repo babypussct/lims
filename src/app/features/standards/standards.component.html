@@ -6,6 +6,7 @@
           [isProcessing]="isProcessing()"
           [canEditStandards]="auth.canEditStandards()"
           (deleteSelected)="deleteSelected()"
+          (printSelected)="openBatchPrintModal()"
           (openAddModal)="openAddModal()"
           (importStandardsFile)="handleFileSelect($event)"
           (importUsageLogFile)="handleUsageLogFileSelect($event)"
@@ -118,7 +119,7 @@
       </app-standards-assign-modal>
 
       <!-- PRINT MODAL -->
-      <app-standards-print-modal [isOpen]="showPrintModal()" [std]="selectedStd()" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
+      <app-standards-print-modal [isOpen]="showPrintModal()" [std]="selectedStd()" [standards]="selectedStandardsToPrint()" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
 
       <!-- HISTORY MODAL -->
       <app-standards-history-modal [historyStd]="historyStd()" [loadingHistory]="loadingHistory()" [historyLogs]="historyLogs()" [isProcessing]="isProcessing()" (closeModal)="historyStd.set(null)" (deleteLogEvent)="deleteLog($event)"></app-standards-history-modal>
