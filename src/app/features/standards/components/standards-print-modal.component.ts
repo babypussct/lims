@@ -786,22 +786,37 @@ export class StandardsPrintModalComponent {
 
     if (this.printLayoutMode() === 'roll') {
         // Roll label printer DK (Brother QL-800, Dymo...)
-        printArea.style.display = 'flex';
-        printArea.style.flexDirection = 'column';
-        printArea.style.alignItems = 'flex-start';
+        printArea.style.display = 'block';
         
         for (const stdItem of list) {
             const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
             if (!ref) continue;
             
             for (let i = 0; i < copies; i++) {
+                // Wrapper element to isolate flex/grid layout page-breaking issues in Chromium
+                const wrapper = document.createElement('div');
+                wrapper.style.width = `${this.printWidth()}mm`;
+                wrapper.style.height = `${this.printHeight()}mm`;
+                wrapper.style.display = 'block';
+                wrapper.style.margin = '0';
+                wrapper.style.padding = '0';
+                wrapper.style.pageBreakAfter = 'always';
+                wrapper.style.breakAfter = 'page';
+                wrapper.style.pageBreakInside = 'avoid';
+                wrapper.style.breakInside = 'avoid';
+                wrapper.style.overflow = 'hidden';
+                wrapper.style.backgroundColor = 'white';
+
                 const clonedNode = ref.cloneNode(true) as HTMLElement;
                 clonedNode.style.boxShadow = 'none';
                 clonedNode.style.border = 'none';
                 clonedNode.style.transform = 'none';
-                clonedNode.style.pageBreakAfter = 'always';
-                clonedNode.style.breakAfter = 'page';
-                printArea.appendChild(clonedNode);
+                clonedNode.style.width = '100%';
+                clonedNode.style.height = '100%';
+                clonedNode.style.margin = '0';
+                
+                wrapper.appendChild(clonedNode);
+                printArea.appendChild(wrapper);
             }
         }
     } else {
@@ -823,6 +838,20 @@ export class StandardsPrintModalComponent {
         let queueIndex = 0;
 
         for (let p = 0; p < totalPages; p++) {
+            // Wrapper to ensure Chromium honors page breaks for grid elements
+            const wrapper = document.createElement('div');
+            wrapper.style.width = '210mm';
+            wrapper.style.height = '297mm';
+            wrapper.style.display = 'block';
+            wrapper.style.margin = '0';
+            wrapper.style.padding = '0';
+            wrapper.style.pageBreakAfter = 'always';
+            wrapper.style.breakAfter = 'page';
+            wrapper.style.pageBreakInside = 'avoid';
+            wrapper.style.breakInside = 'avoid';
+            wrapper.style.overflow = 'hidden';
+            wrapper.style.backgroundColor = 'white';
+
             const pageEl = document.createElement('div');
             pageEl.style.width = '210mm';
             pageEl.style.height = '297mm';
@@ -834,8 +863,6 @@ export class StandardsPrintModalComponent {
             pageEl.style.gridAutoRows = `${preset.height}mm`;
             pageEl.style.rowGap = `${preset.rowGap}mm`;
             pageEl.style.columnGap = `${preset.colGap}mm`;
-            pageEl.style.pageBreakAfter = 'always';
-            pageEl.style.breakAfter = 'page';
             pageEl.style.backgroundColor = 'white';
             pageEl.style.overflow = 'hidden';
 
@@ -904,7 +931,8 @@ export class StandardsPrintModalComponent {
                 }
             }
             
-            printArea.appendChild(pageEl);
+            wrapper.appendChild(pageEl);
+            printArea.appendChild(wrapper);
         }
     }
 
@@ -915,13 +943,43 @@ export class StandardsPrintModalComponent {
     
     if (this.printLayoutMode() === 'roll') {
         style.textContent = `
-            @page { size: ${this.printWidth()}mm ${this.printHeight()}mm; margin: 0; }
-            #print-area { display: block !important; }
+            @media print {
+                @page { size: ${this.printWidth()}mm ${this.printHeight()}mm; margin: 0; }
+                #print-area { display: block !important; }
+                body, html { 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    overflow: hidden !important; 
+                    background-color: white !important;
+                }
+                body > *:not(#print-area) { display: none !important; }
+                #print-reference-container, #print-preview-container {
+                    display: none !important;
+                    visibility: hidden !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                }
+            }
         `;
     } else {
         style.textContent = `
-            @page { size: A4 portrait; margin: 0; }
-            #print-area { display: block !important; }
+            @media print {
+                @page { size: A4 portrait; margin: 0; }
+                #print-area { display: block !important; }
+                body, html { 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    overflow: hidden !important; 
+                    background-color: white !important;
+                }
+                body > *:not(#print-area) { display: none !important; }
+                #print-reference-container, #print-preview-container {
+                    display: none !important;
+                    visibility: hidden !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                }
+            }
         `;
     }
     document.head.appendChild(style);
