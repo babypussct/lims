@@ -684,7 +684,7 @@ export class StandardsPrintModalComponent {
     this.gridStartIndex.set(1);
   }
 
-  onFullSheetPresetChange(preset: string) {
+  onFullSheetPresetChange(preset: 'large' | 'medium' | 'small' | 'custom') {
     this.fullSheetPreset.set(preset);
     this.gridStartIndex.set(1);
     if (preset === 'large') {
