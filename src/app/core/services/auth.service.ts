@@ -17,6 +17,7 @@ import {
   type Auth
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc, arrayRemove } from 'firebase/firestore';
+import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 import { AuthSession } from '../models/auth.model';
 
@@ -51,6 +52,7 @@ export interface UserProfile {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private fb = inject(FirebaseService);
+  private router = inject(Router);
   private auth: Auth;
   private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
 
@@ -207,6 +209,7 @@ export class AuthService {
     }
 
     await signOut(this.auth);
+    this.router.navigate(['/']);
   }
 
   private syncUser(firebaseUser: User) {
