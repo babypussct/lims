@@ -65,6 +65,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     formType: 'type3b',
     columns: {},
     checkboxLines: {
+      'Gộp in chung các mẫu (L1829; L1929; L3729)': 'checkGopInChung',
       'Các mẫu thử không phát hiện': 'checkTatCaND',
       'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
       'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
@@ -88,6 +89,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     formType: 'type3b',
     columns: {},
     checkboxLines: {
+      'Gộp in chung các mẫu (L1829; L1929; L3729)': 'checkGopInChung',
       'Các mẫu thử không phát hiện': 'checkTatCaND',
       'Có mẫu thử phát hiện': 'checkCoMauPhatHien'
     },

@@ -847,6 +847,9 @@ export class StateService implements OnDestroy {
         if (formInputs.targetIds) reqData.targetIds = formInputs.targetIds;
         else reqData.targetIds = deleteField();
 
+        if (formInputs.sampleTargetMap) reqData.sampleTargetMap = formInputs.sampleTargetMap;
+        else reqData.sampleTargetMap = deleteField();
+
         transaction.update(reqRef, reqData);
 
         // 4. Create a new log and print job for the update

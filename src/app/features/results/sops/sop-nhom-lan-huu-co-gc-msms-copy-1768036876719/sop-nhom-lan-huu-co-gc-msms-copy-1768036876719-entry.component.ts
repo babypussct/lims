@@ -412,23 +412,22 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         label
       }));
     }
-
     if (!this.draft.page1Data) {
       this.draft.page1Data = {};
     }
 
     // Set default value for khoiLuong if not set (default 10.0)
-    if (this.draft.page1Data['khoiLuong'] === undefined) {
+    if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
       this.draft.page1Data['khoiLuong'] = '10.0';
     }
 
     // Set default value for loaiMau if not set (default Thủy sản)
-    if (this.draft.page1Data['loaiMau'] === undefined) {
+    if (this.draft.page1Data['loaiMau'] === undefined || this.draft.page1Data['loaiMau'] === null || this.draft.page1Data['loaiMau'] === '') {
       this.draft.page1Data['loaiMau'] = 'Thủy sản';
     }
 
     // Set default value for tinhTrangMau if not set (default Bình thường)
-    if (this.draft.page1Data['tinhTrangMau'] === undefined) {
+    if (this.draft.page1Data['tinhTrangMau'] === undefined || this.draft.page1Data['tinhTrangMau'] === null || this.draft.page1Data['tinhTrangMau'] === '') {
       this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     }
 
@@ -440,14 +439,17 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     // Set other evaluation checkboxes to true (Đạt) if not set
     if (this.checkboxList) {
       this.checkboxList.forEach(cb => {
-        if (cb.key !== 'checkTatCaND' && cb.key !== 'checkCoMauPhatHien' && cb.key !== 'qcNhanDang') {
-          if (this.draft.page1Data[cb.key] === undefined) {
+        if (cb.key !== 'checkTatCaND' && cb.key !== 'checkCoMauPhatHien' && cb.key !== 'qcNhanDang' && cb.key !== 'checkGopInChung') {
+          if (this.draft.page1Data[cb.key] === undefined || this.draft.page1Data[cb.key] === null) {
             this.draft.page1Data[cb.key] = true;
+          }
+        } else if (cb.key === 'checkGopInChung') {
+          if (this.draft.page1Data[cb.key] === undefined || this.draft.page1Data[cb.key] === null) {
+            this.draft.page1Data[cb.key] = false;
           }
         }
       });
     }
-
     try {
       const analytes = await this.masterTargetService.getAll();
       this.masterTargets.set(analytes);
@@ -649,7 +651,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   }
 
   isGeneralObservation(key: string): boolean {
-    return key === 'checkTatCaND' || key === 'checkCoMauPhatHien';
+    return key === 'checkTatCaND' || key === 'checkCoMauPhatHien' || key === 'checkGopInChung';
   }
 
   setQcStatus(key: string, value: boolean | null) {

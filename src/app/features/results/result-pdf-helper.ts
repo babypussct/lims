@@ -3,6 +3,7 @@
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
 import { isCompoundAssigned } from './shared/compound-id-resolver';
+import { formatSampleList } from '../../shared/utils/utils';
 
 export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
   const sampleList = currentRun.sampleList || [];
@@ -286,90 +287,198 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
     return isSelected && matchesFilter;
   });
 
-  filteredSamples.forEach((sampleCode: string, idx: number) => {
-    const resObj = currentDraft.resultData[sampleCode] || {};
+  const isGop = currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true && currentConf.formType === 'type3b';
 
-    if (currentConf.formType === 'type3b') {
-      const rowData: Record<string, any> = {
-        maSoMau: sampleCode
-      };
+  if (isGop && filteredSamples.length > 0) {
+    const mergedSampleCode = formatSampleList(filteredSamples);
+    const rowData: Record<string, any> = {
+      maSoMau: mergedSampleCode
+    };
 
-      const chlorMap: Record<string, string> = {
-        'BHC-alpha': 'BHCa',
-        'BHC-beta': 'BHCb',
-        'BHC-delta': 'BHCd',
-        'BHC-epsilon': 'BHCe',
-        'BHC-gamma': 'BHCg',
-        'Chlordane-cis': 'Chlordane_cis',
-        'Chlordane-oxy': 'Chlordane_oxy',
-        'Chlordane-trans': 'Chlordane_trans',
-        'DDD-o,p': 'DDD_op',
-        'DDD-p,p': 'DDD_pp',
-        'DDE-o,p': 'DDE_op',
-        'DDE-p,p': 'DDE_pp',
-        'DDT-o,p': 'DDT_op',
-        'DDT-p,p': 'DDT_pp',
-        'Endosulfan-I': 'Endosulfan1',
-        'Endosulfan-II': 'Endosulfan2',
-        'Endosulfan-sulfate': 'EndosulfanS',
-        'Heptachlor-epoxide-trans': 'HeptachlorA',
-        'Heptachlor-epoxide-cis': 'HeptachlorB',
-        'Hexachlorobenzene': 'HCB'
-      };
+    const chlorMap: Record<string, string> = {
+      'BHC-alpha': 'BHCa',
+      'BHC-beta': 'BHCb',
+      'BHC-delta': 'BHCd',
+      'BHC-epsilon': 'BHCe',
+      'BHC-gamma': 'BHCg',
+      'Chlordane-cis': 'Chlordane_cis',
+      'Chlordane-oxy': 'Chlordane_oxy',
+      'Chlordane-trans': 'Chlordane_trans',
+      'DDD-o,p': 'DDD_op',
+      'DDD-p,p': 'DDD_pp',
+      'DDE-o,p': 'DDE_op',
+      'DDE-p,p': 'DDE_pp',
+      'DDT-o,p': 'DDT_op',
+      'DDT-p,p': 'DDT_pp',
+      'Endosulfan-I': 'Endosulfan1',
+      'Endosulfan-II': 'Endosulfan2',
+      'Endosulfan-sulfate': 'EndosulfanS',
+      'Heptachlor-epoxide-trans': 'HeptachlorA',
+      'Heptachlor-epoxide-cis': 'HeptachlorB',
+      'Hexachlorobenzene': 'HCB'
+    };
 
-      const mapCompoundToKey = (c: string): string => {
-        if (chlorMap[c]) return chlorMap[c];
-        if (c === 'Parathion-ethyl') return 'Parathion';
-        if (c === 'Ipobenfos') return 'Iprobenfos';
-        return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-      };
+    const mapCompoundToKey = (c: string): string => {
+      if (chlorMap[c]) return chlorMap[c];
+      if (c === 'Parathion-ethyl') return 'Parathion';
+      if (c === 'Ipobenfos') return 'Iprobenfos';
+      return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+    };
 
-      const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
+    const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
-      const isAssigned = (sampleCode: string, compound: string): boolean => {
-        const assigned = sampleTargetMap[sampleCode];
+    const isAssignedToAny = (compound: string): boolean => {
+      return filteredSamples.some((s: string) => {
+        const assigned = sampleTargetMap[s];
         if (!assigned) return true;
         return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
-      };
+      });
+    };
 
-      currentConf.compounds.forEach((c: string) => {
-        const backendKey = mapCompoundToKey(c);
-        const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
-        const assigned = isAssigned(sampleCode, c);
-        
-        if (!assigned) {
-          // Chỉ tiêu không thực hiện -> Giữ nguyên định dạng gốc của form bằng cách để trống
-          rowData[backendKey] = '';
-          rowData[`${backendKey}_nd`] = false;
-          rowData[`${backendKey}_qc1`] = 'N/A';
-          rowData[`${backendKey}_qc2`] = 'N/A';
-          rowData[`${backendKey}_qc3`] = 'N/A';
+    currentConf.compounds.forEach((c: string) => {
+      const backendKey = mapCompoundToKey(c);
+      const assigned = isAssignedToAny(c);
+
+      if (!assigned) {
+        rowData[backendKey] = '';
+        rowData[`${backendKey}_nd`] = false;
+        rowData[`${backendKey}_qc1`] = 'N/A';
+        rowData[`${backendKey}_qc2`] = 'N/A';
+        rowData[`${backendKey}_qc3`] = 'N/A';
+      } else {
+        const uniqueVals = new Set(filteredSamples.map(s => {
+          const sRes = currentDraft.resultData[s] || {};
+          const isNd = sRes[`${c}_nd`] === true;
+          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+        }));
+
+        if (uniqueVals.size === 1) {
+          const commonVal = Array.from(uniqueVals)[0];
+          if (commonVal === 'KPH') {
+            rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else {
+            rowData[`${backendKey}_nd`] = false;
+            rowData[backendKey] = commonVal;
+          }
         } else {
-          // Chỉ tiêu có thực hiện -> Sử dụng đúng giá trị thực tế nhập từ giao diện UI
-          const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
-          rowData[`${backendKey}_nd`] = isNd;
-          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
-          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
-          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';
+          rowData[`${backendKey}_nd`] = false;
+          const resultParts = filteredSamples.map(s => {
+            const sRes = currentDraft.resultData[s] || {};
+            const isNd = sRes[`${c}_nd`] === true;
+            const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            return `${s}: ${displayVal}`;
+          });
+          rowData[backendKey] = resultParts.join('; ');
         }
-      });
 
-      samplesPayload.push(rowData);
-    } else {
-      const rowData: Record<string, any> = {
-        loSo: String(idx + 1),
-        maSoMau: sampleCode,
-        ghiChu: resObj['ghiChu'] || ''
-      };
-      Object.keys(currentConf.columns).forEach((col: string) => {
-        if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-          rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
-        }
-      });
-      samplesPayload.push(rowData);
-    }
-  });
+        const getMergedQc = (qcKey: string): string => {
+          const uniqueQcs = new Set(filteredSamples.map(s => {
+            const sRes = currentDraft.resultData[s] || {};
+            return sRes[`${c}_${qcKey}`] || 'Đạt';
+          }));
+          if (uniqueQcs.size === 1) {
+            return Array.from(uniqueQcs)[0];
+          }
+          return filteredSamples.map(s => {
+            const sRes = currentDraft.resultData[s] || {};
+            return `${s}: ${sRes[`${c}_${qcKey}`] || 'Đạt'}`;
+          }).join('; ');
+        };
+
+        rowData[`${backendKey}_qc1`] = getMergedQc('qc1');
+        rowData[`${backendKey}_qc2`] = getMergedQc('qc2');
+        rowData[`${backendKey}_qc3`] = getMergedQc('qc3');
+      }
+    });
+
+    samplesPayload.push(rowData);
+  } else {
+    filteredSamples.forEach((sampleCode: string, idx: number) => {
+      const resObj = currentDraft.resultData[sampleCode] || {};
+
+      if (currentConf.formType === 'type3b') {
+        const rowData: Record<string, any> = {
+          maSoMau: sampleCode
+        };
+
+        const chlorMap: Record<string, string> = {
+          'BHC-alpha': 'BHCa',
+          'BHC-beta': 'BHCb',
+          'BHC-delta': 'BHCd',
+          'BHC-epsilon': 'BHCe',
+          'BHC-gamma': 'BHCg',
+          'Chlordane-cis': 'Chlordane_cis',
+          'Chlordane-oxy': 'Chlordane_oxy',
+          'Chlordane-trans': 'Chlordane_trans',
+          'DDD-o,p': 'DDD_op',
+          'DDD-p,p': 'DDD_pp',
+          'DDE-o,p': 'DDE_op',
+          'DDE-p,p': 'DDE_pp',
+          'DDT-o,p': 'DDT_op',
+          'DDT-p,p': 'DDT_pp',
+          'Endosulfan-I': 'Endosulfan1',
+          'Endosulfan-II': 'Endosulfan2',
+          'Endosulfan-sulfate': 'EndosulfanS',
+          'Heptachlor-epoxide-trans': 'HeptachlorA',
+          'Heptachlor-epoxide-cis': 'HeptachlorB',
+          'Hexachlorobenzene': 'HCB'
+        };
+
+        const mapCompoundToKey = (c: string): string => {
+          if (chlorMap[c]) return chlorMap[c];
+          if (c === 'Parathion-ethyl') return 'Parathion';
+          if (c === 'Ipobenfos') return 'Iprobenfos';
+          return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+        };
+
+        const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
+
+        const isAssigned = (sampleCode: string, compound: string): boolean => {
+          const assigned = sampleTargetMap[sampleCode];
+          if (!assigned) return true;
+          return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+        };
+
+        currentConf.compounds.forEach((c: string) => {
+          const backendKey = mapCompoundToKey(c);
+          const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
+          const assigned = isAssigned(sampleCode, c);
+          
+          if (!assigned) {
+            rowData[backendKey] = '';
+            rowData[`${backendKey}_nd`] = false;
+            rowData[`${backendKey}_qc1`] = 'N/A';
+            rowData[`${backendKey}_qc2`] = 'N/A';
+            rowData[`${backendKey}_qc3`] = 'N/A';
+          } else {
+            const isNd = resObj[`${c}_nd`] === true;
+            rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+            rowData[`${backendKey}_nd`] = isNd;
+            rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
+            rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
+            rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';
+          }
+        });
+
+        samplesPayload.push(rowData);
+      } else {
+        const rowData: Record<string, any> = {
+          loSo: String(idx + 1),
+          maSoMau: sampleCode,
+          ghiChu: resObj['ghiChu'] || ''
+        };
+        Object.keys(currentConf.columns).forEach((col: string) => {
+          if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+            rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+          }
+        });
+        samplesPayload.push(rowData);
+      }
+    });
+  }
 
   return {
     action: 'generate_pdf',

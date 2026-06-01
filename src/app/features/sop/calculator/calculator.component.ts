@@ -280,7 +280,19 @@ export class CalculatorComponent implements OnDestroy {
       // Override margin if Auto
       const finalMargin = this.marginMode() === 'auto' ? -1 : (values.safetyMargin || 0);
       
-      return { ...values, safetyMargin: finalMargin, sampleList: sampleList, targetIds: Array.from(this.selectedTargets()) };
+      const targetIds = Array.from(this.selectedTargets());
+      const sampleTargetMap: Record<string, string[]> = {};
+      sampleList.forEach(sample => {
+          sampleTargetMap[sample] = targetIds;
+      });
+      
+      return { 
+          ...values, 
+          safetyMargin: finalMargin, 
+          sampleList: sampleList, 
+          targetIds: targetIds,
+          sampleTargetMap: sampleTargetMap
+      };
   }
 
   async fetchData(sop: Sop) {

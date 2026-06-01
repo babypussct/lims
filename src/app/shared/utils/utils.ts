@@ -280,7 +280,7 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
             count++;
         } else {
             if (count === 1) { ranges.push(start.orig); } 
-            else if (count === 2) { ranges.push(`${start.orig}, ${prev.orig}`); } 
+            else if (count === 2) { ranges.push(`${start.orig}; ${prev.orig}`); } 
             else { ranges.push(`${start.orig} -> ${prev.orig}`); } 
             
             start = curr;
@@ -290,10 +290,10 @@ export function formatSampleList(samplesInput: string[] | Set<string> | undefine
     }
 
     if (count === 1) { ranges.push(start.orig); } 
-    else if (count === 2) { ranges.push(`${start.orig}, ${prev.orig}`); } 
+    else if (count === 2) { ranges.push(`${start.orig}; ${prev.orig}`); } 
     else { ranges.push(`${start.orig} -> ${prev.orig}`); } 
     
-    return ranges.join(', ');
+    return ranges.join('; ');
 }
 
 /**
