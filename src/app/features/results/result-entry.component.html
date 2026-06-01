@@ -98,26 +98,44 @@
           </div>
         }
 
-        <!-- Elegant Auto-save status indicator -->
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/30 dark:border-slate-700/20 shadow-xs transition-all duration-300">
-          @if (autoSaveStatus() === 'saving') {
-            <i class="fa-solid fa-cloud-arrow-up text-indigo-500 animate-pulse text-sm"></i>
-            <span class="text-indigo-650 dark:text-indigo-400 text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
-          } @else if (autoSaveStatus() === 'saved') {
-            <i class="fa-solid fa-cloud text-emerald-500 text-sm animate-bounce"></i>
-            <span class="text-emerald-600 dark:text-emerald-450 text-[10px] uppercase tracking-wider font-black">Đã lưu đám mây</span>
-          } @else {
-            <i class="fa-solid fa-cloud text-slate-400 opacity-60 text-sm"></i>
-            <span class="text-[10px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">Auto-save</span>
-          }
-        </div>
-
-        <!-- Save Draft Button -->
+        <!-- Smart Cloud Save Button (Combined Auto-save status & Manual trigger) -->
         <button (click)="triggerSaveDraft()" 
                 [disabled]="isProcessing()"
-                class="px-4 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100/50 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/30 rounded-xl transition flex items-center gap-2 disabled:opacity-50 shadow-sm hover:shadow active:scale-95 duration-150">
-          <i class="fa-solid" [class.fa-floppy-disk]="!isSavingDraft()" [class.fa-spinner]="isSavingDraft()" [class.fa-spin]="isSavingDraft()"></i>
-          <span>Lưu nháp</span>
+                class="px-4 py-2 text-xs font-bold rounded-xl border transition-all duration-300 flex items-center gap-2 shadow-sm hover:shadow active:scale-95 disabled:opacity-50"
+                [class.bg-slate-50/50]="autoSaveStatus() === 'idle'"
+                [class.text-slate-500]="autoSaveStatus() === 'idle'"
+                [class.dark:bg-slate-800/40]="autoSaveStatus() === 'idle'"
+                [class.dark:text-slate-400]="autoSaveStatus() === 'idle'"
+                [class.border-slate-200/30]="autoSaveStatus() === 'idle'"
+                [class.dark:border-slate-700/20]="autoSaveStatus() === 'idle'"
+                [class.hover:bg-slate-100/80]="autoSaveStatus() === 'idle'"
+                [class.dark:hover:bg-slate-750]="autoSaveStatus() === 'idle'"
+                
+                [class.bg-indigo-50/70]="autoSaveStatus() === 'saving'"
+                [class.text-indigo-650]="autoSaveStatus() === 'saving'"
+                [class.dark:bg-indigo-950/30]="autoSaveStatus() === 'saving'"
+                [class.dark:text-indigo-400]="autoSaveStatus() === 'saving'"
+                [class.border-indigo-200/50]="autoSaveStatus() === 'saving'"
+                [class.dark:border-indigo-900/30]="autoSaveStatus() === 'saving'"
+                
+                [class.bg-emerald-50/70]="autoSaveStatus() === 'saved'"
+                [class.text-emerald-650]="autoSaveStatus() === 'saved'"
+                [class.dark:bg-emerald-950/30]="autoSaveStatus() === 'saved'"
+                [class.dark:text-emerald-450]="autoSaveStatus() === 'saved'"
+                [class.border-emerald-200/50]="autoSaveStatus() === 'saved'"
+                [class.dark:border-emerald-900/30]="autoSaveStatus() === 'saved'"
+                title="Lưu nháp dữ liệu hiện tại lên đám mây">
+          
+          @if (autoSaveStatus() === 'saving') {
+            <i class="fa-solid fa-cloud-arrow-up text-indigo-500 animate-pulse text-sm"></i>
+            <span class="text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
+          } @else if (autoSaveStatus() === 'saved') {
+            <i class="fa-solid fa-cloud text-emerald-500 text-sm animate-bounce"></i>
+            <span class="text-[10px] uppercase tracking-wider font-black">Đã lưu đám mây</span>
+          } @else {
+            <i class="fa-solid fa-cloud text-slate-400 dark:text-slate-500 text-sm opacity-80"></i>
+            <span class="text-[10px] uppercase tracking-wider font-black">Lưu nháp</span>
+          }
         </button>
 
         <!-- View PDF / Open Docs if available for the active tab -->

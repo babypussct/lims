@@ -414,14 +414,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Lưu nháp thủ công
+   * Lưu nháp thủ công (Force manual save)
    */
   async triggerSaveDraft() {
-    if (!this.draft()) return;
+    if (!this.draft() || this.isProcessing()) return;
     this.isSavingDraft.set(true);
+    this.autoSaveStatus.set('saving'); // Kích hoạt trạng thái hiển thị "Đang lưu..."
+    
     const success = await this.resultService.saveDraft(this.requestId, this.draft()!, true);
+    
     if (success) {
       this.toast.show('Đã lưu bản nháp kết quả phân tích thành công!', 'success');
+      this.autoSaveStatus.set('saved'); // Hiển thị "Đã lưu đám mây"
+      setTimeout(() => {
+        if (this.autoSaveStatus() === 'saved') {
+          this.autoSaveStatus.set('idle');
+        }
+      }, 3000);
+    } else {
+      this.autoSaveStatus.set('idle');
     }
     this.isSavingDraft.set(false);
   }
