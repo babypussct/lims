@@ -151,9 +151,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Initialize auto-save subscription with 1.5s debounce
+    // Initialize auto-save subscription with 10s debounce
     this.autoSaveSub = this.draftChangeSubject.pipe(
-      debounceTime(1500)
+      debounceTime(10000)
     ).subscribe(async (updatedDraft) => {
       this.autoSaveStatus.set('saving');
       const success = await this.resultService.saveDraft(this.requestId, updatedDraft, false);
