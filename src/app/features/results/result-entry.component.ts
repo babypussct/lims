@@ -468,6 +468,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const currentConf = this.config();
     if (!currentDraft || !currentRun || !currentConf) return;
 
+    // Bắt buộc điền Mã hồ sơ, Tên Blank, Tên Spike cho SOP-01 trước khi xuất bản PDF
+    const key = this.configKey();
+    if (key === 'fipronil-chlorpyrifos') {
+      const maHoSo = String(currentDraft.page1Data['maHoSo'] || '').trim();
+      const blankName = String(currentDraft.page1Data['blankName'] || '').trim();
+      const spikeName = String(currentDraft.page1Data['spikeName'] || '').trim();
+
+      const missingFields: string[] = [];
+      if (!maHoSo) missingFields.push('1. Mã hồ sơ');
+      if (!blankName) missingFields.push('Tên Blank');
+      if (!spikeName) missingFields.push('Tên Spike');
+
+      if (missingFields.length > 0) {
+        this.toast.show(`Vui lòng điền đầy đủ thông tin bắt buộc: ${missingFields.join(', ')} trước khi xuất bản PDF!`, 'error');
+        return;
+      }
+    }
+
     this.isPublishing.set(true);
 
     try {
