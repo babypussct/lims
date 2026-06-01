@@ -102,28 +102,11 @@
         <button (click)="triggerSaveDraft()" 
                 [disabled]="isProcessing()"
                 class="px-4 py-2 text-xs font-bold rounded-xl border transition-all duration-300 flex items-center gap-2 shadow-sm hover:shadow active:scale-95 disabled:opacity-50"
-                [class.bg-slate-50/50]="autoSaveStatus() === 'idle'"
-                [class.text-slate-500]="autoSaveStatus() === 'idle'"
-                [class.dark:bg-slate-800/40]="autoSaveStatus() === 'idle'"
-                [class.dark:text-slate-400]="autoSaveStatus() === 'idle'"
-                [class.border-slate-200/30]="autoSaveStatus() === 'idle'"
-                [class.dark:border-slate-700/20]="autoSaveStatus() === 'idle'"
-                [class.hover:bg-slate-100/80]="autoSaveStatus() === 'idle'"
-                [class.dark:hover:bg-slate-750]="autoSaveStatus() === 'idle'"
-                
-                [class.bg-indigo-50/70]="autoSaveStatus() === 'saving'"
-                [class.text-indigo-650]="autoSaveStatus() === 'saving'"
-                [class.dark:bg-indigo-950/30]="autoSaveStatus() === 'saving'"
-                [class.dark:text-indigo-400]="autoSaveStatus() === 'saving'"
-                [class.border-indigo-200/50]="autoSaveStatus() === 'saving'"
-                [class.dark:border-indigo-900/30]="autoSaveStatus() === 'saving'"
-                
-                [class.bg-emerald-50/70]="autoSaveStatus() === 'saved'"
-                [class.text-emerald-650]="autoSaveStatus() === 'saved'"
-                [class.dark:bg-emerald-950/30]="autoSaveStatus() === 'saved'"
-                [class.dark:text-emerald-450]="autoSaveStatus() === 'saved'"
-                [class.border-emerald-200/50]="autoSaveStatus() === 'saved'"
-                [class.dark:border-emerald-900/30]="autoSaveStatus() === 'saved'"
+                [ngClass]="{
+                  'bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 border-slate-200/30 dark:border-slate-700/20 hover:bg-slate-100/80 dark:hover:bg-slate-750': autoSaveStatus() === 'idle',
+                  'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus() === 'saving',
+                  'bg-emerald-50/70 text-emerald-650 dark:bg-emerald-950/30 dark:text-emerald-450 border-emerald-200/50 dark:border-emerald-900/30': autoSaveStatus() === 'saved'
+                }"
                 title="Lưu nháp dữ liệu hiện tại lên đám mây">
           
           @if (autoSaveStatus() === 'saving') {
