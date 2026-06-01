@@ -100,24 +100,24 @@
 
         <!-- Smart Cloud Save Button (Combined Auto-save status & Manual trigger) -->
         <button (click)="triggerSaveDraft()" 
-                [disabled]="isProcessing()"
-                class="px-4 py-2 text-xs font-bold rounded-xl border transition-all duration-300 flex items-center gap-2 shadow-sm hover:shadow active:scale-95 disabled:opacity-50"
+                [disabled]="isProcessing() || autoSaveStatus() === 'saving' || autoSaveStatus() === 'synced'"
+                class="px-4 py-2 text-xs font-bold rounded-xl border transition-all duration-300 flex items-center gap-2 shadow-sm active:scale-95 disabled:opacity-75"
                 [ngClass]="{
-                  'bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 border-slate-200/30 dark:border-slate-700/20 hover:bg-slate-100/80 dark:hover:bg-slate-750': autoSaveStatus() === 'idle',
-                  'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus() === 'saving',
-                  'bg-emerald-50/70 text-emerald-650 dark:bg-emerald-950/30 dark:text-emerald-450 border-emerald-200/50 dark:border-emerald-900/30': autoSaveStatus() === 'saved'
+                  'bg-emerald-50/40 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-800/30 cursor-default': autoSaveStatus() === 'synced',
+                  'bg-amber-50/50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 hover:shadow': autoSaveStatus() === 'modified',
+                  'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus() === 'saving'
                 }"
-                title="Lưu nháp dữ liệu hiện tại lên đám mây">
+                [title]="autoSaveStatus() === 'synced' ? 'Dữ liệu phân tích đã được tự động đồng bộ thời gian thực' : 'Lưu nháp số liệu hiện tại lên đám mây'">
           
           @if (autoSaveStatus() === 'saving') {
-            <i class="fa-solid fa-cloud-arrow-up text-indigo-500 animate-pulse text-sm"></i>
+            <i class="fa-solid fa-spinner fa-spin text-indigo-500 text-sm"></i>
             <span class="text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
-          } @else if (autoSaveStatus() === 'saved') {
-            <i class="fa-solid fa-cloud text-emerald-500 text-sm animate-bounce"></i>
-            <span class="text-[10px] uppercase tracking-wider font-black">Đã lưu đám mây</span>
+          } @else if (autoSaveStatus() === 'synced') {
+            <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+            <span class="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">Đã lưu tự động</span>
           } @else {
-            <i class="fa-solid fa-cloud text-slate-400 dark:text-slate-500 text-sm opacity-80"></i>
-            <span class="text-[10px] uppercase tracking-wider font-black">Lưu nháp</span>
+            <i class="fa-solid fa-cloud-arrow-up text-amber-500 animate-pulse text-sm"></i>
+            <span class="text-[10px] uppercase tracking-wider font-black">Có thay đổi...</span>
           }
         </button>
 

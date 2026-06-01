@@ -64,7 +64,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing());
 
   // Auto-save state
-  autoSaveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
+  autoSaveStatus = signal<'synced' | 'modified' | 'saving'>('synced');
   private draftChangeSubject = new Subject<AnalysisResultDraft>();
   private autoSaveSub?: Subscription;
 
@@ -149,14 +149,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.autoSaveStatus.set('saving');
       const success = await this.resultService.saveDraft(this.requestId, updatedDraft, false);
       if (success) {
-        this.autoSaveStatus.set('saved');
-        setTimeout(() => {
-          if (this.autoSaveStatus() === 'saved') {
-            this.autoSaveStatus.set('idle');
-          }
-        }, 3000);
+        this.autoSaveStatus.set('synced');
       } else {
-        this.autoSaveStatus.set('idle');
+        this.autoSaveStatus.set('modified');
       }
     });
     
@@ -405,6 +400,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
     this.draft.set(updatedDraft);
+    if (this.autoSaveStatus() !== 'saving') {
+      this.autoSaveStatus.set('modified');
+    }
     this.draftChangeSubject.next(updatedDraft);
   }
 
@@ -420,14 +418,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     
     if (success) {
       this.toast.show('Đã lưu bản nháp kết quả phân tích thành công!', 'success');
-      this.autoSaveStatus.set('saved'); // Hiển thị "Đã lưu đám mây"
-      setTimeout(() => {
-        if (this.autoSaveStatus() === 'saved') {
-          this.autoSaveStatus.set('idle');
-        }
-      }, 3000);
+      this.autoSaveStatus.set('synced'); // Hiển thị "Đã lưu tự động"
     } else {
-      this.autoSaveStatus.set('idle');
+      this.autoSaveStatus.set('modified');
     }
     this.isSavingDraft.set(false);
   }
