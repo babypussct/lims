@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-prompt.component';
+import { StateService } from '../../core/services/state.service';
 
 declare let QRious: any;
 
@@ -217,9 +218,9 @@ declare let QRious: any;
             </div>
             
             <!-- Footer -->
-            <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8">
-                &copy; {{year}} LIMS &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
-                <span class="text-gray-500">NAFIQPM6 LIMS Cloud v1.0</span>
+            <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8 select-none">
+                &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
+                <span class="text-gray-400/80 dark:text-gray-500">NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</span>
             </div>
 
             <!-- Install App Button & Prompt -->
@@ -251,6 +252,7 @@ declare let QRious: any;
 export class LoginComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   toast = inject(ToastService);
+  state = inject(StateService);
   
   mode = signal<'google' | 'password' | 'qr'>('google');
   logoutReason = signal<string | null>(null);
