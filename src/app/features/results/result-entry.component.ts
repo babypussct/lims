@@ -94,7 +94,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   
   detectedPrefixes = computed(() => {
     const r = this.run();
-    const d = this.draft();
     if (!r) return [];
     const prefixes = new Set<string>();
     
@@ -104,14 +103,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
       prefixes.add(prefix);
     });
-
-    // 2. Scan from existing reports in draft to avoid missing generated reports
-    if (d && d.reports) {
-      Object.keys(d.reports).forEach(key => {
-        const prefix = key === '_NO_PREFIX_' ? '' : key;
-        prefixes.add(prefix);
-      });
-    }
     
     return Array.from(prefixes).sort();
   });
@@ -505,7 +496,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     try {
       const activeFilter = this.activeFilter();
-      const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+      const prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
       const key = this.configKey();
       let reportPayload: any;
 

@@ -888,22 +888,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
     
     const prefixes = new Set<string>();
     
-    // 1. Quét từ danh sách mẫu thực tế
+    // Quét từ danh sách mẫu thực tế
     (run.sampleList || []).forEach((s: string) => {
       const startsWithLetter = /^[a-zA-Z]/.test(s);
       const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
       prefixes.add(prefix);
     });
-
-    // 2. Quét từ các khóa báo cáo đã in trong cơ sở dữ liệu để phòng ngừa lỗi thiếu sót
-    // Post-splitting: report keys are in analysisResultSummary.reports (metadata doc)
-    const summaryReports = run.analysisResult?.reports || run.analysisResultSummary?.reports;
-    if (summaryReports) {
-      Object.keys(summaryReports).forEach(key => {
-        const prefix = key === '_NO_PREFIX_' ? '' : key;
-        prefixes.add(prefix);
-      });
-    }
     
     return Array.from(prefixes).sort();
   }
