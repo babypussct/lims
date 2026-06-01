@@ -127,4 +127,32 @@ export class ReportService {
       samples,
     };
   }
+
+  /**
+   * Tải tệp Excel gốc lên Google Drive của mẻ chạy qua Apps Script Web App.
+   */
+  async uploadExcelToDrive(
+    requestId: string,
+    fileName: string,
+    base64Data: string
+  ): Promise<{ success: boolean; fileUrl?: string; fileId?: string; error?: string }> {
+    if (!this.GAS_URL) {
+      throw new Error('Chưa cấu hình GAS Web App URL.');
+    }
+
+    const payload = {
+      action: 'upload_excel',
+      requestId,
+      fileName,
+      fileData: base64Data
+    };
+
+    const result = await firstValueFrom(
+      this.http.post<any>(this.GAS_URL, JSON.stringify(payload), {
+        headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
+      })
+    );
+
+    return result;
+  }
 }

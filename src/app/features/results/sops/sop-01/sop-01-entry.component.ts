@@ -5,6 +5,8 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
 import { calculateSop01Recovery } from './sop-01-engine';
 import { MasterTargetService } from '../../../targets/master-target.service';
 import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
+import { ProgressService } from '../../../../core/services/progress.service';
+import { ReportService } from '../../../../core/services/report.service';
 
 @Component({
   selector: 'app-sop-01-entry',
@@ -265,6 +267,38 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
           <div class="flex flex-wrap items-center gap-3">
             <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
             
+            <!-- Nhập file MassHunter -->
+            <button type="button"
+                    (click)="massHunterFileInput.click()" 
+                    class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-600 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                    title="Nhập kết quả tự động từ file excel Agilent MassHunter">
+              <i class="fa-solid fa-file-excel text-emerald-500"></i>
+              <span>Nhập file MassHunter</span>
+            </button>
+            <input #massHunterFileInput type="file" (change)="importMassHunterExcel($event)" accept=".xlsx" class="hidden">
+
+            <!-- Làm tròn số thập phân -->
+            <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs">
+              <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Làm tròn thập phân:</span>
+              <select [(ngModel)]="decimalPlaces" 
+                      class="bg-transparent text-xs text-slate-700 dark:text-slate-300 font-extrabold focus:outline-none cursor-pointer">
+                <option [ngValue]="1">1 chữ số (e.g. 1.2)</option>
+                <option [ngValue]="2">2 chữ số (e.g. 1.25)</option>
+                <option [ngValue]="3">3 chữ số (e.g. 1.250)</option>
+                <option [ngValue]="4">4 chữ số (e.g. 1.2500)</option>
+              </select>
+            </div>
+
+            @if (draft.page1Data['massHunterExcelUrl']) {
+              <a [href]="draft.page1Data['massHunterExcelUrl']" 
+                 target="_blank"
+                 class="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                 title="Xem tệp Excel thô gốc đã tải lên Google Drive">
+                <i class="fa-solid fa-arrow-up-right-from-square text-indigo-500"></i>
+                <span>Xem tệp MassHunter thô</span>
+              </a>
+            }
+
             <button (click)="bulkFillND()" 
                     class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                     title="Đặt toàn bộ các ô kết quả chưa điền là ND">
@@ -410,10 +444,13 @@ export class Sop01EntryComponent implements OnInit {
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   private masterTargetService = inject(MasterTargetService);
+  private progressService = inject(ProgressService);
+  private reportService = inject(ReportService);
   masterTargets = signal<any[]>([]);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
+  decimalPlaces = 2; // Số chữ số thập phân làm tròn (Mặc định 2)
 
   // Bulk rack properties
   bulkRackStart = 1;
@@ -832,5 +869,221 @@ export class Sop01EntryComponent implements OnInit {
         }
       }
     }, 10);
+  }
+
+  async importMassHunterExcel(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    const XLSX = await import('xlsx');
+    const reader = new FileReader();
+
+    reader.onload = (e: any) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+        
+        // 1. Lặp qua các sheet hoạt chất để trích xuất số liệu
+        const sheetMap: Record<string, string> = {
+          'fipron': 'kqFip',
+          'fipronil': 'kqFip',
+          'fipronildesulfinyl': 'kqFipDesl',
+          'fipronil_desulfinyl': 'kqFipDesl',
+          'fipronilsulfide': 'kqFipSulf',
+          'fipronil_sulfide': 'kqFipSulf',
+          'fipronilsulfone': 'kqFipSulf2',
+          'fipronil_sulfone': 'kqFipSulf2',
+          'chlorpyrifos': 'kqClp',
+          'chlorpyrifosmethyl': 'kqClpMe',
+          'chlorpyrifos_methyl': 'kqClpMe',
+          'chlorpyriphos-methyl-desmethyl': 'kqClpMeDes',
+          'chlorpyrifos-methyl-desmethyl': 'kqClpMeDes'
+        };
+
+        const displayRows = this.getDisplayRowsForFipronil();
+        const r2Values: number[] = [];
+
+        workbook.SheetNames.forEach(sheetName => {
+          const cleanSheetName = sheetName.toLowerCase().replace(/[\s\-_]/g, '');
+          const colKey = sheetMap[cleanSheetName];
+          if (!colKey) return; 
+
+          const sheet = workbook.Sheets[sheetName];
+          if (!sheet) return;
+
+          // A. Trích xuất R2 ở ô N8 (Hàng 8, Cột N/Index 13) hoặc tìm ô chứa R2
+          let r2: number | null = null;
+          const cellN8 = sheet[XLSX.utils.encode_cell({ r: 7, c: 13 })];
+          if (cellN8 && cellN8.v !== undefined && !isNaN(parseFloat(String(cellN8.v)))) {
+            r2 = parseFloat(String(cellN8.v));
+          } else {
+            const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:O20');
+            for (let r = range.s.r; r <= range.e.r; r++) {
+              for (let c = range.s.c; c <= range.e.c; c++) {
+                const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+                if (cell?.v && String(cell.v).trim().toUpperCase() === 'R2') {
+                  const nextCell = sheet[XLSX.utils.encode_cell({ r: r + 1, c })]; 
+                  if (nextCell && nextCell.v !== undefined && !isNaN(parseFloat(String(nextCell.v)))) {
+                    r2 = parseFloat(String(nextCell.v));
+                  }
+                  break;
+                }
+              }
+              if (r2 !== null) break;
+            }
+          }
+
+          if (r2 !== null) {
+            r2Values.push(r2);
+          }
+
+          // B. Trích xuất các mẫu bắt đầu từ hàng 11 (Index 10)
+          const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:AD100');
+          let colSampleName = 8;
+          let colFinalConc = 23;
+
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const cellVal = String(sheet[XLSX.utils.encode_cell({ r: 9, c })]?.v || '').trim().toLowerCase();
+            if (cellVal === 'sample name') {
+              colSampleName = c;
+            } else if (cellVal === 'final-conc.' || cellVal === 'final conc' || cellVal === 'final conc.') {
+              colFinalConc = c;
+            }
+          }
+
+          for (let r = 10; r <= range.e.r; r++) {
+            const sampleNameCell = sheet[XLSX.utils.encode_cell({ r, c: colSampleName })];
+            const finalConcCell = sheet[XLSX.utils.encode_cell({ r, c: colFinalConc })];
+
+            if (!sampleNameCell || sampleNameCell.v === undefined || sampleNameCell.v === null) continue;
+
+            const excelSampleName = String(sampleNameCell.v).trim();
+            const excelSampleNameLower = excelSampleName.toLowerCase();
+            let finalConcStr = String(finalConcCell?.v || '').trim();
+            
+            let isND = false;
+            let valNum: number | null = null;
+            if (finalConcStr.toUpperCase() === 'N.D' || finalConcStr === '' || finalConcStr.toUpperCase() === 'ND') {
+              isND = true;
+            } else {
+              const val = parseFloat(finalConcStr.replace(',', '.'));
+              if (!isNaN(val)) {
+                valNum = val;
+              } else {
+                isND = true;
+              }
+            }
+
+            displayRows.forEach(limsRow => {
+              const limsKey = limsRow.key;
+              const limsType = limsRow.type;
+              let isMatch = false;
+
+              if (limsType === 'QC_BLANK') {
+                isMatch = excelSampleNameLower.includes('bl') || excelSampleNameLower.includes('blank');
+              } else if (limsType === 'QC_SPIKE') {
+                isMatch = (excelSampleNameLower.includes('sp') || excelSampleNameLower.includes('spike')) && 
+                          !excelSampleNameLower.includes('sp_') && 
+                          !excelSampleNameLower.includes('spike_');
+              } else if (limsType === 'QC_SPIKE_N') {
+                const n = limsRow.n;
+                isMatch = excelSampleNameLower.includes(`sp_${n}`) || excelSampleNameLower.includes(`spike_${n}`);
+              } else if (limsType === 'QC_FINAL') {
+                isMatch = excelSampleNameLower.includes('final');
+              } else if (limsType === 'REGULAR') {
+                isMatch = excelSampleNameLower.includes(limsKey.toLowerCase());
+              }
+
+              if (isMatch) {
+                if (!this.draft.resultData[limsKey]) {
+                  this.draft.resultData[limsKey] = { selected: true };
+                }
+                
+                let cleanConc = '';
+                if (isND) {
+                  // Chỉ BLANK mới được điền ND, các loại mẫu khác tự động để trống
+                  cleanConc = (limsType === 'QC_BLANK') ? 'ND' : '';
+                } else if (valNum !== null) {
+                  cleanConc = valNum.toFixed(Number(this.decimalPlaces));
+                }
+
+                this.draft.resultData[limsKey][colKey] = cleanConc;
+                this.updateRecovery(limsKey);
+              }
+            });
+          }
+        });
+
+        // 2. Tự động đánh giá các tiêu chí QC chất lượng (qcR2 và qcThuHoi)
+        if (r2Values.length > 0) {
+          const allR2Ok = r2Values.every(v => v >= 0.99);
+          this.draft.page1Data['qcR2'] = allR2Ok;
+        }
+
+        const spikeRow = this.draft.resultData['QC_SPIKE'];
+        if (spikeRow && spikeRow['kqFip'] !== undefined && spikeRow['kqFip'] !== '') {
+          const fipVal = parseFloat(String(spikeRow['kqFip']));
+          if (!isNaN(fipVal)) {
+            const recovery = (fipVal / 5) * 100;
+            if (recovery >= 70 && recovery <= 120) {
+              this.draft.page1Data['qcThuHoi'] = true;
+            } else {
+              this.draft.page1Data['qcThuHoi'] = false;
+            }
+          }
+        }
+
+        // 3. Phát tín hiệu cập nhật dữ liệu để lưu Firestore
+        this.onDataChanged();
+
+        // 4. Khởi động tiến trình tải tệp gốc nhị phân lên Google Drive qua Apps Script
+        const readerForUpload = new FileReader();
+        readerForUpload.onload = async (uploadEvent: any) => {
+          const base64String = uploadEvent.target.result;
+          
+          this.progressService.start(
+            'Đang lưu tệp Excel gốc', 
+            'Đang kết nối và truyền dữ liệu nhị phân gốc sang Google Drive...', 
+            100
+          );
+          this.progressService.update(30, 'Đang gửi yêu cầu ghi tệp...');
+
+          try {
+            this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
+            const uploadRes = await this.reportService.uploadExcelToDrive(
+              this.draft.requestId, 
+              file.name, 
+              base64String
+            );
+
+            if (uploadRes.success && uploadRes.fileUrl) {
+              this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
+              this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
+              this.draft.page1Data['massHunterExcelName'] = file.name;
+              this.onDataChanged();
+              
+              this.progressService.complete();
+              alert('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!');
+            } else {
+              throw new Error(uploadRes.error || 'Lỗi không thể tạo file trên Drive.');
+            }
+          } catch (err: any) {
+            this.progressService.stop();
+            console.error('Lỗi upload Excel lên Drive:', err);
+            alert('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message);
+          }
+        };
+
+        readerForUpload.readAsDataURL(file);
+
+      } catch (err: any) {
+        console.error('Lỗi khi đọc file Excel MassHunter:', err);
+        alert('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message);
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    input.value = '';
   }
 }
