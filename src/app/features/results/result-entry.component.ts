@@ -289,6 +289,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       });
     }
 
+    if (sopConf.formType === 'type3b') {
+      defaultPage1['checkGopInChung'] = true;
+    }
+
     const defaultResultData: Record<string, any> = {};
     const sampleList = runDoc.sampleList || [];
     

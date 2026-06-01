@@ -102,8 +102,6 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
   const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
   const isTargetAssignedForGas = function(sampleCode, colKey) {
     if (!sampleTargetMap) return true;
-    const assignedTargetIds = sampleTargetMap[sampleCode];
-    if (!assignedTargetIds) return true;
 
     const COMPOUND_TO_FIRESTORE_ID = {
       'Aldrin': 'aldrin',
@@ -179,17 +177,32 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       'HCB': ['HCB', 'Hexachlorobenzene']
     };
 
-    const searchKeys = aliases[colKey] ? aliases[colKey] : [colKey];
-
-    return assignedTargetIds.some(function(tId) {
-      const lowerTId = tId.toLowerCase().trim();
-      return searchKeys.some(function(key) {
-        if (key.toLowerCase().trim() === lowerTId) return true;
-        const firestoreId = COMPOUND_TO_FIRESTORE_ID[key];
-        if (firestoreId && firestoreId.toLowerCase().trim() === lowerTId) return true;
-        return false;
+    const checkAssigned = function(assignedTargetIds, cKey) {
+      const searchKeys = aliases[cKey] ? aliases[cKey] : [cKey];
+      return assignedTargetIds.some(function(tId) {
+        const lowerTId = tId.toLowerCase().trim();
+        return searchKeys.some(function(key) {
+          if (key.toLowerCase().trim() === lowerTId) return true;
+          const firestoreId = COMPOUND_TO_FIRESTORE_ID[key];
+          if (firestoreId && firestoreId.toLowerCase().trim() === lowerTId) return true;
+          return false;
+        });
       });
-    });
+    };
+
+    // Support consolidated/grouped sample list checking
+    const subCodes = sampleCode.split(';').map(function(s) { return s.trim(); }).filter(Boolean);
+    if (subCodes.length > 1) {
+      return subCodes.some(function(sc) {
+        const assignedTargetIds = sampleTargetMap[sc];
+        if (!assignedTargetIds) return true;
+        return checkAssigned(assignedTargetIds, colKey);
+      });
+    }
+
+    const assignedTargetIds = sampleTargetMap[sampleCode];
+    if (!assignedTargetIds) return true;
+    return checkAssigned(assignedTargetIds, colKey);
   };
   
   for (const element of elements) {

@@ -484,6 +484,11 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       this.draft.page1Data['qcNhanDang'] = null;
     }
 
+    // Set default value for checkGopInChung if not set (default true)
+    if (this.draft.page1Data['checkGopInChung'] === undefined || this.draft.page1Data['checkGopInChung'] === null) {
+      this.draft.page1Data['checkGopInChung'] = true;
+    }
+
     // Set other evaluation checkboxes to true (Đạt) if not set
     if (this.checkboxList) {
       this.checkboxList.forEach(cb => {
