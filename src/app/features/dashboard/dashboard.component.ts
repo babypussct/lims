@@ -736,6 +736,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (action === 'RESET_RESULT_DATA') return 'đã reset số liệu kết quả';
       if (action === 'RESTORE_RESULT_BACKUP') return 'đã khôi phục số liệu lưu trữ';
       if (action === 'RESTORE_RESULT_VERSION') return 'đã khôi phục phiên bản cũ';
+      if (action === 'DIRECT_APPROVE') return 'đã duyệt trực tiếp SOP';
 
       if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'đã yêu cầu mượn chuẩn';
       if (action === 'APPROVE_STANDARD_REQUEST') return 'đã duyệt mượn chuẩn';

@@ -101,7 +101,7 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
  * Determines if a compound is assigned to a sample based on the sample's target ID array
  */
 export function isCompoundAssigned(assignedTargetIds: string[], compound: string): boolean {
-  if (!assignedTargetIds) return true;
+  if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
 
   // 1. Direct match: check if exact compound key or its lowercased version is in the array
   const lowerCompound = compound.toLowerCase();

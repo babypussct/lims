@@ -44,6 +44,7 @@ export class StatisticsComponent {
       if (action === 'RESET_RESULT_DATA') return 'Reset số liệu mẻ';
       if (action === 'RESTORE_RESULT_BACKUP') return 'Khôi phục từ bản backup';
       if (action === 'RESTORE_RESULT_VERSION') return 'Rollback phiên bản cũ';
+      if (action === 'DIRECT_APPROVE') return 'Duyệt trực tiếp SOP';
 
       if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'Yêu cầu mượn chuẩn';
       if (action === 'APPROVE_STANDARD_REQUEST') return 'Duyệt mượn chuẩn';

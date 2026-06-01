@@ -497,7 +497,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
     const assigned = targetMap[sampleCode];
-    if (!assigned) return true;
+    if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
   }
 
