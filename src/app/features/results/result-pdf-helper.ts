@@ -346,7 +346,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         rowData[`${backendKey}_qc2`] = 'N/A';
         rowData[`${backendKey}_qc3`] = 'N/A';
       } else {
-        const uniqueVals = new Set(filteredSamples.map(s => {
+        const uniqueVals = new Set<string>(filteredSamples.map((s: string) => {
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
@@ -364,7 +364,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           }
         } else {
           rowData[`${backendKey}_nd`] = false;
-          const resultParts = filteredSamples.map(s => {
+          const resultParts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
@@ -375,16 +375,16 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         }
 
         const getMergedQc = (qcKey: string): string => {
-          const uniqueQcs = new Set(filteredSamples.map(s => {
+          const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return sRes[`${c}_${qcKey}`] || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
-          return filteredSamples.map(s => {
+          return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${sRes[`${c}_${qcKey}`] || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
           }).join('; ');
         };
 
