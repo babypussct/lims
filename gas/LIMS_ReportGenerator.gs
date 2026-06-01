@@ -34,6 +34,8 @@ function doPost(e) {
       result = generateReport(sopId, metadata, samples, version);
     } else if (action === 'archive_reports') {
       result = archiveReportsAction(files);
+    } else if (action === 'upload_excel') {
+      result = uploadExcelAction(payload);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -449,4 +451,44 @@ function archiveSingleFile(fileId) {
   }
 
   file.moveTo(archiveFolder);
+}
+
+// ── Action: Tải file Excel MassHunter gốc lên Google Drive ─────────────
+function uploadExcelAction(payload) {
+  const { requestId, fileName, fileData } = payload;
+  const sopId = payload.sopId || 'fipronil-chlorpyrifos';
+  
+  if (!requestId || !fileName || !fileData) {
+    throw new Error('Missing required upload parameters (requestId, fileName, fileData)');
+  }
+
+  // 1. Tạo/lấy folder theo năm/tháng/chỉ tiêu cho mẻ chạy
+  const now = new Date();
+  const folder = getOrCreateFolder(now, sopId);
+
+  // 2. Làm sạch chuỗi Base64
+  let cleanBase64 = fileData;
+  const base64Index = cleanBase64.indexOf(';base64,');
+  if (base64Index !== -1) {
+    cleanBase64 = cleanBase64.substring(base64Index + 8);
+  }
+
+  // 3. Giải mã nhị phân
+  const decodedBytes = Utilities.base64Decode(cleanBase64);
+  const blob = Utilities.newBlob(
+    decodedBytes, 
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+    fileName
+  );
+
+  // 4. Tạo tệp trên Google Drive
+  const file = folder.createFile(blob);
+  
+  Logger.log(`Excel uploaded successfully: ${fileName} | ID: ${file.getId()} in folder: ${folder.getName()}`);
+
+  return {
+    fileId: file.getId(),
+    fileUrl: file.getUrl(),
+    fileName: file.getName()
+  };
 }

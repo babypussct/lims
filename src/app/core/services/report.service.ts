@@ -134,7 +134,8 @@ export class ReportService {
   async uploadExcelToDrive(
     requestId: string,
     fileName: string,
-    base64Data: string
+    base64Data: string,
+    sopId: string = 'fipronil-chlorpyrifos'
   ): Promise<{ success: boolean; fileUrl?: string; fileId?: string; error?: string }> {
     if (!this.GAS_URL) {
       throw new Error('Chưa cấu hình GAS Web App URL.');
@@ -144,7 +145,8 @@ export class ReportService {
       action: 'upload_excel',
       requestId,
       fileName,
-      fileData: base64Data
+      fileData: base64Data,
+      sopId
     };
 
     const result = await firstValueFrom(

@@ -1054,7 +1054,8 @@ export class Sop01EntryComponent implements OnInit {
             const uploadRes = await this.reportService.uploadExcelToDrive(
               this.draft.requestId, 
               file.name, 
-              base64String
+              base64String,
+              this.draft.sopId
             );
 
             if (uploadRes.success && uploadRes.fileUrl) {
