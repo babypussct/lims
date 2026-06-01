@@ -218,7 +218,7 @@ declare let QRious: any;
             
             <!-- Footer -->
             <div class="text-center mt-6 text-[11px] font-medium text-gray-400 mb-8">
-                &copy; {{year}} Laboratory Information Management System.<br>
+                &copy; {{year}} LIMS &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
                 <span class="text-gray-500">NAFIQPM6 LIMS Cloud v1.0</span>
             </div>
 
