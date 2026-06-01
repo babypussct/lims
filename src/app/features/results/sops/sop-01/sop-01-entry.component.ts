@@ -1051,9 +1051,15 @@ export class Sop01EntryComponent implements OnInit {
 
           try {
             this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
+            const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
+            const sopId = this.draft.sopId;
+            const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
+            const ext = file.name.substring(file.name.lastIndexOf('.'));
+            const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
+
             const uploadRes = await this.reportService.uploadExcelToDrive(
               this.draft.requestId, 
-              file.name, 
+              normalizedFileName, 
               base64String,
               this.draft.sopId
             );
@@ -1061,7 +1067,7 @@ export class Sop01EntryComponent implements OnInit {
             if (uploadRes.success && uploadRes.fileUrl) {
               this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
               this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
-              this.draft.page1Data['massHunterExcelName'] = file.name;
+              this.draft.page1Data['massHunterExcelName'] = normalizedFileName;
               this.onDataChanged();
               
               this.progressService.complete();
