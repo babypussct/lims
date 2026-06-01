@@ -180,18 +180,28 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
       <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar py-2.5 px-3 shrink-0 bg-indigo-50/15 dark:bg-indigo-955/15 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl shadow-2xs">
         <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mr-1">Danh sách mẫu:</span>
         @for (sampleCode of run.sampleList; track sampleCode; let idx = $index) {
-          <button (click)="selectSample(sampleCode)"
-                  [class]="activeSampleCode() === sampleCode 
-                    ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95' 
-                    : 'bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800/80 transition shrink-0 active:scale-95 shadow-2xs'"
-                  class="px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
-            <span [class]="activeSampleCode() === sampleCode
-                    ? 'w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black text-white'
-                    : 'w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80'">
-              {{ idx + 1 }}
-            </span>
-            <span class="font-mono font-bold">{{ sampleCode }}</span>
-          </button>
+          <div class="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition">
+            <!-- Checkbox to toggle inclusion in PDF -->
+            <input type="checkbox" 
+                   [(ngModel)]="draft.resultData[sampleCode]['selected']"
+                   (ngModelChange)="onDataChanged()"
+                   title="Bao gồm mẫu này trong báo cáo in PDF"
+                   class="ml-1.5 w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 cursor-pointer">
+            
+            <button (click)="selectSample(sampleCode)"
+                    [class]="activeSampleCode() === sampleCode 
+                      ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95' 
+                      : 'bg-transparent text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border-0 transition shrink-0 active:scale-95'"
+                    class="px-3 py-2 rounded-lg text-xs flex items-center gap-2"
+                    [class.opacity-50]="draft.resultData[sampleCode]?.['selected'] === false">
+              <span [class]="activeSampleCode() === sampleCode
+                      ? 'w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black text-white'
+                      : 'w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80'">
+                {{ idx + 1 }}
+              </span>
+              <span class="font-mono font-bold">{{ sampleCode }}</span>
+            </button>
+          </div>
         }
       </div>
 
@@ -414,6 +424,19 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     }
     if (!this.draft.page1Data) {
       this.draft.page1Data = {};
+    }
+    if (!this.draft.resultData) {
+      this.draft.resultData = {};
+    }
+    if (this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          this.draft.resultData[sampleCode] = {};
+        }
+        if (this.draft.resultData[sampleCode]['selected'] === undefined) {
+          this.draft.resultData[sampleCode]['selected'] = true;
+        }
+      });
     }
 
     // Set default value for khoiLuong if not set (default 10.0)
