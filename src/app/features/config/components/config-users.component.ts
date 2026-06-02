@@ -357,10 +357,27 @@ export class ConfigUsersComponent implements OnInit {
 
   async saveUser(u: UserProfile) {
       try { 
+          let resolvedPerms: string[] = [];
+          if (u.role === 'manager') {
+              resolvedPerms = Object.values(PERMISSIONS);
+          } else if (u.role === 'viewer') {
+              resolvedPerms = [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW];
+          } else if (u.role === 'pending') {
+              resolvedPerms = [];
+          } else if (u.role === 'staff') {
+              const roleId = u.roleId || 'role_staff_default';
+              const role = this.rolesList().find(r => r.id === roleId);
+              const custom = u.customPermissions || [];
+              resolvedPerms = Array.from(new Set([
+                  ...(role?.permissions || []),
+                  ...custom
+              ]));
+          }
+
           await this.fb.updateUserPermissions(
               u.uid, 
               u.role, 
-              u.permissions || [], 
+              resolvedPerms, 
               u.roleId || 'role_staff_default', 
               u.customPermissions || []
           ); 
