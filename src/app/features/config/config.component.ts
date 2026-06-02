@@ -11,11 +11,12 @@ import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ConfigGeneralComponent } from './components/config-general.component';
 import { ConfigSafetyComponent } from './components/config-safety.component';
 import { ConfigUsersComponent } from './components/config-users.component';
+import { ConfigRolesComponent } from './components/config-roles.component';
 
 @Component({
   selector: 'app-config',
   standalone: true,
-  imports: [CommonModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent],
+  imports: [CommonModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
   template: `
     <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
         
@@ -46,6 +47,9 @@ import { ConfigUsersComponent } from './components/config-users.component';
                 <button (click)="activeTab.set('safety')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'safety' ? 'border-orange-600 dark:border-orange-400 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                     <i class="fa-solid fa-shield-halved"></i> Định mức & Tiêu hao
                 </button>
+                <button (click)="activeTab.set('roles')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'roles' ? 'border-orange-600 dark:border-orange-400 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+                    <i class="fa-solid fa-user-shield"></i> Nhóm vai trò
+                </button>
                 <button (click)="activeTab.set('users')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'users' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                     <i class="fa-solid fa-users-gear"></i> Người dùng & Phân quyền
                 </button>
@@ -56,6 +60,9 @@ import { ConfigUsersComponent } from './components/config-users.component';
             }
             @if (activeTab() === 'safety') {
                 <app-config-safety></app-config-safety>
+            }
+            @if (activeTab() === 'roles') {
+                <app-config-roles></app-config-roles>
             }
             @if (activeTab() === 'users') {
                 <app-config-users></app-config-users>
@@ -161,7 +168,7 @@ export class ConfigComponent {
   
   getAvatarUrl = getAvatarUrl;
   
-  activeTab = signal<'general' | 'users' | 'safety'>('general');
+  activeTab = signal<'general' | 'users' | 'safety' | 'roles'>('general');
 
   availablePermissions = [
       { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },

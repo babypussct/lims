@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Hàm kiểm tra người dùng đã đăng nhập chưa
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 2. Lấy tài liệu User Profile của request hiện tại
+    function getUserProfile(appId) {
+      return get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data;
+    }
+
+    // 3. Kiểm tra User có phải là Manager (Quản lý cấp cao - Full Quyền) không
+    function isManager(appId) {
+      return isSignedIn() && getUserProfile(appId).role == 'manager';
+    }
+
+    // 4. Kiểm tra User có một quyền cụ thể nào đó không
+    function hasPermission(appId, permission) {
+      return isSignedIn() && (
+        isManager(appId) || 
+        getUserProfile(appId).permissions.hasAny([permission])
+      );
+    }
+
+    // --- Thực thi phân quyền cho các Module cốt lõi ---
+
+    // MODULE KHO (INVENTORY)
+    match /artifacts/{appId}/inventory/{itemId} {
+      allow read: if hasPermission(appId, 'inventory_view');
+      allow write: if hasPermission(appId, 'inventory_edit');
+    }
+
+    // MODULE CHUẨN ĐỐI CHIẾU (STANDARDS)
+    match /artifacts/{appId}/standards/{stdId} {
+      allow read: if hasPermission(appId, 'standard_view');
+      allow create, update: if hasPermission(appId, 'standard_edit');
+      allow delete: if hasPermission(appId, 'standard_delete') || isManager(appId);
+    }
+
+    match /artifacts/{appId}/standard_requests/{reqId} {
+      allow read: if hasPermission(appId, 'standard_view');
+      allow create, update: if hasPermission(appId, 'standard_request');
+      allow delete: if isManager(appId);
+    }
+
+    // MODULE QUY TRÌNH SOP (SOPS)
+    match /artifacts/{appId}/sops/{sopId} {
+      allow read: if hasPermission(appId, 'sop_view');
+      allow write: if hasPermission(appId, 'sop_edit');
+    }
+  }
+}

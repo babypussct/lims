@@ -102,7 +102,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   // Computed: Filter -> Sort -> Slice
   filteredItems = computed(() => {
-      let data = [...this.allStandards()]; // Clone array to avoid in-place mutation issues
+      let data = this.allStandards().filter(item => !item._isDeleted && item.status !== 'DELETED');
       const term = this.searchTerm().trim().toLowerCase();
       const widgetFilter = this.activeWidgetFilter();
       

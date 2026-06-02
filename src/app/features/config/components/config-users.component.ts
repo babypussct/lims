@@ -52,7 +52,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                         </div>
                         
                         <!-- Col 2: Role -->
-                        <div class="col-span-1 md:col-span-3">
+                        <div class="col-span-1 md:col-span-3 flex flex-col gap-2">
                             <label class="md:hidden text-[10px] uppercase font-bold text-slate-400 mb-1.5 block">Vai trò tài khoản</label>
                             <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
                                     class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 md:p-2 font-bold outline-none focus:border-indigo-500 dark:focus:border-indigo-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-300 transition"
@@ -63,6 +63,15 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                 <option value="viewer">Viewer</option>
                                 <option value="pending">Pending (Chờ duyệt)</option>
                             </select>
+                            
+                            @if (u.role === 'staff') {
+                                <select [ngModel]="u.roleId || 'role_staff_default'" (ngModelChange)="updateUserRoleId(u, $event)"
+                                        class="w-full text-xs md:text-sm border border-orange-300 dark:border-orange-700/80 rounded-lg p-2.5 md:p-2 font-bold outline-none focus:border-orange-500 bg-orange-50/50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-400 transition">
+                                    @for (r of rolesList(); track r.id) {
+                                        <option [value]="r.id">{{r.name}}</option>
+                                    }
+                                </select>
+                            }
                         </div>
                         
                         <!-- Col 3: Permissions -->
@@ -83,7 +92,7 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                             } @else {
                                 <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-3 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition rounded-xl flex items-center justify-between group">
                                     <div class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 truncate">
-                                        <i class="fa-solid fa-sliders text-blue-500 shrink-0"></i> <span class="truncate">Cấu hình Quyền ({{u.permissions?.length || 0}})</span>
+                                        <i class="fa-solid fa-sliders text-blue-500 shrink-0"></i> <span class="truncate">Cấu hình Quyền ({{getUserPermissionsCount(u)}})</span>
                                     </div>
                                     <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:text-blue-500 transition-colors"></i>
                                 </button>
@@ -135,13 +144,24 @@ import { getAvatarUrl } from '../../../shared/utils/utils';
                                 </span>
                                 <div class="flex flex-col gap-2 mt-1">
                                     @for (perm of group.perms; track perm.val) {
-                                        <label class="flex items-center gap-3 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 cursor-pointer transition">
-                                            <div class="relative w-8 h-4 shrink-0 mt-0.5">
-                                                <input type="checkbox" [checked]="hasPerm(user, perm.val)" (change)="togglePerm(user, perm.val)" class="peer sr-only">
-                                                <div class="w-full h-full bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:bg-[var(--tw-ring-color)] transition-colors" [ngStyle]="{'--tw-ring-color': group.ring}"></div>
-                                                <div class="absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                                        <label class="flex items-center justify-between p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 transition"
+                                               [class.cursor-not-allowed]="isPermInherited(user, perm.val)"
+                                               [class.cursor-pointer]="!isPermInherited(user, perm.val)">
+                                            <div class="flex items-center gap-3">
+                                                <div class="relative w-8 h-4 shrink-0 mt-0.5">
+                                                    <input type="checkbox" 
+                                                           [checked]="isPermChecked(user, perm.val)" 
+                                                           [disabled]="isPermInherited(user, perm.val)"
+                                                           (change)="togglePerm(user, perm.val)" 
+                                                           class="peer sr-only">
+                                                    <div class="w-full h-full bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:bg-[var(--tw-ring-color)] transition-colors" [ngStyle]="{'--tw-ring-color': group.ring}"></div>
+                                                    <div class="absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                                                </div>
+                                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{perm.label}}</span>
                                             </div>
-                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{perm.label}}</span>
+                                            @if (isPermInherited(user, perm.val)) {
+                                                <span class="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600/50">Kế thừa</span>
+                                            }
                                         </label>
                                     }
                                 </div>
@@ -231,26 +251,79 @@ export class ConfigUsersComponent implements OnInit {
     }
   ];
 
+  rolesList = signal<any[]>([]);
+
   ngOnInit() {
       this.loadUsers();
+      this.loadRoles();
   }
 
   async loadUsers() {
       try { const users = await this.fb.getAllUsers(); this.userList.set(users); } catch (e) { this.userList.set([]); }
   }
 
-  hasPerm(u: UserProfile, p: string) { return u.permissions?.includes(p); }
-  
-  togglePerm(u: UserProfile, p: string) {
+  async loadRoles() {
+      try { const roles = await this.fb.getRolesConfig(); this.rolesList.set(roles); } catch (e) { this.rolesList.set([]); }
+  }
+
+  updateUserRoleId(u: UserProfile, roleId: string) {
       this.userList.update(currentUsers => 
           currentUsers.map(user => {
               if (user.uid === u.uid) {
-                  const perms = user.permissions ? [...user.permissions] : [];
-                  const idx = perms.indexOf(p);
-                  if (idx > -1) perms.splice(idx, 1);
-                  else perms.push(p);
+                  return { ...user, roleId: roleId };
+              }
+              return user;
+          })
+      );
+  }
+
+  isPermInherited(u: UserProfile, p: string): boolean {
+      if (u.role !== 'staff') return false;
+      const roleId = u.roleId || 'role_staff_default';
+      const role = this.rolesList().find(r => r.id === roleId);
+      return role?.permissions?.includes(p) || false;
+  }
+
+  isPermChecked(u: UserProfile, p: string): boolean {
+      if (u.role === 'manager') return true;
+      if (u.role === 'viewer') {
+          return [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW].includes(p);
+      }
+      if (u.role === 'pending') return false;
+      // staff
+      const inherited = this.isPermInherited(u, p);
+      const custom = u.customPermissions?.includes(p) || false;
+      return inherited || custom;
+  }
+
+  getUserPermissionsCount(u: UserProfile): number {
+      if (u.role === 'manager') return Object.keys(PERMISSIONS).length;
+      if (u.role === 'viewer') return 4;
+      if (u.role === 'pending') return 0;
+      // staff
+      const roleId = u.roleId || 'role_staff_default';
+      const role = this.rolesList().find(r => r.id === roleId);
+      const custom = u.customPermissions || [];
+      const distinct = new Set([
+          ...(role?.permissions || []),
+          ...custom
+      ]);
+      return distinct.size;
+  }
+
+  hasPerm(u: UserProfile, p: string) { return u.permissions?.includes(p); }
+  
+  togglePerm(u: UserProfile, p: string) {
+      if (this.isPermInherited(u, p)) return;
+      this.userList.update(currentUsers => 
+          currentUsers.map(user => {
+              if (user.uid === u.uid) {
+                  const custom = user.customPermissions ? [...user.customPermissions] : [];
+                  const idx = custom.indexOf(p);
+                  if (idx > -1) custom.splice(idx, 1);
+                  else custom.push(p);
                   
-                  const updatedUser = { ...user, permissions: perms };
+                  const updatedUser = { ...user, customPermissions: custom };
                   // CRITICAL: Ensure the modal UI gets the new reference immediately!
                   if (this.selectedUserForPerms()?.uid === u.uid) {
                       this.selectedUserForPerms.set(updatedUser);
@@ -269,6 +342,11 @@ export class ConfigUsersComponent implements OnInit {
                   const updatedUser = { ...user, role: role };
                   if (role === 'viewer' || role === 'pending') {
                       updatedUser.permissions = [];
+                      updatedUser.customPermissions = [];
+                      updatedUser.roleId = '';
+                  } else if (role === 'staff') {
+                      updatedUser.roleId = 'role_staff_default';
+                      updatedUser.customPermissions = [];
                   }
                   return updatedUser;
               }
@@ -278,7 +356,16 @@ export class ConfigUsersComponent implements OnInit {
   }
 
   async saveUser(u: UserProfile) {
-      try { await this.fb.updateUserPermissions(u.uid, u.role, u.permissions || []); this.toast.show(`Đã cập nhật ${u.displayName}`, 'success'); } 
+      try { 
+          await this.fb.updateUserPermissions(
+              u.uid, 
+              u.role, 
+              u.permissions || [], 
+              u.roleId || 'role_staff_default', 
+              u.customPermissions || []
+          ); 
+          this.toast.show(`Đã cập nhật ${u.displayName}`, 'success'); 
+      } 
       catch (e) { this.toast.show('Lỗi cập nhật.', 'error'); }
   }
 

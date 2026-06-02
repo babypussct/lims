@@ -113,6 +113,7 @@ export class StandardCrudService {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
     await updateDoc(ref, { _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp() });
     await this.logGlobalActivity('SOFT_DELETE_STANDARD', `Đưa chuẩn vào thùng rác: ${name || id}`, id);
+    await this.fb.updateMetadata('standards');
   }
 
   async deleteSelectedStandards(ids: string[]): Promise<void> {
@@ -127,6 +128,7 @@ export class StandardCrudService {
     }
     if (opCount > 0) await batch.commit();
     await this.logGlobalActivity('SOFT_DELETE_BATCH', `Đã xóa lô ${ids.length} chuẩn đối chiếu.`);
+    await this.fb.updateMetadata('standards');
   }
 
   async restoreStandard(id: string, name = ''): Promise<void> {

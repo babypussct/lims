@@ -6,15 +6,13 @@
                 <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
                 Danh sách Chuẩn
             </button>
-            <div class="flex items-center gap-2">
-                @if(auth.canEditStandards()) {
-                    <button (click)="openPrintModal()" [disabled]="!standard()" class="w-9 h-9 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm active:scale-95 disabled:opacity-50" title="In nhãn">
-                        <i class="fa-solid fa-print"></i>
-                    </button>
-                    <button (click)="openEditModal()" [disabled]="!standard()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl shadow-md shadow-indigo-200 dark:shadow-none transition font-bold text-sm active:scale-95 disabled:opacity-50">
-                        <i class="fa-solid fa-pen text-xs"></i> Chỉnh sửa
-                    </button>
-                }
+            <div class="flex items-center gap-2" *appHasPermission="'standard_edit'">
+                <button (click)="openPrintModal()" [disabled]="!standard()" class="w-9 h-9 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm active:scale-95 disabled:opacity-50" title="In nhãn">
+                    <i class="fa-solid fa-print"></i>
+                </button>
+                <button (click)="openEditModal()" [disabled]="!standard()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl shadow-md shadow-indigo-200 dark:shadow-none transition font-bold text-sm active:scale-95 disabled:opacity-50">
+                    <i class="fa-solid fa-pen text-xs"></i> Chỉnh sửa
+                </button>
             </div>
         </div>
 
@@ -175,8 +173,7 @@
                                         <i class="fa-solid fa-file-pdf group-hover:-translate-y-0.5 transition-transform"></i> Xem CoA
                                     </button>
                                 }
-                                @if(auth.canEditStandards()) {
-                                    <button (click)="triggerQuickDriveUpload()" [disabled]="isUploadingCoa()" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition font-bold text-sm active:scale-95 disabled:opacity-50 group shadow-sm">
+                                    <button *appHasPermission="'standard_edit'" (click)="triggerQuickDriveUpload()" [disabled]="isUploadingCoa()" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition font-bold text-sm active:scale-95 disabled:opacity-50 group shadow-sm">
                                         @if(isUploadingCoa()) {
                                             <i class="fa-solid fa-circle-notch fa-spin"></i>
                                         } @else {
@@ -184,7 +181,6 @@
                                         }
                                         {{ std.certificate_ref ? 'Cập nhật CoA' : 'Upload CoA' }}
                                     </button>
-                                }
                             </div>
                         </div>
 
@@ -231,7 +227,7 @@
                             <h4 class="text-sm font-black text-blue-800 dark:text-blue-300">Đang được mượn bởi</h4>
                             <p class="text-base font-bold text-blue-900 dark:text-blue-200 mt-0.5">{{std.current_holder}}</p>
                         </div>
-                        @if(auth.canEditStandards() || std.current_holder_uid === auth.currentUser()?.uid) {
+                        @if(canReturnStandard()) {
                             <button (click)="goToReturn()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md active:scale-95 flex items-center gap-2">
                                 <i class="fa-solid fa-rotate-left"></i> Hoàn trả Chuẩn
                             </button>
@@ -240,7 +236,7 @@
                 }
 
                 <!-- ACTION SHORTCUTS (BOTTOM PANEL) -->
-                @if(canAssign(std) || std.status === 'DEPLETED' || std.current_amount <= 0 || (!std.certificate_ref && !auth.canEditStandards())) {
+                @if(canAssign(std) || std.status === 'DEPLETED' || std.current_amount <= 0 || canRequestCoa()) {
                     <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
 
@@ -264,7 +260,7 @@
                                 <button disabled class="px-4 py-2 bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400 rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed">
                                     <i class="fa-solid fa-hourglass-half"></i> Đang chờ duyệt
                                 </button>
-                            } @else if(auth.canAssignStandards()) {
+                            } @else if(canAssignStandards()) {
                                 <button (click)="openAssignModal(true)" class="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2">
                                     <i class="fa-solid fa-hand-holding-hand"></i> Gán cho mượn
                                 </button>
@@ -287,7 +283,7 @@
                             }
                         }
 
-                        @if(!std.certificate_ref && !auth.canEditStandards()) {
+                        @if(canRequestCoa()) {
                             <button (click)="requestCoa(std)" class="px-4 py-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-xl font-bold text-sm transition flex items-center gap-2" [disabled]="!!std.coa_requested_by" [class.opacity-50]="!!std.coa_requested_by">
                                 <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested_by" [class.fa-clock-rotate-left]="!!std.coa_requested_by"></i> {{std.coa_requested_by ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
                             </button>
@@ -335,9 +331,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
-                                                    @if(auth.canEditStandards()) {
-                                                        <button (click)="deleteLog(log, std.id!)" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-0 group-hover:opacity-100" title="Xóa & Hoàn kho"><i class="fa-solid fa-trash-can"></i></button>
-                                                    }
+                                                        <button *appHasPermission="'standard_edit'" (click)="deleteLog(log, std.id!)" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition opacity-0 group-hover:opacity-100" title="Xóa & Hoàn kho"><i class="fa-solid fa-trash-can"></i></button>
                                                 </td>
                                             </tr>
                                         } @empty {

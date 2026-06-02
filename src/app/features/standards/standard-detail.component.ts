@@ -21,11 +21,12 @@ import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { writeBatch, doc, deleteField, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent, HasPermissionDirective],
   templateUrl: './standard-detail.component.html'
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {
@@ -33,7 +34,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     router = inject(Router);
     stdService = inject(StandardService);
     firebaseService = inject(FirebaseService);
-    auth = inject(AuthService);
+    private auth = inject(AuthService);
     toast = inject(ToastService);
     state = inject(StateService);
     confirmation = inject(ConfirmationService);
@@ -126,6 +127,22 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         const baseUrl = window.location.origin;
         return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/#/standards/' + std.id)}`;
     });
+
+    canReturnStandard = computed(() => {
+        const std = this.standard();
+        if (!std) return false;
+        const isEditor = this.auth.hasPermission('standard_edit');
+        const isHolder = std.current_holder_uid === this.auth.currentUser()?.uid;
+        return isEditor || isHolder;
+    });
+
+    canRequestCoa = computed(() => {
+        const std = this.standard();
+        if (!std) return false;
+        return !std.certificate_ref && !this.auth.hasPermission('standard_edit');
+    });
+
+    canAssignStandards = computed(() => this.auth.hasPermission('standard_edit') || this.auth.hasPermission('standard_approve'));
 
     relatedStandards = computed(() => {
         const std = this.standard();
@@ -334,7 +351,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openEditModal() {
-        if (this.auth.canEditStandards() && this.standard()) {
+        if (this.auth.hasPermission('standard_edit') && this.standard()) {
             this.showEditModal.set(true);
         }
     }

@@ -1,7 +1,8 @@
 
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { DeltaSyncService, DeltaSyncConfig } from '../../core/services/delta-sync.service';
+import { AuthService } from '../../core/services/auth.service';
 import { 
   collection, doc, setDoc, deleteDoc, 
   serverTimestamp, getDoc, writeBatch
@@ -12,6 +13,7 @@ import { MasterAnalyte } from '../../core/models/sop.model';
 export class MasterTargetService {
   private fb = inject(FirebaseService);
   private deltaSync = inject(DeltaSyncService);
+  private auth = inject(AuthService);
 
   /** Reactive signal cho components subscribe trực tiếp */
   readonly analytes = signal<MasterAnalyte[]>([]);
@@ -26,14 +28,23 @@ export class MasterTargetService {
     return collection(this.fb.db, this.collectionPath);
   }
 
-  private readonly SYNC_CONFIG: DeltaSyncConfig = {
-    cacheKey: 'delta_master_analytes',
-    cursorKey: 'delta_master_analytes_cursor',
-    collectionPath: '', // set dynamically in ensureSingleton()
-    orderByField: 'lastUpdated',
-    orderDirection: 'desc',
-    maxCacheSize: 500
-  };
+  private get _deltaCacheKey() {
+    return `delta_master_analytes_${this.fb.APP_ID}`;
+  }
+
+  private get _deltaCursorKey() {
+    return `delta_master_analytes_cursor_${this.fb.APP_ID}`;
+  }
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (!user) {
+        this.singletonStarted = false;
+        this.analytes.set([]);
+      }
+    });
+  }
 
   /**
    * Khởi tạo singleton DeltaSync listener (chỉ gọi 1 lần).
@@ -44,8 +55,12 @@ export class MasterTargetService {
     this.singletonStarted = true;
 
     const config: DeltaSyncConfig = {
-      ...this.SYNC_CONFIG,
-      collectionPath: this.collectionPath
+      cacheKey: this._deltaCacheKey,
+      cursorKey: this._deltaCursorKey,
+      collectionPath: this.collectionPath,
+      orderByField: 'lastUpdated',
+      orderDirection: 'desc',
+      maxCacheSize: 500
     };
 
     this.deltaSync.startSingletonListener<MasterAnalyte>(config, (data) => {
@@ -68,7 +83,7 @@ export class MasterTargetService {
     if (current.length > 0) return current;
 
     // Chưa có data → đọc từ DeltaSync cache (localStorage)
-    const cached = this.deltaSync.getCache<MasterAnalyte>('delta_master_analytes');
+    const cached = this.deltaSync.getCache<MasterAnalyte>(this._deltaCacheKey);
     if (cached.length > 0) {
       const sorted = [...cached].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       this.analytes.set(sorted);

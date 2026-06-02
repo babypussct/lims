@@ -199,6 +199,73 @@ import { Router } from '@angular/router';
                 </div>
             }
         </div>
+
+        <!-- PREMIUM GLASSMORPHIC SMART CONFIRMATION MODAL -->
+        @if (showRevokeModal() && selectedRevokeRequest(); as req) {
+            <div class="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+                <!-- Backdrop blur -->
+                <div class="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-md transition-opacity duration-300" (click)="closeRevokeModal()"></div>
+                
+                <!-- Modal Content -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg border border-slate-100 dark:border-slate-700/80 shadow-2xl relative z-10 overflow-hidden flex flex-col scale-in transform transition-all duration-300 max-h-[90vh]">
+                    <!-- Top subtle accent bar -->
+                    <div class="h-1.5 w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500"></div>
+
+                    <div class="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
+                        <!-- Icon and Title -->
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/50 flex items-center justify-center text-orange-500 shrink-0">
+                                <i class="fa-solid fa-triangle-exclamation text-xl animate-bounce"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight">Xác nhận Hoàn tác & Hủy duyệt</h3>
+                                <p class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">SOP: {{ req.sopName }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Question Description -->
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed mb-6">
+                            Hệ thống sẽ hoàn trả lượng hóa chất sử dụng trở lại kho. Bạn muốn xử lý yêu cầu này thế nào tiếp theo?
+                        </p>
+
+                        <!-- Choice Cards -->
+                        <div class="space-y-4">
+                            <!-- Option A: Đưa về chờ duyệt -->
+                            <button (click)="confirmRevoke('pending')" 
+                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-blue-950/20 dark:hover:to-indigo-950/20 border border-slate-105 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-black text-slate-800 dark:text-slate-200">Đưa về Chờ duyệt</div>
+                                    <div class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">Trả lại kho và chuyển phiếu về trạng thái chờ phê duyệt để có thể sửa đổi hoặc duyệt lại.</div>
+                                </div>
+                            </button>
+
+                            <!-- Option B: Từ chối hoàn toàn -->
+                            <button (click)="confirmRevoke('rejected')" 
+                                    class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-red-50/50 hover:to-rose-50/50 dark:hover:from-red-950/20 dark:hover:to-rose-950/20 border border-slate-105 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 transition group flex gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-ban"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-black text-red-600 dark:text-red-400">Từ chối hoàn toàn</div>
+                                    <div class="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">Trả lại kho và hủy bỏ hoàn toàn yêu cầu này (không thể phê duyệt lại).</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Footer actions -->
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-105 dark:border-slate-750/80 flex justify-end">
+                        <button (click)="closeRevokeModal()" 
+                                class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition">
+                            Hủy thao tác
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
   `,
   styles: [`
@@ -207,6 +274,13 @@ import { Router } from '@angular/router';
     }
     .hover\:bg-fuchsia-700:hover {
       background-color: rgb(162 28 175) !important;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .scale-in {
+      animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
   `]
 })
@@ -219,6 +293,8 @@ export class RequestListComponent implements OnInit {
   currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
   processingId = signal<string | null>(null);
   isLoading = signal(true);
+  showRevokeModal = signal<boolean>(false);
+  selectedRevokeRequest = signal<Request | null>(null);
 
   // Date Filters for History
   startDate = signal<string>(this.getFirstDayOfMonth());
@@ -302,8 +378,26 @@ export class RequestListComponent implements OnInit {
 
   async revoke(req: Request) {
       if (this.processingId()) return;
+      this.selectedRevokeRequest.set(req);
+      this.showRevokeModal.set(true);
+  }
+
+  async confirmRevoke(targetStatus: 'pending' | 'rejected') {
+      const req = this.selectedRevokeRequest();
+      if (!req || this.processingId()) return;
+      this.showRevokeModal.set(false);
       this.processingId.set(req.id);
-      try { await this.state.revokeApproval(req); } finally { this.processingId.set(null); }
+      try {
+          await this.state.revokeApproval(req, targetStatus);
+      } finally {
+          this.processingId.set(null);
+          this.selectedRevokeRequest.set(null);
+      }
+  }
+
+  closeRevokeModal() {
+      this.showRevokeModal.set(false);
+      this.selectedRevokeRequest.set(null);
   }
 
   editApproved(req: Request) {

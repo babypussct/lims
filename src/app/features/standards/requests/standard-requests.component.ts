@@ -22,11 +22,12 @@ import { RequestsTableComponent } from './components/requests-table.component';
 import { CreateRequestDrawerComponent } from './components/create-request-drawer.component';
 import { RequestsActionModalsComponent, ActionModalMode } from './components/requests-action-modals.component';
 import { StandardsPurchaseModalComponent } from '../components/standards-purchase-modal.component';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-standard-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RequestsKanbanComponent, RequestsTableComponent, CreateRequestDrawerComponent, RequestsActionModalsComponent, StandardsPurchaseModalComponent, ExportModalComponent, HasPermissionDirective],
   providers: [DatePipe],
   templateUrl: './standard-requests.component.html'
 })
@@ -36,7 +37,7 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
-  auth = inject(AuthService);
+  private auth = inject(AuthService);
   fb = inject(FormBuilder);
   router = inject(Router);
   datePipe = inject(DatePipe);

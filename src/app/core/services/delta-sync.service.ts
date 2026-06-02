@@ -144,7 +144,7 @@ export class DeltaSyncService {
         (docData as any).id = change.doc.id;
         this._normalizeTimestamps(docData, sortField);
 
-        if (isDeleted(docData)) {
+        if (change.type === 'removed' || isDeleted(docData)) {
           const idx = items.findIndex(i => i.id === docData.id);
           if (idx !== -1) { items.splice(idx, 1); hasChanges = true; }
         } else {
@@ -312,7 +312,7 @@ export class DeltaSyncService {
         (docData as any).id = change.doc.id;
         this._normalizeTimestamps(docData, sortField);
 
-        if (isDeleted(docData)) {
+        if (change.type === 'removed' || isDeleted(docData)) {
           const idx = cachedItems.findIndex(i => i.id === docData.id);
           if (idx !== -1) { cachedItems.splice(idx, 1); hasChanges = true; }
         } else {

@@ -265,7 +265,7 @@ export class StateService implements OnDestroy {
     };
 
     const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
-      this.approvedRequests.set(runs);
+      this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
     });
     this.listeners.push(appSub);
 
@@ -756,9 +756,8 @@ export class StateService implements OnDestroy {
     } catch (e: any) { this.toast.show(e.message, 'error'); }
   }
 
-  async revokeApproval(req: Request) {
+  async revokeApproval(req: Request, targetStatus: 'pending' | 'rejected' = 'pending') {
     if (!this.auth.canApprove()) return;
-    if (!await this.confirmationService.confirm({ message: `HOÀN TÁC: Trả lại kho và hủy duyệt SOP "${req.sopName}"?`, confirmText: 'Hoàn tác', isDangerous: true })) return;
 
     try {
       await runTransaction(this.fb.db, async (transaction) => {
@@ -769,12 +768,30 @@ export class StateService implements OnDestroy {
         for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount), lastUpdated: serverTimestamp() }); }
 
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
-        transaction.update(reqRef, { status: 'pending', approvedAt: deleteField(), lastUpdated: serverTimestamp() });
+        
+        const updates: any = { 
+          status: targetStatus, 
+          approvedAt: deleteField(), 
+          lastUpdated: serverTimestamp() 
+        };
+        if (targetStatus === 'rejected') {
+          updates.rejectedAt = serverTimestamp();
+        }
+        transaction.update(reqRef, updates);
 
         const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
-        transaction.set(logRef, { action: 'REVOKE_APPROVE', details: `Hoàn tác: ${req.sopName}`, timestamp: serverTimestamp(), lastUpdated: serverTimestamp(), user: this.getCurrentUserName(), printable: false, requestId: req.id });
+        const actionText = targetStatus === 'rejected' ? 'Hủy & từ chối trực tiếp' : 'Hoàn tác';
+        transaction.set(logRef, { 
+          action: targetStatus === 'rejected' ? 'REVOKE_AND_REJECT' : 'REVOKE_APPROVE', 
+          details: `${actionText}: ${req.sopName}`, 
+          timestamp: serverTimestamp(), 
+          lastUpdated: serverTimestamp(), 
+          user: this.getCurrentUserName(), 
+          printable: false, 
+          requestId: req.id 
+        });
       });
-      this.toast.show('Đã hoàn tác!', 'info');
+      this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
     } catch (e: any) { this.toast.show(e.message, 'error'); }
   }
 

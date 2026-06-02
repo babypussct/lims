@@ -126,7 +126,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                             <td class="px-6 py-5 text-center">
                                 <!-- Quick Actions -->
                                 <div class="flex items-center justify-center gap-1">
-                                    @if(req.status === 'PENDING_APPROVAL' && auth.canApproveStandards()) {
+                                    @if(req.status === 'PENDING_APPROVAL' && canApproveRequest(req)) {
                                         <button (click)="actionApprove.emit(req)" 
                                                 class="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20 active:scale-90" 
                                                 title="Duyệt & Giao"><i class="fa-solid fa-check"></i></button>
@@ -135,7 +135,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                                 title="Từ chối"><i class="fa-solid fa-times"></i></button>
                                     }
                                     @if(req.status === 'IN_PROGRESS') {
-                                        @if(req.requestedBy === auth.currentUser()?.uid) {
+                                        @if(isCurrentUser(req.requestedBy)) {
                                             <button (click)="actionLogUsage.emit(req)" 
                                                     class="p-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition shadow-lg shadow-teal-500/20 active:scale-90" 
                                                     title="Ghi nhận dùng"><i class="fa-solid fa-pen-nib"></i></button>
@@ -143,13 +143,13 @@ import { AuthService } from '../../../../core/services/auth.service';
                                                     class="p-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition shadow-lg shadow-amber-500/20 active:scale-90 ml-1" 
                                                     title="Báo cáo trả"><i class="fa-solid fa-reply"></i></button>
                                         }
-                                        @if(auth.canApproveStandards() && req.requestedBy !== auth.currentUser()?.uid) {
+                                        @if(canApproveAndNotRequestedBySelf(req)) {
                                             <button (click)="actionReturn.emit({req, isForce: true})" 
                                                     class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition active:scale-90 ml-1" 
                                                     title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand"></i></button>
                                         }
                                     }
-                                    @if(req.status === 'PENDING_RETURN' && auth.canApproveStandards()) {
+                                    @if(req.status === 'PENDING_RETURN' && canApproveRequest(req)) {
                                         <button (click)="actionAdminReceive.emit(req)" 
                                                 class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-xs font-black" 
                                                 title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
@@ -157,7 +157,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                                     @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
                                         <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default" title="Đã khóa"><i class="fa-solid fa-lock"></i></button>
                                     }
-                                    @if(auth.canDeleteStandardLogs()) {
+                                    @if(canDeleteRequest(req)) {
                                         <button (click)="actionDelete.emit(req)" 
                                                 class="p-2 text-rose-300 hover:text-rose-600 bg-rose-50/50 dark:bg-rose-900/20 rounded-xl transition active:scale-90 ml-1" 
                                                 title="Xóa yêu cầu & Hoàn tác tồn kho"><i class="fa-solid fa-trash-can"></i></button>
@@ -183,7 +183,25 @@ import { AuthService } from '../../../../core/services/auth.service';
   `
 })
 export class RequestsTableComponent {
-  auth = inject(AuthService);
+  private auth = inject(AuthService);
+
+  canApproveRequest(req: StandardRequest): boolean {
+    return this.auth.hasPermission('standard_approve');
+  }
+
+  canDeleteRequest(req: StandardRequest): boolean {
+    return this.auth.hasPermission('standard_log_delete');
+  }
+
+  isCurrentUser(uid: string): boolean {
+    const user = this.auth.currentUser();
+    return !!user && uid === user.uid;
+  }
+
+  canApproveAndNotRequestedBySelf(req: StandardRequest): boolean {
+    const user = this.auth.currentUser();
+    return this.auth.hasPermission('standard_approve') && !!user && req.requestedBy !== user.uid;
+  }
 
   @Input() requests: StandardRequest[] = [];
   @Input() isLoading: boolean = false;

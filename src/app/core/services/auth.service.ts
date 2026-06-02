@@ -16,10 +16,14 @@ import {
   type User,
   type Auth
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc, arrayRemove } from 'firebase/firestore';
+import { 
+  doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc, updateDoc, arrayRemove,
+  collection, query, limit, getDocs, writeBatch 
+} from 'firebase/firestore';
 import { Router } from '@angular/router';
 import { FirebaseService } from './firebase.service';
 import { AuthSession } from '../models/auth.model';
+import { DeltaSyncService } from './delta-sync.service';
 
 export const PERMISSIONS = {
   INVENTORY_VIEW: 'inventory_view',
@@ -39,12 +43,61 @@ export const PERMISSIONS = {
   USER_MANAGE: 'user_manage'
 };
 
+export const DEFAULT_ROLES = {
+  role_staff_default: {
+    name: 'Nhân viên mặc định',
+    description: 'Quyền cơ bản của nhân viên LIMS (Chỉ xem)',
+    permissions: [
+      PERMISSIONS.INVENTORY_VIEW,
+      PERMISSIONS.STANDARD_VIEW,
+      PERMISSIONS.SOP_VIEW,
+      PERMISSIONS.RECIPE_VIEW
+    ],
+    isSystemRole: true
+  },
+  role_lab_technician: {
+    name: 'Kiểm nghiệm viên',
+    description: 'Kỹ thuật viên phòng thí nghiệm (Xem/Sửa kho, đăng ký chuẩn)',
+    permissions: [
+      PERMISSIONS.INVENTORY_VIEW,
+      PERMISSIONS.INVENTORY_EDIT,
+      PERMISSIONS.STANDARD_VIEW,
+      PERMISSIONS.RECIPE_VIEW,
+      PERMISSIONS.SOP_VIEW,
+      PERMISSIONS.BATCH_RUN
+    ],
+    isSystemRole: true
+  },
+  role_qc_lead: {
+    name: 'Trưởng nhóm QC',
+    description: 'Trưởng nhóm QC (Phê duyệt chuẩn/SOP, Quản lý kho)',
+    permissions: [
+      PERMISSIONS.INVENTORY_VIEW,
+      PERMISSIONS.INVENTORY_EDIT,
+      PERMISSIONS.STANDARD_VIEW,
+      PERMISSIONS.STANDARD_EDIT,
+      PERMISSIONS.STANDARD_APPROVE,
+      PERMISSIONS.STANDARD_LOG_VIEW,
+      PERMISSIONS.RECIPE_VIEW,
+      PERMISSIONS.RECIPE_EDIT,
+      PERMISSIONS.SOP_VIEW,
+      PERMISSIONS.SOP_EDIT,
+      PERMISSIONS.SOP_APPROVE,
+      PERMISSIONS.BATCH_RUN,
+      PERMISSIONS.REPORT_VIEW
+    ],
+    isSystemRole: true
+  }
+};
+
 export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
   role: 'manager' | 'staff' | 'viewer' | 'pending';
-  permissions?: string[];
+  roleId?: string; // Khóa liên kết Dynamic RBAC
+  permissions?: string[]; // Fallback hoặc Quyền cá nhân
+  customPermissions?: string[]; // Quyền ghi đè cá nhân cho Staff
   photoURL?: string;
   createdAt?: any;
 }
@@ -53,6 +106,7 @@ export interface UserProfile {
 export class AuthService {
   private fb = inject(FirebaseService);
   private router = inject(Router);
+  private deltaSync = inject(DeltaSyncService);
   private auth: Auth;
   private readonly CRED_KEY = 'lims_local_c'; // Key for local storage
 
@@ -61,6 +115,8 @@ export class AuthService {
   /** true trong khi đang xử lý token trả về từ Google redirect — dùng để ẩn màn hình Login */
   isProcessingRedirect = signal<boolean>(false);
   private userUnsub: any = null;
+  private rolesUnsub: any = null;
+  readonly rolesConfig = signal<Record<string, string[]>>({});
 
   constructor() {
     this.auth = getAuth(this.fb.app);
@@ -92,6 +148,7 @@ export class AuthService {
         this.syncUser(firebaseUser);
       } else {
         if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+        if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
         this.currentUser.set(null);
         this.isAuthReady.set(true);
       }
@@ -193,6 +250,13 @@ export class AuthService {
   }
 
   async logout() {
+    if (this.userUnsub) { this.userUnsub(); this.userUnsub = null; }
+    if (this.rolesUnsub) { this.rolesUnsub(); this.rolesUnsub = null; }
+    try {
+        this.deltaSync.destroyAll(); // Hủy toàn bộ DeltaSync real-time listeners
+    } catch (e) {
+        console.warn('[Auth] Failed to destroy DeltaSync singletons:', e);
+    }
     this.clearLocalCredentials(); // Security cleanup
     
     // Xóa FCM token của thiết bị này để ngừng nhận Push Notifications
@@ -219,6 +283,11 @@ export class AuthService {
     // Automatically link password provider in background for Google Auth users
     this.linkPasswordProviderIfNeeded(firebaseUser).catch(err => {
         console.warn("[Auth] linkPasswordProviderIfNeeded error:", err);
+    });
+
+    // Đồng bộ cấu hình nhóm quyền động
+    this.syncRolesConfig().catch(err => {
+        console.warn("[Auth] Failed to sync roles_config:", err);
     });
     
     this.userUnsub = onSnapshot(userRef, async (snap) => {
@@ -340,12 +409,71 @@ export class AuthService {
   }
 
   // --- Permission Checks ---
+
+  // Quyền hạn thời gian thực được tính toán động (Dynamic RBAC)
+  readonly userPermissions = computed(() => {
+    const u = this.currentUser();
+    if (!u) return [];
+    if (u.role === 'manager') return ['*']; // Full quyền
+    if (u.role === 'viewer') return [
+      PERMISSIONS.INVENTORY_VIEW,
+      PERMISSIONS.STANDARD_VIEW,
+      PERMISSIONS.SOP_VIEW,
+      PERMISSIONS.RECIPE_VIEW
+    ];
+    if (u.role === 'pending') return [];
+
+    // Người dùng thuộc nhóm Staff
+    const roleId = u.roleId;
+    if (roleId && this.rolesConfig()[roleId]) {
+      return this.rolesConfig()[roleId];
+    }
+    
+    // Fallback: Sử dụng danh sách permissions tĩnh gán trực tiếp nếu chưa chuyển dịch
+    return u.permissions || [];
+  });
   
   hasPermission(perm: string): boolean {
-    const u = this.currentUser();
-    if (!u) return false;
-    if (u.role === 'manager') return true;
-    return u.permissions?.includes(perm) || false;
+    const perms = this.userPermissions();
+    return perms.includes('*') || perms.includes(perm);
+  }
+
+  private async syncRolesConfig() {
+    if (this.rolesUnsub) { this.rolesUnsub(); }
+    
+    // Khởi tạo các vai trò hệ thống mặc định nếu trống
+    await this.initializeDefaultRolesIfNeeded();
+    
+    const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
+    this.rolesUnsub = onSnapshot(rolesRef, (snap) => {
+        const config: Record<string, string[]> = {};
+        snap.forEach((doc) => {
+            const data = doc.data();
+            config[doc.id] = data['permissions'] || [];
+        });
+        this.rolesConfig.set(config);
+    }, (err) => {
+        console.warn("[Auth] Failed to listen to roles_config:", err);
+    });
+  }
+
+  private async initializeDefaultRolesIfNeeded() {
+    try {
+        const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
+        const snap = await getDocs(query(rolesRef, limit(1)));
+        if (snap.empty) {
+            console.log("[Auth] roles_config is empty. Initializing default system roles...");
+            const batch = writeBatch(this.fb.db);
+            for (const [roleId, data] of Object.entries(DEFAULT_ROLES)) {
+                const roleDocRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config/${roleId}`);
+                batch.set(roleDocRef, data);
+            }
+            await batch.commit();
+            console.log("[Auth] Successfully initialized default system roles.");
+        }
+    } catch (e) {
+        console.warn("[Auth] Failed to initialize default roles:", e);
+    }
   }
 
   canApprove(): boolean { return this.hasPermission(PERMISSIONS.SOP_APPROVE); }

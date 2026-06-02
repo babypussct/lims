@@ -22,11 +22,12 @@ import { Subscription } from 'rxjs';
 import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-calculator',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RecipeManagerComponent, QuickGenerateSampleModalComponent, HasPermissionDirective],
   templateUrl: './calculator.component.html'
 })
 export class CalculatorComponent implements OnDestroy {
@@ -36,7 +37,7 @@ export class CalculatorComponent implements OnDestroy {
   // ... imports and basic setup identical to previous ...
   private fb: FormBuilder = inject(FormBuilder);
   public state = inject(StateService);
-  public auth = inject(AuthService);
+  private auth = inject(AuthService);
   private invService = inject(InventoryService); 
   private recipeService = inject(RecipeService);
   private calcService = inject(CalculatorService);

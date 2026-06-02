@@ -29,8 +29,12 @@ export class InventoryService {
   private auth = inject(AuthService);
 
   // ─── Delta Sync Cache ───────────────────────────────────────────────────────
-  private readonly INV_CACHE_KEY       = 'lims_inv_list_cache';
-  private readonly INV_SYNC_SECONDS_KEY = 'lims_inv_sync_seconds';
+  private get _deltaCacheKey() {
+    return 'lims_inv_list_cache_' + this.fb.APP_ID;
+  }
+  private get _deltaSyncSecondsKey() {
+    return 'lims_inv_sync_seconds_' + this.fb.APP_ID;
+  }
 
   private _memInventory: InventoryItem[] | null = null;
 
@@ -47,7 +51,8 @@ export class InventoryService {
   // ─── INVALIDATE CACHE ───────────────────────────────────────────────────────
   invalidateLocalInventoryCache(): void {
     this._memInventory = null;
-    localStorage.removeItem(this.INV_SYNC_SECONDS_KEY);
+    localStorage.removeItem(this._deltaSyncSecondsKey);
+    localStorage.removeItem(this._deltaCacheKey);
   }
 
   // ─── OPTIMIZED READ Operations ──────────────────────────────────────────────
@@ -145,7 +150,7 @@ export class InventoryService {
       }
 
       const localItems = this._loadInvFromCache();
-      const lastSyncSec = Number(localStorage.getItem(this.INV_SYNC_SECONDS_KEY) || 0);
+      const lastSyncSec = Number(localStorage.getItem(this._deltaSyncSecondsKey) || 0);
 
       if (!localItems || lastSyncSec === 0) {
           // COLD START
@@ -216,7 +221,7 @@ export class InventoryService {
 
   private _loadInvFromCache(): InventoryItem[] | null {
       try {
-          const raw = localStorage.getItem(this.INV_CACHE_KEY);
+          const raw = localStorage.getItem(this._deltaCacheKey);
           return raw ? (JSON.parse(raw) as InventoryItem[]) : null;
       } catch {
           return null;
@@ -225,17 +230,17 @@ export class InventoryService {
 
   private _saveInvToCache(items: InventoryItem[]): void {
       try {
-          localStorage.setItem(this.INV_CACHE_KEY, JSON.stringify(items));
+          localStorage.setItem(this._deltaCacheKey, JSON.stringify(items));
           const maxSec = items.reduce((max, i) => {
               const sec = (i.lastUpdated as any)?.seconds ?? 0;
               return sec > max ? sec : max;
           }, 0);
           if (maxSec > 0) {
-              localStorage.setItem(this.INV_SYNC_SECONDS_KEY, maxSec.toString());
+              localStorage.setItem(this._deltaSyncSecondsKey, maxSec.toString());
           }
       } catch (e: any) {
           console.warn('[InventoryService] Cache write failed:', e?.name);
-          try { localStorage.removeItem(this.INV_CACHE_KEY); } catch {}
+          try { localStorage.removeItem(this._deltaCacheKey); } catch {}
       }
   }
 

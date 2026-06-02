@@ -150,7 +150,9 @@ export class FirebaseService {
                 email: data['email'] || '',
                 displayName: data['displayName'] || 'User',
                 role: data['role'] || 'staff',
-                permissions: data['permissions'] || []
+                roleId: data['roleId'] || '',
+                permissions: data['permissions'] || [],
+                customPermissions: data['customPermissions'] || []
             };
         });
     } catch (e: any) {
@@ -159,9 +161,40 @@ export class FirebaseService {
     }
   }
 
-  async updateUserPermissions(uid: string, role: string, permissions: string[]) {
+  async updateUserPermissions(uid: string, role: string, permissions: string[], roleId?: string, customPermissions?: string[]) {
       const ref = doc(this.db, `artifacts/${this.APP_ID}/users`, uid);
-      await updateDoc(ref, { role, permissions });
+      const updateData: any = { role, permissions };
+      if (roleId !== undefined) {
+          updateData.roleId = roleId;
+      }
+      if (customPermissions !== undefined) {
+          updateData.customPermissions = customPermissions;
+      }
+      await updateDoc(ref, updateData);
+  }
+
+  async getRolesConfig(): Promise<any[]> {
+      try {
+          const colRef = collection(this.db, `artifacts/${this.APP_ID}/roles_config`);
+          const snapshot = await getDocs(colRef);
+          return snapshot.docs.map(d => ({
+              id: d.id,
+              ...d.data()
+          }));
+      } catch (e) {
+          console.warn("Could not fetch roles_config:", e);
+          return [];
+      }
+  }
+
+  async saveRoleConfig(roleId: string, roleData: any) {
+      const ref = doc(this.db, `artifacts/${this.APP_ID}/roles_config`, roleId);
+      await setDoc(ref, roleData, { merge: true });
+  }
+
+  async deleteRoleConfig(roleId: string) {
+      const ref = doc(this.db, `artifacts/${this.APP_ID}/roles_config`, roleId);
+      await deleteDoc(ref);
   }
 
   // --- Storage Estimation --- OPTIMIZED: uses getCountFromServer (1 read/collection)

@@ -15,14 +15,13 @@
              <button (click)="openExportModal()" class="group px-4 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all font-black text-xs flex items-center gap-2 active:scale-95">
                 <i class="fa-solid fa-file-excel text-sm group-hover:scale-110 transition-transform"></i> Xuất Excel
              </button>
-             @if (auth.canApproveStandards()) {
-                 <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+             <!-- Removed @if -->
+                 <button *appHasPermission="'standard_approve'" (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                      <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu Mua sắm
                      @if (pendingPurchaseRequestsCount() > 0) {
                         <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
                      }
                  </button>
-             }
              <button (click)="openRequestModal()" class="group px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                 <i class="fa-solid fa-plus-circle text-base group-hover:rotate-90 transition-transform"></i> Tạo Yêu cầu Mới
              </button>
