@@ -37,6 +37,7 @@ service cloud.firestore {
     
     // Mọi người dùng đã đăng nhập đều có thể đọc/ghi tài khoản của chính mình (FCM token, avatar, v.v.)
     // Manager hoặc User có quyền 'user_manage' có thể xem và sửa thông tin tất cả user
+    // ĐỂ TRÁNH RECURSIVE LOOP, ta tự viết kiểm tra Manager trực tiếp bằng exists/get mà không gọi hasPermission!
     match /artifacts/{appId}/users/{uid} {
       allow read, write: if isSignedIn() && (
         request.auth.uid == uid || 
@@ -71,6 +72,9 @@ service cloud.firestore {
     }
     match /artifacts/{appId}/notifications/{docId} {
       allow read, write: if isSignedIn();
+    }
+    match /artifacts/{appId}/auth_sessions/{sessionId} {
+      allow read, write: if true;
     }
 
     // --- CÁC MODULE NGHIỆP VỤ ---
@@ -135,7 +139,7 @@ service cloud.firestore {
 
     // MODULE YÊU CẦU KIỂM NGHIỆM VÀ KẾT QUẢ (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
-      allow read: if isSignedIn(); // Viewers/Staff đều có quyền xem yêu cầu
+      allow read: if true; // Public read cho phép truy xuất kết quả/QR code không cần đăng nhập
       allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
 
       match /history/{histId} {
@@ -143,19 +147,18 @@ service cloud.firestore {
         allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
       }
     }
+    match /artifacts/{appId}/results_details/{docId} {
+      allow read, write: if isSignedIn();
+    }
 
     // Yêu cầu in ấn nhãn / barcode (Print Jobs)
     match /artifacts/{appId}/print_jobs/{jobId} {
-      allow read: if isSignedIn();
+      allow read: if true; // Public read cho phép máy in hoặc client quét barcode không cần login
       allow write: if isSignedIn();
     }
 
     // Thư viện Target Master
     match /artifacts/{appId}/target_groups/{tgId} {
-      allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
-    }
-    match /artifacts/{appId}/target_libraries/{tlId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
     }
@@ -169,7 +172,7 @@ service cloud.firestore {
     // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
     match /artifacts/{appId}/logs/{logId} {
       allow create: if isSignedIn();
-      allow read: if hasPermission(appId, 'standard_log_view') || isManager(appId);
+      allow read: if true; // Public read cho phép quét QR code truy xuất nguồn gốc
       allow update, delete: if isManager(appId);
     }
   }
