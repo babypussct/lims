@@ -62,6 +62,11 @@ export class CalculatorComponent implements OnDestroy {
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
   
+  // Custom Visual Selection Matrix State
+  customSampleTargetMap = signal<Record<string, Set<string>>>({});
+  isMatrixCustomized = signal<boolean>(false);
+  matrixOpen = signal<boolean>(false);
+  
   // Quick Generate Modal State
   quickGenerateModalOpen = signal(false);
   
@@ -89,6 +94,59 @@ export class CalculatorComponent implements OnDestroy {
       if (!term) return sop.targets;
       return sop.targets.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
   });
+
+  getSelectedTargetsList = computed(() => {
+      const sop = this.activeSop();
+      if (!sop || !sop.targets) return [];
+      const selected = this.selectedTargets();
+      return sop.targets.filter(t => selected.has(t.id));
+  });
+
+  samplesList = computed(() => {
+      const val = this.sampleListText();
+      return val.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  });
+
+  isTargetCheckedForSample(sample: string, targetId: string): boolean {
+      const map = this.customSampleTargetMap();
+      return map[sample]?.has(targetId) || false;
+  }
+
+  toggleMatrixCell(sample: string, targetId: string) {
+      this.isMatrixCustomized.set(true);
+      this.customSampleTargetMap.update(map => {
+          const next = { ...map };
+          const set = next[sample] ? new Set(next[sample]) : new Set<string>();
+          if (set.has(targetId)) {
+              set.delete(targetId);
+          } else {
+              set.add(targetId);
+          }
+          next[sample] = set;
+          return next;
+      });
+      // Re-run calculations
+      this.runCalculation(this.activeSop()!, this.form().value);
+  }
+
+  resetMatrix() {
+      this.isMatrixCustomized.set(false);
+      this.syncMatrixWithGlobals();
+  }
+
+  syncMatrixWithGlobals() {
+      const samples = this.samplesList();
+      const globalTargets = this.selectedTargets();
+      const map: Record<string, Set<string>> = {};
+      samples.forEach(sample => {
+          map[sample] = new Set(globalTargets);
+      });
+      this.customSampleTargetMap.set(map);
+      // Re-run calculations
+      if (this.activeSop()) {
+          this.runCalculation(this.activeSop()!, this.form().value);
+      }
+  }
 
   form = signal<FormGroup>(this.fb.group({ safetyMargin: [10], analysisDate: [this.getTodayDate()] }));
   private formValueSub?: Subscription;
@@ -207,6 +265,24 @@ export class CalculatorComponent implements OnDestroy {
             } else {
                 this.selectedTargets.set(new Set());
             }
+
+            if (editingReq.sampleTargetMap) {
+                const map: Record<string, Set<string>> = {};
+                Object.entries(editingReq.sampleTargetMap).forEach(([sample, targets]) => {
+                    map[sample] = new Set(targets);
+                });
+                this.customSampleTargetMap.set(map);
+                this.isMatrixCustomized.set(true);
+            } else {
+                // Initialize default map matching globals
+                const map: Record<string, Set<string>> = {};
+                const tIds = editingReq.targetIds || [];
+                (editingReq.sampleList || []).forEach(sample => {
+                    map[sample] = new Set(tIds);
+                });
+                this.customSampleTargetMap.set(map);
+                this.isMatrixCustomized.set(false);
+            }
         } else {
             if (cached && cached.sopId === s.id) { 
                 newForm.patchValue(cached.formValues); 
@@ -214,6 +290,8 @@ export class CalculatorComponent implements OnDestroy {
             this.sampleListText.set('');
             this.sampleCount.set(0);
             this.selectedTargets.set(new Set());
+            this.customSampleTargetMap.set({});
+            this.isMatrixCustomized.set(false);
             this.marginMode.set('auto');
         }
         
@@ -256,10 +334,59 @@ export class CalculatorComponent implements OnDestroy {
       if (this.form().contains('n_sample') && lines.length > 0) {
           this.form().patchValue({ n_sample: lines.length });
       }
+
+      // Sync customSampleTargetMap
+      if (!this.isMatrixCustomized()) {
+          this.syncMatrixWithGlobals();
+      } else {
+          // Matrix has customizations: keep existing ones, add new ones with globals, remove old ones
+          this.customSampleTargetMap.update(map => {
+              const next: Record<string, Set<string>> = {};
+              const globalTargets = this.selectedTargets();
+              lines.forEach(sample => {
+                  if (map[sample]) {
+                      next[sample] = map[sample];
+                  } else {
+                      next[sample] = new Set(globalTargets);
+                  }
+              });
+              return next;
+          });
+          // Re-run calculations since custom targets affect chemical needs
+          this.runCalculation(this.activeSop()!, this.form().value);
+      }
   }
 
   toggleTarget(id: string) {
-      this.selectedTargets.update(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+      this.selectedTargets.update(s => { 
+          const n = new Set(s); 
+          if (n.has(id)) {
+              n.delete(id); 
+              // Delete from all samples' sets in the matrix
+              this.customSampleTargetMap.update(map => {
+                  const next = { ...map };
+                  Object.keys(next).forEach(sample => {
+                      const set = new Set(next[sample]);
+                      set.delete(id);
+                      next[sample] = set;
+                  });
+                  return next;
+              });
+          } else {
+              n.add(id); 
+              // Add to all samples' sets in the matrix
+              this.customSampleTargetMap.update(map => {
+                  const next = { ...map };
+                  Object.keys(next).forEach(sample => {
+                      const set = new Set(next[sample]);
+                      set.add(id);
+                      next[sample] = set;
+                  });
+                  return next;
+              });
+          }
+          return n; 
+      });
   }
 
   isAllSelected(allTargets: any[]): boolean {
@@ -268,8 +395,28 @@ export class CalculatorComponent implements OnDestroy {
   }
 
   toggleAllTargets(allTargets: any[]) {
-      if (this.isAllSelected(allTargets)) { this.selectedTargets.set(new Set()); } 
-      else { this.selectedTargets.set(new Set(allTargets.map(t => t.id))); }
+      if (this.isAllSelected(allTargets)) { 
+          this.selectedTargets.set(new Set()); 
+          // Clear all targets from all samples in matrix
+          this.customSampleTargetMap.update(map => {
+              const next = { ...map };
+              Object.keys(next).forEach(sample => {
+                  next[sample] = new Set<string>();
+              });
+              return next;
+          });
+      } else { 
+          const allIds = allTargets.map(t => t.id);
+          this.selectedTargets.set(new Set(allIds)); 
+          // Set all targets for all samples in matrix
+          this.customSampleTargetMap.update(map => {
+              const next = { ...map };
+              Object.keys(next).forEach(sample => {
+                  next[sample] = new Set<string>(allIds);
+              });
+              return next;
+          });
+      }
   }
 
   getPayloadData() {
@@ -282,8 +429,9 @@ export class CalculatorComponent implements OnDestroy {
       
       const targetIds = Array.from(this.selectedTargets());
       const sampleTargetMap: Record<string, string[]> = {};
+      const currentMap = this.customSampleTargetMap();
       sampleList.forEach(sample => {
-          sampleTargetMap[sample] = targetIds;
+          sampleTargetMap[sample] = currentMap[sample] ? Array.from(currentMap[sample]) : targetIds;
       });
       
       return { 
