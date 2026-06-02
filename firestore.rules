@@ -25,31 +25,126 @@ service cloud.firestore {
       );
     }
 
-    // --- Thực thi phân quyền cho các Module cốt lõi ---
+    // --- CẤU HÌNH HỆ THỐNG VÀ VAI TRÒ ---
+    
+    // Mọi người dùng đã đăng nhập đều có thể đọc/ghi tài khoản của chính mình (FCM token, avatar, v.v.)
+    // Manager hoặc User có quyền 'user_manage' có thể xem và sửa thông tin tất cả user
+    match /artifacts/{appId}/users/{uid} {
+      allow read, write: if isSignedIn() && (request.auth.uid == uid || isManager(appId) || hasPermission(appId, 'user_manage'));
+    }
+
+    // Cấu hình nhóm vai trò động (Roles Config)
+    match /artifacts/{appId}/roles_config/{roleId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+    }
+
+    // Metadata hệ thống và Cấu hình chung
+    match /artifacts/{appId}/system/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+    }
+    match /artifacts/{appId}/config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+    }
+    match /artifacts/{appId}/system_updates/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+    }
+
+    // --- CÁC MODULE NGHIỆP VỤ ---
 
     // MODULE KHO (INVENTORY)
     match /artifacts/{appId}/inventory/{itemId} {
       allow read: if hasPermission(appId, 'inventory_view');
       allow write: if hasPermission(appId, 'inventory_edit');
+      
+      // Lịch sử tiêu hao / thay đổi kho
+      match /history/{histId} {
+        allow read: if hasPermission(appId, 'inventory_view');
+        allow write: if hasPermission(appId, 'inventory_edit');
+      }
     }
 
-    // MODULE CHUẨN ĐỐI CHIẾU (STANDARDS)
-    match /artifacts/{appId}/standards/{stdId} {
+    // MODULE CHUẨN ĐỐI CHIẾU (REFERENCE STANDARDS)
+    match /artifacts/{appId}/reference_standards/{stdId} {
       allow read: if hasPermission(appId, 'standard_view');
       allow create, update: if hasPermission(appId, 'standard_edit');
       allow delete: if hasPermission(appId, 'standard_delete') || isManager(appId);
+
+      // Nhật ký mượn/sử dụng chất chuẩn chi tiết
+      match /logs/{logId} {
+        allow read: if hasPermission(appId, 'standard_view');
+        allow write: if hasPermission(appId, 'standard_edit');
+      }
     }
 
+    // Yêu cầu mua chuẩn (Purchase/Standard Requests)
     match /artifacts/{appId}/standard_requests/{reqId} {
       allow read: if hasPermission(appId, 'standard_view');
-      allow create, update: if hasPermission(appId, 'standard_request');
+      allow create, update: if hasPermission(appId, 'standard_request') || hasPermission(appId, 'standard_edit');
+      allow delete: if isManager(appId);
+    }
+    match /artifacts/{appId}/purchase_requests/{reqId} {
+      allow read: if hasPermission(appId, 'standard_view');
+      allow create, update: if hasPermission(appId, 'standard_request') || hasPermission(appId, 'standard_edit');
       allow delete: if isManager(appId);
     }
 
-    // MODULE QUY TRÌNH SOP (SOPS)
+    // Lịch sử sử dụng chuẩn chung
+    match /artifacts/{appId}/standard_usages/{useId} {
+      allow read: if hasPermission(appId, 'standard_view');
+      allow write: if hasPermission(appId, 'standard_edit');
+    }
+
+    // MODULE QUY TRÌNH SOP & CÔNG THỨC (SOPS & RECIPES)
     match /artifacts/{appId}/sops/{sopId} {
       allow read: if hasPermission(appId, 'sop_view');
       allow write: if hasPermission(appId, 'sop_edit');
+
+      match /history/{histId} {
+        allow read: if hasPermission(appId, 'sop_view');
+        allow write: if hasPermission(appId, 'sop_edit');
+      }
+    }
+    match /artifacts/{appId}/recipes/{recipeId} {
+      allow read: if hasPermission(appId, 'recipe_view');
+      allow write: if hasPermission(appId, 'recipe_edit');
+    }
+
+    // MODULE YÊU CẦU KIỂM NGHIỆM VÀ KẾT QUẢ (REQUESTS)
+    match /artifacts/{appId}/requests/{reqId} {
+      allow read: if isSignedIn(); // Viewers/Staff đều có quyền xem yêu cầu
+      allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+
+      match /history/{histId} {
+        allow read: if isSignedIn();
+        allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
+      }
+    }
+
+    // Yêu cầu in ấn nhãn / barcode (Print Jobs)
+    match /artifacts/{appId}/print_jobs/{jobId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Thư viện Target Master
+    match /artifacts/{appId}/target_groups/{tgId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+    }
+    match /artifacts/{appId}/target_libraries/{tlId} {
+      allow read: if isSignedIn();
+      allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+    }
+
+    // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
+    match /artifacts/{appId}/logs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if hasPermission(appId, 'standard_log_view') || isManager(appId);
+      allow update, delete: if isManager(appId);
     }
   }
 }
