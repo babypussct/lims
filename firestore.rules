@@ -7,21 +7,29 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 2. Lấy tài liệu User Profile của request hiện tại
+    // 2. Kiểm tra tài liệu User Profile có tồn tại không
+    function userExists(appId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid));
+    }
+
+    // 3. Lấy tài liệu User Profile của request hiện tại
     function getUserProfile(appId) {
       return get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data;
     }
 
-    // 3. Kiểm tra User có phải là Manager (Quản lý cấp cao - Full Quyền) không
+    // 4. Kiểm tra User có phải là Manager không
     function isManager(appId) {
-      return isSignedIn() && getUserProfile(appId).role == 'manager';
+      return userExists(appId) && getUserProfile(appId).role == 'manager';
     }
 
-    // 4. Kiểm tra User có một quyền cụ thể nào đó không
+    // 5. Kiểm tra User có một quyền cụ thể nào đó không
     function hasPermission(appId, permission) {
-      return isSignedIn() && (
-        isManager(appId) || 
-        getUserProfile(appId).permissions.hasAny([permission])
+      return userExists(appId) && (
+        getUserProfile(appId).role == 'manager' || 
+        (
+          'permissions' in getUserProfile(appId) &&
+          getUserProfile(appId).permissions.hasAny([permission])
+        )
       );
     }
 
@@ -30,27 +38,39 @@ service cloud.firestore {
     // Mọi người dùng đã đăng nhập đều có thể đọc/ghi tài khoản của chính mình (FCM token, avatar, v.v.)
     // Manager hoặc User có quyền 'user_manage' có thể xem và sửa thông tin tất cả user
     match /artifacts/{appId}/users/{uid} {
-      allow read, write: if isSignedIn() && (request.auth.uid == uid || isManager(appId) || hasPermission(appId, 'user_manage'));
+      allow read, write: if isSignedIn() && (
+        request.auth.uid == uid || 
+        (
+          exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data.role == 'manager'
+        )
+      );
     }
 
     // Cấu hình nhóm vai trò động (Roles Config)
     match /artifacts/{appId}/roles_config/{roleId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+      allow write: if isManager(appId);
     }
 
     // Metadata hệ thống và Cấu hình chung
     match /artifacts/{appId}/system/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+      allow write: if isManager(appId);
     }
     match /artifacts/{appId}/config/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+      allow write: if isManager(appId);
     }
     match /artifacts/{appId}/system_updates/{docId} {
       allow read: if isSignedIn();
-      allow write: if isManager(appId) || hasPermission(appId, 'user_manage');
+      allow write: if isManager(appId);
+    }
+    match /artifacts/{appId}/stats/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /artifacts/{appId}/notifications/{docId} {
+      allow read, write: if isSignedIn();
     }
 
     // --- CÁC MODULE NGHIỆP VỤ ---
@@ -138,6 +158,12 @@ service cloud.firestore {
     match /artifacts/{appId}/target_libraries/{tlId} {
       allow read: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'sop_edit');
+    }
+    match /artifacts/{appId}/master_targets/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /artifacts/{appId}/master_analytes/{docId} {
+      allow read, write: if isSignedIn();
     }
 
     // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
