@@ -44,4 +44,5 @@ export interface Log {
       category: string;
       ref?: string;
   };
+  status?: string; // Live request status computed for traceability view
 }

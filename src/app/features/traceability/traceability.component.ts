@@ -85,9 +85,29 @@ declare let QRious: any;
 
                             <div>
                                 <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Hành động</h4>
-                                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                                    <div class="font-bold text-blue-800 text-lg mb-1">{{getActionLabel(logData()?.action)}}</div>
-                                    <p class="text-sm text-blue-600">{{logData()?.details}}</p>
+                                <div class="bg-blue-50/70 border border-blue-100/70 rounded-2xl p-4.5 relative overflow-hidden group shadow-3xs">
+                                    <div class="flex justify-between items-start gap-4">
+                                        <div>
+                                            <div class="font-bold text-blue-800 text-lg mb-1">{{getActionLabel(logData()?.action)}}</div>
+                                            <p class="text-sm text-blue-600 font-medium leading-relaxed">{{logData()?.details}}</p>
+                                        </div>
+                                        
+                                        <!-- Tình trạng Phiếu Badge -->
+                                        @if(logData()?.status; as status) {
+                                            <span [class]="status === 'pending' ? 'bg-amber-100/90 text-amber-800 border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30' :
+                                                           status === 'approved' ? 'bg-emerald-100/90 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30' :
+                                                           status === 'rejected' ? 'bg-rose-100/90 text-rose-800 border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30' :
+                                                           status === 'completed' ? 'bg-fuchsia-100/90 text-fuchsia-800 border-fuchsia-200/60 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30' :
+                                                           status === 'draft' ? 'bg-slate-100/90 text-slate-800 border-slate-200/60 dark:bg-slate-800/40 dark:text-slate-450 dark:border-slate-700/50' : 'bg-slate-100/90 text-slate-800 border-slate-200/60'"
+                                                  class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide border shrink-0 shadow-3xs">
+                                                {{ status === 'pending' ? 'Chờ duyệt' :
+                                                   status === 'approved' ? 'Đã duyệt' :
+                                                   status === 'rejected' ? 'Bị từ chối' :
+                                                   status === 'completed' ? 'Đã hoàn thành' :
+                                                   status === 'draft' ? 'Lưu nháp' : status }}
+                                            </span>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -238,16 +258,30 @@ export class TraceabilityComponent implements OnInit {
       const map: Record<string, string> = {
           'PENDING_REQUEST': 'Yêu cầu chờ duyệt',
           'APPROVED_REQUEST': 'Yêu cầu đã duyệt',
+          'REJECTED_REQUEST': 'Yêu cầu bị từ chối',
+          'COMPLETED_REQUEST': 'Yêu cầu đã hoàn thành',
+          'DRAFT_REQUEST': 'Phiếu yêu cầu lưu nháp',
+          'EDIT_REQUEST': 'Chỉnh sửa phiếu yêu cầu',
           'PRINT_JOB_RECORD': 'Lưu trữ phiếu in',
           'DIRECT_APPROVE': 'Duyệt & In trực tiếp',
           'APPROVE_REQUEST': 'Duyệt yêu cầu',
           'REVOKE_APPROVE': 'Hoàn tác phê duyệt',
+          
           'CREATE_STANDARD_REQUEST': 'Yêu cầu mượn chuẩn',
+          'REQUEST_STANDARD': 'Yêu cầu mượn chuẩn',
           'APPROVE_STANDARD_REQUEST': 'Duyệt mượn chuẩn',
           'REJECT_STANDARD_REQUEST': 'Từ chối mượn chuẩn',
-          'RETURN_STANDARD': 'Hoàn trả chuẩn',
+          'REPORT_RETURN_STANDARD': 'Báo cáo trả chuẩn',
+          'RETURN_STANDARD': 'Nhận lại chuẩn',
+          'ASSIGN_STANDARD': 'Gán chuẩn cho mượn',
+          
           'SAVE_RESULT_DRAFT': 'Lưu nháp kết quả',
           'PUBLISH_RESULT_REPORT': 'Xuất bản báo cáo kết quả',
+          'REVERT_RESULT_DRAFT': 'Hủy xuất bản báo cáo',
+          'RESET_RESULT_DATA': 'Reset số liệu kết quả',
+          'RESTORE_RESULT_BACKUP': 'Khôi phục số liệu lưu trữ',
+          'RESTORE_RESULT_VERSION': 'Khôi phục phiên bản cũ',
+          
           'generate_pdf': 'Tạo tệp PDF',
           'archive_reports': 'Lưu trữ báo cáo'
       };
@@ -327,11 +361,16 @@ export class TraceabilityComponent implements OnInit {
 
               const mockLog: Log = {
                   id: reqSnap.id,
-                  action: reqData.status !== 'pending' ? 'APPROVED_REQUEST' : 'PENDING_REQUEST',
+                  action: reqData.status === 'pending' ? 'PENDING_REQUEST' :
+                          reqData.status === 'approved' ? 'APPROVED_REQUEST' :
+                          reqData.status === 'rejected' ? 'REJECTED_REQUEST' :
+                          reqData.status === 'completed' ? 'COMPLETED_REQUEST' :
+                          reqData.status === 'draft' ? 'DRAFT_REQUEST' : 'APPROVED_REQUEST',
                   details: `Yêu cầu phân tích: ${reqData.sopName}`,
                   timestamp: reqData.approvedAt || reqData.timestamp,
                   user: reqData.user || 'Unknown',
                   printable: true,
+                  status: reqData.status, // Custom field stored in Log type!
                   sopBasicInfo: {
                       name: reqData.sopName,
                       category: 'Request Record'
@@ -367,20 +406,38 @@ export class TraceabilityComponent implements OnInit {
   }
 
   handleLogData(log: Log) {
-      // Hydrate if printJobId exists but printData is missing (New Arch)
-      if (log.printJobId && !log.printData) {
-          const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
-          getDoc(jobRef).then(s => {
-              if (s.exists()) {
-                  log.printData = s.data() as any;
-                  this.logData.set(log);
-                  setTimeout(() => this.generateQr(log.id), 100);
+      const getStatusAndHydrate = async () => {
+          // If log has requestId and no status, fetch request status
+          if (log.requestId && !log.status) {
+              try {
+                  const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${log.requestId}`);
+                  const reqSnap = await getDoc(reqRef);
+                  if (reqSnap.exists()) {
+                      log.status = reqSnap.data()['status'];
+                  }
+              } catch (e) {
+                  console.warn('Failed to fetch request status in Traceability', e);
               }
-          });
-      } else {
+          }
+
+          // Hydrate if printJobId exists but printData is missing (New Arch)
+          if (log.printJobId && !log.printData) {
+              try {
+                  const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
+                  const jobSnap = await getDoc(jobRef);
+                  if (jobSnap.exists()) {
+                      log.printData = jobSnap.data() as any;
+                  }
+              } catch (e) {
+                  console.warn('Failed to fetch print job in Traceability', e);
+              }
+          }
+          
           this.logData.set(log);
           setTimeout(() => this.generateQr(log.id), 100);
-      }
+      };
+
+      getStatusAndHydrate();
   }
 
   generateQr(text: string) {
