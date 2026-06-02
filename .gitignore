@@ -27,3 +27,22 @@ dist-ssr
 *firebase-adminsdk*.json
 *-service-account*.json
 *.env
+
+# Angular cache
+.angular/
+
+# Vercel local metadata
+.vercel/
+
+# Heavy template/scratch data directories
+FILEBIEUMAUGOC/
+temp_inspect_filebieumau3_docx/
+template_extracted/
+scratch/
+
+# Large documents & log files
+Report_ISTD_PARAMETER_NEW.pdf
+Report_ISTD_PARAMETER_NEW.xlsx
+build_errors.txt
+build_errors_2.txt
+build_errors*.txt

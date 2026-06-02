@@ -110,6 +110,10 @@
     "schematicCollections": [
       "angular-eslint"
     ],
-    "analytics": false
+    "analytics": false,
+    "cache": {
+      "enabled": true,
+      "environment": "local"
+    }
   }
 }

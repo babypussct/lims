@@ -53,8 +53,8 @@ interface RollPreset {
                                          Đã chọn {{ standardsToPrint().length }} chất chuẩn để in
                                      </p>
                                  } @else {
-                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words max-w-[340px]" [title]="standardsToPrint()[0]?.name || ''">
-                                         {{ standardsToPrint()[0]?.name || 'Chưa chọn chất chuẩn' }}
+                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-words max-w-[340px]" [title]="standardsToPrint()[0] ? standardsToPrint()[0].name : ''">
+                                         {{ standardsToPrint()[0] ? standardsToPrint()[0].name : 'Chưa chọn chất chuẩn' }}
                                      </p>
                                  }
                              </div>

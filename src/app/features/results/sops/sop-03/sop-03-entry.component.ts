@@ -397,7 +397,7 @@ export class Sop03EntryComponent implements OnInit {
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
     const totalCount = regularSamples.length;
-    const selectedCount = regularSamples.filter(s => this.draft.resultData[s]?.['selected'] !== false).length;
+    const selectedCount = regularSamples.filter(s => this.draft.resultData[s]['selected'] !== false).length;
     
     // Fill progress (leaving blank means ND, which is a completed result)
     let filledCount = 0;
@@ -511,7 +511,7 @@ export class Sop03EntryComponent implements OnInit {
   isAllSelected(): boolean {
     const visible = this.getVisibleRegularSamples();
     if (visible.length === 0) return false;
-    return visible.every(s => this.draft.resultData[s]?.['selected'] !== false);
+    return visible.every(s => this.draft.resultData[s]['selected'] !== false);
   }
 
   toggleSelectAll(event: any) {
@@ -674,7 +674,7 @@ export class Sop03EntryComponent implements OnInit {
       if (isSelected) {
         selectedCount++;
         if (selectedCount % 10 === 0) {
-          const totalSelected = samples.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
+          const totalSelected = samples.filter((s: string) => this.draft.resultData[s]['selected'] !== false).length;
           const isLastSelected = selectedCount === totalSelected;
           if (!isLastSelected) {
             const n = selectedCount / 10;

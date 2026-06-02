@@ -1,0 +1,32 @@
+# Ignore local Angular cache and dependencies
+.angular/
+node_modules/
+dist/
+out-tsc/
+
+# Ignore local configuration and IDE files
+.git/
+.github/
+.vscode/
+.idea/
+.env
+.env.*
+
+# Ignore massive static files and Google Apps Script directory
+FILEBIEUMAUGOC/
+temp_inspect_filebieumau3_docx/
+template_extracted/
+scratch/
+gas/
+
+# Ignore large documents
+Report_ISTD_PARAMETER_NEW.pdf
+Report_ISTD_PARAMETER_NEW.xlsx
+Report_ISTD_PARAMETER_NEW.*
+
+# Ignore local test scripts and logs
+test-*.js
+test_*.js
+test_format.ts
+build_errors*.txt
+*.log
