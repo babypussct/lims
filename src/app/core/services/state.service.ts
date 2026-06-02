@@ -261,7 +261,7 @@ export class StateService implements OnDestroy {
       maxCacheSize: 100, // Safe limit for localStorage
       orderByField: 'approvedAt',
       orderDirection: 'desc',
-      queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed'])]
+      queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
     };
 
     const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
