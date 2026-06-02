@@ -154,7 +154,8 @@ import { Router } from '@angular/router';
                                                 <button (click)="reject(req)" [disabled]="!!processingId()" 
                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-xmark"></i> Từ chối
-                                                } @else {
+                                                </button>
+                                            } @else {
                                                 <button (click)="goToResults(req)" [disabled]="!!processingId()" 
                                                          class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-square-poll-vertical"></i> Nhập kết quả
