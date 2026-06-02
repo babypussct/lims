@@ -108,38 +108,31 @@
                                        </button>
                                    </div>
 
-                                   <!-- Interactive Grid -->
-                                   <div class="overflow-x-auto custom-scrollbar p-3 max-h-60">
-                                       <table class="w-full text-left border-collapse">
-                                           <thead>
-                                               <tr class="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-                                                   <th class="p-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 sticky left-0 bg-slate-50 dark:bg-slate-900 z-10 w-24">Mã Mẫu</th>
+                                   <!-- Interactive Pills Cards Layout -->
+                                   <div class="space-y-3 p-3 max-h-72 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-900/10">
+                                       @for (sample of samplesList(); track sample) {
+                                           <div class="p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-800/80 space-y-2 shadow-sm">
+                                               <!-- Sample Name Badge -->
+                                               <div class="flex items-center gap-1.5 text-[11px] font-mono font-bold text-indigo-700 dark:text-indigo-400">
+                                                   <i class="fa-solid fa-vial-vacuum text-[10px]"></i> Mẫu: {{ sample }}
+                                               </div>
+                                               
+                                               <!-- Target Pills List -->
+                                               <div class="flex flex-wrap gap-1.5">
                                                    @for (target of getSelectedTargetsList(); track target.id) {
-                                                       <th class="p-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center min-w-[70px] truncate max-w-[120px]" [title]="target.name">
+                                                       <button type="button" 
+                                                               (click)="toggleMatrixCell(sample, target.id)"
+                                                               [class]="isTargetCheckedForSample(sample, target.id) 
+                                                                   ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 shadow-sm' 
+                                                                   : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-700/60'"
+                                                               class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all duration-200 flex items-center gap-1.5 hover:scale-102 hover:shadow-sm active:scale-95">
+                                                           <i class="fa-solid" [class]="isTargetCheckedForSample(sample, target.id) ? 'fa-circle-check text-emerald-600 dark:text-emerald-500' : 'fa-circle text-slate-300 dark:text-slate-700'"></i>
                                                            {{ target.name }}
-                                                       </th>
+                                                       </button>
                                                    }
-                                               </tr>
-                                           </thead>
-                                           <tbody>
-                                               @for (sample of samplesList(); track sample) {
-                                                   <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/20">
-                                                       <td class="p-2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 sticky left-0 bg-white dark:bg-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10">{{ sample }}</td>
-                                                       @for (target of getSelectedTargetsList(); track target.id) {
-                                                           <td class="p-2 text-center">
-                                                               <label class="inline-flex items-center justify-center p-1 rounded-md cursor-pointer transition"
-                                                                      [class]="isTargetCheckedForSample(sample, target.id) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-700/30 text-slate-300'">
-                                                                   <input type="checkbox" 
-                                                                          [checked]="isTargetCheckedForSample(sample, target.id)"
-                                                                          (change)="toggleMatrixCell(sample, target.id)"
-                                                                          class="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer">
-                                                               </label>
-                                                           </td>
-                                                       }
-                                                   </tr>
-                                               }
-                                           </tbody>
-                                       </table>
+                                               </div>
+                                           </div>
+                                       }
                                    </div>
                                 </div>
                            }
@@ -232,6 +225,9 @@
                <div class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3 shrink-0">
                   <!-- Action Buttons -->
                   @if (editingRequest()) {
+                      <button (click)="goToResultsEntry()" [disabled]="isProcessing()" class="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50">
+                          <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả Ngay
+                      </button>
                       <button (click)="saveEditedRequest(currentSop)" [disabled]="isProcessing()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2">
                           @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-save"></i> } Lưu Thay Đổi
                       </button>

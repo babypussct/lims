@@ -154,14 +154,17 @@ import { Router } from '@angular/router';
                                                 <button (click)="reject(req)" [disabled]="!!processingId()" 
                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-xmark"></i> Từ chối
+                                                } @else {
+                                                <button (click)="goToResults(req)" [disabled]="!!processingId()" 
+                                                         class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    <i class="fa-solid fa-square-poll-vertical"></i> Nhập kết quả
                                                 </button>
-                                            } @else {
                                                 <button (click)="editApproved(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                         class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-pen"></i> Chỉnh sửa
                                                 </button>
                                                 <button (click)="revoke(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn tác
                                                 </button>
                                             }
@@ -196,7 +199,15 @@ import { Router } from '@angular/router';
             }
         </div>
     </div>
-  `
+  `,
+  styles: [`
+    .bg-fuchsia-600 {
+      background-color: rgb(192 38 211) !important;
+    }
+    .hover\:bg-fuchsia-700:hover {
+      background-color: rgb(162 28 175) !important;
+    }
+  `]
 })
 export class RequestListComponent implements OnInit {
   state = inject(StateService);
@@ -296,5 +307,9 @@ export class RequestListComponent implements OnInit {
 
   editApproved(req: Request) {
       this.router.navigate(['/calculator'], { queryParams: { editRequestId: req.id } });
+  }
+
+  goToResults(req: Request) {
+      this.router.navigate(['/results', req.id]);
   }
 }

@@ -588,6 +588,13 @@ export class CalculatorComponent implements OnDestroy {
       this.router.navigate(['/requests']);
   }
 
+  goToResultsEntry() {
+      const req = this.editingRequest();
+      if (req) {
+          this.router.navigate(['/results', req.id]);
+      }
+  }
+
   // --- QUICK GENERATE MODAL HANDLERS ---
   openQuickGenerateModal() {
       this.quickGenerateModalOpen.set(true);
