@@ -415,8 +415,8 @@
         [isAssignMode]="isAssignMode()"
         [userList]="userList()"
         [isProcessing]="isProcessing()"
-        [currentUserUid]="auth.currentUser()?.uid || ''"
-        [currentUserName]="auth.currentUser()?.displayName || ''"
+        [currentUserUid]="currentUserUid()"
+        [currentUserName]="currentUserName()"
         (closeModal)="showAssignModal.set(false)"
         (confirm)="confirmAssign($event)">
     </app-standards-assign-modal>

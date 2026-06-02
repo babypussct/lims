@@ -100,9 +100,8 @@ export class StandardsComponent implements OnInit, OnDestroy {
       return { expired, expiringSoon, lowStock, total: data.length };
   });
 
-  // Computed: Filter -> Sort -> Slice
   filteredItems = computed(() => {
-      let data = this.allStandards().filter(item => !item._isDeleted && item.status !== 'DELETED');
+      let data = this.allStandards().filter(item => !item._isDeleted && (item.status as any) !== 'DELETED');
       const term = this.searchTerm().trim().toLowerCase();
       const widgetFilter = this.activeWidgetFilter();
       

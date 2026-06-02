@@ -54,6 +54,9 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     getExpiryTimeLeft = getExpiryTimeLeft;
     canAssign = canAssign;
 
+    currentUserUid = computed(() => this.auth.currentUser()?.uid || '');
+    currentUserName = computed(() => this.auth.currentUser()?.displayName || '');
+
     standardId = signal<string>('');
     standard = signal<ReferenceStandard | null>(null);
     isLoading = signal(true);

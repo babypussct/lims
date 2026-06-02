@@ -34,7 +34,8 @@ export class CalculatorComponent implements OnDestroy {
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
   get GHS_DICT() { return GHS_DICTIONARY; }
   
-  // ... imports and basic setup identical to previous ...
+  canViewRecipes() { return this.auth.canViewRecipes(); }
+  canEditSop() { return this.auth.canEditSop(); }
   private fb: FormBuilder = inject(FormBuilder);
   public state = inject(StateService);
   private auth = inject(AuthService);
