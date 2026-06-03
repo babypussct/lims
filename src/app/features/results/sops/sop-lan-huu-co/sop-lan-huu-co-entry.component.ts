@@ -62,20 +62,32 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
             </div>
           </div>
 
-          <!-- Additional Metadata Fields (Loại mẫu, Tình trạng mẫu) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+          <!-- Additional Metadata Fields (Khối lượng, Loại mẫu, Tình trạng mẫu) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+            <!-- Khối lượng mẫu -->
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">2. Khối lượng mẫu (g)</label>
+              <div class="flex items-center gap-1.5">
+                <button type="button"
+                        (click)="draft.page1Data['khoiLuong'] = '10.0'; onDataChanged()"
+                        [class]="draft.page1Data['khoiLuong'] === '10.0'
+                          ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                          : 'px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-855 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                        title="Chọn 10.0 g">
+                  10.0g
+                </button>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['khoiLuong']" 
+                       (ngModelChange)="onDataChanged()"
+                       placeholder="Khối lượng..."
+                       class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
+              </div>
+            </div>
+
             <!-- Loại mẫu -->
             <div>
               <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">3. Loại mẫu</label>
               <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-full custom-scrollbar">
-                <button type="button"
-                        (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
-                        [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                          ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
-                          : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                        title="Chọn Thủy sản">
-                  Thủy sản
-                </button>
                 <button type="button"
                         (click)="draft.page1Data['loaiMau'] = 'Nông sản tươi'; onDataChanged()"
                         [class]="draft.page1Data['loaiMau'] === 'Nông sản tươi'
@@ -91,6 +103,14 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                           : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
                         title="Chọn Nông sản khô">
                   Khô
+                </button>
+                <button type="button"
+                        (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
+                        [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
+                          ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                          : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                        title="Chọn Thủy sản">
+                  Thủy sản
                 </button>
                 <input type="text" 
                        [(ngModel)]="draft.page1Data['loaiMau']" 
@@ -402,7 +422,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
       <!-- TAB 2: CALIBRATION CURVE & SAMPLE RUNS -->
       <div *ngIf="draft.page1Data['printFormType'] === 'formDon'" class="space-y-6">
         
-        <!-- 0. Signature Dates -->
+        <!-- 0. Signature Dates & General Metadata -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
           <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
             <i class="fa-solid fa-calendar mr-2 text-violet-500 text-sm"></i> Thông tin chung & Đánh giá (SOP: {{ run?.sopCode || 'Lân hữu cơ' }})
