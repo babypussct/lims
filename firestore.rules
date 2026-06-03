@@ -27,8 +27,19 @@ service cloud.firestore {
       return userExists(appId) && (
         getUserProfile(appId).role == 'manager' || 
         (
+          getUserProfile(appId).role == 'viewer' && 
+          ['inventory_view', 'standard_view', 'sop_view', 'recipe_view'].hasAny([permission])
+        ) ||
+        (
           'permissions' in getUserProfile(appId) &&
           getUserProfile(appId).permissions.hasAny([permission])
+        ) ||
+        (
+          getUserProfile(appId).role == 'staff' &&
+          'roleId' in getUserProfile(appId) &&
+          exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)) &&
+          'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)).data &&
+          get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)).data.permissions.hasAny([permission])
         )
       );
     }
