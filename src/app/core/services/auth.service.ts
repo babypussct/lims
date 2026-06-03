@@ -41,7 +41,8 @@ export const PERMISSIONS = {
   BATCH_RUN: 'batch_run',  // Chạy Smart Batch & Trạm Pha Chế (thao tác tiêu hao kho)
   REPORT_VIEW: 'report_view',
   USER_MANAGE: 'user_manage',
-  STANDARD_REQUEST: 'standard_request' // Đăng ký mượn chuẩn
+  STANDARD_REQUEST: 'standard_request', // Đăng ký mượn chuẩn
+  BYPASS_MAINTENANCE: 'bypass_maintenance' // Quyền truy cập khi bảo trì (Whitelist)
 };
 
 export const DEFAULT_ROLES = {

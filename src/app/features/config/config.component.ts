@@ -186,6 +186,7 @@ export class ConfigComponent {
       { val: PERMISSIONS.SOP_APPROVE,     label: 'Duyệt (Approve)' },
       { val: PERMISSIONS.REPORT_VIEW,     label: 'Xem Báo cáo' },
       { val: PERMISSIONS.USER_MANAGE,     label: 'Quản trị (Admin)' },
+      { val: PERMISSIONS.BYPASS_MAINTENANCE, label: 'Truy cập khi Bảo trì (Whitelist)' }
   ];
 
   hasPerm(u: any, p: string) { return u.permissions?.includes(p); }

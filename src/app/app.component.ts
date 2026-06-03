@@ -52,6 +52,17 @@ import { filter } from 'rxjs/operators';
         </div>
       }
 
+      <!-- Yellow Countdown Banner -->
+      @if (maintenanceCountdownText() && !isMaintenanceActive()) {
+        <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[105] bg-amber-500 text-white font-bold py-3 px-6 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-400 animate-slide-down no-print max-w-md w-[calc(100%-2rem)]">
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center animate-pulse"><i class="fa-solid fa-hourglass-half text-sm"></i></div>
+            <div class="flex-1">
+                <div class="text-[9px] uppercase tracking-wider opacity-85">Thông báo bảo trì</div>
+                <div class="text-xs leading-snug">Hệ thống sẽ tự động khóa để bảo trì sau <span class="font-mono text-sm underline text-white">{{ maintenanceCountdownText() }}</span>. Vui lòng lưu dữ liệu!</div>
+            </div>
+        </div>
+      }
+
       <!-- Notifications -->
       <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[110] flex flex-col items-center gap-3 no-print w-full max-w-sm px-4 pointer-events-none">
         @for (t of toast.toasts(); track t.id) {
@@ -118,7 +129,35 @@ import { filter } from 'rxjs/operators';
               </button>
            </div>
         </div>
-      } 
+      }
+
+      @if (isMaintenanceActive() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
+        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
+           <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
+              <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-500 animate-pulse">
+                <i class="fa-solid fa-person-digging text-4xl"></i>
+              </div>
+              <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Hệ Thống Đang Bảo Trì</h2>
+              <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed whitespace-pre-wrap">{{ state.maintenanceMessage() }}</p>
+              
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                 <i class="fa-solid fa-shield-halved"></i> LIMS Cloud Admin
+              </div>
+           </div>
+        </div>
+      }
+
+      @if (isMaintenanceActive() && state.isAdmin()) {
+        <div class="fixed bottom-20 right-4 z-[9999] no-print animate-bounce-in pointer-events-none">
+            <div class="pointer-events-auto bg-rose-600 text-white px-4 py-3 rounded-2xl shadow-xl shadow-rose-500/30 flex items-center gap-3 border-2 border-white dark:border-slate-800 max-w-[280px]">
+                <div class="w-10 h-10 shrink-0 bg-white/20 rounded-full flex items-center justify-center animate-pulse"><i class="fa-solid fa-person-digging text-lg"></i></div>
+                <div class="flex-1">
+                    <div class="text-[10px] font-black uppercase tracking-wider text-rose-200">Đang Bật Bảo Trì</div>
+                    <div class="text-xs font-bold leading-tight mt-0.5">Hệ thống đang chặn tất cả user. Đừng quên tắt khi xong!</div>
+                </div>
+            </div>
+        </div>
+      }
 
       @if (!auth.isAuthReady()) {
         <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
@@ -225,6 +264,11 @@ export class AppComponent implements OnDestroy {
   currentUrl = signal<string>('');
 
   constructor() {
+    // Ticker for scheduled maintenance countdown
+    this._maintenanceInterval = setInterval(() => {
+      this.currentTime.set(Date.now());
+    }, 1000);
+
     // Initialize currentUrl
     this.currentUrl.set(this.router.url);
 
@@ -333,9 +377,45 @@ export class AppComponent implements OnDestroy {
   isPulling = signal(false);
   hasNewVersion = signal(false);
   private _swCheckInterval: any;
+  private _maintenanceInterval: any;
+
+  currentTime = signal<number>(Date.now());
+
+  isMaintenanceActive = computed(() => {
+    const isManual = this.state.maintenanceMode();
+    const scheduled = this.state.maintenanceScheduledTime();
+    if (isManual) return true;
+    if (scheduled) {
+      const target = new Date(scheduled).getTime();
+      return this.currentTime() >= target;
+    }
+    return false;
+  });
+
+  maintenanceCountdownText = computed(() => {
+    const scheduled = this.state.maintenanceScheduledTime();
+    if (!scheduled) return null;
+
+    const target = new Date(scheduled).getTime();
+    const diff = target - this.currentTime();
+
+    if (diff <= 0) return null;
+
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+
+    // Show warning banner if remaining time is under 30 minutes
+    if (minutes < 30) {
+      const secStr = seconds < 10 ? '0' + seconds : seconds;
+      const minStr = minutes < 10 ? '0' + minutes : minutes;
+      return `${minStr}:${secStr}`;
+    }
+    return null;
+  });
 
   ngOnDestroy() {
     clearInterval(this._swCheckInterval);
+    clearInterval(this._maintenanceInterval);
   }
 
   // Kiểm tra build mới ngay khi user quay lại tab (từ bất kỳ ứng dụng nào khác)

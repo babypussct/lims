@@ -493,3 +493,193 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
     samples: samplesPayload
   };
 }
+
+export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+  const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+  const samplesPayload: any[] = [];
+  const sampleList = currentRun.sampleList || [];
+
+  const filteredSamples = sampleList.filter((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(s);
+    const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter;
+  });
+
+  const mapCompoundToKey = (c: string): string => {
+    const directMap: Record<string, string> = {
+      'Fipronil desulfinyl': 'FipronilDesulfinyl',
+      'Fipronil sulfide': 'FipronilSulfide',
+      'Fipronil sulfone': 'FipronilSulfone',
+      'Azinphos-methyl': 'AzinphosMethyl',
+      'Chlorpyrifos-methyl': 'ChlorpyrifosMethyl',
+      'Isofenphos-methyl': 'IsofenphosMethyl',
+      'Parathion-methyl': 'ParathionMethyl',
+      'Pirimiphos-methyl': 'PirimiphosMethyl'
+    };
+    if (directMap[c]) return directMap[c];
+    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+  };
+
+  const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
+
+  const isAssigned = (sampleCode: string, compound: string): boolean => {
+    const assigned = sampleTargetMap[sampleCode];
+    if (!assigned) return true;
+    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+  };
+
+  const isGop = currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
+
+  if (isGop && filteredSamples.length > 0) {
+    const mergedSampleCode = formatSampleList(filteredSamples);
+    const rowData: Record<string, any> = {
+      maSoMau: mergedSampleCode,
+      khoiLuong: currentDraft.resultData[filteredSamples[0]]?.['khoiLuong'] || '10.0',
+      heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
+      hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
+      loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
+    };
+
+    const isAssignedToAny = (compound: string): boolean => {
+      return filteredSamples.some((s: string) => isAssigned(s, compound));
+    };
+
+    currentConf.compounds.forEach((c: string) => {
+      const backendKey = mapCompoundToKey(c);
+      const assigned = isAssignedToAny(c);
+
+      if (!assigned) {
+        rowData[backendKey] = '';
+        rowData[`${backendKey}_nd`] = false;
+        rowData[`${backendKey}_qc1`] = 'N/A';
+        rowData[`${backendKey}_qc2`] = 'N/A';
+        rowData[`${backendKey}_qc3`] = 'N/A';
+      } else {
+        const uniqueVals = new Set<string>(filteredSamples.map((s: string) => {
+          const sRes = currentDraft.resultData[s] || {};
+          const isNd = sRes[`${c}_nd`] === true;
+          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+        }));
+
+        if (uniqueVals.size === 1) {
+          const commonVal = Array.from(uniqueVals)[0];
+          if (commonVal === 'KPH') {
+            rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else {
+            rowData[`${backendKey}_nd`] = false;
+            rowData[backendKey] = commonVal;
+          }
+        } else {
+          rowData[`${backendKey}_nd`] = false;
+          const resultParts = filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            const isNd = sRes[`${c}_nd`] === true;
+            const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            return `${s}: ${displayVal}`;
+          });
+          rowData[backendKey] = resultParts.join('; ');
+        }
+
+        const getMergedQc = (qcKey: string): string => {
+          const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+          }));
+          if (uniqueQcs.size === 1) {
+            return Array.from(uniqueQcs)[0];
+          }
+          return filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+          }).join('; ');
+        };
+
+        rowData[`${backendKey}_qc1`] = getMergedQc('qc1');
+        rowData[`${backendKey}_qc2`] = getMergedQc('qc2');
+        rowData[`${backendKey}_qc3`] = getMergedQc('qc3');
+      }
+    });
+
+    samplesPayload.push(rowData);
+  } else {
+    filteredSamples.forEach((sampleCode: string) => {
+      const resObj = currentDraft.resultData[sampleCode] || {};
+      const rowData: Record<string, any> = {
+        maSoMau: sampleCode,
+        khoiLuong: resObj['khoiLuong'] || '10.0',
+        heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
+        hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
+        loSo: resObj['loSo'] || '',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
+      };
+
+      currentConf.compounds.forEach((c: string) => {
+        const backendKey = mapCompoundToKey(c);
+        const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
+        const assigned = isAssigned(sampleCode, c);
+        
+        if (!assigned) {
+          rowData[backendKey] = '';
+          rowData[`${backendKey}_nd`] = false;
+          rowData[`${backendKey}_qc1`] = 'N/A';
+          rowData[`${backendKey}_qc2`] = 'N/A';
+          rowData[`${backendKey}_qc3`] = 'N/A';
+        } else {
+          const isNd = resObj[`${c}_nd`] === true;
+          rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+          rowData[`${backendKey}_nd`] = isNd;
+          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
+          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
+          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';
+        }
+      });
+
+      samplesPayload.push(rowData);
+    });
+  }
+
+  const runSamplesList = sampleList.map((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const detected: string[] = [];
+    currentConf.compounds.forEach((c: string) => {
+      if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c]) {
+        detected.push(`${c}: ${resObj[c]}`);
+      }
+    });
+    const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+
+    return {
+      maSoMau: s,
+      khoiLuong: resObj['khoiLuong'] || '10.0',
+      heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
+      hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
+      loSo: resObj['loSo'] || '',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
+      summaryResult: summaryResult
+    };
+  });
+
+  return {
+    action: 'generate_pdf',
+    sopId: 'lan-huu-co',
+    metadata: {
+      ...currentDraft.page1Data,
+      prefix: prefixForReport,
+      ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
+      ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+      ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
+      runSamplesList: runSamplesList
+    },
+    samples: samplesPayload
+  };
+}

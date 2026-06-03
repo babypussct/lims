@@ -365,13 +365,33 @@
 
       <!-- Render Type 3B Component (Vertical Lists per sample) -->
       @if (config()?.formType === 'type3b') {
-        @if (ENABLE_MODULAR_SOPS && configKey() === 'chlor-huu-co') {
-          <app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry
-            [run]="filteredRun()!"
-            [draft]="draft()!"
-            [config]="config()!"
-            (draftChanged)="onDraftChanged($event)">
-          </app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry>
+        @if (ENABLE_MODULAR_SOPS) {
+          @switch (configKey()) {
+            @case ('chlor-huu-co') {
+              <app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry
+                [run]="filteredRun()!"
+                [draft]="draft()!"
+                [config]="config()!"
+                (draftChanged)="onDraftChanged($event)">
+              </app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry>
+            }
+            @case ('lan-huu-co') {
+              <app-sop-lan-huu-co-entry
+                [run]="filteredRun()!"
+                [draft]="draft()!"
+                [config]="config()!"
+                (draftChanged)="onDraftChanged($event)">
+              </app-sop-lan-huu-co-entry>
+            }
+            @default {
+              <app-result-entry-type3b 
+                [run]="filteredRun()!" 
+                [draft]="draft()!" 
+                [config]="config()!" 
+                (draftChanged)="onDraftChanged($event)">
+              </app-result-entry-type3b>
+            }
+          }
         } @else {
           <app-result-entry-type3b 
             [run]="filteredRun()!" 

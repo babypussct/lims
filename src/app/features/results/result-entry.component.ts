@@ -21,12 +21,14 @@ import { Sop1767857760184EntryComponent } from './sops/sop-1767857760184/sop-176
 import { Sop03EntryComponent } from './sops/sop-03/sop-03-entry.component';
 import { SopDefaultType2EntryComponent } from './sops/sop-default-type2/sop-default-type2-entry.component';
 import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719/sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry.component';
+import { SopLanHuuCoEntryComponent } from './sops/sop-lan-huu-co/sop-lan-huu-co-entry.component';
 import { isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
   buildDichlorvosPdfPayload, 
-  buildDefaultSopPdfPayload 
+  buildDefaultSopPdfPayload,
+  buildLanHuuCoPdfPayload
 } from './result-pdf-helper';
 
 @Component({
@@ -41,7 +43,8 @@ import {
     Sop1767857760184EntryComponent,
     Sop03EntryComponent,
     SopDefaultType2EntryComponent,
-    SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent
+    SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent,
+    SopLanHuuCoEntryComponent
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -514,6 +517,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           currentDraft,
           currentRun,
           activeFilter,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      } else if (key === 'lan-huu-co') {
+        reportPayload = buildLanHuuCoPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
           this.formatAnalysisDate.bind(this),
           this.getRunDate.bind(this)
         );

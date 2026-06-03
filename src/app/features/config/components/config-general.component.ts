@@ -30,6 +30,9 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   notificationService = inject(NotificationService);
 
   versionControl = new FormControl(''); 
+  maintenanceModeLocal = signal<boolean>(false);
+  maintenanceMessageLocal = new FormControl('');
+  maintenanceScheduledTimeLocal = new FormControl('');
   printConfig = this.state.printConfig;
   
   categoriesLocal = signal<CategoryItem[]>([]);
@@ -159,6 +162,9 @@ service cloud.firestore {
 
   ngOnInit() {
     this.versionControl.setValue(this.state.systemVersion()); 
+    this.maintenanceModeLocal.set(this.state.maintenanceMode());
+    this.maintenanceMessageLocal.setValue(this.state.maintenanceMessage());
+    this.maintenanceScheduledTimeLocal.setValue(this.state.maintenanceScheduledTime() || '');
     this.categoriesLocal.set(JSON.parse(JSON.stringify(this.state.categories())));
     this.listenSystemUpdates();
   }
@@ -234,6 +240,26 @@ service cloud.firestore {
   async saveAvatarStyle(style: string) {
       await this.state.saveAvatarStyle(style);
       this.toast.show('Đã cập nhật giao diện Avatar!');
+  }
+
+  async saveMaintenanceConfig() {
+      const msg = this.maintenanceMessageLocal.value || 'Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.';
+      const scheduledVal = this.maintenanceScheduledTimeLocal.value || null;
+      await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
+      
+      if (this.maintenanceModeLocal()) {
+          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'warning', true);
+      } else if (scheduledVal) {
+          const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
+          this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
+      } else {
+          this.toast.show('Đã cập nhật cấu hình bảo trì thành công!', 'success');
+      }
+  }
+
+  clearScheduledTime() {
+      this.maintenanceScheduledTimeLocal.setValue('');
+      this.toast.show('Đã xóa thời gian hẹn giờ bảo trì. Nhấn Lưu để áp dụng.', 'info');
   }
 
   async loadUsage() {

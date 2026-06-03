@@ -82,6 +82,9 @@ export class StateService implements OnDestroy {
   avatarStyle = signal<string>('initials');
 
   systemVersion = signal<string>('V1.0 FINAL');
+  maintenanceMode = signal<boolean>(false);
+  maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
+  maintenanceScheduledTime = signal<string | null>(null);
 
   selectedSop = signal<Sop | null>(null);
   editingSop = signal<Sop | null>(null);
@@ -387,6 +390,9 @@ export class StateService implements OnDestroy {
         const d = sysSnap.data()!;
         if (d['version']) this.systemVersion.set(d['version']);
         if (d['avatarStyle']) this.avatarStyle.set(d['avatarStyle']);
+        if (d['maintenanceMode'] !== undefined) this.maintenanceMode.set(d['maintenanceMode']);
+        if (d['maintenanceMessage']) this.maintenanceMessage.set(d['maintenanceMessage']);
+        this.maintenanceScheduledTime.set(d['maintenanceScheduledTime'] || null);
       }
 
       // Lưu lại vào trình duyệt cho lần sau
@@ -411,6 +417,9 @@ export class StateService implements OnDestroy {
       if (cache.categories?.['items']) this.categories.set(cache.categories['items'] as CategoryItem[]);
       if (cache.system?.['version']) this.systemVersion.set(cache.system['version']);
       if (cache.system?.['avatarStyle']) this.avatarStyle.set(cache.system['avatarStyle']);
+      if (cache.system?.['maintenanceMode'] !== undefined) this.maintenanceMode.set(cache.system['maintenanceMode']);
+      if (cache.system?.['maintenanceMessage']) this.maintenanceMessage.set(cache.system['maintenanceMessage']);
+      this.maintenanceScheduledTime.set(cache.system?.['maintenanceScheduledTime'] || null);
       return true;
     } catch (_) { return false; /* ignore stale/corrupt cache */ }
   }
@@ -500,6 +509,42 @@ export class StateService implements OnDestroy {
     await setDoc(ref, { avatarStyle: style }, { merge: true });
     await this.updateConfigMetadata();
     await this.loadConfig();
+  }
+
+  async saveMaintenanceConfig(mode: boolean, message: string, scheduledTime: string | null = null) {
+    const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'config', 'system');
+    await setDoc(ref, { 
+      maintenanceMode: mode, 
+      maintenanceMessage: message,
+      maintenanceScheduledTime: scheduledTime
+    }, { merge: true });
+    
+    // Ghi nhận Audit Log
+    let details = mode ? `Bật chế độ bảo trì. Nội dung: "${message}"` : 'Tắt chế độ bảo trì.';
+    if (scheduledTime) {
+      const formattedTime = new Date(scheduledTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+      details += ` (Lịch hẹn bảo trì: ${formattedTime})`;
+    }
+    await this.logMaintenanceActivity(mode ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', details);
+
+    await this.updateConfigMetadata();
+    await this.loadConfig();
+  }
+
+  async logMaintenanceActivity(action: string, details: string) {
+    try {
+      const logRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'));
+      await setDoc(logRef, {
+        action,
+        details,
+        timestamp: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+        user: this.getCurrentUserName(),
+        printable: false
+      });
+    } catch (e) {
+      console.warn("Failed to write maintenance audit log:", e);
+    }
   }
 
   public getCurrentUserName(): string { return this.auth.currentUser()?.displayName || 'Unknown User'; }
