@@ -204,6 +204,7 @@ export class ConfigRolesComponent implements OnInit {
       { val: PERMISSIONS.INVENTORY_EDIT,  label: 'Sửa Kho' },
       { val: PERMISSIONS.BATCH_RUN,       label: 'Chạy Batch & Pha Chế' },
       { val: PERMISSIONS.STANDARD_VIEW,   label: 'Xem Chuẩn' },
+      { val: PERMISSIONS.STANDARD_REQUEST,label: 'Mượn Chuẩn' },
       { val: PERMISSIONS.STANDARD_EDIT,   label: 'Sửa Chuẩn' },
       { val: PERMISSIONS.STANDARD_APPROVE,label: 'Duyệt & Giao Chuẩn' },
       { val: PERMISSIONS.STANDARD_LOG_VIEW,label: 'Xem Báo cáo Chuẩn' },
@@ -240,6 +241,7 @@ export class ConfigRolesComponent implements OnInit {
       ring: 'var(--tw-colors-indigo-500, #6366f1)',
       perms: [
         { val: PERMISSIONS.STANDARD_VIEW, label: 'Xem Chuẩn' },
+        { val: PERMISSIONS.STANDARD_REQUEST, label: 'Đăng ký mượn Chuẩn' },
         { val: PERMISSIONS.STANDARD_EDIT, label: 'Sửa thông tin Chuẩn' },
         { val: PERMISSIONS.STANDARD_APPROVE, label: 'Duyệt & Giao nhận Chuẩn' },
         { val: PERMISSIONS.STANDARD_LOG_VIEW, label: 'Xem Báo cáo/Nhật ký Chuẩn' },

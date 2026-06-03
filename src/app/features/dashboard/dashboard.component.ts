@@ -371,15 +371,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
       this.isLoading.set(true);
+      
+      // 1. Tải danh sách tồn kho thấp
       try {
-          const [lowStock, nearestStd, users] = await Promise.all([
-              this.invService.getLowStockItems(5),
-              this.stdService.getNearestExpiry(),
-              this.fb.getAllUsers()
-          ]);
+          const lowStock = await this.invService.getLowStockItems(5);
           this.lowStockItems.set(lowStock);
+      } catch (e) {
+          console.warn("Dashboard: Lỗi khi tải danh sách tồn kho thấp:", e);
+      }
+
+      // 2. Tải thông tin chuẩn sắp hết hạn
+      try {
+          const nearestStd = await this.stdService.getNearestExpiry();
           this.processPriorityStandard(nearestStd);
-          
+      } catch (e) {
+          console.warn("Dashboard: Lỗi khi tải thông tin chất chuẩn sắp hết hạn:", e);
+      }
+
+      // 3. Tải danh sách người dùng cho bản đồ ảnh đại diện (Graceful fallback nếu chưa có quyền/chưa đăng nhập xong)
+      try {
+          const users = await this.fb.getAllUsers();
           const map: Record<string, string> = {};
           users.forEach(u => {
               if (u.displayName && u.photoURL) {
@@ -387,11 +398,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
               }
           });
           this.userPhotoMap.set(map);
-      } catch(e) {
-          console.error("Dashboard fetch error", e);
-      } finally {
-          this.isLoading.set(false);
+      } catch (e) {
+          console.warn("Dashboard: Không thể tải danh sách người dùng (lỗi phân quyền hoặc kết nối):", e);
       }
+
+      this.isLoading.set(false);
   }
 
 

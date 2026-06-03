@@ -40,31 +40,34 @@ export const PERMISSIONS = {
   SOP_APPROVE: 'sop_approve',
   BATCH_RUN: 'batch_run',  // Chạy Smart Batch & Trạm Pha Chế (thao tác tiêu hao kho)
   REPORT_VIEW: 'report_view',
-  USER_MANAGE: 'user_manage'
+  USER_MANAGE: 'user_manage',
+  STANDARD_REQUEST: 'standard_request' // Đăng ký mượn chuẩn
 };
 
 export const DEFAULT_ROLES = {
   role_staff_default: {
     name: 'Nhân viên mặc định',
-    description: 'Quyền cơ bản của nhân viên LIMS (Chỉ xem)',
+    description: 'Quyền cơ bản của nhân viên LIMS (Chỉ xem và mượn chuẩn)',
     permissions: [
       PERMISSIONS.INVENTORY_VIEW,
       PERMISSIONS.STANDARD_VIEW,
       PERMISSIONS.SOP_VIEW,
-      PERMISSIONS.RECIPE_VIEW
+      PERMISSIONS.RECIPE_VIEW,
+      PERMISSIONS.STANDARD_REQUEST
     ],
     isSystemRole: true
   },
   role_lab_technician: {
     name: 'Kiểm nghiệm viên',
-    description: 'Kỹ thuật viên phòng thí nghiệm (Xem/Sửa kho, đăng ký chuẩn)',
+    description: 'Kỹ thuật viên phòng thí nghiệm (Xem/Sửa kho, đăng ký mượn chuẩn)',
     permissions: [
       PERMISSIONS.INVENTORY_VIEW,
       PERMISSIONS.INVENTORY_EDIT,
       PERMISSIONS.STANDARD_VIEW,
       PERMISSIONS.RECIPE_VIEW,
       PERMISSIONS.SOP_VIEW,
-      PERMISSIONS.BATCH_RUN
+      PERMISSIONS.BATCH_RUN,
+      PERMISSIONS.STANDARD_REQUEST
     ],
     isSystemRole: true
   },
@@ -434,12 +437,16 @@ export class AuthService {
 
     // Người dùng thuộc nhóm Staff
     const roleId = u.roleId;
-    if (roleId && this.rolesConfig()[roleId]) {
-      return this.rolesConfig()[roleId];
+    const rolePerms = (roleId && this.rolesConfig()[roleId]) || [];
+    const customPerms = u.customPermissions || [];
+    const combined = Array.from(new Set([...rolePerms, ...customPerms]));
+    
+    // Fallback: Sử dụng danh sách permissions tĩnh gán trực tiếp nếu chưa đồng bộ config
+    if (combined.length === 0 && u.permissions && u.permissions.length > 0) {
+      return u.permissions;
     }
     
-    // Fallback: Sử dụng danh sách permissions tĩnh gán trực tiếp nếu chưa chuyển dịch
-    return u.permissions || [];
+    return combined;
   });
   
   hasPermission(perm: string): boolean {

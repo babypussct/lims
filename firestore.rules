@@ -125,7 +125,11 @@ service cloud.firestore {
     // MODULE CHUẨN ĐỐI CHIẾU (REFERENCE STANDARDS)
     match /artifacts/{appId}/reference_standards/{stdId} {
       allow read: if hasPermission(appId, 'standard_view');
-      allow create, update: if hasPermission(appId, 'standard_edit');
+      allow create: if hasPermission(appId, 'standard_edit');
+      allow update: if hasPermission(appId, 'standard_edit') || (
+        hasPermission(appId, 'standard_request') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['has_pending_request', 'lastUpdated'])
+      );
       allow delete: if hasPermission(appId, 'standard_delete') || isManager(appId);
 
       // Nhật ký mượn/sử dụng chất chuẩn chi tiết
