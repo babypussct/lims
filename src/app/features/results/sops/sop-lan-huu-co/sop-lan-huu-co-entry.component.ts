@@ -1114,7 +1114,7 @@ export class SopLanHuuCoEntryComponent implements OnInit {
 
     // 3. Regular samples
     if (this.run && this.run.sampleList) {
-      this.run.sampleList.forEach((sampleCode) => {
+      this.run.sampleList.forEach((sampleCode: string) => {
         list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });
       });
     }
