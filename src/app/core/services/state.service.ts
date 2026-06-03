@@ -123,7 +123,8 @@ export class StateService implements OnDestroy {
 
     effect(() => {
       const user = this.auth.currentUser();
-      if (user) {
+      const perms = this.auth.userPermissions();
+      if (user && perms.length > 0) {
         this.initData();
         // checkSystemHealth() removed from auto-call — call manually from Admin panel
       } else {

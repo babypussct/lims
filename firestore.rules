@@ -25,7 +25,8 @@ service cloud.firestore {
     // 5. Trợ giúp phân giải quyền hạn khi tài liệu người dùng được xác định là tồn tại
     function evaluateUserPermission(appId, profile, permission) {
       let role = profile.get('role', 'pending');
-      let roleId = profile.get('roleId', 'role_staff_default');
+      let rawRoleId = profile.get('roleId', 'role_staff_default');
+      let roleId = (rawRoleId == null || rawRoleId == '') ? 'role_staff_default' : rawRoleId;
       let customPerms = profile.get('permissions', []);
       let hasCustom = customPerms.hasAny([permission]);
       
@@ -40,15 +41,14 @@ service cloud.firestore {
           (
             // 1. Ưu tiên cao nhất: Nếu manager đã cấu hình roles_config thì lấy theo cấu hình đó
             (
-              roleId != '' && roleId != null &&
               exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
-              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.get('permissions', []) is list &&
-              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.get('permissions', []).hasAny([permission])
+              'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
+              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
             )
             ||
             // 2. Fallback: CHỈ ÁP DỤNG khi roles_config chưa được tạo (bị trống)
             (
-              (roleId == '' || roleId == null || !exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId))) &&
+              !exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
               (
                 ['inventory_view', 'standard_view', 'sop_view', 'recipe_view', 'standard_request'].hasAny([permission]) ||
                 (roleId == 'role_lab_technician' && ['inventory_edit', 'batch_run'].hasAny([permission])) ||
