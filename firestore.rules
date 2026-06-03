@@ -26,7 +26,8 @@ service cloud.firestore {
     function evaluateUserPermission(appId, profile, permission) {
       let role = profile.get('role', 'pending');
       let roleId = profile.get('roleId', 'role_staff_default');
-      let hasCustom = 'permissions' in profile && profile.permissions.hasAny([permission]);
+      let customPerms = profile.get('permissions', []);
+      let hasCustom = customPerms.hasAny([permission]);
       
       return role == 'manager' || 
         (
@@ -37,8 +38,7 @@ service cloud.firestore {
         (
           role == 'staff' &&
           exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
-          'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
-          get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
+          get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.get('permissions', []).hasAny([permission])
         );
     }
 
@@ -49,15 +49,15 @@ service cloud.firestore {
 
     // --- CẤU HÌNH HỆ THỐNG VÀ VAI TRÒ ---
     
-    // Mọi người dùng đã đăng nhập đều có thể đọc/ghi tài khoản của chính mình (FCM token, avatar, v.v.)
-    // Manager hoặc User có quyền 'user_manage' có thể xem và sửa thông tin tất cả user
-    // ĐỂ TRÁNH RECURSIVE LOOP, ta tự viết kiểm tra Manager trực tiếp bằng exists/get mà không gọi hasPermission!
+    // Mọi người dùng đã đăng nhập đều có thể đọc thông tin cơ bản để hiển thị avatar,
+    // nhưng chỉ người dùng đó hoặc Manager mới được phép chỉnh sửa
     match /artifacts/{appId}/users/{uid} {
-      allow read, write: if isSignedIn() && (
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (
         request.auth.uid == uid || 
         (
           exists(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data.role == 'manager'
+          get(/databases/$(database)/documents/artifacts/$(appId)/users/$(request.auth.uid)).data.get('role', 'pending') == 'manager'
         )
       );
     }
