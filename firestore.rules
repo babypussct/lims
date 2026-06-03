@@ -33,13 +33,6 @@ service cloud.firestore {
         (
           'permissions' in getUserProfile(appId) &&
           getUserProfile(appId).permissions.hasAny([permission])
-        ) ||
-        (
-          getUserProfile(appId).role == 'staff' &&
-          'roleId' in getUserProfile(appId) &&
-          exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)) &&
-          'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)).data &&
-          get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(getUserProfile(appId).roleId)).data.permissions.hasAny([permission])
         )
       );
     }

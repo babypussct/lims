@@ -1,5 +1,5 @@
 
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -120,6 +120,15 @@ export class AuthService {
 
   constructor() {
     this.auth = getAuth(this.fb.app);
+
+    // Tự động đồng bộ/di chuyển quyền của chính user đăng nhập lên Firestore nếu chưa khớp
+    effect(() => {
+      const u = this.currentUser();
+      const roles = this.rolesConfig();
+      if (u && Object.keys(roles).length > 0) {
+        this.autoMigrateUserPermissionsIfNeeded(u, roles);
+      }
+    });
 
     // --- DIRECT OIDC LOGIN FALLBACK INTERCEPTOR ---
     // If the manual redirect fallback was used, index.html will capture the id_token
@@ -473,6 +482,45 @@ export class AuthService {
         }
     } catch (e) {
         console.warn("[Auth] Failed to initialize default roles:", e);
+    }
+  }
+
+  private async autoMigrateUserPermissionsIfNeeded(u: UserProfile, roles: Record<string, string[]>) {
+    if (!u || !u.role || u.role === 'manager' || u.role === 'pending') return;
+    
+    let resolvedPerms: string[] = [];
+    let needsUpdate = false;
+
+    if (u.role === 'viewer') {
+      const viewerPerms = [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW];
+      if (!u.permissions || u.permissions.length !== viewerPerms.length || !viewerPerms.every(p => u.permissions!.includes(p))) {
+        resolvedPerms = viewerPerms;
+        needsUpdate = true;
+      }
+    } else if (u.role === 'staff') {
+      const roleId = u.roleId || 'role_staff_default';
+      const rolePerms = roles[roleId];
+      if (rolePerms) {
+        const custom = u.customPermissions || [];
+        resolvedPerms = Array.from(new Set([...rolePerms, ...custom]));
+        if (!u.permissions || u.permissions.length !== resolvedPerms.length || !resolvedPerms.every(p => u.permissions!.includes(p))) {
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      console.log(`[Auth] Auto-migrating/updating permissions for logged-in user ${u.displayName}...`);
+      try {
+        const userRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/users/${u.uid}`);
+        await updateDoc(userRef, { 
+          permissions: resolvedPerms,
+          lastUpdated: serverTimestamp()
+        });
+        console.log(`[Auth] Auto-migration complete for ${u.displayName}.`);
+      } catch (e) {
+        console.warn("[Auth] Failed to auto-migrate user permissions:", e);
+      }
     }
   }
 
