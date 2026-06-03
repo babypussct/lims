@@ -3,7 +3,7 @@ import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from 
 import { CommonModule } from '@angular/common';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { formatDate, formatNum, formatSampleList } from '../../shared/utils/utils';
+import { formatDate, formatNum, formatSampleList, naturalCompare } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 import { MasterTargetService } from '../targets/master-target.service';
@@ -154,11 +154,11 @@ declare let QRious: any;
                                     <div class="pt-2">
                                         <span class="text-xs text-slate-500 block mb-2 font-bold uppercase tracking-wider text-slate-400">Chỉ tiêu phân tích theo từng mẫu</span>
                                         <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                                            @for(sample of objectKeys(getSampleTargetMap()!); track sample) {
+                                            @for(sample of getSortedSamples(getSampleTargetMap()); track sample) {
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
                                                     <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded self-start shrink-0">{{ sample }}</span>
                                                     <div class="flex flex-wrap gap-1.5 justify-end">
-                                                        @for(tId of getSampleTargetMap()![sample]; track tId) {
+                                                        @for(tId of getSortedTargets(getSampleTargetMap()![sample]); track tId) {
                                                             <span class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/30 text-indigo-700 dark:text-indigo-350 px-2 py-0.5 rounded-lg text-[10px] font-bold">
                                                                 {{ resolveCompoundName(tId) }}
                                                             </span>
@@ -306,6 +306,16 @@ export class TraceabilityComponent implements OnInit {
           return targetMap as Record<string, string[]>;
       }
       return null;
+  }
+
+  getSortedSamples(map: Record<string, string[]> | null): string[] {
+      if (!map) return [];
+      return Object.keys(map).sort(naturalCompare);
+  }
+
+  getSortedTargets(tIds: string[] | undefined): string[] {
+      if (!tIds || !Array.isArray(tIds)) return [];
+      return [...tIds].sort((a, b) => naturalCompare(this.resolveCompoundName(a), this.resolveCompoundName(b)));
   }
 
   async loadData(id: string) {

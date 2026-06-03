@@ -221,6 +221,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     if (isTrifluralin) {
       defaultPage1['r2'] = '0.999';
+      defaultPage1['hasFinal'] = true;
       defaultPage1['blankName'] = '';
       defaultPage1['spikeName'] = '';
       defaultPage1['calibPoints'] = [

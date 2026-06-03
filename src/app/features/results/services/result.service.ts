@@ -202,17 +202,17 @@ export class ResultService {
       // Hỗ trợ di trú tự động: Đọc phân tách dữ liệu cũ nếu có
       const legacyResult = metaData['analysisResult'] || {};
       
-      const mergedPage1Data = {
+      const mergedPage1Data = JSON.parse(JSON.stringify({
         ...(legacyResult['page1Data'] || {}),
         ...(currentDetail['page1Data'] || {}),
         ...(draft.page1Data || {})
-      };
+      }));
       
-      const mergedResultData = {
+      const mergedResultData = JSON.parse(JSON.stringify({
         ...(legacyResult['resultData'] || {}),
         ...(currentDetail['resultData'] || {}),
         ...(draft.resultData || {})
-      };
+      }));
       
       const mergedPublishedBackup = draft.publishedBackup || currentDetail['publishedBackup'] || legacyResult['publishedBackup'] || null;
       

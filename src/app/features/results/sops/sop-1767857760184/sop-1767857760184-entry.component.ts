@@ -58,17 +58,6 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
               </button>
             </div>
           </div>
-          
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-widest">Kiểm soát chất lượng (QC) mẫu</label>
-            <label class="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850 h-[42px]">
-              <input type="checkbox" 
-                     [(ngModel)]="draft.page1Data['hasFinal']" 
-                     (ngModelChange)="onFinalToggled()"
-                     class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
-              <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
-            </label>
-          </div>
         </div>
 
         <!-- Signature Dates -->
@@ -128,8 +117,20 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
                      placeholder="Ví dụ: 0.9992..."
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
             </div>
+            
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC FINAL</label>
+              <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850">
+                <input type="checkbox" 
+                       [(ngModel)]="draft.page1Data['hasFinal']" 
+                       (ngModelChange)="onFinalToggled()"
+                       class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
+              </label>
+            </div>
+            
             <div class="text-[10.5px] text-slate-400 leading-relaxed font-medium">
-              <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i> Giá trị này sẽ được tự động điền vào hàng cuối cùng của bảng đường chuẩn trong báo cáo xuất bản.
+              <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i> Các giá trị cấu hình này sẽ được tự động điền vào báo cáo xuất bản.
             </div>
           </div>
 

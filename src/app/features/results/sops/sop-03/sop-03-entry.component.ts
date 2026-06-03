@@ -91,6 +91,16 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
                      placeholder="Ví dụ: 0.9992..."
                      class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
             </div>
+
+            <div class="pt-2">
+              <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850">
+                <input type="checkbox" 
+                       [(ngModel)]="draft.page1Data['hasFinal']" 
+                       (ngModelChange)="onDataChanged()"
+                       class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
+              </label>
+            </div>
           </div>
 
           <!-- Calibration Points Grid (Horizontal Card Layout) -->
@@ -692,7 +702,7 @@ export class Sop03EntryComponent implements OnInit {
       }
     });
 
-    if (selectedCount > 0) {
+    if (selectedCount > 0 && this.draft.page1Data['hasFinal']) {
       const finalKey = this.getFinalKey(prefix);
       ensureKey(finalKey, true);
       list.push({
