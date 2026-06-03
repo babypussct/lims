@@ -248,7 +248,7 @@ service cloud.firestore {
       await this.state.saveMaintenanceConfig(this.maintenanceModeLocal(), msg, scheduledVal);
       
       if (this.maintenanceModeLocal()) {
-          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'warning', true);
+          this.toast.show('Đã BẬT chế độ bảo trì! Người dùng thông thường sẽ bị chặn.', 'info', true);
       } else if (scheduledVal) {
           const formatted = new Date(scheduledVal).toLocaleString('vi-VN');
           this.toast.show(`Đã hẹn giờ bảo trì vào lúc ${formatted}`, 'info');
