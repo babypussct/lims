@@ -12,123 +12,213 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
   const doc = DocumentApp.openById(docId);
   const body = doc.getBody();
 
-  // 1. Định vị và chia tách Section 1 & Section 2
-  let sec2Idx = -1;
-  const numChildren = body.getNumChildren();
-  for (let i = 0; i < numChildren; i++) {
-    const child = body.getChild(i);
-    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-      const text = child.asParagraph().getText().trim();
-      if (text.includes("XÁC ĐỊNH DƯ LƯỢNG") && !text.includes("KẾT QUẢ")) {
-        sec2Idx = i;
-        break;
+  const printFormType = metadata.printFormType || 'formCheck';
+
+  if (printFormType === 'formDon') {
+    // === FORM ĐƠN (Trang 15) ===
+    let compounds = metadata.compoundsToPrint || [];
+    if (compounds.length === 0) {
+      compounds = ['Chlorpyrifos'];
+    }
+
+    const templateChildren = [];
+    const numChildren = body.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      templateChildren.push(body.getChild(i).copy());
+    }
+
+    body.clear();
+
+    const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
+
+    for (let c = 0; c < compounds.length; c++) {
+      const compoundName = compounds[c];
+      if (c > 0) {
+        body.appendPageBreak();
+      }
+
+      const pageElements = [];
+      for (let i = 0; i < templateChildren.length; i++) {
+        const cloned = templateChildren[i].copy();
+        const type = cloned.getType();
+        let appended = null;
+        if (type === DocumentApp.ElementType.PARAGRAPH) {
+          appended = body.appendParagraph(cloned.asParagraph());
+        } else if (type === DocumentApp.ElementType.TABLE) {
+          appended = body.appendTable(cloned.asTable());
+        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+          appended = body.appendListItem(cloned.asListItem());
+        }
+        if (appended) pageElements.push(appended);
+      }
+
+      for (const element of pageElements) {
+        if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const pText = element.asParagraph().getText();
+          if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
+            element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
+          }
+        }
+
+        // Standard placeholders
+        for (const [key, val] of Object.entries(metadata)) {
+          if (key !== 'samples' && key !== 'runSamplesList') {
+            if (val === true) {
+              element.replaceText(`{{${key}}}`, '☑');
+            } else if (val === false) {
+              element.replaceText(`{{${key}}}`, '☐');
+            } else {
+              element.replaceText(`{{${key}}}`, val !== null && val !== undefined ? val.toString() : '');
+            }
+          }
+        }
+
+        if (sopConfig.signaturePlaceholders) {
+          for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
+            const textVal = metadata[fieldName] || '';
+            if (textVal) {
+              const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
+              element.replaceText(placeholderText, dateOnly);
+            }
+          }
+        }
+      }
+
+      fillLanHuuCoSection2(pageElements, sopConfig, metadata, compoundName, samples);
+    }
+
+    cleanLanHuuCoLastPageBreak(body);
+    doc.saveAndClose();
+
+    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+    const pdfName = fileName + '.pdf';
+    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+    return {
+      docId,
+      pdfId: pdfFile.getId(),
+      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
+      pdfUrl: pdfFile.getUrl(),
+      pdfViewUrl: pdfFile.getDownloadUrl(),
+      fileName,
+      createdAt: new Date().toISOString(),
+    };
+  } else {
+    // === FORM CHECK (Trang 9-10) ===
+    let sec2Idx = -1;
+    const numChildren = body.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      const child = body.getChild(i);
+      if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+        const text = child.asParagraph().getText().trim();
+        if ((text.includes("XÁC ĐỊNH") && text.includes("LƯỢNG") && !text.includes("KẾT QUẢ")) ||
+            (text.includes("XA") && text.includes("C") && text.includes("D") && text.includes("L") && text.includes("NG") && !text.includes("KẾT QUẢ"))) {
+          sec2Idx = i;
+          break;
+        }
       }
     }
-  }
 
-  if (sec2Idx === -1) {
-    // Fallback nếu không tìm thấy paragraph tiêu đề của Section 2
-    Logger.log("[LanHuuCoCustom] CẢNH BÁO: Không tìm thấy tiêu đề của Section 2. Đặt fallback tại 214.");
-    sec2Idx = 214;
-  }
+    const hasSection2 = (sec2Idx !== -1 && sec2Idx < numChildren);
+    if (!hasSection2) {
+      Logger.log("[LanHuuCoCustom] Không tìm thấy Section 2 (chạy chuẩn bị mẫu). Toàn bộ tài liệu được xem là Section 1.");
+      sec2Idx = numChildren;
+    }
 
-  // Clone Section 2 children
-  const sec2Children = [];
-  for (let i = sec2Idx; i < numChildren; i++) {
-    sec2Children.push(body.getChild(i).copy());
-  }
-
-  // Xóa Section 2 ra khỏi body tạm thời
-  for (let i = numChildren - 1; i >= sec2Idx; i--) {
-    body.removeChild(body.getChild(i));
-  }
-
-  // Lấy danh sách children của Section 1 để nhân bản
-  const sec1NumChildren = body.getNumChildren();
-  const sec1Children = [];
-  for (let i = 0; i < sec1NumChildren; i++) {
-    sec1Children.push(body.getChild(i).copy());
-  }
-
-  const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
-
-  // 2. Nhân bản Section 1 cho từng mẫu
-  if (samples.length > 0) {
-    fillLanHuuCoSample(body, sopConfig, metadata, samples[0]);
-  }
-
-  for (let s = 1; s < samples.length; s++) {
-    body.appendPageBreak();
-    const tempContainer = [];
-    for (let i = 0; i < sec1Children.length; i++) {
-      const cloned = sec1Children[i].copy();
-      const type = cloned.getType();
-      let appended = null;
-      if (type === DocumentApp.ElementType.PARAGRAPH) {
-        appended = body.appendParagraph(cloned.asParagraph());
-      } else if (type === DocumentApp.ElementType.TABLE) {
-        appended = body.appendTable(cloned.asTable());
-      } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-        appended = body.appendListItem(cloned.asListItem());
+    const sec2Children = [];
+    if (hasSection2) {
+      for (let i = sec2Idx; i < numChildren; i++) {
+        sec2Children.push(body.getChild(i).copy());
       }
-      if (appended) tempContainer.push(appended);
     }
-    fillLanHuuCoSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
-  }
 
-  // 3. Ghép Section 2 vào cuối tài liệu
-  body.appendPageBreak();
-  const sec2Container = [];
-  for (let i = 0; i < sec2Children.length; i++) {
-    const cloned = sec2Children[i].copy();
-    const type = cloned.getType();
-    let appended = null;
-    if (type === DocumentApp.ElementType.PARAGRAPH) {
-      appended = body.appendParagraph(cloned.asParagraph());
-    } else if (type === DocumentApp.ElementType.TABLE) {
-      appended = body.appendTable(cloned.asTable());
-    } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-      appended = body.appendListItem(cloned.asListItem());
+    let sentinel = null;
+    if (hasSection2) {
+      sentinel = body.insertParagraph(sec2Idx, "");
+      const newNum = body.getNumChildren();
+      for (let i = newNum - 1; i > sec2Idx; i--) {
+        body.removeChild(body.getChild(i));
+      }
     }
-    if (appended) sec2Container.push(appended);
+
+    const sec1NumChildren = body.getNumChildren();
+    const sec1Children = [];
+    for (let i = 0; i < sec1NumChildren; i++) {
+      sec1Children.push(body.getChild(i).copy());
+    }
+
+    const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
+
+    if (samples.length > 0) {
+      fillLanHuuCoSample(body, sopConfig, metadata, samples[0]);
+    }
+
+    for (let s = 1; s < samples.length; s++) {
+      body.appendPageBreak();
+      const tempContainer = [];
+      for (let i = 0; i < sec1Children.length; i++) {
+        const cloned = sec1Children[i].copy();
+        const type = cloned.getType();
+        let appended = null;
+        if (type === DocumentApp.ElementType.PARAGRAPH) {
+          appended = body.appendParagraph(cloned.asParagraph());
+        } else if (type === DocumentApp.ElementType.TABLE) {
+          appended = body.appendTable(cloned.asTable());
+        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+          appended = body.appendListItem(cloned.asListItem());
+        }
+        if (appended) tempContainer.push(appended);
+      }
+      fillLanHuuCoSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
+    }
+
+    if (hasSection2 && sec2Children.length > 0) {
+      body.appendPageBreak();
+      const sec2Container = [];
+      for (let i = 0; i < sec2Children.length; i++) {
+        const cloned = sec2Children[i].copy();
+        const type = cloned.getType();
+        let appended = null;
+        if (type === DocumentApp.ElementType.PARAGRAPH) {
+          appended = body.appendParagraph(cloned.asParagraph());
+        } else if (type === DocumentApp.ElementType.TABLE) {
+          appended = body.appendTable(cloned.asTable());
+        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+          appended = body.appendListItem(cloned.asListItem());
+        }
+        if (appended) sec2Container.push(appended);
+      }
+
+      fillLanHuuCoSection2(sec2Container, sopConfig, metadata, null, samples);
+    }
+
+    if (sentinel) {
+      body.removeChild(sentinel);
+    }
+
+    cleanLanHuuCoLastPageBreak(body);
+    doc.saveAndClose();
+
+    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+    const pdfName = fileName + '.pdf';
+    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+    return {
+      docId,
+      pdfId: pdfFile.getId(),
+      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
+      pdfUrl: pdfFile.getUrl(),
+      pdfViewUrl: pdfFile.getDownloadUrl(),
+      fileName,
+      createdAt: new Date().toISOString(),
+    };
   }
-
-  // Điền dữ liệu vào Section 2
-  fillLanHuuCoSection2(sec2Container, sopConfig, metadata);
-
-  // Tự động thu dọn PageBreak thừa cuối tài liệu nếu có
-  cleanLanHuuCoLastPageBreak(body);
-
-  // Lưu doc
-  doc.saveAndClose();
-
-  // Xuất file PDF
-  const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
-  const pdfName = fileName + '.pdf';
-  const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
-
-  const pdfUrl     = pdfFile.getUrl();
-  const docsUrl    = `https://docs.google.com/document/d/${docId}/edit`;
-  const pdfViewUrl = pdfFile.getDownloadUrl();
-
-  Logger.log(`[LanHuuCoCustom] Báo cáo Lân hữu cơ tạo thành công: ${fileName}`);
-
-  return {
-    docId,
-    pdfId:       pdfFile.getId(),
-    docsUrl,
-    pdfUrl,
-    pdfViewUrl,
-    fileName,
-    createdAt:   new Date().toISOString(),
-  };
 }
 
 /**
  * Điền thông tin Section 1 (cấp body chính) cho mẫu đầu tiên
  */
 function fillLanHuuCoSample(body, sopConfig, metadata, sample) {
-  // Bản chất body cũng là một danh sách phần tử, duyệt qua và gọi helper
   const numChildren = body.getNumChildren();
   const elements = [];
   for (let i = 0; i < numChildren; i++) {
@@ -146,7 +236,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
   const isTargetAssignedForGas = function(sampleCode, colKey) {
     if (!sampleTargetMap) return true;
     
-    // Bản đồ chuẩn hóa Backend Key sang Firestore Target ID của Lân hữu cơ
     const COMPOUND_TO_FIRESTORE_ID = {
       'Acephate': 'acephate',
       'AzinphosMethyl': 'azinphos-methyl',
@@ -209,7 +298,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
     return checkAssigned(assignedTargetIds, colKey);
   };
 
-  // Chuẩn bị toàn bộ fields thay thế dạng {{fieldName}}
   const allFields = {};
   if (metadata) {
     for (const [k, v] of Object.entries(metadata)) {
@@ -263,11 +351,9 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
   };
 
   for (const element of elements) {
-    // 1. Thay thế thông tin mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
     element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
 
-    // 2. Thay thế chữ ký và ngày tháng
     if (sopConfig.signaturePlaceholders) {
       for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
         const textVal = metadata[fieldName] || '';
@@ -278,7 +364,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
 
-    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
         const isChecked = metadata[fieldName] === true;
@@ -287,7 +372,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
 
-    // 4. Thay thế mọi placeholder dạng {{fieldName}}
     for (const [key, val] of Object.entries(allFields)) {
       if (val === true) {
         element.replaceText(`{{${key}}}`, '☑');
@@ -298,9 +382,7 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
 
-    // 5. Xử lý điền các ô checkbox loại mẫu, khối lượng, tình trạng mẫu và kết quả chung
     try {
-      // a. Khối lượng mẫu
       const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
       let kl10Check = '☐';
       let klOtherText = '………';
@@ -314,7 +396,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
         element.replaceText('10\\.0\\s*;\\s*[…\\.]+', '10.0 ; ' + klOtherText);
       }
 
-      // b. Loại mẫu
       const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
       let isTuoi = loaiMauVal === 'Nông sản tươi';
       let isKho = loaiMauVal === 'Nông sản khô';
@@ -333,7 +414,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thủy sản', 'khô; ' + thuySanCheck + ' Thủy sản');
       element.replaceText('sản\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'sản; ' + lmKhacCheck + ' Khác: ' + lmKhacText);
 
-      // c. Tình trạng mẫu
       const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
       let isBinhThuong = ttMauVal === 'Bình thường';
       let isTtKhac = !isBinhThuong;
@@ -345,7 +425,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       element.replaceText('Tình trạng mẫu:\\s*[☐□☑]\\s*Bình thường', 'Tình trạng mẫu: ' + btCheck + ' Bình thường');
       element.replaceText('thường\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'thường; ' + ttKhacCheck + ' Khác: ' + ttKhacText);
 
-      // d. Kết quả phát hiện/không phát hiện
       let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
       let isKhongPhatHien = sample.checkTatCaND === true || metadata.checkTatCaND === true;
       
@@ -374,7 +453,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       element.replaceText('[☐□☑]\\s*Phát hiện', phCheck + ' Phát hiện');
       element.replaceText('[☐□☑]\\s*Không phát hiện', kphCheck + ' Không phát hiện');
 
-      // e. Bổ sung nước
       const boSungNuocVal = (sample.checkBoSungNuoc || metadata.checkBoSungNuoc || 'không').toString().trim().toLowerCase();
       let bsNuocCo = '☐';
       let bsNuocKhong = '☐';
@@ -385,7 +463,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
       element.replaceText('Bổ\\s*sung\\s*nước:\\s*[☐□☑]?\\s*có;\\s*[☐□☑]?\\s*không', 'Bổ sung nước: ' + bsNuocCo + ' có; ' + bsNuocKhong + ' không');
 
-      // f. Hút 8ml cho vào hỗn hợp:
       const hhLamSachVal = (sample.checkHonHopLamSach || metadata.checkHonHopLamSach || 'B1').toString().trim().toUpperCase();
       let hhB1 = '☐';
       let hhB2 = '☐';
@@ -396,7 +473,6 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
       element.replaceText('hỗn\\s*hợp\\s*:\\s*[☐□☑]?\\s*B1;\\s*[☐□☑]?\\s*B2', 'hỗn hợp : ' + hhB1 + ' B1; ' + hhB2 + ' B2');
 
-      // g. HSPL
       const hsplVal = (sample.heSoPhaLoang || sample.hSoPhaLoang || metadata.heSoPhaLoang || '1').toString().trim();
       let hspl1Check = '☐';
       let hsplOtherText = '………';
@@ -410,13 +486,8 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       Logger.log('[Report LanHuuCo] Lỗi điền metadata: ' + e.toString());
     }
 
-    // 6. Điền bảng kết quả hoạt chất (Table 4)
     fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextToKey, isTargetAssignedForGas);
-
-    // 7. Điền bảng nồng độ điểm chuẩn ở Section 1 (Table 2)
     fillLanHuuCoTable2Directly(element, metadata);
-    
-    // 8. Đánh giá Đạt/Không đạt/NA cho bảng QC của từng mẫu (Table 3)
     fillLanHuuCoQcTableDirectly(element, sopConfig, allFields);
   }
 }
@@ -494,12 +565,10 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
 
   for (let r = 2; r < numRows; r++) {
     const row = resultsTable.getRow(r);
-    // Left side: name cell 0, cells 1-4 for result & QCs
     const leftName = row.getCell(0).getText().trim();
     if (leftName) {
       fillSide(row, 0, leftName);
     }
-    // Right side: name cell 5, cells 6-9 for result & QCs
     const rightName = row.getCell(5).getText().trim();
     if (rightName) {
       fillSide(row, 5, rightName);
@@ -534,7 +603,7 @@ function fillLanHuuCoTable2Directly(element, metadata) {
     const calibPoints = metadata.calibPoints || [];
     for (let i = 0; i < 6; i++) {
       const rowIdx = i + 1;
-      const row = calTable2.getRow(rowIdx);
+      const row = calibTable2.getRow(rowIdx);
       if (i < calibPoints.length) {
         const pt = calibPoints[i];
         setCellText(row, 1, pt.loSo || '20', null, 9);
@@ -575,7 +644,7 @@ function fillLanHuuCoQcTableDirectly(element, sopConfig, allFields) {
 
           if (fieldName && allFields[fieldName] !== undefined) {
             const val = allFields[fieldName];
-            const evalCell = row.getCell(2); // Cột Đánh giá
+            const evalCell = row.getCell(2);
             
             let datCheck, khongDatCheck, naCheck;
             if (val === true) {
@@ -610,7 +679,7 @@ function fillLanHuuCoQcTableDirectly(element, sopConfig, allFields) {
 /**
  * Điền thông tin vào Section 2 (Calibration table & Sample prep table)
  */
-function fillLanHuuCoSection2(elements, sopConfig, metadata) {
+function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, samples) {
   let tables = [];
   for (const element of elements) {
     if (element.getType() === DocumentApp.ElementType.TABLE) {
@@ -651,9 +720,57 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata) {
         setCellText(row, 2, '', null, 9);
       }
     }
-    // Điền R2
     const r2Val = metadata.r2 || '';
     setCellText(calibTable.getRow(7), 1, r2Val, null, 9);
+  }
+
+  // Helper inside function to map compound to backend key
+  function mapCompoundToKey(cName) {
+    const directMap = {
+      'Acephate': 'Acephate',
+      'AzinphosMethyl': 'AzinphosMethyl',
+      'Cadusafos': 'Cadusafos',
+      'Chlorpyrifos': 'Chlorpyrifos',
+      'ChlorpyrifosMethyl': 'ChlorpyrifosMethyl',
+      'Diazinon': 'Diazinon',
+      'Dimethoate': 'Dimethoate',
+      'Edifenphos': 'Edifenphos',
+      'Ethion': 'Ethion',
+      'Ethoprophos': 'Ethoprophos',
+      'Fenitrothion': 'Fenitrothion',
+      'Fenthion': 'Fenthion',
+      'Fipronil': 'Fipronil',
+      'FipronilSulfide': 'FipronilSulfide',
+      'FipronilSulfone': 'FipronilSulfone',
+      'FipronilDesulfinyl': 'FipronilDesulfinyl',
+      'Iprobenfos': 'Iprobenfos',
+      'Malathion': 'Malathion',
+      'Mefenoxam': 'Mefenoxam',
+      'Metalaxyl': 'Metalaxyl',
+      'Methacrifos': 'Methacrifos',
+      'Methidathion': 'Methidathion',
+      'Monocrotophos': 'Monocrotophos',
+      'Omethoate': 'Omethoate',
+      'Parathion': 'Parathion',
+      'ParathionMethyl': 'ParathionMethyl',
+      'Phenthoate': 'Phenthoate',
+      'Phorate': 'Phorate',
+      'Phosmet': 'Phosmet',
+      'Phosphamidon': 'Phosphamidon',
+      'PirimiphosMethyl': 'PirimiphosMethyl',
+      'Profenofos': 'Profenofos',
+      'Quinalphos': 'Quinalphos',
+      'Ronnel': 'Ronnel',
+      'Triazophos': 'Triazophos',
+      'Vamidothion': 'Vamidothion',
+      'Chlorfenvinphos': 'Chlorfenvinphos',
+      'IsofenphosMethyl': 'IsofenphosMethyl'
+    };
+    const normalized = cName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [k, v] of Object.entries(directMap)) {
+      if (k.toLowerCase() === normalized) return v;
+    }
+    return cName;
   }
 
   // 2. Điền bảng chuẩn bị mẫu Table 8 (rows=19)
@@ -669,17 +786,38 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata) {
   if (prepTable) {
     const runSamplesList = metadata.runSamplesList || [];
     
-    // Clear / fill 18 rows đầu tiên
     for (let i = 0; i < 18; i++) {
       const rowIdx = i + 1;
       const row = prepTable.getRow(rowIdx);
       if (i < runSamplesList.length) {
         const s = runSamplesList[i];
+        let displayResult = s.summaryResult || 'KPH';
+        
+        if (compoundName && samples) {
+          if (s.key === 'QC_BLANK' || s.key === 'QC_SPIKE' || s.key === 'QC_FINAL') {
+            displayResult = 'KPH';
+          } else if (s.key === 'GROUPED' && s.compoundResults) {
+            displayResult = s.compoundResults[compoundName] || 'KPH';
+          } else {
+            const matchedSample = samples.find(function(item) {
+              return item.maSoMau === s.maSoMau;
+            });
+            if (matchedSample) {
+              const backendKey = mapCompoundToKey(compoundName);
+              const isNd = matchedSample[backendKey + '_nd'] === true;
+              const val = matchedSample[backendKey];
+              displayResult = isNd ? 'KPH' : (val || 'KPH');
+            } else {
+              displayResult = 'KPH';
+            }
+          }
+        }
+
         setCellText(row, 0, s.maSoMau || '', null, 9);
         setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
         setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
         setCellText(row, 3, s.loSo || '', null, 9);
-        setCellText(row, 4, s.summaryResult || 'KPH', null, 9);
+        setCellText(row, 4, displayResult, null, 9);
       } else {
         setCellText(row, 0, '', null, 9);
         setCellText(row, 1, '', null, 9);
@@ -689,18 +827,39 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata) {
       }
     }
     
-    // Nếu nhiều hơn 18 mẫu, tự động nhân bản dòng 18 và chèn tiếp xuống dưới
     if (runSamplesList.length > 18) {
       for (let i = 18; i < runSamplesList.length; i++) {
         const s = runSamplesList[i];
         const newRow = prepTable.getRow(18).copy();
         prepTable.appendRow(newRow);
         const row = prepTable.getRow(i + 1);
+        
+        let displayResult = s.summaryResult || 'KPH';
+        if (compoundName && samples) {
+          if (s.key === 'QC_BLANK' || s.key === 'QC_SPIKE' || s.key === 'QC_FINAL') {
+            displayResult = 'KPH';
+          } else if (s.key === 'GROUPED' && s.compoundResults) {
+            displayResult = s.compoundResults[compoundName] || 'KPH';
+          } else {
+            const matchedSample = samples.find(function(item) {
+              return item.maSoMau === s.maSoMau;
+            });
+            if (matchedSample) {
+              const backendKey = mapCompoundToKey(compoundName);
+              const isNd = matchedSample[backendKey + '_nd'] === true;
+              const val = matchedSample[backendKey];
+              displayResult = isNd ? 'KPH' : (val || 'KPH');
+            } else {
+              displayResult = 'KPH';
+            }
+          }
+        }
+
         setCellText(row, 0, s.maSoMau || '', null, 9);
         setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
         setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
         setCellText(row, 3, s.loSo || '', null, 9);
-        setCellText(row, 4, s.summaryResult || 'KPH', null, 9);
+        setCellText(row, 4, displayResult, null, 9);
       }
     }
   }

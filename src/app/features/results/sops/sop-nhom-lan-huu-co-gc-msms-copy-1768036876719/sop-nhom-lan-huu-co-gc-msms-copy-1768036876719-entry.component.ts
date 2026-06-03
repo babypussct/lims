@@ -193,7 +193,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
             <div class="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition shrink-0">
               <!-- Checkbox to toggle inclusion in PDF -->
               <input type="checkbox" 
-                     [ngModel]="draft.resultData[sampleCode]['selected'] !== false"
+                     [ngModel]="draft.resultData?.[sampleCode]?.['selected'] !== false"
                      (ngModelChange)="toggleSampleSelected(sampleCode, $event)"
                      title="Bao gồm mẫu này trong báo cáo in PDF"
                      class="ml-1.5 w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 cursor-pointer">
@@ -203,7 +203,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                         ? 'bg-violet-600 text-white font-extrabold shadow-sm border border-violet-650 transition shrink-0 active:scale-95' 
                         : 'bg-transparent text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border-0 transition shrink-0 active:scale-95'"
                       class="px-3 py-2 rounded-lg text-xs flex items-center gap-2"
-                      [class.opacity-50]="draft.resultData[sampleCode]['selected'] === false">
+                      [class.opacity-50]="draft.resultData?.[sampleCode]?.['selected'] === false">
                 <span [class]="activeSampleCode() === sampleCode
                         ? 'w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black text-white'
                         : 'w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80'">

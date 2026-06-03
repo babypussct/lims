@@ -54,7 +54,10 @@ function doPost(e) {
 
 // ── Core: Tạo báo cáo & Định tuyến thông minh (Dynamic Routing) ────────
 function generateReport(sopId, metadata, samples, version) {
-  const templateId = CONFIG.TEMPLATES[sopId];
+  let templateId = CONFIG.TEMPLATES[sopId];
+  if (sopId === 'lan-huu-co' && metadata && metadata.printFormType === 'formDon') {
+    templateId = '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y';
+  }
   const sopConfig   = CONFIG.SOP_CONFIG[sopId];
 
   if (!templateId || templateId === 'PASTE_GOOGLE_DOC_ID_HERE') {

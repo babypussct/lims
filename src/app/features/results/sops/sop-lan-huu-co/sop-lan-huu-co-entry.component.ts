@@ -12,6 +12,29 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
   template: `
     <div class="space-y-6 animate-fade-in">
       
+      <!-- Form Selection Switcher -->
+      <div class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 shadow-sm mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider">Hình thức in kết quả:</span>
+          <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200 dark:border-slate-800 select-none items-center shadow-3xs">
+            <button type="button"
+                    (click)="setPrintFormType('formCheck')"
+                    [class]="draft.page1Data['printFormType'] === 'formCheck'
+                      ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                      : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
+              FORM CHECK (Trang 9-10)
+            </button>
+            <button type="button"
+                    (click)="setPrintFormType('formDon')"
+                    [class]="draft.page1Data['printFormType'] === 'formDon'
+                      ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
+                      : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-850 dark:hover:text-slate-250 transition duration-155'">
+              FORM ĐƠN (Trang 15)
+            </button>
+          </div>
+        </div>
+      </div>
+      
       <!-- Tab Header Switcher -->
       <div class="flex border-b border-slate-200 dark:border-slate-800 gap-4 mb-2">
         <button type="button"
@@ -23,6 +46,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
           <i class="fa-solid fa-flask"></i> 1. Kết quả hoạt chất (Trang 9-10)
         </button>
         <button type="button"
+                *ngIf="draft.page1Data['printFormType'] === 'formDon'"
                 (click)="activeTab.set('chromatography')"
                 [class]="activeTab() === 'chromatography'
                   ? 'border-b-2 border-violet-600 text-violet-600 dark:text-violet-400 font-extrabold pb-3 text-xs tracking-wider uppercase'
@@ -119,7 +143,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
           </div>
 
           <!-- Checkbox & QC segment controls grid (Dynamic from SOP metadata configuration) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             @for (checkbox of checkboxList; track checkbox.key) {
               @if (isGeneralObservation(checkbox.key)) {
                 <!-- Standard observation checkbox -->
@@ -133,7 +157,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                   </div>
                 </label>
               } @else {
-                <!-- QC evaluation with Đạt / Không đạt Segment Control -->
+                <!-- QC evaluation with Đạt / Không đạt Segment Control (visible in FORM CHECK) -->
                 <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/40 dark:bg-slate-955/40 border border-slate-250/25 dark:border-slate-800/60 transition hover:border-slate-350 dark:hover:border-slate-700 shadow-xs">
                   <div class="flex-1 min-w-0 pr-1">
                     <span class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 leading-snug block break-words">
@@ -148,7 +172,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                             (click)="setQcStatus(checkbox.key, true)"
                             [class]="draft.page1Data[checkbox.key] === true 
                               ? 'px-2.5 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-550 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                             title="Đạt tiêu chí">
                       Đạt
                     </button>
@@ -158,17 +182,17 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                             (click)="setQcStatus(checkbox.key, false)"
                             [class]="draft.page1Data[checkbox.key] === false 
                               ? 'px-2.5 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-550 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                             title="Không đạt tiêu chí">
                       K.Đạt
                     </button>
-
+ 
                     <!-- Button 'N/A' (null) -->
                     <button type="button"
                             (click)="setQcStatus(checkbox.key, null)"
                             [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
                               ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
+                              : 'px-2 py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                             title="Chưa đánh giá">
                       N/A
                     </button>
@@ -178,8 +202,9 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
             }
           </div>
         </div>
-
-        <!-- 2. Sample Navigation Tabs & Print Configuration -->
+        
+        <!-- 2. Sample Navigation Tabs
+ & Print Configuration -->
         <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
           <div class="flex flex-wrap items-center gap-3 overflow-x-auto custom-scrollbar flex-1 min-w-0">
             <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mr-1 shrink-0">Danh sách mẫu:</span>
@@ -268,7 +293,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                 <span>Đặt tất cả KPH</span>
               </button>
 
-              <button (click)="sampleBulkQC()" 
+              <button *ngIf="draft.page1Data['printFormType'] === 'formCheck'"
+                      (click)="sampleBulkQC()" 
                       type="button"
                       class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-emerald-955/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
                 <i class="fa-solid fa-circle-check text-emerald-500"></i>
@@ -294,9 +320,9 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                   <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Hoạt chất</th>
                   <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">KPH / ND</th>
                   <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">Kết quả (µg/kg)</th>
-                  <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC1 (Độ thu hồi)</th>
-                  <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC2 (Độ tuyến tính R2)</th>
-                  <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC3 (Kết luận)</th>
+                  <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC1 (Độ thu hồi)</th>
+                  <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC2 (Độ tuyến tính R2)</th>
+                  <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC3 (Kết luận)</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -334,7 +360,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     </td>
 
                     <!-- QC1 Toggle Button Group -->
-                    <td class="py-1 px-1.5 text-center">
+                    <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
                       <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
                            [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
                            [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
@@ -366,8 +392,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     </td>
 
                     <!-- QC2 Toggle Button Group -->
-                    <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
+                    <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
+                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
                            [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
                            [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
                         <button type="button"
@@ -398,8 +424,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     </td>
 
                     <!-- QC3 Toggle Button Group -->
-                    <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
+                    <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
+                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
                            [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
                            [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
                         <button type="button"
@@ -441,49 +467,90 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
         
         <!-- 1. Calibration Curve Parameters -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-            <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-chart-line mr-2 text-violet-500 text-sm"></i>
-              Đường chuẩn sắc ký (Trang 15 - Table 7)
-            </h4>
-            <div class="flex items-center gap-2">
-              <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hệ số tuyến tính R²:</label>
-              <input type="text"
-                     [(ngModel)]="draft.page1Data['r2']"
-                     (ngModelChange)="onDataChanged()"
-                     placeholder="0.999..."
-                     class="w-24 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 text-center outline-none transition">
-            </div>
-          </div>
+          <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-chart-line mr-2 text-violet-500 text-sm"></i>
+            Khai báo Đường chuẩn & QC sắc ký (Trang 15 - Table 7)
+          </h4>
 
-          <!-- 6 Points Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            @for (pt of draft.page1Data['calibPoints']; track $index) {
-              <div class="bg-slate-50/40 dark:bg-slate-955/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 hover:shadow-xs hover:border-violet-400/50 dark:hover:border-violet-500/40 transition duration-200 group">
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                  <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 group-hover:text-violet-500 transition duration-200">Chuẩn C{{ $index }}</span>
-                  <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
-                </div>
-                <div>
-                  <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Số vial</label>
-                  <input type="text" 
-                         [(ngModel)]="pt['loSo']" 
-                         (ngModelChange)="onDataChanged()"
-                         (focus)="$any($event.target).select()"
-                         placeholder="..."
-                         class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none text-center transition">
-                </div>
-                <div>
-                  <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Nồng độ (ng/mL)</label>
-                  <input type="text" 
-                         [(ngModel)]="pt['hamLuong']" 
-                         (ngModelChange)="onDataChanged()"
-                         (focus)="$any($event.target).select()"
-                         placeholder="..."
-                         class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none text-center transition">
-                </div>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Side: R^2, Blank Name, Spike Name, QC FINAL -->
+            <div class="lg:col-span-4 space-y-4">
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Trắng (Blank)</label>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['blankName']" 
+                       (ngModelChange)="onDataChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="BLANK"
+                       class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
               </div>
-            }
+              
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Thêm chuẩn (Spike)</label>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['spikeName']" 
+                       (ngModelChange)="onDataChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="SPIKE"
+                       class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
+                <input type="text" 
+                       [(ngModel)]="draft.page1Data['r2']" 
+                       (ngModelChange)="onDataChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="0.999..."
+                       class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition">
+              </div>
+              
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC FINAL</label>
+                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-855">
+                  <input type="checkbox" 
+                         [(ngModel)]="draft.page1Data['hasFinal']" 
+                         (ngModelChange)="onFinalToggled()"
+                         class="w-4 h-4 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                  <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Right Side: Calibration points (5 points C0-C4) -->
+            <div class="lg:col-span-8">
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">
+                Các Điểm Đường chuẩn (Calibration Curve Points)
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                @for (pt of draft.page1Data['calibPoints']; track $index) {
+                  <div class="bg-slate-50/40 dark:bg-slate-955/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 hover:shadow-xs hover:border-violet-400/50 dark:hover:border-violet-500/40 transition duration-200 group">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                      <span class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 group-hover:text-violet-500 transition duration-200">Chuẩn C{{ $index }}</span>
+                      <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                    </div>
+                    <div>
+                      <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Số vial</label>
+                      <input type="text" 
+                             [(ngModel)]="pt['loSo']" 
+                             (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
+                             placeholder="..."
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none text-center transition">
+                    </div>
+                    <div>
+                      <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Nồng độ (ng/mL)</label>
+                      <input type="text" 
+                             [(ngModel)]="pt['hamLuong']" 
+                             (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
+                             placeholder="..."
+                             class="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 outline-none text-center transition">
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         </div>
 
@@ -511,15 +578,25 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                @for (sampleCode of run.sampleList; track sampleCode; let idx = $index) {
-                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                @for (row of getChromatographyRows(); track row.key; let idx = $index) {
+                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10"
+                      [class.opacity-60]="draft.resultData[row.key]['selected'] === false"
+                      [ngClass]="{
+                        'bg-indigo-50/15 dark:bg-indigo-955/5 border-l-4 border-l-indigo-500/60': row.type === 'QC'
+                      }">
                     <td class="py-2 px-3 font-mono text-slate-400 text-center font-bold">{{ idx + 1 }}</td>
-                    <td class="py-2 px-3 font-bold text-slate-700 dark:text-slate-200 font-mono">{{ sampleCode }}</td>
+                    <td class="py-2 px-3 font-bold text-slate-700 dark:text-slate-200 font-mono flex items-center gap-1.5">
+                      <input type="checkbox"
+                             [(ngModel)]="draft.resultData[row.key]['selected']"
+                             (ngModelChange)="onDataChanged()"
+                             class="w-3.5 h-3.5 rounded text-violet-650 border-slate-350 dark:border-slate-700 focus:ring-violet-500">
+                      <span>{{ row.label }}</span>
+                    </td>
                     
                     <!-- Weight (khoiLuong) -->
                     <td class="py-1 px-1.5">
                       <input type="text"
-                             [(ngModel)]="draft.resultData[sampleCode]['khoiLuong']"
+                             [(ngModel)]="draft.resultData[row.key]['khoiLuong']"
                              (ngModelChange)="onDataChanged()"
                              (focus)="$any($event.target).select()"
                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
@@ -528,8 +605,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     <!-- Dilution (heSoPhaLoang / hSoPhaLoang) -->
                     <td class="py-1 px-1.5">
                       <input type="text"
-                             [(ngModel)]="draft.resultData[sampleCode]['heSoPhaLoang']"
-                             (ngModelChange)="syncDilution(sampleCode)"
+                             [(ngModel)]="draft.resultData[row.key]['heSoPhaLoang']"
+                             (ngModelChange)="syncDilution(row.key)"
                              (focus)="$any($event.target).select()"
                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
                     </td>
@@ -537,7 +614,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     <!-- Vial Number (loSo) -->
                     <td class="py-1 px-1.5">
                       <input type="text"
-                             [(ngModel)]="draft.resultData[sampleCode]['loSo']"
+                             [(ngModel)]="draft.resultData[row.key]['loSo']"
                              (ngModelChange)="onDataChanged()"
                              (focus)="$any($event.target).select()"
                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
@@ -545,17 +622,17 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
 
                     <!-- Water Addition (checkBoSungNuoc) -->
                     <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
+                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
                         <button type="button"
-                                (click)="setPrepField(sampleCode, 'checkBoSungNuoc', 'có')"
-                                [class]="draft.resultData[sampleCode]['checkBoSungNuoc'] === 'có'
+                                (click)="setPrepField(row.key, 'checkBoSungNuoc', 'có')"
+                                [class]="draft.resultData[row.key]['checkBoSungNuoc'] === 'có'
                                   ? 'px-2 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
                                   : 'px-2 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
                           Có
                         </button>
                         <button type="button"
-                                (click)="setPrepField(sampleCode, 'checkBoSungNuoc', 'không')"
-                                [class]="draft.resultData[sampleCode]['checkBoSungNuoc'] === 'không' || !draft.resultData[sampleCode]['checkBoSungNuoc']
+                                (click)="setPrepField(row.key, 'checkBoSungNuoc', 'không')"
+                                [class]="draft.resultData[row.key]['checkBoSungNuoc'] === 'không' || !draft.resultData[row.key]['checkBoSungNuoc']
                                   ? 'px-2 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
                                   : 'px-2 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
                           Không
@@ -565,17 +642,17 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
 
                     <!-- Cleanup Mix (checkHonHopLamSach) -->
                     <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
+                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
                         <button type="button"
-                                (click)="setPrepField(sampleCode, 'checkHonHopLamSach', 'B1')"
-                                [class]="draft.resultData[sampleCode]['checkHonHopLamSach'] === 'B1' || !draft.resultData[sampleCode]['checkHonHopLamSach']
+                                (click)="setPrepField(row.key, 'checkHonHopLamSach', 'B1')"
+                                [class]="draft.resultData[row.key]['checkHonHopLamSach'] === 'B1' || !draft.resultData[row.key]['checkHonHopLamSach']
                                   ? 'px-2.5 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
                                   : 'px-2.5 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
                           B1
                         </button>
                         <button type="button"
-                                (click)="setPrepField(sampleCode, 'checkHonHopLamSach', 'B2')"
-                                [class]="draft.resultData[sampleCode]['checkHonHopLamSach'] === 'B2'
+                                (click)="setPrepField(row.key, 'checkHonHopLamSach', 'B2')"
+                                [class]="draft.resultData[row.key]['checkHonHopLamSach'] === 'B2'
                                   ? 'px-2.5 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
                                   : 'px-2.5 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
                           B2
@@ -590,7 +667,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
         </div>
       </div>
     </div>
-  `
+
+      `
 })
 export class SopLanHuuCoEntryComponent implements OnInit {
   @Input() run!: any;
@@ -636,21 +714,38 @@ export class SopLanHuuCoEntryComponent implements OnInit {
       this.draft.resultData = {};
     }
 
-    // Initialize calibration points (C0-C5)
-    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 6) {
+    // Initialize printFormType (default: formCheck)
+    if (this.draft.page1Data['printFormType'] === undefined) {
+      this.draft.page1Data['printFormType'] = 'formCheck';
+    }
+
+    // Initialize calibration points (C0-C4: 5 points)
+    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '', hamLuong: '0' },
-        { loSo: '', hamLuong: '5' },
-        { loSo: '', hamLuong: '10' },
-        { loSo: '', hamLuong: '20' },
-        { loSo: '', hamLuong: '50' },
-        { loSo: '', hamLuong: '100' }
+        { loSo: '1', hamLuong: '0' },
+        { loSo: '2', hamLuong: '5' },
+        { loSo: '3', hamLuong: '10' },
+        { loSo: '4', hamLuong: '20' },
+        { loSo: '5', hamLuong: '50' }
       ];
     }
 
     if (this.draft.page1Data['r2'] === undefined) {
       this.draft.page1Data['r2'] = '';
     }
+
+    if (this.draft.page1Data['blankName'] === undefined) {
+      this.draft.page1Data['blankName'] = '';
+    }
+
+    if (this.draft.page1Data['spikeName'] === undefined) {
+      this.draft.page1Data['spikeName'] = '';
+    }
+
+    if (this.draft.page1Data['hasFinal'] === undefined) {
+      this.draft.page1Data['hasFinal'] = false;
+    }
+
 
     if (this.run.sampleList) {
       this.run.sampleList.forEach((sampleCode: string) => {
@@ -736,8 +831,16 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   }
 
   onDataChanged() {
+    if (this.draft.resultData && this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';
+      this.draft.resultData['QC_FINAL']['khoiLuong'] = this.draft.resultData['QC_SPIKE']['khoiLuong'] || '';
+      this.draft.resultData['QC_FINAL']['heSoPhaLoang'] = this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] || '';
+      this.draft.resultData['QC_FINAL']['checkBoSungNuoc'] = this.draft.resultData['QC_SPIKE']['checkBoSungNuoc'] || 'không';
+      this.draft.resultData['QC_FINAL']['checkHonHopLamSach'] = this.draft.resultData['QC_SPIKE']['checkHonHopLamSach'] || 'B1';
+    }
     this.draftChanged.emit(this.draft);
   }
+
 
   onCheckboxChange(changedKey: string) {
     if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
@@ -952,4 +1055,86 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     this.draft.resultData[sampleCode]['hSoPhaLoang'] = val;
     this.onDataChanged();
   }
+
+  setPrintFormType(type: 'formCheck' | 'formDon') {
+    this.draft.page1Data['printFormType'] = type;
+    if (type === 'formCheck') {
+      this.activeTab.set('compounds');
+    }
+    this.onDataChanged();
+  }
+
+  onFinalToggled() {
+    if (this.draft.page1Data['hasFinal']) {
+      const spike = this.draft.resultData['QC_SPIKE'];
+      this.draft.resultData['QC_FINAL'] = {
+        loSo: spike?.['loSo'] || '7',
+        selected: true,
+        khoiLuong: spike?.['khoiLuong'] || '10.0',
+        heSoPhaLoang: spike?.['heSoPhaLoang'] || '1',
+        checkBoSungNuoc: spike?.['checkBoSungNuoc'] || 'không',
+        checkHonHopLamSach: spike?.['checkHonHopLamSach'] || 'B1'
+      };
+    } else {
+      delete this.draft.resultData['QC_FINAL'];
+    }
+    this.onDataChanged();
+  }
+
+  getChromatographyRows(): any[] {
+    const list = [];
+    
+    // 1. QC_BLANK
+    const blankName = this.draft.page1Data['blankName'] || 'BLANK';
+    if (!this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK'] = {
+        loSo: '6',
+        selected: true,
+        khoiLuong: '10.0',
+        heSoPhaLoang: '1',
+        checkBoSungNuoc: 'không',
+        checkHonHopLamSach: 'B1'
+      };
+    }
+    list.push({ key: 'QC_BLANK', label: blankName, type: 'QC' });
+
+    // 2. QC_SPIKE
+    const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
+    if (!this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE'] = {
+        loSo: '7',
+        selected: true,
+        khoiLuong: '10.0',
+        heSoPhaLoang: '1',
+        checkBoSungNuoc: 'không',
+        checkHonHopLamSach: 'B1'
+      };
+    }
+    list.push({ key: 'QC_SPIKE', label: spikeName, type: 'QC' });
+
+    // 3. Regular samples
+    if (this.run && this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode) => {
+        list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });
+      });
+    }
+
+    // 4. QC_FINAL (optional)
+    if (this.draft.page1Data['hasFinal']) {
+      if (!this.draft.resultData['QC_FINAL']) {
+        this.draft.resultData['QC_FINAL'] = {
+          loSo: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['loSo'] : '7',
+          selected: true,
+          khoiLuong: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['khoiLuong'] : '10.0',
+          heSoPhaLoang: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] : '1',
+          checkBoSungNuoc: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['checkBoSungNuoc'] : 'không',
+          checkHonHopLamSach: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['checkHonHopLamSach'] : 'B1'
+        };
+      }
+      list.push({ key: 'QC_FINAL', label: 'FINAL', type: 'QC' });
+    }
+
+    return list;
+  }
 }
+
