@@ -203,30 +203,36 @@ export class StateService implements OnDestroy {
     };
 
     // 1. Inventory Listener
-    const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
-      const items: InventoryItem[] = [];
-      s.forEach(d => {
-        const data = d.data();
-        // Lọc rác Soft Delete ra khỏi State Memory
-        if (data['_isDeleted'] !== true) {
-          items.push({ id: d.id, ...data } as InventoryItem);
-        }
-      });
-      this.inventory.set(items);
-    }, handleError('Inventory'));
-    this.listeners.push(invSub);
+    if (this.auth.hasPermission('inventory_view')) {
+      const invSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory'), (s) => {
+        const items: InventoryItem[] = [];
+        s.forEach(d => {
+          const data = d.data();
+          // Lọc rác Soft Delete ra khỏi State Memory
+          if (data['_isDeleted'] !== true) {
+            items.push({ id: d.id, ...data } as InventoryItem);
+          }
+        });
+        this.inventory.set(items);
+      }, handleError('Inventory'));
+      this.listeners.push(invSub);
+    }
 
     // 2. SOPs Listener
-    const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
-      const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
-      this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
-    }, handleError('SOPs'));
-    this.listeners.push(sopSub);
+    if (this.auth.hasPermission('sop_view')) {
+      const sopSub = onSnapshot(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'sops'), (s) => {
+        const items: Sop[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Sop));
+        this.sops.set(items.sort((a, b) => a.name.localeCompare(b.name)));
+      }, handleError('SOPs'));
+      this.listeners.push(sopSub);
+    }
 
     // 3. Requests Listeners
-    const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
-      (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
-    this.listeners.push(reqSub);
+    if (this.auth.hasPermission('standard_view')) { // Hoặc quyền khác phù hợp với requests
+      const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
+        (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
+      this.listeners.push(reqSub);
+    }
 
     // OPTIMIZED: standards listener removed (legacy collection, no writes exist)
     // statistics.component.ts uses loadAllStandardRequests() on-demand instead

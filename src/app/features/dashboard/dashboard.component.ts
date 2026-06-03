@@ -374,8 +374,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       // 1. Tải danh sách tồn kho thấp
       try {
-          const lowStock = await this.invService.getLowStockItems(5);
-          this.lowStockItems.set(lowStock);
+          if (this.auth.hasPermission('inventory_view')) {
+              const lowStock = await this.invService.getLowStockItems(5);
+              this.lowStockItems.set(lowStock);
+          }
       } catch (e) {
           console.warn("Dashboard: Lỗi khi tải danh sách tồn kho thấp:", e);
       }

@@ -28,7 +28,7 @@ service cloud.firestore {
       let rawRoleId = profile.get('roleId', 'role_staff_default');
       let roleId = (rawRoleId == null || rawRoleId == '') ? 'role_staff_default' : rawRoleId;
       let customPerms = profile.get('permissions', []);
-      let hasCustom = customPerms.hasAny([permission]);
+      let hasCustom = customPerms is list && customPerms.hasAny([permission]);
       
       return role == 'manager' || 
         (
@@ -43,6 +43,7 @@ service cloud.firestore {
             (
               exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
               'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
+              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions is list &&
               get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
             )
             ||
