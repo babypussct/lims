@@ -38,11 +38,14 @@ service cloud.firestore {
         (
           role == 'staff' &&
           (
-            (roleId == 'role_staff_default' && ['inventory_view', 'standard_view', 'sop_view', 'recipe_view'].hasAny([permission])) ||
-            (roleId == 'role_lab_technician' && ['inventory_view', 'inventory_edit', 'standard_view', 'recipe_view', 'sop_view', 'batch_run'].hasAny([permission])) ||
-            (roleId == 'role_qc_lead' && ['inventory_view', 'inventory_edit', 'standard_view', 'standard_edit', 'standard_approve', 'standard_log_view', 'recipe_view', 'recipe_edit', 'sop_view', 'sop_edit', 'sop_approve', 'batch_run', 'report_view'].hasAny([permission])) ||
+            // Cứu cánh tuyệt đối: Bất kể roleId là gì, Staff luôn có các quyền cơ bản này (bao gồm mượn chuẩn)
+            ['inventory_view', 'standard_view', 'sop_view', 'recipe_view', 'standard_request'].hasAny([permission]) ||
+            (roleId == 'role_lab_technician' && ['inventory_edit', 'batch_run'].hasAny([permission])) ||
+            (roleId == 'role_qc_lead' && ['inventory_edit', 'standard_edit', 'standard_approve', 'standard_log_view', 'recipe_edit', 'sop_edit', 'sop_approve', 'batch_run', 'report_view'].hasAny([permission])) ||
             (
+              roleId != '' && roleId != null &&
               exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
+              get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.get('permissions', []) is list &&
               get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.get('permissions', []).hasAny([permission])
             )
           )
