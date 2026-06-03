@@ -22,15 +22,13 @@ service cloud.firestore {
       return userExists(appId) && getUserProfile(appId).get('role', 'pending') == 'manager';
     }
 
-    // 5. Kiểm tra User có một quyền cụ thể nào đó không
-    function hasPermission(appId, permission) {
-      let profile = getUserProfile(appId);
+    // 5. Trợ giúp phân giải quyền hạn khi tài liệu người dùng được xác định là tồn tại
+    function evaluateUserPermission(appId, profile, permission) {
       let role = profile.get('role', 'pending');
       let roleId = profile.get('roleId', 'role_staff_default');
       let hasCustom = 'permissions' in profile && profile.permissions.hasAny([permission]);
       
-      return userExists(appId) && (
-        role == 'manager' || 
+      return role == 'manager' || 
         (
           role == 'viewer' && 
           ['inventory_view', 'standard_view', 'sop_view', 'recipe_view'].hasAny([permission])
@@ -41,8 +39,12 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
           'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
           get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
-        )
-      );
+        );
+    }
+
+    // 6. Kiểm tra User có một quyền cụ thể nào đó không (Tuyệt đối không gây crash nếu user profile chưa tồn tại)
+    function hasPermission(appId, permission) {
+      return userExists(appId) && evaluateUserPermission(appId, getUserProfile(appId), permission);
     }
 
     // --- CẤU HÌNH HỆ THỐNG VÀ VAI TRÒ ---
