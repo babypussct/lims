@@ -19,20 +19,28 @@ service cloud.firestore {
 
     // 4. Kiểm tra User có phải là Manager không
     function isManager(appId) {
-      return userExists(appId) && getUserProfile(appId).role == 'manager';
+      return userExists(appId) && getUserProfile(appId).get('role', 'pending') == 'manager';
     }
 
     // 5. Kiểm tra User có một quyền cụ thể nào đó không
     function hasPermission(appId, permission) {
+      let profile = getUserProfile(appId);
+      let role = profile.get('role', 'pending');
+      let roleId = profile.get('roleId', 'role_staff_default');
+      let hasCustom = 'permissions' in profile && profile.permissions.hasAny([permission]);
+      
       return userExists(appId) && (
-        getUserProfile(appId).role == 'manager' || 
+        role == 'manager' || 
         (
-          getUserProfile(appId).role == 'viewer' && 
+          role == 'viewer' && 
           ['inventory_view', 'standard_view', 'sop_view', 'recipe_view'].hasAny([permission])
         ) ||
+        hasCustom ||
         (
-          'permissions' in getUserProfile(appId) &&
-          getUserProfile(appId).permissions.hasAny([permission])
+          role == 'staff' &&
+          exists(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)) &&
+          'permissions' in get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data &&
+          get(/databases/$(database)/documents/artifacts/$(appId)/roles_config/$(roleId)).data.permissions.hasAny([permission])
         )
       );
     }
