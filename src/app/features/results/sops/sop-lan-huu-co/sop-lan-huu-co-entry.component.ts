@@ -35,29 +35,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
         </div>
       </div>
       
-      <!-- Tab Header Switcher -->
-      <div class="flex border-b border-slate-200 dark:border-slate-800 gap-4 mb-2">
-        <button type="button"
-                (click)="activeTab.set('compounds')"
-                [class]="activeTab() === 'compounds'
-                  ? 'border-b-2 border-violet-600 text-violet-600 dark:text-violet-400 font-extrabold pb-3 text-xs tracking-wider uppercase'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-bold pb-3 text-xs tracking-wider uppercase'"
-                class="px-2 transition active:scale-95 flex items-center gap-2">
-          <i class="fa-solid fa-flask"></i> 1. Kết quả hoạt chất (Trang 9-10)
-        </button>
-        <button type="button"
-                *ngIf="draft.page1Data['printFormType'] === 'formDon'"
-                (click)="activeTab.set('chromatography')"
-                [class]="activeTab() === 'chromatography'
-                  ? 'border-b-2 border-violet-600 text-violet-600 dark:text-violet-400 font-extrabold pb-3 text-xs tracking-wider uppercase'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-bold pb-3 text-xs tracking-wider uppercase'"
-                class="px-2 transition active:scale-95 flex items-center gap-2">
-          <i class="fa-solid fa-chart-line"></i> 2. Đường chuẩn & Chạy mẫu (Trang 15)
-        </button>
-      </div>
-
       <!-- TAB 1: COMPOUND RESULTS GRID -->
-      <div *ngIf="activeTab() === 'compounds'" class="space-y-6">
+      <div *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="space-y-6">
         
         <!-- 1. Metadata Form & Checkboxes -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
@@ -156,48 +135,6 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
                   </div>
                 </label>
-              } @else {
-                <!-- QC evaluation with Đạt / Không đạt Segment Control (visible in FORM CHECK) -->
-                <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/40 dark:bg-slate-955/40 border border-slate-250/25 dark:border-slate-800/60 transition hover:border-slate-350 dark:hover:border-slate-700 shadow-xs">
-                  <div class="flex-1 min-w-0 pr-1">
-                    <span class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 leading-snug block break-words">
-                      {{ checkbox.label }}
-                    </span>
-                  </div>
-                  
-                  <!-- Pass / Fail selector -->
-                  <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0 select-none">
-                    <!-- Button 'Đạt' (true) -->
-                    <button type="button"
-                            (click)="setQcStatus(checkbox.key, true)"
-                            [class]="draft.page1Data[checkbox.key] === true 
-                              ? 'px-2.5 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-550 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            title="Đạt tiêu chí">
-                      Đạt
-                    </button>
-                    
-                    <!-- Button 'Không đạt' (false) -->
-                    <button type="button"
-                            (click)="setQcStatus(checkbox.key, false)"
-                            [class]="draft.page1Data[checkbox.key] === false 
-                              ? 'px-2.5 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-550 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            title="Không đạt tiêu chí">
-                      K.Đạt
-                    </button>
- 
-                    <!-- Button 'N/A' (null) -->
-                    <button type="button"
-                            (click)="setQcStatus(checkbox.key, null)"
-                            [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
-                              ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                            title="Chưa đánh giá">
-                      N/A
-                    </button>
-                  </div>
-                </div>
               }
             }
           </div>
@@ -463,8 +400,31 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
       </div>
 
       <!-- TAB 2: CALIBRATION CURVE & SAMPLE RUNS -->
-      <div *ngIf="activeTab() === 'chromatography'" class="space-y-6">
+      <div *ngIf="draft.page1Data['printFormType'] === 'formDon'" class="space-y-6">
         
+        <!-- 0. Signature Dates -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+          <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-calendar mr-2 text-violet-500 text-sm"></i> Thông tin chung & Đánh giá (SOP: {{ run?.sopCode || 'Lân hữu cơ' }})
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
+              <input type="date" 
+                     [(ngModel)]="draft.page1Data.ngayNguoiPhanTich" 
+                     (ngModelChange)="onDataChanged()"
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
+              <input type="date" 
+                     [(ngModel)]="draft.page1Data.ngayNguoiThamTra" 
+                     (ngModelChange)="onDataChanged()"
+                     class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
+            </div>
+          </div>
+        </div>
+
         <!-- 1. Calibration Curve Parameters -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
           <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
@@ -1060,6 +1020,8 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     this.draft.page1Data['printFormType'] = type;
     if (type === 'formCheck') {
       this.activeTab.set('compounds');
+    } else {
+      this.activeTab.set('chromatography');
     }
     this.onDataChanged();
   }
