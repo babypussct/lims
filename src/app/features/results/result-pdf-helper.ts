@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
@@ -647,12 +647,27 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     });
   }
 
+  // Helper to build compound results and notes maps for runSamplesList
+  const buildCompoundMaps = (resKey: string) => {
+    const resObj = currentDraft.resultData[resKey] || {};
+    const results: Record<string, string> = {};
+    const notes: Record<string, string> = {};
+    currentConf.compounds.forEach((c: string) => {
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH';
+      const val = resObj[c];
+      results[c] = isNd ? 'KPH' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'KPH');
+      notes[c] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
+    });
+    return { results, notes };
+  };
+
   // Build chromatography runs list
   const runSamplesList: any[] = [];
   
   // 1. QC_BLANK
   const blankName = currentDraft.page1Data['blankName'] || 'BLANK';
   const blankRes = currentDraft.resultData['QC_BLANK'] || {};
+  const blankMaps = buildCompoundMaps('QC_BLANK');
   runSamplesList.push({
     key: 'QC_BLANK',
     maSoMau: blankName,
@@ -662,12 +677,15 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     loSo: blankRes['loSo'] || '6',
     checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH'
+    summaryResult: 'KPH',
+    compoundResults: blankMaps.results,
+    compoundNotes: blankMaps.notes
   });
 
   // 2. QC_SPIKE
   const spikeName = currentDraft.page1Data['spikeName'] || 'SPIKE';
   const spikeRes = currentDraft.resultData['QC_SPIKE'] || {};
+  const spikeMaps = buildCompoundMaps('QC_SPIKE');
   runSamplesList.push({
     key: 'QC_SPIKE',
     maSoMau: spikeName,
@@ -677,7 +695,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     loSo: spikeRes['loSo'] || '7',
     checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH'
+    summaryResult: 'KPH',
+    compoundResults: spikeMaps.results,
+    compoundNotes: spikeMaps.notes
   });
 
   // 3. Regular samples
@@ -712,6 +732,15 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       return acc;
     }, {});
 
+    const compoundNotes = currentConf.compounds.reduce((acc: any, c: string) => {
+      const notes = filteredSamples.map((sCode: string) => {
+        const sRes = currentDraft.resultData[sCode] || {};
+        return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
+      });
+      acc[c] = notes.join('; ');
+      return acc;
+    }, {});
+
     runSamplesList.push({
       key: 'GROUPED',
       maSoMau: mergedSampleCode,
@@ -722,7 +751,8 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
-      compoundResults: compoundResults
+      compoundResults: compoundResults,
+      compoundNotes: compoundNotes
     });
   } else {
     filteredSamples.forEach((s: string) => {
@@ -735,6 +765,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       });
       const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
       
+      const sMaps = buildCompoundMaps(s);
       runSamplesList.push({
         key: s,
         maSoMau: s,
@@ -744,7 +775,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         loSo: resObj['loSo'] || '',
         checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
-        summaryResult: summaryResult
+        summaryResult: summaryResult,
+        compoundResults: sMaps.results,
+        compoundNotes: sMaps.notes
       });
     });
   }
@@ -752,6 +785,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   // 4. QC_FINAL
   if (currentDraft.page1Data['hasFinal']) {
     const finalRes = currentDraft.resultData['QC_FINAL'] || {};
+    const finalMaps = buildCompoundMaps('QC_FINAL');
     runSamplesList.push({
       key: 'QC_FINAL',
       maSoMau: 'FINAL',
@@ -761,7 +795,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       loSo: finalRes['loSo'] || '7',
       checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
-      summaryResult: 'KPH'
+      summaryResult: 'KPH',
+      compoundResults: finalMaps.results,
+      compoundNotes: finalMaps.notes
     });
   }
 

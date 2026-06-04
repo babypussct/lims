@@ -785,45 +785,51 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
 
   if (prepTable) {
     const runSamplesList = metadata.runSamplesList || [];
+    const isDon = metadata.printFormType === 'formDon';
     
     for (let i = 0; i < 18; i++) {
       const rowIdx = i + 1;
       const row = prepTable.getRow(rowIdx);
       if (i < runSamplesList.length) {
         const s = runSamplesList[i];
-        let displayResult = s.summaryResult || 'KPH';
         
-        if (compoundName && samples) {
-          if (s.key === 'QC_BLANK' || s.key === 'QC_SPIKE' || s.key === 'QC_FINAL') {
-            displayResult = 'KPH';
-          } else if (s.key === 'GROUPED' && s.compoundResults) {
-            displayResult = s.compoundResults[compoundName] || 'KPH';
+        let cell4Text = '';
+        let cell5Text = '';
+        if (isDon) {
+          if (s.compoundResults && compoundName) {
+            cell4Text = s.compoundResults[compoundName] || 'KPH';
           } else {
-            const matchedSample = samples.find(function(item) {
-              return item.maSoMau === s.maSoMau;
-            });
-            if (matchedSample) {
-              const backendKey = mapCompoundToKey(compoundName);
-              const isNd = matchedSample[backendKey + '_nd'] === true;
-              const val = matchedSample[backendKey];
-              displayResult = isNd ? 'KPH' : (val || 'KPH');
-            } else {
-              displayResult = 'KPH';
-            }
+            cell4Text = 'KPH';
           }
+          if (s.compoundNotes && compoundName) {
+            cell5Text = s.compoundNotes[compoundName] || '';
+          }
+        } else {
+          cell4Text = s.checkBoSungNuoc || 'không';
+          cell5Text = s.checkHonHopLamSach || 'B1';
         }
 
         setCellText(row, 0, s.maSoMau || '', null, 9);
         setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
         setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
         setCellText(row, 3, s.loSo || '', null, 9);
-        setCellText(row, 4, displayResult, null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, cell4Text, null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, cell5Text, null, 9);
+        }
       } else {
         setCellText(row, 0, '', null, 9);
         setCellText(row, 1, '', null, 9);
         setCellText(row, 2, '', null, 9);
         setCellText(row, 3, '', null, 9);
-        setCellText(row, 4, '', null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, '', null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, '', null, 9);
+        }
       }
     }
     
@@ -834,32 +840,32 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
         prepTable.appendRow(newRow);
         const row = prepTable.getRow(i + 1);
         
-        let displayResult = s.summaryResult || 'KPH';
-        if (compoundName && samples) {
-          if (s.key === 'QC_BLANK' || s.key === 'QC_SPIKE' || s.key === 'QC_FINAL') {
-            displayResult = 'KPH';
-          } else if (s.key === 'GROUPED' && s.compoundResults) {
-            displayResult = s.compoundResults[compoundName] || 'KPH';
+        let cell4Text = '';
+        let cell5Text = '';
+        if (isDon) {
+          if (s.compoundResults && compoundName) {
+            cell4Text = s.compoundResults[compoundName] || 'KPH';
           } else {
-            const matchedSample = samples.find(function(item) {
-              return item.maSoMau === s.maSoMau;
-            });
-            if (matchedSample) {
-              const backendKey = mapCompoundToKey(compoundName);
-              const isNd = matchedSample[backendKey + '_nd'] === true;
-              const val = matchedSample[backendKey];
-              displayResult = isNd ? 'KPH' : (val || 'KPH');
-            } else {
-              displayResult = 'KPH';
-            }
+            cell4Text = 'KPH';
           }
+          if (s.compoundNotes && compoundName) {
+            cell5Text = s.compoundNotes[compoundName] || '';
+          }
+        } else {
+          cell4Text = s.checkBoSungNuoc || 'không';
+          cell5Text = s.checkHonHopLamSach || 'B1';
         }
 
         setCellText(row, 0, s.maSoMau || '', null, 9);
         setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
         setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
         setCellText(row, 3, s.loSo || '', null, 9);
-        setCellText(row, 4, displayResult, null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, cell4Text, null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, cell5Text, null, 9);
+        }
       }
     }
   }

@@ -666,6 +666,8 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   activeSampleCode = signal<string>('');
   searchQuery = signal<string>('');
 
+  activeCompound = '';
+
   filteredCompounds = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
     const compounds = this.config?.compounds || [];
@@ -697,6 +699,23 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     // Initialize printFormType (default: formCheck)
     if (this.draft.page1Data['printFormType'] === undefined) {
       this.draft.page1Data['printFormType'] = 'formCheck';
+    }
+
+    // Initialize activeCompound
+    if (this.config?.compounds && this.config.compounds.length > 0) {
+      this.activeCompound = this.config.compounds[0];
+    }
+
+    // Initialize R^2 if formDon
+    if (this.draft.page1Data['printFormType'] === 'formDon') {
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
+    }
+
+    // Initialize default page1Data.khoiLuong to '10.0'
+    if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
+      this.draft.page1Data['khoiLuong'] = '10.0';
     }
 
     // Initialize calibration points (C0-C4: 5 points)
@@ -810,6 +829,25 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     this.activeSampleCode.set(sampleCode);
   }
 
+  updateRecovery(key: string, compound: string) {
+    const row = this.draft.resultData[key];
+    if (!row) return;
+    const val = parseFloat(row[compound] || '');
+    if (!isNaN(val)) {
+      const rec = Math.round((val / 10.0) * 100);
+      row[compound + '_ghiChu'] = `${rec}%`;
+    } else {
+      row[compound + '_ghiChu'] = '';
+    }
+  }
+
+  onChromResultChanged(key: string) {
+    if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
+      this.updateRecovery(key, this.activeCompound);
+    }
+    this.onDataChanged();
+  }
+
   onDataChanged() {
     if (this.draft.resultData && this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';
@@ -818,9 +856,16 @@ export class SopLanHuuCoEntryComponent implements OnInit {
       this.draft.resultData['QC_FINAL']['checkBoSungNuoc'] = this.draft.resultData['QC_SPIKE']['checkBoSungNuoc'] || 'không';
       this.draft.resultData['QC_FINAL']['checkHonHopLamSach'] = this.draft.resultData['QC_SPIKE']['checkHonHopLamSach'] || 'B1';
     }
+
+    if (this.config?.compounds) {
+      this.config.compounds.forEach((c: string) => {
+        this.updateRecovery('QC_SPIKE', c);
+        this.updateRecovery('QC_FINAL', c);
+      });
+    }
+
     this.draftChanged.emit(this.draft);
   }
-
 
   onCheckboxChange(changedKey: string) {
     if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
@@ -1042,6 +1087,9 @@ export class SopLanHuuCoEntryComponent implements OnInit {
       this.activeTab.set('compounds');
     } else {
       this.activeTab.set('chromatography');
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
     }
     this.onDataChanged();
   }
@@ -1050,7 +1098,7 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     if (this.draft.page1Data['hasFinal']) {
       const spike = this.draft.resultData['QC_SPIKE'];
       this.draft.resultData['QC_FINAL'] = {
-        loSo: spike?.['loSo'] || '7',
+        loSo: spike?.['loSo'] || '8',
         selected: true,
         khoiLuong: spike?.['khoiLuong'] || '10.0',
         heSoPhaLoang: spike?.['heSoPhaLoang'] || '1',
@@ -1063,40 +1111,95 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     this.onDataChanged();
   }
 
+  bulkFillNDFormDon() {
+    const rows = this.getChromatographyRows();
+    rows.forEach((row: any) => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData && rowData['selected'] !== false) {
+        if (!rowData[this.activeCompound] || rowData[this.activeCompound]?.trim() === '') {
+          rowData[this.activeCompound] = 'KPH';
+        }
+      }
+    });
+    this.onDataChanged();
+  }
+
+  bulkClearAllFormDon() {
+    const rows = this.getChromatographyRows();
+    rows.forEach((row: any) => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData) {
+        rowData[this.activeCompound] = '';
+        rowData[this.activeCompound + '_ghiChu'] = '';
+      }
+    });
+    this.onDataChanged();
+  }
+
   getChromatographyRows(): any[] {
     const list = [];
+    const isDon = this.draft.page1Data['printFormType'] === 'formDon';
+    const defaultBlankVial = isDon ? '7' : '6';
+    const defaultSpikeVial = isDon ? '8' : '7';
     
     // 1. QC_BLANK
     const blankName = this.draft.page1Data['blankName'] || 'BLANK';
     if (!this.draft.resultData['QC_BLANK']) {
+      const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
       this.draft.resultData['QC_BLANK'] = {
-        loSo: '6',
+        loSo: defaultBlankVial,
         selected: true,
-        khoiLuong: '10.0',
+        khoiLuong: randW,
         heSoPhaLoang: '1',
         checkBoSungNuoc: 'không',
         checkHonHopLamSach: 'B1'
       };
+    } else {
+      this.draft.resultData['QC_BLANK']['loSo'] = this.draft.resultData['QC_BLANK']['loSo'] || defaultBlankVial;
+      if (isDon && (this.draft.resultData['QC_BLANK']['khoiLuong'] === undefined || this.draft.resultData['QC_BLANK']['khoiLuong'] === '' || this.draft.resultData['QC_BLANK']['khoiLuong'] === '10.0')) {
+        this.draft.resultData['QC_BLANK']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+      }
     }
     list.push({ key: 'QC_BLANK', label: blankName, type: 'QC' });
 
     // 2. QC_SPIKE
     const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
     if (!this.draft.resultData['QC_SPIKE']) {
+      const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
       this.draft.resultData['QC_SPIKE'] = {
-        loSo: '7',
+        loSo: defaultSpikeVial,
         selected: true,
-        khoiLuong: '10.0',
+        khoiLuong: randW,
         heSoPhaLoang: '1',
         checkBoSungNuoc: 'không',
         checkHonHopLamSach: 'B1'
       };
+    } else {
+      this.draft.resultData['QC_SPIKE']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || defaultSpikeVial;
+      if (isDon && (this.draft.resultData['QC_SPIKE']['khoiLuong'] === undefined || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '' || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '10.0')) {
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+      }
     }
     list.push({ key: 'QC_SPIKE', label: spikeName, type: 'QC' });
 
     // 3. Regular samples
     if (this.run && this.run.sampleList) {
       this.run.sampleList.forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
+          this.draft.resultData[sampleCode] = {
+            loSo: '',
+            selected: true,
+            khoiLuong: randW,
+            heSoPhaLoang: '1',
+            checkBoSungNuoc: 'không',
+            checkHonHopLamSach: 'B1'
+          };
+        } else {
+          if (isDon && (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '' || this.draft.resultData[sampleCode]['khoiLuong'] === '10.0')) {
+            this.draft.resultData[sampleCode]['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+          }
+        }
         list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });
       });
     }
@@ -1104,14 +1207,25 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     // 4. QC_FINAL (optional)
     if (this.draft.page1Data['hasFinal']) {
       if (!this.draft.resultData['QC_FINAL']) {
+        const spike = this.draft.resultData['QC_SPIKE'];
+        const finalVial = spike?.['loSo'] || defaultSpikeVial;
+        const finalW = spike?.['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+        const finalF = spike?.['heSoPhaLoang'] || '1';
         this.draft.resultData['QC_FINAL'] = {
-          loSo: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['loSo'] : '7',
+          loSo: finalVial,
           selected: true,
-          khoiLuong: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['khoiLuong'] : '10.0',
-          heSoPhaLoang: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] : '1',
-          checkBoSungNuoc: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['checkBoSungNuoc'] : 'không',
-          checkHonHopLamSach: this.draft.resultData['QC_SPIKE'] ? this.draft.resultData['QC_SPIKE']['checkHonHopLamSach'] : 'B1'
+          khoiLuong: finalW,
+          heSoPhaLoang: finalF,
+          checkBoSungNuoc: 'không',
+          checkHonHopLamSach: 'B1'
         };
+      } else {
+        const spike = this.draft.resultData['QC_SPIKE'];
+        if (spike) {
+          this.draft.resultData['QC_FINAL']['loSo'] = spike['loSo'] || defaultSpikeVial;
+          this.draft.resultData['QC_FINAL']['khoiLuong'] = spike['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+          this.draft.resultData['QC_FINAL']['heSoPhaLoang'] = spike['heSoPhaLoang'] || '1';
+        }
       }
       list.push({ key: 'QC_FINAL', label: 'FINAL', type: 'QC' });
     }
