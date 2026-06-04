@@ -217,14 +217,15 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
 
         <!-- Unified Print Configuration Toggle -->
         <div class="flex items-center gap-3 pl-4 md:border-l border-slate-200 dark:border-slate-800 shrink-0">
-          <label class="flex items-center gap-2.5 p-2 px-3.5 rounded-xl hover:bg-violet-50/50 dark:hover:bg-violet-950/20 border border-slate-200 dark:border-slate-800/80 cursor-pointer select-none transition bg-white dark:bg-slate-900 shadow-2xs">
+          <label class="flex items-center gap-2.5 p-2 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 cursor-not-allowed select-none transition bg-slate-50 dark:bg-slate-900/50 shadow-2xs opacity-80"
+                 title="Tự động tính toán dựa trên số lượng mẫu được chọn in">
             <input type="checkbox" 
-                   [(ngModel)]="draft.page1Data['checkGopInChung']" 
-                   (ngModelChange)="onDataChanged()"
-                   class="w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500">
+                   [ngModel]="draft.page1Data['checkGopInChung']" 
+                   disabled
+                   class="w-4 h-4 rounded text-violet-650 border-slate-300 dark:border-slate-700 focus:ring-violet-500 disabled:opacity-70 disabled:cursor-not-allowed">
             <div class="flex flex-col">
               <span class="text-xs font-black text-violet-750 dark:text-violet-400 tracking-wide">Gộp in chung các mẫu</span>
-              <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Sinh 1 trang báo cáo gộp danh sách</span>
+              <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Tự động ({{ (getSelectedSampleCount() > 1) ? 'Bật vì chọn > 1 mẫu' : 'Tắt vì chọn 1 mẫu' }})</span>
             </div>
           </label>
         </div>
@@ -463,6 +464,8 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         }
       });
     }
+
+    this.updateGopInChungState();
 
     // Set default value for khoiLuong if not set (default 10.0)
     if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
@@ -703,11 +706,24 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     this.onDataChanged();
   }
 
+  getSelectedSampleCount(): number {
+    const sampleList = this.run?.sampleList || [];
+    return sampleList.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
+  }
+
+  private updateGopInChungState() {
+    const shouldGop = this.getSelectedSampleCount() > 1;
+    if (this.draft.page1Data['checkGopInChung'] !== shouldGop) {
+      this.draft.page1Data['checkGopInChung'] = shouldGop;
+    }
+  }
+
   toggleSampleSelected(sampleCode: string, checked: boolean) {
     if (!this.draft.resultData[sampleCode]) {
       this.draft.resultData[sampleCode] = {};
     }
     this.draft.resultData[sampleCode]['selected'] = checked;
+    this.updateGopInChungState();
     this.onDataChanged();
   }
 
@@ -726,6 +742,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       }
       this.draft.resultData[s]['selected'] = targetState;
     });
+    this.updateGopInChungState();
     this.onDataChanged();
   }
 

@@ -182,6 +182,122 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
 }
 
 /**
+ * Helper functions for safely replacing text without losing formatting
+ */
+function replaceCheckboxSafely(el, pattern, charToInsert) {
+  let found = el.findText(pattern);
+  while (found) {
+    const textElement = found.getElement().asText();
+    const start = found.getStartOffset();
+    const end = found.getEndOffsetInclusive();
+    // Use try-catch in case of cross-element boundaries
+    try {
+      const textStr = textElement.getText().substring(start, end + 1);
+      const boxIndex = textStr.search(/[☐□☑]/);
+      if (boxIndex !== -1) {
+        textElement.deleteText(start + boxIndex, start + boxIndex);
+        textElement.insertText(start + boxIndex, charToInsert);
+      }
+    } catch(e) {
+      Logger.log('[replaceCheckboxSafely] Partial match boundary error: ' + e);
+    }
+    found = el.findText(pattern, found);
+  }
+}
+
+function insertTextAfterPattern(el, pattern, textToInsert) {
+  if (!textToInsert) return;
+  const found = el.findText(pattern);
+  if (found) {
+    const textElement = found.getElement().asText();
+    const end = found.getEndOffsetInclusive();
+    textElement.insertText(end + 1, textToInsert);
+  }
+}
+
+function replaceDotsSafely(el, pattern, textToInsert) {
+  if (!textToInsert) return;
+  let found = el.findText(pattern);
+  if (found) {
+    const textElement = found.getElement().asText();
+    const start = found.getStartOffset();
+    const end = found.getEndOffsetInclusive();
+    try {
+      const textStr = textElement.getText().substring(start, end + 1);
+      const match = textStr.match(/[…\.]+/);
+      if (match) {
+        const dotStart = start + match.index;
+        const dotEnd = dotStart + match[0].length - 1;
+        textElement.insertText(dotStart, textToInsert);
+        textElement.deleteText(dotStart + textToInsert.length, dotEnd + textToInsert.length);
+      }
+    } catch(e) {
+      Logger.log('[replaceDotsSafely] Partial match boundary error: ' + e);
+    }
+  }
+}
+
+/**
+ * Helper functions for safely replacing text without losing formatting
+ */
+function replaceCheckboxSafely(el, pattern, charToInsert) {
+  let found = el.findText(pattern);
+  while (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const start = found.getStartOffset();
+      const end = found.getEndOffsetInclusive();
+      const textStr = textElement.getText().substring(start, end + 1);
+      const boxIndex = textStr.search(/[☐□☑]/);
+      if (boxIndex !== -1) {
+        const insertPos = start + boxIndex;
+        textElement.insertText(insertPos, charToInsert);
+        textElement.deleteText(insertPos + 1, insertPos + 1);
+      }
+    } catch(e) {
+      Logger.log('[replaceCheckboxSafely] Error at pattern ' + pattern + ': ' + e);
+    }
+    found = el.findText(pattern, found);
+  }
+}
+
+function insertTextAfterPattern(el, pattern, textToInsert) {
+  if (!textToInsert) return;
+  const found = el.findText(pattern);
+  if (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const end = found.getEndOffsetInclusive();
+      textElement.insertText(end + 1, textToInsert);
+    } catch(e) {
+      Logger.log('[insertTextAfterPattern] Error at pattern ' + pattern + ': ' + e);
+    }
+  }
+}
+
+function replaceDotsSafely(el, pattern, textToInsert) {
+  if (!textToInsert) return;
+  let found = el.findText(pattern);
+  if (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const start = found.getStartOffset();
+      const end = found.getEndOffsetInclusive();
+      const textStr = textElement.getText().substring(start, end + 1);
+      const match = textStr.match(/[…\.]+/);
+      if (match) {
+        const dotStart = start + match.index;
+        const dotEnd = dotStart + match[0].length - 1;
+        textElement.deleteText(dotStart, dotEnd);
+        textElement.insertText(dotStart, textToInsert);
+      }
+    } catch(e) {
+      Logger.log('[replaceDotsSafely] Error at pattern ' + pattern + ': ' + e);
+    }
+  }
+}
+
+/**
  * Điền thông tin Section 1 (cấp body chính) cho mẫu đầu tiên
  */
 function fillLanHuuCoSample(body, sopConfig, metadata, sample) {
@@ -325,40 +441,41 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
   };
 
   for (const element of elements) {
-    element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
-    // Dùng [^\\t\\n]* thay vì .* để không nuốt mất "2. Khối lượng mẫu..." ở cùng dòng
-    element.replaceText('1\\.\\s*Mã số mẫu\\s*:[^\\t\\n]*', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
+      element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
+      
+      // Chèn mã số mẫu vào ngay sau dấu hai chấm (không khớp \s* phía sau để tránh nuốt tab)
+      insertTextAfterPattern(element, '1\\.\\s*Mã số mẫu\\s*:', ' ' + (sample.maSoMau || ''));
 
-    if (sopConfig.signaturePlaceholders) {
-      for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
-        const textVal = metadata[fieldName] || '';
-        if (textVal) {
-          const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
-          element.replaceText(placeholderText, dateOnly);
+      if (sopConfig.signaturePlaceholders) {
+        for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
+          const textVal = metadata[fieldName] || '';
+          if (textVal) {
+            const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
+            element.replaceText(placeholderText, dateOnly);
+          }
         }
       }
-    }
 
-    if (sopConfig.checkboxLines) {
-      for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
-        const isChecked = metadata[fieldName] === true;
-        const checkChar = isChecked ? '☑' : '☐';
-        replaceCheckboxInElementRecursive(element, lineText, checkChar);
+      if (sopConfig.checkboxLines) {
+        for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
+          const isChecked = metadata[fieldName] === true;
+          const checkChar = isChecked ? '☑' : '☐';
+          replaceCheckboxInElementRecursive(element, lineText, checkChar);
+        }
       }
-    }
 
-    for (const [key, val] of Object.entries(allFields)) {
-      if (val === true) {
-        element.replaceText(`{{${key}}}`, '☑');
-      } else if (val === false) {
-        element.replaceText(`{{${key}}}`, '☐');
-      } else {
-        element.replaceText(`{{${key}}}`, val !== null && val !== undefined ? val.toString() : '');
+      for (const [key, val] of Object.entries(allFields)) {
+        if (val === true) {
+          element.replaceText(`{{${key}}}`, '☑');
+        } else if (val === false) {
+          element.replaceText(`{{${key}}}`, '☐');
+        } else {
+          element.replaceText(`{{${key}}}`, val !== null && val !== undefined ? val.toString() : '');
+        }
       }
-    }
 
       try {
-      const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+        const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
       let kl10Check = '☐';
       let klOtherText = '………';
       if (khoiLuongVal === '10.0' || khoiLuongVal === '10') {
@@ -367,23 +484,9 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
         klOtherText = khoiLuongVal;
       }
       
-      const txt = element.getText();
-      const klMatch = txt.match(/m\s*=\s*[☐□☑]\s*10\.0/);
-      if (klMatch) {
-        const oldStr = klMatch[0];
-        const newStr = oldStr.replace(/[☐□☑]/, kl10Check);
-        const escapedOldStr = oldStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        element.replaceText(escapedOldStr, newStr);
-      }
-
+      replaceCheckboxSafely(element, 'm\\s*=\\s*[☐□☑]', kl10Check);
       if (klOtherText !== '………') {
-        const otherMatch = txt.match(/10\.0\s*;\s*[…\.]+/);
-        if (otherMatch) {
-          const oldStr = otherMatch[0];
-          const newStr = oldStr.replace(/[…\.]+/, klOtherText);
-          const escapedOldStr = oldStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          element.replaceText(escapedOldStr, newStr);
-        }
+        replaceDotsSafely(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
       }
 
       const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
@@ -398,11 +501,13 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       const thuySanCheck = isThuySan ? '☑' : '☐';
       const lmKhacCheck = isLmKhac ? '☑' : '☐';
 
-      element.replaceText('Loại mẫu:\\s*[☐□☑]\\s*Nông sản tươi', 'Loại mẫu: ' + tuoiCheck + ' Nông sản tươi');
-      element.replaceText('tươi\\s*;\\s*[☐□☑]\\s*Nông sản khô', 'tươi; ' + khoCheck + ' Nông sản khô');
-      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thuỷ sản', 'khô; ' + thuySanCheck + ' Thuỷ sản');
-      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thủy sản', 'khô; ' + thuySanCheck + ' Thủy sản');
-      element.replaceText('sản\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'sản; ' + lmKhacCheck + ' Khác: ' + lmKhacText);
+      replaceCheckboxSafely(element, 'Loại mẫu:\\s*[☐□☑]', tuoiCheck);
+      replaceCheckboxSafely(element, 'tươi\\s*;\\s*[☐□☑]', khoCheck);
+      replaceCheckboxSafely(element, 'khô\\s*;\\s*[☐□☑]', thuySanCheck);
+      replaceCheckboxSafely(element, 'sản\\s*;\\s*[☐□☑]', lmKhacCheck);
+      if (isLmKhac) {
+        replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
+      }
 
       const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
       let isBinhThuong = ttMauVal === 'Bình thường';
@@ -412,8 +517,11 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       const btCheck = isBinhThuong ? '☑' : '☐';
       const ttKhacCheck = isTtKhac ? '☑' : '☐';
 
-      element.replaceText('Tình trạng mẫu:\\s*[☐□☑]\\s*Bình thường', 'Tình trạng mẫu: ' + btCheck + ' Bình thường');
-      element.replaceText('thường\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'thường; ' + ttKhacCheck + ' Khác: ' + ttKhacText);
+      replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*[☐□☑]', btCheck);
+      replaceCheckboxSafely(element, 'thường\\s*;\\s*[☐□☑]', ttKhacCheck);
+      if (isTtKhac) {
+        replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
+      }
 
       let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
       let isKhongPhatHien = sample.checkTatCaND === true || metadata.checkTatCaND === true;
@@ -440,8 +548,8 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       const phCheck = isPhatHien ? '☑' : '☐';
       const kphCheck = isKhongPhatHien ? '☑' : '☐';
 
-      element.replaceText('[☐□☑]\\s*Phát hiện', phCheck + ' Phát hiện');
-      element.replaceText('[☐□☑]\\s*Không phát hiện', kphCheck + ' Không phát hiện');
+      replaceCheckboxSafely(element, '[☐□☑]\\s*Phát hiện', phCheck);
+      replaceCheckboxSafely(element, '[☐□☑]\\s*Không phát hiện', kphCheck);
 
       const boSungNuocVal = (sample.checkBoSungNuoc || metadata.checkBoSungNuoc || 'không').toString().trim().toLowerCase();
       let bsNuocCo = '☐';
@@ -451,7 +559,8 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       } else {
         bsNuocKhong = '☑';
       }
-      element.replaceText('Bổ\\s*sung\\s*nước:\\s*[☐□☑]?\\s*có;\\s*[☐□☑]?\\s*không', 'Bổ sung nước: ' + bsNuocCo + ' có; ' + bsNuocKhong + ' không');
+      replaceCheckboxSafely(element, 'nước:\\s*[☐□☑]', bsNuocCo);
+      replaceCheckboxSafely(element, 'có;\\s*[☐□☑]', bsNuocKhong);
 
       const hhLamSachVal = (sample.checkHonHopLamSach || metadata.checkHonHopLamSach || 'B1').toString().trim().toUpperCase();
       let hhB1 = '☐';
@@ -461,7 +570,8 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       } else if (hhLamSachVal === 'B2') {
         hhB2 = '☑';
       }
-      element.replaceText('hỗn\\s*hợp\\s*:\\s*[☐□☑]?\\s*B1;\\s*[☐□☑]?\\s*B2', 'hỗn hợp : ' + hhB1 + ' B1; ' + hhB2 + ' B2');
+      replaceCheckboxSafely(element, 'hợp\\s*:\\s*[☐□☑]', hhB1);
+      replaceCheckboxSafely(element, 'B1;\\s*[☐□☑]', hhB2);
 
       const hsplVal = (sample.heSoPhaLoang || sample.hSoPhaLoang || metadata.heSoPhaLoang || '1').toString().trim();
       let hspl1Check = '☐';
@@ -471,7 +581,10 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       } else {
         hsplOtherText = hsplVal;
       }
-      element.replaceText('HSPL:\\s*[☐□☑]?\\s*1\\s*;\\s*[…\\.]*', 'HSPL: ' + hspl1Check + ' 1 ; ' + hsplOtherText);
+      replaceCheckboxSafely(element, 'HSPL:\\s*[☐□☑]', hspl1Check);
+      if (hsplOtherText !== '………') {
+        replaceDotsSafely(element, '1\\s*;\\s*[…\\.]+', hsplOtherText);
+      }
     } catch (e) {
       Logger.log('[Report LanHuuCo] Lỗi điền metadata: ' + e.toString());
     }
@@ -520,15 +633,30 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
     // Không được giao → giữ nguyên template tuyệt đối
     if (!isTargetAssignedForGas(sample.maSoMau, key)) return;
 
-    const kqRaw = (sample[key] !== undefined && sample[key] !== null) ? sample[key].toString().trim() : '';
-    const isNd  = sample[key + '_nd'] === true;
+    const getSampleValue = function(suffix) {
+      if (sample[key + suffix] !== undefined) return sample[key + suffix];
+      const searchKey = (key + suffix).toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (const k in sample) {
+        if (k.toLowerCase().replace(/[^a-z0-9]/g, '') === searchKey) {
+          return sample[k];
+        }
+      }
+      return undefined;
+    };
 
-    // KPH / kph / N/A / — coi như không phát hiện
+    const valRaw = getSampleValue('');
+    const kqRaw = (valRaw !== undefined && valRaw !== null) ? valRaw.toString().trim() : '';
+    const isNd  = getSampleValue('_nd') === true;
+
+    // isKph chỉ định liệu giá trị này có phải là không phát hiện hay không
     const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
-    const kqVal    = isKph ? '' : kqRaw;
-    const isDetected = !isKph && (kqVal !== '' || isNd);
+    const kqVal = isKph ? '' : kqRaw;
+    
+    // Đã phát hiện (có kqVal) hoặc được đánh dấu ND
+    // NẾU kqRaw rỗng (isKph = true) nhưng isNd = true thì CHẮC CHẮN phải xử lý
+    const isDetected = (kqVal !== '' || isNd || kqRaw.toUpperCase() === 'KPH');
 
-    // Không có dữ liệu → không chạm vào template
+    // Không có dữ liệu để xử lý → không chạm vào template
     if (!isDetected) return;
 
     const kqCell  = row.getCell(startCellIdx + 1);
@@ -543,13 +671,9 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
         kqCell.replaceText('^[…\\.]{2,}', kqVal);
       }
       
-      const txt = kqCell.getText();
-      const matchND = txt.match(/[☐□☑]\s*ND/);
-      if (matchND) {
-        const oldStr = matchND[0];
-        const newStr = oldStr.replace(/[☐□☑]/, isNd ? '☑' : '☐');
-        kqCell.replaceText(oldStr, newStr);
-      }
+      // Khớp duy nhất ký tự checkbox vì trong ô kết quả chỉ có 1 checkbox ND
+      // Việc khớp đúng 1 ký tự đảm bảo 100% không bao giờ bị lỗi tràn Text element (boundary error)
+      replaceCheckboxSafely(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
     } catch(e) {
       Logger.log('[fillSide kqCell] ' + (key || '') + ': ' + e.toString());
     }
@@ -559,31 +683,31 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
       const isDat      = (qcRawVal === 'Đạt'      || qcRawVal === '☑');
       const isKhongDat = (qcRawVal === 'Không đạt' || qcRawVal === '☒' || qcRawVal === 'Không Đạt');
       try {
-        const txt = cell.getText();
-        
-        // Khớp checkbox đi liền với KĐ
-        const matchKD = txt.match(/[☐□☑]\s*KĐ/);
-        if (matchKD) {
-          const oldStr = matchKD[0];
-          const newStr = oldStr.replace(/[☐□☑]/, isKhongDat ? '☑' : '☐');
-          cell.replaceText(oldStr, newStr);
-        }
-
-        // Khớp checkbox đi liền với Đ
-        const matchD = txt.match(/[☐□☑]\s*Đ/);
-        if (matchD) {
-          const oldStr = matchD[0];
-          const newStr = oldStr.replace(/[☐□☑]/, isDat ? '☑' : '☐');
-          cell.replaceText(oldStr, newStr);
+        // Khớp toàn bộ các checkbox trong ô (luôn có 2 cái: cái 1 là Đạt, cái 2 là Không đạt)
+        let found = cell.findText('[☐□☑]');
+        let index = 0;
+        while (found) {
+          const textElement = found.getElement().asText();
+          const offset = found.getStartOffset();
+          
+          let charToInsert = '☐';
+          if (index === 0) charToInsert = isDat ? '☑' : '☐';
+          if (index === 1) charToInsert = isKhongDat ? '☑' : '☐';
+          
+          textElement.insertText(offset, charToInsert);
+          textElement.deleteText(offset + 1, offset + 1);
+          
+          found = cell.findText('[☐□☑]', found);
+          index++;
         }
       } catch(e) {
         Logger.log('[fillQcCell] ' + e.toString());
       }
     };
 
-    fillQcCell(qc1Cell, sample[key + '_qc1'] || '');
-    fillQcCell(qc2Cell, sample[key + '_qc2'] || '');
-    fillQcCell(qc3Cell, sample[key + '_qc3'] || '');
+    fillQcCell(qc1Cell, getSampleValue('_qc1') || '');
+    fillQcCell(qc2Cell, getSampleValue('_qc2') || '');
+    fillQcCell(qc3Cell, getSampleValue('_qc3') || '');
   };
 
   for (let r = 2; r < numRows; r++) {
