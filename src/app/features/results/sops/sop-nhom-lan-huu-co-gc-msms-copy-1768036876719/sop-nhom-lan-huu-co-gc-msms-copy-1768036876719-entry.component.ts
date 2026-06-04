@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
+﻿import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
@@ -437,10 +437,267 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
 
+setPrintFormType(type: 'formCheck' | 'formDon') {
+    this.draft.page1Data['printFormType'] = type;
+
+    // Automatically assign appropriate vials when switching form type
+    const defaultBlankVial = '7';
+    const defaultSpikeVial = '8';
+    
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = defaultBlankVial;
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = defaultSpikeVial;
+    }
+    if (this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = defaultSpikeVial;
+    }
+
+    if (type === 'formCheck') {
+      this.activeTab.set('compounds');
+    } else {
+      this.activeTab.set('chromatography');
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
+    }
+    this.onDataChanged();
+  }
+
+  onFinalToggled() {
+    if (this.draft.page1Data['hasFinal']) {
+      const spike = this.draft.resultData['QC_SPIKE'];
+      this.draft.resultData['QC_FINAL'] = {
+        loSo: spike?.['loSo'] || '8',
+        selected: true,
+        khoiLuong: spike?.['khoiLuong'] || '10.0',
+        heSoPhaLoang: spike?.['heSoPhaLoang'] || '1',
+        checkBoSungNuoc: spike?.['checkBoSungNuoc'] || 'không',
+        checkHonHopLamSach: spike?.['checkHonHopLamSach'] || 'B1'
+      };
+    } else {
+      delete this.draft.resultData['QC_FINAL'];
+    }
+    this.onDataChanged();
+  }
+
+  bulkFillNDFormDon() {
+    const active = this.draft.page1Data['activeCompound'];
+    if (!active) return;
+    const rows = this.getChromatographyRows();
+    rows.forEach((row: any) => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData && rowData['selected'] !== false) {
+        if (!rowData[active] || rowData[active]?.trim() === '') {
+          rowData[active] = 'KPH';
+        }
+      }
+    });
+    this.onDataChanged();
+  }
+
+  bulkClearAllFormDon() {
+    const active = this.draft.page1Data['activeCompound'];
+    if (!active) return;
+    const rows = this.getChromatographyRows();
+    rows.forEach((row: any) => {
+      const rowData = this.draft.resultData[row.key];
+      if (rowData) {
+        rowData[active] = '';
+        rowData[active + '_ghiChu'] = '';
+      }
+    });
+    this.onDataChanged();
+  }
+
+  getChromatographyRows(): any[] {
+    const list = [];
+    const isDon = this.draft.page1Data['printFormType'] === 'formDon';
+    const defaultBlankVial = '7';
+    const defaultSpikeVial = '8';
+    
+    // 1. QC_BLANK
+    const blankName = this.draft.page1Data['blankName'] || 'BLANK';
+    if (!this.draft.resultData['QC_BLANK']) {
+      const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
+      this.draft.resultData['QC_BLANK'] = {
+        loSo: defaultBlankVial,
+        selected: true,
+        khoiLuong: randW,
+        heSoPhaLoang: '1',
+        checkBoSungNuoc: 'không',
+        checkHonHopLamSach: 'B1'
+      };
+    } else {
+      this.draft.resultData['QC_BLANK']['loSo'] = this.draft.resultData['QC_BLANK']['loSo'] || defaultBlankVial;
+      if (isDon && (this.draft.resultData['QC_BLANK']['khoiLuong'] === undefined || this.draft.resultData['QC_BLANK']['khoiLuong'] === '' || this.draft.resultData['QC_BLANK']['khoiLuong'] === '10.0')) {
+        this.draft.resultData['QC_BLANK']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+      }
+    }
+    list.push({ key: 'QC_BLANK', label: blankName, type: 'QC' });
+
+    // 2. QC_SPIKE
+    const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
+    if (!this.draft.resultData['QC_SPIKE']) {
+      const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
+      this.draft.resultData['QC_SPIKE'] = {
+        loSo: defaultSpikeVial,
+        selected: true,
+        khoiLuong: randW,
+        heSoPhaLoang: '1',
+        checkBoSungNuoc: 'không',
+        checkHonHopLamSach: 'B1'
+      };
+    } else {
+      this.draft.resultData['QC_SPIKE']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || defaultSpikeVial;
+      if (isDon && (this.draft.resultData['QC_SPIKE']['khoiLuong'] === undefined || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '' || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '10.0')) {
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+      }
+    }
+    list.push({ key: 'QC_SPIKE', label: spikeName, type: 'QC' });
+
+    // 3. Regular samples
+    if (this.run && this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
+          this.draft.resultData[sampleCode] = {
+            loSo: '',
+            selected: true,
+            khoiLuong: randW,
+            heSoPhaLoang: '1',
+            checkBoSungNuoc: 'không',
+            checkHonHopLamSach: 'B1'
+          };
+        } else {
+          if (isDon && (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '' || this.draft.resultData[sampleCode]['khoiLuong'] === '10.0')) {
+            this.draft.resultData[sampleCode]['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+          }
+        }
+        list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });
+      });
+    }
+
+    // 4. QC_FINAL (optional)
+    if (this.draft.page1Data['hasFinal']) {
+      if (!this.draft.resultData['QC_FINAL']) {
+        const spike = this.draft.resultData['QC_SPIKE'];
+        const finalVial = spike?.['loSo'] || defaultSpikeVial;
+        const finalW = spike?.['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+        const finalF = spike?.['heSoPhaLoang'] || '1';
+        this.draft.resultData['QC_FINAL'] = {
+          loSo: finalVial,
+          selected: true,
+          khoiLuong: finalW,
+          heSoPhaLoang: finalF,
+          checkBoSungNuoc: 'không',
+          checkHonHopLamSach: 'B1'
+        };
+      } else {
+        const spike = this.draft.resultData['QC_SPIKE'];
+        if (spike) {
+          this.draft.resultData['QC_FINAL']['loSo'] = spike['loSo'] || defaultSpikeVial;
+          this.draft.resultData['QC_FINAL']['khoiLuong'] = spike['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+          this.draft.resultData['QC_FINAL']['heSoPhaLoang'] = spike['heSoPhaLoang'] || '1';
+        }
+      }
+      list.push({ key: 'QC_FINAL', label: 'FINAL', type: 'QC' });
+    }
+
+    return list;
+  }
+
   async ngOnInit() {
     if (this.run.sampleList && this.run.sampleList.length > 0) {
       this.activeSampleCode.set(this.run.sampleList[0]);
     }
+
+    // Initialize printFormType (default: formCheck)
+    if (this.draft.page1Data['printFormType'] === undefined) {
+      this.draft.page1Data['printFormType'] = 'formCheck';
+    }
+
+    // Initialize activeCompound
+    if (!this.draft.page1Data['activeCompound']) {
+      if (this.config?.compounds && this.config.compounds.length > 0) {
+        this.draft.page1Data['activeCompound'] = this.config.compounds[0];
+      }
+    }
+
+    // Initialize R^2 if formDon
+    if (this.draft.page1Data['printFormType'] === 'formDon') {
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
+    }
+
+    // Initialize default page1Data.khoiLuong to '10.0'
+    if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    }
+
+    // Initialize calibration points (C0-C4: 5 points)
+    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '1', hamLuong: '0' },
+        { loSo: '2', hamLuong: '5' },
+        { loSo: '3', hamLuong: '10' },
+        { loSo: '4', hamLuong: '20' },
+        { loSo: '5', hamLuong: '50' }
+      ];
+    }
+
+    if (this.draft.page1Data['r2'] === undefined) {
+      this.draft.page1Data['r2'] = '';
+    }
+
+    if (this.draft.page1Data['blankName'] === undefined) {
+      this.draft.page1Data['blankName'] = '';
+    }
+
+    if (this.draft.page1Data['spikeName'] === undefined) {
+      this.draft.page1Data['spikeName'] = '';
+    }
+
+    if (this.draft.page1Data['hasFinal'] === undefined) {
+      this.draft.page1Data['hasFinal'] = false;
+    }
+
+
+    if (this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          this.draft.resultData[sampleCode] = {};
+        }
+        const sRes = this.draft.resultData[sampleCode];
+        if (sRes['selected'] === undefined) {
+          sRes['selected'] = true;
+        }
+        if (sRes['khoiLuong'] === undefined) {
+          sRes['khoiLuong'] = '10.0';
+        }
+        if (sRes['heSoPhaLoang'] === undefined) {
+          sRes['heSoPhaLoang'] = '1';
+        }
+        if (sRes['hSoPhaLoang'] === undefined) {
+          sRes['hSoPhaLoang'] = '1';
+        }
+        if (sRes['loSo'] === undefined) {
+          sRes['loSo'] = '';
+        }
+        if (sRes['checkBoSungNuoc'] === undefined) {
+          sRes['checkBoSungNuoc'] = 'không';
+        }
+        if (sRes['checkHonHopLamSach'] === undefined) {
+          sRes['checkHonHopLamSach'] = 'B1';
+        }
+      });
+    }
+
+    this.updateGopInChungState();
+
+
 
     if (this.config.checkboxLines) {
       this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({

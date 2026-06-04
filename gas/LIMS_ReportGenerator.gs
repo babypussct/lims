@@ -58,6 +58,9 @@ function generateReport(sopId, metadata, samples, version) {
   if (sopId === 'lan-huu-co' && metadata && metadata.printFormType === 'formDon') {
     templateId = '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y';
   }
+  if (sopId === 'chlor-huu-co' && metadata && metadata.printFormType === 'formDon') {
+    templateId = '1JhO-qVV6-KFw9zq2ARCYyVwlQoj6xFjFHlrBsjNGbH8';
+  }
   const sopConfig   = CONFIG.SOP_CONFIG[sopId];
 
   if (!templateId || templateId === 'PASTE_GOOGLE_DOC_ID_HERE') {

@@ -12,39 +12,177 @@ function generateCustomReport_chlor_huu_co(templateId, metadata, samples, folder
   const doc = DocumentApp.openById(docId);
   const body = doc.getBody();
 
-  // Lấy cấu hình của Chlor hữu cơ từ cấu hình chung (hoặc tùy biến trực tiếp ở đây)
-  const sopConfig = CONFIG.SOP_CONFIG['chlor-huu-co'];
+  const printFormType = metadata.printFormType || 'formCheck';
 
-  // Sử dụng bộ engine nội bộ riêng biệt của Chlor hữu cơ
-  generateChlorHuuCoReport(body, sopConfig, metadata, samples);
+  if (printFormType === 'formDon') {
+    // === FORM ĐƠN (Trang 15) ===
+    let compounds = metadata.compoundsToPrint || [];
+    if (compounds.length === 0) {
+      if (metadata.activeCompound) {
+        compounds = [metadata.activeCompound];
+      } else {
+        compounds = ['Aldrin'];
+      }
+    }
 
-  // Lưu doc
-  doc.saveAndClose();
+    const templateChildren = [];
+    const numChildren = body.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      templateChildren.push(body.getChild(i).copy());
+    }
 
-  // Xuất file PDF
-  const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
-  const pdfName = fileName + '.pdf';
-  const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+    const sopConfig = CONFIG.SOP_CONFIG['chlor-huu-co'];
 
-  const pdfUrl     = pdfFile.getUrl();
-  const docsUrl    = `https://docs.google.com/document/d/${docId}/edit`;
-  const pdfViewUrl = pdfFile.getDownloadUrl();
+    for (let c = 0; c < compounds.length; c++) {
+      const compoundName = compounds[c];
+      let pageElements = [];
 
-  Logger.log(`[ChlorHuuCoCustom] Report created: ${fileName} | Doc: ${docId} | PDF: ${pdfFile.getId()}`);
+      if (c === 0) {
+        for (let i = 0; i < numChildren; i++) {
+          const child = body.getChild(i);
+          const type = child.getType();
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            pageElements.push(child.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            pageElements.push(child.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            pageElements.push(child.asListItem());
+          }
+        }
+      } else {
+        body.appendPageBreak();
+        for (let i = 0; i < templateChildren.length; i++) {
+          const cloned = templateChildren[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) pageElements.push(appended);
+        }
+      }
 
-  return {
-    docId,
-    pdfId:       pdfFile.getId(),
-    docsUrl,
-    pdfUrl,
-    pdfViewUrl,
-    fileName,
-    createdAt:   new Date().toISOString(),
-  };
+      for (const element of pageElements) {
+        if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          const pText = element.asParagraph().getText();
+          if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
+            element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
+          }
+        }
+
+        // Standard placeholders
+        for (const [key, val] of Object.entries(metadata)) {
+          if (key !== 'samples' && key !== 'runSamplesList') {
+            if (val === true) {
+              element.replaceText(`{{${key}}}`, '☑');
+            } else if (val === false) {
+              element.replaceText(`{{${key}}}`, '☐');
+            } else {
+              element.replaceText(`{{${key}}}`, val !== null && val !== undefined ? val.toString() : '');
+            }
+          }
+        }
+
+        if (sopConfig.signaturePlaceholders) {
+          for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
+            const textVal = metadata[fieldName] || '';
+            if (textVal) {
+              const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
+              element.replaceText(placeholderText, dateOnly);
+            }
+          }
+        }
+      }
+
+      fillChlorHuuCoSection2(pageElements, sopConfig, metadata, compoundName, samples);
+    }
+
+    cleanChlorHuuCoLastPageBreak(body);
+    doc.saveAndClose();
+
+    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+    const pdfName = fileName + '.pdf';
+    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+    return {
+      docId,
+      pdfId: pdfFile.getId(),
+      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
+      pdfUrl: pdfFile.getUrl(),
+      pdfViewUrl: pdfFile.getDownloadUrl(),
+      fileName,
+      createdAt: new Date().toISOString(),
+    };
+  } else {
+    // === FORM CHECK (Trang 9-10) ===
+    const templateChildren = [];
+    const numChildren = body.getNumChildren();
+    for (let i = 0; i < numChildren; i++) {
+      templateChildren.push(body.getChild(i).copy());
+    }
+
+    const sopConfig = CONFIG.SOP_CONFIG['chlor-huu-co'];
+
+    for (let s = 0; s < samples.length; s++) {
+      let pageElements = [];
+
+      if (s === 0) {
+        for (let i = 0; i < numChildren; i++) {
+          const child = body.getChild(i);
+          const type = child.getType();
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            pageElements.push(child.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            pageElements.push(child.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            pageElements.push(child.asListItem());
+          }
+        }
+      } else {
+        body.appendPageBreak();
+        for (let i = 0; i < templateChildren.length; i++) {
+          const cloned = templateChildren[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) pageElements.push(appended);
+        }
+      }
+
+      fillChlorHuuCoSampleForElements(pageElements, sopConfig, metadata, samples[s]);
+    }
+
+    cleanChlorHuuCoLastPageBreak(body);
+    doc.saveAndClose();
+
+    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
+    const pdfName = fileName + '.pdf';
+    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
+
+    return {
+      docId,
+      pdfId: pdfFile.getId(),
+      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
+      pdfUrl: pdfFile.getUrl(),
+      pdfViewUrl: pdfFile.getDownloadUrl(),
+      fileName,
+      createdAt: new Date().toISOString(),
+    };
+  }
 }
 
 /**
- * Nhân bản trang theo từng mẫu thử và gọi hàm điền dữ liệu riêng biệt
+ * Helper functions for safely replacing text without losing formatting
  */
 function generateChlorHuuCoReport(body, sopConfig, metadata, samples) {
   const numChildren = body.getNumChildren();
@@ -768,3 +906,280 @@ function fillChromatogramTableDirectly(element, sopConfig, sample, isTargetAssig
   return true;
 }
 
+
+function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, samples) {
+  let tables = [];
+  for (const element of elements) {
+    if (element.getType() === DocumentApp.ElementType.TABLE) {
+      tables.push(element.asTable());
+    } else if (typeof element.getTables === 'function') {
+      const tbls = element.getTables();
+      for (let j = 0; j < tbls.length; j++) {
+        tables.push(tbls[j]);
+      }
+    }
+  }
+
+  // 1. Điền bảng đường chuẩn Table 7 (rows=8)
+  let calibTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() === 8) {
+      const headerText = t.getRow(0).getText();
+      if (headerText.includes("Chuẩn") && headerText.includes("vial")) {
+        calibTable = t;
+        break;
+      }
+    }
+  }
+
+  if (calibTable) {
+    const calibPoints = metadata.calibPoints || [];
+    for (let i = 0; i < 6; i++) {
+      const rowIdx = i + 1;
+      const row = calibTable.getRow(rowIdx);
+      setCellText(row, 0, `C${i}`, null, 9);
+      if (i < calibPoints.length) {
+        const pt = calibPoints[i];
+        setCellText(row, 1, pt.loSo || '', null, 9);
+        setCellText(row, 2, pt.hamLuong || '', null, 9);
+      } else {
+        setCellText(row, 1, '', null, 9);
+        setCellText(row, 2, '', null, 9);
+      }
+    }
+    const r2Val = metadata.r2 || '';
+    setCellText(calibTable.getRow(7), 1, r2Val, null, 9);
+  }
+
+  // Helper inside function to map compound to backend key
+    function mapCompoundToKey(cName) {
+    const tableTextToKey = {
+      'aldrin': 'Aldrin',
+      'bhca': 'BHCa', 'bhc-alpha': 'BHCa', 'alpha-bhc': 'BHCa', 'Î±-bhc': 'BHCa',
+      'bhcb': 'BHCb', 'bhc-beta': 'BHCb', 'beta-bhc': 'BHCb', 'Î²-bhc': 'BHCb',
+      'bhcd': 'BHCd', 'bhc-delta': 'BHCd', 'delta-bhc': 'BHCd', 'Î´-bhc': 'BHCd',
+      'bhce': 'BHCe', 'bhc-epsilon': 'BHCe', 'epsilon-bhc': 'BHCe', 'Îµ-bhc': 'BHCe',
+      'bhcg': 'BHCg', 'bhc-gamma': 'BHCg', 'gamma-bhc': 'BHCg', 'Î³-bhc': 'BHCg', 'lindane': 'BHCg',
+      'chlordane_cis': 'Chlordane_cis', 'chlordane-cis': 'Chlordane_cis', 'cis-chlordane': 'Chlordane_cis',
+      'chlordane_oxy': 'Chlordane_oxy', 'chlordane-oxy': 'Chlordane_oxy', 'oxy-chlordane': 'Chlordane_oxy',
+      'chlordane_trans': 'Chlordane_trans', 'chlordane-trans': 'Chlordane_trans', 'trans-chlordane': 'Chlordane_trans',
+      'ddd_op': 'DDD_op', 'ddd-o,p': 'DDD_op', 'o,p-ddd': 'DDD_op', 'o,p''-ddd': 'DDD_op',
+      'ddd_pp': 'DDD_pp', 'ddd-p,p': 'DDD_pp', 'p,p-ddd': 'DDD_pp', 'p,p''-ddd': 'DDD_pp',
+      'dde_op': 'DDE_op', 'dde-o,p': 'DDE_op', 'o,p-dde': 'DDE_op', 'o,p''-dde': 'DDE_op',
+      'dde_pp': 'DDE_pp', 'dde-p,p': 'DDE_pp', 'p,p-dde': 'DDE_pp', 'p,p''-dde': 'DDE_pp',
+      'ddt_op': 'DDT_op', 'ddt-o,p': 'DDT_op', 'o,p-ddt': 'DDT_op', 'o,p''-ddt': 'DDT_op',
+      'ddt_pp': 'DDT_pp', 'ddt-p,p': 'DDT_pp', 'p,p-ddt': 'DDT_pp', 'p,p''-ddt': 'DDT_pp',
+      'dieldrin': 'Dieldrin',
+      'endosulfan1': 'Endosulfan1', 'endosulfan-i': 'Endosulfan1', 'alpha-endosulfan': 'Endosulfan1',
+      'endosulfan2': 'Endosulfan2', 'endosulfan-ii': 'Endosulfan2', 'beta-endosulfan': 'Endosulfan2',
+      'endosulfans': 'EndosulfanS', 'endosulfan-sulfate': 'EndosulfanS',
+      'endrin': 'Endrin',
+      'heptachlorendoepoxideisomera': 'HeptachlorA', 'heptachlor epoxide isomer a': 'HeptachlorA', 'heptachlorepoxideisomera': 'HeptachlorA',
+      'heptachlorexoepoxideisomerb': 'HeptachlorB', 'heptachlor epoxide isomer b': 'HeptachlorB', 'heptachlorepoxideisomerb': 'HeptachlorB',
+      'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor epoxide trans': 'HeptachlorA',
+      'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor epoxide cis': 'HeptachlorB',
+      'heptachlor': 'Heptachlor',
+      'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
+      'isodrin': 'Isodrin',
+      'methoxychlor': 'Methoxychlor',
+      'mirex': 'Mirex',
+      'pendimethalin': 'Pendimethalin'
+    };
+    const searchKey = cName.toLowerCase().replace(/[\s\-\'\â€™\_]/g, '');
+    return tableTextToKey[searchKey] || cName;
+  }ents, sopConfig, metadata, compoundName, samples) {
+  let tables = [];
+  for (const element of elements) {
+    if (element.getType() === DocumentApp.ElementType.TABLE) {
+      tables.push(element.asTable());
+    } else if (typeof element.getTables === 'function') {
+      const tbls = element.getTables();
+      for (let j = 0; j < tbls.length; j++) {
+        tables.push(tbls[j]);
+      }
+    }
+  }
+
+  // 1. Điền bảng đường chuẩn Table 7 (rows=8)
+  let calibTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() === 8) {
+      const headerText = t.getRow(0).getText();
+      if (headerText.includes("Chuẩn") && headerText.includes("vial")) {
+        calibTable = t;
+        break;
+      }
+    }
+  }
+
+  if (calibTable) {
+    const calibPoints = metadata.calibPoints || [];
+    for (let i = 0; i < 6; i++) {
+      const rowIdx = i + 1;
+      const row = calibTable.getRow(rowIdx);
+      setCellText(row, 0, `C${i}`, null, 9);
+      if (i < calibPoints.length) {
+        const pt = calibPoints[i];
+        setCellText(row, 1, pt.loSo || '', null, 9);
+        setCellText(row, 2, pt.hamLuong || '', null, 9);
+      } else {
+        setCellText(row, 1, '', null, 9);
+        setCellText(row, 2, '', null, 9);
+      }
+    }
+    const r2Val = metadata.r2 || '';
+    setCellText(calibTable.getRow(7), 1, r2Val, null, 9);
+  }
+
+  // Helper inside function to map compound to backend key
+  function mapCompoundToKey(cName) {
+    const directMap = {
+      'Acephate': 'Acephate',
+      'AzinphosMethyl': 'AzinphosMethyl',
+      'Cadusafos': 'Cadusafos',
+      'Chlorpyrifos': 'Chlorpyrifos',
+      'ChlorpyrifosMethyl': 'ChlorpyrifosMethyl',
+      'Diazinon': 'Diazinon',
+      'Dimethoate': 'Dimethoate',
+      'Edifenphos': 'Edifenphos',
+      'Ethion': 'Ethion',
+      'Ethoprophos': 'Ethoprophos',
+      'Fenitrothion': 'Fenitrothion',
+      'Fenthion': 'Fenthion',
+      'Fipronil': 'Fipronil',
+      'FipronilSulfide': 'FipronilSulfide',
+      'FipronilSulfone': 'FipronilSulfone',
+      'FipronilDesulfinyl': 'FipronilDesulfinyl',
+      'Iprobenfos': 'Iprobenfos',
+      'Malathion': 'Malathion',
+      'Mefenoxam': 'Mefenoxam',
+      'Metalaxyl': 'Metalaxyl',
+      'Methacrifos': 'Methacrifos',
+      'Methidathion': 'Methidathion',
+      'Monocrotophos': 'Monocrotophos',
+      'Omethoate': 'Omethoate',
+      'Parathion': 'Parathion',
+      'ParathionMethyl': 'ParathionMethyl',
+      'Phenthoate': 'Phenthoate',
+      'Phorate': 'Phorate',
+      'Phosmet': 'Phosmet',
+      'Phosphamidon': 'Phosphamidon',
+      'PirimiphosMethyl': 'PirimiphosMethyl',
+      'Profenofos': 'Profenofos',
+      'Quinalphos': 'Quinalphos',
+      'Ronnel': 'Ronnel',
+      'Triazophos': 'Triazophos',
+      'Vamidothion': 'Vamidothion',
+      'Chlorfenvinphos': 'Chlorfenvinphos',
+      'IsofenphosMethyl': 'IsofenphosMethyl'
+    };
+    const normalized = cName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [k, v] of Object.entries(directMap)) {
+      if (k.toLowerCase() === normalized) return v;
+    }
+    return cName;
+  }
+
+  // 2. Điền bảng chuẩn bị mẫu Table 8 (rows=19)
+  let prepTable = null;
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    if (t.getNumRows() === 19 || (t.getNumRows() >= 10 && t.getRow(0).getText().includes("Hệ số pha loãng F"))) {
+      prepTable = t;
+      break;
+    }
+  }
+
+  if (prepTable) {
+    const runSamplesList = metadata.runSamplesList || [];
+    const isDon = metadata.printFormType === 'formDon';
+    
+    for (let i = 0; i < 18; i++) {
+      const rowIdx = i + 1;
+      const row = prepTable.getRow(rowIdx);
+      if (i < runSamplesList.length) {
+        const s = runSamplesList[i];
+        
+        let cell4Text = '';
+        let cell5Text = '';
+        if (isDon) {
+          if (s.compoundResults && compoundName) {
+            cell4Text = s.compoundResults[compoundName] || 'KPH';
+          } else {
+            cell4Text = 'KPH';
+          }
+          if (s.compoundNotes && compoundName) {
+            cell5Text = s.compoundNotes[compoundName] || '';
+          }
+        } else {
+          cell4Text = s.checkBoSungNuoc || 'không';
+          cell5Text = s.checkHonHopLamSach || 'B1';
+        }
+
+        setCellText(row, 0, s.maSoMau || '', null, 9);
+        setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
+        setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
+        setCellText(row, 3, s.loSo || '', null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, cell4Text, null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, cell5Text, null, 9);
+        }
+      } else {
+        setCellText(row, 0, '', null, 9);
+        setCellText(row, 1, '', null, 9);
+        setCellText(row, 2, '', null, 9);
+        setCellText(row, 3, '', null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, '', null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, '', null, 9);
+        }
+      }
+    }
+    
+    if (runSamplesList.length > 18) {
+      for (let i = 18; i < runSamplesList.length; i++) {
+        const s = runSamplesList[i];
+        const newRow = prepTable.getRow(18).copy();
+        prepTable.appendRow(newRow);
+        const row = prepTable.getRow(i + 1);
+        
+        let cell4Text = '';
+        let cell5Text = '';
+        if (isDon) {
+          if (s.compoundResults && compoundName) {
+            cell4Text = s.compoundResults[compoundName] || 'KPH';
+          } else {
+            cell4Text = 'KPH';
+          }
+          if (s.compoundNotes && compoundName) {
+            cell5Text = s.compoundNotes[compoundName] || '';
+          }
+        } else {
+          cell4Text = s.checkBoSungNuoc || 'không';
+          cell5Text = s.checkHonHopLamSach || 'B1';
+        }
+
+        setCellText(row, 0, s.maSoMau || '', null, 9);
+        setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
+        setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
+        setCellText(row, 3, s.loSo || '', null, 9);
+        if (row.getNumCells() > 4) {
+          setCellText(row, 4, cell4Text, null, 9);
+        }
+        if (row.getNumCells() > 5) {
+          setCellText(row, 5, cell5Text, null, 9);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Xóa PageBreak thừa ở cuối tài liệu
+ */

@@ -1,0 +1,84 @@
+    // Initialize printFormType (default: formCheck)
+    if (this.draft.page1Data['printFormType'] === undefined) {
+      this.draft.page1Data['printFormType'] = 'formCheck';
+    }
+
+    // Initialize activeCompound
+    if (!this.draft.page1Data['activeCompound']) {
+      if (this.config?.compounds && this.config.compounds.length > 0) {
+        this.draft.page1Data['activeCompound'] = this.config.compounds[0];
+      }
+    }
+
+    // Initialize R^2 if formDon
+    if (this.draft.page1Data['printFormType'] === 'formDon') {
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
+    }
+
+    // Initialize default page1Data.khoiLuong to '10.0'
+    if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    }
+
+    // Initialize calibration points (C0-C4: 5 points)
+    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
+      this.draft.page1Data['calibPoints'] = [
+        { loSo: '1', hamLuong: '0' },
+        { loSo: '2', hamLuong: '5' },
+        { loSo: '3', hamLuong: '10' },
+        { loSo: '4', hamLuong: '20' },
+        { loSo: '5', hamLuong: '50' }
+      ];
+    }
+
+    if (this.draft.page1Data['r2'] === undefined) {
+      this.draft.page1Data['r2'] = '';
+    }
+
+    if (this.draft.page1Data['blankName'] === undefined) {
+      this.draft.page1Data['blankName'] = '';
+    }
+
+    if (this.draft.page1Data['spikeName'] === undefined) {
+      this.draft.page1Data['spikeName'] = '';
+    }
+
+    if (this.draft.page1Data['hasFinal'] === undefined) {
+      this.draft.page1Data['hasFinal'] = false;
+    }
+
+
+    if (this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (!this.draft.resultData[sampleCode]) {
+          this.draft.resultData[sampleCode] = {};
+        }
+        const sRes = this.draft.resultData[sampleCode];
+        if (sRes['selected'] === undefined) {
+          sRes['selected'] = true;
+        }
+        if (sRes['khoiLuong'] === undefined) {
+          sRes['khoiLuong'] = '10.0';
+        }
+        if (sRes['heSoPhaLoang'] === undefined) {
+          sRes['heSoPhaLoang'] = '1';
+        }
+        if (sRes['hSoPhaLoang'] === undefined) {
+          sRes['hSoPhaLoang'] = '1';
+        }
+        if (sRes['loSo'] === undefined) {
+          sRes['loSo'] = '';
+        }
+        if (sRes['checkBoSungNuoc'] === undefined) {
+          sRes['checkBoSungNuoc'] = 'không';
+        }
+        if (sRes['checkHonHopLamSach'] === undefined) {
+          sRes['checkHonHopLamSach'] = 'B1';
+        }
+      });
+    }
+
+    this.updateGopInChungState();
+
