@@ -343,8 +343,13 @@ export class StateService implements OnDestroy {
 
         if (data['config'] > (lastSyncTimes['config'] || 0)) {
           lastSyncTimes['config'] = data['config'];
-          // Config không có realtime listener → cần reload mới áp dụng → persistent toast
-          this.toast.show('⚙️ Cấu hình hệ thống có thay đổi. Tải lại để áp dụng!', 'info', true);
+          const wasMaintenance = this.maintenanceMode();
+          // Tự động tải lại cấu hình ngầm để nhận trạng thái bảo trì hoặc cấu hình mới nhất
+          this.loadConfig().then(() => {
+            if (wasMaintenance === this.maintenanceMode()) {
+              this.toast.show('⚙️ Cấu hình hệ thống đã được cập nhật.', 'success');
+            }
+          });
         }
       }
     }, handleError('System Metadata'));

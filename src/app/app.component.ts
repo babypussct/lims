@@ -138,8 +138,9 @@ import { filter } from 'rxjs/operators';
               <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Hệ Thống Đang Bảo Trì</h2>
               <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed whitespace-pre-wrap">{{ state.maintenanceMessage() }}</p>
               
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
-                 <i class="fa-solid fa-shield-halved"></i> LIMS Cloud Admin
+              <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed select-none">
+                 &copy; {{year}} Angular Portal &bull; Thiết kế & Phát triển bởi Otada &bull; Sử dụng nội bộ<br>
+                 <span>NAFIQPM6 Laboratory Information Management System Cloud &bull; {{state.systemVersion()}}</span>
               </div>
            </div>
         </div>
@@ -260,6 +261,7 @@ export class AppComponent implements OnDestroy {
 
   // Reactive URL signal for computed dependencies
   currentUrl = signal<string>('');
+  year = new Date().getFullYear();
 
   constructor() {
     // Ticker for scheduled maintenance countdown
@@ -287,6 +289,16 @@ export class AppComponent implements OnDestroy {
         this.notificationService.stopListener();
       }
     }, { allowSignalWrites: true });
+
+    // Lắng nghe trạng thái bảo trì để thông báo khi kết thúc
+    let previousMaintenanceState = false;
+    effect(() => {
+      const active = this.isMaintenanceActive();
+      if (previousMaintenanceState && !active && this.auth.currentUser()) {
+        this.toast.show('🎉 Hệ thống đã hoàn tất bảo trì! Bạn có thể tiếp tục làm việc.', 'success');
+      }
+      previousMaintenanceState = active;
+    });
 
     // --- SERVICE WORKER: Lắng nghe bản build mới ---
     if (this.swUpdate.isEnabled) {
