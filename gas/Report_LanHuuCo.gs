@@ -18,7 +18,11 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
     // === FORM ĐƠN (Trang 15) ===
     let compounds = metadata.compoundsToPrint || [];
     if (compounds.length === 0) {
-      compounds = ['Chlorpyrifos'];
+      if (metadata.activeCompound) {
+        compounds = [metadata.activeCompound];
+      } else {
+        compounds = ['Chlorpyrifos'];
+      }
     }
 
     const templateChildren = [];

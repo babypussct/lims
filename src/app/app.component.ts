@@ -129,9 +129,7 @@ import { filter } from 'rxjs/operators';
               </button>
            </div>
         </div>
-      }
-
-      @if (isMaintenanceActive() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
+      } @else if (isMaintenanceActive() && auth.currentUser() && !state.isAdmin() && !auth.hasPermission('bypass_maintenance')) {
         <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md no-print p-4">
            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-rose-500/30 animate-bounce-in">
               <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-500 animate-pulse">

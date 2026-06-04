@@ -539,8 +539,26 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
             <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
               <i class="fa-solid fa-table mr-2 text-violet-500 text-sm"></i>
-              Bảng thông số chạy mẫu & Quy trình (Trang 15 - Table 8 & Trang 9)
+              Bảng thông số chạy mẫu & Kết quả (Trang 15 - Table 8 & Trang 9)
             </h4>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hoạt chất:</label>
+              <select [(ngModel)]="draft.page1Data['activeCompound']"
+                      (ngModelChange)="onDataChanged()"
+                      class="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold text-violet-600 dark:text-violet-400 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition cursor-pointer max-w-[200px]">
+                @for (c of config.compounds; track c) {
+                  <option [value]="c">{{ compoundDisplayNames()[c] || c }}</option>
+                }
+              </select>
+
+              <button (click)="bulkFillNDFormDon()" 
+                      class="px-2 py-1 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                      title="Đặt toàn bộ các ô kết quả chưa điền là KPH">
+                <i class="fa-solid fa-pen-clip"></i>
+                <span>Điền KPH</span>
+              </button>
+            </div>
           </div>
 
           <!-- Spreadsheet Table -->
@@ -553,8 +571,8 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                   <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-32">Khối lượng (g)</th>
                   <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-32">HS pha loãng F</th>
                   <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-28">Số lọ (Vial)</th>
-                  <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-40">Bổ sung nước</th>
-                  <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-40">Hợp chất làm sạch</th>
+                  <th class="py-2.5 px-3 text-center font-bold text-slate-500 dark:text-slate-400 w-32">Kết quả (ng/g)</th>
+                  <th class="py-2.5 px-3 text-left font-bold text-slate-500 dark:text-slate-400 min-w-[140px]">Ghi chú</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -600,44 +618,24 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                              class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
                     </td>
 
-                    <!-- Water Addition (checkBoSungNuoc) -->
-                    <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
-                        <button type="button"
-                                (click)="setPrepField(row.key, 'checkBoSungNuoc', 'có')"
-                                [class]="draft.resultData[row.key]['checkBoSungNuoc'] === 'có'
-                                  ? 'px-2 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                                  : 'px-2 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
-                          Có
-                        </button>
-                        <button type="button"
-                                (click)="setPrepField(row.key, 'checkBoSungNuoc', 'không')"
-                                [class]="draft.resultData[row.key]['checkBoSungNuoc'] === 'không' || !draft.resultData[row.key]['checkBoSungNuoc']
-                                  ? 'px-2 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                                  : 'px-2 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
-                          Không
-                        </button>
-                      </div>
+                    <!-- Kết quả (ng/g) -->
+                    <td class="py-1 px-1.5">
+                      <input type="text"
+                             [(ngModel)]="draft.resultData[row.key][draft.page1Data['activeCompound']]"
+                             (ngModelChange)="onChromResultChanged(row.key)"
+                             (focus)="$any($event.target).select()"
+                             placeholder="ND/Kết quả"
+                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
                     </td>
 
-                    <!-- Cleanup Mix (checkHonHopLamSach) -->
-                    <td class="py-1 px-1.5 text-center">
-                      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs">
-                        <button type="button"
-                                (click)="setPrepField(row.key, 'checkHonHopLamSach', 'B1')"
-                                [class]="draft.resultData[row.key]['checkHonHopLamSach'] === 'B1' || !draft.resultData[row.key]['checkHonHopLamSach']
-                                  ? 'px-2.5 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                                  : 'px-2.5 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
-                          B1
-                        </button>
-                        <button type="button"
-                                (click)="setPrepField(row.key, 'checkHonHopLamSach', 'B2')"
-                                [class]="draft.resultData[row.key]['checkHonHopLamSach'] === 'B2'
-                                  ? 'px-2.5 py-0.5 text-[9px] font-black rounded bg-violet-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                                  : 'px-2.5 py-0.5 text-[9px] font-bold rounded text-slate-500 hover:text-slate-700 transition duration-150 active:scale-95'">
-                          B2
-                        </button>
-                      </div>
+                    <!-- Ghi chú -->
+                    <td class="py-1 px-1.5">
+                      <input type="text"
+                             [(ngModel)]="draft.resultData[row.key][draft.page1Data['activeCompound'] + '_ghiChu']"
+                             (ngModelChange)="onDataChanged()"
+                             (focus)="$any($event.target).select()"
+                             placeholder="Ghi chú..."
+                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-left text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
                     </td>
                   </tr>
                 }
@@ -665,8 +663,6 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   activeSampleCode = signal<string>('');
   searchQuery = signal<string>('');
-
-  activeCompound = '';
 
   filteredCompounds = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
@@ -702,8 +698,10 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     }
 
     // Initialize activeCompound
-    if (this.config?.compounds && this.config.compounds.length > 0) {
-      this.activeCompound = this.config.compounds[0];
+    if (!this.draft.page1Data['activeCompound']) {
+      if (this.config?.compounds && this.config.compounds.length > 0) {
+        this.draft.page1Data['activeCompound'] = this.config.compounds[0];
+      }
     }
 
     // Initialize R^2 if formDon
@@ -843,7 +841,7 @@ export class SopLanHuuCoEntryComponent implements OnInit {
 
   onChromResultChanged(key: string) {
     if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
-      this.updateRecovery(key, this.activeCompound);
+      this.updateRecovery(key, this.draft.page1Data['activeCompound']);
     }
     this.onDataChanged();
   }
@@ -1083,6 +1081,21 @@ export class SopLanHuuCoEntryComponent implements OnInit {
 
   setPrintFormType(type: 'formCheck' | 'formDon') {
     this.draft.page1Data['printFormType'] = type;
+
+    // Automatically assign appropriate vials when switching form type
+    const defaultBlankVial = '7';
+    const defaultSpikeVial = '8';
+    
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = defaultBlankVial;
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = defaultSpikeVial;
+    }
+    if (this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = defaultSpikeVial;
+    }
+
     if (type === 'formCheck') {
       this.activeTab.set('compounds');
     } else {
@@ -1112,12 +1125,14 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   }
 
   bulkFillNDFormDon() {
+    const active = this.draft.page1Data['activeCompound'];
+    if (!active) return;
     const rows = this.getChromatographyRows();
     rows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
       if (rowData && rowData['selected'] !== false) {
-        if (!rowData[this.activeCompound] || rowData[this.activeCompound]?.trim() === '') {
-          rowData[this.activeCompound] = 'KPH';
+        if (!rowData[active] || rowData[active]?.trim() === '') {
+          rowData[active] = 'KPH';
         }
       }
     });
@@ -1125,12 +1140,14 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   }
 
   bulkClearAllFormDon() {
+    const active = this.draft.page1Data['activeCompound'];
+    if (!active) return;
     const rows = this.getChromatographyRows();
     rows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
       if (rowData) {
-        rowData[this.activeCompound] = '';
-        rowData[this.activeCompound + '_ghiChu'] = '';
+        rowData[active] = '';
+        rowData[active + '_ghiChu'] = '';
       }
     });
     this.onDataChanged();
@@ -1139,8 +1156,8 @@ export class SopLanHuuCoEntryComponent implements OnInit {
   getChromatographyRows(): any[] {
     const list = [];
     const isDon = this.draft.page1Data['printFormType'] === 'formDon';
-    const defaultBlankVial = isDon ? '7' : '6';
-    const defaultSpikeVial = isDon ? '8' : '7';
+    const defaultBlankVial = '7';
+    const defaultSpikeVial = '8';
     
     // 1. QC_BLANK
     const blankName = this.draft.page1Data['blankName'] || 'BLANK';
