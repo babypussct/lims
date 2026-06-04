@@ -31,29 +31,39 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
       templateChildren.push(body.getChild(i).copy());
     }
 
-    body.clear();
-
     const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
 
     for (let c = 0; c < compounds.length; c++) {
       const compoundName = compounds[c];
-      if (c > 0) {
-        body.appendPageBreak();
-      }
+      let pageElements = [];
 
-      const pageElements = [];
-      for (let i = 0; i < templateChildren.length; i++) {
-        const cloned = templateChildren[i].copy();
-        const type = cloned.getType();
-        let appended = null;
-        if (type === DocumentApp.ElementType.PARAGRAPH) {
-          appended = body.appendParagraph(cloned.asParagraph());
-        } else if (type === DocumentApp.ElementType.TABLE) {
-          appended = body.appendTable(cloned.asTable());
-        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-          appended = body.appendListItem(cloned.asListItem());
+      if (c === 0) {
+        for (let i = 0; i < numChildren; i++) {
+          const child = body.getChild(i);
+          const type = child.getType();
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            pageElements.push(child.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            pageElements.push(child.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            pageElements.push(child.asListItem());
+          }
         }
-        if (appended) pageElements.push(appended);
+      } else {
+        body.appendPageBreak();
+        for (let i = 0; i < templateChildren.length; i++) {
+          const cloned = templateChildren[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) pageElements.push(appended);
+        }
       }
 
       for (const element of pageElements) {
@@ -109,72 +119,33 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
     };
   } else {
     // === FORM CHECK (Trang 9-10) ===
-    let sec2Idx = -1;
+    const templateChildren = [];
     const numChildren = body.getNumChildren();
     for (let i = 0; i < numChildren; i++) {
-      const child = body.getChild(i);
-      if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-        const text = child.asParagraph().getText().trim();
-        if ((text.includes("XÁC ĐỊNH") && text.includes("LƯỢNG") && !text.includes("KẾT QUẢ")) ||
-            (text.includes("XA") && text.includes("C") && text.includes("D") && text.includes("L") && text.includes("NG") && !text.includes("KẾT QUẢ"))) {
-          sec2Idx = i;
-          break;
+      templateChildren.push(body.getChild(i).copy());
+    }
+
+    const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
+
+    for (let s = 0; s < samples.length; s++) {
+      let pageElements = [];
+
+      if (s === 0) {
+        for (let i = 0; i < numChildren; i++) {
+          const child = body.getChild(i);
+          const type = child.getType();
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            pageElements.push(child.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            pageElements.push(child.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            pageElements.push(child.asListItem());
+          }
         }
-      }
-    }
-
-    const hasSection2 = (sec2Idx !== -1 && sec2Idx < numChildren);
-    if (!hasSection2) {
-      Logger.log("[LanHuuCoCustom] Không tìm thấy Section 2 (chạy chuẩn bị mẫu). Toàn bộ tài liệu được xem là Section 1.");
-      sec2Idx = numChildren;
-    }
-
-    const sec2Children = [];
-    if (hasSection2) {
-      for (let i = sec2Idx; i < numChildren; i++) {
-        sec2Children.push(body.getChild(i).copy());
-      }
-    }
-
-    let sentinel = null;
-    if (hasSection2 && samples.length > 1) {
-      sentinel = body.insertParagraph(sec2Idx, "");
-      const newNum = body.getNumChildren();
-      for (let i = newNum - 1; i > sec2Idx; i--) {
-        body.removeChild(body.getChild(i));
-      }
-    }
-
-    if (samples.length === 1) {
-      const elements = [];
-      for (let i = 0; i < body.getNumChildren(); i++) {
-        elements.push(body.getChild(i));
-      }
-      fillLanHuuCoSampleForElements(elements, sopConfig, metadata, samples[0]);
-      
-      if (hasSection2) {
-        const sec2Elements = [];
-        for (let i = sec2Idx; i < body.getNumChildren(); i++) {
-          sec2Elements.push(body.getChild(i));
-        }
-        fillLanHuuCoSection2(sec2Elements, sopConfig, metadata, null, samples);
-      }
-    } else {
-      const sec1NumChildren = body.getNumChildren();
-      const sec1Children = [];
-      for (let i = 0; i < sec1NumChildren; i++) {
-        sec1Children.push(body.getChild(i).copy());
-      }
-
-      if (samples.length > 0) {
-        fillLanHuuCoSample(body, sopConfig, metadata, samples[0]);
-      }
-
-      for (let s = 1; s < samples.length; s++) {
+      } else {
         body.appendPageBreak();
-        const tempContainer = [];
-        for (let i = 0; i < sec1Children.length; i++) {
-          const cloned = sec1Children[i].copy();
+        for (let i = 0; i < templateChildren.length; i++) {
+          const cloned = templateChildren[i].copy();
           const type = cloned.getType();
           let appended = null;
           if (type === DocumentApp.ElementType.PARAGRAPH) {
@@ -184,38 +155,11 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
           } else if (type === DocumentApp.ElementType.LIST_ITEM) {
             appended = body.appendListItem(cloned.asListItem());
           }
-          if (appended) tempContainer.push(appended);
+          if (appended) pageElements.push(appended);
         }
-        fillLanHuuCoSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
       }
 
-      if (hasSection2 && sec2Children.length > 0) {
-        body.appendPageBreak();
-        const sec2Container = [];
-        for (let i = 0; i < sec2Children.length; i++) {
-          const cloned = sec2Children[i].copy();
-          const type = cloned.getType();
-          let appended = null;
-          if (type === DocumentApp.ElementType.PARAGRAPH) {
-            appended = body.appendParagraph(cloned.asParagraph());
-          } else if (type === DocumentApp.ElementType.TABLE) {
-            appended = body.appendTable(cloned.asTable());
-          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-            appended = body.appendListItem(cloned.asListItem());
-          }
-          if (appended) sec2Container.push(appended);
-        }
-
-        fillLanHuuCoSection2(sec2Container, sopConfig, metadata, null, samples);
-      }
-    }
-
-    if (sentinel) {
-      try {
-        body.removeChild(sentinel);
-      } catch (e) {
-        sentinel.setText('');
-      }
+      fillLanHuuCoSampleForElements(pageElements, sopConfig, metadata, samples[s]);
     }
 
     cleanLanHuuCoLastPageBreak(body);
@@ -244,7 +188,15 @@ function fillLanHuuCoSample(body, sopConfig, metadata, sample) {
   const numChildren = body.getNumChildren();
   const elements = [];
   for (let i = 0; i < numChildren; i++) {
-    elements.push(body.getChild(i));
+    const child = body.getChild(i);
+    const type = child.getType();
+    if (type === DocumentApp.ElementType.PARAGRAPH) {
+      elements.push(child.asParagraph());
+    } else if (type === DocumentApp.ElementType.TABLE) {
+      elements.push(child.asTable());
+    } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+      elements.push(child.asListItem());
+    }
   }
   fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample);
 }
@@ -413,9 +365,10 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       } else {
         klOtherText = khoiLuongVal;
       }
-      element.replaceText('m\\s*=\\s*[☐□☑]?\\s*10\\.0', 'm = ' + kl10Check + ' 10.0');
+      // Chỉ thay thế checkbox sau m = , giữ nguyên phần "; ...." phía sau
+      element.replaceText('(m\\s*=\\s*)[☐□☑](\\s*10\\.0)', '$1' + kl10Check + '$2');
       if (klOtherText !== '………') {
-        element.replaceText('10\\.0\\s*;\\s*[…\\.]+', '10.0 ; ' + klOtherText);
+        element.replaceText('(10\\.0\\s*;\\s*)[…\\.]+', '$1' + klOtherText);
       }
 
       const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
@@ -509,7 +462,9 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
     }
 
     fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextToKey, isTargetAssignedForGas);
-    fillLanHuuCoTable2Directly(element, metadata);
+    if (metadata.printFormType === 'formDon') {
+      fillLanHuuCoTable2Directly(element, metadata);
+    }
     fillLanHuuCoQcTableDirectly(element, sopConfig, allFields);
   }
 }
@@ -541,6 +496,16 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
 
   const numRows = resultsTable.getNumRows();
 
+  // Helper: thay thế checkbox trong ô, giữ nguyên toàn bộ format (dấu chấm, khoảng trắng)
+  const replaceCellCheckbox = function(row, cellIdx, fromChar, toChar) {
+    try {
+      const cell = row.getCell(cellIdx);
+      // Thoát ký tự đặc biệt trong regex (☐, □, ☑)
+      const escaped = fromChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      cell.replaceText(escaped, toChar);
+    } catch(e) {}
+  };
+
   const fillSide = function(row, startCellIdx, nameText) {
     const normalName = nameText.toLowerCase().replace(/[^a-z0-9]/g, '');
     const key = tableTextToKey[normalName];
@@ -548,41 +513,60 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
 
     const isAssigned = isTargetAssignedForGas(sample.maSoMau, key);
     
+    // Ô kết quả (startCellIdx+1): chỉ thay checkbox ND; nếu có giá trị thì thay dấu chấm đầu
+    // Ô QC (startCellIdx+2,3,4): chỉ thay checkbox Đ và KĐ
+    const kqCell = row.getCell(startCellIdx + 1);
+    const qc1Cell = row.getCell(startCellIdx + 2);
+    const qc2Cell = row.getCell(startCellIdx + 3);
+    const qc3Cell = row.getCell(startCellIdx + 4);
+
     if (!isAssigned) {
-      setCellText(row, startCellIdx + 1, "—    ☐ ND", 0, 8.5);
-      setCellText(row, startCellIdx + 2, "☐ Đ           ☐ KĐ", 0, 8.5);
-      setCellText(row, startCellIdx + 3, "☐ Đ           ☐ KĐ", 0, 8.5);
-      setCellText(row, startCellIdx + 4, "☐ Đ           ☐ KĐ", 0, 8.5);
-    } else {
-      const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
-      const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
-      const isDetected = (kqVal !== '' || ndVal === '☑');
-      
-      let qc1Val = '☐';
-      let qc2Val = '☐';
-      let qc3Val = '☐';
-      
-      if (isDetected) {
-        qc1Val = sample[key + '_qc1'] || '☐';
-        qc2Val = sample[key + '_qc2'] || '☐';
-        qc3Val = sample[key + '_qc3'] || '☐';
-      }
-      
-      const qc1Dat = (qc1Val === 'Đạt' || qc1Val === '☑') ? '☑' : '☐';
-      const qc1Kd = (qc1Val === 'Không đạt' || qc1Val === '☒' || qc1Val === 'Không Đạt') ? '☑' : '☐';
-      
-      const qc2Dat = (qc2Val === 'Đạt' || qc2Val === '☑') ? '☑' : '☐';
-      const qc2Kd = (qc2Val === 'Không đạt' || qc2Val === '☒' || qc2Val === 'Không Đạt') ? '☑' : '☐';
-      
-      const qc3Dat = (qc3Val === 'Đạt' || qc3Val === '☑') ? '☑' : '☐';
-      const qc3Kd = (qc3Val === 'Không đạt' || qc3Val === '☒' || qc3Val === 'Không Đạt') ? '☑' : '☐';
-      
-      const prefix = kqVal ? kqVal : '………';
-      setCellText(row, startCellIdx + 1, `${prefix}    ${ndVal} ND`, 0, 8.5);
-      setCellText(row, startCellIdx + 2, `${qc1Dat} Đ           ${qc1Kd} KĐ`, 0, 8.5);
-      setCellText(row, startCellIdx + 3, `${qc2Dat} Đ           ${qc2Kd} KĐ`, 0, 8.5);
-      setCellText(row, startCellIdx + 4, `${qc3Dat} Đ           ${qc3Kd} KĐ`, 0, 8.5);
+      // Không được yêu cầu → giữ ☐, chỉ đảm bảo không tích
+      // Thay ☑ → ☐ phòng trường hợp template có sẵn ☑
+      try { kqCell.replaceText('[☑]', '☐'); } catch(e) {}
+      try { qc1Cell.replaceText('[☑]', '☐'); } catch(e) {}
+      try { qc2Cell.replaceText('[☑]', '☐'); } catch(e) {}
+      try { qc3Cell.replaceText('[☑]', '☐'); } catch(e) {}
+      return;
     }
+
+    const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString().trim() : '';
+    const isNd = sample[key + '_nd'] === true;
+    const isDetected = (kqVal !== '' || isNd);
+
+    // --- Ô kết quả: thay dấu chấm đầu nếu có giá trị, rồi thay checkbox ND ---
+    try {
+      if (kqVal) {
+        // Thay chuỗi dấu chấm liên tiếp ở đầu bằng giá trị thực
+        kqCell.replaceText('^[…\.]+', kqVal);
+      }
+      // Thay checkbox ND
+      kqCell.replaceText('[☐□☑](?=\\s*ND)', isNd ? '☑' : '☐');
+    } catch(e) {}
+
+    // --- Ô QC1, QC2, QC3: chỉ thay checkbox Đ và KĐ ---
+    const fillQcCell = function(cell, qcRawVal) {
+      if (!isDetected) {
+        // Không phát hiện → bỏ trống hết
+        try { cell.replaceText('[☐□☑]', '☐'); } catch(e) {}
+        return;
+      }
+      const isDat = (qcRawVal === 'Đạt' || qcRawVal === '☑');
+      const isKhongDat = (qcRawVal === 'Không đạt' || qcRawVal === '☒' || qcRawVal === 'Không Đạt');
+      try {
+        // Thay checkbox trước chữ "Đ" (nhưng không phải trước "KĐ")
+        cell.replaceText('[☐□☑](?=\\s*Đ(?!ạt|T|t))', isDat ? '☑' : '☐');
+        // Thay checkbox trước chữ "KĐ"
+        cell.replaceText('[☐□☑](?=\\s*KĐ)', isKhongDat ? '☑' : '☐');
+      } catch(e) {}
+    };
+
+    const qc1Raw = isDetected ? (sample[key + '_qc1'] || '☐') : '☐';
+    const qc2Raw = isDetected ? (sample[key + '_qc2'] || '☐') : '☐';
+    const qc3Raw = isDetected ? (sample[key + '_qc3'] || '☐') : '☐';
+    fillQcCell(qc1Cell, qc1Raw);
+    fillQcCell(qc2Cell, qc2Raw);
+    fillQcCell(qc3Cell, qc3Raw);
   };
 
   for (let r = 2; r < numRows; r++) {
@@ -625,7 +609,7 @@ function fillLanHuuCoTable2Directly(element, metadata) {
     const calibPoints = metadata.calibPoints || [];
     for (let i = 0; i < 6; i++) {
       const rowIdx = i + 1;
-      const row = calibTable2.getRow(rowIdx);
+      const row = calTable2.getRow(rowIdx);
       if (i < calibPoints.length) {
         const pt = calibPoints[i];
         setCellText(row, 1, pt.loSo || '20', null, 9);
