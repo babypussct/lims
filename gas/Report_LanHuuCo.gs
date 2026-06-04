@@ -137,7 +137,7 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
     }
 
     let sentinel = null;
-    if (hasSection2) {
+    if (hasSection2 && samples.length > 1) {
       sentinel = body.insertParagraph(sec2Idx, "");
       const newNum = body.getNumChildren();
       for (let i = newNum - 1; i > sec2Idx; i--) {
@@ -145,59 +145,77 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
       }
     }
 
-    const sec1NumChildren = body.getNumChildren();
-    const sec1Children = [];
-    for (let i = 0; i < sec1NumChildren; i++) {
-      sec1Children.push(body.getChild(i).copy());
-    }
-
-    const sopConfig = CONFIG.SOP_CONFIG['lan-huu-co'];
-
-    if (samples.length > 0) {
-      fillLanHuuCoSample(body, sopConfig, metadata, samples[0]);
-    }
-
-    for (let s = 1; s < samples.length; s++) {
-      body.appendPageBreak();
-      const tempContainer = [];
-      for (let i = 0; i < sec1Children.length; i++) {
-        const cloned = sec1Children[i].copy();
-        const type = cloned.getType();
-        let appended = null;
-        if (type === DocumentApp.ElementType.PARAGRAPH) {
-          appended = body.appendParagraph(cloned.asParagraph());
-        } else if (type === DocumentApp.ElementType.TABLE) {
-          appended = body.appendTable(cloned.asTable());
-        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-          appended = body.appendListItem(cloned.asListItem());
-        }
-        if (appended) tempContainer.push(appended);
+    if (samples.length === 1) {
+      const elements = [];
+      for (let i = 0; i < body.getNumChildren(); i++) {
+        elements.push(body.getChild(i));
       }
-      fillLanHuuCoSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
-    }
-
-    if (hasSection2 && sec2Children.length > 0) {
-      body.appendPageBreak();
-      const sec2Container = [];
-      for (let i = 0; i < sec2Children.length; i++) {
-        const cloned = sec2Children[i].copy();
-        const type = cloned.getType();
-        let appended = null;
-        if (type === DocumentApp.ElementType.PARAGRAPH) {
-          appended = body.appendParagraph(cloned.asParagraph());
-        } else if (type === DocumentApp.ElementType.TABLE) {
-          appended = body.appendTable(cloned.asTable());
-        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-          appended = body.appendListItem(cloned.asListItem());
+      fillLanHuuCoSampleForElements(elements, sopConfig, metadata, samples[0]);
+      
+      if (hasSection2) {
+        const sec2Elements = [];
+        for (let i = sec2Idx; i < body.getNumChildren(); i++) {
+          sec2Elements.push(body.getChild(i));
         }
-        if (appended) sec2Container.push(appended);
+        fillLanHuuCoSection2(sec2Elements, sopConfig, metadata, null, samples);
+      }
+    } else {
+      const sec1NumChildren = body.getNumChildren();
+      const sec1Children = [];
+      for (let i = 0; i < sec1NumChildren; i++) {
+        sec1Children.push(body.getChild(i).copy());
       }
 
-      fillLanHuuCoSection2(sec2Container, sopConfig, metadata, null, samples);
+      if (samples.length > 0) {
+        fillLanHuuCoSample(body, sopConfig, metadata, samples[0]);
+      }
+
+      for (let s = 1; s < samples.length; s++) {
+        body.appendPageBreak();
+        const tempContainer = [];
+        for (let i = 0; i < sec1Children.length; i++) {
+          const cloned = sec1Children[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) tempContainer.push(appended);
+        }
+        fillLanHuuCoSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
+      }
+
+      if (hasSection2 && sec2Children.length > 0) {
+        body.appendPageBreak();
+        const sec2Container = [];
+        for (let i = 0; i < sec2Children.length; i++) {
+          const cloned = sec2Children[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) sec2Container.push(appended);
+        }
+
+        fillLanHuuCoSection2(sec2Container, sopConfig, metadata, null, samples);
+      }
     }
 
     if (sentinel) {
-      body.removeChild(sentinel);
+      try {
+        body.removeChild(sentinel);
+      } catch (e) {
+        sentinel.setText('');
+      }
     }
 
     cleanLanHuuCoLastPageBreak(body);
@@ -356,7 +374,7 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
 
   for (const element of elements) {
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
-    element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
+    element.replaceText('1\\.\\s*Mã số mẫu\\s*:.*', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
 
     if (sopConfig.signaturePlaceholders) {
       for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
