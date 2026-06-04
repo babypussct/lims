@@ -166,7 +166,7 @@ export class StandardCrudService {
       id: logRef.id, action, details,
       timestamp: serverTimestamp(), lastUpdated: serverTimestamp(),
       user: this.auth.currentUser()?.displayName || 'Hệ thống',
-      targetId
+      targetId: targetId ?? null
     });
   }
 }

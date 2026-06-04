@@ -326,7 +326,8 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
 
   for (const element of elements) {
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
-    element.replaceText('1\\.\\s*Mã số mẫu\\s*:.*', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
+    // Dùng [^\\t\\n]* thay vì .* để không nuốt mất "2. Khối lượng mẫu..." ở cùng dòng
+    element.replaceText('1\\.\\s*Mã số mẫu\\s*:[^\\t\\n]*', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
 
     if (sopConfig.signaturePlaceholders) {
       for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
@@ -356,7 +357,7 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       }
     }
 
-    try {
+      try {
       const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
       let kl10Check = '☐';
       let klOtherText = '………';
@@ -365,10 +366,24 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
       } else {
         klOtherText = khoiLuongVal;
       }
-      // Chỉ thay thế checkbox sau m = , giữ nguyên phần "; ...." phía sau
-      element.replaceText('(m\\s*=\\s*)[☐□☑](\\s*10\\.0)', '$1' + kl10Check + '$2');
+      
+      const txt = element.getText();
+      const klMatch = txt.match(/m\s*=\s*[☐□☑]\s*10\.0/);
+      if (klMatch) {
+        const oldStr = klMatch[0];
+        const newStr = oldStr.replace(/[☐□☑]/, kl10Check);
+        const escapedOldStr = oldStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        element.replaceText(escapedOldStr, newStr);
+      }
+
       if (klOtherText !== '………') {
-        element.replaceText('(10\\.0\\s*;\\s*)[…\\.]+', '$1' + klOtherText);
+        const otherMatch = txt.match(/10\.0\s*;\s*[…\.]+/);
+        if (otherMatch) {
+          const oldStr = otherMatch[0];
+          const newStr = oldStr.replace(/[…\.]+/, klOtherText);
+          const escapedOldStr = oldStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          element.replaceText(escapedOldStr, newStr);
+        }
       }
 
       const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
@@ -471,6 +486,7 @@ function fillLanHuuCoSampleForElements(elements, sopConfig, metadata, sample) {
 
 /**
  * Tìm và điền Table 4 (38 hoạt chất dạng 2 cột song song)
+ * Nguyên tắc: KHÔNG chạm vào ô nào nếu không có dữ liệu thực (bảo toàn template gốc)
  */
 function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextToKey, isTargetAssignedForGas) {
   let tables = [];
@@ -496,89 +512,86 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
 
   const numRows = resultsTable.getNumRows();
 
-  // Helper: thay thế checkbox trong ô, giữ nguyên toàn bộ format (dấu chấm, khoảng trắng)
-  const replaceCellCheckbox = function(row, cellIdx, fromChar, toChar) {
-    try {
-      const cell = row.getCell(cellIdx);
-      // Thoát ký tự đặc biệt trong regex (☐, □, ☑)
-      const escaped = fromChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      cell.replaceText(escaped, toChar);
-    } catch(e) {}
-  };
-
   const fillSide = function(row, startCellIdx, nameText) {
     const normalName = nameText.toLowerCase().replace(/[^a-z0-9]/g, '');
     const key = tableTextToKey[normalName];
     if (!key) return;
 
-    const isAssigned = isTargetAssignedForGas(sample.maSoMau, key);
-    
-    // Ô kết quả (startCellIdx+1): chỉ thay checkbox ND; nếu có giá trị thì thay dấu chấm đầu
-    // Ô QC (startCellIdx+2,3,4): chỉ thay checkbox Đ và KĐ
-    const kqCell = row.getCell(startCellIdx + 1);
+    // Không được giao → giữ nguyên template tuyệt đối
+    if (!isTargetAssignedForGas(sample.maSoMau, key)) return;
+
+    const kqRaw = (sample[key] !== undefined && sample[key] !== null) ? sample[key].toString().trim() : '';
+    const isNd  = sample[key + '_nd'] === true;
+
+    // KPH / kph / N/A / — coi như không phát hiện
+    const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
+    const kqVal    = isKph ? '' : kqRaw;
+    const isDetected = !isKph && (kqVal !== '' || isNd);
+
+    // Không có dữ liệu → không chạm vào template
+    if (!isDetected) return;
+
+    const kqCell  = row.getCell(startCellIdx + 1);
     const qc1Cell = row.getCell(startCellIdx + 2);
     const qc2Cell = row.getCell(startCellIdx + 3);
     const qc3Cell = row.getCell(startCellIdx + 4);
 
-    if (!isAssigned) {
-      // Không được yêu cầu → giữ ☐, chỉ đảm bảo không tích
-      // Thay ☑ → ☐ phòng trường hợp template có sẵn ☑
-      try { kqCell.replaceText('[☑]', '☐'); } catch(e) {}
-      try { qc1Cell.replaceText('[☑]', '☐'); } catch(e) {}
-      try { qc2Cell.replaceText('[☑]', '☐'); } catch(e) {}
-      try { qc3Cell.replaceText('[☑]', '☐'); } catch(e) {}
-      return;
-    }
-
-    const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString().trim() : '';
-    const isNd = sample[key + '_nd'] === true;
-    const isDetected = (kqVal !== '' || isNd);
-
-    // --- Ô kết quả: thay dấu chấm đầu nếu có giá trị, rồi thay checkbox ND ---
+    // --- Ô kết quả ---
     try {
       if (kqVal) {
-        // Thay chuỗi dấu chấm liên tiếp ở đầu bằng giá trị thực
-        kqCell.replaceText('^[…\.]+', kqVal);
+        // Thay chuỗi 2+ dấu chấm/ellipsis ở đầu ô bằng giá trị thực
+        kqCell.replaceText('^[…\\.]{2,}', kqVal);
       }
-      // Thay checkbox ND
-      kqCell.replaceText('[☐□☑](?=\\s*ND)', isNd ? '☑' : '☐');
-    } catch(e) {}
+      
+      const txt = kqCell.getText();
+      const matchND = txt.match(/[☐□☑]\s*ND/);
+      if (matchND) {
+        const oldStr = matchND[0];
+        const newStr = oldStr.replace(/[☐□☑]/, isNd ? '☑' : '☐');
+        kqCell.replaceText(oldStr, newStr);
+      }
+    } catch(e) {
+      Logger.log('[fillSide kqCell] ' + (key || '') + ': ' + e.toString());
+    }
 
-    // --- Ô QC1, QC2, QC3: chỉ thay checkbox Đ và KĐ ---
+    // --- Ô QC (chỉ khi phát hiện) ---
     const fillQcCell = function(cell, qcRawVal) {
-      if (!isDetected) {
-        // Không phát hiện → bỏ trống hết
-        try { cell.replaceText('[☐□☑]', '☐'); } catch(e) {}
-        return;
-      }
-      const isDat = (qcRawVal === 'Đạt' || qcRawVal === '☑');
+      const isDat      = (qcRawVal === 'Đạt'      || qcRawVal === '☑');
       const isKhongDat = (qcRawVal === 'Không đạt' || qcRawVal === '☒' || qcRawVal === 'Không Đạt');
       try {
-        // Thay checkbox trước chữ "Đ" (nhưng không phải trước "KĐ")
-        cell.replaceText('[☐□☑](?=\\s*Đ(?!ạt|T|t))', isDat ? '☑' : '☐');
-        // Thay checkbox trước chữ "KĐ"
-        cell.replaceText('[☐□☑](?=\\s*KĐ)', isKhongDat ? '☑' : '☐');
-      } catch(e) {}
+        const txt = cell.getText();
+        
+        // Khớp checkbox đi liền với KĐ
+        const matchKD = txt.match(/[☐□☑]\s*KĐ/);
+        if (matchKD) {
+          const oldStr = matchKD[0];
+          const newStr = oldStr.replace(/[☐□☑]/, isKhongDat ? '☑' : '☐');
+          cell.replaceText(oldStr, newStr);
+        }
+
+        // Khớp checkbox đi liền với Đ
+        const matchD = txt.match(/[☐□☑]\s*Đ/);
+        if (matchD) {
+          const oldStr = matchD[0];
+          const newStr = oldStr.replace(/[☐□☑]/, isDat ? '☑' : '☐');
+          cell.replaceText(oldStr, newStr);
+        }
+      } catch(e) {
+        Logger.log('[fillQcCell] ' + e.toString());
+      }
     };
 
-    const qc1Raw = isDetected ? (sample[key + '_qc1'] || '☐') : '☐';
-    const qc2Raw = isDetected ? (sample[key + '_qc2'] || '☐') : '☐';
-    const qc3Raw = isDetected ? (sample[key + '_qc3'] || '☐') : '☐';
-    fillQcCell(qc1Cell, qc1Raw);
-    fillQcCell(qc2Cell, qc2Raw);
-    fillQcCell(qc3Cell, qc3Raw);
+    fillQcCell(qc1Cell, sample[key + '_qc1'] || '');
+    fillQcCell(qc2Cell, sample[key + '_qc2'] || '');
+    fillQcCell(qc3Cell, sample[key + '_qc3'] || '');
   };
 
   for (let r = 2; r < numRows; r++) {
     const row = resultsTable.getRow(r);
-    const leftName = row.getCell(0).getText().trim();
-    if (leftName) {
-      fillSide(row, 0, leftName);
-    }
+    const leftName  = row.getCell(0).getText().trim();
+    if (leftName)  fillSide(row, 0, leftName);
     const rightName = row.getCell(5).getText().trim();
-    if (rightName) {
-      fillSide(row, 5, rightName);
-    }
+    if (rightName) fillSide(row, 5, rightName);
   }
 }
 
