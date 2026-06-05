@@ -248,7 +248,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                       type="button"
                       class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
                 <i class="fa-solid fa-pen-nib text-amber-500"></i>
-                <span>Đặt tất cả KPH</span>
+                <span>Đặt tất cả ND</span>
               </button>
 
               <button *ngIf="draft.page1Data['printFormType'] === 'formCheck'"
@@ -555,9 +555,9 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
 
               <button (click)="bulkFillNDFormDon()" 
                       class="px-2 py-1 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
-                      title="Đặt toàn bộ các ô kết quả chưa điền là KPH">
+                      title="Đặt toàn bộ các ô kết quả chưa điền là ND">
                 <i class="fa-solid fa-pen-clip"></i>
-                <span>Điền KPH</span>
+                <span>Điền ND</span>
               </button>
             </div>
           </div>
@@ -718,14 +718,24 @@ export class SopLanHuuCoEntryComponent implements OnInit {
     }
 
     // Initialize calibration points (C0-C4: 5 points)
+    const defaultCalib = [
+      { loSo: '1', hamLuong: '0' },
+      { loSo: '2', hamLuong: '5' },
+      { loSo: '3', hamLuong: '10' },
+      { loSo: '4', hamLuong: '20' },
+      { loSo: '5', hamLuong: '50' }
+    ];
     if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
-      this.draft.page1Data['calibPoints'] = [
-        { loSo: '1', hamLuong: '0' },
-        { loSo: '2', hamLuong: '5' },
-        { loSo: '3', hamLuong: '10' },
-        { loSo: '4', hamLuong: '20' },
-        { loSo: '5', hamLuong: '50' }
-      ];
+      this.draft.page1Data['calibPoints'] = defaultCalib;
+    } else {
+      this.draft.page1Data['calibPoints'].forEach((pt: any, idx: number) => {
+        if (pt.hamLuong === undefined || pt.hamLuong === null || String(pt.hamLuong).trim() === '') {
+          pt.hamLuong = defaultCalib[idx].hamLuong;
+        }
+        if (pt.loSo === undefined || pt.loSo === null || String(pt.loSo).trim() === '') {
+          pt.loSo = defaultCalib[idx].loSo;
+        }
+      });
     }
 
     if (this.draft.page1Data['r2'] === undefined) {
@@ -746,7 +756,7 @@ export class SopLanHuuCoEntryComponent implements OnInit {
 
 
     if (this.run.sampleList) {
-      this.run.sampleList.forEach((sampleCode: string) => {
+      this.run.sampleList.forEach((sampleCode: string, idx: number) => {
         if (!this.draft.resultData[sampleCode]) {
           this.draft.resultData[sampleCode] = {};
         }
@@ -757,14 +767,14 @@ export class SopLanHuuCoEntryComponent implements OnInit {
         if (sRes['khoiLuong'] === undefined) {
           sRes['khoiLuong'] = '10.0';
         }
-        if (sRes['heSoPhaLoang'] === undefined) {
+        if (sRes['heSoPhaLoang'] === undefined || sRes['heSoPhaLoang'] === null || String(sRes['heSoPhaLoang']).trim() === '') {
           sRes['heSoPhaLoang'] = '1';
         }
-        if (sRes['hSoPhaLoang'] === undefined) {
+        if (sRes['hSoPhaLoang'] === undefined || sRes['hSoPhaLoang'] === null || String(sRes['hSoPhaLoang']).trim() === '') {
           sRes['hSoPhaLoang'] = '1';
         }
-        if (sRes['loSo'] === undefined) {
-          sRes['loSo'] = '';
+        if (sRes['loSo'] === undefined || sRes['loSo'] === null || String(sRes['loSo']).trim() === '') {
+          sRes['loSo'] = (9 + idx).toString();
         }
         if (sRes['checkBoSungNuoc'] === undefined) {
           sRes['checkBoSungNuoc'] = 'không';
@@ -1144,7 +1154,7 @@ export class SopLanHuuCoEntryComponent implements OnInit {
       const rowData = this.draft.resultData[row.key];
       if (rowData && rowData['selected'] !== false) {
         if (!rowData[active] || rowData[active]?.trim() === '') {
-          rowData[active] = 'KPH';
+          rowData[active] = 'ND';
         }
       }
     });
@@ -1213,11 +1223,11 @@ export class SopLanHuuCoEntryComponent implements OnInit {
 
     // 3. Regular samples
     if (this.run && this.run.sampleList) {
-      this.run.sampleList.forEach((sampleCode: string) => {
+      this.run.sampleList.forEach((sampleCode: string, idx: number) => {
         if (!this.draft.resultData[sampleCode]) {
           const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
           this.draft.resultData[sampleCode] = {
-            loSo: '',
+            loSo: (9 + idx).toString(),
             selected: true,
             khoiLuong: randW,
             heSoPhaLoang: '1',
@@ -1227,6 +1237,15 @@ export class SopLanHuuCoEntryComponent implements OnInit {
         } else {
           if (isDon && (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '' || this.draft.resultData[sampleCode]['khoiLuong'] === '10.0')) {
             this.draft.resultData[sampleCode]['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+          }
+          if (this.draft.resultData[sampleCode]['heSoPhaLoang'] === undefined || this.draft.resultData[sampleCode]['heSoPhaLoang'] === null || String(this.draft.resultData[sampleCode]['heSoPhaLoang']).trim() === '') {
+            this.draft.resultData[sampleCode]['heSoPhaLoang'] = '1';
+          }
+          if (this.draft.resultData[sampleCode]['hSoPhaLoang'] === undefined || this.draft.resultData[sampleCode]['hSoPhaLoang'] === null || String(this.draft.resultData[sampleCode]['hSoPhaLoang']).trim() === '') {
+            this.draft.resultData[sampleCode]['hSoPhaLoang'] = '1';
+          }
+          if (this.draft.resultData[sampleCode]['loSo'] === undefined || this.draft.resultData[sampleCode]['loSo'] === null || String(this.draft.resultData[sampleCode]['loSo']).trim() === '') {
+            this.draft.resultData[sampleCode]['loSo'] = (9 + idx).toString();
           }
         }
         list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });

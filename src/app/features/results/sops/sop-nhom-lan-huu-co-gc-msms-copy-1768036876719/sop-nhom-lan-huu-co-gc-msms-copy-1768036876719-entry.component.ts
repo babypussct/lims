@@ -680,19 +680,6 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
         </div>
       </div>
     </div>
-  ` py-1 text-[9px] font-bold rounded text-slate-450 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                              class="min-w-[24px]">
-                        N/A
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   `
 })
 export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnInit {

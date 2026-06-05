@@ -649,7 +649,7 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
     const isNd  = getSampleValue('_nd') === true;
 
     // isKph chỉ định liệu giá trị này có phải là không phát hiện hay không
-    const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
+    const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'ND' || kqRaw.toUpperCase() === 'ND' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
     const kqVal = isKph ? '' : kqRaw;
     
     // Đã phát hiện (có kqVal) hoặc được đánh dấu ND
@@ -929,8 +929,10 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
   if (prepTable) {
     const runSamplesList = metadata.runSamplesList || [];
     const isDon = metadata.printFormType === 'formDon';
+    const totalRows = prepTable.getNumRows();
+    const numDataRows = totalRows - 1;
     
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < numDataRows; i++) {
       const rowIdx = i + 1;
       const row = prepTable.getRow(rowIdx);
       if (i < runSamplesList.length) {
@@ -940,9 +942,9 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'KPH';
+            cell4Text = s.compoundResults[compoundName] || 'ND';
           } else {
-            cell4Text = 'KPH';
+            cell4Text = 'ND';
           }
           if (s.compoundNotes && compoundName) {
             cell5Text = s.compoundNotes[compoundName] || '';
@@ -976,10 +978,10 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
       }
     }
     
-    if (runSamplesList.length > 18) {
-      for (let i = 18; i < runSamplesList.length; i++) {
+    if (runSamplesList.length > numDataRows) {
+      for (let i = numDataRows; i < runSamplesList.length; i++) {
         const s = runSamplesList[i];
-        const newRow = prepTable.getRow(18).copy();
+        const newRow = prepTable.getRow(numDataRows).copy();
         prepTable.appendRow(newRow);
         const row = prepTable.getRow(i + 1);
         
@@ -987,9 +989,9 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'KPH';
+            cell4Text = s.compoundResults[compoundName] || 'ND';
           } else {
-            cell4Text = 'KPH';
+            cell4Text = 'ND';
           }
           if (s.compoundNotes && compoundName) {
             cell5Text = s.compoundNotes[compoundName] || '';

@@ -1003,8 +1003,10 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
   if (prepTable) {
     const runSamplesList = metadata.runSamplesList || [];
     const isDon = metadata.printFormType === 'formDon';
+    const totalRows = prepTable.getNumRows();
+    const numDataRows = totalRows - 1;
     
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < numDataRows; i++) {
       const rowIdx = i + 1;
       const row = prepTable.getRow(rowIdx);
       if (i < runSamplesList.length) {
@@ -1014,9 +1016,9 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'KPH';
+            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'ND';
           } else {
-            cell4Text = 'KPH';
+            cell4Text = 'ND';
           }
           if (s.compoundNotes && compoundName) {
             cell5Text = s.compoundNotes[mapCompoundToKey(compoundName)] || '';
@@ -1050,10 +1052,10 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
       }
     }
     
-    if (runSamplesList.length > 18) {
-      for (let i = 18; i < runSamplesList.length; i++) {
+    if (runSamplesList.length > numDataRows) {
+      for (let i = numDataRows; i < runSamplesList.length; i++) {
         const s = runSamplesList[i];
-        const newRow = prepTable.getRow(18).copy();
+        const newRow = prepTable.getRow(numDataRows).copy();
         prepTable.appendRow(newRow);
         const row = prepTable.getRow(i + 1);
         
@@ -1061,9 +1063,9 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'KPH';
+            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'ND';
           } else {
-            cell4Text = 'KPH';
+            cell4Text = 'ND';
           }
           if (s.compoundNotes && compoundName) {
             cell5Text = s.compoundNotes[mapCompoundToKey(compoundName)] || '';
