@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { Router } from '@angular/router';
@@ -15,307 +15,311 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
   standalone: true,
   imports: [CommonModule, SkeletonComponent, DateRangeFilterComponent],
   template: `
-    <div class="h-full flex flex-col fade-in relative p-6 bg-slate-50/20 dark:bg-slate-950/5">
-      <!-- Header -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 mb-6">
-        <div>
-          <h2 class="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-            <i class="fa-solid fa-square-poll-vertical text-fuchsia-600 dark:text-fuchsia-500 text-xl shadow-sm shadow-fuchsia-500/10"></i> Nhập Kết Quả Phân Tích
-          </h2>
-          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
-            Nhập kết quả, điền thông tin kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.
-          </p>
-        </div>
+    <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10">
 
-        <!-- Filter Tab -->
-        <div class="flex bg-white dark:bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl self-start border border-slate-150/80 dark:border-slate-800/80 shadow-xs">
-          <button (click)="filterStatus.set('all')" 
-                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
-                  [class]="filterStatus() === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs' : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
-            Tất cả @if(filteredCount('all') > 0) { <span class="ml-1 bg-slate-200 dark:bg-slate-950 text-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('all')}}</span> }
-          </button>
-          <button (click)="filterStatus.set('pending')" 
-                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
-                  [class]="filterStatus() === 'pending' ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 shadow-2xs border border-amber-100/50 dark:border-amber-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
-            Chờ nhập @if(filteredCount('pending') > 0) { <span class="ml-1 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('pending')}}</span> }
-          </button>
-          <button (click)="filterStatus.set('draft')" 
-                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
-                  [class]="filterStatus() === 'draft' ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-405 shadow-2xs border border-indigo-100/50 dark:border-indigo-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
-            Đang nháp @if(filteredCount('draft') > 0) { <span class="ml-1 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('draft')}}</span> }
-          </button>
-          <button (click)="filterStatus.set('completed')" 
-                  class="px-4 py-2 text-xs font-black rounded-xl transition duration-200 active:scale-95" 
-                  [class]="filterStatus() === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 shadow-2xs border border-emerald-100/50 dark:border-emerald-900/10' : 'text-slate-450 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
-            Đã hoàn thành @if(filteredCount('completed') > 0) { <span class="ml-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg text-[9px] font-black">{{filteredCount('completed')}}</span> }
-          </button>
-        </div>
-      </div>
-
-      <!-- Premium Glassmorphic Stats Header -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 shrink-0">
-        <!-- KPI 1: Active Runs (Blue Theme, filter-aware) -->
-        <div (click)="filterStatus.set('all'); selectedSopId.set('all')"
-             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
-             [class]="(filterStatus() === 'all' && selectedSopId() === 'all')
-               ? 'bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/60 dark:border-blue-500/50 shadow-md ring-1 ring-blue-500/30'
-               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-blue-400 dark:hover:border-blue-800/50 hover:shadow-xs'">
-          <div class="space-y-1.5">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Mẻ Phân Tích Hoạt Động</span>
-            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight">{{ allApprovedRuns().length }}</span>
-            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-450 flex items-center gap-1.5 mt-2">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Real-time Sync
-            </span>
+      <!-- ══════════════════════════════════════════════════════
+           HEADER: Title + Status Tabs
+      ══════════════════════════════════════════════════════ -->
+      <div class="shrink-0 px-6 pt-6 pb-0">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+          <!-- Page Title -->
+          <div>
+            <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 tracking-tight">
+              <span class="w-8 h-8 rounded-xl bg-fuchsia-600 flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0">
+                <i class="fa-solid fa-square-poll-vertical text-white text-sm"></i>
+              </span>
+              Nhập Kết Quả Phân Tích
+            </h2>
+            <p class="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 ml-10">
+              Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.
+            </p>
           </div>
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 shrink-0"
-               [class]="(filterStatus() === 'all' && selectedSopId() === 'all')
-                 ? 'bg-blue-500/20 text-blue-600 dark:text-blue-450'
-                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-blue-500/10 group-hover:text-blue-500'">
-            <i class="fa-solid fa-flask text-lg"></i>
+
+          <!-- Status Filter Tabs -->
+          <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-1 rounded-2xl shadow-sm shrink-0 self-start lg:self-auto">
+            <button (click)="filterStatus.set('all')"
+                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
+                    [class]="filterStatus() === 'all'
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-sm'
+                      : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+              Tất cả
+              @if(filteredCount('all') > 0) {
+                <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('all')}}</span>
+              }
+            </button>
+            <button (click)="filterStatus.set('pending')"
+                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
+                    [class]="filterStatus() === 'pending'
+                      ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 shadow-sm border border-amber-100/60 dark:border-amber-900/20'
+                      : 'text-slate-450 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
+              Chờ nhập
+              @if(filteredCount('pending') > 0) {
+                <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('pending')}}</span>
+              }
+            </button>
+            <button (click)="filterStatus.set('draft')"
+                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
+                    [class]="filterStatus() === 'draft'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 shadow-sm border border-indigo-100/60 dark:border-indigo-900/20'
+                      : 'text-slate-450 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
+              Đang nháp
+              @if(filteredCount('draft') > 0) {
+                <span class="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('draft')}}</span>
+              }
+            </button>
+            <button (click)="filterStatus.set('completed')"
+                    class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
+                    [class]="filterStatus() === 'completed'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 shadow-sm border border-emerald-100/60 dark:border-emerald-900/20'
+                      : 'text-slate-450 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
+              Hoàn thành
+              @if(filteredCount('completed') > 0) {
+                <span class="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('completed')}}</span>
+              }
+            </button>
           </div>
         </div>
 
-        <!-- KPI 2: Completion Rate (Emerald Theme, filter-aware) -->
-        <div (click)="filterStatus.set('completed')"
-             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
-             [class]="filterStatus() === 'completed'
-               ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/60 dark:border-emerald-500/50 shadow-md ring-1 ring-emerald-500/30'
-               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-400 dark:hover:border-emerald-800/50 hover:shadow-xs'">
-          <div class="space-y-1.5 flex-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Hiệu Suất Nhập Liệu</span>
-            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight">{{ averageCompletion() }}%</span>
-            <div class="w-full bg-slate-100 dark:bg-slate-800/80 h-1.5 rounded-full overflow-hidden mt-3 max-w-[140px]">
-              <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
+        <!-- ══════════════════════════════════════════════════════
+             KPI STRIP: 3 số liệu gọn + SOP distribution
+        ══════════════════════════════════════════════════════ -->
+        <div class="flex flex-wrap items-stretch gap-3 mb-5">
+          <!-- KPI: Tổng mẻ hoạt động -->
+          <button (click)="filterStatus.set('all'); selectedSopId.set('all')"
+               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
+               [class.ring-2]="filterStatus() === 'all' && selectedSopId() === 'all'"
+               [class.ring-blue-500]="filterStatus() === 'all' && selectedSopId() === 'all'"
+               [class.border-blue-300]="filterStatus() === 'all' && selectedSopId() === 'all'">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 transition-colors">
+              <i class="fa-solid fa-flask text-sm"></i>
             </div>
-          </div>
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 ml-4 shrink-0"
-               [class]="filterStatus() === 'completed'
-                 ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-450'
-                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-emerald-500/10 group-hover:text-emerald-500'">
-            <i class="fa-solid fa-chart-line text-lg"></i>
-          </div>
-        </div>
+            <div class="text-left">
+              <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
+            </div>
+          </button>
 
-        <!-- KPI 3: Pending Entry (Amber Theme, filter-aware) -->
-        <div (click)="filterStatus.set('pending')"
-             class="cursor-pointer backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group hover:scale-[1.02] active:scale-[0.98]"
-             [class]="filterStatus() === 'pending'
-               ? 'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/60 dark:border-amber-500/50 shadow-md ring-1 ring-amber-500/30'
-               : 'bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-amber-400 dark:hover:border-amber-800/50 hover:shadow-xs'">
-          <div class="space-y-1.5">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Mẻ Đang Chờ Nhập</span>
-            <span class="text-3xl font-black text-slate-850 dark:text-slate-100 block tracking-tight"
-                  [class.text-amber-500]="pendingCount() > 0">{{ pendingCount() }}</span>
-            <span class="text-[9px] font-bold text-amber-600 dark:text-amber-450 flex items-center gap-1.5 mt-2">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Yêu cầu nhập gấp
-            </span>
-          </div>
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 shrink-0"
-               [class]="filterStatus() === 'pending'
-                 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-450'
-                 : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 group-hover:bg-amber-500/10 group-hover:text-amber-500'">
-            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-          </div>
-        </div>
+          <!-- KPI: Chờ nhập -->
+          <button (click)="filterStatus.set('pending')"
+               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
+               [class.ring-2]="filterStatus() === 'pending'"
+               [class.ring-amber-500]="filterStatus() === 'pending'"
+               [class.border-amber-300]="filterStatus() === 'pending'">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:bg-amber-100 dark:group-hover:bg-amber-950/50 transition-colors">
+              <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
+              <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
+            </div>
+          </button>
 
-        <!-- KPI 4: SOP Ratio (Dynamic HSL Theme, dynamic active filters) -->
-        <div class="backdrop-blur-md p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between relative group bg-white/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:border-violet-400 dark:hover:border-violet-850 hover:shadow-xs">
-          <div class="space-y-1.5 flex-1">
-            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Phân Bổ Phương Pháp SOP</span>
-            <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+          <!-- KPI: Hiệu suất -->
+          <button (click)="filterStatus.set('completed')"
+               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-800 transition-all duration-200 active:scale-[0.98] min-w-[160px]"
+               [class.ring-2]="filterStatus() === 'completed'"
+               [class.ring-emerald-500]="filterStatus() === 'completed'"
+               [class.border-emerald-300]="filterStatus() === 'completed'">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-950/50 transition-colors">
+              <i class="fa-solid fa-chart-line text-sm"></i>
+            </div>
+            <div class="text-left flex-1">
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ averageCompletion() }}%</span>
+                <span class="text-[9px] font-bold text-emerald-500">hoàn thành</span>
+              </div>
+              <div class="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
+              </div>
+            </div>
+          </button>
+
+          <!-- SOP Distribution chips -->
+          <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm min-w-[200px]">
+            <div class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ Phương Pháp SOP</div>
+            <div class="flex items-center gap-1.5 flex-wrap">
               @for (item of sopDistribution(); track item.id) {
-                <span class="text-[10px] font-bold cursor-pointer transition-all duration-150 px-2 py-0.5 rounded-lg border {{ item.textClass }} {{ item.bgClass }} hover:scale-105 active:scale-95"
-                      (click)="selectedSopId.set(selectedSopId() === item.id ? 'all' : item.id)"
-                      [class.ring-2]="selectedSopId() === item.id"
-                      [class.ring-violet-500]="selectedSopId() === item.id"
-                      [class.border-violet-500]="selectedSopId() === item.id">
-                  {{ item.name }}: {{ item.count }}
-                </span>
+                <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
+                        (click)="selectedSopId.set(selectedSopId() === item.id ? 'all' : item.id)"
+                        [class.ring-2]="selectedSopId() === item.id"
+                        [class.ring-violet-500]="selectedSopId() === item.id">
+                  {{ item.name }}: <span class="font-black">{{ item.count }}</span>
+                </button>
               } @empty {
-                <span class="text-[10px] font-bold text-slate-450 dark:text-slate-500">Chưa có mẻ chạy</span>
-              }
-            </div>
-            <div class="w-full flex h-1.5 rounded-full overflow-hidden mt-3 bg-slate-100 dark:bg-slate-800/80 max-w-[240px]">
-              @for (item of sopDistribution(); track item.id) {
-                <div class="{{ item.barColor }} h-full transition-all duration-300"
-                     [style.width.%]="allApprovedRuns().length ? (item.count / allApprovedRuns().length) * 100 : 0"
-                     [title]="item.name + ': ' + item.count + ' mẻ'">
-                </div>
+                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Chưa có mẻ chạy</span>
               }
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Advanced Filter Panel & Search -->
-      <div class="relative z-40 mb-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs space-y-4 shrink-0 transition-all duration-300">
-        <div class="flex flex-col sm:flex-row gap-3">
-          <!-- Text Search Box -->
-          <div class="relative flex-1">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-              <i class="fa-solid fa-magnifying-glass text-xs"></i>
-            </span>
-            <input type="text" 
-                   [value]="searchText()"
-                   (input)="onSearchInput($event)"
-                   placeholder="Tìm theo Mã mẻ chạy, SOP, Mã số mẫu, Analyst..." 
-                   class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 dark:text-slate-200 font-bold transition font-sans">
-            @if (searchText()) {
-              <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fa-solid fa-circle-xmark text-xs"></i>
-              </button>
-            }
-          </div>
 
-          <!-- Advanced Toggle, View Switcher & Clear Buttons -->
-          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <!-- View Mode Switcher (iOS Segmented Style) -->
-            <div class="flex bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 rounded-xl mr-2 shrink-0">
+        <!-- ══════════════════════════════════════════════════════
+             FILTER & SEARCH BAR
+        ══════════════════════════════════════════════════════ -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm mb-5 overflow-hidden">
+          <!-- Row 1: Search + Actions -->
+          <div class="flex items-center gap-2 p-3 border-b border-slate-100 dark:border-slate-800/80">
+            <!-- Search -->
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+              </span>
+              <input type="text"
+                     [value]="searchText()"
+                     (input)="onSearchInput($event)"
+                     placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Analyst..."
+                     class="w-full pl-8 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
+              @if (searchText()) {
+                <button (click)="searchText.set('')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                  <i class="fa-solid fa-circle-xmark text-xs"></i>
+                </button>
+              }
+            </div>
+
+            <!-- Divider -->
+            <div class="w-px h-6 bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+
+            <!-- View Mode Toggle -->
+            <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
               <button (click)="viewMode.set('grid')"
-                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'"
+                      [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
                       class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
-                <i class="fa-solid fa-table-cells text-[10px]"></i>
-                <span>Lưới</span>
+                <i class="fa-solid fa-table-cells"></i> Lưới
               </button>
               <button (click)="viewMode.set('table')"
-                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-2xs font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'"
+                      [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
                       class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 duration-150">
-                <i class="fa-solid fa-list text-[10px]"></i>
-                <span>Bảng</span>
+                <i class="fa-solid fa-list"></i> Bảng
               </button>
             </div>
 
-            <!-- Dynamic Merge Mode Toggle -->
+            <!-- Merge Mode Toggle -->
             <button (click)="toggleMergeMode()"
-                    [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-200/50 dark:border-fuchsia-850' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="px-3.5 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 active:scale-95 duration-150 shadow-xs shrink-0 mr-2">
+                    [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                    class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900">
               <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
-              <span>Gộp mẻ chạy</span>
+              Gộp mẻ
               @if (isMergeModeActive() && selectedRunsCount() > 0) {
-                <span class="w-4.5 h-4.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs ml-1">
-                  {{ selectedRunsCount() }}
-                </span>
+                <span class="w-4 h-4 bg-fuchsia-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">{{ selectedRunsCount() }}</span>
               }
             </button>
 
-            <!-- Advanced Filter Button -->
-            <button (click)="showAdvancedFilters.set(!showAdvancedFilters())" 
-                    [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-450 border-blue-200/50 dark:border-blue-800' : 'bg-white dark:bg-slate-800 text-slate-655 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="px-4 py-2 border rounded-xl text-xs font-black transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 relative active:scale-95 duration-150 shadow-xs shrink-0">
-              <i class="fa-solid fa-sliders text-[10px]"></i>
-              <span>Lọc nâng cao</span>
+            <!-- Advanced Filters toggle -->
+            <button (click)="showAdvancedFilters.set(!showAdvancedFilters())"
+                    [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                    class="px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900">
+              <i class="fa-solid fa-sliders text-[10px]"></i> Lọc nâng cao
               @if (activeFiltersCount() > 0) {
-                <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-blue-600 dark:bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs shadow-blue-500/30">
-                  {{ activeFiltersCount() }}
-                </span>
+                <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
               }
-              <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300" [class.rotate-180]="showAdvancedFilters()"></i>
+              <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" [class.rotate-180]="showAdvancedFilters()"></i>
             </button>
-            
+
             @if (hasActiveFilters()) {
-              <button (click)="resetAllFilters()" 
-                      class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-xs shrink-0">
-                <i class="fa-solid fa-rotate-left text-[10px]"></i>
-                <span>Xóa lọc</span>
+              <button (click)="resetAllFilters()"
+                      class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition flex items-center gap-1 active:scale-95 shrink-0">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa lọc
               </button>
             }
           </div>
-        </div> <!-- Fixed: Properly close the flex-row layout container -->
 
-        <!-- Collapsible Content -->
-        @if (showAdvancedFilters()) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-150 dark:border-slate-800/80 text-xs animate-fade-in">
-            <!-- SOP selection -->
-            <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Phương pháp (SOP)</label>
-              <div class="relative flex items-center group/select">
-                <span class="absolute left-3 text-slate-400 dark:text-slate-500 transition-colors group-hover/select:text-blue-500 group-focus-within/select:text-blue-500">
-                  <i class="fa-solid fa-flask text-xs"></i>
-                </span>
-                <select [value]="selectedSopId()" 
-                        (change)="onSopChange($event)"
-                        class="w-full appearance-none pr-8 pl-9 py-2 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-950/20 dark:hover:bg-slate-900/30 border border-slate-200/60 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-750 dark:text-slate-250 font-extrabold text-xs transition duration-150 cursor-pointer">
-                  <option value="all">Tất cả phương pháp</option>
-                  @for (sop of availableSops(); track sop.id) {
-                    <option [value]="sop.id">{{ sop.name }}</option>
-                  }
-                </select>
-                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none text-slate-400 dark:text-slate-500 transition-transform duration-200 group-focus-within/select:rotate-180"></i>
+          <!-- Row 2: Advanced Filter Panel (collapsible) -->
+          @if (showAdvancedFilters()) {
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-slate-50/50 dark:bg-slate-950/20 animate-fade-in">
+              <!-- SOP Filter -->
+              <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Phương pháp (SOP)</label>
+                <div class="relative">
+                  <span class="absolute left-3 inset-y-0 flex items-center text-slate-400 pointer-events-none">
+                    <i class="fa-solid fa-flask text-[10px]"></i>
+                  </span>
+                  <select [value]="selectedSopId()" (change)="onSopChange($event)"
+                          class="w-full appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                    <option value="all">Tất cả phương pháp</option>
+                    @for (sop of availableSops(); track sop.id) {
+                      <option [value]="sop.id">{{ sop.name }}</option>
+                    }
+                  </select>
+                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+                </div>
+              </div>
+
+              <!-- Analyst Filter -->
+              <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Analyst</label>
+                <div class="relative">
+                  <span class="absolute left-3 inset-y-0 flex items-center text-slate-400 pointer-events-none">
+                    <i class="fa-solid fa-user text-[10px]"></i>
+                  </span>
+                  <select [value]="selectedAnalyst()" (change)="onAnalystChange($event)"
+                          class="w-full appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                    <option value="all">Tất cả nhân viên</option>
+                    @for (analyst of availableAnalysts(); track analyst) {
+                      <option [value]="analyst">{{ analyst }}</option>
+                    }
+                  </select>
+                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+                </div>
+              </div>
+
+              <!-- Date Range -->
+              <div class="flex flex-col gap-1 sm:col-span-2">
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Khoảng thời gian (Ngày duyệt)</label>
+                <app-date-range-filter
+                    [initStart]="startDate()"
+                    [initEnd]="endDate()"
+                    containerClass="bg-transparent p-0 border-0 shadow-none w-full gap-3"
+                    (dateChange)="onDateRangeChange($event)">
+                </app-date-range-filter>
               </div>
             </div>
-
-            <!-- Analyst selection -->
-            <div class="flex flex-col gap-1.5">
-              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Người thực hiện (Analyst)</label>
-              <div class="relative flex items-center group/select">
-                <span class="absolute left-3 text-slate-400 dark:text-slate-500 transition-colors group-hover/select:text-blue-500 group-focus-within/select:text-blue-500">
-                  <i class="fa-solid fa-user-circle text-xs"></i>
-                </span>
-                <select [value]="selectedAnalyst()" 
-                        (change)="onAnalystChange($event)"
-                        class="w-full appearance-none pr-8 pl-9 py-2 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-950/20 dark:hover:bg-slate-900/30 border border-slate-200/60 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-slate-750 dark:text-slate-250 font-extrabold text-xs transition duration-150 cursor-pointer">
-                  <option value="all">Tất cả nhân viên</option>
-                  @for (analyst of availableAnalysts(); track analyst) {
-                    <option [value]="analyst">{{ analyst }}</option>
-                  }
-                </select>
-                <i class="fa-solid fa-chevron-down text-[9px] opacity-50 absolute right-3 pointer-events-none text-slate-400 dark:text-slate-500 transition-transform duration-200 group-focus-within/select:rotate-180"></i>
-              </div>
-            </div>
-
-            <!-- Date Range Filter -->
-            <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest text-[9px]">Khoảng thời gian (Ngày duyệt)</label>
-              <app-date-range-filter 
-                  [initStart]="startDate()" 
-                  [initEnd]="endDate()" 
-                  containerClass="bg-transparent p-0 border-0 shadow-none w-full gap-3"
-                  (dateChange)="onDateRangeChange($event)">
-              </app-date-range-filter>
-            </div>
-          </div>
-        }
+          }
+        </div>
       </div>
 
-      @if (isLoading()) {
-          <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
+      <!-- ══════════════════════════════════════════════════════
+           MAIN CONTENT: Cards / Table
+      ══════════════════════════════════════════════════════ -->
+      <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+
+        @if (isLoading()) {
+          <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 animate-pulse">
             @for (i of [1,2,3,4,5,6]; track i) {
               <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
-                <app-skeleton width="80px" height="14px"></app-skeleton>
-                <app-skeleton width="200px" height="20px"></app-skeleton>
-                <app-skeleton width="140px" height="14px"></app-skeleton>
-                <app-skeleton width="100%" height="32px"></app-skeleton>
+                <app-skeleton width="80px" height="12px"></app-skeleton>
+                <app-skeleton width="200px" height="18px"></app-skeleton>
+                <app-skeleton width="140px" height="12px"></app-skeleton>
+                <app-skeleton width="100%" height="28px"></app-skeleton>
               </div>
             }
           </div>
         } @else {
+
+          <!-- ─── GRID VIEW ─── -->
           @if (viewMode() === 'grid') {
-            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
               @for (run of displayedRuns(); track run.id) {
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-150/80 dark:border-slate-800/80 p-5 hover:shadow-xl hover:border-slate-200/40 dark:hover:border-slate-700/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative z-10 hover:z-30 group"
+                <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250 flex flex-col overflow-hidden relative"
                      [class.ring-2]="lastSelectedRequestId() === run.id"
                      [class.ring-fuchsia-500]="lastSelectedRequestId() === run.id"
-                     [class.animate-pulse]="lastSelectedRequestId() === run.id"
-                     [class.border-fuchsia-500]="lastSelectedRequestId() === run.id"
-                     [class.shadow-md]="lastSelectedRequestId() === run.id"
-                     [ngClass]="{'ring-1 ring-fuchsia-500/30 dark:ring-fuchsia-500/20': run.isVirtualMaster && lastSelectedRequestId() !== run.id}">
-                  <!-- Ribbon gradient nhận diện phương pháp (SOP) -->
-                  <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} rounded-t-2xl"></div>
+                     [ngClass]="{'ring-1 ring-fuchsia-500/20': run.isVirtualMaster && lastSelectedRequestId() !== run.id}">
 
-                  <!-- Top Header Card -->
-                  <div>
-                    <div class="flex items-center justify-between mb-3.5">
-                      <div class="flex items-center gap-2.5">
-                        <!-- Checkbox gộp mẻ chạy -->
+                  <!-- SOP Color Ribbon -->
+                  <div class="h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} shrink-0"></div>
+
+                  <!-- Card Body -->
+                  <div class="flex flex-col flex-1 p-5">
+                    <!-- Top Row: Status + Date + Merge checkbox -->
+                    <div class="flex items-center justify-between mb-3">
+                      <div class="flex items-center gap-2">
                         @if (isMergeModeActive()) {
-                          <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                          <label class="inline-flex items-center cursor-pointer" (click)="$event.stopPropagation()">
                             <input type="checkbox"
                                    [checked]="selectedRunsMap()[run.id]"
                                    (change)="toggleRunSelection(run)"
-                                   class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                                   class="w-4 h-4 text-fuchsia-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded focus:ring-fuchsia-500">
                           </label>
                         }
-                        <span [class]="getStatusClass(run.id)" class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5">
+                        <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide border">
                           <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                             'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
                             'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
@@ -324,85 +328,88 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                           {{ getStatusText(run.id) }}
                         </span>
                         @if (run.isVirtualMaster) {
-                          <span class="px-2 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase tracking-widest animate-pulse">Master ảo</span>
+                          <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
                         }
                       </div>
-                      <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">
-                        <i class="fa-regular fa-calendar mr-1"></i>
-                        {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
+                      <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1">
+                        <i class="fa-regular fa-calendar text-[9px]"></i>
+                        {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : '—' }}
                       </span>
                     </div>
 
-                    <!-- SOP Title -->
-                    <h3 class="font-extrabold text-slate-800 dark:text-slate-150 text-base mb-1.5 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
+                    <!-- SOP Name -->
+                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-[15px] leading-snug mb-1 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
                       {{ run.sopName }}
                     </h3>
 
                     @if (run.isVirtualMaster && run.childRequestIds) {
-                      <div class="text-[10px] text-fuchsia-500 dark:text-fuchsia-400 font-bold mb-3 flex items-center gap-1 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 px-2 py-1 rounded-lg border border-fuchsia-100/30 dark:border-fuchsia-900/20 select-none">
+                      <div class="text-[9px] text-fuchsia-500 dark:text-fuchsia-400 font-bold mb-2 flex items-center gap-1 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 px-2 py-1 rounded-lg border border-fuchsia-100/30 dark:border-fuchsia-900/20 select-none w-fit">
                         <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
                       </div>
                     }
-                    
-                    <!-- Analyst block (Pastel custom avatar) -->
-                    <div class="text-xs text-slate-500 dark:text-slate-450 mb-4 flex items-center gap-2">
-                      <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-3xs select-none">
+
+                    <!-- Analyst -->
+                    <div class="flex items-center gap-2 mb-3">
+                      <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-sm shrink-0">
                         {{ getAnalystInitials(run.user) }}
                       </div>
-                      <span class="font-bold text-slate-655 dark:text-slate-300">{{ run.user || 'Unknown' }}</span>
+                      <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ run.user || 'Unknown' }}</span>
                     </div>
 
                     <!-- Sample Codes -->
                     @if (run.sampleList && run.sampleList.length > 0) {
-                      <div class="mb-4 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-start gap-2 max-h-20 overflow-y-auto custom-scrollbar">
-                        <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"></i>
-                        <span class="break-all font-mono font-bold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
+                      <div class="text-[10px] text-slate-500 dark:text-slate-450 bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 rounded-xl p-2.5 flex items-start gap-1.5 max-h-16 overflow-y-auto custom-scrollbar mb-3 flex-1">
+                        <i class="fa-solid fa-vials text-slate-350 dark:text-slate-600 mt-0.5 shrink-0 text-[9px]"></i>
+                        <span class="break-all font-mono font-semibold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
                       </div>
+                    } @else {
+                      <div class="flex-1"></div>
                     }
                   </div>
-                  <!-- Action Buttons -->
-                  <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2.5 relative">
-                    <!-- Dropdown in ấn báo cáo dạng Popover -->
-                    <div class="relative">
-                      @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
-                        <button (click)="openReportHub(run); $event.stopPropagation()"
-                                class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
-                          <i class="fa-solid fa-file-pdf text-red-500"></i> Báo cáo
-                        </button>
-                      }
-                    </div>
 
-                    <!-- Enter/Edit Action Button -->
+                  <!-- Card Footer: Action Buttons -->
+                  <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
+                    @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
+                      <button (click)="openReportHub(run); $event.stopPropagation()"
+                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
+                        <span>Báo cáo</span>
+                      </button>
+                    }
                     <button (click)="enterResults(run.id)"
-                            [class]="runStatusMap()[run.id] === 'completed' 
-                              ? 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:border-fuchsia-200 dark:hover:border-fuchsia-800/30 shadow-3xs'
-                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-xs active:scale-95 duration-155'"
-                            class="px-4 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-3xs active:scale-95">
-                      <i class="fa-solid" [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'" [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
-                      {{ runStatusMap()[run.id] === 'completed' ? 'Sửa/In lại' : 'Nhập kết quả' }}
+                            [class]="runStatusMap()[run.id] === 'completed'
+                              ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40'
+                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-500/20'"
+                            class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition active:scale-95 duration-150 border border-transparent">
+                      <i class="fa-solid text-[11px]"
+                         [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'"
+                         [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
+                      {{ runStatusMap()[run.id] === 'completed' ? 'Sửa / In lại' : 'Nhập kết quả' }}
                     </button>
                   </div>
                 </div>
               } @empty {
-                <div class="col-span-full text-center py-20 bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
-                  <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
-                    <i class="fa-solid fa-square-poll-vertical text-3xl"></i>
+                <div class="col-span-full text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  <div class="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300 dark:text-slate-600">
+                    <i class="fa-solid fa-square-poll-vertical text-2xl"></i>
                   </div>
-                  <p class="text-slate-500 dark:text-slate-400 font-bold text-sm">
-                    Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
-                  </p>
+                  <p class="text-slate-400 dark:text-slate-500 font-semibold text-sm">Không tìm thấy mẻ nào phù hợp.</p>
+                  @if (hasActiveFilters()) {
+                    <button (click)="resetAllFilters()" class="mt-3 text-xs text-fuchsia-600 dark:text-fuchsia-400 font-black hover:underline">Xóa bộ lọc</button>
+                  }
                 </div>
               }
             </div>
+
+          <!-- ─── TABLE VIEW ─── -->
           } @else if (viewMode() === 'table') {
-            <!-- Compact Table List View -->
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-150/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">
                       @if (isMergeModeActive()) {
-                        <th class="p-4 w-12 text-center">Chọn</th>
+                        <th class="p-4 w-10 text-center"><i class="fa-solid fa-check-double"></i></th>
                       }
                       <th class="p-4">Phương pháp / Mã mẻ</th>
                       <th class="p-4">Phân tích viên</th>
@@ -412,67 +419,64 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       <th class="p-4 text-right">Hành động</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                     @for (run of displayedRuns(); track run.id) {
-                      <tr [ngClass]="{
-                            'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-4 border-l-fuchsia-500': lastSelectedRequestId() === run.id
-                          }"
-                          class="hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors font-bold text-slate-655 dark:text-slate-300">
-                        <!-- Checkbox -->
+                      <tr [ngClass]="{'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-2 border-l-fuchsia-500': lastSelectedRequestId() === run.id}"
+                          class="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors text-slate-700 dark:text-slate-300">
+
                         @if (isMergeModeActive()) {
                           <td class="p-4 text-center">
-                            <label class="inline-flex items-center cursor-pointer select-none" (click)="$event.stopPropagation()">
+                            <label class="inline-flex items-center cursor-pointer" (click)="$event.stopPropagation()">
                               <input type="checkbox"
                                      [checked]="selectedRunsMap()[run.id]"
                                      (change)="toggleRunSelection(run)"
-                                     class="w-4.5 h-4.5 text-fuchsia-600 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded focus:ring-fuchsia-500 focus:ring-2">
+                                     class="w-4 h-4 text-fuchsia-600 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 rounded focus:ring-fuchsia-500">
                             </label>
                           </td>
                         }
 
-                        <!-- Method / Batch Code -->
-                        <td class="p-4 space-y-0.5">
-                          <div class="flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }}"></span>
-                            <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs sm:text-sm">{{ run.sopName }}</span>
+                        <td class="p-4">
+                          <div class="flex items-center gap-2 mb-0.5">
+                            <span class="w-2 h-2 rounded-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} shrink-0"></span>
+                            <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs">{{ run.sopName }}</span>
                             @if (run.isVirtualMaster) {
                               <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
                             }
                           </div>
-                          <div class="text-[10px] text-slate-400 font-mono tracking-tight font-bold">Mã mẻ: {{ run.inputs?.['batchCode'] || run.id }}</div>
+                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id }}</div>
                           @if (run.isVirtualMaster && run.childRequestIds) {
-                            <div class="text-[9px] text-fuchsia-500 dark:text-fuchsia-400 font-bold flex items-center gap-0.5 mt-0.5">
+                            <div class="text-[9px] text-fuchsia-500 font-bold flex items-center gap-0.5 ml-4 mt-0.5">
                               <i class="fa-solid fa-link text-[7px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
                             </div>
                           }
                         </td>
 
-                        <!-- Analyst -->
                         <td class="p-4">
                           <div class="flex items-center gap-2">
-                            <div [class]="getAnalystAvatarClass(run.user)" class="w-5 h-5 rounded-full border flex items-center justify-center text-[8px] font-black uppercase shadow-3xs">
+                            <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-sm shrink-0">
                               {{ getAnalystInitials(run.user) }}
                             </div>
-                            <span class="text-xs">{{ run.user || 'Unknown' }}</span>
+                            <span class="text-xs font-semibold truncate max-w-[100px]">{{ run.user || 'Unknown' }}</span>
                           </div>
                         </td>
 
-                        <!-- Date -->
-                        <td class="p-4 text-[11px] text-slate-500 dark:text-slate-400 font-bold">
-                          {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : 'Không có ngày' }}
+                        <td class="p-4 text-[11px] text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">
+                          <i class="fa-regular fa-calendar mr-1 text-[9px]"></i>
+                          {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : '—' }}
                         </td>
 
-                        <!-- Sample list -->
-                        <td class="p-4 max-w-[200px]">
-                          <div class="truncate text-[11px] font-mono text-slate-500 dark:text-slate-450" title="{{ run.sampleList ? formatSampleList(run.sampleList) : '' }}">
-                            {{ run.sampleList?.length || 0 }} mẫu ({{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }})
+                        <td class="p-4 max-w-[180px]">
+                          <div class="text-[10px] font-semibold text-slate-500">
+                            <span class="font-extrabold text-slate-700 dark:text-slate-300">{{ run.sampleList?.length || 0 }}</span> mẫu
+                          </div>
+                          <div class="truncate text-[9px] font-mono text-slate-400 dark:text-slate-600" [title]="run.sampleList ? formatSampleList(run.sampleList) : ''">
+                            {{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }}
                           </div>
                         </td>
 
-                        <!-- Status -->
                         <td class="p-4 text-center">
-                          <span [class]="getStatusClass(run.id)" class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1 justify-center">
-                            <span class="w-1.2 h-1.2 rounded-full" [ngClass]="{
+                          <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide border">
+                            <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
                               'bg-emerald-500 animate-pulse': runStatusMap()[run.id] === 'completed',
                               'bg-indigo-500 animate-pulse': runStatusMap()[run.id] === 'draft',
                               'bg-amber-500 animate-pulse': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
@@ -481,31 +485,28 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                           </span>
                         </td>
 
-                        <!-- Actions -->
-                        <td class="p-4 text-right">
-                          <div class="flex items-center justify-end gap-2 relative">
-                            <!-- Popover report dropdown -->
-                            <div class="relative">
-                              @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
-                                <button (click)="openReportHub(run); $event.stopPropagation()"
-                                        class="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition flex items-center justify-center border border-slate-200 dark:border-slate-755 shadow-3xs"
-                                        title="Quản lý và xem các báo cáo">
-                                  <i class="fa-solid fa-file-pdf text-red-500 text-xs"></i>
-                                </button>
-                              }
-                            </div>
-
+                        <td class="p-4">
+                          <div class="flex items-center justify-end gap-2">
+                            @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
+                              <button (click)="openReportHub(run); $event.stopPropagation()"
+                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 rounded-xl text-xs font-black transition active:scale-95">
+                                <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
+                                <span>Báo cáo</span>
+                              </button>
+                            }
                             <button (click)="enterResults(run.id)"
-                                    class="px-3 py-1.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 rounded-xl text-[11px] font-black transition active:scale-95 duration-100 flex items-center gap-1 shadow-3xs">
-                              <i class="fa-solid fa-arrow-right"></i>
+                                    class="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-xl text-xs font-black transition active:scale-95 shadow-sm shadow-fuchsia-500/20 whitespace-nowrap">
+                              <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                              {{ runStatusMap()[run.id] === 'completed' ? 'Sửa lại' : 'Nhập KQ' }}
                             </button>
                           </div>
                         </td>
                       </tr>
                     } @empty {
                       <tr>
-                        <td [attr.colspan]="isMergeModeActive() ? 7 : 6" class="text-center py-16 text-slate-450 dark:text-slate-500 font-bold">
-                          Không tìm thấy mẻ nào phù hợp với bộ lọc hiện tại.
+                        <td [attr.colspan]="isMergeModeActive() ? 7 : 6" class="text-center py-16 text-slate-400 dark:text-slate-500 font-semibold text-sm">
+                          <i class="fa-solid fa-inbox text-2xl mb-2 block opacity-40"></i>
+                          Không tìm thấy mẻ nào phù hợp.
                         </td>
                       </tr>
                     }
@@ -516,183 +517,171 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
           }
         }
 
-      <!-- Floating Merge Action Bar -->
+      </div><!-- end scrollable area -->
+
+      <!-- ══════════════════════════════════════════════════════
+           FLOATING MERGE ACTION BAR
+      ══════════════════════════════════════════════════════ -->
       @if (selectedRunsCount() >= 2) {
-        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-slate-950/95 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-700/50 backdrop-blur-md animate-fade-in z-50">
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 dark:bg-slate-950/98 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-5 border border-slate-700/60 backdrop-blur-md animate-fade-in z-50">
           <div class="flex flex-col">
-            <span class="text-xs font-black text-slate-100">Đã chọn {{ selectedRunsCount() }} mẻ chạy để gộp kết quả</span>
-            <span class="text-[9px] font-bold text-slate-400 mt-0.5">Phương pháp: {{ getSelectedSopName() }}</span>
+            <span class="text-xs font-black text-slate-100">Đã chọn <span class="text-fuchsia-400">{{ selectedRunsCount() }}</span> mẻ để gộp</span>
+            <span class="text-[9px] font-bold text-slate-400 mt-0.5">{{ getSelectedSopName() }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <button (click)="cancelSelection()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition">
-              Hủy
-            </button>
-            <button (click)="openMergeModal()" class="px-4 py-1.5 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-md shadow-fuchsia-500/20">
-              Gộp mẻ chạy
+            <button (click)="cancelSelection()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-black transition active:scale-95">Hủy</button>
+            <button (click)="openMergeModal()" class="px-4 py-1.5 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition active:scale-95 shadow-md shadow-fuchsia-500/20 flex items-center gap-1.5">
+              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp mẻ chạy
             </button>
           </div>
         </div>
       }
 
-      <!-- Glassmorphic Merge Modal -->
+      <!-- ══════════════════════════════════════════════════════
+           MERGE MODAL
+      ══════════════════════════════════════════════════════ -->
       @if (showMergeModal()) {
-        <div class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full border border-slate-100 dark:border-slate-800/80 shadow-2xl p-6 space-y-5">
+        <div class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full border border-slate-200/80 dark:border-slate-800 shadow-2xl p-6 space-y-5">
             <div class="flex justify-between items-start">
               <div>
-                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Cấu hình Gộp mẻ chạy</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-450 mt-1">Hợp nhất mẫu từ nhiều mẻ chạy khác ngày vào 1 phiếu duy nhất.</p>
+                <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span class="w-7 h-7 bg-fuchsia-100 dark:bg-fuchsia-950/40 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-code-merge rotate-90 text-fuchsia-600 dark:text-fuchsia-400 text-xs"></i>
+                  </span>
+                  Cấu hình Gộp mẻ chạy
+                </h3>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 ml-9">Hợp nhất mẫu từ nhiều mẻ chạy vào 1 phiếu duy nhất.</p>
               </div>
-              <button (click)="closeMergeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fa-solid fa-circle-xmark text-lg"></i>
+              <button (click)="closeMergeModal()" class="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 flex items-center justify-center transition active:scale-90">
+                <i class="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
-            <!-- Configuration Form -->
             <div class="space-y-4 text-xs">
-              <!-- Choosing Master Curve -->
               <div class="flex flex-col gap-1.5">
-                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Mẻ lấy đường chuẩn chính</label>
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mẻ lấy đường chuẩn chính</label>
                 <div class="space-y-2">
                   @for (run of getSelectedRuns(); track run.id) {
-                    <label class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-150 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/20 transition">
-                      <input type="radio" 
-                             name="masterCurve" 
-                             [value]="run.id"
+                    <label class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/50 transition">
+                      <input type="radio" name="masterCurve" [value]="run.id"
                              [checked]="masterCurveRunId() === run.id"
                              (change)="masterCurveRunId.set(run.id)"
                              class="text-fuchsia-600 focus:ring-fuchsia-500">
                       <div class="flex flex-col">
-                        <span class="font-extrabold text-slate-700 dark:text-slate-250">{{ run.sopName }} (v{{ run.analysisResult?.version || 1 }})</span>
-                        <span class="text-[10px] text-slate-400 font-bold mt-0.5">Mã mẻ: {{ run.inputs?.['batchCode'] || run.id }} - Người nhập: {{ run.user }}</span>
+                        <span class="font-extrabold text-slate-700 dark:text-slate-250">{{ run.sopName }}</span>
+                        <span class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ run.inputs?.['batchCode'] || run.id }} — {{ run.user }}</span>
                       </div>
                     </label>
                   }
                 </div>
               </div>
 
-              <!-- Unified Date Range -->
               <div class="flex flex-col gap-1.5">
-                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Ngày phân tích hiển thị trên phiếu</label>
-                <input type="text"
-                       [value]="unifiedDateString()"
-                       (input)="onUnifiedDateChange($event)"
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ngày phân tích hiển thị trên phiếu</label>
+                <input type="text" [value]="unifiedDateString()" (input)="onUnifiedDateChange($event)"
                        placeholder="Ví dụ: 22/05/2026 - 23/05/2026"
-                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold">
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-bold text-xs">
               </div>
 
-              <!-- Custom Master Run Code -->
               <div class="flex flex-col gap-1.5">
-                <label class="font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[9px]">Mã mẻ gộp Master (Custom ID)</label>
-                <input type="text"
-                       [value]="customMasterId()"
-                       (input)="onCustomMasterIdChange($event)"
-                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-mono font-bold uppercase">
+                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mã mẻ gộp Master (Custom ID)</label>
+                <input type="text" [value]="customMasterId()" (input)="onCustomMasterIdChange($event)"
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 dark:text-slate-200 font-mono font-bold uppercase text-xs">
               </div>
             </div>
 
-            <!-- Footer Buttons -->
-            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-              <button (click)="closeMergeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition">
-                Hủy
-              </button>
-              <button (click)="executeMerge()" class="px-5 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition shadow-md shadow-fuchsia-500/10">
-                Tạo mẻ gộp
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button (click)="closeMergeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-black transition active:scale-95">Hủy</button>
+              <button (click)="executeMerge()" class="px-5 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white rounded-xl text-xs font-black transition shadow-md shadow-fuchsia-500/10 active:scale-95 flex items-center gap-1.5">
+                <i class="fa-solid fa-check text-[10px]"></i> Tạo mẻ gộp
               </button>
             </div>
           </div>
         </div>
       }
 
-      <!-- Premium Glassmorphic Report Hub Modal -->
+      <!-- ══════════════════════════════════════════════════════
+           REPORT HUB MODAL
+      ══════════════════════════════════════════════════════ -->
       @if (showReportHubModal() && selectedRequestForReport()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-          <div class="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 transform scale-100 flex flex-col max-h-[85vh]">
-            
-            <!-- Modal Header -->
-            <div class="px-6 py-4.5 bg-slate-50/50 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0">
+          <div class="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-500/10 to-rose-500/10 text-red-655 dark:text-red-400 flex items-center justify-center border border-red-100/50 dark:border-red-900/30">
-                  <i class="fa-solid fa-file-pdf text-base animate-pulse"></i>
+                <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-100/50 dark:border-red-900/20 shrink-0">
+                  <i class="fa-solid fa-file-pdf text-sm"></i>
                 </div>
                 <div>
-                  <h3 class="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight m-0">Trung Tâm Quản Lý Báo Cáo</h3>
-                  <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold m-0 mt-0.5">Mẻ chạy: {{ selectedRequestForReport().runCode }} — {{ selectedRequestForReport().sopName }}</p>
+                  <h3 class="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">Trung Tâm Báo Cáo</h3>
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">{{ selectedRequestForReport().sopName }}</p>
                 </div>
               </div>
-              <button (click)="closeReportHub()" 
-                      class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 flex items-center justify-center transition active:scale-90">
+              <button (click)="closeReportHub()" class="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 flex items-center justify-center transition active:scale-90">
                 <i class="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
-            <!-- Modal Content (Scrollable) -->
-            <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
-              
-              <!-- 1. CÁC BẢN IN HIỆN TẠI (ACTIVE REPORTS) -->
-              <div class="space-y-3">
-                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/85 pb-2">
-                  <i class="fa-solid fa-print mr-1.5 text-fuchsia-500"></i> Các bản in đang hoạt động
+            <div class="p-5 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
+
+              <div class="space-y-2.5">
+                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-1.5">
+                  <i class="fa-solid fa-print text-fuchsia-500"></i> Bản in đang hoạt động
                 </h4>
 
-                <!-- Báo cáo chung (Tất cả mẫu) - Luôn hiển thị nếu có file in -->
                 @if (unifiedAllSamplesReport()) {
-                  <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
+                  <div class="bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-                      <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ unifiedAllSamplesReport().version }}</span>
-                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ unifiedAllSamplesReport().updatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                      <span class="inline-block px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wide border border-indigo-200/30 mb-1.5">Tất cả mẫu</span>
+                      <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ unifiedAllSamplesReport().version }}</span></div>
+                      <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 shrink-0">
                       <a [href]="getSafeGoogleUrl((unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
-                         class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
-                        <i class="fa-solid fa-file-pdf"></i> XEM PDF
+                         class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                        <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
                       </a>
                       @if (unifiedAllSamplesReport().docsUrl) {
                         <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
-                          <i class="fa-solid fa-file-word"></i> MỞ DOCS
+                           class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                          <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS
                         </a>
                       }
                     </div>
                   </div>
                 }
 
-                <!-- Báo cáo theo phân nhóm tiền tố (Prefix reports) - CHỈ DÀNH CHO TRIFLURALIN KHI CÓ NHIỀU NHÓM -->
                 @if (shouldShowPrefixLoop()) {
                   @for (pref of getSelectedRunPrefixes(); track pref) {
-                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-sm transition">
+                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-950/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
+                        <span class="inline-block px-2 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-black uppercase tracking-wide border border-fuchsia-200/20 mb-1.5">
                           {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
                         </span>
                         @if (getPrefixReportForSelected(pref)) {
-                          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mt-1">Phiên bản hiện tại: v{{ getPrefixReportForSelected(pref).version || 1 }}</span>
-                          <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Thời gian: {{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                          <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ getPrefixReportForSelected(pref).version || 1 }}</span></div>
+                          <div class="text-[10px] text-slate-400 mt-0.5">{{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
                         } @else {
-                          <span class="text-[11px] font-bold text-slate-500/70 block mt-1">Phiên bản hiện tại: Chưa có</span>
-                          <span class="text-[10px] text-slate-400 dark:text-slate-500/80 block mt-0.5">Mẫu thuộc nhóm {{ pref === '' ? 'Không tiền tố' : pref }} tồn tại trong mẻ chạy nhưng chưa xuất bản file.</span>
+                          <div class="text-[11px] text-slate-400 font-semibold">Chưa có file in</div>
                         }
                       </div>
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 shrink-0">
                         @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).pdfUrl || getPrefixReportForSelected(pref).pdfViewUrl)) {
                           <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                             class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
-                            <i class="fa-solid fa-file-pdf"></i> XEM PDF
+                             class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                            <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
                           </a>
                           @if (getPrefixReportForSelected(pref).docsUrl) {
                             <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                               class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 no-underline">
-                              <i class="fa-solid fa-file-word"></i> MỞ DOCS
+                               class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                              <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS
                             </a>
                           }
                         } @else {
-                          <span class="text-[10px] text-amber-600 dark:text-amber-500 font-extrabold flex items-center gap-1 mr-2">
-                            <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Chưa tạo file
-                          </span>
                           <button (click)="enterResults(selectedRequestForReport().id, pref); closeReportHub()"
-                                  class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95">
-                            <i class="fa-solid fa-arrows-rotate animate-spin-slow"></i> TẠO FILE IN
+                                  class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
+                            <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
                           </button>
                         }
                       </div>
@@ -700,70 +689,64 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   }
                 }
 
-                <!-- Hộp Cảnh báo Không có file in (Chỉ hiển thị cho mẻ KHÔNG phân nhóm tiền tố) -->
                 @if (!shouldShowPrefixLoop() && !unifiedAllSamplesReport()) {
                   @if (runStatusMap()[selectedRequestForReport().id] === 'completed') {
-                    <div class="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:shadow-xs transition">
-                      <div class="space-y-1">
-                        <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-955/50 text-amber-700 dark:text-amber-400 border border-amber-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-                        <span class="text-[11px] font-bold text-slate-700 dark:text-slate-350 block">Trạng thái: Đã hoàn thành (Chưa có file in)</span>
-                        <span class="text-[10px] text-slate-450 dark:text-slate-500 block font-medium">Bản in của mẻ này chưa được tạo ra trên Google Drive hoặc bị lỗi.</span>
+                    <div class="bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+                      <div>
+                        <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Mẻ hoàn thành nhưng chưa có file in</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Bản in chưa được tạo hoặc bị lỗi khi xuất.</div>
                       </div>
                       <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
-                              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0">
-                        <i class="fa-solid fa-file-invoice text-sm animate-pulse"></i> TẠO FILE IN
+                              class="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 shrink-0">
+                        <i class="fa-solid fa-file-invoice text-[11px]"></i> TẠO FILE IN
                       </button>
                     </div>
                   } @else {
-                    <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-bold text-xs">
-                      <i class="fa-solid fa-triangle-exclamation text-lg block mb-1.5 opacity-60"></i>
-                      Mẻ chạy này chưa được xuất bản báo cáo nào.
+                    <div class="text-center py-6 text-slate-400 dark:text-slate-500 font-semibold text-xs">
+                      <i class="fa-solid fa-file-circle-xmark text-xl block mb-2 opacity-40"></i>
+                      Mẻ chạy này chưa có báo cáo nào.
                     </div>
                   }
                 }
               </div>
 
-              <!-- 2. LỊCH SỬ PHIÊN BẢN CŨ (VERSION HISTORY ARCHIVE) -->
-              <div class="space-y-3">
-                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/85 pb-2">
-                  <i class="fa-solid fa-clock-rotate-left mr-1.5 text-slate-500"></i> Lưu trữ lịch sử tất cả phiên bản
+              <div class="space-y-2.5">
+                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-1.5">
+                  <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Lịch sử phiên bản
                 </h4>
-
                 @if (isLoadingHistory()) {
-                  <div class="flex flex-col items-center justify-center py-8 gap-2">
-                    <i class="fa-solid fa-spinner fa-spin text-lg text-fuchsia-500"></i>
-                    <span class="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">Đang tải lịch sử...</span>
+                  <div class="flex items-center justify-center py-6 gap-2 text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span class="text-xs font-semibold">Đang tải lịch sử...</span>
                   </div>
                 } @else {
                   @if (selectedRequestHistoryList().length > 0) {
-                    <div class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                    <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                       @for (hist of selectedRequestHistoryList(); track hist.version + '_' + hist.prefix) {
-                        <div class="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/60 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/60 rounded-xl px-3 py-2.5 text-xs">
                           <div>
                             <div class="flex items-center gap-1.5">
-                              <span class="font-black text-slate-700 dark:text-slate-350">Bản v{{ hist.version }}</span>
+                              <span class="font-extrabold text-slate-700 dark:text-slate-300">v{{ hist.version }}</span>
                               @if (hist.prefix) {
-                                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-bold uppercase">
-                                  {{ hist.prefix === '_NO_PREFIX_' ? 'Không tiền tố' : hist.prefix }}
+                                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-500 text-[8px] font-bold uppercase">
+                                  {{ hist.prefix === '_NO_PREFIX_' ? 'No prefix' : hist.prefix }}
                                 </span>
                               }
                               @if (hist.status === 'archived') {
-                                <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-955/50 text-amber-700 dark:text-amber-400 text-[8px] font-extrabold uppercase border border-amber-200/20">Lưu trữ</span>
+                                <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase">Lưu trữ</span>
                               }
                             </div>
-                            <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-1">Người in: {{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm - dd/MM/yyyy' }}</span>
+                            <div class="text-[9px] text-slate-400 mt-0.5">{{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm dd/MM/yy' }}</div>
                           </div>
                           <div class="flex items-center gap-1.5 shrink-0">
                             <a [href]="getSafeGoogleUrl(hist.pdfViewUrl || hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                               class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/30 text-slate-600 hover:text-red-655 dark:text-slate-400 dark:hover:text-red-400 border border-slate-200/40 dark:border-slate-700/40 flex items-center justify-center transition active:scale-90"
-                               title="Xem PDF bản này">
-                              <i class="fa-solid fa-file-pdf text-xs"></i>
+                               class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-300 hover:text-red-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Xem PDF bản này">
+                              <i class="fa-solid fa-file-pdf text-[10px]"></i>
                             </a>
                             @if (hist.docsUrl) {
                               <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                                 class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/30 text-slate-600 hover:text-blue-655 dark:text-slate-400 dark:hover:text-blue-400 border border-slate-200/40 dark:border-slate-700/40 flex items-center justify-center transition active:scale-90"
-                                 title="Mở Docs bản này">
-                                <i class="fa-solid fa-file-word text-xs"></i>
+                                 class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này">
+                                <i class="fa-solid fa-file-word text-[10px]"></i>
                               </a>
                             }
                           </div>
@@ -771,19 +754,21 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       }
                     </div>
                   } @else {
-                    <div class="text-center py-4 text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                    <div class="text-center py-4 text-slate-400 dark:text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
                       Không có bản in cũ trong lịch sử.
                     </div>
                   }
                 }
               </div>
-
             </div>
 
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 bg-slate-50/50 dark:bg-slate-850/50 border-t border-slate-100 dark:border-slate-800/80 flex justify-end shrink-0">
-              <button (click)="closeReportHub()" 
-                      class="px-5 py-2.5 bg-slate-200 hover:bg-slate-350 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition active:scale-95">
+            <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-slate-50/30 dark:bg-slate-950/10">
+              <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+                      class="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 rounded-xl transition active:scale-95">
+                <i class="fa-solid fa-pen-to-square text-[11px]"></i> Mở để chỉnh sửa
+              </button>
+              <button (click)="closeReportHub()"
+                      class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-250 rounded-xl text-xs font-black transition active:scale-95">
                 Đóng
               </button>
             </div>
