@@ -1066,4 +1066,3 @@ function cleanLanHuuCoLastPageBreak(body) {
   } catch(e) {
     Logger.log(`[Autocut LanHuuCo] Lỗi dọn dẹp PageBreak: ${e.toString()}`);
   }
-}
