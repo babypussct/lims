@@ -1,0 +1,263 @@
+<div class="space-y-6">
+
+  <!-- 1. Metadata Form & Checkboxes -->
+  <app-sop-header-metadata
+    [title]="'Thông tin chung & Đánh giá (SOP: ' + (run?.sopCode || 'sop_1767857760184') + ')'"
+    [draft]="draft"
+    [checkboxList]="[]"
+    (draftChanged)="onDataChanged()">
+    
+    <!-- Method Toggle & FINAL option -->
+    <div sop-metadata-extra class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2 mt-4">
+      <div>
+        <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-widest">Thiết bị phân tích</label>
+        <div class="flex gap-2">
+          <button type="button" 
+                  (click)="setMethod('GC/MS')" 
+                  [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                  [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                  [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
+                  [class.bg-slate-50]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  [class.dark:bg-slate-955]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  [class.text-slate-700]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-microscope text-sm"></i>
+            <span>GC/MS</span>
+          </button>
+          
+          <button type="button" 
+                  (click)="setMethod('GC/MSMS')" 
+                  [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                  [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                  [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
+                  [class.bg-slate-50]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  [class.dark:bg-slate-955]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  [class.text-slate-700]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-flask-vials text-sm"></i>
+            <span>GC/MS/MS</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-sop-header-metadata>
+
+  <!-- 1.5. Calibration curves configuration -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
+    <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+      <i class="fa-solid fa-chart-line mr-2 text-cyan-500 text-sm"></i> Khai báo Đường chuẩn & Hệ số xác định (R²)
+    </h4>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left Side: R^2, Blank Name, Spike Name -->
+      <div class="lg:col-span-4 space-y-4">
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Trắng (Blank)</label>
+          <input type="text" 
+                 [(ngModel)]="draft.page1Data['blankName']" 
+                 (ngModelChange)="onDataChanged()"
+                 (focus)="$any($event.target).select()"
+                 placeholder="BLANK"
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Tên mẫu Thêm chuẩn (Spike)</label>
+          <input type="text" 
+                 [(ngModel)]="draft.page1Data['spikeName']" 
+                 (ngModelChange)="onDataChanged()"
+                 (focus)="$any($event.target).select()"
+                 placeholder="SPIKE"
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Hệ số xác định R²</label>
+          <input type="text" 
+                 [(ngModel)]="draft.page1Data['r2']" 
+                 (ngModelChange)="onDataChanged()"
+                 (focus)="$any($event.target).select()"
+                 placeholder="Ví dụ: 0.9992..."
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC FINAL</label>
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850">
+            <input type="checkbox" 
+                   [(ngModel)]="draft.page1Data['hasFinal']" 
+                   (ngModelChange)="onFinalToggled()"
+                   class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+            <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
+          </label>
+        </div>
+        
+        <div class="text-[10.5px] text-slate-400 leading-relaxed font-medium">
+          <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i> Các giá trị cấu hình này sẽ được tự động điền vào báo cáo xuất bản.
+        </div>
+      </div>
+
+      <!-- Calibration Points Grid -->
+      <div class="lg:col-span-8">
+        <app-sop-calibration-points
+          title="Các Điểm Đường chuẩn (Calibration Curve Points)"
+          [calibPoints]="draft.page1Data['calibPoints']"
+          [pointLabels]="[]"
+          pointPrefix="Chuẩn C"
+          [isSuffixVisible]="false"
+          [isFuchsiaRing]="false"
+          (pointsChanged)="onDataChanged()">
+        </app-sop-calibration-points>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+      <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center">
+        <i class="fa-solid fa-table-cells mr-2 text-cyan-500 text-sm"></i> Lưới nhập sắc ký mẫu thử (Spreadsheet)
+      </h4>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
+        
+        <button (click)="bulkFillND()" 
+                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                title="Đặt toàn bộ các ô kết quả chưa điền là ND">
+          <i class="fa-solid fa-pen-clip"></i>
+          <span>Điền ND ô trống</span>
+        </button>
+
+        <button (click)="bulkClearAll()" 
+                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-red-50 dark:hover:bg-red-955/20 text-slate-655 dark:text-slate-455 hover:text-red-655 dark:hover:text-red-400 border border-slate-200/60 dark:border-slate-800 hover:border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                title="Xóa toàn bộ các ô kết quả của bảng">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Xóa hết bảng</span>
+        </button>
+
+        <!-- Quick Vial Input -->
+        <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
+          <span class="font-bold text-slate-500 dark:text-slate-400">Lọ số:</span>
+          <input type="number" 
+                 [(ngModel)]="bulkVialStart" 
+                 (ngModelChange)="onBulkVialStartChange()"
+                 placeholder="Bắt đầu" 
+                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+          <span class="text-slate-400">-</span>
+          <input type="number" 
+                 [(ngModel)]="bulkVialEnd" 
+                 placeholder="Kết thúc" 
+                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+          <button (click)="applyBulkVials()" 
+                  class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+            <i class="fa-solid fa-check"></i>
+            <span>Áp dụng</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spreadsheet Table Grid -->
+    <div class="overflow-x-auto custom-scrollbar border border-slate-200/60 dark:border-slate-800 rounded-xl max-h-[500px]">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 sticky top-0 z-20">
+            <th class="py-3 px-3 text-center w-12 bg-slate-50 dark:bg-slate-900">
+              <input type="checkbox"
+                     [checked]="isAllSelected()"
+                     (change)="toggleSelectAll($event)"
+                     class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500">
+            </th>
+            <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Lọ số</th>
+            <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[140px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Mẫu thử</th>
+            
+            @for (col of activeColumns; track col) {
+              <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[130px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">
+                {{ columnDisplayNames()[col] || getColumnLabel(col) }}
+              </th>
+            }
+            
+            <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[180px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Ghi chú</th>
+            <th class="py-3 px-4 text-center font-black text-slate-455 dark:text-slate-500 text-xs w-24 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Tác vụ</th>
+          </tr>
+        </thead>
+        
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+          @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
+            <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/30 transition-colors focus-within:bg-cyan-50/10 dark:focus-within:bg-cyan-500/5 border-l-4 border-l-transparent focus-within:border-l-cyan-500 transition-all duration-150" 
+                [class.opacity-60]="draft.resultData[row.key]['selected'] === false"
+                [ngClass]="{
+                  'bg-indigo-50/15 dark:bg-indigo-955/5 border-l-indigo-500/60': row.key.startsWith('QC_')
+                }">
+              <td class="py-2.5 px-3 text-center">
+                <input type="checkbox"
+                       [(ngModel)]="draft.resultData[row.key]['selected']"
+                       (ngModelChange)="onDataChanged()"
+                       class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500">
+              </td>
+              <td class="py-1.5 px-2 w-28">
+                <input type="text"
+                       [(ngModel)]="draft.resultData[row.key]['loSo']"
+                       (ngModelChange)="onDataChanged()"
+                       [id]="'cell-' + rowIdx + '-loSo'"
+                       [disabled]="row.key === 'QC_FINAL'"
+                       (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 1)"
+                       (focus)="$any($event.target).select()"
+                       placeholder="Vial..."
+                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
+              </td>
+              <td class="py-2.5 px-4">
+                @if (row.key.startsWith('QC_')) {
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-955 dark:text-indigo-400 uppercase shadow-xs border border-indigo-200/30">
+                    {{ row.label }}
+                  </span>
+                } @else {
+                  <span class="font-mono font-black text-xs text-slate-750 dark:text-slate-300 break-all select-all">{{ row.key }}</span>
+                }
+              </td>
+              
+              @for (col of activeColumns; track col; let colIdx = $index) {
+                <td class="py-1.5 px-2">
+                  <input type="text"
+                         [(ngModel)]="draft.resultData[row.key][col]"
+                         (ngModelChange)="onCellChanged(row.key)"
+                         [id]="'cell-' + rowIdx + '-' + col"
+                         [disabled]="row.key === 'QC_FINAL' && col !== 'kqDichlorvos'"
+                         (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 2)"
+                         (focus)="$any($event.target).select()"
+                         placeholder="..."
+                         class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
+                </td>
+              }
+              
+              <td class="py-1.5 px-2">
+                <input type="text"
+                       [(ngModel)]="draft.resultData[row.key]['ghiChu']"
+                       (ngModelChange)="onDataChanged()"
+                       [id]="'cell-' + rowIdx + '-ghiChu'"
+                       (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length + 2)"
+                       (focus)="$any($event.target).select()"
+                       placeholder="Ghi chú..."
+                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-355 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+              </td>
+              <td class="py-1.5 px-4 text-center">
+                <button (click)="copyRowToAll(row.key)" 
+                        class="w-7 h-7 inline-flex items-center justify-center bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-black transition active:scale-95 duration-100 shadow-xs"
+                        title="Sao chép kết quả dòng này cho tất cả dòng khác">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

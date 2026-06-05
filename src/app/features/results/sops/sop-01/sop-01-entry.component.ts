@@ -8,444 +8,16 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
 import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
+import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 
 @Component({
   selector: 'app-sop-01-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="space-y-6">
-      
-      <!-- 1. Metadata Form & Checkboxes -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông tin chung & Đánh giá (SOP-01)
-        </h4>
-
-        <!-- Signature Dates -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
-            <input type="date" 
-                   [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
-                   (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
-          </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
-            <input type="date" 
-                   [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
-                   (ngModelChange)="onDataChanged()"
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
-          </div>
-        </div>
-
-        <!-- Fipronil specific inputs (Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20">
-          <!-- Mã hồ sơ -->
-          <div>
-            <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">1. Mã hồ sơ</label>
-            <input type="text" 
-                   [(ngModel)]="draft.page1Data['maHoSo']" 
-                   (ngModelChange)="onDataChanged()"
-                   placeholder="Nhập mã hồ sơ..."
-                   class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-          </div>
-
-          <!-- Hệ số pha loãng -->
-          <div>
-            <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">3. Hệ số pha loãng (f)</label>
-            <div class="flex items-center gap-1.5">
-              <button type="button"
-                      (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
-                      [class]="draft.page1Data['heSoPhaLoang'] === '1' 
-                        ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
-                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                      title="Chọn f=1">
-                f=1
-              </button>
-              <input type="text" 
-                     [(ngModel)]="draft.page1Data['heSoPhaLoang']" 
-                     (ngModelChange)="onDataChanged()"
-                     placeholder="Hệ số f..."
-                     class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-            </div>
-          </div>
-
-          <!-- Loại mẫu -->
-          <div>
-            <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">4. Loại mẫu</label>
-            <div class="flex items-center gap-1.5">
-              <button type="button"
-                      (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
-                      [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                        ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
-                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                      title="Chọn Thủy sản">
-                Thủy sản
-              </button>
-              <input type="text" 
-                     [(ngModel)]="draft.page1Data['loaiMau']" 
-                     (ngModelChange)="onDataChanged()"
-                     placeholder="Loại mẫu..."
-                     class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-            </div>
-          </div>
-
-          <!-- Tình trạng mẫu -->
-          <div>
-            <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">5. Tình trạng mẫu</label>
-            <div class="flex items-center gap-1.5">
-              <button type="button"
-                      (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
-                      [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
-                        ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
-                        : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                      title="Chọn Bình thường">
-                Bình thường
-              </button>
-              <input type="text" 
-                     [(ngModel)]="draft.page1Data['tinhTrangMau']" 
-                     (ngModelChange)="onDataChanged()"
-                     placeholder="Tình trạng..."
-                     class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-            </div>
-          </div>
-        </div>
-
-        <!-- Checkbox & QC evaluation grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-          @for (checkbox of checkboxList; track checkbox.key) {
-            @if (isGeneralObservation(checkbox.key)) {
-              <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
-                <input type="checkbox" 
-                       [(ngModel)]="draft.page1Data[checkbox.key]" 
-                       (ngModelChange)="onCheckboxChange(checkbox.key)"
-                       class="mt-0.5 w-4 h-4 rounded text-indigo-650 border-slate-300 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
-                <div>
-                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
-                </div>
-              </label>
-            } @else {
-              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/40 dark:bg-slate-955/40 border border-slate-250/25 dark:border-slate-800/60 transition hover:border-slate-350 dark:hover:border-slate-700 shadow-xs">
-                <div class="flex-1 min-w-0 pr-1">
-                  <span class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 leading-snug block break-words">
-                    {{ checkbox.label }}
-                  </span>
-                </div>
-                
-                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0 select-none">
-                  <button type="button"
-                          (click)="setQcStatus(checkbox.key, true)"
-                          [class]="draft.page1Data[checkbox.key] === true 
-                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                          title="Đạt tiêu chí">
-                    Đạt
-                  </button>
-                  
-                  <button type="button"
-                          (click)="setQcStatus(checkbox.key, false)"
-                          [class]="draft.page1Data[checkbox.key] === false 
-                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                          title="Không đạt tiêu chí">
-                    K.Đạt
-                  </button>
-
-                  <button type="button"
-                          (click)="setQcStatus(checkbox.key, null)"
-                          [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
-                            ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                          title="Chưa đánh giá">
-                    N/A
-                  </button>
-                </div>
-              </div>
-            }
-          }
-        </div>
-      </div>
-
-      <!-- 1.5. Section 7 Đường chuẩn -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
-        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-          <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai báo Đường chuẩn
-        </h4>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-5 space-y-3">
-            <div class="p-4 bg-indigo-50/15 dark:bg-indigo-950/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl space-y-3 shadow-xs">
-              <h5 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-flask-vial"></i> Cấu hình mẫu QC & Tên tuỳ chỉnh
-              </h5>
-              
-              <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
-                <input type="checkbox" 
-                       [(ngModel)]="draft.page1Data['hasCheckSample']" 
-                       (ngModelChange)="onHasCheckSampleChange()"
-                       class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
-              </label>
-
-              <div class="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Blank</label>
-                  <input type="text" 
-                         [(ngModel)]="draft.page1Data['blankName']" 
-                         (ngModelChange)="onDataChanged()"
-                         placeholder="BLANK"
-                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                </div>
-                <div>
-                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Spike</label>
-                  <input type="text" 
-                         [(ngModel)]="draft.page1Data['spikeName']" 
-                         (ngModelChange)="onDataChanged()"
-                         placeholder="SPIKE"
-                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                </div>
-              </div>
-
-              @if (draft.page1Data['hasCheckSample']) {
-                <div class="animate-fade-in">
-                  <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên Check Sample</label>
-                  <input type="text" 
-                         [(ngModel)]="draft.page1Data['checkSampleName']" 
-                         (ngModelChange)="onDataChanged()"
-                         placeholder="CHECK_SAMPLE"
-                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Calibration Points Grid: Premium horizontally-focused row layout -->
-          <div class="lg:col-span-7 flex flex-col justify-center">
-            <div>
-              <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">5 Điểm Đường chuẩn (Calibration Curve Points)</label>
-              <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                @for (pt of draft.page1Data['calibPoints']; track $index) {
-                  <div [class]="'bg-white dark:bg-slate-900 border-t-4 ' + 
-                    ($index === 0 ? 'border-t-slate-400/80 border-slate-200 dark:border-slate-800/80' : 
-                     ($index === 1 ? 'border-t-emerald-500 border-slate-200 dark:border-slate-800/80' : 
-                      ($index === 2 ? 'border-t-teal-500 border-slate-200 dark:border-slate-800/80' : 
-                       ($index === 3 ? 'border-t-indigo-500 border-slate-200 dark:border-slate-800/80' : 'border-t-purple-500 border-slate-200 dark:border-slate-800/80')))) + 
-                    ' rounded-2xl p-3 text-center shadow-sm hover:shadow-md transition duration-200'"
-                    style="content-visibility: auto;">
-                    <span [class]="'inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-black mb-1.5 uppercase ' +
-                      ($index === 0 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 
-                       ($index === 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' : 
-                        ($index === 2 ? 'bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400' : 
-                         ($index === 3 ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400' : 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400'))))">
-                      Point C{{ $index }}
-                    </span>
-                    <div class="text-[12px] font-black text-slate-850 dark:text-slate-100 my-0.5">
-                      {{ $index === 0 ? '0 ppb' : ($index === 1 ? '5 ppb' : ($index === 2 ? '10 ppb' : ($index === 3 ? '20 ppb' : '50 ppb'))) }}
-                    </div>
-                    <div class="text-[9px] font-bold text-slate-400 dark:text-slate-500 mb-2">IS: 20 ppb</div>
-                    <input type="text" 
-                           [(ngModel)]="pt['loSo']" 
-                           (ngModelChange)="onDataChanged()"
-                           placeholder="Vial..."
-                           class="w-full text-center bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl py-1.5 px-2 text-xs text-slate-800 dark:text-slate-100 font-extrabold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-inner">
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
-          <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả (SOP-01 Spreadsheet)
-          </h4>
-
-          <div class="flex flex-wrap items-center gap-3">
-            <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
-            
-            <!-- Nhập file MassHunter -->
-            <button type="button"
-                    (click)="massHunterFileInput.click()" 
-                    class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-605 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                    title="Nhập kết quả tự động từ file excel Agilent MassHunter">
-              <i class="fa-solid fa-file-excel text-emerald-500"></i>
-              <span>Nhập tệp MassHunter</span>
-            </button>
-            <input #massHunterFileInput type="file" (change)="importMassHunterExcel($event)" accept=".xlsx" class="hidden">
-
-            <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-extrabold cursor-pointer select-none shadow-2xs">
-              <input type="checkbox"
-                     [(ngModel)]="draft.page1Data['uploadMassHunterToDrive']"
-                     (ngModelChange)="onDataChanged()"
-                     class="w-4 h-4 rounded text-emerald-650 border-slate-350 focus:ring-emerald-500">
-              <span class="text-slate-600 dark:text-slate-350">Tải tệp lên Google Drive</span>
-            </label>
-
-            <!-- Làm tròn số thập phân -->
-            <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs">
-              <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Làm tròn thập phân:</span>
-              <select [(ngModel)]="decimalPlaces" 
-                      class="bg-transparent text-xs text-slate-700 dark:text-slate-300 font-extrabold focus:outline-none cursor-pointer">
-                <option [ngValue]="1">1 chữ số (e.g. 1.2)</option>
-                <option [ngValue]="2">2 chữ số (e.g. 1.25)</option>
-                <option [ngValue]="3">3 chữ số (e.g. 1.250)</option>
-                <option [ngValue]="4">4 chữ số (e.g. 1.2500)</option>
-              </select>
-            </div>
-
-            @if (draft.page1Data['massHunterExcelUrl']) {
-              <a [href]="draft.page1Data['massHunterExcelUrl']" 
-                 target="_blank"
-                 class="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                 title="Xem tệp Excel thô gốc đã tải lên Google Drive">
-                <i class="fa-solid fa-arrow-up-right-from-square text-indigo-500"></i>
-                <span>Xem tệp MassHunter thô</span>
-              </a>
-            }
-
-            <button (click)="bulkFillND()" 
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                    title="Đặt toàn bộ các ô kết quả chưa điền là ND">
-              <i class="fa-solid fa-pen-clip text-amber-500"></i>
-              <span>Điền ND ô trống</span>
-            </button>
-
-            <button (click)="bulkClearAll()" 
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                    title="Xóa toàn bộ các ô kết quả của bảng">
-              <i class="fa-solid fa-trash-can text-rose-500"></i>
-              <span>Xóa hết bảng</span>
-            </button>
-
-            <!-- Quick Vial Rack Input for Fipronil -->
-            <div class="flex items-center gap-2 bg-indigo-50/15 dark:bg-indigo-950/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
-              <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập Vial nhanh:</span>
-              <div class="flex items-center gap-1.5">
-                <span class="text-slate-450 dark:text-slate-500 font-bold">Rack:</span>
-                <input type="number" 
-                       [(ngModel)]="bulkRackStart" 
-                       title="Khay chạy máy (Rack)"
-                       placeholder="Rack" 
-                       class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-slate-450 dark:text-slate-500 font-bold">Vial đầu:</span>
-                <input type="number" 
-                       [(ngModel)]="bulkVialStartFip" 
-                       title="Vial bắt đầu"
-                       placeholder="Vial" 
-                       class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-slate-450 dark:text-slate-500 font-bold">Size:</span>
-                <input type="number" 
-                       [(ngModel)]="bulkVialsPerRack" 
-                       title="Số ống vial tối đa trên một khay (Rack)"
-                       placeholder="Tối đa" 
-                       class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-              </div>
-              <button (click)="applyBulkVials()" 
-                      class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
-                      title="Điền tự động số khay và vial cho toàn bộ danh sách mẫu">
-                <i class="fa-solid fa-magic text-[10px]"></i>
-                <span>Điền nhanh</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Spreadsheet Table Grid -->
-        <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-250/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
-                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Vial No.</th>
-                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[140px]">Mẫu thử</th>
-                
-                <!-- Dynamic active columns -->
-                @for (col of activeColumns; track col) {
-                  <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">
-                    {{ columnDisplayNames()[col] || col }} (µg/kg)
-                  </th>
-                }
-                
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">Hành động</th>
-              </tr>
-            </thead>
-            
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
-              @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
-                @if (draft.resultData[row.key]) {
-                  <tr [class]="row.isQC 
-                        ? 'bg-amber-50/15 dark:bg-amber-950/5 border-l-4 border-l-amber-500/80 hover:bg-amber-50/25 dark:hover:bg-amber-950/10 transition-colors' 
-                        : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150'">
-                    
-                    <!-- Vial No input cell -->
-                    <td class="py-1.5 px-3 w-24">
-                      <input type="text"
-                             [(ngModel)]="draft.resultData[row.key]['loSo']"
-                             (ngModelChange)="onDataChanged()"
-                             [id]="'cell-' + rowIdx + '-loSo'"
-                             (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
-                             (focus)="$any($event.target).select()"
-                             placeholder="..."
-                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner">
-                    </td>
-
-                    <!-- Sample/QC Identifier with tag styling -->
-                    <td class="py-2.5 px-4 font-mono font-extrabold text-xs text-slate-700 dark:text-slate-300 break-all">
-                      @if (row.isQC) {
-                        <span class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                          <i class="fa-solid fa-flask text-[10px]"></i> {{ row.label }}
-                        </span>
-                      } @else {
-                        <span>{{ row.label }}</span>
-                      }
-                    </td>
-                    
-                    <!-- Dynamic active columns inputs -->
-                    @for (col of activeColumns; track col; let colIdx = $index) {
-                      <td class="py-1.5 px-2">
-                        <input type="text"
-                               [(ngModel)]="draft.resultData[row.key][col]"
-                               (ngModelChange)="onCellChanged(row.key)"
-                               [id]="'cell-' + rowIdx + '-' + col"
-                               [disabled]="!isTargetAssigned(row.key, col)"
-                               (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
-                               (focus)="$any($event.target).select()"
-                               placeholder="..."
-                               class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-105 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
-                      </td>
-                    }
-                    
-                    <!-- Quick Row actions / Badges -->
-                    <td class="py-1.5 px-4 text-center">
-                      @if (row.isQC) {
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 dark:bg-amber-400/5 dark:text-amber-400 border border-amber-500/20">
-                          QC Active
-                        </span>
-                      } @else {
-                        <button (click)="copyRowToAll(row.key)" 
-                                class="p-1.5 bg-slate-50 hover:bg-fuchsia-600 dark:bg-slate-850 dark:hover:bg-fuchsia-600 text-slate-500 hover:text-white dark:text-slate-400 rounded-lg text-[10px] font-bold transition border border-slate-200 dark:border-slate-800 active:scale-90"
-                                title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
-                          <i class="fa-solid fa-copy"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                }
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `
+  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  templateUrl: './sop-01-entry.component.html'
 })
 export class Sop01EntryComponent implements OnInit {
   @Input() run!: any;
@@ -551,26 +123,6 @@ export class Sop01EntryComponent implements OnInit {
     });
 
     this.prefillUnassignedTargets();
-    this.onDataChanged();
-  }
-
-  isGeneralObservation(key: string): boolean {
-    return key === 'checkTatCaND' || key === 'checkCoMauPhatHien';
-  }
-
-  setQcStatus(key: string, value: boolean | null) {
-    this.draft.page1Data[key] = value;
-    this.onDataChanged();
-  }
-
-  onCheckboxChange(changedKey: string) {
-    if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
-      this.draft.page1Data['checkCoMauPhatHien'] = false;
-      this.draft.page1Data['qcNhanDang'] = null; // Reset to N/A
-    } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
-      this.draft.page1Data['checkTatCaND'] = false;
-      this.draft.page1Data['qcNhanDang'] = true; // Auto check "Đạt"
-    }
     this.onDataChanged();
   }
 
@@ -847,117 +399,26 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   bulkFillND() {
-    const visible = this.run.sampleList || [];
-    visible.forEach((sampleCode: string) => {
-      const row = this.draft.resultData[sampleCode];
-      if (row) {
-        this.activeColumns.forEach(col => {
-          if (!row[col] || row[col]?.trim() === '') {
-            row[col] = 'ND';
-          }
-        });
-      }
-    });
-
-    // Fill QCs
-    Object.keys(this.draft.resultData).forEach(key => {
-      if (key.startsWith('QC_')) {
-        const row = this.draft.resultData[key];
-        if (row) {
-          this.activeColumns.forEach(col => {
-            if (!row[col] || row[col]?.trim() === '') {
-              row[col] = 'ND';
-            }
-          });
-          this.updateRecovery(key);
-        }
-      }
-    });
-
+    bulkFillND(this.draft.resultData, this.run.sampleList, this.activeColumns, (key) => this.updateRecovery(key));
     this.draft.page1Data['checkTatCaND'] = true;
     this.draft.page1Data['checkCoMauPhatHien'] = false;
     this.onDataChanged();
   }
 
   bulkClearAll() {
-    const visible = this.run.sampleList || [];
-    visible.forEach((sampleCode: string) => {
-      const row = this.draft.resultData[sampleCode];
-      if (row) {
-        this.activeColumns.forEach(col => {
-          row[col] = '';
-        });
-        row['ghiChu'] = '';
-      }
-    });
-
-    Object.keys(this.draft.resultData).forEach(key => {
-      if (key.startsWith('QC_')) {
-        const row = this.draft.resultData[key];
-        if (row) {
-          this.activeColumns.forEach(col => {
-            row[col] = '';
-          });
-          row['ghiChu'] = '';
-        }
-      }
-    });
-
+    bulkClearAll(this.draft.resultData, this.run.sampleList, this.activeColumns);
     this.onDataChanged();
   }
 
   copyRowToAll(sourceKey: string) {
-    const source = this.draft.resultData[sourceKey];
-    if (!source) return;
-
-    const visible = this.run.sampleList || [];
-    visible.forEach((targetKey: string) => {
-      if (targetKey !== sourceKey) {
-        if (!this.draft.resultData[targetKey]) {
-          this.draft.resultData[targetKey] = { selected: true };
-        }
-        this.activeColumns.forEach(col => {
-          this.draft.resultData[targetKey][col] = source[col];
-        });
-        this.updateRecovery(targetKey);
-      }
-    });
-
+    copyRowToAll(this.draft.resultData, this.run.sampleList, this.activeColumns, sourceKey, (key) => this.updateRecovery(key));
     this.onDataChanged();
   }
 
   handleGridNavigation(event: KeyboardEvent, rowIdx: number, colName: string, colIdx: number) {
-    const key = event.key;
-    let targetRowIdx = rowIdx;
-    let targetColIdx = colIdx;
-
+    const columnsList = ['loSo', ...this.activeColumns];
     const rows = this.getDisplayRowsForFipronil();
-    const colsCount = this.activeColumns.length + 1; // loSo + active cols
-
-    if (key === 'ArrowUp') {
-      targetRowIdx = Math.max(0, rowIdx - 1);
-      event.preventDefault();
-    } else if (key === 'ArrowDown') {
-      targetRowIdx = Math.min(rows.length - 1, rowIdx + 1);
-      event.preventDefault();
-    } else if (key === 'ArrowLeft') {
-      targetColIdx = Math.max(0, colIdx - 1);
-    } else if (key === 'ArrowRight') {
-      targetColIdx = Math.min(colsCount - 1, colIdx + 1);
-    } else {
-      return;
-    }
-
-    const targetColName = targetColIdx === 0 ? 'loSo' : this.activeColumns[targetColIdx - 1];
-    setTimeout(() => {
-      const el = document.getElementById(`cell-${targetRowIdx}-${targetColName}`);
-      if (el) {
-        el.focus();
-        if (el instanceof HTMLInputElement) {
-          el.select();
-        }
-      }
-    }, 10);
+    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
   }
 
   async importMassHunterExcel(event: Event) {
@@ -973,7 +434,6 @@ export class Sop01EntryComponent implements OnInit {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array', cellDates: false });
         
-        // 1. Lặp qua các sheet hoạt chất để trích xuất số liệu
         const sheetMap: Record<string, string> = {
           'fipron': 'kqFip',
           'fipronil': 'kqFip',
@@ -982,6 +442,7 @@ export class Sop01EntryComponent implements OnInit {
           'fipronilsulfide': 'kqFipSulf',
           'fipronil_sulfide': 'kqFipSulf',
           'fipronilsulfone': 'kqFipSulf2',
+          'fipronil_solid': 'kqFipSulf',
           'fipronil_sulfone': 'kqFipSulf2',
           'chlorpyrifos': 'kqClp',
           'chlorpyrifosmethyl': 'kqClpMe',
@@ -991,123 +452,18 @@ export class Sop01EntryComponent implements OnInit {
         };
 
         const displayRows = this.getDisplayRowsForFipronil();
-        const r2Values: number[] = [];
+        const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
 
-        workbook.SheetNames.forEach(sheetName => {
-          const cleanSheetName = sheetName.toLowerCase().replace(/[\s\-_]/g, '');
-          const colKey = sheetMap[cleanSheetName];
-          if (!colKey) return; 
-
-          const sheet = workbook.Sheets[sheetName];
-          if (!sheet) return;
-
-          // A. Trích xuất R2 ở ô N8 (Hàng 8, Cột N/Index 13) hoặc tìm ô chứa R2
-          let r2: number | null = null;
-          const cellN8 = sheet[XLSX.utils.encode_cell({ r: 7, c: 13 })];
-          if (cellN8 && cellN8.v !== undefined && !isNaN(parseFloat(String(cellN8.v)))) {
-            r2 = parseFloat(String(cellN8.v));
-          } else {
-            const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:O20');
-            for (let r = range.s.r; r <= range.e.r; r++) {
-              for (let c = range.s.c; c <= range.e.c; c++) {
-                const cell = sheet[XLSX.utils.encode_cell({ r, c })];
-                if (cell?.v && String(cell.v).trim().toUpperCase() === 'R2') {
-                  const nextCell = sheet[XLSX.utils.encode_cell({ r: r + 1, c })]; 
-                  if (nextCell && nextCell.v !== undefined && !isNaN(parseFloat(String(nextCell.v)))) {
-                    r2 = parseFloat(String(nextCell.v));
-                  }
-                  break;
-                }
-              }
-              if (r2 !== null) break;
-            }
-          }
-
-          if (r2 !== null) {
-            r2Values.push(r2);
-          }
-
-          // B. Trích xuất các mẫu bắt đầu từ hàng 11 (Index 10)
-          const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:AD100');
-          let colSampleName = 8;
-          let colFinalConc = 23;
-
-          for (let c = range.s.c; c <= range.e.c; c++) {
-            const cellVal = String(sheet[XLSX.utils.encode_cell({ r: 9, c })]?.v || '').trim().toLowerCase();
-            if (cellVal === 'sample name') {
-              colSampleName = c;
-            } else if (cellVal === 'final-conc.' || cellVal === 'final conc' || cellVal === 'final conc.') {
-              colFinalConc = c;
-            }
-          }
-
-          for (let r = 10; r <= range.e.r; r++) {
-            const sampleNameCell = sheet[XLSX.utils.encode_cell({ r, c: colSampleName })];
-            const finalConcCell = sheet[XLSX.utils.encode_cell({ r, c: colFinalConc })];
-
-            if (!sampleNameCell || sampleNameCell.v === undefined || sampleNameCell.v === null) continue;
-
-            const excelSampleName = String(sampleNameCell.v).trim();
-            const excelSampleNameLower = excelSampleName.toLowerCase();
-            let finalConcStr = String(finalConcCell?.v || '').trim();
-            
-            let isND = false;
-            let valNum: number | null = null;
-            if (finalConcStr.toUpperCase() === 'N.D' || finalConcStr === '' || finalConcStr.toUpperCase() === 'ND') {
-              isND = true;
-            } else {
-              const val = parseFloat(finalConcStr.replace(',', '.'));
-              if (!isNaN(val)) {
-                valNum = val;
-              } else {
-                isND = true;
-              }
-            }
-
-            displayRows.forEach(limsRow => {
-              const limsKey = limsRow.key;
-              const limsType = limsRow.type;
-              let isMatch = false;
-
-              if (limsType === 'QC_BLANK') {
-                isMatch = excelSampleNameLower.includes('bl') || excelSampleNameLower.includes('blank');
-              } else if (limsType === 'QC_SPIKE') {
-                isMatch = (excelSampleNameLower.includes('sp') || excelSampleNameLower.includes('spike')) && 
-                          !excelSampleNameLower.includes('sp_') && 
-                          !excelSampleNameLower.includes('spike_');
-              } else if (limsType === 'QC_SPIKE_N') {
-                const n = limsRow.n;
-                isMatch = excelSampleNameLower.includes(`sp_${n}`) || excelSampleNameLower.includes(`spike_${n}`);
-              } else if (limsType === 'QC_FINAL') {
-                isMatch = excelSampleNameLower.includes('final');
-              } else if (limsType === 'QC_CHECK_SAMPLE') {
-                const checkSampleName = (this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE').toLowerCase();
-                isMatch = excelSampleNameLower.includes('check_sample') || 
-                          excelSampleNameLower.includes('checksample') || 
-                          excelSampleNameLower.includes(checkSampleName);
-              } else if (limsType === 'REGULAR') {
-                isMatch = excelSampleNameLower.includes(limsKey.toLowerCase());
-              }
-
-              if (isMatch) {
-                if (!this.draft.resultData[limsKey]) {
-                  this.draft.resultData[limsKey] = { selected: true };
-                }
-                
-                let cleanConc = '';
-                if (isND) {
-                  // Chỉ BLANK mới được điền ND, các loại mẫu khác tự động để trống
-                  cleanConc = (limsType === 'QC_BLANK') ? 'ND' : '';
-                } else if (valNum !== null) {
-                  cleanConc = valNum.toFixed(Number(this.decimalPlaces));
-                }
-
-                this.draft.resultData[limsKey][colKey] = cleanConc;
-                this.updateRecovery(limsKey);
-              }
-            });
-          }
-        });
+        const { r2Values } = parseMassHunterWorkbook(
+          XLSX,
+          workbook,
+          displayRows,
+          this.draft.resultData,
+          this.decimalPlaces,
+          checkSampleName,
+          sheetMap,
+          (key) => this.updateRecovery(key)
+        );
 
         // 2. Tự động đánh giá các tiêu chí QC chất lượng (qcR2 và qcThuHoi)
         if (r2Values.length > 0) {
