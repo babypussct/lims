@@ -1057,7 +1057,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     if (!row) return;
     const val = parseFloat(row[compound] || '');
     if (!isNaN(val)) {
-      const rec = Math.round((val / 10.0) * 100);
+      const rec = ((val / 10.0) * 100).toFixed(1);
       row[compound + '_ghiChu'] = `${rec}%`;
     } else {
       row[compound + '_ghiChu'] = '';

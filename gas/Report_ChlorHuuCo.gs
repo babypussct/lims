@@ -70,27 +70,25 @@ function generateCustomReport_chlor_huu_co(templateId, metadata, samples, folder
         if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
           const pText = element.asParagraph().getText();
           if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
-            const textEl = element.asParagraph().editAsText();
-            const textStr = textEl.getText();
-            let firstDot = textStr.indexOf('.');
-            if (firstDot === -1) {
-              firstDot = textStr.indexOf('…');
-            }
-            if (firstDot !== -1) {
-              let lastDot = firstDot;
-              while (lastDot + 1 < textStr.length && (textStr[lastDot + 1] === '.' || textStr[lastDot + 1] === '…' || textStr[lastDot + 1] === ' ')) {
-                lastDot++;
-              }
-              while (lastDot > firstDot && textStr[lastDot] === ' ') {
-                lastDot--;
-              }
-              textEl.insertText(firstDot, compoundName.toUpperCase());
-              textEl.deleteText(firstDot + compoundName.length, lastDot + compoundName.length);
+            const para = element.asParagraph();
+            // Dùng findText để tìm chính xác dấu … (hoặc ...) mà không làm hỏng offset
+            const found = para.findText('[…\\.]+');
+            if (found) {
+              const textEl = found.getElement().asText();
+              const start = found.getStartOffset();
+              const end = found.getEndOffsetInclusive();
+              // Xóa placeholder TRƯỚC → chèn tên target SAU:
+              // sau deleteText, insertText tại 'start' kế thừa định dạng văn bản xung quanh
+              textEl.deleteText(start, end);
+              textEl.insertText(start, compoundName.toUpperCase());
             } else {
-              element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
+              // Fallback: chèn vào cuối — dùng appendText để giữ định dạng ký tự cuối
+              const textEl = para.editAsText();
+              textEl.appendText(' ' + compoundName.toUpperCase());
             }
           }
         }
+
 
         // Standard placeholders
         for (const [key, val] of Object.entries(metadata)) {

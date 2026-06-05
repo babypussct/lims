@@ -34,7 +34,7 @@ export function calculateSop01Recovery(row: Sop01Row, sampleCode: string): strin
       const val = parseFloat(String(valStr));
       if (!isNaN(val)) {
         const rec = (val / 5) * 100;
-        const recFormatted = rec % 1 === 0 ? rec.toFixed(0) : rec.toFixed(1);
+        const recFormatted = rec.toFixed(1);
         const cleanName = comp.replace(/^kq/, '');
         recoveries.push(`${cleanName}: ${recFormatted}%`);
       }

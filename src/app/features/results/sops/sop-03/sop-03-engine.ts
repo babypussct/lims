@@ -27,7 +27,7 @@ export function calculateSop03Recovery(row: Sop03Row, sampleCode: string, spikeN
     const val = parseFloat(String(valStr));
     if (!isNaN(val)) {
       const rec = val * 100;
-      const recFormatted = rec % 1 === 0 ? rec.toFixed(0) : rec.toFixed(1);
+      const recFormatted = rec.toFixed(1);
       return `${recFormatted}%`;
     }
   }

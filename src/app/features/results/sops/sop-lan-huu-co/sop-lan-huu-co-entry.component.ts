@@ -872,7 +872,7 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     if (!row) return;
     const val = parseFloat(row[compound] || '');
     if (!isNaN(val)) {
-      const rec = Math.round((val / 10.0) * 100);
+      const rec = ((val / 10.0) * 100).toFixed(1);
       row[compound + '_ghiChu'] = `${rec}%`;
     } else {
       row[compound + '_ghiChu'] = '';

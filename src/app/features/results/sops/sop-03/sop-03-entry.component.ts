@@ -321,7 +321,7 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
                     <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key]['ghiChu']"
-                             (ngModelChange)="onDataChanged()"
+                             (ngModelChange)="onGhiChuChanged(row.key)"
                              (focus)="$any($event.target).select()"
                              placeholder="Ghi chú..."
                              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-fuchsia-500 outline-none">
@@ -427,7 +427,7 @@ export class Sop03EntryComponent implements OnInit {
       const val = parseFloat(spikeRow['kqTrifluralin']);
       if (!isNaN(val)) {
         spikeRecoveryVal = val * 100;
-        spikeRecovery = `${spikeRecoveryVal % 1 === 0 ? spikeRecoveryVal.toFixed(0) : spikeRecoveryVal.toFixed(1)}%`;
+        spikeRecovery = `${spikeRecoveryVal.toFixed(1)}%`;
       }
     }
     
@@ -613,7 +613,33 @@ export class Sop03EntryComponent implements OnInit {
 
   onCellChanged(sampleCode: string) {
     this.updateRecovery(sampleCode);
+    if (sampleCode.startsWith('QC_FINAL_QC_')) {
+      this.propagateFinalQc(sampleCode);
+    }
     this.onDataChanged();
+  }
+
+  onGhiChuChanged(sampleCode: string) {
+    if (sampleCode.startsWith('QC_FINAL_QC_')) {
+      this.propagateFinalQc(sampleCode);
+    }
+    this.onDataChanged();
+  }
+
+  propagateFinalQc(sourceKey: string) {
+    const source = this.draft.resultData[sourceKey];
+    if (!source) return;
+    Object.keys(this.draft.resultData).forEach(key => {
+      if (key.startsWith('QC_FINAL_QC_') && key !== sourceKey) {
+        if (!this.draft.resultData[key]) {
+          this.draft.resultData[key] = {};
+        }
+        this.draft.resultData[key]['loSo'] = source['loSo'] || '';
+        this.draft.resultData[key]['kqTrifluralin'] = source['kqTrifluralin'] || '';
+        this.draft.resultData[key]['ghiChu'] = source['ghiChu'] || '';
+        this.draft.resultData[key]['selected'] = source['selected'] !== false;
+      }
+    });
   }
 
   updateRecovery(sampleCode: string) {

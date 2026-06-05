@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { calculateSop01Recovery } from './sop-01-engine';
 import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
+import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/compound-id-resolver';
 import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-sop-01-entry',
@@ -270,12 +271,20 @@ import { ReportService } from '../../../../core/services/report.service';
             <!-- Nhập file MassHunter -->
             <button type="button"
                     (click)="massHunterFileInput.click()" 
-                    class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-600 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                    class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-605 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-800/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                     title="Nhập kết quả tự động từ file excel Agilent MassHunter">
               <i class="fa-solid fa-file-excel text-emerald-500"></i>
-              <span>Nhập file MassHunter</span>
+              <span>Nhập tệp MassHunter</span>
             </button>
             <input #massHunterFileInput type="file" (change)="importMassHunterExcel($event)" accept=".xlsx" class="hidden">
+
+            <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-extrabold cursor-pointer select-none shadow-2xs">
+              <input type="checkbox"
+                     [(ngModel)]="draft.page1Data['uploadMassHunterToDrive']"
+                     (ngModelChange)="onDataChanged()"
+                     class="w-4 h-4 rounded text-emerald-650 border-slate-350 focus:ring-emerald-500">
+              <span class="text-slate-600 dark:text-slate-350">Tải tệp lên Google Drive</span>
+            </label>
 
             <!-- Làm tròn số thập phân -->
             <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs">
@@ -406,10 +415,11 @@ import { ReportService } from '../../../../core/services/report.service';
                                [(ngModel)]="draft.resultData[row.key][col]"
                                (ngModelChange)="onCellChanged(row.key)"
                                [id]="'cell-' + rowIdx + '-' + col"
+                               [disabled]="!isTargetAssigned(row.key, col)"
                                (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
                                (focus)="$any($event.target).select()"
                                placeholder="..."
-                               class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
+                               class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-105 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
                       </td>
                     }
                     
@@ -446,6 +456,7 @@ export class Sop01EntryComponent implements OnInit {
   private masterTargetService = inject(MasterTargetService);
   private progressService = inject(ProgressService);
   private reportService = inject(ReportService);
+  private toast = inject(ToastService);
   masterTargets = signal<any[]>([]);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
@@ -495,6 +506,7 @@ export class Sop01EntryComponent implements OnInit {
     if (this.draft.page1Data['loaiMau'] === undefined) this.draft.page1Data['loaiMau'] = 'Thủy sản';
     if (this.draft.page1Data['tinhTrangMau'] === undefined) this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
+    if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) this.draft.page1Data['uploadMassHunterToDrive'] = true;
 
     // Khởi tạo tên tuỳ chỉnh cho các mẫu QC
     if (this.draft.page1Data['blankName'] === undefined) this.draft.page1Data['blankName'] = '';
@@ -538,6 +550,7 @@ export class Sop01EntryComponent implements OnInit {
       }
     });
 
+    this.prefillUnassignedTargets();
     this.onDataChanged();
   }
 
@@ -630,6 +643,53 @@ export class Sop01EntryComponent implements OnInit {
 
   onDataChanged() {
     this.draftChanged.emit(this.draft);
+  }
+
+  isTargetAssigned(sampleCode: string, col: string): boolean {
+    if (sampleCode.startsWith('QC_')) return true;
+    if (!this.run) return true;
+    const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return true;
+    const assigned = targetMap[sampleCode];
+    if (!assigned || assigned.length === 0) return true;
+
+    const customNames: Record<string, string> = {
+      'kqFip': 'Fipronil',
+      'kqFipDesl': 'Fipronil desulfinyl',
+      'kqFipSulf': 'Fipronil sulfide',
+      'kqFipSulf2': 'Fipronil sulfone',
+      'kqClp': 'Chlorpyrifos',
+      'kqClpMe': 'Chlorpyrifos methyl',
+      'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
+    };
+    const compound = customNames[col] || col;
+    return isCompoundAssigned(assigned, compound);
+  }
+
+  prefillUnassignedTargets() {
+    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+    if (!this.run || !targetMap || !this.activeColumns) return;
+    const sampleList = this.run.sampleList || [];
+    let changed = false;
+
+    sampleList.forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = {};
+      }
+      const row = this.draft.resultData[sampleCode];
+      this.activeColumns.forEach((c: string) => {
+        if (!this.isTargetAssigned(sampleCode, c)) {
+          if (row[c] !== 'N/A') {
+            row[c] = 'N/A';
+            changed = true;
+          }
+        }
+      });
+    });
+
+    if (changed) {
+      this.onDataChanged();
+    }
   }
 
   onCellChanged(sampleCode: string) {
@@ -991,6 +1051,11 @@ export class Sop01EntryComponent implements OnInit {
                 isMatch = excelSampleNameLower.includes(`sp_${n}`) || excelSampleNameLower.includes(`spike_${n}`);
               } else if (limsType === 'QC_FINAL') {
                 isMatch = excelSampleNameLower.includes('final');
+              } else if (limsType === 'QC_CHECK_SAMPLE') {
+                const checkSampleName = (this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE').toLowerCase();
+                isMatch = excelSampleNameLower.includes('check_sample') || 
+                          excelSampleNameLower.includes('checksample') || 
+                          excelSampleNameLower.includes(checkSampleName);
               } else if (limsType === 'REGULAR') {
                 isMatch = excelSampleNameLower.includes(limsKey.toLowerCase());
               }
@@ -1037,56 +1102,60 @@ export class Sop01EntryComponent implements OnInit {
         // 3. Phát tín hiệu cập nhật dữ liệu để lưu Firestore
         this.onDataChanged();
 
-        // 4. Khởi động tiến trình tải tệp gốc nhị phân lên Google Drive qua Apps Script
-        const readerForUpload = new FileReader();
-        readerForUpload.onload = async (uploadEvent: any) => {
-          const base64String = uploadEvent.target.result;
-          
-          this.progressService.start(
-            'Đang lưu tệp Excel gốc', 
-            'Đang kết nối và truyền dữ liệu nhị phân gốc sang Google Drive...', 
-            100
-          );
-          this.progressService.update(30, 'Đang gửi yêu cầu ghi tệp...');
-
-          try {
-            this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
-            const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
-            const sopId = this.draft.sopId;
-            const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
-            const ext = file.name.substring(file.name.lastIndexOf('.'));
-            const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
-
-            const uploadRes = await this.reportService.uploadExcelToDrive(
-              this.draft.requestId, 
-              normalizedFileName, 
-              base64String,
-              this.draft.sopId
+        // 4. Khởi động tiến trình tải tệp gốc nhị phân lên Google Drive qua Apps Script (nếu được bật)
+        if (this.draft.page1Data['uploadMassHunterToDrive'] !== false) {
+          const readerForUpload = new FileReader();
+          readerForUpload.onload = async (uploadEvent: any) => {
+            const base64String = uploadEvent.target.result;
+            
+            this.progressService.start(
+              'Đang lưu tệp Excel gốc', 
+              'Đang kết nối và truyền dữ liệu nhị phân gốc sang Google Drive...', 
+              100
             );
+            this.progressService.update(30, 'Đang gửi yêu cầu ghi tệp...');
 
-            if (uploadRes.success && uploadRes.fileUrl) {
-              this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
-              this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
-              this.draft.page1Data['massHunterExcelName'] = normalizedFileName;
-              this.onDataChanged();
-              
-              this.progressService.complete();
-              alert('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!');
-            } else {
-              throw new Error(uploadRes.error || 'Lỗi không thể tạo file trên Drive.');
+            try {
+              this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
+              const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
+              const sopId = this.draft.sopId;
+              const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
+              const ext = file.name.substring(file.name.lastIndexOf('.'));
+              const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
+
+              const uploadRes = await this.reportService.uploadExcelToDrive(
+                this.draft.requestId, 
+                normalizedFileName, 
+                base64String,
+                this.draft.sopId
+              );
+
+              if (uploadRes.success && uploadRes.fileUrl) {
+                this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
+                this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
+                this.draft.page1Data['massHunterExcelName'] = normalizedFileName;
+                this.onDataChanged();
+                
+                this.progressService.complete();
+                this.toast.show('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!', 'success');
+              } else {
+                throw new Error(uploadRes.error || 'Lỗi không thể tạo file trên Drive.');
+              }
+            } catch (err: any) {
+              this.progressService.stop();
+              console.error('Lỗi upload Excel lên Drive:', err);
+              this.toast.show('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message, 'error');
             }
-          } catch (err: any) {
-            this.progressService.stop();
-            console.error('Lỗi upload Excel lên Drive:', err);
-            alert('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message);
-          }
-        };
+          };
 
-        readerForUpload.readAsDataURL(file);
+          readerForUpload.readAsDataURL(file);
+        } else {
+          this.toast.show('Nhập số liệu thành công! (Không tải tệp lên Google Drive)', 'success');
+        }
 
       } catch (err: any) {
         console.error('Lỗi khi đọc file Excel MassHunter:', err);
-        alert('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message);
+        this.toast.show('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message, 'error');
       }
     };
 

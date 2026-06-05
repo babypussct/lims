@@ -355,12 +355,12 @@ export class Sop1767857760184EntryComponent implements OnInit {
 
     // Spike Recovery
     const spikeVal = parseFloat(this.draft.resultData['QC_SPIKE']?.['kqDichlorvos'] || '');
-    const spikeRecovery = !isNaN(spikeVal) ? Math.round((spikeVal / 10.0) * 100) : null;
+    const spikeRecovery = !isNaN(spikeVal) ? Number(((spikeVal / 10.0) * 100).toFixed(1)) : null;
     const spikeQcStatus = spikeRecovery !== null ? (spikeRecovery >= 70 && spikeRecovery <= 120 ? 'PASS' : 'FAIL') : 'NONE';
 
     // Final Recovery
     const finalVal = parseFloat(this.draft.resultData['QC_FINAL']?.['kqDichlorvos'] || '');
-    const finalRecovery = !isNaN(finalVal) ? Math.round((finalVal / 10.0) * 100) : null;
+    const finalRecovery = !isNaN(finalVal) ? Number(((finalVal / 10.0) * 100).toFixed(1)) : null;
     const finalQcStatus = finalRecovery !== null ? (finalRecovery >= 70 && finalRecovery <= 120 ? 'PASS' : 'FAIL') : 'NONE';
 
     return {
@@ -627,7 +627,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     if (!row) return;
     const val = parseFloat(row['kqDichlorvos'] || '');
     if (!isNaN(val)) {
-      const rec = Math.round((val / 10.0) * 100);
+      const rec = ((val / 10.0) * 100).toFixed(1);
       row['ghiChu'] = `${rec}%`;
     } else {
       row['ghiChu'] = '';
