@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
@@ -575,7 +575,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
               <select [(ngModel)]="draft.page1Data['activeCompound']"
                       (ngModelChange)="onDataChanged()"
                       class="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold text-violet-600 dark:text-violet-400 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition cursor-pointer max-w-[200px]">
-                @for (c of config.compounds; track c) {
+                @for (c of assignedCompoundsForFormDon(); track c) {
                   <option [value]="c">{{ compoundDisplayNames()[c] || c }}</option>
                 }
               </select>
@@ -656,11 +656,12 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
                     <!-- Kết quả (µg/kg) -->
                     <td class="py-1 px-1.5">
                       <input type="text"
+                             [disabled]="row.type === 'REGULAR' && !isTargetAssigned(row.key, draft.page1Data['activeCompound'])"
                              [(ngModel)]="draft.resultData[row.key][draft.page1Data['activeCompound']]"
                              (ngModelChange)="onChromResultChanged(row.key)"
                              (focus)="$any($event.target).select()"
                              placeholder="ND/Kết quả"
-                             class="w-full bg-white dark:bg-slate-855 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
+                             class="w-full bg-white dark:bg-slate-855 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                     </td>
 
                     <!-- Ghi chú -->
@@ -682,7 +683,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/com
     </div>
   `
 })
-export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnInit {
+export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnInit, OnChanges {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
@@ -694,6 +695,31 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   compoundDisplayNames = signal<Record<string, string>>({});
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
+
+  /** Danh sách hoạt chất được giao cho ít nhất 1 mẫu trong mẻ này (dùng cho Form Đơn) */
+  assignedCompoundsForFormDon = computed(() => {
+    const compounds: string[] = this.config?.compounds || [];
+    const sampleList: string[] = this.run?.sampleList || [];
+    if (!sampleList.length) return compounds;
+    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return compounds;
+    return compounds.filter((c: string) =>
+      sampleList.some((s: string) => this.isTargetAssigned(s, c))
+    );
+  });
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['run'] && !changes['run'].firstChange) {
+      const newRun = changes['run'].currentValue;
+      if (newRun && newRun.sampleList && newRun.sampleList.length > 0) {
+        // Reset to first sample of the new filtered list when prefix filter changes
+        const currentActive = this.activeSampleCode();
+        if (!newRun.sampleList.includes(currentActive)) {
+          this.activeSampleCode.set(newRun.sampleList[0]);
+        }
+      }
+    }
+  }
 
   setPrintFormType(type: 'formCheck' | 'formDon') {
     this.draft.page1Data['printFormType'] = type;
@@ -876,10 +902,16 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       this.draft.page1Data['printFormType'] = 'formCheck';
     }
 
-    // Initialize activeCompound
+    // Initialize activeCompound: ưu tiên hoạt chất đầu tiên được giao cho ít nhất 1 mẫu
     if (!this.draft.page1Data['activeCompound']) {
-      if (this.config?.compounds && this.config.compounds.length > 0) {
-        this.draft.page1Data['activeCompound'] = this.config.compounds[0];
+      const compounds: string[] = this.config?.compounds || [];
+      const sampleList: string[] = this.run?.sampleList || [];
+      const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+      const firstAssigned = targetMap
+        ? compounds.find((c: string) => sampleList.some((s: string) => this.isTargetAssigned(s, c)))
+        : compounds[0];
+      if (firstAssigned) {
+        this.draft.page1Data['activeCompound'] = firstAssigned;
       }
     }
 
