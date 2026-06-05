@@ -146,59 +146,105 @@
           <span>{{ getPrintButtonLabel() }}</span>
         </button>
 
-        <!-- Thao tác khác Dropdown (Premium SaaS Dropdown) -->
-        <div class="relative group/actions">
-          <button [disabled]="isProcessing()"
-                  class="px-3.5 py-2 text-xs font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 duration-150">
-            <i class="fa-solid fa-gear"></i>
+        <!-- Thao tác khác Dropdown (Click-based, Responsive: Desktop=Dropdown, Mobile=BottomSheet) -->
+        <div class="relative">
+          <button (click)="toggleActionsMenu()" 
+                  [disabled]="isProcessing()"
+                  class="px-4 py-2.5 text-xs font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition flex items-center gap-2 active:scale-95 disabled:opacity-50 duration-150"
+                  [class.bg-slate-200]="showActionsMenu()"
+                  [class.dark:bg-slate-750]="showActionsMenu()">
+            <i class="fa-solid fa-gear" [class.fa-spin]="showActionsMenu()"></i>
             <span>THAO TÁC</span>
-            <i class="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
+            <i class="fa-solid fa-chevron-down text-[9px] opacity-60 transition-transform duration-200"
+               [class.rotate-180]="showActionsMenu()"></i>
           </button>
           
-          <div class="absolute right-0 top-full mt-2 w-64 bg-white/98 dark:bg-slate-900/98 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-2xl p-2 opacity-0 invisible group-hover/actions:opacity-100 group-hover/actions:visible transition-all duration-200 z-50 flex flex-col gap-1">
-            
-            <!-- Section 1: Tài liệu & Báo cáo -->
-            @if (getCurrentPdfUrl() || getCurrentDocsUrl()) {
-              <div class="px-2.5 py-1 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                Báo cáo & Tài liệu
-              </div>
-              @if (getCurrentPdfUrl()) {
-                <button (click)="openPdfPreview(getCurrentPdfUrl())"
-                   class="w-full text-left px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
-                  <i class="fa-solid fa-file-pdf"></i>
-                  <span>Xem PDF phiên bản này</span>
+          @if (showActionsMenu()) {
+            <!-- Backdrop: semi-transparent on mobile, transparent on desktop -->
+            <div class="fixed inset-0 z-40 bg-black/40 md:bg-transparent" (click)="closeActionsMenu()"></div>
+          
+            <!-- Menu Container: Bottom sheet on mobile, dropdown on desktop -->
+            <div class="
+              fixed inset-x-0 bottom-0 z-50 p-4 pt-0
+              md:absolute md:inset-auto md:right-0 md:top-full md:mt-2.5 md:p-0 md:bottom-auto
+            ">
+              <div class="
+                w-full max-w-lg mx-auto
+                md:w-80 md:max-w-none md:mx-0
+                bg-white dark:bg-slate-900 
+                rounded-t-3xl md:rounded-2xl 
+                border border-slate-200 dark:border-slate-700 
+                shadow-2xl 
+                p-4 md:p-3
+                animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-top-2 duration-200
+              ">
+                <!-- Mobile drag handle -->
+                <div class="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-4 md:hidden"></div>
+
+                <!-- Mobile header -->
+                <div class="flex items-center justify-between mb-3 md:hidden">
+                  <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-slate-400"></i>
+                    Thao tác nhanh
+                  </h3>
+                  <button (click)="closeActionsMenu()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-90">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                  </button>
+                </div>
+                
+                <!-- Section 1: Tài liệu & Báo cáo -->
+                @if (getCurrentPdfUrl() || getCurrentDocsUrl()) {
+                  <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Báo cáo & Tài liệu
+                  </div>
+                  @if (getCurrentPdfUrl()) {
+                    <button (click)="closeActionsMenu(); openPdfPreview(getCurrentPdfUrl())"
+                       class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                      <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-file-pdf text-rose-500"></i>
+                      </div>
+                      <span>Xem PDF phiên bản này</span>
+                    </button>
+                  }
+                  @if (getCurrentDocsUrl()) {
+                    <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                       (click)="closeActionsMenu()"
+                       class="px-4 py-3.5 md:py-3 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 no-underline active:scale-[0.98]">
+                      <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                        <i class="fa-brands fa-google-drive text-blue-500"></i>
+                      </div>
+                      <span>Mở Docs phiên bản này</span>
+                    </a>
+                  }
+                  <div class="border-t border-slate-200 dark:border-slate-800 my-2 mx-2"></div>
+                }
+
+                <!-- Section 2: Quản lý mẻ chạy -->
+                <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Quản trị mẻ chạy
+                </div>
+                @if (draft()?.status === 'completed') {
+                  <button (click)="closeActionsMenu(); triggerRevertToDraft()" 
+                          [disabled]="isProcessing()"
+                          class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                    <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                      <i class="fa-solid fa-unlock text-amber-500"></i>
+                    </div>
+                    <span>Hủy xuất bản kết quả</span>
+                  </button>
+                }
+                <button (click)="closeActionsMenu(); openResetModal()"
+                        [disabled]="isProcessing()"
+                        class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                  <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-trash-can text-red-500"></i>
+                  </div>
+                  <span>Xóa hoàn toàn kết quả</span>
                 </button>
-              }
-              @if (getCurrentDocsUrl()) {
-                <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                   class="px-3 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-2.5 no-underline">
-                  <i class="fa-brands fa-google-drive"></i>
-                  <span>Mở Docs phiên bản này</span>
-                </a>
-              }
-              <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
-            }
 
-            <!-- Section 2: Quản lý mẻ chạy -->
-            <div class="px-2.5 py-1 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              Quản trị mẻ chạy
+              </div>
             </div>
-            @if (draft()?.status === 'completed') {
-              <button (click)="triggerRevertToDraft()" 
-                      [disabled]="isProcessing()"
-                      class="w-full text-left px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
-                <i class="fa-solid fa-unlock"></i>
-                <span>Hủy xuất bản kết quả</span>
-              </button>
-            }
-            <button (click)="openResetModal()"
-                    [disabled]="isProcessing()"
-                    class="w-full text-left px-3 py-2 text-xs font-bold text-red-650 dark:text-red-450 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-2.5 border-0 bg-transparent cursor-pointer">
-              <i class="fa-solid fa-trash-can"></i>
-              <span>Xóa hoàn toàn kết quả</span>
-            </button>
-
-          </div>
+          }
         </div>
       </div>
     }

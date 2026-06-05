@@ -646,7 +646,9 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   isTargetAssigned(sampleCode: string, col: string): boolean {
-    if (sampleCode.startsWith('QC_')) return true;
+    if (sampleCode.startsWith('QC_')) {
+      return this.isTargetAssignedToAnySample(col);
+    }
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
@@ -666,13 +668,40 @@ export class Sop01EntryComponent implements OnInit {
     return isCompoundAssigned(assigned, compound);
   }
 
+  isTargetAssignedToAnySample(col: string): boolean {
+    if (!this.run) return true;
+    const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return true;
+    const sampleList = this.run.sampleList || [];
+    if (sampleList.length === 0) return true;
+
+    return sampleList.some((sampleCode: string) => {
+      const assigned = targetMap[sampleCode];
+      if (!assigned || assigned.length === 0) return true;
+
+      const customNames: Record<string, string> = {
+        'kqFip': 'Fipronil',
+        'kqFipDesl': 'Fipronil desulfinyl',
+        'kqFipSulf': 'Fipronil sulfide',
+        'kqFipSulf2': 'Fipronil sulfone',
+        'kqClp': 'Chlorpyrifos',
+        'kqClpMe': 'Chlorpyrifos methyl',
+        'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
+      };
+      const compound = customNames[col] || col;
+      return isCompoundAssigned(assigned, compound);
+    });
+  }
+
   prefillUnassignedTargets() {
     const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
     if (!this.run || !targetMap || !this.activeColumns) return;
-    const sampleList = this.run.sampleList || [];
+    
+    // Get all rows in display (including QC samples)
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
     let changed = false;
 
-    sampleList.forEach((sampleCode: string) => {
+    allRowKeys.forEach((sampleCode: string) => {
       if (!this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode] = {};
       }

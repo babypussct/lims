@@ -93,6 +93,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   resetConfirmText = signal('');
   isMetadataExpanded = signal(false);
 
+  // Actions dropdown toggle (click-based instead of hover)
+  showActionsMenu = signal(false);
+
+  toggleActionsMenu() {
+    this.showActionsMenu.update(v => !v);
+  }
+
+  closeActionsMenu() {
+    this.showActionsMenu.set(false);
+  }
+
   // Global Prefix Filtering
   activeFilter = signal<string>('ALL');
   
