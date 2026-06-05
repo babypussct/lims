@@ -1,4 +1,4 @@
-﻿import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
@@ -455,9 +455,8 @@ setPrintFormType(type: 'formCheck' | 'formDon') {
     }
 
     if (type === 'formCheck') {
-      this.activeTab.set('compounds');
+      // Not applicable for Chlor Huu Co
     } else {
-      this.activeTab.set('chromatography');
       if (!this.draft.page1Data['r2']) {
         this.draft.page1Data['r2'] = '0.999';
       }
@@ -680,9 +679,6 @@ setPrintFormType(type: 'formCheck' | 'formDon') {
         if (sRes['heSoPhaLoang'] === undefined) {
           sRes['heSoPhaLoang'] = '1';
         }
-        if (sRes['hSoPhaLoang'] === undefined) {
-          sRes['hSoPhaLoang'] = '1';
-        }
         if (sRes['loSo'] === undefined) {
           sRes['loSo'] = '';
         }
@@ -695,58 +691,14 @@ setPrintFormType(type: 'formCheck' | 'formDon') {
       });
     }
 
+
     this.updateGopInChungState();
-
-
 
     if (this.config.checkboxLines) {
       this.checkboxList = Object.entries(this.config.checkboxLines).map(([label, key]) => ({
         key: key as string,
         label
       }));
-    }
-    if (!this.draft.page1Data) {
-      this.draft.page1Data = {};
-    }
-    if (!this.draft.resultData) {
-      this.draft.resultData = {};
-    }
-    if (this.run.sampleList) {
-      this.run.sampleList.forEach((sampleCode: string) => {
-        if (!this.draft.resultData[sampleCode]) {
-          this.draft.resultData[sampleCode] = {};
-        }
-        if (this.draft.resultData[sampleCode]['selected'] === undefined) {
-          this.draft.resultData[sampleCode]['selected'] = true;
-        }
-      });
-    }
-
-    this.updateGopInChungState();
-
-    // Set default value for khoiLuong if not set (default 10.0)
-    if (this.draft.page1Data['khoiLuong'] === undefined || this.draft.page1Data['khoiLuong'] === null || this.draft.page1Data['khoiLuong'] === '') {
-      this.draft.page1Data['khoiLuong'] = '10.0';
-    }
-
-    // Set default value for loaiMau if not set (default Thủy sản)
-    if (this.draft.page1Data['loaiMau'] === undefined || this.draft.page1Data['loaiMau'] === null || this.draft.page1Data['loaiMau'] === '') {
-      this.draft.page1Data['loaiMau'] = 'Thủy sản';
-    }
-
-    // Set default value for tinhTrangMau if not set (default Bình thường)
-    if (this.draft.page1Data['tinhTrangMau'] === undefined || this.draft.page1Data['tinhTrangMau'] === null || this.draft.page1Data['tinhTrangMau'] === '') {
-      this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
-    }
-
-    // Set default value for qcNhanDang if not set (default NA / null)
-    if (this.draft.page1Data['qcNhanDang'] === undefined) {
-      this.draft.page1Data['qcNhanDang'] = null;
-    }
-
-    // Set default value for checkGopInChung if not set (default true)
-    if (this.draft.page1Data['checkGopInChung'] === undefined || this.draft.page1Data['checkGopInChung'] === null) {
-      this.draft.page1Data['checkGopInChung'] = true;
     }
 
     // Set other evaluation checkboxes to true (Đạt) if not set

@@ -28,7 +28,8 @@ import {
   buildFipronilPdfPayload, 
   buildDichlorvosPdfPayload, 
   buildDefaultSopPdfPayload,
-  buildLanHuuCoPdfPayload
+  buildLanHuuCoPdfPayload,
+  buildChlorHuuCoPdfPayload
 } from './result-pdf-helper';
 
 @Component({
@@ -522,6 +523,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         );
       } else if (key === 'lan-huu-co') {
         reportPayload = buildLanHuuCoPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      } else if (key === 'chlor-huu-co') {
+        reportPayload = buildChlorHuuCoPdfPayload(
           currentDraft,
           currentRun,
           activeFilter,

@@ -953,32 +953,32 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
   }
 
   // Helper inside function to map compound to backend key
-    function mapCompoundToKey(cName) {
+  function mapCompoundToKey(cName) {
     const tableTextToKey = {
       'aldrin': 'Aldrin',
-      'bhca': 'BHCa', 'bhc-alpha': 'BHCa', 'alpha-bhc': 'BHCa', 'Î±-bhc': 'BHCa',
-      'bhcb': 'BHCb', 'bhc-beta': 'BHCb', 'beta-bhc': 'BHCb', 'Î²-bhc': 'BHCb',
-      'bhcd': 'BHCd', 'bhc-delta': 'BHCd', 'delta-bhc': 'BHCd', 'Î´-bhc': 'BHCd',
-      'bhce': 'BHCe', 'bhc-epsilon': 'BHCe', 'epsilon-bhc': 'BHCe', 'Îµ-bhc': 'BHCe',
-      'bhcg': 'BHCg', 'bhc-gamma': 'BHCg', 'gamma-bhc': 'BHCg', 'Î³-bhc': 'BHCg', 'lindane': 'BHCg',
-      'chlordane_cis': 'Chlordane_cis', 'chlordane-cis': 'Chlordane_cis', 'cis-chlordane': 'Chlordane_cis',
-      'chlordane_oxy': 'Chlordane_oxy', 'chlordane-oxy': 'Chlordane_oxy', 'oxy-chlordane': 'Chlordane_oxy',
-      'chlordane_trans': 'Chlordane_trans', 'chlordane-trans': 'Chlordane_trans', 'trans-chlordane': 'Chlordane_trans',
-      'ddd_op': 'DDD_op', 'ddd-o,p': 'DDD_op', 'o,p-ddd': 'DDD_op', 'o,p''-ddd': 'DDD_op',
-      'ddd_pp': 'DDD_pp', 'ddd-p,p': 'DDD_pp', 'p,p-ddd': 'DDD_pp', 'p,p''-ddd': 'DDD_pp',
-      'dde_op': 'DDE_op', 'dde-o,p': 'DDE_op', 'o,p-dde': 'DDE_op', 'o,p''-dde': 'DDE_op',
-      'dde_pp': 'DDE_pp', 'dde-p,p': 'DDE_pp', 'p,p-dde': 'DDE_pp', 'p,p''-dde': 'DDE_pp',
-      'ddt_op': 'DDT_op', 'ddt-o,p': 'DDT_op', 'o,p-ddt': 'DDT_op', 'o,p''-ddt': 'DDT_op',
-      'ddt_pp': 'DDT_pp', 'ddt-p,p': 'DDT_pp', 'p,p-ddt': 'DDT_pp', 'p,p''-ddt': 'DDT_pp',
+      'bhca': 'BHCa', 'bhcalpha': 'BHCa', 'alphabhc': 'BHCa', 'αbhc': 'BHCa',
+      'bhcb': 'BHCb', 'bhcbeta': 'BHCb', 'betabhc': 'BHCb', 'βbhc': 'BHCb',
+      'bhcd': 'BHCd', 'bhcdelta': 'BHCd', 'deltabhc': 'BHCd', 'δbhc': 'BHCd',
+      'bhce': 'BHCe', 'bhcepsilon': 'BHCe', 'epsilonbhc': 'BHCe', 'εbhc': 'BHCe',
+      'bhcg': 'BHCg', 'bhcgamma': 'BHCg', 'gammabhc': 'BHCg', 'γbhc': 'BHCg', 'lindane': 'BHCg',
+      'chlordanecis': 'Chlordane_cis', 'cischlordane': 'Chlordane_cis',
+      'chlordaneoxy': 'Chlordane_oxy', 'oxychlordane': 'Chlordane_oxy',
+      'chlordanetrans': 'Chlordane_trans', 'transchlordane': 'Chlordane_trans',
+      'dddop': 'DDD_op', 'opddd': 'DDD_op',
+      'dddpp': 'DDD_pp', 'ppddd': 'DDD_pp',
+      'ddeop': 'DDE_op', 'opdde': 'DDE_op',
+      'ddepp': 'DDE_pp', 'ppdde': 'DDE_pp',
+      'ddtop': 'DDT_op', 'opddt': 'DDT_op',
+      'ddtpp': 'DDT_pp', 'ppddt': 'DDT_pp',
       'dieldrin': 'Dieldrin',
-      'endosulfan1': 'Endosulfan1', 'endosulfan-i': 'Endosulfan1', 'alpha-endosulfan': 'Endosulfan1',
-      'endosulfan2': 'Endosulfan2', 'endosulfan-ii': 'Endosulfan2', 'beta-endosulfan': 'Endosulfan2',
-      'endosulfans': 'EndosulfanS', 'endosulfan-sulfate': 'EndosulfanS',
+      'endosulfan1': 'Endosulfan1', 'endosulfani': 'Endosulfan1', 'alphaendosulfan': 'Endosulfan1',
+      'endosulfan2': 'Endosulfan2', 'endosulfanii': 'Endosulfan2', 'betaendosulfan': 'Endosulfan2',
+      'endosulfans': 'EndosulfanS', 'endosulfansulfate': 'EndosulfanS',
       'endrin': 'Endrin',
-      'heptachlorendoepoxideisomera': 'HeptachlorA', 'heptachlor epoxide isomer a': 'HeptachlorA', 'heptachlorepoxideisomera': 'HeptachlorA',
-      'heptachlorexoepoxideisomerb': 'HeptachlorB', 'heptachlor epoxide isomer b': 'HeptachlorB', 'heptachlorepoxideisomerb': 'HeptachlorB',
-      'heptachlora': 'HeptachlorA', 'heptachlor-epoxide-trans': 'HeptachlorA', 'heptachlor epoxide trans': 'HeptachlorA',
-      'heptachlorb': 'HeptachlorB', 'heptachlor-epoxide-cis': 'HeptachlorB', 'heptachlor epoxide cis': 'HeptachlorB',
+      'heptachlorendoepoxideisomera': 'HeptachlorA', 'heptachlorepoxideisomera': 'HeptachlorA', 'heptachlorepoxideisomertrans': 'HeptachlorA',
+      'heptachlorexoepoxideisomerb': 'HeptachlorB', 'heptachlorepoxideisomerb': 'HeptachlorB', 'heptachlorepoxideisomerck': 'HeptachlorB', 'heptachlorepoxideisomerdecis': 'HeptachlorB',
+      'heptachlora': 'HeptachlorA', 'heptachlorepoxicetrans': 'HeptachlorA', 'heptachlorepoxidetrans': 'HeptachlorA',
+      'heptachlorb': 'HeptachlorB', 'heptachlorepoxicecis': 'HeptachlorB', 'heptachlorepoxidecis': 'HeptachlorB',
       'heptachlor': 'Heptachlor',
       'hcb': 'HCB', 'hexachlorobenzene': 'HCB',
       'isodrin': 'Isodrin',
@@ -986,100 +986,8 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
       'mirex': 'Mirex',
       'pendimethalin': 'Pendimethalin'
     };
-    const searchKey = cName.toLowerCase().replace(/[\s\-\'\â€™\_]/g, '');
+    const searchKey = cName.toLowerCase().replace(/[\s\-\'\_,]/g, '');
     return tableTextToKey[searchKey] || cName;
-  }ents, sopConfig, metadata, compoundName, samples) {
-  let tables = [];
-  for (const element of elements) {
-    if (element.getType() === DocumentApp.ElementType.TABLE) {
-      tables.push(element.asTable());
-    } else if (typeof element.getTables === 'function') {
-      const tbls = element.getTables();
-      for (let j = 0; j < tbls.length; j++) {
-        tables.push(tbls[j]);
-      }
-    }
-  }
-
-  // 1. Điền bảng đường chuẩn Table 7 (rows=8)
-  let calibTable = null;
-  for (let i = 0; i < tables.length; i++) {
-    const t = tables[i];
-    if (t.getNumRows() === 8) {
-      const headerText = t.getRow(0).getText();
-      if (headerText.includes("Chuẩn") && headerText.includes("vial")) {
-        calibTable = t;
-        break;
-      }
-    }
-  }
-
-  if (calibTable) {
-    const calibPoints = metadata.calibPoints || [];
-    for (let i = 0; i < 6; i++) {
-      const rowIdx = i + 1;
-      const row = calibTable.getRow(rowIdx);
-      setCellText(row, 0, `C${i}`, null, 9);
-      if (i < calibPoints.length) {
-        const pt = calibPoints[i];
-        setCellText(row, 1, pt.loSo || '', null, 9);
-        setCellText(row, 2, pt.hamLuong || '', null, 9);
-      } else {
-        setCellText(row, 1, '', null, 9);
-        setCellText(row, 2, '', null, 9);
-      }
-    }
-    const r2Val = metadata.r2 || '';
-    setCellText(calibTable.getRow(7), 1, r2Val, null, 9);
-  }
-
-  // Helper inside function to map compound to backend key
-  function mapCompoundToKey(cName) {
-    const directMap = {
-      'Acephate': 'Acephate',
-      'AzinphosMethyl': 'AzinphosMethyl',
-      'Cadusafos': 'Cadusafos',
-      'Chlorpyrifos': 'Chlorpyrifos',
-      'ChlorpyrifosMethyl': 'ChlorpyrifosMethyl',
-      'Diazinon': 'Diazinon',
-      'Dimethoate': 'Dimethoate',
-      'Edifenphos': 'Edifenphos',
-      'Ethion': 'Ethion',
-      'Ethoprophos': 'Ethoprophos',
-      'Fenitrothion': 'Fenitrothion',
-      'Fenthion': 'Fenthion',
-      'Fipronil': 'Fipronil',
-      'FipronilSulfide': 'FipronilSulfide',
-      'FipronilSulfone': 'FipronilSulfone',
-      'FipronilDesulfinyl': 'FipronilDesulfinyl',
-      'Iprobenfos': 'Iprobenfos',
-      'Malathion': 'Malathion',
-      'Mefenoxam': 'Mefenoxam',
-      'Metalaxyl': 'Metalaxyl',
-      'Methacrifos': 'Methacrifos',
-      'Methidathion': 'Methidathion',
-      'Monocrotophos': 'Monocrotophos',
-      'Omethoate': 'Omethoate',
-      'Parathion': 'Parathion',
-      'ParathionMethyl': 'ParathionMethyl',
-      'Phenthoate': 'Phenthoate',
-      'Phorate': 'Phorate',
-      'Phosmet': 'Phosmet',
-      'Phosphamidon': 'Phosphamidon',
-      'PirimiphosMethyl': 'PirimiphosMethyl',
-      'Profenofos': 'Profenofos',
-      'Quinalphos': 'Quinalphos',
-      'Ronnel': 'Ronnel',
-      'Triazophos': 'Triazophos',
-      'Vamidothion': 'Vamidothion',
-      'Chlorfenvinphos': 'Chlorfenvinphos',
-      'IsofenphosMethyl': 'IsofenphosMethyl'
-    };
-    const normalized = cName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const [k, v] of Object.entries(directMap)) {
-      if (k.toLowerCase() === normalized) return v;
-    }
-    return cName;
   }
 
   // 2. Điền bảng chuẩn bị mẫu Table 8 (rows=19)
@@ -1106,12 +1014,12 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'KPH';
+            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'KPH';
           } else {
             cell4Text = 'KPH';
           }
           if (s.compoundNotes && compoundName) {
-            cell5Text = s.compoundNotes[compoundName] || '';
+            cell5Text = s.compoundNotes[mapCompoundToKey(compoundName)] || '';
           }
         } else {
           cell4Text = s.checkBoSungNuoc || 'không';
@@ -1153,12 +1061,12 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
         let cell5Text = '';
         if (isDon) {
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'KPH';
+            cell4Text = s.compoundResults[mapCompoundToKey(compoundName)] || 'KPH';
           } else {
             cell4Text = 'KPH';
           }
           if (s.compoundNotes && compoundName) {
-            cell5Text = s.compoundNotes[compoundName] || '';
+            cell5Text = s.compoundNotes[mapCompoundToKey(compoundName)] || '';
           }
         } else {
           cell4Text = s.checkBoSungNuoc || 'không';
@@ -1179,7 +1087,3 @@ function fillChlorHuuCoSection2(elements, sopConfig, metadata, compoundName, sam
     }
   }
 }
-
-/**
- * Xóa PageBreak thừa ở cuối tài liệu
- */
