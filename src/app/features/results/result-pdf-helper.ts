@@ -531,7 +531,8 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
   };
 
-  const isGop = currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
+  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+  const isGop = !isDon && currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
 
   if (isGop && filteredSamples.length > 0) {
     const mergedSampleCode = filteredSamples.join('; ');
@@ -882,7 +883,8 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
   };
 
-  const isGop = currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
+  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+  const isGop = !isDon && currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
 
   if (isGop && filteredSamples.length > 0) {
     const mergedSampleCode = filteredSamples.join('; ');

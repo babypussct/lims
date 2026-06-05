@@ -72,15 +72,20 @@ function generateCustomReport_chlor_huu_co(templateId, metadata, samples, folder
           if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
             const textEl = element.asParagraph().editAsText();
             const textStr = textEl.getText();
-            let idx = textStr.indexOf('...');
-            let len = 3;
-            if (idx === -1) {
-              idx = textStr.indexOf('…');
-              len = 1;
+            let firstDot = textStr.indexOf('.');
+            if (firstDot === -1) {
+              firstDot = textStr.indexOf('…');
             }
-            if (idx !== -1) {
-              textEl.insertText(idx, compoundName.toUpperCase());
-              textEl.deleteText(idx + compoundName.length, idx + compoundName.length + len - 1);
+            if (firstDot !== -1) {
+              let lastDot = firstDot;
+              while (lastDot + 1 < textStr.length && (textStr[lastDot + 1] === '.' || textStr[lastDot + 1] === '…' || textStr[lastDot + 1] === ' ')) {
+                lastDot++;
+              }
+              while (lastDot > firstDot && textStr[lastDot] === ' ') {
+                lastDot--;
+              }
+              textEl.insertText(firstDot, compoundName.toUpperCase());
+              textEl.deleteText(firstDot + compoundName.length, lastDot + compoundName.length);
             } else {
               element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
             }

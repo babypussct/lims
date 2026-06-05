@@ -896,14 +896,24 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     }
 
     // Initialize calibration points (C0-C4: 5 points)
+    const defaultCalib = [
+      { loSo: '1', hamLuong: '0' },
+      { loSo: '2', hamLuong: '5' },
+      { loSo: '3', hamLuong: '10' },
+      { loSo: '4', hamLuong: '20' },
+      { loSo: '5', hamLuong: '50' }
+    ];
     if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length !== 5) {
-      this.draft.page1Data['calibPoints'] = [
-        { loSo: '1', hamLuong: '0' },
-        { loSo: '2', hamLuong: '5' },
-        { loSo: '3', hamLuong: '10' },
-        { loSo: '4', hamLuong: '20' },
-        { loSo: '5', hamLuong: '50' }
-      ];
+      this.draft.page1Data['calibPoints'] = defaultCalib;
+    } else {
+      this.draft.page1Data['calibPoints'].forEach((pt: any, idx: number) => {
+        if (pt.hamLuong === undefined || pt.hamLuong === null || String(pt.hamLuong).trim() === '') {
+          pt.hamLuong = defaultCalib[idx].hamLuong;
+        }
+        if (pt.loSo === undefined || pt.loSo === null || String(pt.loSo).trim() === '') {
+          pt.loSo = defaultCalib[idx].loSo;
+        }
+      });
     }
 
     if (this.draft.page1Data['r2'] === undefined) {
