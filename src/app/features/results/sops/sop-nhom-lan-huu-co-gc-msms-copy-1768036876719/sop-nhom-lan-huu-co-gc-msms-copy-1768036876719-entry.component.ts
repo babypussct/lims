@@ -695,7 +695,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
   checkboxList: { key: string; label: string }[] = [];
   activeSampleCode = signal<string>('');
 
-setPrintFormType(type: 'formCheck' | 'formDon') {
+  setPrintFormType(type: 'formCheck' | 'formDon') {
     this.draft.page1Data['printFormType'] = type;
 
     // Automatically assign appropriate vials when switching form type
@@ -719,6 +719,7 @@ setPrintFormType(type: 'formCheck' | 'formDon') {
         this.draft.page1Data['r2'] = '0.999';
       }
     }
+    this.updateGopInChungState();
     this.onDataChanged();
   }
 
@@ -1228,11 +1229,7 @@ setPrintFormType(type: 'formCheck' | 'formDon') {
     }
   }
 
-  setPrintFormType(type: 'formCheck' | 'formDon') {
-    this.draft.page1Data['printFormType'] = type;
-    this.updateGopInChungState();
-    this.onDataChanged();
-  }
+
 
   toggleSampleSelected(sampleCode: string, checked: boolean) {
     if (!this.draft.resultData[sampleCode]) {
