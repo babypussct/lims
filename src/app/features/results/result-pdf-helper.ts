@@ -803,7 +803,6 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   }
 
   // Get active compounds to print (for formDon, only print the selected activeCompound)
-  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
   const compoundsToPrint = isDon 
     ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
     : currentConf.compounds.filter((c: string) => {
@@ -1158,7 +1157,6 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   }
 
   // Get active compounds to print (for formDon, only print the selected activeCompound)
-  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
   const compoundsToPrint = isDon 
     ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
     : currentConf.compounds.filter((c: string) => {
