@@ -282,6 +282,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     if (sopConf.formType === 'type3b') {
       defaultPage1['checkGopInChung'] = true;
+      defaultPage1['printFormType'] = 'formCheck';
     }
 
     const defaultResultData: Record<string, any> = {};

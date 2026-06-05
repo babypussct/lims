@@ -61,8 +61,13 @@ export class ResultService {
     
     let lastMeta: any = null;
     let lastDetail: any = null;
+    let metaLoaded = false;
+    let detailLoaded = false;
     
     const emitMerged = () => {
+      if (!metaLoaded || !detailLoaded) {
+        return;
+      }
       if (!lastMeta) {
         callback(null, null);
         return;
@@ -103,18 +108,19 @@ export class ResultService {
     };
     
     const unsubMeta = onSnapshot(metaRef, (docSnap) => {
+      metaLoaded = true;
       if (docSnap.exists()) {
         lastMeta = docSnap.data();
-        emitMerged();
       } else {
         lastMeta = null;
-        emitMerged();
       }
+      emitMerged();
     }, (error) => {
       console.error('Error listening to metadata changes:', error);
     });
     
     const unsubDetail = onSnapshot(detailRef, (docSnap) => {
+      detailLoaded = true;
       if (docSnap.exists()) {
         lastDetail = docSnap.data();
       } else {

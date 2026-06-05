@@ -655,7 +655,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     currentConf.compounds.forEach((c: string) => {
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH';
       const val = resObj[c];
-      results[c] = isNd ? 'KPH' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'KPH');
+      results[c] = isNd ? 'ND' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
       notes[c] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
     });
     return { results, notes };
@@ -801,10 +801,13 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     });
   }
 
-  // Get active compounds to print (for formDon)
-  const compoundsToPrint = currentConf.compounds.filter((c: string) => {
-    return filteredSamples.some((s: string) => isAssigned(s, c));
-  });
+  // Get active compounds to print (for formDon, only print the selected activeCompound)
+  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+  const compoundsToPrint = isDon 
+    ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
+    : currentConf.compounds.filter((c: string) => {
+        return filteredSamples.some((s: string) => isAssigned(s, c));
+      });
 
   return {
     action: 'generate_pdf',
@@ -1004,7 +1007,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH';
       const val = resObj[c];
       const backendKey = mapCompoundToKey(c);
-      results[backendKey] = isNd ? 'KPH' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'KPH');
+      results[backendKey] = isNd ? 'ND' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
       notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
     });
     return { results, notes };
@@ -1152,10 +1155,13 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     });
   }
 
-  // Get active compounds to print (for formDon)
-  const compoundsToPrint = currentConf.compounds.filter((c: string) => {
-    return filteredSamples.some((s: string) => isAssigned(s, c));
-  });
+  // Get active compounds to print (for formDon, only print the selected activeCompound)
+  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+  const compoundsToPrint = isDon 
+    ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
+    : currentConf.compounds.filter((c: string) => {
+        return filteredSamples.some((s: string) => isAssigned(s, c));
+      });
 
   return {
     action: 'generate_pdf',

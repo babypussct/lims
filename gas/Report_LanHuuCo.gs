@@ -70,7 +70,20 @@ function generateCustomReport_lan_huu_co(templateId, metadata, samples, folder, 
         if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
           const pText = element.asParagraph().getText();
           if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
-            element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
+            const textEl = element.asParagraph().editAsText();
+            const textStr = textEl.getText();
+            let idx = textStr.indexOf('...');
+            let len = 3;
+            if (idx === -1) {
+              idx = textStr.indexOf('…');
+              len = 1;
+            }
+            if (idx !== -1) {
+              textEl.insertText(idx, compoundName.toUpperCase());
+              textEl.deleteText(idx + compoundName.length, idx + compoundName.length + len - 1);
+            } else {
+              element.asParagraph().setText("XÁC ĐỊNH DƯ LƯỢNG " + compoundName.toUpperCase());
+            }
           }
         }
 
@@ -850,21 +863,23 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
 
   if (calibTable) {
     const calibPoints = metadata.calibPoints || [];
+    const fSize = sopConfig.defaultFontSize || 13;
     for (let i = 0; i < 6; i++) {
       const rowIdx = i + 1;
       const row = calibTable.getRow(rowIdx);
-      setCellText(row, 0, `C${i}`, null, 9);
       if (i < calibPoints.length) {
+        setCellText(row, 0, `C${i}`, null, fSize);
         const pt = calibPoints[i];
-        setCellText(row, 1, pt.loSo || '', null, 9);
-        setCellText(row, 2, pt.hamLuong || '', null, 9);
+        setCellText(row, 1, pt.loSo || '', null, fSize);
+        setCellText(row, 2, pt.hamLuong || '', null, fSize);
       } else {
-        setCellText(row, 1, '', null, 9);
-        setCellText(row, 2, '', null, 9);
+        setCellText(row, 0, '', null, fSize);
+        setCellText(row, 1, '', null, fSize);
+        setCellText(row, 2, '', null, fSize);
       }
     }
     const r2Val = metadata.r2 || '';
-    setCellText(calibTable.getRow(7), 1, r2Val, null, 9);
+    setCellText(calibTable.getRow(7), 1, r2Val, null, fSize);
   }
 
   // Helper inside function to map compound to backend key
@@ -932,6 +947,7 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
     const totalRows = prepTable.getNumRows();
     const numDataRows = totalRows - 1;
     
+    const fSize = sopConfig.defaultFontSize || 13;
     for (let i = 0; i < numDataRows; i++) {
       const rowIdx = i + 1;
       const row = prepTable.getRow(rowIdx);
@@ -941,39 +957,48 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
         let cell4Text = '';
         let cell5Text = '';
         if (isDon) {
+          let resVal = 'ND';
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'ND';
-          } else {
-            cell4Text = 'ND';
+            resVal = s.compoundResults[compoundName] || 'ND';
           }
+          let noteVal = '';
           if (s.compoundNotes && compoundName) {
-            cell5Text = s.compoundNotes[compoundName] || '';
+            noteVal = (s.compoundNotes[compoundName] || '').trim();
           }
+          if (noteVal) {
+            if (!noteVal.startsWith('(') || !noteVal.endsWith(')')) {
+              noteVal = `(${noteVal})`;
+            }
+            cell4Text = resVal ? `${resVal} ${noteVal}` : noteVal;
+          } else {
+            cell4Text = resVal;
+          }
+          cell5Text = '';
         } else {
           cell4Text = s.checkBoSungNuoc || 'không';
           cell5Text = s.checkHonHopLamSach || 'B1';
         }
 
-        setCellText(row, 0, s.maSoMau || '', null, 9);
-        setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
-        setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
-        setCellText(row, 3, s.loSo || '', null, 9);
+        setCellText(row, 0, s.maSoMau || '', null, fSize);
+        setCellText(row, 1, s.khoiLuong || '10.0', null, fSize);
+        setCellText(row, 2, s.heSoPhaLoang || '1', null, fSize);
+        setCellText(row, 3, s.loSo || '', null, fSize);
         if (row.getNumCells() > 4) {
-          setCellText(row, 4, cell4Text, null, 9);
+          setCellText(row, 4, cell4Text, null, fSize);
         }
         if (row.getNumCells() > 5) {
-          setCellText(row, 5, cell5Text, null, 9);
+          setCellText(row, 5, cell5Text, null, fSize);
         }
       } else {
-        setCellText(row, 0, '', null, 9);
-        setCellText(row, 1, '', null, 9);
-        setCellText(row, 2, '', null, 9);
-        setCellText(row, 3, '', null, 9);
+        setCellText(row, 0, '', null, fSize);
+        setCellText(row, 1, '', null, fSize);
+        setCellText(row, 2, '', null, fSize);
+        setCellText(row, 3, '', null, fSize);
         if (row.getNumCells() > 4) {
-          setCellText(row, 4, '', null, 9);
+          setCellText(row, 4, '', null, fSize);
         }
         if (row.getNumCells() > 5) {
-          setCellText(row, 5, '', null, 9);
+          setCellText(row, 5, '', null, fSize);
         }
       }
     }
@@ -981,35 +1006,44 @@ function fillLanHuuCoSection2(elements, sopConfig, metadata, compoundName, sampl
     if (runSamplesList.length > numDataRows) {
       for (let i = numDataRows; i < runSamplesList.length; i++) {
         const s = runSamplesList[i];
-        const newRow = prepTable.getRow(numDataRows).copy();
+        const newRow = prepTable.copy().getRow(numDataRows).copy(); // copy row template properly
         prepTable.appendRow(newRow);
         const row = prepTable.getRow(i + 1);
         
         let cell4Text = '';
         let cell5Text = '';
         if (isDon) {
+          let resVal = 'ND';
           if (s.compoundResults && compoundName) {
-            cell4Text = s.compoundResults[compoundName] || 'ND';
-          } else {
-            cell4Text = 'ND';
+            resVal = s.compoundResults[compoundName] || 'ND';
           }
+          let noteVal = '';
           if (s.compoundNotes && compoundName) {
-            cell5Text = s.compoundNotes[compoundName] || '';
+            noteVal = (s.compoundNotes[compoundName] || '').trim();
           }
+          if (noteVal) {
+            if (!noteVal.startsWith('(') || !noteVal.endsWith(')')) {
+              noteVal = `(${noteVal})`;
+            }
+            cell4Text = resVal ? `${resVal} ${noteVal}` : noteVal;
+          } else {
+            cell4Text = resVal;
+          }
+          cell5Text = '';
         } else {
           cell4Text = s.checkBoSungNuoc || 'không';
           cell5Text = s.checkHonHopLamSach || 'B1';
         }
 
-        setCellText(row, 0, s.maSoMau || '', null, 9);
-        setCellText(row, 1, s.khoiLuong || '10.0', null, 9);
-        setCellText(row, 2, s.heSoPhaLoang || '1', null, 9);
-        setCellText(row, 3, s.loSo || '', null, 9);
+        setCellText(row, 0, s.maSoMau || '', null, fSize);
+        setCellText(row, 1, s.khoiLuong || '10.0', null, fSize);
+        setCellText(row, 2, s.heSoPhaLoang || '1', null, fSize);
+        setCellText(row, 3, s.loSo || '', null, fSize);
         if (row.getNumCells() > 4) {
-          setCellText(row, 4, cell4Text, null, 9);
+          setCellText(row, 4, cell4Text, null, fSize);
         }
         if (row.getNumCells() > 5) {
-          setCellText(row, 5, cell5Text, null, 9);
+          setCellText(row, 5, cell5Text, null, fSize);
         }
       }
     }
