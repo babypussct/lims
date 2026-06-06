@@ -1,6 +1,7 @@
 
 import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { formatDate, formatNum, formatSampleList, naturalCompare } from '../../shared/utils/utils';
@@ -60,6 +61,15 @@ declare let QRious: any;
                             <div class="mt-2 text-sm text-slate-500 font-medium flex items-center gap-2">
                                 <i class="fa-solid fa-clock"></i> {{formatDate(logData()?.timestamp)}}
                             </div>
+                            @if (getAssociatedRequestId(); as reqId) {
+                                <div class="mt-4">
+                                    <button (click)="viewBatchResults(reqId)" 
+                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
+                                        <i class="fa-solid fa-square-poll-vertical"></i>
+                                        <span>Xem Kết Quả Mẻ Phân Tích</span>
+                                    </button>
+                                </div>
+                            }
                         </div>
                         <div class="shrink-0 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
                             <canvas #qrCanvas class="w-32 h-32"></canvas>
@@ -221,6 +231,7 @@ export class TraceabilityComponent implements OnInit {
   fb = inject(FirebaseService);
   toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
+  private router = inject(Router);
   
   formatDate = formatDate;
   formatNum = formatNum;
@@ -251,6 +262,19 @@ export class TraceabilityComponent implements OnInit {
 
   resolveCompoundName(compoundId: string): string {
       return resolveCompoundDisplayName(compoundId, this.masterTargets());
+  }
+
+  getAssociatedRequestId(): string | null {
+      const log = this.logData();
+      if (!log) return null;
+      if (log.action.includes('REQUEST') || log.sopBasicInfo) {
+          return log.id;
+      }
+      return log.requestId || (log.printData as any)?.requestId || log.id || null;
+  }
+
+  viewBatchResults(requestId: string) {
+      this.router.navigate(['/results-view', requestId]);
   }
 
   getActionLabel(action: string | undefined): string {

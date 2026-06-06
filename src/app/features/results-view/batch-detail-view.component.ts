@@ -1,7 +1,9 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, viewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+
+declare let QRious: any;
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { ResultService } from '../results/services/result.service';
@@ -76,6 +78,13 @@ import { MasterTargetService } from '../targets/master-target.service';
               </button>
             }
 
+            <!-- View Traceability Audit Log -->
+            <button (click)="viewTraceability()"
+                    class="px-3.5 py-2 text-xs font-bold text-indigo-655 dark:text-indigo-455 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-100/50 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/30 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>Truy xuất mẻ</span>
+            </button>
+
             <!-- Switch to Edit Mode (If allowed or draft) -->
             <button (click)="goToEditMode()"
                     class="px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition duration-150 active:scale-95 flex items-center gap-1.5">
@@ -137,6 +146,31 @@ import { MasterTargetService } from '../targets/master-target.service';
                   }"></span>
                   {{ getStatusText() }}
                 </span>
+              </div>
+            </div>
+
+            <!-- QR Code & Quick Verify Card -->
+            <div class="bg-gradient-to-br from-indigo-50/50 via-white to-pink-50/20 dark:from-slate-900 dark:to-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-xs p-5 flex flex-col md:flex-row items-center gap-5 shrink-0">
+              <div class="shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-xs border border-slate-150 dark:border-slate-700/60">
+                <canvas #qrCanvas class="w-28 h-28"></canvas>
+              </div>
+              <div class="space-y-2 text-center md:text-left flex-1">
+                <h4 class="text-xs font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center justify-center md:justify-start">
+                  <i class="fa-solid fa-qrcode mr-2 text-indigo-500"></i> Xác minh & Đối chiếu độc lập
+                </h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  Quét mã QR để đối chiếu nhật ký hoạt động độc lập, kiểm tra các loại hóa chất sử dụng và thời gian chuẩn bị mẻ phân tích này.
+                </p>
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                  <button (click)="viewTraceability()" 
+                          class="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-750 text-white rounded-lg text-[10px] font-black active:scale-95 transition shadow-sm">
+                    Mở trang đối chiếu
+                  </button>
+                  <button (click)="copyTraceabilityLink()" 
+                          class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-350 rounded-lg text-[10px] font-bold active:scale-95 transition border border-slate-200/40">
+                    Sao chép liên kết
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -458,6 +492,17 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   requestId = '';
   isLoading = signal(true);
+
+  qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
+
+  constructor() {
+    effect(() => {
+      const canvas = this.qrCanvas();
+      if (canvas) {
+        this.generateQrCode();
+      }
+    });
+  }
 
   // App models signals
   run = signal<any | null>(null);
@@ -807,6 +852,31 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/results']);
+  }
+
+  viewTraceability() {
+    this.router.navigate(['/traceability', this.requestId]);
+  }
+
+  copyTraceabilityLink() {
+    const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+    const link = baseUrl + this.requestId;
+    navigator.clipboard.writeText(link).then(() => {
+      this.toast.show('Đã sao chép liên kết truy xuất nguồn gốc!', 'success');
+    }).catch(err => {
+      this.toast.show('Không thể sao chép liên kết: ' + err, 'error');
+    });
+  }
+
+  generateQrCode() {
+    if (typeof QRious === 'undefined' || !this.qrCanvas()) return;
+    const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+    new QRious({
+      element: this.qrCanvas()!.nativeElement,
+      value: baseUrl + this.requestId,
+      size: 112,
+      level: 'M'
+    });
   }
 
   private getGoogleDrivePreviewUrl(url: string | null | undefined): string {
