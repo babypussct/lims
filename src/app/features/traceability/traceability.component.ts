@@ -99,7 +99,6 @@ declare let QRious: any;
                     <!-- Top Row: ID & QR -->
                     <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 pb-8">
                         <div>
-                        <div>
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
                                     Transaction ID
