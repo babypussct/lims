@@ -103,6 +103,18 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.SOP_VIEW }
   },
   {
+    path: 'results-view',
+    loadComponent: () => import('./features/results-view/results-dashboard.component').then(m => m.ResultsDashboardComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
+    path: 'results-view/:id',
+    loadComponent: () => import('./features/results-view/batch-detail-view.component').then(m => m.BatchDetailViewComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
     path: 'stats',
     loadComponent: () => import('./features/dashboard/statistics.component').then(m => m.StatisticsComponent),
     canActivate: [permissionGuard],
