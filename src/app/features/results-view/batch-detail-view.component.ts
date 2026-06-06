@@ -214,7 +214,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                       @for (comp of config()?.compounds; track comp; let idx = $index) {
-                        <tr [class.opacity-60]="!isTargetAssigned(activeSampleCode(), comp)" [class.bg-slate-50/20]="!isTargetAssigned(activeSampleCode(), comp)" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
+                        <tr [ngClass]="{ 'opacity-60 bg-slate-50/20': !isTargetAssigned(activeSampleCode(), comp) }" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
                           <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-400">
                             @if (isTargetAssigned(activeSampleCode(), comp)) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[9px]"></i> }
                           </td>
