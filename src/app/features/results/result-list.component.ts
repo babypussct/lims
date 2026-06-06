@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { Router } from '@angular/router';
@@ -298,7 +298,8 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
           @if (viewMode() === 'grid') {
             <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
               @for (run of displayedRuns(); track run.id) {
-                <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250 flex flex-col overflow-hidden relative"
+                <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250 flex flex-col overflow-hidden relative cursor-pointer"
+                     (click)="enterResults(run.id)"
                      [class.ring-2]="lastSelectedRequestId() === run.id"
                      [class.ring-fuchsia-500]="lastSelectedRequestId() === run.id"
                      [ngClass]="{'ring-1 ring-fuchsia-500/20': run.isVirtualMaster && lastSelectedRequestId() !== run.id}">
@@ -376,15 +377,15 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                         <span>Báo cáo</span>
                       </button>
                     }
-                    <button (click)="enterResults(run.id)"
-                            [class]="runStatusMap()[run.id] === 'completed'
+                    <button (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
+                            [class]="(runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft')
                               ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40'
                               : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-500/20'"
                             class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition active:scale-95 duration-150 border border-transparent">
                       <i class="fa-solid text-[11px]"
-                         [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed'"
-                         [class.fa-arrows-rotate]="runStatusMap()[run.id] === 'completed'"></i>
-                      {{ runStatusMap()[run.id] === 'completed' ? 'Sửa / In lại' : 'Nhập kết quả' }}
+                         [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed' && runStatusMap()[run.id] !== 'draft'"
+                         [class.fa-eye]="runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft'"></i>
+                      {{ (runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft') ? 'Xem chi tiết' : 'Nhập kết quả' }}
                     </button>
                   </div>
                 </div>
@@ -422,7 +423,8 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                     @for (run of displayedRuns(); track run.id) {
                       <tr [ngClass]="{'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-2 border-l-fuchsia-500': lastSelectedRequestId() === run.id}"
-                          class="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors text-slate-700 dark:text-slate-300">
+                          class="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors text-slate-700 dark:text-slate-300 cursor-pointer"
+                          (click)="enterResults(run.id)">
 
                         @if (isMergeModeActive()) {
                           <td class="p-4 text-center">
@@ -494,10 +496,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                                 <span>Báo cáo</span>
                               </button>
                             }
-                            <button (click)="enterResults(run.id)"
+                            <button (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
                                     class="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-xl text-xs font-black transition active:scale-95 shadow-sm shadow-fuchsia-500/20 whitespace-nowrap">
-                              <i class="fa-solid fa-pen-to-square text-[10px]"></i>
-                              {{ runStatusMap()[run.id] === 'completed' ? 'Sửa lại' : 'Nhập KQ' }}
+                              <i class="fa-solid text-[10px]"
+                                 [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed' && runStatusMap()[run.id] !== 'draft'"
+                                 [class.fa-eye]="runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft'"></i>
+                              {{ (runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft') ? 'Xem chi tiết' : 'Nhập KQ' }}
                             </button>
                           </div>
                         </td>
@@ -679,7 +683,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             </a>
                           }
                         } @else {
-                          <button (click)="enterResults(selectedRequestForReport().id, pref); closeReportHub()"
+                          <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
                                   class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
                             <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
                           </button>
@@ -696,7 +700,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                         <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Mẻ hoàn thành nhưng chưa có file in</div>
                         <div class="text-[10px] text-slate-400 mt-0.5">Bản in chưa được tạo hoặc bị lỗi khi xuất.</div>
                       </div>
-                      <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+                      <button (click)="enterResults(selectedRequestForReport().id, undefined, true); closeReportHub()"
                               class="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 shrink-0">
                         <i class="fa-solid fa-file-invoice text-[11px]"></i> TẠO FILE IN
                       </button>
@@ -763,7 +767,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
             </div>
 
             <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-slate-50/30 dark:bg-slate-950/10">
-              <button (click)="enterResults(selectedRequestForReport().id); closeReportHub()"
+              <button (click)="enterResults(selectedRequestForReport().id, undefined, true); closeReportHub()"
                       class="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 rounded-xl transition active:scale-95">
                 <i class="fa-solid fa-pen-to-square text-[11px]"></i> Mở để chỉnh sửa
               </button>
@@ -1602,15 +1606,23 @@ export class ResultListComponent implements OnInit, OnDestroy {
     }
   }
 
-  enterResults(requestId: string, prefix?: string) {
+  enterResults(requestId: string, prefix?: string, forceEdit = false) {
     try {
       sessionStorage.setItem('lims_last_selected_request_id', requestId);
       this.saveState();
     } catch (e) {}
-    if (prefix !== undefined) {
-      this.router.navigate(['/results', requestId], { queryParams: { prefix } });
+
+    const status = this.runStatusMap()[requestId] || 'pending';
+    const hasResults = status === 'completed' || status === 'draft';
+
+    if (forceEdit || !hasResults || prefix !== undefined) {
+      if (prefix !== undefined) {
+        this.router.navigate(['/results', requestId], { queryParams: { prefix } });
+      } else {
+        this.router.navigate(['/results', requestId]);
+      }
     } else {
-      this.router.navigate(['/results', requestId]);
+      this.router.navigate(['/results-view', requestId]);
     }
   }
 
