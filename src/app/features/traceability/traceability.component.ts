@@ -2,6 +2,7 @@
 import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { formatDate, formatNum, formatSampleList, naturalCompare } from '../../shared/utils/utils';
@@ -32,7 +33,53 @@ declare let QRious: any;
         @if(isLoading()) {
             <div class="py-20 text-center">
                 <div class="inline-block w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <p class="text-slate-400 font-bold text-sm">Đang truy xuất dữ liệu blockchain...</p>
+                <p class="text-slate-400 font-bold text-sm">Đang tải dữ liệu gốc...</p>
+            </div>
+        } @else if(isVerifying()) {
+            <div class="py-20 max-w-md mx-auto fade-in">
+                <div class="bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-800 text-left font-mono relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500/20">
+                        <div class="h-full bg-emerald-500 transition-all duration-500 ease-out" [style.width]="(verifyStep() / 3 * 100) + '%'"></div>
+                    </div>
+                    <div class="flex items-center gap-3 mb-6 mt-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400 text-xl"></i>
+                        <span class="text-emerald-400 font-bold tracking-widest uppercase text-sm">Blockchain Verification</span>
+                    </div>
+                    
+                    <div class="space-y-4 text-xs">
+                        <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 0">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span class="text-slate-300">Đang thiết lập kết nối mã hóa...</span>
+                        </div>
+                        <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 1">
+                            @if(verifyStep() >= 1) {
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                <span class="text-slate-300">Đang đối chiếu chữ ký điện tử...</span>
+                            } @else {
+                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
+                                <span class="text-slate-500">Đang đối chiếu chữ ký điện tử...</span>
+                            }
+                        </div>
+                        <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 2">
+                            @if(verifyStep() >= 2) {
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                <span class="text-slate-300">Xác thực tính toàn vẹn dữ liệu gốc...</span>
+                            } @else {
+                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
+                                <span class="text-slate-500">Xác thực tính toàn vẹn dữ liệu gốc...</span>
+                            }
+                        </div>
+                        <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 3">
+                            @if(verifyStep() >= 3) {
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                <span class="text-emerald-400 font-bold text-[13px]">Xác minh hoàn tất!</span>
+                            } @else {
+                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
+                                <span class="text-slate-500">Hoàn thiện đối chiếu...</span>
+                            }
+                        </div>
+                    </div>
+                </div>
             </div>
         } @else if(errorMsg()) {
             <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm">
@@ -52,9 +99,15 @@ declare let QRious: any;
                     <!-- Top Row: ID & QR -->
                     <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 pb-8">
                         <div>
-                            <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                                Transaction ID
-                            </span>
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    Transaction ID
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                    <i class="fa-solid fa-shield-check"></i> Verified
+                                </span>
+                            </div>
                             <div class="font-mono text-xl md:text-3xl font-black text-slate-800 break-all">
                                 {{logData()?.id}}
                             </div>
@@ -63,11 +116,23 @@ declare let QRious: any;
                             </div>
                             @if (getAssociatedRequestId(); as reqId) {
                                 <div class="mt-4">
-                                    <button (click)="viewBatchResults(reqId)" 
-                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
-                                        <i class="fa-solid fa-square-poll-vertical"></i>
-                                        <span>Xem Kết Quả Mẻ Phân Tích</span>
-                                    </button>
+                                    @if (auth.currentUser()) {
+                                        <button (click)="viewBatchResults(reqId)" 
+                                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
+                                            <i class="fa-solid fa-square-poll-vertical"></i>
+                                            <span>Xem Kết Quả Mẻ Phân Tích</span>
+                                        </button>
+                                    } @else {
+                                        <div class="inline-flex items-start gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
+                                            <div class="mt-0.5 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-lock text-[10px]"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-bold text-slate-700 leading-tight mb-1">Kết quả thuộc chế độ bảo mật.</p>
+                                                <p class="text-[9px] text-slate-500 leading-tight">Yêu cầu đăng nhập hệ thống LIMS để xem chi tiết.</p>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             }
                         </div>
@@ -75,6 +140,56 @@ declare let QRious: any;
                             <canvas #qrCanvas class="w-32 h-32"></canvas>
                         </div>
                     </div>
+
+                    <!-- Workflow Stepper -->
+                    @if(logData()?.status; as status) {
+                        <div class="mb-8 pb-8 border-b border-slate-100 fade-in">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Tiến độ quy trình</h4>
+                            <div class="flex items-center justify-between relative max-w-2xl mx-auto px-4 mt-6">
+                                <!-- Background Line -->
+                                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 rounded-full z-0"></div>
+                                <!-- Active Line -->
+                                <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-emerald-500 rounded-full z-0 transition-all duration-1000 ease-out"
+                                     [style.width]="status === 'completed' ? '100%' : (status === 'approved' ? '100%' : (status === 'draft' ? '66%' : (status === 'pending' ? '33%' : '0%')))"></div>
+                                
+                                <!-- Step 1: Request -->
+                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
+                                         [ngClass]="status !== 'unknown' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                                        <i class="fa-solid fa-clipboard-list"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold" [ngClass]="status !== 'unknown' ? 'text-emerald-700' : 'text-slate-400'">Tiếp nhận</span>
+                                </div>
+
+                                <!-- Step 2: Prepare -->
+                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
+                                         [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                                        <i class="fa-solid fa-flask"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Chuẩn bị mẫu</span>
+                                </div>
+
+                                <!-- Step 3: Analyze -->
+                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
+                                         [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                                        <i class="fa-solid fa-microscope"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Phân tích máy</span>
+                                </div>
+
+                                <!-- Step 4: Approve -->
+                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
+                                         [ngClass]="(status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                                        <i class="fa-solid fa-check-double"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Phê duyệt</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
 
                     <!-- Main Info Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -228,6 +343,7 @@ export class TraceabilityComponent implements OnInit {
   // Input Binding from Router (Angular 16+)
   @Input() id?: string;
 
+  auth = inject(AuthService);
   fb = inject(FirebaseService);
   toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
@@ -241,6 +357,8 @@ export class TraceabilityComponent implements OnInit {
   logData = signal<Log | null>(null);
   masterTargets = signal<any[]>([]);
   isLoading = signal(false);
+  isVerifying = signal(false);
+  verifyStep = signal(0);
   errorMsg = signal('');
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
@@ -352,7 +470,7 @@ export class TraceabilityComponent implements OnInit {
           const snap = await getDoc(logRef);
 
           if (snap.exists()) {
-              this.handleLogData({ id: snap.id, ...snap.data() } as Log);
+              this.startVerificationProcess({ id: snap.id, ...snap.data() } as Log);
               return;
           }
 
@@ -371,7 +489,7 @@ export class TraceabilityComponent implements OnInit {
                   printable: true,
                   printData: jobData // Embed full data
               };
-              this.handleLogData(mockLog);
+              this.startVerificationProcess(mockLog);
               return;
           }
 
@@ -424,7 +542,7 @@ export class TraceabilityComponent implements OnInit {
                   }
               };
               
-              this.handleLogData(mockLog);
+              this.startVerificationProcess(mockLog);
               return;
           }
 
@@ -437,6 +555,25 @@ export class TraceabilityComponent implements OnInit {
       } finally {
           this.isLoading.set(false);
       }
+  }
+
+  startVerificationProcess(log: Log) {
+      this.isLoading.set(false);
+      this.isVerifying.set(true);
+      this.verifyStep.set(0);
+      
+      let step = 0;
+      const interval = setInterval(() => {
+          step++;
+          this.verifyStep.set(step);
+          if (step >= 3) {
+              clearInterval(interval);
+              setTimeout(() => {
+                  this.isVerifying.set(false);
+                  this.handleLogData(log);
+              }, 600);
+          }
+      }, 500);
   }
 
   handleLogData(log: Log) {

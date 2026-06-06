@@ -151,8 +151,11 @@ import { MasterTargetService } from '../targets/master-target.service';
 
             <!-- QR Code & Quick Verify Card -->
             <div class="bg-gradient-to-br from-indigo-50/50 via-white to-pink-50/20 dark:from-slate-900 dark:to-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-xs p-5 flex flex-col md:flex-row items-center gap-5 shrink-0">
-              <div class="shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-xs border border-slate-150 dark:border-slate-700/60">
+              <div (click)="openQrModal()" class="shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-xs border border-slate-150 dark:border-slate-700/60 cursor-pointer hover:scale-105 transition-transform group relative" title="Nhấn để phóng to mã QR">
                 <canvas #qrCanvas class="w-28 h-28"></canvas>
+                <div class="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <i class="fa-solid fa-expand text-slate-700 dark:text-slate-200 text-xl drop-shadow-md"></i>
+                </div>
               </div>
               <div class="space-y-2 text-center md:text-left flex-1">
                 <h4 class="text-xs font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center justify-center md:justify-start">
@@ -476,6 +479,26 @@ import { MasterTargetService } from '../targets/master-target.service';
           </button>
         </div>
       }
+
+      <!-- QR Interactive Modal -->
+      @if (isQrModalOpen()) {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center fade-in backdrop-blur-md bg-slate-900/60" (click)="isQrModalOpen.set(false)">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6" (click)="$event.stopPropagation()">
+            <div class="text-center space-y-2">
+              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Mã Đối Chiếu (QR Code)</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại thông minh quét mã này để truy cập trang xác minh nhật ký độc lập của hệ thống LIMS.</p>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl shadow-inner border border-slate-200/60">
+              <canvas #qrModalCanvas class="w-[240px] h-[240px]"></canvas>
+            </div>
+            
+            <button (click)="isQrModalOpen.set(false)" class="px-8 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-slate-700 rounded-xl text-xs font-black active:scale-95 transition mt-2 border border-slate-200/60 dark:border-slate-700">
+              Đóng
+            </button>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: []
@@ -494,6 +517,8 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
+  qrModalCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrModalCanvas');
+  isQrModalOpen = signal(false);
 
   constructor() {
     effect(() => {
@@ -877,6 +902,21 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       size: 112,
       level: 'M'
     });
+  }
+
+  openQrModal() {
+    this.isQrModalOpen.set(true);
+    setTimeout(() => {
+      if (typeof QRious !== 'undefined' && this.qrModalCanvas()) {
+        const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+        new QRious({
+          element: this.qrModalCanvas()!.nativeElement,
+          value: baseUrl + this.requestId,
+          size: 240,
+          level: 'M'
+        });
+      }
+    }, 50);
   }
 
   private getGoogleDrivePreviewUrl(url: string | null | undefined): string {
