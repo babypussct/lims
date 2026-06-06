@@ -120,7 +120,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                   <span class="w-1 h-1 rounded-full" [ngClass]="{
                     'bg-emerald-500': draft()?.status === 'completed',
                     'bg-indigo-500': draft()?.status === 'draft',
-                    'bg-amber-500': draft()?.status === 'pending' || !draft()?.status
+                    'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
                   }"></span>
                   {{ getStatusText() }}
                 </span>
@@ -170,8 +170,8 @@ import { MasterTargetService } from '../targets/master-target.service';
                   @for (pt of draft()?.page1Data?.['calibPoints']; track $index) {
                     <div class="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-150 dark:border-slate-800/80 text-center space-y-1">
                       <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Điểm {{ $index + 1 }}</span>
-                      <span class="block font-mono text-xs font-black text-slate-800 dark:text-slate-100">Lọ: {{ pt.loSo || '—' }}</span>
-                      <span class="block text-[10px] font-bold text-slate-500 dark:text-slate-400">{{ pt.hamLuong !== undefined ? pt.hamLuong + ' ppb' : (pt.vialNo ? 'Vial ' + pt.vialNo : '') }}</span>
+                      <span class="block font-mono text-xs font-black text-slate-800 dark:text-slate-100">Lọ: {{ pt['loSo'] || '—' }}</span>
+                      <span class="block text-[10px] font-bold text-slate-500 dark:text-slate-400">{{ pt['hamLuong'] !== undefined ? pt['hamLuong'] + ' ppb' : (pt['vialNo'] ? 'Vial ' + pt['vialNo'] : '') }}</span>
                     </div>
                   }
                 </div>
@@ -301,7 +301,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           
                           <!-- Vial No -->
                           <td class="py-2.5 px-4 font-mono text-xs text-slate-655 dark:text-slate-400">
-                            {{ (draft()?.resultData?.[row.key])?.loSo || '—' }}
+                            {{ (draft()?.resultData?.[row.key])?.['loSo'] || '—' }}
                           </td>
                           
                           <!-- Sample name -->
@@ -318,13 +318,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                           <!-- Weight -->
                           @if (hasColumn('khoiLuong')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.khoiLuong !== undefined && (draft()?.resultData?.[row.key])?.khoiLuong !== null ? (draft()?.resultData?.[row.key])?.khoiLuong : '—' }}
+                              {{ (draft()?.resultData?.[row.key])?.['khoiLuong'] !== undefined && (draft()?.resultData?.[row.key])?.['khoiLuong'] !== null ? (draft()?.resultData?.[row.key])?.['khoiLuong'] : '—' }}
                             </td>
                           }
                           <!-- Dilution -->
                           @if (hasColumn('heSoPhaLoang')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.heSoPhaLoang !== undefined && (draft()?.resultData?.[row.key])?.heSoPhaLoang !== null ? (draft()?.resultData?.[row.key])?.heSoPhaLoang : '—' }}
+                              {{ (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== undefined && (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== null ? (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] : '—' }}
                             </td>
                           }
 
@@ -341,7 +341,7 @@ import { MasterTargetService } from '../targets/master-target.service';
 
                           <!-- Note -->
                           <td class="py-2.5 px-4 text-slate-500 dark:text-slate-400 text-xs italic">
-                            {{ (draft()?.resultData?.[row.key])?.ghiChu || '' }}
+                            {{ (draft()?.resultData?.[row.key])?.['ghiChu'] || '' }}
                           </td>
                         </tr>
                       }
