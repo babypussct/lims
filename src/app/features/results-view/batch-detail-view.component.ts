@@ -176,8 +176,6 @@ import { MasterTargetService } from '../targets/master-target.service';
                 </div>
               </div>
             </div>
-
-            <!-- QC Checklist Results -->
             @if (checkboxList().length > 0) {
               <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
                 <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
@@ -186,24 +184,39 @@ import { MasterTargetService } from '../targets/master-target.service';
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   @for (qc of checkboxList(); track qc.key) {
-                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-slate-50/40 dark:bg-slate-955/20 shadow-2xs">
-                      <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
-                      
-                      <!-- Badge representing boolean, string or null status -->
+                    @if (isQcField(qc.key)) {
                       @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
-                        <span class="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                          <i class="fa-solid fa-check text-[8px]"></i> Đạt
-                        </span>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-emerald-50/40 dark:bg-emerald-955/20 shadow-2xs">
+                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
+                          <span class="px-2.5 py-0.5 bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            <i class="fa-solid fa-check text-[8px]"></i> Đạt
+                          </span>
+                        </div>
                       } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
-                        <span class="px-2.5 py-0.5 bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-200/30 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                          <i class="fa-solid fa-xmark text-[8px]"></i> Không đạt
-                        </span>
-                      } @else {
-                        <span class="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200/20 rounded text-[10px] font-bold uppercase tracking-wider shrink-0">
-                          N/A
-                        </span>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-150 dark:border-slate-800/60 bg-rose-50/40 dark:bg-rose-955/20 shadow-2xs">
+                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
+                          <span class="px-2.5 py-0.5 bg-rose-100/80 dark:bg-rose-900/40 text-rose-700 dark:text-rose-455 border border-rose-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            <i class="fa-solid fa-xmark text-[8px]"></i> Không đạt
+                          </span>
+                        </div>
                       }
-                    </div>
+                    } @else {
+                      @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-blue-50/40 dark:bg-blue-955/20 shadow-2xs">
+                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
+                          <span class="px-2.5 py-0.5 bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                            <i class="fa-solid fa-info text-[8px]"></i> Ghi nhận
+                          </span>
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+              </div>
+            }></i> Đạt
+                        </span>
+                      </div>
+                    }
                   }
                 </div>
               </div>
@@ -403,26 +416,45 @@ import { MasterTargetService } from '../targets/master-target.service';
           </div>
 
           <!-- RIGHT PANEL: PDF EMBED PREVIEW -->
-          <div class="lg:col-span-5 flex flex-col bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
-            <!-- Preview header bar -->
-            <div class="px-4 py-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between shrink-0">
-              <span class="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-file-invoice-dollar text-rose-500"></i> Bản PDF báo cáo chính thức
-              </span>
-              
-              @if (getCurrentPdfUrl()) {
-                <a [href]="getCurrentPdfUrl()" target="_blank"
-                   class="px-2.5 py-1 text-[10px] font-black text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs transition active:scale-95 flex items-center gap-1 no-underline">
-                  <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Mở Drive
-                </a>
-              }
-            </div>
+          <div class="lg:col-span-5">
+            <!-- PDF Previewer Panel -->
+            <div class="flex flex-col h-[700px] bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 relative">
+              <div class="bg-slate-800 px-4 py-3 flex flex-wrap items-center justify-between border-b border-slate-700/80 gap-2">
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-file-pdf text-red-400"></i> Bản PDF báo cáo chính thức
+                </h4>
 
-            <!-- Embedded iframe container -->
-            <div class="flex-1 relative">
-              @if (safePdfUrl()) {
-                <iframe [src]="safePdfUrl()!" class="absolute inset-0 w-full h-full border-none bg-slate-50 dark:bg-slate-950 shadow-inner"></iframe>
-              } @else {
+                <!-- SELECTOR DROPDOWN FOR MULTIPLE REPORTS -->
+                @if (availableReports().length > 1 && activeFilter() === 'ALL') {
+                  <div class="flex items-center gap-1.5 text-xs text-slate-300">
+                    <span class="font-medium text-[9px] uppercase tracking-wider text-slate-400">Xem báo cáo:</span>
+                    <select [ngModel]="selectedPdfPrefix()" 
+                            (ngModelChange)="selectedPdfPrefix.set($event)"
+                            class="bg-slate-700 text-slate-100 border border-slate-600 rounded-lg px-2.5 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500">
+                      @for (report of availableReports(); track report.key) {
+                        <option [value]="report.key">{{ report.label }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+
+                <div class="flex items-center gap-2">
+                  @if (getCurrentDocsUrl()) {
+                    <a [href]="getCurrentDocsUrl()" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-bold uppercase tracking-widest transition duration-150 flex items-center gap-1.5 shadow-sm">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Docs
+                    </a>
+                  }
+                  <a [href]="getCurrentPdfUrl() || '#'" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-bold uppercase tracking-widest transition duration-150 flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Drive
+                  </a>
+                </div>
+              </div>
+
+              <!-- Embedded iframe container -->
+              <div class="flex-1 relative">
+                @if (safePdfUrl()) {
+                  <iframe [src]="safePdfUrl()!" class="absolute inset-0 w-full h-full border-none bg-slate-50 dark:bg-slate-950 shadow-inner"></iframe>
+                } @else {
                 <!-- EMPTY STATE: Report not printed yet -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-4">
                   <div class="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/10 flex items-center justify-center text-slate-300 dark:text-slate-655 text-2xl">
@@ -542,6 +574,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   // Active filters and tabs
   activeFilter = signal<string>('ALL');
   activeSampleCode = signal<string>('');
+  selectedPdfPrefix = signal<string>('');
 
   private unsubscribeFromDraft?: () => void;
 
@@ -568,13 +601,22 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (!d) return null;
 
     if (activeFilter === 'ALL') {
-      url = d.pdfViewUrl || d.pdfUrl || null;
-      if (!url && d.reports) {
-        const prefixes = this.detectedPrefixes();
-        if (prefixes.length > 0) {
-          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-          if (d.reports[firstReportKey]) {
-            url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+      const selected = this.selectedPdfPrefix();
+      if (selected && d.reports) {
+         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
+         if (d.reports[reportKey]) {
+           url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
+         }
+      }
+      if (!url) {
+        url = d.pdfViewUrl || d.pdfUrl || null;
+        if (!url && d.reports) {
+          const prefixes = this.detectedPrefixes();
+          if (prefixes.length > 0) {
+            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+            if (d.reports[firstReportKey]) {
+              url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+            }
           }
         }
       }
@@ -650,6 +692,11 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
             this.configKey.set(resolvedKey);
             this.draft.set(draftDoc);
             
+            // Set initial selected PDF prefix
+            if (this.detectedPrefixes().length > 0) {
+               this.selectedPdfPrefix.set(this.detectedPrefixes()[0]);
+            }
+
             // Build custom columns labels map
             this.buildColumnDisplayNames();
           }
@@ -723,62 +770,166 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return !!(d && d.page1Data && d.page1Data['calibPoints'] && d.page1Data['calibPoints'].length > 0);
   }
 
+  isQcField(key: string): boolean {
+    return key.startsWith('qc');
+  }
+
+  availableReports = computed(() => {
+    const d = this.draft();
+    if (!d || !d.reports) return [];
+    return Object.entries(d.reports).map(([key, value]: [string, any]) => {
+      const displayLabel = key === '_NO_PREFIX_' ? 'Không tiền tố' : `Tiền tố ${key}`;
+      return {
+        key: key === '_NO_PREFIX_' ? '' : key,
+        label: displayLabel,
+        fileName: value.fileName,
+        url: value.pdfViewUrl || value.pdfUrl || null,
+        docsUrl: value.docsUrl || null
+      };
+    });
+  });
+
   getType2DisplayRows(): any[] {
     const d = this.draft();
     const r = this.run();
     const conf = this.config();
     if (!d || !r || !conf) return [];
 
-    const list: any[] = [];
     const activeFilter = this.activeFilter();
+    const isTrifluralin = conf.id === 'trifluralin-gcms';
+    const isFipronil = conf.id === 'fipronil-chlorpyrifos';
+    const isDichlorvos = conf.id === 'dichlorvos-gcms';
 
-    // 1. BLANK QC
-    if (d.resultData['QC_BLANK']) {
-      list.push({
-        key: 'QC_BLANK',
-        label: d.page1Data['blankName'] || 'Blank (QC)',
-        isQC: true
-      });
-    }
+    const list: any[] = [];
 
-    // 2. SPIKE QC
-    if (d.resultData['QC_SPIKE']) {
-      list.push({
-        key: 'QC_SPIKE',
-        label: d.page1Data['spikeName'] || 'Spike (QC)',
-        isQC: true
-      });
-    }
+    if (isFipronil) {
+      // BLANK (vial 1.7)
+      const blankName = d.page1Data?.['blankName'] || 'BLANK';
+      list.push({ key: 'QC_BLANK', label: blankName, isQC: true });
 
-    // 3. CHECK_SAMPLE QC
-    if (d.resultData['QC_CHECK_SAMPLE'] && d.page1Data['hasCheckSample']) {
-      list.push({
-        key: 'QC_CHECK_SAMPLE',
-        label: d.page1Data['checkSampleName'] || 'Check Sample (QC)',
-        isQC: true
-      });
-    }
+      // SPIKE (vial 1.8)
+      const spikeName = d.page1Data?.['spikeName'] || 'SPIKE';
+      list.push({ key: 'QC_SPIKE', label: spikeName, isQC: true });
 
-    // 4. Regular samples (with filtering)
-    (r.sampleList || []).forEach((sampleCode: string) => {
-      const startsWithLetter = /^[a-zA-Z]/.test(sampleCode);
-      const prefix = startsWithLetter ? sampleCode.charAt(0).toUpperCase() : '';
-      
-      if (activeFilter === 'ALL' || prefix === activeFilter) {
-        list.push({
-          key: sampleCode,
-          label: sampleCode,
-          isQC: false
-        });
+      // CHECK_SAMPLE (vial 1.9, optional)
+      if (d.page1Data?.['hasCheckSample']) {
+        const checkSampleName = d.page1Data?.['checkSampleName'] || 'CHECK_SAMPLE';
+        list.push({ key: 'QC_CHECK_SAMPLE', label: checkSampleName, isQC: true });
       }
-    });
 
-    // 5. FINAL QC
-    if (d.resultData['QC_FINAL'] && (d.page1Data['hasFinal'] || conf.id === 'fipronil-chlorpyrifos')) {
-      list.push({
-        key: 'QC_FINAL',
-        label: 'FINAL (QC)',
-        isQC: true
+      // Regular samples & dynamic SP_N every 10 samples
+      const sampleList = r.sampleList || [];
+      let regularCount = 0;
+      sampleList.forEach((sampleCode: string) => {
+        list.push({ key: sampleCode, label: sampleCode, isQC: false });
+
+        regularCount++;
+        if (regularCount % 10 === 0) {
+          const isLastSample = regularCount === sampleList.length;
+          if (!isLastSample) {
+            const n = regularCount / 10;
+            list.push({
+              key: `QC_SPIKE_${n}`,
+              label: `SP_${n}`,
+              isQC: true
+            });
+          }
+        }
+      });
+
+      // FINAL (vial 1.8)
+      list.push({ key: 'QC_FINAL', label: 'FINAL', isQC: true });
+    } 
+    else if (isDichlorvos) {
+      // Blank
+      const blankName = d.page1Data?.['blankName'] || 'Blank';
+      list.push({ key: 'QC_BLANK', label: blankName, isQC: true });
+
+      // Spike
+      const spikeName = d.page1Data?.['spikeName'] || 'Spike';
+      list.push({ key: 'QC_SPIKE', label: spikeName, isQC: true });
+
+      // Regular samples (filtered by activeFilter)
+      const sampleList = r.sampleList || [];
+      const filteredSamples = sampleList.filter((s: string) => {
+        const startsWithLetter = /^[a-zA-Z]/.test(s);
+        const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+        return activeFilter === 'ALL' || prefix === activeFilter;
+      });
+
+      filteredSamples.forEach((sampleCode: string) => {
+        list.push({ key: sampleCode, label: sampleCode, isQC: false });
+      });
+
+      // FINAL (optional)
+      if (d.page1Data?.['hasFinal']) {
+        list.push({ key: 'QC_FINAL', label: 'FINAL', isQC: true });
+      }
+    }
+    else if (isTrifluralin) {
+      const blankName = d.page1Data?.['blankName'] || 'Blank';
+      const spikeName = d.page1Data?.['spikeName'] || 'Spike';
+
+      const prefixes = activeFilter === 'ALL' ? (this.detectedPrefixes() || ['']) : [activeFilter];
+
+      prefixes.forEach((prefix) => {
+        const prefixSamples = (r.sampleList || []).filter((s: string) => {
+          const startsWithLetter = /^[a-zA-Z]/.test(s);
+          const p = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+          return p === prefix;
+        });
+
+        if (prefixSamples.length === 0) return;
+
+        const labelPrefix = prefix ? ` (Tiền tố ${prefix})` : '';
+
+        list.push({
+          key: 'QC_BLANK',
+          label: `${blankName}${labelPrefix}`,
+          isQC: true
+        });
+        list.push({
+          key: 'QC_SPIKE',
+          label: `${spikeName}${labelPrefix}`,
+          isQC: true
+        });
+
+        let selectedCount = 0;
+        prefixSamples.forEach((sampleCode: string) => {
+          const resObj = d.resultData[sampleCode] || {};
+          const isSelected = resObj['selected'] !== false;
+
+          list.push({
+            key: sampleCode,
+            label: sampleCode,
+            isQC: false
+          });
+
+          if (isSelected) {
+            selectedCount++;
+            if (selectedCount % 10 === 0) {
+              const totalSelected = prefixSamples.filter((s: string) => d.resultData[s]?.['selected'] !== false).length;
+              const isLastSelected = selectedCount === totalSelected;
+              if (!isLastSelected) {
+                const n = selectedCount / 10;
+                list.push({
+                  key: `QC_SPIKE_${n}_QC_${prefix}`,
+                  label: `SPIKE_${n}${labelPrefix}`,
+                  isQC: true
+                });
+              }
+            }
+          }
+        });
+
+        if (selectedCount > 0) {
+          const finalKey = `QC_FINAL_QC_${prefix}`;
+          list.push({
+            key: finalKey,
+            label: `FINAL${labelPrefix}`,
+            isQC: true
+          });
+        }
       });
     }
 
@@ -792,13 +943,22 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (!d) return null;
 
     if (activeFilter === 'ALL') {
-      url = d.pdfViewUrl || d.pdfUrl || null;
-      if (!url && d.reports) {
-        const prefixes = this.detectedPrefixes();
-        if (prefixes.length > 0) {
-          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-          if (d.reports[firstReportKey]) {
-            url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+      const selected = this.selectedPdfPrefix();
+      if (selected !== null && selected !== undefined && d.reports) {
+         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
+         if (d.reports[reportKey]) {
+           url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
+         }
+      }
+      if (!url) {
+        url = d.pdfViewUrl || d.pdfUrl || null;
+        if (!url && d.reports) {
+          const prefixes = this.detectedPrefixes();
+          if (prefixes.length > 0) {
+            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+            if (d.reports[firstReportKey]) {
+              url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+            }
           }
         }
       }
@@ -818,13 +978,22 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (!d) return null;
 
     if (activeFilter === 'ALL') {
-      url = d.docsUrl || null;
-      if (!url && d.reports) {
-        const prefixes = this.detectedPrefixes();
-        if (prefixes.length > 0) {
-          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-          if (d.reports[firstReportKey]) {
-            url = d.reports[firstReportKey].docsUrl || null;
+      const selected = this.selectedPdfPrefix();
+      if (selected !== null && selected !== undefined && d.reports) {
+         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
+         if (d.reports[reportKey]) {
+           url = d.reports[reportKey].docsUrl || null;
+         }
+      }
+      if (!url) {
+        url = d.docsUrl || null;
+        if (!url && d.reports) {
+          const prefixes = this.detectedPrefixes();
+          if (prefixes.length > 0) {
+            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+            if (d.reports[firstReportKey]) {
+              url = d.reports[firstReportKey].docsUrl || null;
+            }
           }
         }
       }

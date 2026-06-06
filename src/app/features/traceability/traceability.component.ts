@@ -37,45 +37,47 @@ declare let QRious: any;
             </div>
         } @else if(isVerifying()) {
             <div class="py-20 max-w-md mx-auto fade-in">
-                <div class="bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-800 text-left font-mono relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500/20">
-                        <div class="h-full bg-emerald-500 transition-all duration-500 ease-out" [style.width]="(verifyStep() / 3 * 100) + '%'"></div>
+                <div class="bg-white rounded-2xl p-6 shadow-xl border border-slate-200 text-left relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100">
+                        <div class="h-full bg-indigo-600 transition-all duration-500 ease-out" [style.width]="(verifyStep() / 3 * 100) + '%'"></div>
                     </div>
                     <div class="flex items-center gap-3 mb-6 mt-2">
-                        <i class="fa-solid fa-shield-halved text-emerald-400 text-xl"></i>
-                        <span class="text-emerald-400 font-bold tracking-widest uppercase text-sm">Blockchain Verification</span>
+                        <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <i class="fa-solid fa-server text-sm"></i>
+                        </div>
+                        <span class="text-slate-800 font-black tracking-wider uppercase text-sm">Truy Xuất Hồ Sơ LIMS</span>
                     </div>
                     
-                    <div class="space-y-4 text-xs">
+                    <div class="space-y-4 text-xs font-medium">
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 0">
-                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                            <span class="text-slate-300">Đang thiết lập kết nối mã hóa...</span>
+                            <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                            <span class="text-slate-600">Đang kết nối hệ thống máy chủ LIMS...</span>
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 1">
                             @if(verifyStep() >= 1) {
-                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                                <span class="text-slate-300">Đang đối chiếu chữ ký điện tử...</span>
+                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <span class="text-slate-600">Đang đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
                             } @else {
-                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
-                                <span class="text-slate-500">Đang đối chiếu chữ ký điện tử...</span>
+                                <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
+                                <span class="text-slate-500">Đang đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
                             }
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 2">
                             @if(verifyStep() >= 2) {
-                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                                <span class="text-slate-300">Xác thực tính toàn vẹn dữ liệu gốc...</span>
+                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <span class="text-slate-600">Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)...</span>
                             } @else {
-                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
-                                <span class="text-slate-500">Xác thực tính toàn vẹn dữ liệu gốc...</span>
+                                <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
+                                <span class="text-slate-500">Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)...</span>
                             }
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 3">
                             @if(verifyStep() >= 3) {
-                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                                <span class="text-emerald-400 font-bold text-[13px]">Xác minh hoàn tất!</span>
+                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <span class="text-indigo-700 font-black text-[13px]">Truy xuất hoàn tất!</span>
                             } @else {
-                                <i class="fa-solid fa-spinner fa-spin text-slate-500"></i>
-                                <span class="text-slate-500">Hoàn thiện đối chiếu...</span>
+                                <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
+                                <span class="text-slate-500">Đang trích xuất báo cáo...</span>
                             }
                         </div>
                     </div>
@@ -103,8 +105,8 @@ declare let QRious: any;
                                 <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider">
                                     Transaction ID
                                 </span>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
-                                    <i class="fa-solid fa-shield-check"></i> Verified
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                    <i class="fa-solid fa-database"></i> Hệ thống LIMS
                                 </span>
                             </div>
                             <div class="font-mono text-xl md:text-3xl font-black text-slate-800 break-all">
@@ -140,51 +142,71 @@ declare let QRious: any;
                         </div>
                     </div>
 
-                    <!-- Workflow Stepper -->
+                    <!-- Premium Workflow Stepper -->
                     @if(logData()?.status; as status) {
-                        <div class="mb-8 pb-8 border-b border-slate-100 fade-in">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Tiến độ quy trình</h4>
-                            <div class="flex items-center justify-between relative max-w-2xl mx-auto px-4 mt-6">
-                                <!-- Background Line -->
-                                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 rounded-full z-0"></div>
-                                <!-- Active Line -->
-                                <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-emerald-500 rounded-full z-0 transition-all duration-1000 ease-out"
-                                     [style.width]="status === 'completed' ? '100%' : (status === 'approved' ? '100%' : (status === 'draft' ? '66%' : (status === 'pending' ? '33%' : '0%')))"></div>
-                                
+                        <div class="mb-10 fade-in">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Tiến độ quy trình LIMS</h4>
+                            <div class="flex flex-col sm:flex-row items-stretch gap-2">
                                 <!-- Step 1: Request -->
-                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
-                                         [ngClass]="status !== 'unknown' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
-                                        <i class="fa-solid fa-clipboard-list"></i>
+                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                     [ngClass]="status !== 'unknown' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm"
+                                         [ngClass]="status !== 'unknown' ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                        <i class="fa-solid fa-clipboard-list text-xs"></i>
                                     </div>
-                                    <span class="text-[10px] font-bold" [ngClass]="status !== 'unknown' ? 'text-emerald-700' : 'text-slate-400'">Tiếp nhận</span>
+                                    <div class="z-10">
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status !== 'unknown' ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 1</div>
+                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Tiếp nhận</div>
+                                    </div>
                                 </div>
 
                                 <!-- Step 2: Prepare -->
-                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
-                                         [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
-                                        <i class="fa-solid fa-flask"></i>
+                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                     [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    @if(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') {
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
+                                    }
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
+                                         [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                        <i class="fa-solid fa-flask text-xs"></i>
                                     </div>
-                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Chuẩn bị mẫu</span>
+                                    <div class="z-10">
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 2</div>
+                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Chuẩn bị mẫu</div>
+                                    </div>
                                 </div>
 
                                 <!-- Step 3: Analyze -->
-                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
-                                         [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
-                                        <i class="fa-solid fa-microscope"></i>
+                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                     [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    @if(status === 'draft' || status === 'approved' || status === 'completed') {
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
+                                    }
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
+                                         [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                        <i class="fa-solid fa-microscope text-xs"></i>
                                     </div>
-                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Phân tích máy</span>
+                                    <div class="z-10">
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 3</div>
+                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phân tích máy</div>
+                                    </div>
                                 </div>
 
                                 <!-- Step 4: Approve -->
-                                <div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors duration-500 border-2"
-                                         [ngClass]="(status === 'approved' || status === 'completed') ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'">
-                                        <i class="fa-solid fa-check-double"></i>
+                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                     [ngClass]="(status === 'approved' || status === 'completed') ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    @if(status === 'approved' || status === 'completed') {
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-100 to-transparent dark:from-emerald-900/30 opacity-50"></div>
+                                    }
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
+                                         [ngClass]="(status === 'approved' || status === 'completed') ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                        <i class="fa-solid fa-check-double text-xs"></i>
                                     </div>
-                                    <span class="text-[10px] font-bold" [ngClass]="(status === 'approved' || status === 'completed') ? 'text-emerald-700' : 'text-slate-400'">Phê duyệt</span>
+                                    <div class="z-10">
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'completed') ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'">Bước 4</div>
+                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phê duyệt</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -192,45 +214,62 @@ declare let QRious: any;
 
                     <!-- Main Info Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- Left: Actor & Action -->
+                        <!-- Left: Actor & Action Unified Card -->
                         <div class="space-y-6">
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Người thực hiện</h4>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-lg border border-slate-200">
-                                        {{logData()?.user?.charAt(0)}}
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-slate-800">{{logData()?.user}}</div>
-                                        <div class="text-xs text-slate-400">Authorized Staff</div>
-                                    </div>
+                            <div class="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm p-6 relative overflow-hidden group">
+                                <!-- Status left border accent -->
+                                <div class="absolute left-0 top-0 bottom-0 w-2 transition-colors duration-300"
+                                     [ngClass]="logData()?.status === 'completed' || logData()?.status === 'approved' ? 'bg-emerald-500' : 
+                                                (logData()?.status === 'pending' ? 'bg-amber-500' : 
+                                                (logData()?.status === 'draft' ? 'bg-indigo-500' : 
+                                                (logData()?.status === 'rejected' ? 'bg-rose-500' : 'bg-slate-400')))">
                                 </div>
-                            </div>
-
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Hành động</h4>
-                                <div class="bg-blue-50/70 border border-blue-100/70 rounded-2xl p-4.5 relative overflow-hidden group shadow-3xs">
-                                    <div class="flex justify-between items-start gap-4">
-                                        <div>
-                                            <div class="font-bold text-blue-800 text-lg mb-1">{{getActionLabel(logData()?.action)}}</div>
-                                            <p class="text-sm text-blue-600 font-medium leading-relaxed">{{logData()?.details}}</p>
-                                        </div>
-                                        
-                                        <!-- Tình trạng Phiếu Badge -->
-                                        @if(logData()?.status; as status) {
-                                            <span [class]="status === 'pending' ? 'bg-amber-100/90 text-amber-800 border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30' :
-                                                           status === 'approved' ? 'bg-emerald-100/90 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30' :
-                                                           status === 'rejected' ? 'bg-rose-100/90 text-rose-800 border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30' :
-                                                           status === 'completed' ? 'bg-fuchsia-100/90 text-fuchsia-800 border-fuchsia-200/60 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30' :
-                                                           status === 'draft' ? 'bg-slate-100/90 text-slate-800 border-slate-200/60 dark:bg-slate-800/40 dark:text-slate-450 dark:border-slate-700/50' : 'bg-slate-100/90 text-slate-800 border-slate-200/60'"
-                                                  class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide border shrink-0 shadow-3xs">
-                                                {{ status === 'pending' ? 'Chờ duyệt' :
-                                                   status === 'approved' ? 'Đã duyệt' :
-                                                   status === 'rejected' ? 'Bị từ chối' :
-                                                   status === 'completed' ? 'Đã hoàn thành' :
-                                                   status === 'draft' ? 'Lưu nháp' : status }}
-                                            </span>
-                                        }
+                                
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+                                   <div class="flex items-center gap-4">
+                                       <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xl text-slate-600 dark:text-slate-300 shadow-inner">
+                                           {{logData()?.user?.charAt(0)}}
+                                       </div>
+                                       <div>
+                                           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Thực hiện bởi</div>
+                                           <div class="text-base font-black text-slate-800 dark:text-slate-100 leading-none">{{logData()?.user}}</div>
+                                           <div class="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1">
+                                               <i class="fa-solid fa-user-shield text-emerald-500"></i> Authorized Staff
+                                           </div>
+                                       </div>
+                                   </div>
+                                   <div class="shrink-0 pl-14 sm:pl-0">
+                                       @if(logData()?.status; as status) {
+                                           <span [class]="status === 'pending' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/30' :
+                                                          status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30' :
+                                                          status === 'rejected' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/30' :
+                                                          status === 'completed' ? 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-900/30' :
+                                                          status === 'draft' ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/30' : 'bg-slate-50 text-slate-700 border-slate-200/60'"
+                                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm">
+                                               @if(status === 'completed' || status === 'approved') {
+                                                   <i class="fa-solid fa-check"></i>
+                                               } @else if(status === 'pending' || status === 'draft') {
+                                                   <i class="fa-solid fa-clock"></i>
+                                               } @else if(status === 'rejected') {
+                                                   <i class="fa-solid fa-xmark"></i>
+                                               }
+                                               {{ status === 'pending' ? 'Chờ duyệt' :
+                                                  status === 'approved' ? 'Đã duyệt' :
+                                                  status === 'rejected' ? 'Bị từ chối' :
+                                                  status === 'completed' ? 'Đã hoàn thành' :
+                                                  status === 'draft' ? 'Lưu nháp' : status }}
+                                           </span>
+                                       }
+                                   </div>
+                                </div>
+                                
+                                <div class="pl-3">
+                                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sự kiện hệ thống ghi nhận</div>
+                                    <div class="text-lg font-black text-slate-800 dark:text-slate-100 mb-2 leading-tight">
+                                        {{getActionLabel(logData()?.action)}}
+                                    </div>
+                                    <div class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 break-words">
+                                        {{logData()?.details}}
                                     </div>
                                 </div>
                             </div>
@@ -570,9 +609,9 @@ export class TraceabilityComponent implements OnInit {
               setTimeout(() => {
                   this.isVerifying.set(false);
                   this.handleLogData(log);
-              }, 600);
+              }, 300);
           }
-      }, 500);
+      }, 250);
   }
 
   handleLogData(log: Log) {
