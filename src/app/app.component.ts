@@ -10,7 +10,6 @@ import { PrintPreviewModalComponent } from './shared/components/print-preview-mo
 import { GlobalScannerComponent } from './shared/components/global-scanner/global-scanner.component'; 
 import { Gs1InfoModalComponent } from './shared/components/gs1-info-modal/gs1-info-modal.component';
 import { LoginComponent } from './features/auth/login.component';
-import { NotificationBellComponent } from './shared/components/notification-bell/notification-bell.component';
 import { NotificationPanelComponent } from './shared/components/notification-panel/notification-panel.component';
 import { ProgressOverlayComponent } from './shared/components/progress-overlay/progress-overlay.component';
 
@@ -36,7 +35,6 @@ import { filter } from 'rxjs/operators';
     GlobalScannerComponent, 
     Gs1InfoModalComponent,
     LoginComponent,
-    NotificationBellComponent,
     NotificationPanelComponent,
     ProgressOverlayComponent
   ],

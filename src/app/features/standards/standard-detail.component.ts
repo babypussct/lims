@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StandardService } from './standard.service';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
@@ -26,7 +26,7 @@ import { HasPermissionDirective } from '../../shared/directives/has-permission.d
 @Component({
   selector: 'app-standard-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsPurchaseModalComponent, StandardsAssignModalComponent, HasPermissionDirective],
   templateUrl: './standard-detail.component.html'
 })
 export class StandardDetailComponent implements OnInit, OnDestroy {

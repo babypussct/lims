@@ -10,7 +10,6 @@ import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewIt
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
-import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService, UserProfile } from '../../core/services/auth.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
@@ -32,7 +31,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent],
   templateUrl: './standards.component.html'
 })
 export class StandardsComponent implements OnInit, OnDestroy {
