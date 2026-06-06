@@ -428,12 +428,7 @@ export class AuthService {
     const u = this.currentUser();
     if (!u) return [];
     if (u.role === 'manager') return ['*']; // Full quyền
-    if (u.role === 'viewer') return [
-      PERMISSIONS.INVENTORY_VIEW,
-      PERMISSIONS.STANDARD_VIEW,
-      PERMISSIONS.SOP_VIEW,
-      PERMISSIONS.RECIPE_VIEW
-    ];
+    if (u.role === 'viewer') return [];
     if (u.role === 'pending') return [];
 
     // Người dùng thuộc nhóm Staff
@@ -500,8 +495,8 @@ export class AuthService {
     let needsUpdate = false;
 
     if (u.role === 'viewer') {
-      const viewerPerms = [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW];
-      if (!u.permissions || u.permissions.length !== viewerPerms.length || !viewerPerms.every(p => u.permissions!.includes(p))) {
+      const viewerPerms: string[] = [];
+      if (!u.permissions || u.permissions.length !== viewerPerms.length) {
         resolvedPerms = viewerPerms;
         needsUpdate = true;
       }

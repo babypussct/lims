@@ -288,7 +288,7 @@ export class ConfigUsersComponent implements OnInit {
   isPermChecked(u: UserProfile, p: string): boolean {
       if (u.role === 'manager') return true;
       if (u.role === 'viewer') {
-          return [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW].includes(p);
+          return false;
       }
       if (u.role === 'pending') return false;
       // staff
@@ -299,7 +299,7 @@ export class ConfigUsersComponent implements OnInit {
 
   getUserPermissionsCount(u: UserProfile): number {
       if (u.role === 'manager') return Object.keys(PERMISSIONS).length;
-      if (u.role === 'viewer') return 4;
+      if (u.role === 'viewer') return 0;
       if (u.role === 'pending') return 0;
       // staff
       const roleId = u.roleId || 'role_staff_default';
@@ -362,7 +362,7 @@ export class ConfigUsersComponent implements OnInit {
           if (u.role === 'manager') {
               resolvedPerms = Object.values(PERMISSIONS);
           } else if (u.role === 'viewer') {
-              resolvedPerms = [PERMISSIONS.INVENTORY_VIEW, PERMISSIONS.STANDARD_VIEW, PERMISSIONS.SOP_VIEW, PERMISSIONS.RECIPE_VIEW];
+              resolvedPerms = [];
           } else if (u.role === 'pending') {
               resolvedPerms = [];
           } else if (u.role === 'staff') {
