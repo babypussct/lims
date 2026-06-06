@@ -213,13 +213,6 @@ import { MasterTargetService } from '../targets/master-target.service';
                   }
                 </div>
               </div>
-            }></i> Đạt
-                        </span>
-                      </div>
-                    }
-                  }
-                </div>
-              </div>
             }
 
             <!-- Calibration Curve configuration -->
@@ -475,6 +468,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               }
             </div>
           </div>
+        </div>
         </div>
       } @else if (run() && !draft()) {
         <!-- PENDING STATE: No results entered yet -->
