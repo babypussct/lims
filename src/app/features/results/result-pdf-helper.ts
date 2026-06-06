@@ -26,7 +26,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
     maSoMau: currentDraft.page1Data['blankName'] || 'Blank',
-    kqTrifluralin: blankObj['kqTrifluralin'] || '',
+    kqTrifluralin: blankObj['kqTrifluralin'] === 'N/A' ? '' : (blankObj['kqTrifluralin'] || ''),
     ghiChu: blankObj['ghiChu'] || ''
   });
 
@@ -35,7 +35,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
     maSoMau: currentDraft.page1Data['spikeName'] || 'Spike',
-    kqTrifluralin: spikeObj['kqTrifluralin'] || '',
+    kqTrifluralin: spikeObj['kqTrifluralin'] === 'N/A' ? '' : (spikeObj['kqTrifluralin'] || ''),
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
@@ -46,7 +46,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     samplesPayload.push({
       loSo: resObj['loSo'] || '',
       maSoMau: sampleCode,
-      kqTrifluralin: resObj['kqTrifluralin'] || '',
+      kqTrifluralin: resObj['kqTrifluralin'] === 'N/A' ? '' : (resObj['kqTrifluralin'] || ''),
       ghiChu: resObj['ghiChu'] || ''
     });
 
@@ -60,7 +60,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
         samplesPayload.push({
           loSo: spikeNObj['loSo'] || spikeObj['loSo'] || '2',
           maSoMau: `SPIKE_${n}`,
-          kqTrifluralin: spikeNObj['kqTrifluralin'] || '',
+          kqTrifluralin: spikeNObj['kqTrifluralin'] === 'N/A' ? '' : (spikeNObj['kqTrifluralin'] || ''),
           ghiChu: spikeNObj['ghiChu'] || ''
         });
       }
@@ -74,7 +74,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     samplesPayload.push({
       loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
       maSoMau: 'FINAL',
-      kqTrifluralin: finalObj['kqTrifluralin'] || '',
+      kqTrifluralin: finalObj['kqTrifluralin'] === 'N/A' ? '' : (finalObj['kqTrifluralin'] || ''),
       ghiChu: finalObj['ghiChu'] || ''
     });
   }
@@ -105,7 +105,8 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
       ghiChu: resObj['ghiChu'] || ''
     };
     activeCols.forEach((col: string) => {
-      rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+      const val = resObj[col];
+      rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
     });
     return rowData;
   };
@@ -135,7 +136,8 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
       ghiChu: resObj['ghiChu'] || ''
     };
     activeCols.forEach((col: string) => {
-      rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+      const val = resObj[col];
+      rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
     });
     samplesPayload.push(rowData);
 
@@ -154,7 +156,8 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
           ghiChu: spikeNObj['ghiChu'] || ''
         };
         activeCols.forEach((col: string) => {
-          spRowData[col] = spikeNObj[col] !== undefined ? spikeNObj[col] : '';
+          const val = spikeNObj[col];
+          spRowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
         });
         samplesPayload.push(spRowData);
       }
@@ -201,7 +204,8 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
           }
           rowData[col] = mergedVal;
         } else {
-          rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+          const val = resObj[col];
+      rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
         }
       }
     });
@@ -247,7 +251,8 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
           }
           rowData[col] = mergedVal;
         } else {
-          rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+          const val = resObj[col];
+      rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
         }
       }
     });
@@ -350,7 +355,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
         }));
 
         if (uniqueVals.size === 1) {
@@ -455,7 +460,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             rowData[`${backendKey}_qc3`] = 'N/A';
           } else {
             const isNd = resObj[`${c}_nd`] === true;
-            rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+            rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
             rowData[`${backendKey}_nd`] = isNd;
             rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
             rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -472,7 +477,8 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         };
         Object.keys(currentConf.columns).forEach((col: string) => {
           if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
-            rowData[col] = resObj[col] !== undefined ? resObj[col] : '';
+            const val = resObj[col];
+      rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
           }
         });
         samplesPayload.push(rowData);
@@ -565,7 +571,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
         }));
 
         if (uniqueVals.size === 1) {
@@ -636,7 +642,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
           rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -654,9 +660,10 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH';
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
       const val = resObj[c];
-      results[c] = isNd ? 'ND' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
+      const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
+      results[c] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
       notes[c] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
     });
     return { results, notes };
@@ -710,12 +717,12 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     currentConf.compounds.forEach((c: string) => {
       const isDet = filteredSamples.some((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
-        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c];
+        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c] && sRes[c] !== 'N/A';
       });
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return sRes[c] || 'KPH';
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
@@ -726,9 +733,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'KPH' : (sRes[c] || 'KPH');
+        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
       });
-      const allKph = vals.every((v: string) => v === 'KPH');
+      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
       acc[c] = allKph ? 'KPH' : vals.join('; ');
       return acc;
     }, {});
@@ -760,7 +767,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       const resObj = currentDraft.resultData[s] || {};
       const detected: string[] = [];
       currentConf.compounds.forEach((c: string) => {
-        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c]) {
+        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c] && resObj[c] !== 'N/A') {
           detected.push(`${c}: ${resObj[c]}`);
         }
       });
@@ -916,7 +923,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
         }));
 
         if (uniqueVals.size === 1) {
@@ -987,7 +994,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' ? '' : val);
+          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
           rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -1005,10 +1012,11 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH';
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
       const val = resObj[c];
       const backendKey = mapCompoundToKey(c);
-      results[backendKey] = isNd ? 'ND' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
+      const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
+      results[backendKey] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
       notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
     });
     return { results, notes };
@@ -1062,12 +1070,12 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     currentConf.compounds.forEach((c: string) => {
       const isDet = filteredSamples.some((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
-        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c];
+        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c] && sRes[c] !== 'N/A';
       });
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return sRes[c] || 'KPH';
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
@@ -1078,9 +1086,9 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'KPH' : (sRes[c] || 'KPH');
+        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
       });
-      const allKph = vals.every((v: string) => v === 'KPH');
+      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
       const backendKey = mapCompoundToKey(c);
       acc[backendKey] = allKph ? 'KPH' : vals.join('; ');
       return acc;
@@ -1114,7 +1122,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       const resObj = currentDraft.resultData[s] || {};
       const detected: string[] = [];
       currentConf.compounds.forEach((c: string) => {
-        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c]) {
+        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c] && resObj[c] !== 'N/A') {
           detected.push(`${c}: ${resObj[c]}`);
         }
       });

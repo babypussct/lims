@@ -609,6 +609,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           },
           options: { 
               responsive: true, maintainAspectRatio: false, 
+              layout: {
+                  padding: {
+                      top: 10,
+                      bottom: 15,
+                      left: 10,
+                      right: 15
+                  }
+              },
               plugins: { 
                   legend: { display: false }, 
                   tooltip: { 
@@ -636,7 +644,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
               }, 
               interaction: { mode: 'index', intersect: false },
               scales: { 
-                  x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8' } }, 
+                  x: { 
+                      display: true,
+                      grid: { display: false }, 
+                      border: { display: false }, 
+                      ticks: { 
+                          display: true,
+                          font: { size: 10, family: "'Open Sans', sans-serif" }, 
+                          color: '#94a3b8' 
+                      } 
+                  }, 
                   y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: gridColor }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
                   y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
               } 
