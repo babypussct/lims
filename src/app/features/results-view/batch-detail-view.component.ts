@@ -136,16 +136,15 @@ import { MasterTargetService } from '../targets/master-target.service';
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   @for (qc of checkboxList(); track qc.key) {
-                    @let statusValue = draft()?.page1Data?.[qc.key];
                     <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-slate-50/40 dark:bg-slate-955/20 shadow-2xs">
                       <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
                       
                       <!-- Badge representing boolean, string or null status -->
-                      @if (statusValue === true || statusValue === 'true') {
+                      @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
                         <span class="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
                           <i class="fa-solid fa-check text-[8px]"></i> Đạt
                         </span>
-                      } @else if (statusValue === false || statusValue === 'false') {
+                      } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
                         <span class="px-2.5 py-0.5 bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-200/30 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
                           <i class="fa-solid fa-xmark text-[8px]"></i> Không đạt
                         </span>
@@ -215,27 +214,25 @@ import { MasterTargetService } from '../targets/master-target.service';
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                       @for (comp of config()?.compounds; track comp; let idx = $index) {
-                        @let isAssigned = isTargetAssigned(activeSampleCode(), comp);
-                        @let rowData = draft()?.resultData?.[activeSampleCode()] || {};
-                        <tr [class.opacity-60]="!isAssigned" [class.bg-slate-50/20]="!isAssigned" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
+                        <tr [class.opacity-60]="!isTargetAssigned(activeSampleCode(), comp)" [class.bg-slate-50/20]="!isTargetAssigned(activeSampleCode(), comp)" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
                           <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-400">
-                            @if (isAssigned) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[9px]"></i> }
+                            @if (isTargetAssigned(activeSampleCode(), comp)) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[9px]"></i> }
                           </td>
                           <td class="py-2.5 px-4 font-extrabold text-xs text-slate-750 dark:text-slate-200">
                             {{ getCompoundDisplayName(comp) }}
                           </td>
                           <td class="py-2.5 px-4 text-center">
-                            @if (isAssigned) {
-                              <span [class.text-amber-600]="rowData[comp + '_nd']" class="text-xs">
-                                <i class="fa-regular text-sm" [class.fa-square-check]="rowData[comp + '_nd']" [class.fa-square]="!rowData[comp + '_nd']"></i>
+                            @if (isTargetAssigned(activeSampleCode(), comp)) {
+                              <span [class.text-amber-600]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" class="text-xs">
+                                <i class="fa-regular text-sm" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
                               </span>
                             } @else {
                               <span class="text-slate-300 dark:text-slate-700">—</span>
                             }
                           </td>
                           <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
-                            @if (isAssigned) {
-                              {{ rowData[comp] !== undefined && rowData[comp] !== null ? (rowData[comp] === 'N/A' ? '' : rowData[comp]) : '—' }}
+                            @if (isTargetAssigned(activeSampleCode(), comp)) {
+                              {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
                             } @else {
                               <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
                             }
@@ -244,11 +241,10 @@ import { MasterTargetService } from '../targets/master-target.service';
                           <!-- QC statuses badges -->
                           @for (qcNum of ['1', '2', '3']; track qcNum) {
                             <td class="py-2 px-3 text-center">
-                              @if (isAssigned) {
-                                @let qStatus = rowData[comp + '_qc' + qcNum];
-                                @if (qStatus === 'Đạt') {
+                              @if (isTargetAssigned(activeSampleCode(), comp)) {
+                                @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
                                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250/25">Đạt</span>
-                                } @else if (qStatus === 'Không đạt') {
+                                } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
                                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-250/25">K.Đạt</span>
                                 } @else {
                                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400 border border-slate-200/20">N/A</span>
@@ -299,14 +295,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                       @for (row of getType2DisplayRows(); track row.key) {
-                        @let rowData = draft()?.resultData?.[row.key] || {};
                         <tr [ngClass]="{
                           'bg-indigo-50/10 dark:bg-indigo-955/5 font-semibold text-slate-900 dark:text-slate-100': row.isQC
                         }" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
                           
                           <!-- Vial No -->
                           <td class="py-2.5 px-4 font-mono text-xs text-slate-655 dark:text-slate-400">
-                            {{ rowData.loSo || '—' }}
+                            {{ (draft()?.resultData?.[row.key])?.loSo || '—' }}
                           </td>
                           
                           <!-- Sample name -->
@@ -323,13 +318,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                           <!-- Weight -->
                           @if (hasColumn('khoiLuong')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ rowData.khoiLuong !== undefined && rowData.khoiLuong !== null ? rowData.khoiLuong : '—' }}
+                              {{ (draft()?.resultData?.[row.key])?.khoiLuong !== undefined && (draft()?.resultData?.[row.key])?.khoiLuong !== null ? (draft()?.resultData?.[row.key])?.khoiLuong : '—' }}
                             </td>
                           }
                           <!-- Dilution -->
                           @if (hasColumn('heSoPhaLoang')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ rowData.heSoPhaLoang !== undefined && rowData.heSoPhaLoang !== null ? rowData.heSoPhaLoang : '—' }}
+                              {{ (draft()?.resultData?.[row.key])?.heSoPhaLoang !== undefined && (draft()?.resultData?.[row.key])?.heSoPhaLoang !== null ? (draft()?.resultData?.[row.key])?.heSoPhaLoang : '—' }}
                             </td>
                           }
 
@@ -337,7 +332,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           @for (col of activeColumns(); track col) {
                             <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
                               @if (isTargetAssigned(row.key, col)) {
-                                {{ rowData[col] !== undefined && rowData[col] !== null ? (rowData[col] === 'N/A' ? '' : rowData[col]) : '—' }}
+                                {{ (draft()?.resultData?.[row.key])?.[col] !== undefined && (draft()?.resultData?.[row.key])?.[col] !== null ? ((draft()?.resultData?.[row.key])?.[col] === 'N/A' ? '' : (draft()?.resultData?.[row.key])?.[col]) : '—' }}
                               } @else {
                                 <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
                               }
@@ -346,7 +341,7 @@ import { MasterTargetService } from '../targets/master-target.service';
 
                           <!-- Note -->
                           <td class="py-2.5 px-4 text-slate-500 dark:text-slate-400 text-xs italic">
-                            {{ rowData.ghiChu || '' }}
+                            {{ (draft()?.resultData?.[row.key])?.ghiChu || '' }}
                           </td>
                         </tr>
                       }
