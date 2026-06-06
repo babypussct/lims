@@ -104,9 +104,8 @@ export const routes: Routes = [
   },
   {
     path: 'results-view',
-    loadComponent: () => import('./features/results-view/results-dashboard.component').then(m => m.ResultsDashboardComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.SOP_VIEW }
+    redirectTo: 'results',
+    pathMatch: 'full'
   },
   {
     path: 'results-view/:id',

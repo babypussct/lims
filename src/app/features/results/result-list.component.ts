@@ -28,7 +28,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
               <span class="w-8 h-8 rounded-xl bg-fuchsia-600 flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0">
                 <i class="fa-solid fa-square-poll-vertical text-white text-sm"></i>
               </span>
-              Nhập Kết Quả Phân Tích
+              Tra cứu & Quản lý Kết quả Mẻ Chạy
             </h2>
             <p class="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 ml-10">
               Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.
@@ -377,15 +377,10 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                         <span>Báo cáo</span>
                       </button>
                     }
-                    <button (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
-                            [class]="(runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft')
-                              ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40'
-                              : 'bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-md shadow-fuchsia-500/20'"
-                            class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition active:scale-95 duration-150 border border-transparent">
-                      <i class="fa-solid text-[11px]"
-                         [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed' && runStatusMap()[run.id] !== 'draft'"
-                         [class.fa-eye]="runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft'"></i>
-                      {{ (runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft') ? 'Xem chi tiết' : 'Nhập kết quả' }}
+                    <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
+                            class="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 duration-150 shadow-sm">
+                      <i class="fa-solid text-[11px] fa-eye"></i>
+                      Chi tiết Mẻ chạy
                     </button>
                   </div>
                 </div>
@@ -496,12 +491,10 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                                 <span>Báo cáo</span>
                               </button>
                             }
-                            <button (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
-                                    class="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 rounded-xl text-xs font-black transition active:scale-95 shadow-sm shadow-fuchsia-500/20 whitespace-nowrap">
-                              <i class="fa-solid text-[10px]"
-                                 [class.fa-pen-to-square]="runStatusMap()[run.id] !== 'completed' && runStatusMap()[run.id] !== 'draft'"
-                                 [class.fa-eye]="runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft'"></i>
-                              {{ (runStatusMap()[run.id] === 'completed' || runStatusMap()[run.id] === 'draft') ? 'Xem chi tiết' : 'Nhập KQ' }}
+                            <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
+                                    class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 hover:border-fuchsia-200 dark:hover:border-fuchsia-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm whitespace-nowrap">
+                              <i class="fa-solid fa-eye text-[10px]"></i>
+                              Chi tiết
                             </button>
                           </div>
                         </td>
@@ -1612,18 +1605,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.saveState();
     } catch (e) {}
 
-    const status = this.runStatusMap()[requestId] || 'pending';
-    const hasResults = status === 'completed' || status === 'draft';
-
-    if (forceEdit || !hasResults || prefix !== undefined) {
-      if (prefix !== undefined) {
-        this.router.navigate(['/results', requestId], { queryParams: { prefix } });
-      } else {
-        this.router.navigate(['/results', requestId]);
-      }
-    } else {
-      this.router.navigate(['/results-view', requestId]);
-    }
+    this.router.navigate(['/results-view', requestId]);
   }
 
   openUrl(url: string) {

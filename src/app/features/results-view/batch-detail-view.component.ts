@@ -394,6 +394,26 @@ import { MasterTargetService } from '../targets/master-target.service';
             </div>
           </div>
         </div>
+      } @else if (run() && !draft()) {
+        <!-- PENDING STATE: No results entered yet -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed p-12 animate-fade-in shadow-sm">
+          <div class="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-full flex items-center justify-center text-indigo-500 text-3xl mb-5 shadow-inner">
+            <i class="fa-solid fa-file-pen"></i>
+          </div>
+          <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa có kết quả phân tích</h4>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed font-medium">
+            Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
+          </p>
+          <div class="flex items-center gap-3">
+            <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
+              Quay lại
+            </button>
+            <button (click)="goToEditMode()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
+              <i class="fa-solid fa-play text-xs"></i>
+              Truy cập UI Nhập Kết Quả
+            </button>
+          </div>
+        </div>
       } @else {
         <!-- ERROR STATE: Batch not found -->
         <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed p-12">
@@ -746,7 +766,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
-    this.router.navigate(['/results-view']);
+    this.router.navigate(['/results']);
   }
 
   private getGoogleDrivePreviewUrl(url: string | null | undefined): string {
