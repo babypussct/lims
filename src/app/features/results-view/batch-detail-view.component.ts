@@ -101,10 +101,10 @@ import { MasterTargetService } from '../targets/master-target.service';
           <div class="lg:col-span-7 flex flex-col space-y-6 overflow-y-auto pr-2 custom-scrollbar">
             
             <!-- General metadata & status card -->
-            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 shrink-0">
               <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80">
                 <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy</span>
-                <span class="font-mono font-extrabold text-xs text-slate-800 dark:text-slate-200 select-all block">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+                <span class="font-mono font-extrabold text-xs text-slate-800 dark:text-slate-200 select-all block break-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
                 <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị đo</span>
@@ -113,6 +113,19 @@ import { MasterTargetService } from '../targets/master-target.service';
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
                 <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người phân tích</span>
                 <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.user || '—' }}</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 mb-1">Ngày phân tích</span>
+                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
+              </div>
+              <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày ký sổ</span>
+                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">
+                  @if (draft()?.page1Data?.['ngayNguoiPhanTich'] || draft()?.page1Data?.['ngayNguoiThamTra']) {
+                    PT: {{ draft()?.page1Data?.['ngayNguoiPhanTich'] || '—' }}<br>
+                    TT: {{ draft()?.page1Data?.['ngayNguoiThamTra'] || '—' }}
+                  } @else {
+                    —
+                  }
+                </span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
                 <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Trạng thái</span>
@@ -486,6 +499,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     if (activeFilter === 'ALL') {
       url = d.pdfViewUrl || d.pdfUrl || null;
+      if (!url && d.reports) {
+        const prefixes = this.detectedPrefixes();
+        if (prefixes.length > 0) {
+          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+          if (d.reports[firstReportKey]) {
+            url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+          }
+        }
+      }
     } else {
       const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
@@ -701,6 +723,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     if (activeFilter === 'ALL') {
       url = d.pdfViewUrl || d.pdfUrl || null;
+      if (!url && d.reports) {
+        const prefixes = this.detectedPrefixes();
+        if (prefixes.length > 0) {
+          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+          if (d.reports[firstReportKey]) {
+            url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+          }
+        }
+      }
     } else {
       const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
@@ -718,6 +749,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     if (activeFilter === 'ALL') {
       url = d.docsUrl || null;
+      if (!url && d.reports) {
+        const prefixes = this.detectedPrefixes();
+        if (prefixes.length > 0) {
+          const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
+          if (d.reports[firstReportKey]) {
+            url = d.reports[firstReportKey].docsUrl || null;
+          }
+        }
+      }
     } else {
       const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
