@@ -524,21 +524,23 @@ function fillNhomCucResultsTableDirectly(element, sopConfig, sample, tableTextTo
     const isDetected = (kqVal !== '' || isNd || kqRaw.toUpperCase() === 'KPH');
     if (!isDetected) return;
 
-    const kqCell  = row.getCell(startCellIdx + 1);
-    const qc1Cell = row.getCell(startCellIdx + 2);
-    const qc2Cell = row.getCell(startCellIdx + 3);
-    const qc3Cell = row.getCell(startCellIdx + 4);
+    const numCells = row.getNumCells();
+    const kqCell  = (startCellIdx + 1 < numCells) ? row.getCell(startCellIdx + 1) : null;
+    const qc1Cell = (startCellIdx + 2 < numCells) ? row.getCell(startCellIdx + 2) : null;
+    const qc2Cell = (startCellIdx + 3 < numCells) ? row.getCell(startCellIdx + 3) : null;
+    const qc3Cell = (startCellIdx + 4 < numCells) ? row.getCell(startCellIdx + 4) : null;
 
     try {
-      if (kqVal) {
+      if (kqCell && kqVal) {
         kqCell.replaceText('^[…\\.]{2,}', kqVal);
       }
-      replaceCheckboxSafelyNhomCuc(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
+      if (kqCell) replaceCheckboxSafelyNhomCuc(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
     } catch(e) {
       Logger.log('[fillSide kqCell NhomCuc] ' + (key || '') + ': ' + e.toString());
     }
 
     const fillQcCell = function(cell, qcRawVal) {
+      if (!cell) return;
       const isDat      = (qcRawVal === 'Đạt'      || qcRawVal === '☑');
       const isKhongDat = (qcRawVal === 'Không đạt' || qcRawVal === '☒' || qcRawVal === 'Không Đạt');
       try {
@@ -570,10 +572,27 @@ function fillNhomCucResultsTableDirectly(element, sopConfig, sample, tableTextTo
 
   for (let r = 2; r < numRows; r++) {
     const row = resultsTable.getRow(r);
-    const leftName  = row.getCell(0).getText().trim();
-    if (leftName)  fillSide(row, 0, leftName);
-    const rightName = row.getCell(5).getText().trim();
-    if (rightName) fillSide(row, 5, rightName);
+    const numCells = row.getNumCells();
+    
+    if (numCells > 0) {
+      let offset = 0;
+      let leftName = row.getCell(0).getText().trim();
+      if (/^\d+$/.test(leftName) && numCells > 1) {
+        leftName = row.getCell(1).getText().trim();
+        offset = 1;
+      }
+      if (leftName) fillSide(row, offset, leftName);
+    }
+    
+    let rightOffset = 5;
+    if (numCells > rightOffset) {
+      let rightName = row.getCell(rightOffset).getText().trim();
+      if (/^\d+$/.test(rightName) && numCells > rightOffset + 1) {
+        rightName = row.getCell(rightOffset + 1).getText().trim();
+        rightOffset += 1;
+      }
+      if (rightName) fillSide(row, rightOffset, rightName);
+    }
   }
 }
 
