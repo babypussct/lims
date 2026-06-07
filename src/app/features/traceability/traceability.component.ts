@@ -30,12 +30,7 @@ declare let QRious: any;
             </div>
         </div>
 
-        @if(isLoading()) {
-            <div class="py-20 text-center">
-                <div class="inline-block w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <p class="text-slate-400 font-bold text-sm">Đang tải dữ liệu gốc...</p>
-            </div>
-        } @else if(isVerifying()) {
+        @if(isVerifying() || isLoading()) {
             <div class="py-20 max-w-md mx-auto fade-in">
                 <div class="bg-white rounded-2xl p-6 shadow-xl border border-slate-200 text-left relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100">
@@ -50,13 +45,18 @@ declare let QRious: any;
                     
                     <div class="space-y-4 text-xs font-medium">
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 0">
-                            <i class="fa-solid fa-circle-check text-indigo-500"></i>
-                            <span class="text-slate-600">Đang kết nối hệ thống máy chủ LIMS...</span>
+                            @if(verifyStep() >= 0) {
+                                <i class="fa-solid fa-circle-check text-indigo-500"></i>
+                                <span class="text-slate-600">Đã kết nối hệ thống máy chủ LIMS...</span>
+                            } @else {
+                                <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
+                                <span class="text-slate-500">Đang kết nối hệ thống máy chủ LIMS...</span>
+                            }
                         </div>
                         <div class="flex items-center gap-3 transition-opacity duration-300" [class.opacity-40]="verifyStep() < 1">
                             @if(verifyStep() >= 1) {
                                 <i class="fa-solid fa-circle-check text-indigo-500"></i>
-                                <span class="text-slate-600">Đang đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
+                                <span class="text-slate-600">Đã đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
                             } @else {
                                 <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
                                 <span class="text-slate-500">Đang đồng bộ hồ sơ nhật ký mẻ phân tích...</span>
@@ -117,7 +117,7 @@ declare let QRious: any;
                             </div>
                             @if (getAssociatedRequestId(); as reqId) {
                                 <div class="mt-4">
-                                    @if (auth.currentUser()) {
+                                    @if (auth.currentUser() && auth.canViewSop()) {
                                         <button (click)="viewBatchResults(reqId)" 
                                                 class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 active:scale-95 transition">
                                             <i class="fa-solid fa-square-poll-vertical"></i>
@@ -130,7 +130,13 @@ declare let QRious: any;
                                             </div>
                                             <div>
                                                 <p class="text-[10px] font-bold text-slate-700 leading-tight mb-1">Kết quả thuộc chế độ bảo mật.</p>
-                                                <p class="text-[9px] text-slate-500 leading-tight">Yêu cầu đăng nhập hệ thống LIMS để xem chi tiết.</p>
+                                                <p class="text-[9px] text-slate-500 leading-tight">
+                                                    @if (auth.currentUser()) {
+                                                        Tài khoản của bạn không có quyền xem dữ liệu này.
+                                                    } @else {
+                                                        Yêu cầu đăng nhập hệ thống LIMS để xem chi tiết.
+                                                    }
+                                                </p>
                                             </div>
                                         </div>
                                     }
@@ -161,51 +167,37 @@ declare let QRious: any;
                                     </div>
                                 </div>
 
-                                <!-- Step 2: Prepare -->
+                                <!-- Step 2: Approve -->
                                 <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    @if(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') {
+                                     [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
+                                    @if(status === 'approved' || status === 'draft' || status === 'completed') {
                                         <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
                                     }
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
-                                        <i class="fa-solid fa-flask text-xs"></i>
-                                    </div>
-                                    <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'pending' || status === 'draft' || status === 'approved' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 2</div>
-                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Chuẩn bị mẫu</div>
-                                    </div>
-                                </div>
-
-                                <!-- Step 3: Analyze -->
-                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    @if(status === 'draft' || status === 'approved' || status === 'completed') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-100 to-transparent dark:from-indigo-900/30 opacity-50"></div>
-                                    }
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
-                                        <i class="fa-solid fa-microscope text-xs"></i>
-                                    </div>
-                                    <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'draft' || status === 'approved' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 3</div>
-                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phân tích máy</div>
-                                    </div>
-                                </div>
-
-                                <!-- Step 4: Approve -->
-                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
-                                     [ngClass]="(status === 'approved' || status === 'completed') ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800'">
-                                    @if(status === 'approved' || status === 'completed') {
-                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-100 to-transparent dark:from-emerald-900/30 opacity-50"></div>
-                                    }
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
-                                         [ngClass]="(status === 'approved' || status === 'completed') ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'">
+                                         [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'">
                                         <i class="fa-solid fa-check-double text-xs"></i>
                                     </div>
                                     <div class="z-10">
-                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'completed') ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'">Bước 4</div>
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="(status === 'approved' || status === 'draft' || status === 'completed') ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400'">Bước 2</div>
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Phê duyệt</div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3: Result & Report -->
+                                <div class="flex-1 relative p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                     [ngClass]="status === 'completed' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : (status === 'draft' ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20' : 'border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800')">
+                                    @if(status === 'completed') {
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-100 to-transparent dark:from-emerald-900/30 opacity-50"></div>
+                                    } @else if(status === 'draft') {
+                                        <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-100 to-transparent dark:from-amber-900/30 opacity-50"></div>
+                                    }
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 text-white shadow-sm transition-colors duration-500"
+                                         [ngClass]="status === 'completed' ? 'bg-emerald-500' : (status === 'draft' ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700')">
+                                        <i class="fa-solid fa-square-poll-vertical text-xs"></i>
+                                    </div>
+                                    <div class="z-10">
+                                        <div class="text-[10px] font-black uppercase tracking-wider" [ngClass]="status === 'completed' ? 'text-emerald-700 dark:text-emerald-400' : (status === 'draft' ? 'text-amber-700 dark:text-amber-400' : 'text-slate-400')">Bước 3</div>
+                                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Cập nhật & Báo cáo</div>
                                     </div>
                                 </div>
                             </div>
@@ -423,10 +415,10 @@ export class TraceabilityComponent implements OnInit {
   getAssociatedRequestId(): string | null {
       const log = this.logData();
       if (!log) return null;
-      if (log.action.includes('REQUEST') || log.sopBasicInfo) {
-          return log.id;
-      }
-      return log.requestId || (log.printData as any)?.requestId || log.id || null;
+      if (log.requestId) return log.requestId;
+      if ((log.printData as any)?.requestId) return (log.printData as any).requestId;
+      if (log.printData?.inputs?.['batchCode']) return log.printData.inputs['batchCode'];
+      return log.id || null;
   }
 
   viewBatchResults(requestId: string) {
@@ -500,6 +492,7 @@ export class TraceabilityComponent implements OnInit {
 
   async loadData(id: string) {
       this.isLoading.set(true);
+      this.verifyStep.set(-1);
       this.errorMsg.set('');
       
       try {
@@ -596,8 +589,8 @@ export class TraceabilityComponent implements OnInit {
   }
 
   startVerificationProcess(log: Log) {
-      this.isLoading.set(false);
       this.isVerifying.set(true);
+      this.isLoading.set(false);
       this.verifyStep.set(0);
       
       let step = 0;
