@@ -16,6 +16,8 @@ const CONFIG = {
     'dichlorvos-gcms':        '15Vg_kdrEx1DQ-LyLuZVo8sKnjW7JFV7mQDAEE3xKywY',   // Dichlorvos/Dipterex(Trichlorfon)
     'chlor-huu-co':           '1xQNkNRcPtfmQjwyv5F2qx1E2VbCmeuPbnfCK3_AgAGQ',   // (filebieumau_FORM_TRANG4.docx)
     'lan-huu-co':             '1nSWI-KDXhcnzZK3k0X5o0Wn2rXQ2XeRx87jx8WJAM60',   // SOP-02 | TÊN Nhóm Lân hữu cơ (GC-MS/MS)
+    'nhom-cuc':               '1ugk8Xx-LHYD7xrarxE01pG96fIA5Po7OMdjQ8htrys0',   // Nhóm Cúc (GC-MS/MS) - Form Check
+    'nhom-cuc-don':           '1rlN0iNEG_beYHBX7VRsoJ6QQsMerKxian8OJni0Ha9A',   // Nhóm Cúc (GC-MS/MS) - Form Đơn
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -133,13 +135,7 @@ const CONFIG = {
       formType: 'type3b',
       defaultFontSize: 13,
       columns: {}, // Sử dụng text replacements động cho Dạng 3B
-      checkboxLines: {
-        'Mẫu kiểm tra nội bộ':                                       'qcKiemTraNoiBo',
-        'Độ thu hồi R%':                                             'qcThuHoiR',
-        'Hệ số tuyến tính R2':                                       'qcR2',
-        'Độ lệch thời gian lưu':                                     'qcThoiGianLuu',
-        'S/N':                                                       'qcSN',
-      },
+      checkboxLines: {}, // Trống vì Lân hữu cơ không có bảng QC checklist ở trang 1
       signaturePlaceholders: {
         'date1': 'ngayNguoiPhanTich',
         'date2': 'ngayNguoiThamTra',
@@ -155,6 +151,23 @@ const CONFIG = {
         { key: 'Phosmet' }, { key: 'Phosphamidon' }, { key: 'PirimiphosMethyl' }, { key: 'Profenofos' },
         { key: 'Quinalphos' }, { key: 'Ronnel' }, { key: 'Triazophos' }, { key: 'Vamidothion' },
         { key: 'Chlorfenvinphos' }, { key: 'IsofenphosMethyl' }
+      ]
+    },
+    'nhom-cuc': {
+      folderName: 'Nhóm Cúc (Type 3B)',
+      formType: 'type3b',
+      defaultFontSize: 13,
+      columns: {},
+      checkboxLines: {}, // Trống vì Nhóm Cúc không có bảng QC checklist ở trang 1
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      },
+      resultColumns: [
+        { key: 'Bifenthrin' }, { key: 'CyfluthrinBaythroid' }, { key: 'lamdaCyhalothrin' }, { key: 'Deltamethrin' },
+        { key: 'Tralomethrin' }, { key: 'Ethofenprox' }, { key: 'PermethrinCis' }, { key: 'PermethrinTrans' },
+        { key: 'Fenpropathrin' }, { key: 'Silafluofen' }, { key: 'Flucythrinate' }, { key: 'Fenvalerate' },
+        { key: 'Cypermethrins' }, { key: 'Tefluthrin' }
       ]
     }
   }

@@ -1192,3 +1192,340 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     samples: samplesPayload
   };
 }
+
+export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+  const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+  const samplesPayload: any[] = [];
+  const sampleList = currentRun.sampleList || [];
+
+  const filteredSamples = sampleList.filter((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(s);
+    const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter;
+  });
+
+  const mapCompoundToKey = (c: string): string => {
+    const directMap: Record<string, string> = {
+      'Cyfluthrin (Baythroid)': 'CyfluthrinBaythroid',
+      'lamda-Cyhalothrin': 'lamdaCyhalothrin',
+      'Permethrin cis': 'PermethrinCis',
+      'Permethrin trans': 'PermethrinTrans'
+    };
+    if (directMap[c]) return directMap[c];
+    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s'()]/g, '');
+  };
+
+  const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
+
+  const isAssigned = (sampleCode: string, compound: string): boolean => {
+    const assigned = sampleTargetMap[sampleCode];
+    if (!assigned) return true;
+    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+  };
+
+  const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+  const isGop = !isDon && currentDraft.page1Data && currentDraft.page1Data['checkGopInChung'] === true;
+
+  if (isGop && filteredSamples.length > 0) {
+    const mergedSampleCode = filteredSamples.join('; ');
+    const rowData: Record<string, any> = {
+      maSoMau: mergedSampleCode,
+      khoiLuong: currentDraft.resultData[filteredSamples[0]]?.['khoiLuong'] || '10.0',
+      heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
+      hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
+      loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
+    };
+
+    const isAssignedToAny = (compound: string): boolean => {
+      return filteredSamples.some((s: string) => isAssigned(s, compound));
+    };
+
+    currentConf.compounds.forEach((c: string) => {
+      const backendKey = mapCompoundToKey(c);
+      const assigned = isAssignedToAny(c);
+
+      if (!assigned) {
+        rowData[backendKey] = '';
+        rowData[`${backendKey}_nd`] = false;
+        rowData[`${backendKey}_qc1`] = 'N/A';
+        rowData[`${backendKey}_qc2`] = 'N/A';
+        rowData[`${backendKey}_qc3`] = 'N/A';
+      } else {
+        const uniqueVals = new Set<string>(filteredSamples.map((s: string) => {
+          const sRes = currentDraft.resultData[s] || {};
+          const isNd = sRes[`${c}_nd`] === true;
+          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
+        }));
+
+        if (uniqueVals.size === 1) {
+          const commonVal = Array.from(uniqueVals)[0];
+          if (commonVal === 'KPH') {
+            rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else {
+            rowData[`${backendKey}_nd`] = false;
+            rowData[backendKey] = commonVal;
+          }
+        } else {
+          rowData[`${backendKey}_nd`] = false;
+          const resultParts = filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            const isNd = sRes[`${c}_nd`] === true;
+            const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            return `${s}: ${displayVal}`;
+          });
+          rowData[backendKey] = resultParts.join('; ');
+        }
+
+        const getMergedQc = (qcKey: string): string => {
+          const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+          }));
+          if (uniqueQcs.size === 1) {
+            return Array.from(uniqueQcs)[0];
+          }
+          return filteredSamples.map((s: string) => {
+            const sRes = currentDraft.resultData[s] || {};
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+          }).join('; ');
+        };
+
+        rowData[`${backendKey}_qc1`] = getMergedQc('qc1');
+        rowData[`${backendKey}_qc2`] = getMergedQc('qc2');
+        rowData[`${backendKey}_qc3`] = getMergedQc('qc3');
+      }
+    });
+
+    samplesPayload.push(rowData);
+  } else {
+    filteredSamples.forEach((sampleCode: string) => {
+      const resObj = currentDraft.resultData[sampleCode] || {};
+      const rowData: Record<string, any> = {
+        maSoMau: sampleCode,
+        khoiLuong: resObj['khoiLuong'] || '10.0',
+        heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
+        hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
+        loSo: resObj['loSo'] || '',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
+      };
+
+      currentConf.compounds.forEach((c: string) => {
+        const backendKey = mapCompoundToKey(c);
+        const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
+        const assigned = isAssigned(sampleCode, c);
+
+        if (!assigned) {
+          rowData[backendKey] = '';
+          rowData[`${backendKey}_nd`] = false;
+          rowData[`${backendKey}_qc1`] = 'N/A';
+          rowData[`${backendKey}_qc2`] = 'N/A';
+          rowData[`${backendKey}_qc3`] = 'N/A';
+        } else {
+          const isNd = resObj[`${c}_nd`] === true;
+          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
+          rowData[`${backendKey}_nd`] = isNd;
+          rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
+          rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
+          rowData[`${backendKey}_qc3`] = resObj[`${c}_qc3`] || '';
+        }
+      });
+
+      samplesPayload.push(rowData);
+    });
+  }
+
+  // Helper to build compound results and notes maps for runSamplesList
+  const buildCompoundMaps = (resKey: string) => {
+    const resObj = currentDraft.resultData[resKey] || {};
+    const results: Record<string, string> = {};
+    const notes: Record<string, string> = {};
+    currentConf.compounds.forEach((c: string) => {
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
+      const val = resObj[c];
+      const backendKey = mapCompoundToKey(c);
+      const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
+      results[backendKey] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
+      notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
+    });
+    return { results, notes };
+  };
+
+  // Build chromatography runs list
+  const runSamplesList: any[] = [];
+
+  // 1. QC_BLANK
+  const blankName = currentDraft.page1Data['blankName'] || 'BLANK';
+  const blankRes = currentDraft.resultData['QC_BLANK'] || {};
+  const blankMaps = buildCompoundMaps('QC_BLANK');
+  runSamplesList.push({
+    key: 'QC_BLANK',
+    maSoMau: blankName,
+    khoiLuong: blankRes['khoiLuong'] || '10.0',
+    heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
+    hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
+    loSo: blankRes['loSo'] || '7',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
+    summaryResult: 'KPH',
+    compoundResults: blankMaps.results,
+    compoundNotes: blankMaps.notes
+  });
+
+  // 2. QC_SPIKE
+  const spikeName = currentDraft.page1Data['spikeName'] || 'SPIKE';
+  const spikeRes = currentDraft.resultData['QC_SPIKE'] || {};
+  const spikeMaps = buildCompoundMaps('QC_SPIKE');
+  runSamplesList.push({
+    key: 'QC_SPIKE',
+    maSoMau: spikeName,
+    khoiLuong: spikeRes['khoiLuong'] || '10.0',
+    heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
+    hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
+    loSo: spikeRes['loSo'] || '8',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
+    summaryResult: 'KPH',
+    compoundResults: spikeMaps.results,
+    compoundNotes: spikeMaps.notes
+  });
+
+  // 3. Regular samples
+  if (isGop && filteredSamples.length > 0) {
+    const mergedSampleCode = filteredSamples.join('; ');
+    const s0 = filteredSamples[0];
+    const resObj = currentDraft.resultData[s0] || {};
+    const detected: string[] = [];
+    currentConf.compounds.forEach((c: string) => {
+      const isDet = filteredSamples.some((sCode: string) => {
+        const sRes = currentDraft.resultData[sCode] || {};
+        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c] && sRes[c] !== 'N/A';
+      });
+      if (isDet) {
+        const vals = filteredSamples.map((sCode: string) => {
+          const sRes = currentDraft.resultData[sCode] || {};
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
+        }).join('; ');
+        detected.push(`${c}: ${vals}`);
+      }
+    });
+    const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+
+    const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
+      const vals = filteredSamples.map((sCode: string) => {
+        const sRes = currentDraft.resultData[sCode] || {};
+        const isNd = sRes[`${c}_nd`] === true;
+        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
+      });
+      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
+      const backendKey = mapCompoundToKey(c);
+      acc[backendKey] = allKph ? 'KPH' : vals.join('; ');
+      return acc;
+    }, {});
+
+    const compoundNotes = currentConf.compounds.reduce((acc: any, c: string) => {
+      const notes = filteredSamples.map((sCode: string) => {
+        const sRes = currentDraft.resultData[sCode] || {};
+        return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
+      });
+      const backendKey = mapCompoundToKey(c);
+      acc[backendKey] = notes.join('; ');
+      return acc;
+    }, {});
+
+    runSamplesList.push({
+      key: 'GROUPED',
+      maSoMau: mergedSampleCode,
+      khoiLuong: resObj['khoiLuong'] || '10.0',
+      heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
+      hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
+      loSo: resObj['loSo'] || '',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
+      summaryResult: summaryResult,
+      compoundResults: compoundResults,
+      compoundNotes: compoundNotes
+    });
+  } else {
+    filteredSamples.forEach((s: string) => {
+      const resObj = currentDraft.resultData[s] || {};
+      const detected: string[] = [];
+      currentConf.compounds.forEach((c: string) => {
+        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && resObj[c] && resObj[c] !== 'N/A') {
+          detected.push(`${c}: ${resObj[c]}`);
+        }
+      });
+      const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+
+      const sMaps = buildCompoundMaps(s);
+      runSamplesList.push({
+        key: s,
+        maSoMau: s,
+        khoiLuong: resObj['khoiLuong'] || '10.0',
+        heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
+        hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
+        loSo: resObj['loSo'] || '',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
+        summaryResult: summaryResult,
+        compoundResults: sMaps.results,
+        compoundNotes: sMaps.notes
+      });
+    });
+  }
+
+  // 4. QC_FINAL
+  if (currentDraft.page1Data['hasFinal']) {
+    const finalRes = currentDraft.resultData['QC_FINAL'] || {};
+    const finalMaps = buildCompoundMaps('QC_FINAL');
+    runSamplesList.push({
+      key: 'QC_FINAL',
+      maSoMau: 'FINAL',
+      khoiLuong: finalRes['khoiLuong'] || '10.0',
+      heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
+      hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
+      loSo: finalRes['loSo'] || '8',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
+      summaryResult: 'KPH',
+      compoundResults: finalMaps.results,
+      compoundNotes: finalMaps.notes
+    });
+  }
+
+  // Get active compounds to print (for formDon, only print the selected activeCompound)
+  const compoundsToPrint = isDon 
+    ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
+    : currentConf.compounds.filter((c: string) => {
+        return filteredSamples.some((s: string) => isAssigned(s, c));
+      });
+
+  return {
+    action: 'generate_pdf',
+    sopId: 'nhom-cuc',
+    metadata: {
+      ...currentDraft.page1Data,
+      printFormType: currentDraft.page1Data['printFormType'] || 'formCheck',
+      blankName: currentDraft.page1Data['blankName'] || 'BLANK',
+      spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
+      hasFinal: currentDraft.page1Data['hasFinal'] === true,
+      calibPoints: currentDraft.page1Data['calibPoints'] || [],
+      r2: currentDraft.page1Data['r2'] || '',
+      compoundsToPrint: compoundsToPrint,
+      prefix: prefixForReport,
+      ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
+      ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+      ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
+      runSamplesList: runSamplesList
+    },
+    samples: samplesPayload
+  };
+}

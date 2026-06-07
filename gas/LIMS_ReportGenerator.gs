@@ -56,10 +56,13 @@ function doPost(e) {
 function generateReport(sopId, metadata, samples, version) {
   let templateId = CONFIG.TEMPLATES[sopId];
   if (sopId === 'lan-huu-co' && metadata && metadata.printFormType === 'formDon') {
-    templateId = '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y';
+    templateId = CONFIG.TEMPLATES['lan-huu-co-don'] || '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y';
   }
   if (sopId === 'chlor-huu-co' && metadata && metadata.printFormType === 'formDon') {
-    templateId = '1JhO-qVV6-KFw9zq2ARCYyVwlQoj6xFjFHlrBsjNGbH8';
+    templateId = CONFIG.TEMPLATES['chlor-huu-co-don'] || '1JhO-qVV6-KFw9zq2ARCYyVwlQoj6xFjFHlrBsjNGbH8';
+  }
+  if (sopId === 'nhom-cuc' && metadata && metadata.printFormType === 'formDon') {
+    templateId = CONFIG.TEMPLATES['nhom-cuc-don'] || 'PASTE_GOOGLE_DOC_ID_HERE';
   }
   const sopConfig   = CONFIG.SOP_CONFIG[sopId];
 

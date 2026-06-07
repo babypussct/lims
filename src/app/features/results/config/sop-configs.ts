@@ -6,6 +6,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   'sop_1767857760184': 'dichlorvos-gcms', // Dichlorvos/Dipterex(Trichlorfon) (GC-MS & GC-MS/MS)
   'nhom_lan_huu_co_gc-msms_copy_1768036876719': 'chlor-huu-co', // Nhóm Chlor hữu cơ (GC-MS/MS) (filebieumau_FORM_TRANG4.docx)
   'SOP-02': 'lan-huu-co',             // Nhóm Lân hữu cơ (GC-MS/MS)
+  'sop_1767856825928': 'nhom-cuc',    // Nhóm Cúc (GC-MS/MS)
   // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
   // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)
 };
@@ -17,6 +18,7 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['dichlorvos'],                               configKey: 'dichlorvos-gcms' },
   { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
   { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'],     configKey: 'lan-huu-co' },
+  { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'],            configKey: 'nhom-cuc' },
 ];
 
 export const ANGULAR_SOP_CONFIG: Record<string, {
@@ -87,15 +89,7 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
   'lan-huu-co': {
     formType: 'type3b',
     columns: {},
-    checkboxLines: {
-      'Các mẫu thử không phát hiện': 'checkTatCaND',
-      'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
-      'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
-      'Độ thu hồi R%': 'qcThuHoiR',
-      'Hệ số tuyến tính R2': 'qcR2',
-      'Độ lệch thời gian lưu': 'qcThoiGianLuu',
-      'S/N': 'qcSN'
-    },
+    checkboxLines: {},
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
     compounds: [
       'Acephate',
@@ -136,6 +130,28 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       'Vamidothion',
       'Chlorfenvinphos',
       'Isofenphos-methyl'
+    ]
+  },
+  'nhom-cuc': {
+    formType: 'type3b',
+    columns: {},
+    checkboxLines: {},
+    signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
+    compounds: [
+      'Bifenthrin',
+      'Cyfluthrin (Baythroid)',
+      'lamda-Cyhalothrin',
+      'Deltamethrin',
+      'Tralomethrin',
+      'Ethofenprox',
+      'Permethrin cis',
+      'Permethrin trans',
+      'Fenpropathrin',
+      'Silafluofen',
+      'Flucythrinate',
+      'Fenvalerate',
+      'Cypermethrins',
+      'Tefluthrin'
     ]
   }
 };

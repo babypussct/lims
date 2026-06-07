@@ -429,6 +429,14 @@
                 (draftChanged)="onDraftChanged($event)">
               </app-sop-lan-huu-co-entry>
             }
+            @case ('nhom-cuc') {
+              <app-sop-1767856825928-entry
+                [run]="filteredRun()!"
+                [draft]="draft()!"
+                [config]="config()!"
+                (draftChanged)="onDraftChanged($event)">
+              </app-sop-1767856825928-entry>
+            }
             @default {
               <app-result-entry-type3b 
                 [run]="filteredRun()!" 
