@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
@@ -492,6 +492,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
     metadata: {
       ...currentDraft.page1Data,
       prefix: prefixForReport,
+      sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate())
@@ -829,6 +830,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
       prefix: prefixForReport,
+      sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1184,6 +1186,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
       prefix: prefixForReport,
+      sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1521,6 +1524,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
       prefix: prefixForReport,
+      sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
