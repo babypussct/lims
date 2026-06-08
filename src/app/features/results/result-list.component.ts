@@ -1500,13 +1500,14 @@ export class ResultListComponent implements OnInit, OnDestroy {
       if (r.targetIds) {
         r.targetIds.forEach((t: string) => allTargetIds.add(t));
       }
-      if (r.sampleTargetMap) {
-        Object.keys(r.sampleTargetMap).forEach(sampleId => {
+      const rMap = r.sampleTargetMap || r.inputs?.sampleTargetMap;
+      if (rMap) {
+        Object.keys(rMap).forEach(sampleId => {
           if (!combinedSampleTargetMap[sampleId]) {
             combinedSampleTargetMap[sampleId] = [];
           }
           const existingTargets = new Set(combinedSampleTargetMap[sampleId]);
-          r.sampleTargetMap[sampleId].forEach((t: string) => existingTargets.add(t));
+          rMap[sampleId].forEach((t: string) => existingTargets.add(t));
           combinedSampleTargetMap[sampleId] = Array.from(existingTargets);
         });
       }

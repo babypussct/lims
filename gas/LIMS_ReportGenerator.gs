@@ -50,8 +50,16 @@ function replaceDotsSafely(el, pattern, textToInsert) {
         const dotsIndex = match.index;
         const dotsLength = match[0].length;
         const insertPos = start + dotsIndex;
+        
+        // Chèn text mới vào
         textElement.insertText(insertPos, textToInsert);
-        textElement.deleteText(insertPos + textToInsert.length, insertPos + textToInsert.length + dotsLength - 1);
+        
+        // Tính toán số lượng dấu chấm cần xóa (tối đa bằng chiều dài chuỗi text hoặc số dấu chấm hiện có)
+        // Để không làm thụt / rút gọn dòng của User
+        const charsToDelete = Math.min(textToInsert.length, dotsLength);
+        
+        // Xóa dấu chấm
+        textElement.deleteText(insertPos + textToInsert.length, insertPos + textToInsert.length + charsToDelete - 1);
       }
     } catch(e) {
       Logger.log('[replaceDotsSafely] Error at pattern ' + pattern + ': ' + e);
@@ -569,6 +577,11 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
   try {
     let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
     
+    // Nếu không phải form Đơn thì luôn ép khối lượng về 10.0g cho mọi mẻ gộp / form check
+    if (metadata.printFormType !== 'formDon') {
+      khoiLuongVal = '10.0';
+    }
+    
     let kl10Check = '☐';
     let klOtherText = '………';
     
@@ -578,13 +591,20 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
       klOtherText = khoiLuongVal;
     }
     
-    replaceCheckboxSafely(element, 'm\\s*=\\s*[☑☐□N]', kl10Check);
+    const cbPattern = '([☑☐□N]|\\[\\s*\\]|\\(\\s*\\))';
+
+    replaceCheckboxSafely(element, 'm\\s*=\\s*' + cbPattern, kl10Check);
     if (klOtherText !== '………') {
       replaceDotsSafely(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
     }
     
     // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại
     element.replaceText('{{khoiLuong}}', khoiLuongVal);
+    // Bắt thêm case chữ m =g mà user đề cập trong bảng kết quả mẫu
+    // Nếu là form check, nếu có chữ m = ........ g thì thay bằng 10.0
+    if (metadata.printFormType !== 'formDon') {
+      replaceDotsSafely(element, 'm\\s*=\\s*[…\\.]+', ' 10.0 ');
+    }
 
     const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
     let isTuoi = loaiMauVal === 'Nông sản tươi';
@@ -598,10 +618,10 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
     const thuySanCheck = isThuySan ? '☑' : '☐';
     const lmKhacCheck = isLmKhac ? '☑' : '☐';
 
-    replaceCheckboxSafely(element, 'Loại mẫu:\\s*[☑☐□N]', tuoiCheck);
-    replaceCheckboxSafely(element, 'tươi\\s*;\\s*[☑☐□N]', khoCheck);
-    replaceCheckboxSafely(element, 'khô\\s*;\\s*[☑☐□N]', thuySanCheck);
-    replaceCheckboxSafely(element, 'sản\\s*;\\s*[☑☐□N]', lmKhacCheck);
+    replaceCheckboxSafely(element, 'Loại mẫu:\\s*' + cbPattern, tuoiCheck);
+    replaceCheckboxSafely(element, 'tươi\\s*;\\s*' + cbPattern, khoCheck);
+    replaceCheckboxSafely(element, 'khô\\s*;\\s*' + cbPattern, thuySanCheck);
+    replaceCheckboxSafely(element, 'sản\\s*;\\s*' + cbPattern, lmKhacCheck);
     if (isLmKhac) {
       replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
     }
@@ -614,8 +634,8 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
     const btCheck = isBinhThuong ? '☑' : '☐';
     const ttKhacCheck = isTtKhac ? '☑' : '☐';
 
-    replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*[☑☐□N]', btCheck);
-    replaceCheckboxSafely(element, 'thường\\s*;\\s*[☑☐□N]', ttKhacCheck);
+    replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*' + cbPattern, btCheck);
+    replaceCheckboxSafely(element, 'thường\\s*;\\s*' + cbPattern, ttKhacCheck);
     if (isTtKhac) {
       replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
     }
@@ -646,8 +666,8 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
     const phCheck = isPhatHien ? '☑' : '☐';
     const kphCheck = isKhongPhatHien ? '☑' : '☐';
 
-    replaceCheckboxSafely(element, '[☑☐□N]\\s*Phát hiện', phCheck);
-    replaceCheckboxSafely(element, '[☑☐□N]\\s*Không phát hiện', kphCheck);
+    replaceCheckboxSafely(element, cbPattern + '\\s*Phát hiện', phCheck);
+    replaceCheckboxSafely(element, cbPattern + '\\s*Không phát hiện', kphCheck);
 
   } catch(e) {
     Logger.log('[fillCommonSampleCheckboxes] Error: ' + e.toString());

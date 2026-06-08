@@ -69,13 +69,14 @@ export class ResultService {
           if (r['targetIds']) {
             r['targetIds'].forEach((t: string) => allTargetIds.add(t));
           }
-          if (r['sampleTargetMap']) {
-            Object.keys(r['sampleTargetMap']).forEach(sampleId => {
+          const rMap = r['sampleTargetMap'] || r['inputs']?.['sampleTargetMap'];
+          if (rMap) {
+            Object.keys(rMap).forEach(sampleId => {
               if (!combinedSampleTargetMap[sampleId]) {
                 combinedSampleTargetMap[sampleId] = [];
               }
               const existingTargets = new Set(combinedSampleTargetMap[sampleId]);
-              r['sampleTargetMap'][sampleId].forEach((t: string) => existingTargets.add(t));
+              rMap[sampleId].forEach((t: string) => existingTargets.add(t));
               combinedSampleTargetMap[sampleId] = Array.from(existingTargets);
             });
           }
@@ -113,8 +114,13 @@ export class ResultService {
         return;
       }
       
-      // Auto-heal old virtual masters that missed targetIds merging
-      if (lastMeta.isVirtualMaster && (!lastMeta.targetIds || !lastMeta.sampleTargetMap) && lastMeta.childRequestIds && !lastMeta._isHealing) {
+      const needsHealing = !lastMeta.targetIds || 
+                           lastMeta.targetIds.length === 0 || 
+                           !lastMeta.sampleTargetMap || 
+                           Object.keys(lastMeta.sampleTargetMap).length === 0 ||
+                           (lastMeta.sampleList && Object.keys(lastMeta.sampleTargetMap).length < lastMeta.sampleList.length);
+      
+      if (lastMeta.isVirtualMaster && needsHealing && lastMeta.childRequestIds && !lastMeta._isHealing) {
         lastMeta._isHealing = true; // prevent infinite loop before db updates
         this.autoHealVirtualMaster(requestId, lastMeta).then(() => {
           // Khi updateDoc xong, onSnapshot sẽ tự động kích hoạt lại emitMerged với dữ liệu mới

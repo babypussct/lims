@@ -128,63 +128,61 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         const headerText = t.getRow(0).getCell(0).getText();
         if (headerText.includes("Thông số đánh giá")) {
           const checkboxLines = sopConfig.checkboxLines;
-          if (checkboxLines) {
-            const numRows = t.getNumRows();
-            for (let r = 1; r < numRows; r++) {
-              const row = t.getRow(r);
-              const labelText = row.getCell(0).getText().trim();
-              
-              let fieldName = null;
-              if (checkboxLines) {
-                for (const [keyText, fName] of Object.entries(checkboxLines)) {
-                  if (labelText.includes(keyText) || keyText.includes(labelText)) {
-                    fieldName = fName;
-                    break;
-                  }
+          const numRows = t.getNumRows();
+          for (let r = 1; r < numRows; r++) {
+            const row = t.getRow(r);
+            const labelText = row.getCell(0).getText().trim();
+            
+            let fieldName = null;
+            if (checkboxLines) {
+              for (const [keyText, fName] of Object.entries(checkboxLines)) {
+                if (labelText.includes(keyText) || keyText.includes(labelText)) {
+                  fieldName = fName;
+                  break;
                 }
-              }
-              // Fallback if not mapped
-              if (!fieldName) {
-                if (labelText.includes('Mẫu trắng') || labelText.includes('Blank')) fieldName = 'checkMauTrang';
-                else if (labelText.includes('Mẫu thêm chuẩn') || labelText.includes('Spike')) fieldName = 'checkMauThemChuan';
-                else if (labelText.includes('Hiệu suất thu hồi')) fieldName = 'checkHieuSuatThuHoi';
-                else if (labelText.includes('Độ chụm')) fieldName = 'checkDoChum';
-              }
-
-              if (fieldName && allFields[fieldName] !== undefined) {
-                const val = allFields[fieldName];
-                const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
-                
-                let datCheck, khongDatCheck, naCheck;
-                if (val === true) {
-                  datCheck = "☑ Đạt";
-                  khongDatCheck = "☐ Không đạt";
-                  naCheck = "☐ N/A";
-                } else if (val === false) {
-                  datCheck = "☐ Đạt";
-                  khongDatCheck = "☑ Không đạt";
-                  naCheck = "☐ N/A";
-                } else { // null (N/A)
-                  datCheck = "☐ Đạt";
-                  khongDatCheck = "☐ Không đạt";
-                  naCheck = "☑ N/A";
-                }
-
-                evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
-                evalCell.replaceText('[☐□☑] Đạt', datCheck);
-
-                evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
-                evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
-
-                evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
-                evalCell.replaceText('[☐□☑] N/A', naCheck);
               }
             }
+            // Fallback if not mapped
+            if (!fieldName) {
+              if (labelText.includes('Mẫu trắng') || labelText.includes('Blank')) fieldName = 'checkMauTrang';
+              else if (labelText.includes('Mẫu thêm chuẩn') || labelText.includes('Spike')) fieldName = 'checkMauThemChuan';
+              else if (labelText.includes('Hiệu suất thu hồi')) fieldName = 'checkHieuSuatThuHoi';
+              else if (labelText.includes('Độ chụm')) fieldName = 'checkDoChum';
+            }
+
+            if (fieldName) {
+              // Default to true (Đạt) if undefined in metadata/sample
+              const val = allFields[fieldName] !== undefined ? allFields[fieldName] : true;
+              const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
+              
+              let datCheck, khongDatCheck, naCheck;
+              if (val === true) {
+                datCheck = "☑ Đạt";
+                khongDatCheck = "☐ Không đạt";
+                naCheck = "☐ N/A";
+              } else if (val === false) {
+                datCheck = "☐ Đạt";
+                khongDatCheck = "☑ Không đạt";
+                naCheck = "☐ N/A";
+              } else { // null (N/A)
+                datCheck = "☐ Đạt";
+                khongDatCheck = "☐ Không đạt";
+                naCheck = "☑ N/A";
+              }
+
+              evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
+              evalCell.replaceText('[☐□☑] Đạt', datCheck);
+
+              evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
+              evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
+
+              evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
+              evalCell.replaceText('[☐□☑] N/A', naCheck);
+            }
           }
+        }
       }
     }
-    
-
   }
 }
 
