@@ -1,40 +1,122 @@
 
 function generateType3bReport(body, sopConfig, metadata, samples) {
+  const printFormType = metadata.printFormType || 'formCheck';
+  
   const numChildren = body.getNumChildren();
   const children = [];
   for (let i = 0; i < numChildren; i++) {
     children.push(body.getChild(i).copy());
   }
 
-  // Điền dữ liệu cho mẫu đầu tiên
-  if (samples.length > 0) {
-    fillType3bSample(body, sopConfig, metadata, samples[0]);
-  }
-
-  // Nhân bản trang và điền dữ liệu cho các mẫu tiếp theo
-  for (let s = 1; s < samples.length; s++) {
-    body.appendPageBreak();
-    
-    const tempContainer = [];
-    for (let i = 0; i < children.length; i++) {
-      const cloned = children[i].copy();
-      const type = cloned.getType();
-      let appendedElement = null;
-      if (type === DocumentApp.ElementType.PARAGRAPH) {
-        appendedElement = body.appendParagraph(cloned.asParagraph());
-      } else if (type === DocumentApp.ElementType.TABLE) {
-        appendedElement = body.appendTable(cloned.asTable());
-      } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-        appendedElement = body.appendListItem(cloned.asListItem());
-      }
-      if (appendedElement) {
-        tempContainer.push(appendedElement);
+  if (printFormType === 'formDon') {
+    // === FORM ĐƠN ===
+    // Lặp theo từng hoạt chất (1 hoạt chất = 1 trang)
+    let compounds = metadata.compoundsToPrint || [];
+    if (compounds.length === 0) {
+      if (metadata.activeCompound) {
+        compounds = [metadata.activeCompound];
+      } else if (sopConfig.compounds && sopConfig.compounds.length > 0) {
+        compounds = [sopConfig.compounds[0]];
+      } else {
+        compounds = [''];
       }
     }
-    fillType3bSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
+    
+    for (let c = 0; c < compounds.length; c++) {
+      const compoundName = compounds[c];
+      let pageElements = [];
+      
+      if (c === 0) {
+        for (let i = 0; i < numChildren; i++) {
+          const child = body.getChild(i);
+          const type = child.getType();
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            pageElements.push(child.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            pageElements.push(child.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            pageElements.push(child.asListItem());
+          }
+        }
+      } else {
+        body.appendPageBreak();
+        for (let i = 0; i < children.length; i++) {
+          const cloned = children[i].copy();
+          const type = cloned.getType();
+          let appended = null;
+          if (type === DocumentApp.ElementType.PARAGRAPH) {
+            appended = body.appendParagraph(cloned.asParagraph());
+          } else if (type === DocumentApp.ElementType.TABLE) {
+            appended = body.appendTable(cloned.asTable());
+          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+            appended = body.appendListItem(cloned.asListItem());
+          }
+          if (appended) pageElements.push(appended);
+        }
+      }
+      
+      // Xử lý điền tên hoạt chất vào header (XÁC ĐỊNH DƯ LƯỢNG ...)
+      if (compoundName) {
+        for (const element of pageElements) {
+          if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            const pText = element.asParagraph().getText();
+            if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
+              const para = element.asParagraph();
+              const found = para.findText('[…\\.]+');
+              if (found) {
+                try {
+                  const textEl = found.getElement().asText();
+                  const start = found.getStartOffset();
+                  const end = found.getEndOffsetInclusive();
+                  textEl.deleteText(start, end);
+                  textEl.insertText(start, compoundName.toUpperCase());
+                } catch(e) {}
+              } else {
+                try {
+                  const textEl = para.editAsText();
+                  textEl.appendText(' ' + compoundName.toUpperCase());
+                } catch(e) {}
+              }
+            }
+          }
+        }
+      }
+      
+      // Với form Đơn, mẫu phân tích là mẫu đầu tiên (nếu có)
+      const sampleToUse = samples.length > 0 ? samples[0] : {};
+      fillType3bSampleForElements(pageElements, sopConfig, metadata, sampleToUse);
+    }
+    
+  } else {
+    // === FORM CHECK ===
+    // Lặp theo từng mẫu (1 mẫu = 1 trang)
+    if (samples.length > 0) {
+      fillType3bSample(body, sopConfig, metadata, samples[0]);
+    }
+  
+    for (let s = 1; s < samples.length; s++) {
+      body.appendPageBreak();
+      
+      const tempContainer = [];
+      for (let i = 0; i < children.length; i++) {
+        const cloned = children[i].copy();
+        const type = cloned.getType();
+        let appendedElement = null;
+        if (type === DocumentApp.ElementType.PARAGRAPH) {
+          appendedElement = body.appendParagraph(cloned.asParagraph());
+        } else if (type === DocumentApp.ElementType.TABLE) {
+          appendedElement = body.appendTable(cloned.asTable());
+        } else if (type === DocumentApp.ElementType.LIST_ITEM) {
+          appendedElement = body.appendListItem(cloned.asListItem());
+        }
+        if (appendedElement) {
+          tempContainer.push(appendedElement);
+        }
+      }
+      fillType3bSampleForElements(tempContainer, sopConfig, metadata, samples[s]);
+    }
   }
   
-  // Tự động thu dọn PageBreak cuối tài liệu nếu có
   cleanLastPageBreak(body);
 }
 
@@ -50,6 +132,32 @@ function fillType3bSample(body, sopConfig, metadata, sample) {
  */
 function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
   const allFields = { ...metadata, ...sample };
+  
+  // Bộ lọc chỉ định (Target Assignment Resolver)
+  const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
+  const isTargetAssignedForGas = function(sampleCode, compoundName) {
+    if (!sampleTargetMap || !sampleCode || !compoundName) return true;
+    
+    const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
+    const codesToCheck = subCodes.length > 0 ? subCodes : [sampleCode];
+    
+    for (const sc of codesToCheck) {
+      const assignedTargetIds = sampleTargetMap[sc];
+      if (!assignedTargetIds) return true; // Fallback an toàn nếu không tìm thấy cấu hình của mẫu
+      
+      const compLower = compoundName.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+      const isAssigned = assignedTargetIds.some(tId => {
+        const tLower = tId.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+        // Bảo vệ: tránh Heptachlor khớp nhầm Heptachlor-epoxide
+        if (compLower === 'heptachlor' && tLower.includes('epoxide')) return false;
+        if (tLower === 'heptachlor' && compLower.includes('epoxide')) return false;
+        
+        return tLower.includes(compLower) || compLower.includes(tLower);
+      });
+      if (isAssigned) return true;
+    }
+    return false;
+  };
   
   for (const element of elements) {
 
@@ -93,6 +201,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     }
     
     // 5. Thay thế kết quả kết luận cho từng hoạt chất riêng biệt bằng mã hóa gọn (K1, N1, A1...)
+    // (Dành cho form cũ hoặc nếu có định nghĩa resultColumns)
     if (sopConfig.resultColumns) {
       for (let idx = 1; idx <= sopConfig.resultColumns.length; idx++) {
         const col = sopConfig.resultColumns[idx - 1];
@@ -182,7 +291,340 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
           }
         }
       }
+      
+      // 7. Xử lý điền Kết quả và QC cho TỪNG HOẠT CHẤT riêng biệt (Nhóm Cúc, Lân...)
+      if (sopConfig.compounds && sopConfig.compounds.length > 0) {
+        for (let r = 0; r < t.getNumRows(); r++) {
+          const row = t.getRow(r);
+          const numCols = row.getNumCells();
+          if (numCols < 2) continue;
+          
+          // Phân tách các ô trong dòng thành các "phân đoạn" (segments)
+          // Để hỗ trợ cả bảng 1 cột (Nhóm Cúc/Chlor) và bảng 2 cột chia đôi (Nhóm Lân)
+          let segments = [];
+          for (let c = 0; c < numCols; c++) {
+            const cellText = row.getCell(c).getText().trim();
+            if (!cellText || cellText.length < 2) continue;
+            
+            let matchedCompound = null;
+            // 1. Ưu tiên khớp chính xác
+            for (const comp of sopConfig.compounds) {
+              if (cellText.toLowerCase() === comp.toLowerCase()) {
+                matchedCompound = comp;
+                break;
+              }
+            }
+            // 2. Khớp chuỗi con nếu không khớp chính xác
+            if (!matchedCompound) {
+              for (const comp of sopConfig.compounds) {
+                if (cellText.toLowerCase().includes(comp.toLowerCase()) && cellText.length < 50) {
+                  matchedCompound = comp;
+                  break;
+                }
+              }
+            }
+            
+            if (matchedCompound) {
+              segments.push({ compound: matchedCompound, startCol: c });
+            }
+          }
+          
+          // Tính toán khoảng cột của mỗi phân đoạn (endCol)
+          for (let s = 0; s < segments.length; s++) {
+            segments[s].endCol = (s < segments.length - 1) ? (segments[s+1].startCol - 1) : (numCols - 1);
+          }
+          
+          // Xử lý từng phân đoạn độc lập
+          for (const seg of segments) {
+            const { compound, startCol, endCol } = seg;
+            if (startCol >= endCol) continue; // Không có cột kết quả nào
+            
+            const segmentCells = [];
+            for (let c = startCol + 1; c <= endCol; c++) {
+              segmentCells.push(row.getCell(c));
+            }
+            
+            const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
+            
+            if (!isAssigned) {
+              // Hoạt chất KHÔNG được chỉ định -> Điền gạch ngang và để trống QC
+              let ndReplaced = false;
+              for (const cell of segmentCells) {
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*ND');
+                if (foundNd) {
+                  try {
+                    const textElement = foundNd.getElement().asText();
+                    const start = foundNd.getStartOffset();
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+                    if (match) {
+                      textElement.insertText(start + match.index, '☐');
+                      textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+                    }
+                  } catch(e) {}
+                  ndReplaced = true;
+                  break;
+                }
+              }
+              
+              for (const cell of segmentCells) {
+                let foundDots = cell.findText('[…\\.]{2,}');
+                if (foundDots) {
+                  try {
+                    const dText = foundDots.getElement().asText();
+                    const dStart = foundDots.getStartOffset();
+                    const dMatch = dText.getText().substring(dStart, foundDots.getEndOffsetInclusive() + 1).match(/[…\.]{2,}/);
+                    if (dMatch) {
+                      dText.insertText(dStart + dMatch.index, '—');
+                      const charsToDelete = Math.min(1, dMatch[0].length);
+                      dText.deleteText(dStart + dMatch.index + 1, dStart + dMatch.index + charsToDelete);
+                    }
+                  } catch(e) {}
+                  break; // Chỉ gạch ngang 1 lần đầu tiên
+                }
+              }
+              
+              // Gạch trống QC trong segment
+              for (let i = 0; i < 3; i++) {
+                _setNthQcCheckboxInCells(segmentCells, i, 'Đ(?!ạ)', false);
+                _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', false);
+              }
+              
+            } else {
+              // Hoạt chất ĐƯỢC CHỈ ĐỊNH -> Điền kết quả và QC
+              const resultVal = sample[compound] !== undefined && sample[compound] !== null ? sample[compound].toString() : '';
+              const isNd = sample[compound + '_nd'] === true;
+              const qcList = [
+                sample[compound + '_qc1'],
+                sample[compound + '_qc2'],
+                sample[compound + '_qc3']
+              ];
+              
+              // 7.1. Tìm checkbox ND và điền kết quả (dấu chấm) trong segment
+              for (const cell of segmentCells) {
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*ND');
+                if (foundNd) {
+                  try {
+                    const textElement = foundNd.getElement().asText();
+                    const start = foundNd.getStartOffset();
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+                    if (match) {
+                      const insertPos = start + match.index;
+                      const charToInsert = isNd ? '☑' : '☐';
+                      textElement.insertText(insertPos, charToInsert);
+                      textElement.deleteText(insertPos + 1, insertPos + match[0].length);
+                    }
+                  } catch(e) {}
+                  
+                  // Điền số kết quả đè lên dãy dấu chấm
+                  if (!isNd && resultVal) {
+                    let foundDots = cell.findText('[…\\.]{2,}');
+                    if (foundDots) {
+                      try {
+                        const dText = foundDots.getElement().asText();
+                        const dStart = foundDots.getStartOffset();
+                        const dMatch = dText.getText().substring(dStart, foundDots.getEndOffsetInclusive() + 1).match(/[…\.]{2,}/);
+                        if (dMatch) {
+                          const insertPos = dStart + dMatch.index;
+                          dText.insertText(insertPos, resultVal);
+                          const charsToDelete = Math.min(resultVal.length, dMatch[0].length);
+                          dText.deleteText(insertPos + resultVal.length, insertPos + resultVal.length + charsToDelete - 1);
+                        }
+                      } catch(e) {}
+                    }
+                  }
+                  break; // Xử lý xong phần kết quả của compound này
+                }
+              }
+              
+              // 7.2. Tìm và tick các ô QC Đ/KĐ theo thứ tự trong segment
+              for (let i = 0; i < qcList.length; i++) {
+                const qcStatus = qcList[i];
+                if (qcStatus) {
+                  const checkDat = (qcStatus === 'Đạt' || qcStatus === '☑');
+                  const checkKhongDat = (qcStatus === 'Không đạt' || qcStatus === '☒' || qcStatus === 'Không Đạt');
+                  
+                  _setNthQcCheckboxInCells(segmentCells, i, 'Đ(?!ạ)', checkDat);
+                  _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', checkKhongDat);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // 8. Tự động điền Bảng Sắc Ký Đồ (Chromatogram Table)
+      _fillGenericChromatogramTable(t, sample, sopConfig, isTargetAssignedForGas);
     }
+  }
+}
+
+/**
+ * Tự động dò và điền Bảng Sắc Ký Đồ (Mục 9) trong các report Type 3B
+ */
+function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssignedForGas) {
+  if (!sopConfig.compounds || sopConfig.compounds.length === 0) return;
+  if (table.getNumRows() < 5) return; // Bảng sắc ký đồ thường dài
+  
+  const numCols = table.getRow(0).getNumCells();
+  if (numCols < 3) return; // Cần ít nhất 3 cột (Hoạt chất, Mẫu nền, Mẫu thu hồi...)
+  
+  // Dò tìm xem bảng này có phải bảng Sắc ký đồ không (chứa tên hoạt chất, nhưng không chứa header "Kết quả" hay "Đánh giá")
+  const headerText = table.getRow(0).getText().toLowerCase();
+  if (headerText.includes('đánh giá') || headerText.includes('kết quả') || headerText.includes('tuyến tính') || headerText.includes('thu hồi r%')) {
+    return; // Đây là bảng QC hoặc bảng Kết quả chính
+  }
+  
+  // Kiểm tra 2-3 hàng đầu tiên xem có chứa ít nhất 1 hoạt chất không
+  let isChromTable = false;
+  for (let r = 1; r < Math.min(4, table.getNumRows()); r++) {
+    const rowText = table.getRow(r).getText().toLowerCase();
+    if (sopConfig.compounds.some(c => rowText.includes(c.toLowerCase()))) {
+      isChromTable = true;
+      break;
+    }
+  }
+  
+  for (let r = 1; r < table.getNumRows(); r++) {
+    const row = table.getRow(r);
+    const numCols = row.getNumCells();
+    
+    let segments = [];
+    for (let c = 0; c < numCols; c++) {
+      const cellText = row.getCell(c).getText().trim();
+      if (!cellText || cellText.length < 2) continue;
+      
+      let matchedCompound = null;
+      for (const comp of sopConfig.compounds) {
+        if (cellText.toLowerCase() === comp.toLowerCase()) {
+          matchedCompound = comp; break;
+        }
+      }
+      if (!matchedCompound) {
+        for (const comp of sopConfig.compounds) {
+          if (cellText.toLowerCase().includes(comp.toLowerCase()) && cellText.length < 50) {
+            matchedCompound = comp; break;
+          }
+        }
+      }
+      if (matchedCompound) {
+        segments.push({ compound: matchedCompound, startCol: c });
+      }
+    }
+    
+    for (let s = 0; s < segments.length; s++) {
+      segments[s].endCol = (s < segments.length - 1) ? (segments[s+1].startCol - 1) : (numCols - 1);
+    }
+    
+    for (const seg of segments) {
+      const { compound, startCol, endCol } = seg;
+      if (startCol >= endCol) continue;
+      
+      const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
+      if (!isAssigned) {
+        // Gạch trống các cột trong segment
+        for (let c = startCol + 1; c <= endCol; c++) {
+          try { row.getCell(c).setText("—"); } catch(e) {}
+        }
+      } else {
+        const kqVal = sample[compound] !== undefined && sample[compound] !== null ? sample[compound].toString() : '';
+        const ndVal = sample[compound + '_nd'] === true ? '☑' : '☐';
+        const isDetected = (kqVal !== '' || ndVal === '☑');
+        
+        let ndCount = 0;
+        for (let c = startCol + 1; c <= endCol; c++) {
+          const cell = row.getCell(c);
+          const cellText = cell.getText().toLowerCase();
+          
+          if (cellText.includes('nd')) {
+            // Lần xuất hiện đầu tiên của ND trong segment là Mẫu thử
+            if (ndCount === 0) {
+              _replaceGenericCheckbox(cell, 'nd', isDetected);
+            } 
+            // Lần thứ hai là Mẫu nền (luôn ND)
+            else if (ndCount === 1) {
+              _replaceGenericCheckbox(cell, 'nd', true);
+            }
+            ndCount++;
+          }
+          if (cellText.includes('đ') && !cellText.includes('kđ')) {
+            _replaceGenericCheckbox(cell, 'đ(?!ạ)', true);
+          }
+        }
+      }
+    }
+  }
+}
+
+function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
+  let matchIndex = 0;
+  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  
+  for (const cell of cells) {
+    let found = cell.findText(pattern);
+    while (found) {
+      if (matchIndex === n) {
+        try {
+          const textElement = found.getElement().asText();
+          const start = found.getStartOffset();
+          const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+          if (match) {
+            textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
+            textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+          }
+        } catch(e) {}
+        return; // Đã tìm thấy và tick xong
+      }
+      matchIndex++;
+      found = cell.findText(pattern, found);
+    }
+  }
+}
+
+function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
+  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  let found = cell.findText(pattern);
+  while (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const start = found.getStartOffset();
+      const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+      if (match) {
+        textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
+        textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+      }
+    } catch(e) {}
+    found = cell.findText(pattern, found);
+  }
+}
+
+/**
+ * Helper tìm và tick checkbox ở vị trí thứ n trong một dòng table (hỗ trợ nhiều QC liên tiếp)
+ */
+function _setNthQcCheckboxInRow(row, targetIndex, labelPattern, isChecked) {
+  const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
+  let found = row.findText(pattern);
+  let count = 0;
+  
+  while (found) {
+    if (count === targetIndex) {
+      try {
+        const textElement = found.getElement().asText();
+        const start = found.getStartOffset();
+        const end = found.getEndOffsetInclusive();
+        const textStr = textElement.getText().substring(start, end + 1);
+        const match = textStr.match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+        
+        if (match) {
+          const insertPos = start + match.index;
+          const charToInsert = isChecked ? '☑' : '☐';
+          textElement.insertText(insertPos, charToInsert);
+          textElement.deleteText(insertPos + 1, insertPos + match[0].length);
+        }
+      } catch(e) {}
+      break;
+    }
+    found = row.findText(pattern, found);
+    count++;
   }
 }
 
