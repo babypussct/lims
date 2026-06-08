@@ -248,6 +248,43 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
     this.onDataChanged();
   }
 
+  on10gCheckChange(event: any) {
+    this.draft.page1Data['is10gChecked'] = event.target.checked;
+    if (this.draft.page1Data['is10gChecked']) {
+      this.draft.page1Data['khoiLuongKhac'] = '';
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    } else {
+      this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'] || '';
+    }
+    this.onDataChanged();
+  }
+
+  onKhoiLuongKhacChange() {
+    if (this.draft.page1Data['khoiLuongKhac']) {
+      this.draft.page1Data['is10gChecked'] = false;
+      this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'];
+    } else {
+      this.draft.page1Data['is10gChecked'] = true;
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    }
+    this.onDataChanged();
+  }
+
+  bulkRandomizeMasses() {
+    if (this.run && this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (this.draft.resultData[sampleCode]) {
+          const randW = (10.01 + Math.random() * 0.08).toFixed(3);
+          this.draft.resultData[sampleCode]['khoiLuong'] = randW;
+        }
+      });
+      if (this.draft.resultData['QC_SPIKE']) {
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.08).toFixed(3);
+      }
+      this.onDataChanged();
+    }
+  }
+
   onDataChanged() {
     if (this.draft.resultData && this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';

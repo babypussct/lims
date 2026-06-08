@@ -154,19 +154,18 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     // 2. QC_SPIKE
     const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
     if (!this.draft.resultData['QC_SPIKE']) {
-      const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
       this.draft.resultData['QC_SPIKE'] = {
         loSo: defaultSpikeVial,
         selected: true,
-        khoiLuong: randW,
+        khoiLuong: '10.0',
         heSoPhaLoang: '1',
         checkBoSungNuoc: 'không',
         checkHonHopLamSach: 'B1'
       };
     } else {
       this.draft.resultData['QC_SPIKE']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || defaultSpikeVial;
-      if (isDon && (this.draft.resultData['QC_SPIKE']['khoiLuong'] === undefined || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '' || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '10.0')) {
-        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+      if (this.draft.resultData['QC_SPIKE']['khoiLuong'] === undefined || this.draft.resultData['QC_SPIKE']['khoiLuong'] === '') {
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = '10.0';
       }
     }
     list.push({ key: 'QC_SPIKE', label: spikeName, type: 'QC' });
@@ -175,18 +174,17 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     if (this.run && this.run.sampleList) {
       this.run.sampleList.forEach((sampleCode: string, idx: number) => {
         if (!this.draft.resultData[sampleCode]) {
-          const randW = isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0';
           this.draft.resultData[sampleCode] = {
             loSo: (9 + idx).toString(),
             selected: true,
-            khoiLuong: randW,
+            khoiLuong: '10.0',
             heSoPhaLoang: '1',
             checkBoSungNuoc: 'không',
             checkHonHopLamSach: 'B1'
           };
         } else {
-          if (isDon && (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '' || this.draft.resultData[sampleCode]['khoiLuong'] === '10.0')) {
-            this.draft.resultData[sampleCode]['khoiLuong'] = (10.01 + Math.random() * 0.09).toFixed(2);
+          if (this.draft.resultData[sampleCode]['khoiLuong'] === undefined || this.draft.resultData[sampleCode]['khoiLuong'] === '') {
+            this.draft.resultData[sampleCode]['khoiLuong'] = '10.0';
           }
         }
         list.push({ key: sampleCode, label: sampleCode, type: 'REGULAR' });
@@ -198,7 +196,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       if (!this.draft.resultData['QC_FINAL']) {
         const spike = this.draft.resultData['QC_SPIKE'];
         const finalVial = spike?.['loSo'] || defaultSpikeVial;
-        const finalW = spike?.['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+        const finalW = spike?.['khoiLuong'] || '10.0';
         const finalF = spike?.['heSoPhaLoang'] || '1';
         this.draft.resultData['QC_FINAL'] = {
           loSo: finalVial,
@@ -212,7 +210,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         const spike = this.draft.resultData['QC_SPIKE'];
         if (spike) {
           this.draft.resultData['QC_FINAL']['loSo'] = spike['loSo'] || defaultSpikeVial;
-          this.draft.resultData['QC_FINAL']['khoiLuong'] = spike['khoiLuong'] || (isDon ? (10.01 + Math.random() * 0.09).toFixed(2) : '10.0');
+          this.draft.resultData['QC_FINAL']['khoiLuong'] = spike['khoiLuong'] || '10.0';
           this.draft.resultData['QC_FINAL']['heSoPhaLoang'] = spike['heSoPhaLoang'] || '1';
         }
       }
@@ -399,6 +397,43 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       this.updateRecovery(key, this.draft.page1Data['activeCompound']);
     }
     this.onDataChanged();
+  }
+
+  on10gCheckChange(event: any) {
+    this.draft.page1Data['is10gChecked'] = event.target.checked;
+    if (this.draft.page1Data['is10gChecked']) {
+      this.draft.page1Data['khoiLuongKhac'] = '';
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    } else {
+      this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'] || '';
+    }
+    this.onDataChanged();
+  }
+
+  onKhoiLuongKhacChange() {
+    if (this.draft.page1Data['khoiLuongKhac']) {
+      this.draft.page1Data['is10gChecked'] = false;
+      this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'];
+    } else {
+      this.draft.page1Data['is10gChecked'] = true;
+      this.draft.page1Data['khoiLuong'] = '10.0';
+    }
+    this.onDataChanged();
+  }
+
+  bulkRandomizeMasses() {
+    if (this.run && this.run.sampleList) {
+      this.run.sampleList.forEach((sampleCode: string) => {
+        if (this.draft.resultData[sampleCode]) {
+          const randW = (10.01 + Math.random() * 0.08).toFixed(3);
+          this.draft.resultData[sampleCode]['khoiLuong'] = randW;
+        }
+      });
+      if (this.draft.resultData['QC_SPIKE']) {
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = (10.01 + Math.random() * 0.08).toFixed(3);
+      }
+      this.onDataChanged();
+    }
   }
 
   onDataChanged() {

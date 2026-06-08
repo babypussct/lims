@@ -398,18 +398,29 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
     // 4.5. Xử lý điền các ô checkbox loại mẫu, khối lượng, tình trạng mẫu và kết quả chung
     try {
       // a. Khối lượng mẫu
-      const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+      let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+      
+      if (metadata.printFormType === 'formDon' && (khoiLuongVal === '10.0' || khoiLuongVal === '10')) {
+        const randDecimals = Math.floor(Math.random() * (90 - 10 + 1) + 10);
+        khoiLuongVal = '10.0' + randDecimals;
+      }
+
       let kl10Check = '☐';
       let klOtherText = '………';
+
       if (khoiLuongVal === '10.0' || khoiLuongVal === '10') {
         kl10Check = '☑';
       } else {
         klOtherText = khoiLuongVal;
       }
+
       element.replaceText('m\\s*=\\s*[☐□☑]?\\s*10\\.0', 'm = ' + kl10Check + ' 10.0');
       if (klOtherText !== '………') {
         element.replaceText('10\\.0\\s*;\\s*[…\\.]+', '10.0 ; ' + klOtherText);
       }
+
+      // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại
+      element.replaceText('{{khoiLuong}}', khoiLuongVal);
 
       // b. Loại mẫu
       const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();

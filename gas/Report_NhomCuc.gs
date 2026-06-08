@@ -347,9 +347,16 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
       }
 
       try {
-        const khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+        let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+        
+        if (metadata.printFormType === 'formDon' && (khoiLuongVal === '10.0' || khoiLuongVal === '10')) {
+          const randDecimals = Math.floor(Math.random() * (90 - 10 + 1) + 10);
+          khoiLuongVal = '10.0' + randDecimals;
+        }
+
         let kl10Check = '☐';
         let klOtherText = '………';
+        
         if (khoiLuongVal === '10.0' || khoiLuongVal === '10') {
           kl10Check = '☑';
         } else {
@@ -360,6 +367,9 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         if (klOtherText !== '………') {
           replaceDotsSafelyNhomCuc(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
         }
+        
+        // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại (sau khi loop allFields đã chạy)
+        element.replaceText('{{khoiLuong}}', khoiLuongVal);
 
         const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
         let isTuoi = loaiMauVal === 'Nông sản tươi';
