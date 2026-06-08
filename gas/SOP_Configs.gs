@@ -128,6 +128,14 @@ const CONFIG = {
         { key: 'Dieldrin' }, { key: 'Endosulfan1' }, { key: 'Endosulfan2' }, { key: 'EndosulfanS' }, { key: 'Endrin' },
         { key: 'Heptachlor' }, { key: 'HeptachlorA' }, { key: 'HeptachlorB' }, { key: 'HCB' }, { key: 'Isodrin' },
         { key: 'Methoxychlor' }, { key: 'Mirex' }, { key: 'Pendimethalin' }
+      ],
+      compounds: [
+        'Aldrin', 'BHC-alpha', 'BHC-beta', 'BHC-delta', 'BHC-epsilon', 'BHC-gamma',
+        'Chlordane-cis', 'Chlordane-oxy', 'Chlordane-trans',
+        'DDD-o,p', 'DDD-p,p', 'DDE-o,p', 'DDE-p,p', 'DDT-o,p', 'DDT-p,p',
+        'Dieldrin', 'Endosulfan-I', 'Endosulfan-II', 'Endosulfan-sulfate', 'Endrin',
+        'Heptachlor', 'Heptachlor-epoxide-trans', 'Heptachlor-epoxide-cis',
+        'Hexachlorobenzene', 'Isodrin', 'Methoxychlor', 'Mirex', 'Pendimethalin'
       ]
     },
     'lan-huu-co': {
@@ -151,6 +159,16 @@ const CONFIG = {
         { key: 'Phosmet' }, { key: 'Phosphamidon' }, { key: 'PirimiphosMethyl' }, { key: 'Profenofos' },
         { key: 'Quinalphos' }, { key: 'Ronnel' }, { key: 'Triazophos' }, { key: 'Vamidothion' },
         { key: 'Chlorfenvinphos' }, { key: 'IsofenphosMethyl' }
+      ],
+      compounds: [
+        'Acephate', 'Azinphos-methyl', 'Cadusafos', 'Chlorpyrifos', 'Chlorpyrifos-methyl',
+        'Diazinon', 'Dimethoate', 'Edifenphos', 'Ethion', 'Ethoprophos',
+        'Fenitrothion', 'Fenthion', 'Fipronil', 'Fipronil sulfide', 'Fipronil sulfone',
+        'Fipronil desulfinyl', 'Iprobenfos', 'Malathion', 'Mefenoxam', 'Metalaxyl',
+        'Methacrifos', 'Methidathion', 'Monocrotophos', 'Omethoate', 'Parathion',
+        'Parathion-methyl', 'Phenthoate', 'Phorate', 'Phosmet', 'Phosphamidon',
+        'Pirimiphos-methyl', 'Profenofos', 'Quinalphos', 'Ronnel', 'Triazophos',
+        'Vamidothion', 'Chlorfenvinphos', 'Isofenphos-methyl'
       ]
     },
     'nhom-cuc': {
@@ -168,6 +186,12 @@ const CONFIG = {
         { key: 'Tralomethrin' }, { key: 'Ethofenprox' }, { key: 'PermethrinCis' }, { key: 'PermethrinTrans' },
         { key: 'Fenpropathrin' }, { key: 'Silafluofen' }, { key: 'Flucythrinate' }, { key: 'Fenvalerate' },
         { key: 'Cypermethrins' }, { key: 'Tefluthrin' }
+      ],
+      compounds: [
+        'Bifenthrin', 'Cyfluthrin (Baythroid)', 'lamda-Cyhalothrin', 'Deltamethrin',
+        'Tralomethrin', 'Ethofenprox', 'Permethrin cis', 'Permethrin trans',
+        'Fenpropathrin', 'Silafluofen', 'Flucythrinate', 'Fenvalerate',
+        'Cypermethrins', 'Tefluthrin'
       ]
     }
   }
