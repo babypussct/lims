@@ -43,8 +43,12 @@ export class ResultService {
         batch.update(childRef, { parentMasterId: deleteField() });
       }
 
-      // Xóa document của mẻ gộp
-      batch.delete(metaRef);
+      // Xóa document của mẻ gộp (dùng soft-delete để tương thích với DeltaSync)
+      batch.update(metaRef, { 
+        _isDeleted: true, 
+        status: 'REJECTED', 
+        lastUpdated: serverTimestamp() 
+      });
       batch.delete(detailRef);
 
       await batch.commit();
