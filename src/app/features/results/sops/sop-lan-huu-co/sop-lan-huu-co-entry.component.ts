@@ -309,6 +309,17 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
+
+    // Support pooled samples separated by ';'
+    const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
+    if (subCodes.length > 1) {
+      return subCodes.some(sc => {
+        const assigned = targetMap[sc];
+        if (!assigned || assigned.length === 0) return true;
+        return isCompoundAssigned(assigned, compound);
+      });
+    }
+
     const assigned = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
