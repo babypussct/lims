@@ -1,12 +1,4 @@
-/**
- * LIMS Report Generator — Dạng Biểu Mẫu 2 & 3A
- * ========================================================
- * Chứa logic điền bảng và thay thế trường dữ liệu trên 1 hoặc nhiều trang.
- */
 
-/**
- * Xử lý điền báo cáo cho Dạng 2 & Dạng 3A (Điền bảng)
- */
 function generateType2_3aReport(body, sopConfig, metadata, samples) {
   fillTextFields(body, sopConfig, metadata);
   fillSampleTable(body, sopConfig, samples);
@@ -654,30 +646,30 @@ function fillQcTableCheckboxes(body, sopConfig, metadata) {
       const val = metadata[fieldName];
       const evalCell = row.getCell(2); // Cột Đánh giá (cột index 2)
       
-      let datCheck, khongDatCheck, naCheck;
+      let datChar, khongDatChar, naChar;
       if (val === true) {
-        datCheck = "☑ Đạt";
-        khongDatCheck = "☐ Không đạt";
-        naCheck = "☐ N/A";
+        datChar = "☑";
+        khongDatChar = "☐";
+        naChar = "☐";
       } else if (val === false) {
-        datCheck = "☐ Đạt";
-        khongDatCheck = "☑ Không đạt";
-        naCheck = "☐ N/A";
+        datChar = "☐";
+        khongDatChar = "☑";
+        naChar = "☐";
       } else { // null (N/A)
-        datCheck = "☐ Đạt";
-        khongDatCheck = "☐ Không đạt";
-        naCheck = "☑ N/A";
+        datChar = "☐";
+        khongDatChar = "☐";
+        naChar = "☑";
       }
 
       // Khớp và thay thế đúng checkbox Đạt/Không đạt/N/A
-      evalCell.replaceText('[\\[\\(] ?[\\]\\)] Đạt', datCheck);
-      evalCell.replaceText('[☐□☑] Đạt', datCheck);
+      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*Đạt', datChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*Đạt', datChar);
 
-      evalCell.replaceText('[\\[\\(] ?[\\]\\)] Không đạt', khongDatCheck);
-      evalCell.replaceText('[☐□☑] Không đạt', khongDatCheck);
+      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*Không đạt', khongDatChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*Không đạt', khongDatChar);
 
-      evalCell.replaceText('[\\[\\(] ?[\\]\\)] N/A', naCheck);
-      evalCell.replaceText('[☐□☑] N/A', naCheck);
+      replaceCheckboxSafely(evalCell, '[\\[\\(] ?[\\]\\)]\\s*N/A', naChar);
+      replaceCheckboxSafely(evalCell, '[☐□☑]\\s*N/A', naChar);
     }
   }
 }

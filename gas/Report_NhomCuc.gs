@@ -1,245 +1,4 @@
-/**
- * Custom Report Generator for Nhóm Cúc (SOP: nhom-cuc)
- * =========================================================================
- * Tự động nhân bản các trang kết quả (Section 1) theo từng mẫu thử
- * và giữ duy nhất một trang thông số chạy & đường chuẩn (Section 2) ở cuối.
- */
 
-function generateCustomReport_nhom_cuc(templateId, metadata, samples, folder, fileName, version) {
-  const templateFile = DriveApp.getFileById(templateId);
-  const newFile = templateFile.makeCopy(fileName, folder);
-  const docId = newFile.getId();
-  const doc = DocumentApp.openById(docId);
-  const body = doc.getBody();
-
-  const printFormType = metadata.printFormType || 'formCheck';
-
-  if (printFormType === 'formDon') {
-    // === FORM ĐƠN (Trang 12) ===
-    let compounds = metadata.compoundsToPrint || [];
-    if (compounds.length === 0) {
-      if (metadata.activeCompound) {
-        compounds = [metadata.activeCompound];
-      } else {
-        compounds = ['Bifenthrin'];
-      }
-    }
-
-    const templateChildren = [];
-    const numChildren = body.getNumChildren();
-    for (let i = 0; i < numChildren; i++) {
-      templateChildren.push(body.getChild(i).copy());
-    }
-
-    const sopConfig = CONFIG.SOP_CONFIG['nhom-cuc'];
-
-    for (let c = 0; c < compounds.length; c++) {
-      const compoundName = compounds[c];
-      let pageElements = [];
-
-      if (c === 0) {
-        for (let i = 0; i < numChildren; i++) {
-          const child = body.getChild(i);
-          const type = child.getType();
-          if (type === DocumentApp.ElementType.PARAGRAPH) {
-            pageElements.push(child.asParagraph());
-          } else if (type === DocumentApp.ElementType.TABLE) {
-            pageElements.push(child.asTable());
-          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-            pageElements.push(child.asListItem());
-          }
-        }
-      } else {
-        body.appendPageBreak();
-        for (let i = 0; i < templateChildren.length; i++) {
-          const cloned = templateChildren[i].copy();
-          const type = cloned.getType();
-          let appended = null;
-          if (type === DocumentApp.ElementType.PARAGRAPH) {
-            appended = body.appendParagraph(cloned.asParagraph());
-          } else if (type === DocumentApp.ElementType.TABLE) {
-            appended = body.appendTable(cloned.asTable());
-          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-            appended = body.appendListItem(cloned.asListItem());
-          }
-          if (appended) pageElements.push(appended);
-        }
-      }
-
-      for (const element of pageElements) {
-        if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
-          const pText = element.asParagraph().getText();
-          if (pText.includes("XÁC ĐỊNH DƯ LƯỢNG") || pText.includes("XAC DINH DU LUONG")) {
-            const para = element.asParagraph();
-            const found = para.findText('[…\\.]+');
-            if (found) {
-              const textEl = found.getElement().asText();
-              const start = found.getStartOffset();
-              const end = found.getEndOffsetInclusive();
-              textEl.deleteText(start, end);
-              textEl.insertText(start, compoundName.toUpperCase());
-            } else {
-              const textEl = para.editAsText();
-              textEl.appendText(' ' + compoundName.toUpperCase());
-            }
-          }
-        }
-
-        // Standard placeholders
-        for (const [key, val] of Object.entries(metadata)) {
-          if (key !== 'samples' && key !== 'runSamplesList') {
-            if (val === true) {
-              element.replaceText(`{{${key}}}`, '☑');
-            } else if (val === false) {
-              element.replaceText(`{{${key}}}`, '☐');
-            } else {
-              element.replaceText(`{{${key}}}`, val !== null && val !== undefined ? val.toString() : '');
-            }
-          }
-        }
-
-        if (sopConfig.signaturePlaceholders) {
-          for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
-            const textVal = metadata[fieldName] || '';
-            if (textVal) {
-              const dateOnly = textVal.split('/ ').length > 1 ? textVal.split(' /')[0].trim() : textVal.trim();
-              element.replaceText(placeholderText, dateOnly);
-            }
-          }
-        }
-      }
-
-      fillNhomCucSection2(pageElements, sopConfig, metadata, compoundName, samples);
-    }
-
-    cleanNhomCucLastPageBreak(body);
-    doc.saveAndClose();
-
-    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
-    const pdfName = fileName + '.pdf';
-    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
-
-    return {
-      docId,
-      pdfId: pdfFile.getId(),
-      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
-      pdfUrl: pdfFile.getUrl(),
-      pdfViewUrl: pdfFile.getDownloadUrl(),
-      fileName,
-      createdAt: new Date().toISOString(),
-    };
-  } else {
-    // === FORM CHECK (Trang 9-10) ===
-    const templateChildren = [];
-    const numChildren = body.getNumChildren();
-    for (let i = 0; i < numChildren; i++) {
-      templateChildren.push(body.getChild(i).copy());
-    }
-
-    const sopConfig = CONFIG.SOP_CONFIG['nhom-cuc'];
-
-    for (let s = 0; s < samples.length; s++) {
-      let pageElements = [];
-
-      if (s === 0) {
-        for (let i = 0; i < numChildren; i++) {
-          const child = body.getChild(i);
-          const type = child.getType();
-          if (type === DocumentApp.ElementType.PARAGRAPH) {
-            pageElements.push(child.asParagraph());
-          } else if (type === DocumentApp.ElementType.TABLE) {
-            pageElements.push(child.asTable());
-          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-            pageElements.push(child.asListItem());
-          }
-        }
-      } else {
-        body.appendPageBreak();
-        for (let i = 0; i < templateChildren.length; i++) {
-          const cloned = templateChildren[i].copy();
-          const type = cloned.getType();
-          let appended = null;
-          if (type === DocumentApp.ElementType.PARAGRAPH) {
-            appended = body.appendParagraph(cloned.asParagraph());
-          } else if (type === DocumentApp.ElementType.TABLE) {
-            appended = body.appendTable(cloned.asTable());
-          } else if (type === DocumentApp.ElementType.LIST_ITEM) {
-            appended = body.appendListItem(cloned.asListItem());
-          }
-          if (appended) pageElements.push(appended);
-        }
-      }
-
-      fillNhomCucSampleForElements(pageElements, sopConfig, metadata, samples[s]);
-    }
-
-    cleanNhomCucLastPageBreak(body);
-    doc.saveAndClose();
-
-    const pdfBlob = DriveApp.getFileById(docId).getAs('application/pdf');
-    const pdfName = fileName + '.pdf';
-    const pdfFile = folder.createFile(pdfBlob).setName(pdfName);
-
-    return {
-      docId,
-      pdfId: pdfFile.getId(),
-      docsUrl: `https://docs.google.com/document/d/${docId}/edit`,
-      pdfUrl: pdfFile.getUrl(),
-      pdfViewUrl: pdfFile.getDownloadUrl(),
-      fileName,
-      createdAt: new Date().toISOString(),
-    };
-  }
-}
-
-/**
- * Helper function for safely replacing checkbox char
- */
-function replaceCheckboxSafelyNhomCuc(el, pattern, charToInsert) {
-  let found = el.findText(pattern);
-  while (found) {
-    try {
-      const textElement = found.getElement().asText();
-      const start = found.getStartOffset();
-      const end = found.getEndOffsetInclusive();
-      const textStr = textElement.getText().substring(start, end + 1);
-      const boxIndex = textStr.search(/[☐□☑]/);
-      if (boxIndex !== -1) {
-        const insertPos = start + boxIndex;
-        textElement.insertText(insertPos, charToInsert);
-        textElement.deleteText(insertPos + 1, insertPos + 1);
-      }
-    } catch(e) {
-      Logger.log('[replaceCheckboxSafelyNhomCuc] Error at pattern ' + pattern + ': ' + e);
-    }
-    found = el.findText(pattern, found);
-  }
-}
-
-/**
- * Helper function for safely replacing dots
- */
-function replaceDotsSafelyNhomCuc(el, pattern, textToInsert) {
-  if (!textToInsert) return;
-  let found = el.findText(pattern);
-  if (found) {
-    try {
-      const textElement = found.getElement().asText();
-      const start = found.getStartOffset();
-      const end = found.getEndOffsetInclusive();
-      const textStr = textElement.getText().substring(start, end + 1);
-      const match = textStr.match(/[…\.]+/);
-      if (match) {
-        const dotStart = start + match.index;
-        const dotEnd = dotStart + match[0].length - 1;
-        textElement.deleteText(dotStart, dotEnd);
-        textElement.insertText(dotStart, textToInsert);
-      }
-    } catch(e) {
-      Logger.log('[replaceDotsSafelyNhomCuc] Error at pattern ' + pattern + ': ' + e);
-    }
-  }
-}
 
 /**
  * Điền thông tin mẫu cho danh sách các phần tử cụ thể (dành cho các mẫu nhân bản)
@@ -363,9 +122,9 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
           klOtherText = khoiLuongVal;
         }
         
-        replaceCheckboxSafelyNhomCuc(element, 'm\\s*=\\s*[☐□☑]', kl10Check);
+        replaceCheckboxSafely(element, 'm\\s*=\\s*[☐□☑]', kl10Check);
         if (klOtherText !== '………') {
-          replaceDotsSafelyNhomCuc(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
+          replaceDotsSafely(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
         }
         
         // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại (sau khi loop allFields đã chạy)
@@ -383,12 +142,12 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         const thuySanCheck = isThuySan ? '☑' : '☐';
         const lmKhacCheck = isLmKhac ? '☑' : '☐';
 
-        replaceCheckboxSafelyNhomCuc(element, 'Loại mẫu:\\s*[☐□☑]', tuoiCheck);
-        replaceCheckboxSafelyNhomCuc(element, 'tươi\\s*;\\s*[☐□☑]', khoCheck);
-        replaceCheckboxSafelyNhomCuc(element, 'khô\\s*;\\s*[☐□☑]', thuySanCheck);
-        replaceCheckboxSafelyNhomCuc(element, 'sản\\s*;\\s*[☐□☑]', lmKhacCheck);
+        replaceCheckboxSafely(element, 'Loại mẫu:\\s*[☐□☑]', tuoiCheck);
+        replaceCheckboxSafely(element, 'tươi\\s*;\\s*[☐□☑]', khoCheck);
+        replaceCheckboxSafely(element, 'khô\\s*;\\s*[☐□☑]', thuySanCheck);
+        replaceCheckboxSafely(element, 'sản\\s*;\\s*[☐□☑]', lmKhacCheck);
         if (isLmKhac) {
-          replaceDotsSafelyNhomCuc(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
+          replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
         }
 
         const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
@@ -399,10 +158,10 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         const btCheck = isBinhThuong ? '☑' : '☐';
         const ttKhacCheck = isTtKhac ? '☑' : '☐';
 
-        replaceCheckboxSafelyNhomCuc(element, 'Tình trạng mẫu:\\s*[☐□☑]', btCheck);
-        replaceCheckboxSafelyNhomCuc(element, 'thường\\s*;\\s*[☐□☑]', ttKhacCheck);
+        replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*[☐□☑]', btCheck);
+        replaceCheckboxSafely(element, 'thường\\s*;\\s*[☐□☑]', ttKhacCheck);
         if (isTtKhac) {
-          replaceDotsSafelyNhomCuc(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
+          replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
         }
 
         let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
@@ -430,8 +189,8 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         const phCheck = isPhatHien ? '☑' : '☐';
         const kphCheck = isKhongPhatHien ? '☑' : '☐';
 
-        replaceCheckboxSafelyNhomCuc(element, '[☐□☑]\\s*Phát hiện', phCheck);
-        replaceCheckboxSafelyNhomCuc(element, '[☐□☑]\\s*Không phát hiện', kphCheck);
+        replaceCheckboxSafely(element, '[☐□☑]\\s*Phát hiện', phCheck);
+        replaceCheckboxSafely(element, '[☐□☑]\\s*Không phát hiện', kphCheck);
 
         const boSungNuocVal = (sample.checkBoSungNuoc || metadata.checkBoSungNuoc || 'không').toString().trim().toLowerCase();
         let bsNuocCo = '☐';
@@ -441,8 +200,8 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         } else {
           bsNuocKhong = '☑';
         }
-        replaceCheckboxSafelyNhomCuc(element, 'nước:\\s*[☐□☑]', bsNuocCo);
-        replaceCheckboxSafelyNhomCuc(element, 'có;\\s*[☐□☑]', bsNuocKhong);
+        replaceCheckboxSafely(element, 'nước:\\s*[☐□☑]', bsNuocCo);
+        replaceCheckboxSafely(element, 'có;\\s*[☐□☑]', bsNuocKhong);
 
         const hhLamSachVal = (sample.checkHonHopLamSach || metadata.checkHonHopLamSach || 'B1').toString().trim().toUpperCase();
         let hhB1 = '☐';
@@ -452,8 +211,8 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         } else if (hhLamSachVal === 'B2') {
           hhB2 = '☑';
         }
-        replaceCheckboxSafelyNhomCuc(element, 'hợp\\s*:\\s*[☐□☑]', hhB1);
-        replaceCheckboxSafelyNhomCuc(element, 'B1;\\s*[☐□☑]', hhB2);
+        replaceCheckboxSafely(element, 'hợp\\s*:\\s*[☐□☑]', hhB1);
+        replaceCheckboxSafely(element, 'B1;\\s*[☐□☑]', hhB2);
 
         const hsplVal = (sample.heSoPhaLoang || sample.hSoPhaLoang || metadata.heSoPhaLoang || '1').toString().trim();
         let hspl1Check = '☐';
@@ -463,9 +222,9 @@ function fillNhomCucSampleForElements(elements, sopConfig, metadata, sample) {
         } else {
           hsplOtherText = hsplVal;
         }
-        replaceCheckboxSafelyNhomCuc(element, 'HSPL:\\s*[☐□☑]', hspl1Check);
+        replaceCheckboxSafely(element, 'HSPL:\\s*[☐□☑]', hspl1Check);
         if (hsplOtherText !== '………') {
-          replaceDotsSafelyNhomCuc(element, '1\\s*;\\s*[…\\.]+', hsplOtherText);
+          replaceDotsSafely(element, '1\\s*;\\s*[…\\.]+', hsplOtherText);
         }
       } catch (e) {
         Logger.log('[Report NhomCuc] Lỗi điền metadata: ' + e.toString());
@@ -551,7 +310,7 @@ function fillNhomCucResultsTableDirectly(element, sopConfig, sample, tableTextTo
       if (kqCell && kqVal) {
         kqCell.replaceText('^[…\\.]{2,}', kqVal);
       }
-      if (kqCell) replaceCheckboxSafelyNhomCuc(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
+      if (kqCell) replaceCheckboxSafely(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
     } catch(e) {
       Logger.log('[fillSide kqCell NhomCuc] ' + (key || '') + ': ' + e.toString());
     }

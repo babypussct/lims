@@ -1,8 +1,4 @@
-/**
- * Custom Report Generator for Dichlorvos/Dipterex (SOP: sop_1767857760184)
- * =========================================================================
- * Tự động điền Bảng Đường chuẩn (Bảng 1) và Bảng kết quả (Bảng 2)
- */
+
 function generateCustomReport_dichlorvos_gcms(templateId, metadata, samples, folder, fileName, version) {
   const templateFile = DriveApp.getFileById(templateId);
   const newFile = templateFile.makeCopy(fileName, folder);

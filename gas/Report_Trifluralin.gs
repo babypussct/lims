@@ -1,8 +1,4 @@
-/**
- * Custom Report Generator for Trifluralin (SOP-03)
- * ===============================================
- * Tự động điền Bảng Đường chuẩn (Table 4) và các mẫu chính
- */
+
 function generateCustomReport_trifluralin_gcms(templateId, metadata, samples, folder, fileName, version) {
   const templateFile = DriveApp.getFileById(templateId);
   const newFile = templateFile.makeCopy(fileName, folder);

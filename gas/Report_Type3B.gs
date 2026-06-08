@@ -1,12 +1,4 @@
-/**
- * LIMS Report Generator — Dạng Biểu Mẫu 3B (Lân hữu cơ / Chlor hữu cơ)
- * ========================================================
- * Chứa logic nhân bản cấu trúc trang template theo từng mẫu thử và điền hoạt chất tương ứng.
- */
 
-/**
- * Xử lý điền báo cáo cho Dạng 3B (Nhân bản trang theo từng mẫu)
- */
 function generateType3bReport(body, sopConfig, metadata, samples) {
   const numChildren = body.getNumChildren();
   const children = [];

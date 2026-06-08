@@ -1,8 +1,4 @@
-/**
- * Custom Report Generator for Fipronil - Chlorpyrifos (SOP-01)
- * ============================================================
- * Thực hiện điền Bảng QC (đúng ô kết quả Đạt/Không Đạt) và Bảng Đường chuẩn
- */
+
 function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, samples, folder, fileName, version) {
   const templateFile = DriveApp.getFileById(templateId);
   const newFile = templateFile.makeCopy(fileName, folder);
@@ -18,55 +14,41 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
   // 1.1 Custom: Xử lý điền Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu
   try {
     const maHoSoVal = (metadata.maHoSo || "").trim();
-    const maHoSoDisplay = maHoSoVal ? maHoSoVal : "……………………";
-    // Thay thế khoảng trắng bằng ký tự Tab \t để kích hoạt tab stop gốc của template
-    const p3Text = `1. Mã hồ sơ : ${maHoSoDisplay}\t2. Khối lượng mẫu: m = 10.0 ± 0.1 gram`;
-    let searchResultP3 = body.findText("1\\. Mã hồ sơ");
-    if (searchResultP3) {
-      const para = searchResultP3.getElement().getParent().asParagraph();
-      para.setText(p3Text);
-      para.setFontFamily("Times New Roman");
-      para.setFontSize(11);
-      para.setUnderline(false);
+    if (maHoSoVal) {
+      replaceDotsSafely(body, '1\\.\\s*Mã hồ sơ\\s*:\\s*[\\.…]+', maHoSoVal);
     }
 
     const fVal = (metadata.heSoPhaLoang || "1").trim();
     const isF1 = fVal === "1";
     const f1Check = isF1 ? "☑" : "☐";
     const fOtherCheck = !isF1 ? "☑" : "☐";
-    const fOtherVal = !isF1 ? fVal : "…..";
+    
+    replaceCheckboxSafely(body, 'Hệ số pha loãng:\\s*[☐□☑]', f1Check);
+    replaceCheckboxSafely(body, 'f=\\s*1\\s*;\\s*[☐□☑]', fOtherCheck);
+    if (!isF1) {
+      replaceDotsSafely(body, 'f=\\s*[\\.…]+', fVal);
+    }
 
     const loaiMauVal = (metadata.loaiMau || "Thủy sản").trim();
     const isTS = loaiMauVal === "Thủy sản" || loaiMauVal === "Thuỷ sản";
     const tsCheck = isTS ? "☑" : "☐";
     const loaiMauOtherCheck = !isTS ? "☑" : "☐";
-    const loaiMauOtherVal = !isTS ? loaiMauVal : "…………";
-
-    // Thay thế khoảng trắng bằng ký tự Tab \t để kích hoạt tab stop gốc của template
-    const p4Text = `3. Hệ số pha loãng: ${f1Check} f= 1;  ${fOtherCheck} f= ${fOtherVal}\t4. Loại mẫu: ${tsCheck} Thuỷ sản; ${loaiMauOtherCheck} Khác: ${loaiMauOtherVal}`;
-    let searchResultP4 = body.findText("3\\. Hệ số pha loãng");
-    if (searchResultP4) {
-      const para = searchResultP4.getElement().getParent().asParagraph();
-      para.setText(p4Text);
-      para.setFontFamily("Times New Roman");
-      para.setFontSize(11);
-      para.setUnderline(false);
+    
+    replaceCheckboxSafely(body, 'Loại mẫu:\\s*[☐□☑]', tsCheck);
+    replaceCheckboxSafely(body, 'sản\\s*;\\s*[☐□☑]', loaiMauOtherCheck);
+    if (!isTS) {
+      replaceDotsSafely(body, 'Khác\\s*:\\s*[\\.…]+', loaiMauVal);
     }
 
     const tinhTrangVal = (metadata.tinhTrangMau || "Bình thường").trim();
     const isNormal = tinhTrangVal === "Bình thường";
     const normalCheck = isNormal ? "☑" : "☐";
     const normalOtherCheck = !isNormal ? "☑" : "☐";
-    const normalOtherVal = !isNormal ? tinhTrangVal : "……………………………………………………";
 
-    const p5Text = `5. Tình trạng mẫu: ${normalCheck} Bình thường; ${normalOtherCheck} Khác: ${normalOtherVal}`;
-    let searchResultP5 = body.findText("5\\. Tình trạng mẫu");
-    if (searchResultP5) {
-      const para = searchResultP5.getElement().getParent().asParagraph();
-      para.setText(p5Text);
-      para.setFontFamily("Times New Roman");
-      para.setFontSize(11);
-      para.setUnderline(false);
+    replaceCheckboxSafely(body, 'Tình trạng mẫu:\\s*[☐□☑]', normalCheck);
+    replaceCheckboxSafely(body, 'thường\\s*;\\s*[☐□☑]', normalOtherCheck);
+    if (!isNormal) {
+      replaceDotsSafely(body, 'Khác\\s*:\\s*[\\.…]+', tinhTrangVal);
     }
   } catch (e) {
     Logger.log(`[FipronilCustom] Lỗi khi điền metadata đầu trang: ${e.toString()}`);

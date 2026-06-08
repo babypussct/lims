@@ -1,4 +1,64 @@
 /**
+ * LIMS Report Generator & Global Helpers
+ */
+
+/**
+ * Helper function for safely replacing checkbox char
+ * Chỉ tìm và thay thế đúng vị trí ký tự Checkbox [☐□☑] hoặc [ ] hoặc ( )
+ * nhằm bảo toàn toàn bộ Format và Layout (Tab stop, in đậm, in nghiêng) của Google Docs.
+ */
+function replaceCheckboxSafely(el, pattern, charToInsert) {
+  let found = el.findText(pattern);
+  while (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const start = found.getStartOffset();
+      const end = found.getEndOffsetInclusive();
+      const textStr = textElement.getText().substring(start, end + 1);
+      
+      const match = textStr.match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+      const boxIndex = match ? match.index : -1;
+      const matchLength = match ? match[0].length : 1;
+      
+      if (boxIndex !== -1) {
+        const insertPos = start + boxIndex;
+        textElement.insertText(insertPos, charToInsert);
+        textElement.deleteText(insertPos + 1, insertPos + matchLength);
+      }
+    } catch(e) {
+      Logger.log('[replaceCheckboxSafely] Error at pattern ' + pattern + ': ' + e);
+    }
+    found = el.findText(pattern, found);
+  }
+}
+
+/**
+ * Helper function for safely replacing dotted line with text
+ * Chỉ xóa các dấu chấm ... đúng bằng không gian cần thiết để điền chữ.
+ */
+function replaceDotsSafely(el, pattern, textToInsert) {
+  if (!textToInsert) return;
+  let found = el.findText(pattern);
+  if (found) {
+    try {
+      const textElement = found.getElement().asText();
+      const start = found.getStartOffset();
+      const end = found.getEndOffsetInclusive();
+      const textStr = textElement.getText().substring(start, end + 1);
+      const match = textStr.match(/[…\.]{2,}/);
+      if (match) {
+        const dotsIndex = match.index;
+        const dotsLength = match[0].length;
+        const insertPos = start + dotsIndex;
+        textElement.insertText(insertPos, textToInsert);
+        textElement.deleteText(insertPos + textToInsert.length, insertPos + textToInsert.length + dotsLength - 1);
+      }
+    } catch(e) {
+      Logger.log('[replaceDotsSafely] Error at pattern ' + pattern + ': ' + e);
+    }
+  }
+}
+/**
  * LIMS Report Generator — Google Apps Script Core Controller
  * ==========================================================
  * Deploy as Web App:

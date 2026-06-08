@@ -414,9 +414,9 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
         klOtherText = khoiLuongVal;
       }
 
-      element.replaceText('m\\s*=\\s*[☐□☑]?\\s*10\\.0', 'm = ' + kl10Check + ' 10.0');
+      replaceCheckboxSafely(element, 'm\\s*=\\s*[☐□☑]', kl10Check);
       if (klOtherText !== '………') {
-        element.replaceText('10\\.0\\s*;\\s*[…\\.]+', '10.0 ; ' + klOtherText);
+        replaceDotsSafely(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
       }
 
       // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại
@@ -435,11 +435,13 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       const thuySanCheck = isThuySan ? '☑' : '☐';
       const lmKhacCheck = isLmKhac ? '☑' : '☐';
 
-      element.replaceText('Loại mẫu:\\s*[☐□☑]\\s*Nông sản tươi', 'Loại mẫu: ' + tuoiCheck + ' Nông sản tươi');
-      element.replaceText('tươi\\s*;\\s*[☐□☑]\\s*Nông sản khô', 'tươi; ' + khoCheck + ' Nông sản khô');
-      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thuỷ sản', 'khô; ' + thuySanCheck + ' Thuỷ sản');
-      element.replaceText('khô\\s*;\\s*[☐□☑]\\s*Thủy sản', 'khô; ' + thuySanCheck + ' Thủy sản');
-      element.replaceText('sản\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'sản; ' + lmKhacCheck + ' Khác: ' + lmKhacText);
+      replaceCheckboxSafely(element, 'Loại mẫu:\\s*[☐□☑]', tuoiCheck);
+      replaceCheckboxSafely(element, 'tươi\\s*;\\s*[☐□☑]', khoCheck);
+      replaceCheckboxSafely(element, 'khô\\s*;\\s*[☐□☑]', thuySanCheck);
+      replaceCheckboxSafely(element, 'sản\\s*;\\s*[☐□☑]', lmKhacCheck);
+      if (isLmKhac) {
+        replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
+      }
 
       // c. Tình trạng mẫu
       const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
@@ -450,8 +452,11 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       const btCheck = isBinhThuong ? '☑' : '☐';
       const ttKhacCheck = isTtKhac ? '☑' : '☐';
 
-      element.replaceText('Tình trạng mẫu:\\s*[☐□☑]\\s*Bình thường', 'Tình trạng mẫu: ' + btCheck + ' Bình thường');
-      element.replaceText('thường\\s*;\\s*[☐□☑]\\s*Khác\\s*:\\s*[…\\.]*', 'thường; ' + ttKhacCheck + ' Khác: ' + ttKhacText);
+      replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*[☐□☑]', btCheck);
+      replaceCheckboxSafely(element, 'thường\\s*;\\s*[☐□☑]', ttKhacCheck);
+      if (isTtKhac) {
+        replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
+      }
 
       // d. Kết quả phát hiện/không phát hiện
       let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
@@ -479,8 +484,8 @@ function fillChlorHuuCoSampleForElements(elements, sopConfig, metadata, sample) 
       const phCheck = isPhatHien ? '☑' : '☐';
       const kphCheck = isKhongPhatHien ? '☑' : '☐';
 
-      element.replaceText('[☐□☑]\\s*Phát hiện', phCheck + ' Phát hiện');
-      element.replaceText('[☐□☑]\\s*Không phát hiện', kphCheck + ' Không phát hiện');
+      replaceCheckboxSafely(element, '[☐□☑]\\s*Phát hiện', phCheck);
+      replaceCheckboxSafely(element, '[☐□☑]\\s*Không phát hiện', kphCheck);
     } catch (e) {
       Logger.log('[Report ChlorHuuCo] Lỗi điền metadata: ' + e.toString());
     }
