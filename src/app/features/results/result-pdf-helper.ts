@@ -282,6 +282,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
+  const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const filteredSamples = sampleList.filter((s: string) => {
     const resObj = currentDraft.resultData[s] || {};
@@ -329,8 +330,6 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
       if (c === 'Ipobenfos') return 'Iprobenfos';
       return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
     };
-
-    const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
     const isAssignedToAny = (compound: string): boolean => {
       return filteredSamples.some((s: string) => {
@@ -438,8 +437,6 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           if (c === 'Ipobenfos') return 'Iprobenfos';
           return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
         };
-
-        const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
         const isAssigned = (sampleCode: string, compound: string): boolean => {
           const assigned = sampleTargetMap[sampleCode];
