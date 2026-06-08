@@ -331,6 +331,11 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                         @if (run.isVirtualMaster) {
                           <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
                         }
+                        @if (run.parentMasterId) {
+                          <a [routerLink]="['/results', run.parentMasterId]" (click)="$event.stopPropagation()" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-0.5" title="Mẻ này đã được gộp vào Master {{run.parentMasterId}}">
+                            <i class="fa-solid fa-link text-[7px]"></i> Đã gộp
+                          </a>
+                        }
                       </div>
                       <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1">
                         <i class="fa-regular fa-calendar text-[9px]"></i>
@@ -1576,6 +1581,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
       
       batch.set(metaRef, masterPayload);
       batch.set(detailRef, detailPayload);
+      
+      // 6. Set parentMasterId on all child requests
+      sops.forEach(r => {
+        const childRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', r.id);
+        batch.update(childRef, { parentMasterId: masterId });
+      });
+      
       await batch.commit();
       
       // Close modal and deselect

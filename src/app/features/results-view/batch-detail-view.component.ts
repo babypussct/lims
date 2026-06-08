@@ -30,11 +30,16 @@ import { MasterTargetService } from '../targets/master-target.service';
             <i class="fa-solid fa-arrow-left text-sm"></i>
           </button>
           <div>
-            <span class="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider block mb-0.5">
-              {{ run() ? run().sopName : 'Äang táº£i...' }}
+            <span class="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mb-0.5 flex items-center gap-2">
+              {{ run() ? run().sopName : '�ang t?i...' }}
+              @if (run()?.parentMasterId) {
+                <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="M? ch?y n�y d� du?c g?p s? li?u. Nh?n d? di t?i Master ?o.">
+                  <i class="fa-solid fa-link text-[7px] animate-pulse"></i> �� g?p Master ?o
+                </a>
+              }
             </span>
             <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
-              Chi Tiáº¿t Káº¿t Quáº£ Máº» PhÃ¢n TÃ­ch
+              Chi Ti?t K?t Qu? M? Ph�n T�ch
             </h3>
           </div>
         </div>
@@ -48,13 +53,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                 <button (click)="activeFilter.set('ALL')"
                         [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                         class="transition duration-150">
-                  Táº¥t cáº£
+                  Tất cả
                 </button>
                 @for (prefix of detectedPrefixes(); track prefix) {
                   <button (click)="activeFilter.set(prefix)"
                           [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                           class="transition duration-150">
-                    {{ prefix === '' ? 'KhÃ´ng tiá»n tá»‘' : 'Tiá»n tá»‘ ' + prefix }}
+                    {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
                   </button>
                 }
               </div>
@@ -65,7 +70,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
                  class="px-3.5 py-2 text-xs font-bold text-blue-650 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 no-underline active:scale-95 shadow-3xs">
                 <i class="fa-brands fa-google-drive"></i>
-                <span class="hidden md:inline">Má»Ÿ Docs</span>
+                <span class="hidden md:inline">Mở Docs</span>
               </a>
             }
 
@@ -82,14 +87,14 @@ import { MasterTargetService } from '../targets/master-target.service';
             <button (click)="viewTraceability()"
                     class="px-3.5 py-2 text-xs font-bold text-indigo-655 dark:text-indigo-455 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-100/50 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/30 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
               <i class="fa-solid fa-clock-rotate-left"></i>
-              <span>Truy xuáº¥t máº»</span>
+              <span>Truy xuất mẻ</span>
             </button>
 
             <!-- Switch to Edit Mode (If allowed or draft) -->
             <button (click)="goToEditMode()"
                     class="px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition duration-150 active:scale-95 flex items-center gap-1.5">
               <i class="fa-solid fa-pen-to-square"></i>
-              <span>Chá»‰nh sá»­a sá»‘ liá»‡u</span>
+              <span>Chỉnh sửa số liệu</span>
             </button>
           </div>
         }
@@ -100,7 +105,7 @@ import { MasterTargetService } from '../targets/master-target.service';
         <div class="flex-1 flex items-center justify-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-12">
           <div class="text-center space-y-4">
             <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-600 dark:text-indigo-400"></i>
-            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Äang táº£i chi tiáº¿t máº» cháº¡y...</p>
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Đang tải chi tiết mẻ chạy...</p>
           </div>
         </div>
       } @else if (run() && draft() && config()) {
@@ -112,32 +117,32 @@ import { MasterTargetService } from '../targets/master-target.service';
             <!-- General metadata & status card -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 shrink-0">
               <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">MÃ£ máº» cháº¡y</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy</span>
                 <span class="font-mono font-extrabold text-xs text-slate-800 dark:text-slate-200 select-all block break-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiáº¿t bá»‹ Ä‘o</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị đo</span>
                 <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || 'GC-MS/MS / LC-MS/MS' }}</span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">NgÆ°á»i phÃ¢n tÃ­ch</span>
-                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.user || 'â€”' }}</span>
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 mb-1">NgÃ y phÃ¢n tÃ­ch</span>
-                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : 'â€”' }}</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người phân tích</span>
+                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.user || '—' }}</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 mb-1">Ngày phân tích</span>
+                <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">NgÃ y kÃ½ sá»•</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày ký sổ</span>
                 <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">
                   @if (draft()?.page1Data?.['ngayNguoiPhanTich'] || draft()?.page1Data?.['ngayNguoiThamTra']) {
-                    PT: {{ draft()?.page1Data?.['ngayNguoiPhanTich'] || 'â€”' }}<br>
-                    TT: {{ draft()?.page1Data?.['ngayNguoiThamTra'] || 'â€”' }}
+                    PT: {{ draft()?.page1Data?.['ngayNguoiPhanTich'] || '—' }}<br>
+                    TT: {{ draft()?.page1Data?.['ngayNguoiThamTra'] || '—' }}
                   } @else {
-                    â€”
+                    —
                   }
                 </span>
               </div>
               <div class="p-3 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Tráº¡ng thÃ¡i</span>
+                <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Trạng thái</span>
                 <span [class]="getStatusClass()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide border mt-0.5">
                   <span class="w-1 h-1 rounded-full" [ngClass]="{
                     'bg-emerald-500': draft()?.status === 'completed',
@@ -151,7 +156,7 @@ import { MasterTargetService } from '../targets/master-target.service';
 
             <!-- QR Code & Quick Verify Card -->
             <div class="bg-gradient-to-br from-indigo-50/50 via-white to-pink-50/20 dark:from-slate-900 dark:to-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-xs p-5 flex flex-col md:flex-row items-center gap-5 shrink-0">
-              <div (click)="openQrModal()" class="shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-xs border border-slate-150 dark:border-slate-700/60 cursor-pointer hover:scale-105 transition-transform group relative" title="Nháº¥n Ä‘á»ƒ phÃ³ng to mÃ£ QR">
+              <div (click)="openQrModal()" class="shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-xs border border-slate-150 dark:border-slate-700/60 cursor-pointer hover:scale-105 transition-transform group relative" title="Nhấn để phóng to mã QR">
                 <canvas #qrCanvas class="w-28 h-28"></canvas>
                 <div class="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <i class="fa-solid fa-expand text-slate-700 dark:text-slate-200 text-xl drop-shadow-md"></i>
@@ -159,19 +164,19 @@ import { MasterTargetService } from '../targets/master-target.service';
               </div>
               <div class="space-y-2 text-center md:text-left flex-1">
                 <h4 class="text-xs font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center justify-center md:justify-start">
-                  <i class="fa-solid fa-qrcode mr-2 text-indigo-500"></i> XÃ¡c minh & Äá»‘i chiáº¿u Ä‘á»™c láº­p
+                  <i class="fa-solid fa-qrcode mr-2 text-indigo-500"></i> Xác minh & Đối chiếu độc lập
                 </h4>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                  QuÃ©t mÃ£ QR Ä‘á»ƒ Ä‘á»‘i chiáº¿u nháº­t kÃ½ hoáº¡t Ä‘á»™ng Ä‘á»™c láº­p, kiá»ƒm tra cÃ¡c loáº¡i hÃ³a cháº¥t sá»­ dá»¥ng vÃ  thá»i gian chuáº©n bá»‹ máº» phÃ¢n tÃ­ch nÃ y.
+                  Quét mã QR để đối chiếu nhật ký hoạt động độc lập, kiểm tra các loại hóa chất sử dụng và thời gian chuẩn bị mẻ phân tích này.
                 </p>
                 <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
                   <button (click)="viewTraceability()" 
                           class="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-750 text-white rounded-lg text-[10px] font-black active:scale-95 transition shadow-sm">
-                    Má»Ÿ trang Ä‘á»‘i chiáº¿u
+                    Mở trang đối chiếu
                   </button>
                   <button (click)="copyTraceabilityLink()" 
                           class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-350 rounded-lg text-[10px] font-bold active:scale-95 transition border border-slate-200/40">
-                    Sao chÃ©p liÃªn káº¿t
+                    Sao chép liên kết
                   </button>
                 </div>
               </div>
@@ -179,7 +184,7 @@ import { MasterTargetService } from '../targets/master-target.service';
             @if (checkboxList().length > 0) {
               <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
                 <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <i class="fa-solid fa-square-check mr-2 text-indigo-500"></i> ÄÃ¡nh giÃ¡ cháº¥t lÆ°á»£ng máº» (QC Flags)
+                  <i class="fa-solid fa-square-check mr-2 text-indigo-500"></i> Đánh giá chất lượng mẻ (QC Flags)
                 </h4>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -189,14 +194,14 @@ import { MasterTargetService } from '../targets/master-target.service';
                         <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-emerald-50/40 dark:bg-emerald-955/20 shadow-2xs">
                           <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
                           <span class="px-2.5 py-0.5 bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-check text-[8px]"></i> Äáº¡t
+                            <i class="fa-solid fa-check text-[8px]"></i> Đạt
                           </span>
                         </div>
                       } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
                         <div class="flex items-center justify-between p-3 rounded-xl border border-slate-150 dark:border-slate-800/60 bg-rose-50/40 dark:bg-rose-955/20 shadow-2xs">
                           <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
                           <span class="px-2.5 py-0.5 bg-rose-100/80 dark:bg-rose-900/40 text-rose-700 dark:text-rose-455 border border-rose-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-xmark text-[8px]"></i> KhÃ´ng Ä‘áº¡t
+                            <i class="fa-solid fa-xmark text-[8px]"></i> Không đạt
                           </span>
                         </div>
                       }
@@ -205,7 +210,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                         <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-blue-50/40 dark:bg-blue-955/20 shadow-2xs">
                           <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
                           <span class="px-2.5 py-0.5 bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-info text-[8px]"></i> Ghi nháº­n
+                            <i class="fa-solid fa-info text-[8px]"></i> Ghi nhận
                           </span>
                         </div>
                       }
@@ -219,14 +224,14 @@ import { MasterTargetService } from '../targets/master-target.service';
             @if (hasCalibPoints()) {
               <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
                 <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <i class="fa-solid fa-chart-line mr-2 text-indigo-500"></i> CÃ¡c Ä‘iá»ƒm hiá»‡u chuáº©n (Calibration curve points)
+                  <i class="fa-solid fa-chart-line mr-2 text-indigo-500"></i> Các điểm hiệu chuẩn (Calibration curve points)
                 </h4>
                 
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   @for (pt of draft()?.page1Data?.['calibPoints']; track $index) {
                     <div class="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-150 dark:border-slate-800/80 text-center space-y-1">
-                      <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Äiá»ƒm {{ $index + 1 }}</span>
-                      <span class="block font-mono text-xs font-black text-slate-800 dark:text-slate-100">Lá»: {{ pt['loSo'] || 'â€”' }}</span>
+                      <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Điểm {{ $index + 1 }}</span>
+                      <span class="block font-mono text-xs font-black text-slate-800 dark:text-slate-100">Lọ: {{ pt['loSo'] || '—' }}</span>
                       <span class="block text-[10px] font-bold text-slate-500 dark:text-slate-400">{{ pt['hamLuong'] !== undefined ? pt['hamLuong'] + ' ppb' : (pt['vialNo'] ? 'Vial ' + pt['vialNo'] : '') }}</span>
                     </div>
                   }
@@ -241,7 +246,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                 
                 <!-- Sample selection horizontal lists -->
                 <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-3 border-b border-slate-150 dark:border-slate-800 shrink-0">
-                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shrink-0">Chá»n máº«u:</span>
+                  <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shrink-0">Chọn mẫu:</span>
                   @for (sample of run()?.sampleList; track sample; let idx = $index) {
                     <button (click)="activeSampleCode.set(sample)"
                             [class]="activeSampleCode() === sample
@@ -260,9 +265,9 @@ import { MasterTargetService } from '../targets/master-target.service';
                     <thead>
                       <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-3xs">
                         <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-16">STT</th>
-                        <th class="py-2.5 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Hoáº¡t cháº¥t</th>
+                        <th class="py-2.5 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Hoạt chất</th>
                         <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">ND (N/A)</th>
-                        <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-36">Káº¿t quáº£ (Âµg/kg)</th>
+                        <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-36">Kết quả (µg/kg)</th>
                         <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC1</th>
                         <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC2</th>
                         <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC3</th>
@@ -283,12 +288,12 @@ import { MasterTargetService } from '../targets/master-target.service';
                                 <i class="fa-regular text-sm" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
                               </span>
                             } @else {
-                              <span class="text-slate-300 dark:text-slate-700">â€”</span>
+                              <span class="text-slate-300 dark:text-slate-700">—</span>
                             }
                           </td>
                           <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
                             @if (isTargetAssigned(activeSampleCode(), comp)) {
-                              {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : 'â€”' }}
+                              {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
                             } @else {
                               <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
                             }
@@ -298,15 +303,15 @@ import { MasterTargetService } from '../targets/master-target.service';
                           @for (qcNum of ['1', '2', '3']; track qcNum) {
                             <td class="py-2 px-3 text-center">
                               @if (isTargetAssigned(activeSampleCode(), comp)) {
-                                @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Äáº¡t') {
-                                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250/25">Äáº¡t</span>
-                                } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'KhÃ´ng Ä‘áº¡t') {
-                                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-250/25">K.Äáº¡t</span>
+                                @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
+                                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250/25">Đạt</span>
+                                } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
+                                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-250/25">K.Đạt</span>
                                 } @else {
                                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400 border border-slate-200/20">N/A</span>
                                 }
                               } @else {
-                                <span class="text-slate-300 dark:text-slate-700">â€”</span>
+                                <span class="text-slate-300 dark:text-slate-700">—</span>
                               }
                             </td>
                           }
@@ -320,7 +325,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               <!-- TYPE 2 / 3A STYLE: Spreadsheet static grid -->
               <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 flex-1 min-h-[400px] flex flex-col space-y-4">
                 <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <i class="fa-solid fa-table-cells mr-2 text-indigo-500"></i> Báº£ng káº¿t quáº£ máº» cháº¡y (Chromatography grid)
+                  <i class="fa-solid fa-table-cells mr-2 text-indigo-500"></i> Bảng kết quả mẻ chạy (Chromatography grid)
                 </h4>
                 
                 <div class="flex-1 overflow-auto custom-scrollbar max-h-[500px]">
@@ -328,15 +333,15 @@ import { MasterTargetService } from '../targets/master-target.service';
                     <thead>
                       <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-3xs">
                         <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Vial No.</th>
-                        <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px]">Máº«u thá»­</th>
+                        <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px]">Mẫu thử</th>
                         
                         <!-- Weight column if present -->
                         @if (hasColumn('khoiLuong')) {
-                          <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Khá»‘i lÆ°á»£ng</th>
+                          <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Khối lượng</th>
                         }
                         <!-- Dilution column if present -->
                         @if (hasColumn('heSoPhaLoang')) {
-                          <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Há»‡ sá»‘ pha loÃ£ng</th>
+                          <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Hệ số pha loãng</th>
                         }
 
                         <!-- Dynamic compounds columns -->
@@ -346,7 +351,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           </th>
                         }
                         
-                        <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[160px]">Ghi chÃº</th>
+                        <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[160px]">Ghi chú</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
@@ -357,7 +362,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           
                           <!-- Vial No -->
                           <td class="py-2.5 px-4 font-mono text-xs text-slate-655 dark:text-slate-400">
-                            {{ (draft()?.resultData?.[row.key])?.['loSo'] || 'â€”' }}
+                            {{ (draft()?.resultData?.[row.key])?.['loSo'] || '—' }}
                           </td>
                           
                           <!-- Sample name -->
@@ -374,13 +379,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                           <!-- Weight -->
                           @if (hasColumn('khoiLuong')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.['khoiLuong'] !== undefined && (draft()?.resultData?.[row.key])?.['khoiLuong'] !== null ? (draft()?.resultData?.[row.key])?.['khoiLuong'] : 'â€”' }}
+                              {{ (draft()?.resultData?.[row.key])?.['khoiLuong'] !== undefined && (draft()?.resultData?.[row.key])?.['khoiLuong'] !== null ? (draft()?.resultData?.[row.key])?.['khoiLuong'] : '—' }}
                             </td>
                           }
                           <!-- Dilution -->
                           @if (hasColumn('heSoPhaLoang')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== undefined && (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== null ? (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] : 'â€”' }}
+                              {{ (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== undefined && (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== null ? (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] : '—' }}
                             </td>
                           }
 
@@ -388,7 +393,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           @for (col of activeColumns(); track col) {
                             <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
                               @if (isTargetAssigned(row.key, col)) {
-                                {{ (draft()?.resultData?.[row.key])?.[col] !== undefined && (draft()?.resultData?.[row.key])?.[col] !== null ? ((draft()?.resultData?.[row.key])?.[col] === 'N/A' ? '' : (draft()?.resultData?.[row.key])?.[col]) : 'â€”' }}
+                                {{ (draft()?.resultData?.[row.key])?.[col] !== undefined && (draft()?.resultData?.[row.key])?.[col] !== null ? ((draft()?.resultData?.[row.key])?.[col] === 'N/A' ? '' : (draft()?.resultData?.[row.key])?.[col]) : '—' }}
                               } @else {
                                 <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
                               }
@@ -414,13 +419,13 @@ import { MasterTargetService } from '../targets/master-target.service';
             <div class="flex flex-col h-[700px] bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 relative">
               <div class="bg-slate-800 px-4 py-3 flex flex-wrap items-center justify-between border-b border-slate-700/80 gap-2">
                 <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <i class="fa-solid fa-file-pdf text-red-400"></i> Báº£n PDF bÃ¡o cÃ¡o chÃ­nh thá»©c
+                  <i class="fa-solid fa-file-pdf text-red-400"></i> Bản PDF báo cáo chính thức
                 </h4>
 
                 <!-- SELECTOR DROPDOWN FOR MULTIPLE REPORTS -->
                 @if (availableReports().length > 1 && activeFilter() === 'ALL') {
                   <div class="flex items-center gap-1.5 text-xs text-slate-300">
-                    <span class="font-medium text-[9px] uppercase tracking-wider text-slate-400">Xem bÃ¡o cÃ¡o:</span>
+                    <span class="font-medium text-[9px] uppercase tracking-wider text-slate-400">Xem báo cáo:</span>
                     <select [ngModel]="selectedPdfPrefix()" 
                             (ngModelChange)="selectedPdfPrefix.set($event)"
                             class="bg-slate-700 text-slate-100 border border-slate-600 rounded-lg px-2.5 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500">
@@ -434,11 +439,11 @@ import { MasterTargetService } from '../targets/master-target.service';
                 <div class="flex items-center gap-2">
                   @if (getCurrentDocsUrl()) {
                     <a [href]="getCurrentDocsUrl()" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-bold uppercase tracking-widest transition duration-150 flex items-center gap-1.5 shadow-sm">
-                      <i class="fa-solid fa-arrow-up-right-from-square"></i> Má»Ÿ Docs
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Docs
                     </a>
                   }
                   <a [href]="getCurrentPdfUrl() || '#'" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-bold uppercase tracking-widest transition duration-150 flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Má»Ÿ Drive
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Drive
                   </a>
                 </div>
               </div>
@@ -454,15 +459,15 @@ import { MasterTargetService } from '../targets/master-target.service';
                     <i class="fa-solid fa-file-pdf"></i>
                   </div>
                   <div class="max-w-xs space-y-2">
-                    <h5 class="text-sm font-extrabold text-slate-800 dark:text-slate-200">BÃ¡o cÃ¡o chÆ°a Ä‘Æ°á»£c táº¡o</h5>
+                    <h5 class="text-sm font-extrabold text-slate-800 dark:text-slate-200">Báo cáo chưa được tạo</h5>
                     <p class="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-                      Máº» phÃ¢n tÃ­ch nÃ y chÆ°a Ä‘Æ°á»£c táº¡o bÃ¡o cÃ¡o PDF hoÃ n chá»‰nh. Vui lÃ²ng báº¥m vÃ o nÃºt dÆ°á»›i Ä‘Ã¢y Ä‘á»ƒ chá»‰nh sá»­a sá»‘ liá»‡u vÃ  báº¥m "Táº¡o & In".
+                      Mẻ phân tích này chưa được tạo báo cáo PDF hoàn chỉnh. Vui lòng bấm vào nút dưới đây để chỉnh sửa số liệu và bấm "Tạo & In".
                     </p>
                   </div>
                   <button (click)="goToEditMode()"
                           class="px-4 py-2 bg-indigo-50 hover:bg-indigo-150 text-indigo-650 dark:bg-indigo-955/20 dark:hover:bg-indigo-900/30 dark:text-indigo-400 rounded-xl text-xs font-black transition active:scale-95 duration-100 flex items-center gap-1">
                     <i class="fa-solid fa-pen-to-square text-[10px]"></i>
-                    <span>VÃ o Nháº­p liá»‡u & Táº¡o PDF</span>
+                    <span>Vào Nhập liệu & Tạo PDF</span>
                   </button>
                 </div>
               }
@@ -476,17 +481,17 @@ import { MasterTargetService } from '../targets/master-target.service';
           <div class="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-full flex items-center justify-center text-indigo-500 text-3xl mb-5 shadow-inner">
             <i class="fa-solid fa-file-pen"></i>
           </div>
-          <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">ChÆ°a cÃ³ káº¿t quáº£ phÃ¢n tÃ­ch</h4>
+          <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa có kết quả phân tích</h4>
           <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed font-medium">
-            Máº» cháº¡y <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id }}]</span> hiá»‡n chÆ°a Ä‘Æ°á»£c nháº­p sá»‘ liá»‡u vÃ  Ä‘Ã¡nh giÃ¡ QC. Nháº¥n nÃºt bÃªn dÆ°á»›i Ä‘á»ƒ báº¯t Ä‘áº§u Ä‘iá»n káº¿t quáº£.
+            Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
           </p>
           <div class="flex items-center gap-3">
             <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
-              Quay láº¡i
+              Quay lại
             </button>
             <button (click)="goToEditMode()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
               <i class="fa-solid fa-play text-xs"></i>
-              Truy cáº­p UI Nháº­p Káº¿t Quáº£
+              Truy cập UI Nhập Kết Quả
             </button>
           </div>
         </div>
@@ -496,12 +501,12 @@ import { MasterTargetService } from '../targets/master-target.service';
           <div class="w-16 h-16 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-full flex items-center justify-center text-red-500 text-2xl mb-4">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h4 class="text-base font-extrabold text-slate-800 dark:text-slate-200 mb-1">KhÃ´ng tÃ¬m tháº¥y máº» phÃ¢n tÃ­ch</h4>
+          <h4 class="text-base font-extrabold text-slate-800 dark:text-slate-200 mb-1">Không tìm thấy mẻ phân tích</h4>
           <p class="text-xs text-slate-400 dark:text-slate-500 mb-4 text-center max-w-sm">
-            KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin chi tiáº¿t hoáº·c cáº¥u hÃ¬nh SOP tÆ°Æ¡ng á»©ng cá»§a máº» cháº¡y phÃ¢n tÃ­ch nÃ y.
+            Không tìm thấy thông tin chi tiết hoặc cấu hình SOP tương ứng của mẻ chạy phân tích này.
           </p>
           <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-            Quay láº¡i danh sÃ¡ch
+            Quay lại danh sách
           </button>
         </div>
       }
@@ -511,8 +516,8 @@ import { MasterTargetService } from '../targets/master-target.service';
         <div class="fixed inset-0 z-[100] flex items-center justify-center fade-in backdrop-blur-md bg-slate-900/60" (click)="isQrModalOpen.set(false)">
           <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6" (click)="$event.stopPropagation()">
             <div class="text-center space-y-2">
-              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">MÃ£ Äá»‘i Chiáº¿u (QR Code)</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sá»­ dá»¥ng Ä‘iá»‡n thoáº¡i thÃ´ng minh quÃ©t mÃ£ nÃ y Ä‘á»ƒ truy cáº­p trang xÃ¡c minh nháº­t kÃ½ Ä‘á»™c láº­p cá»§a há»‡ thá»‘ng LIMS.</p>
+              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Mã Đối Chiếu (QR Code)</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại thông minh quét mã này để truy cập trang xác minh nhật ký độc lập của hệ thống LIMS.</p>
             </div>
             
             <div class="bg-white p-4 rounded-2xl shadow-inner border border-slate-200/60">
@@ -520,7 +525,7 @@ import { MasterTargetService } from '../targets/master-target.service';
             </div>
             
             <button (click)="isQrModalOpen.set(false)" class="px-8 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-slate-700 rounded-xl text-xs font-black active:scale-95 transition mt-2 border border-slate-200/60 dark:border-slate-700">
-              ÄÃ³ng
+              Đóng
             </button>
           </div>
         </div>
@@ -650,7 +655,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     this.requestId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.requestId) {
-      this.toast.show('KhÃ´ng tÃ¬m tháº¥y ID máº» cháº¡y!', 'error');
+      this.toast.show('Không tìm thấy ID mẻ chạy!', 'error');
       this.router.navigate(['/results-view']);
       return;
     }
@@ -735,7 +740,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       }
 
       // Translate display name through master Analytes DB
-      map[col] = resolveCompoundDisplayName(map[col], this.masterTargets()) + ' (Âµg/kg)';
+      map[col] = resolveCompoundDisplayName(map[col], this.masterTargets()) + ' (µg/kg)';
     });
 
     this.columnDisplayNames.set(map);
@@ -772,7 +777,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const d = this.draft();
     if (!d || !d.reports) return [];
     return Object.entries(d.reports).map(([key, value]: [string, any]) => {
-      const displayLabel = key === '_NO_PREFIX_' ? 'KhÃ´ng tiá»n tá»‘' : `Tiá»n tá»‘ ${key}`;
+      const displayLabel = key === '_NO_PREFIX_' ? 'Không tiền tố' : `Tiền tố ${key}`;
       return {
         key: key === '_NO_PREFIX_' ? '' : key,
         label: displayLabel,
@@ -875,7 +880,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
         if (prefixSamples.length === 0) return;
 
-        const labelPrefix = prefix ? ` (Tiá»n tá»‘ ${prefix})` : '';
+        const labelPrefix = prefix ? ` (Tiền tố ${prefix})` : '';
 
         list.push({
           key: 'QC_BLANK',
@@ -1002,23 +1007,23 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   openPdfInModal(url: string) {
     const activeFilter = this.activeFilter();
-    const filterName = activeFilter === 'ALL' ? 'Táº¥t cáº£ máº«u' : (activeFilter === '' ? 'KhÃ´ng tiá»n tá»‘' : `NhÃ³m ${activeFilter}`);
+    const filterName = activeFilter === 'ALL' ? 'Tất cả mẫu' : (activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`);
     const previewUrl = this.getGoogleDrivePreviewUrl(url);
 
     this.printService.openPdfPreview(
       previewUrl,
-      `BÃ¡o cÃ¡o káº¿t quáº£ â€” ${this.run()?.sopName || ''} (${filterName})`,
+      `Báo cáo kết quả — ${this.run()?.sopName || ''} (${filterName})`,
       this.draft()?.version || 1,
-      this.draft()?.updatedBy || 'ChÆ°a rÃµ',
+      this.draft()?.updatedBy || 'Chưa rõ',
       this.draft()?.updatedAt
     );
   }
 
   getStatusText(): string {
     const status = this.draft()?.status || 'pending';
-    if (status === 'completed') return 'ÄÃ£ duyá»‡t';
-    if (status === 'draft') return 'Äang nhÃ¡p';
-    return 'Chá» nháº­p';
+    if (status === 'completed') return 'Đã duyệt';
+    if (status === 'draft') return 'Đang nháp';
+    return 'Chờ nhập';
   }
 
   getStatusClass(): string {
@@ -1050,9 +1055,9 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
     const link = baseUrl + this.requestId;
     navigator.clipboard.writeText(link).then(() => {
-      this.toast.show('ÄÃ£ sao chÃ©p liÃªn káº¿t truy xuáº¥t nguá»“n gá»‘c!', 'success');
+      this.toast.show('Đã sao chép liên kết truy xuất nguồn gốc!', 'success');
     }).catch(err => {
-      this.toast.show('KhÃ´ng thá»ƒ sao chÃ©p liÃªn káº¿t: ' + err, 'error');
+      this.toast.show('Không thể sao chép liên kết: ' + err, 'error');
     });
   }
 

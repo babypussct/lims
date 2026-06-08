@@ -21,7 +21,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
 
   const samplesPayload: any[] = [];
 
-  // 1. ThÃªm Blank vÃ o Ä‘áº§u danh sÃ¡ch
+  // 1. Thêm Blank vào đầu danh sách
   const blankObj = currentDraft.resultData['QC_BLANK'] || {};
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
@@ -30,7 +30,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: blankObj['ghiChu'] || ''
   });
 
-  // 2. ThÃªm Spike vÃ o vá»‹ trÃ­ thá»© 2
+  // 2. Thêm Spike vào vị trí thứ 2
   const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
@@ -39,7 +39,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
-  // 3. ThÃªm cÃ¡c máº«u vÃ  cÃ¡c máº«u SPIKE_N xen káº½
+  // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
   let selectedCount = 0;
   prefixSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
@@ -382,14 +382,14 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
           }).join('; ');
         };
 
@@ -548,7 +548,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -598,14 +598,14 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
           }).join('; ');
         };
 
@@ -625,7 +625,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -683,7 +683,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '6',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -701,7 +701,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '7',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -756,7 +756,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -781,7 +781,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -801,7 +801,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '7',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,
@@ -900,7 +900,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -950,14 +950,14 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
           }).join('; ');
         };
 
@@ -977,7 +977,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -1036,7 +1036,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -1054,7 +1054,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -1111,7 +1111,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1136,7 +1136,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1156,7 +1156,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,
@@ -1237,7 +1237,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -1287,14 +1287,14 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
           }).join('; ');
         };
 
@@ -1314,7 +1314,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -1373,7 +1373,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -1391,7 +1391,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -1448,7 +1448,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1473,7 +1473,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1493,7 +1493,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,

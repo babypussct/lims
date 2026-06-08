@@ -270,6 +270,46 @@ export class ResultService {
       
       batch.set(detailRef, detailPayload, { merge: true });
       
+      // 3. Tự động đồng bộ Dữ liệu từ Master -> Child (nếu mẻ chạy này là Master Ảo)
+      if (metaData['isVirtualMaster'] && Array.isArray(metaData['childRequestIds']) && metaData['childRequestIds'].length > 0) {
+        const childIds: string[] = metaData['childRequestIds'];
+        for (const childId of childIds) {
+          const childMetaSnap = await getDoc(this.getDocRef(childId));
+          if (childMetaSnap.exists()) {
+            const childMeta = childMetaSnap.data();
+            const childSamples: string[] = childMeta['sampleList'] || [];
+            
+            const childDetailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', childId);
+            const childDetailSnap = await getDoc(childDetailRef);
+            let childResultData = childDetailSnap.exists() ? (childDetailSnap.data()['resultData'] || {}) : {};
+            
+            let childUpdated = false;
+            childSamples.forEach(sampleCode => {
+              if (mergedResultData[sampleCode]) {
+                childResultData[sampleCode] = { ...mergedResultData[sampleCode] };
+                childUpdated = true;
+              }
+            });
+            
+            if (childUpdated) {
+              batch.set(childDetailRef, {
+                resultData: childResultData,
+                updatedAt: timestampStr,
+                updatedBy: userName + ' (via Master Sync)'
+              }, { merge: true });
+            }
+            
+            // Đồng bộ trạng thái và báo cáo (analysisResultSummary) xuống mẻ con
+            const childReqRef = this.getDocRef(childId);
+            batch.update(childReqRef, {
+              status: draft.status || metaData['status'] || 'draft',
+              lastUpdated: serverTimestamp(),
+              analysisResultSummary: summaryPayload
+            });
+          }
+        }
+      }
+      
       await batch.commit();
 
       if (isManualSave) {
@@ -343,6 +383,32 @@ export class ResultService {
       querySnap.forEach(docSnap => {
         historyList.push(docSnap.data());
       });
+      
+      // Lấy thêm lịch sử báo cáo từ Master Ảo (nếu có)
+      const reqRef = this.getDocRef(requestId);
+      const reqSnap = await getDoc(reqRef);
+      if (reqSnap.exists()) {
+        const reqData = reqSnap.data();
+        if (reqData['parentMasterId']) {
+          const parentHistoryColRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', reqData['parentMasterId'], 'history');
+          const parentQ = query(parentHistoryColRef, orderBy('version', 'desc'));
+          const parentQuerySnap = await getDocs(parentQ);
+          parentQuerySnap.forEach(docSnap => {
+            const data = docSnap.data();
+            data['isFromMaster'] = true;
+            data['masterId'] = reqData['parentMasterId'];
+            historyList.push(data);
+          });
+        }
+      }
+      
+      // Sắp xếp lại danh sách theo thời gian mới nhất (vì có thể có cả bản của con và của cha)
+      historyList.sort((a, b) => {
+        const dateA = new Date(a.publishedAt || 0).getTime();
+        const dateB = new Date(b.publishedAt || 0).getTime();
+        return dateB - dateA;
+      });
+      
       return historyList;
     } catch (e) {
       console.error('Error getting history:', e);
