@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { ResultService } from './services/result.service';
@@ -39,6 +39,7 @@ import {
   standalone: true,
   imports: [
     CommonModule, 
+    RouterModule,
     ResultEntryType2Component, 
     ResultEntryType3bComponent, 
     SkeletonComponent,

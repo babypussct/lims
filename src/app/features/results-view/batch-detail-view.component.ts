@@ -1,7 +1,7 @@
-﻿import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, viewChild, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, viewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 declare let QRious: any;
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -18,7 +18,7 @@ import { MasterTargetService } from '../targets/master-target.service';
 @Component({
   selector: 'app-batch-detail-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="h-full flex flex-col fade-in bg-slate-50/30 dark:bg-slate-950/10 p-6 space-y-6">
       

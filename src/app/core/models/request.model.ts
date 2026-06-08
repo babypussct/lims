@@ -51,4 +51,5 @@ export interface Request {
   // Virtual Master Run details (Option C merging)
   isVirtualMaster?: boolean;
   childRequestIds?: string[];
+  parentMasterId?: string;
 }

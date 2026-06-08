@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { formatSampleList, getSafeGoogleUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
@@ -13,7 +13,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 @Component({
   selector: 'app-result-list',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, DateRangeFilterComponent],
+  imports: [CommonModule, RouterModule, SkeletonComponent, DateRangeFilterComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10">
 
