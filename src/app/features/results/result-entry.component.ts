@@ -669,6 +669,26 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
+  async triggerDeleteVirtualMaster() {
+    if (!this.run()?.isVirtualMaster || this.isProcessing()) return;
+    
+    // Yêu cầu confirm
+    if (!confirm('Bạn có chắc chắn muốn gỡ gộp và xóa mẻ Master Ảo này không?\nDữ liệu kết quả mẫu đã nhập sẽ vẫn được giữ nguyên ở các mẻ con.')) {
+      return;
+    }
+
+    this.isSavingDraft.set(true);
+    try {
+      const success = await this.resultService.deleteVirtualMaster(this.requestId);
+      if (success) {
+        // Điều hướng về dashboard kết quả
+        this.router.navigate(['/results']);
+      }
+    } finally {
+      this.isSavingDraft.set(false);
+    }
+  }
+
   getPrintButtonLabel(): string {
     const activeFilter = this.activeFilter();
     if (activeFilter === 'ALL') {

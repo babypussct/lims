@@ -16,8 +16,54 @@ export class ResultService {
   private toast = inject(ToastService);
 
   private getDocRef(requestId: string) {
-    // Tái sử dụng collection 'requests' đã có đầy đủ quyền đọc/ghi trên Production
+    // Tái sử dụng collection 'requests' để có đầy đủ quyền đọc/ghi trên Production
     return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
+  }
+
+  async deleteVirtualMaster(masterId: string): Promise<boolean> {
+    try {
+      const metaRef = this.getDocRef(masterId);
+      const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', masterId);
+      
+      const metaSnap = await getDoc(metaRef);
+      if (!metaSnap.exists()) {
+        throw new Error('Mẻ gộp không tồn tại');
+      }
+      const data = metaSnap.data();
+      if (!data['isVirtualMaster']) {
+        throw new Error('Chỉ được xóa mẻ Master Ảo (Mẻ gộp)');
+      }
+
+      const childIds: string[] = data['childRequestIds'] || [];
+      const batch = writeBatch(this.fb.db);
+
+      // Xóa reference parentMasterId trên các mẻ con
+      for (const childId of childIds) {
+        const childRef = this.getDocRef(childId);
+        batch.update(childRef, { parentMasterId: deleteField() });
+      }
+
+      // Xóa document của mẻ gộp
+      batch.delete(metaRef);
+      batch.delete(detailRef);
+
+      await batch.commit();
+
+      await this.logActivity(
+        'DELETE_VIRTUAL_MASTER',
+        `Đã gỡ gộp và xóa mẻ ảo: ${masterId}`,
+        masterId,
+        data['sopId'] || '',
+        data['sopName'] || ''
+      );
+
+      this.toast.show('Đã gỡ gộp và xóa mẻ ảo thành công!', 'success');
+      return true;
+    } catch (e: any) {
+      console.error(e);
+      this.toast.show('Lỗi khi xóa mẻ gộp: ' + e.message, 'error');
+      return false;
+    }
   }
 
   private async logActivity(
