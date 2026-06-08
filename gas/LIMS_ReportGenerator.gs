@@ -132,6 +132,9 @@ function generateReport(sopId, metadata, samples, version) {
   if (sopId === 'nhom-cuc' && metadata && metadata.printFormType === 'formDon') {
     templateId = CONFIG.TEMPLATES['nhom-cuc-don'] || 'PASTE_GOOGLE_DOC_ID_HERE';
   }
+  if (sopId === 'nhom-i' && metadata && metadata.printFormType === 'formDon') {
+    templateId = CONFIG.TEMPLATES['nhom-i-don'] || '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE';
+  }
   const sopConfig   = CONFIG.SOP_CONFIG[sopId];
 
   if (!templateId || templateId === 'PASTE_GOOGLE_DOC_ID_HERE') {

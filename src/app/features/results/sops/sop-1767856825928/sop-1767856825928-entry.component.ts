@@ -91,12 +91,9 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
       const compounds: string[] = this.config?.compounds || [];
       const sampleList: string[] = this.run?.sampleList || [];
       const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
-      const firstAssigned = targetMap
-        ? compounds.find((c: string) => sampleList.some((s: string) => this.isTargetAssigned(s, c)))
-        : compounds[0];
-      if (firstAssigned) {
-        this.draft.page1Data['activeCompound'] = firstAssigned;
-      }
+      let firstAssigned = targetMap ? compounds.find((c: string) => sampleList.some((s: string) => this.isTargetAssigned(s, c))) : compounds[0];
+      if (!firstAssigned && compounds && compounds.length > 0) { firstAssigned = compounds[0]; }
+      if (firstAssigned) { this.draft.page1Data['activeCompound'] = firstAssigned; }
     }
 
     // Initialize R^2 if formDon
@@ -307,6 +304,7 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
     if (!this.run) return true;
+    if (this.run.isVirtualMaster) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
 
@@ -744,3 +742,5 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
     return list;
   }
 }
+
+

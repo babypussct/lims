@@ -342,6 +342,15 @@ export class ResultService {
               if (mergedResultData[sampleCode]) {
                 childResultData[sampleCode] = { ...mergedResultData[sampleCode] };
                 childUpdated = true;
+              } else {
+                // Support pooled samples in master batch (e.g., "M1; M2")
+                const pooledKey = Object.keys(mergedResultData).find(k => 
+                  k.split(';').map(s => s.trim()).includes(sampleCode)
+                );
+                if (pooledKey) {
+                  childResultData[sampleCode] = { ...mergedResultData[pooledKey] };
+                  childUpdated = true;
+                }
               }
             });
             

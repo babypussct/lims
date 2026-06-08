@@ -134,6 +134,7 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
  */
 export function isCompoundAssigned(assignedTargetIds: string[], compound: string): boolean {
   if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
+  if (!compound) return false;
 
   // 1. Direct match: check if exact compound key or its lowercased version is in the array
   const lowerCompound = compound.toLowerCase();
@@ -145,7 +146,21 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
   const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
   if (firestoreId) {
     const lowerId = firestoreId.toLowerCase();
-    return assignedTargetIds.some(tId => tId.toLowerCase() === lowerId);
+    if (assignedTargetIds.some(tId => tId.toLowerCase() === lowerId)) {
+      return true;
+    }
+  }
+
+  // 3. Slug-based match fallback: allow spaces to match underscores or hyphens
+  const slugified = lowerCompound.replace(/[\s\-]/g, '_');
+  if (assignedTargetIds.some(tId => tId.toLowerCase().replace(/[\s\-]/g, '_') === slugified)) {
+    return true;
+  }
+
+  // 4. Special phonetic fallback for 'ph' vs 'f'
+  const phoneticSlug = slugified.replace(/ph/g, 'f');
+  if (assignedTargetIds.some(tId => tId.toLowerCase().replace(/[\s\-]/g, '_').replace(/ph/g, 'f') === phoneticSlug)) {
+    return true;
   }
 
   return false;

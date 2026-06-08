@@ -7,6 +7,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   'nhom_lan_huu_co_gc-msms_copy_1768036876719': 'chlor-huu-co', // Nhóm Chlor hữu cơ (GC-MS/MS) (filebieumau_FORM_TRANG4.docx)
   'SOP-02': 'lan-huu-co',             // Nhóm Lân hữu cơ (GC-MS/MS)
   'sop_1767856825928': 'nhom-cuc',    // Nhóm Cúc (GC-MS/MS)
+  'sop_1767857642144': 'nhom-i',      // Nhóm I (GC-MS/MS)
   // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
   // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)
 };
@@ -19,6 +20,7 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
   { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'],     configKey: 'lan-huu-co' },
   { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'],            configKey: 'nhom-cuc' },
+  { keywords: ['nhóm i', 'nhom i'],                         configKey: 'nhom-i' },
 ];
 
 export const ANGULAR_SOP_CONFIG: Record<string, {
@@ -152,6 +154,65 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       'Fenvalerate',
       'Cypermethrins',
       'Tefluthrin'
+    ]
+  },
+  'nhom-i': {
+    formType: 'type3b',
+    columns: {},
+    checkboxLines: {},
+    signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
+    compounds: [
+      'Phosmet',
+      'Phosphamidon',
+      'Pirimiphos methyl',
+      'Profenofos',
+      'Triazophos',
+      'Vamidothion',
+      'Difenoconazole',
+      'Propiconazole',
+      'Tetraconazole',
+      'Hexaconazole',
+      'Triadimenol',
+      'Paclobutrazol',
+      'Flutriafol',
+      'Imazalil',
+      'Uniconazole',
+      'Tricyclazole',
+      'Flusilazole',
+      'Cyproconazole',
+      'Azoxystrobin',
+      'Fenbuconazole',
+      'Tebuconazole',
+      'Fipronil',
+      'Bitertanol',
+      'Boscalid',
+      'Buprofezin',
+      'Butachlor',
+      'Cyprodinil',
+      'Dicloran',
+      'Fenoxanil',
+      'Fluazifop',
+      'Fludioxonil',
+      'Flufenacet',
+      'Kresoxim methyl',
+      'Mecarbam',
+      'Mefenacet',
+      'Molinate',
+      'Nitrothal-Isopropyl',
+      'Alachlor',
+      'Piperonyl butoxide',
+      'Propanil',
+      'Propoxur',
+      'Silafluofen',
+      'Simazine',
+      'Tebufenpyrad',
+      'Atrazine',
+      'Tebuthiuron',
+      'Thiabendazole',
+      'Chlorfenapyr',
+      'Vinclozolin',
+      'Trifluralin',
+      'Chlorothalonil'
     ]
   }
 };

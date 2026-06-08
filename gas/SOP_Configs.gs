@@ -18,6 +18,8 @@ const CONFIG = {
     'lan-huu-co':             '1nSWI-KDXhcnzZK3k0X5o0Wn2rXQ2XeRx87jx8WJAM60',   // SOP-02 | TÊN Nhóm Lân hữu cơ (GC-MS/MS)
     'nhom-cuc':               '1ugk8Xx-LHYD7xrarxE01pG96fIA5Po7OMdjQ8htrys0',   // Nhóm Cúc (GC-MS/MS) - Form Check
     'nhom-cuc-don':           '1rlN0iNEG_beYHBX7VRsoJ6QQsMerKxian8OJni0Ha9A',   // Nhóm Cúc (GC-MS/MS) - Form Đơn
+    'nhom-i':                 'PASTE_GOOGLE_DOC_ID_HERE',                       // Nhóm I (GC-MS/MS) - Form Check
+    'nhom-i-don':             '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE',   // Nhóm I (GC-MS/MS) - Form Đơn
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -192,6 +194,43 @@ const CONFIG = {
         'Tralomethrin', 'Ethofenprox', 'Permethrin cis', 'Permethrin trans',
         'Fenpropathrin', 'Silafluofen', 'Flucythrinate', 'Fenvalerate',
         'Cypermethrins', 'Tefluthrin'
+      ]
+    },
+    'nhom-i': {
+      folderName: 'Nhóm I (Type 3B)',
+      formType: 'type3b',
+      defaultFontSize: 13,
+      columns: {},
+      checkboxLines: {},
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      },
+      resultColumns: [
+        { key: 'Phosmet' }, { key: 'Phosphamidon' }, { key: 'PirimiphosMethyl' }, { key: 'Profenofos' },
+        { key: 'Triazophos' }, { key: 'Vamidothion' }, { key: 'Difenoconazole' }, { key: 'Propiconazole' },
+        { key: 'Tetraconazole' }, { key: 'Hexaconazole' }, { key: 'Triadimenol' }, { key: 'Paclobutrazol' },
+        { key: 'Flutriafol' }, { key: 'Imazalil' }, { key: 'Uniconazole' }, { key: 'Tricyclazole' },
+        { key: 'Flusilazole' }, { key: 'Cyproconazole' }, { key: 'Azoxystrobin' }, { key: 'Fenbuconazole' },
+        { key: 'Tebuconazole' }, { key: 'Fipronil' }, { key: 'Bitertanol' }, { key: 'Boscalid' },
+        { key: 'Buprofezin' }, { key: 'Butachlor' }, { key: 'Cyprodinil' }, { key: 'Dicloran' },
+        { key: 'Fenoxanil' }, { key: 'Fluazifop' }, { key: 'Fludioxonil' }, { key: 'Flufenacet' },
+        { key: 'KresoximMethyl' }, { key: 'Mecarbam' }, { key: 'Mefenacet' }, { key: 'Molinate' },
+        { key: 'NitrothalIsopropyl' }, { key: 'Alachlor' }, { key: 'PiperonylButoxide' }, { key: 'Propanil' },
+        { key: 'Propoxur' }, { key: 'Silafluofen' }, { key: 'Simazine' }, { key: 'Tebufenpyrad' },
+        { key: 'Atrazine' }, { key: 'Tebuthiuron' }, { key: 'Thiabendazole' }, { key: 'Chlorfenapyr' },
+        { key: 'Vinclozolin' }, { key: 'Trifluralin' }, { key: 'Chlorothalonil' }
+      ],
+      compounds: [
+        'Phosmet', 'Phosphamidon', 'Pirimiphos methyl', 'Profenofos', 'Triazophos', 'Vamidothion',
+        'Difenoconazole', 'Propiconazole', 'Tetraconazole', 'Hexaconazole', 'Triadimenol', 'Paclobutrazol',
+        'Flutriafol', 'Imazalil', 'Uniconazole', 'Tricyclazole', 'Flusilazole', 'Cyproconazole',
+        'Azoxystrobin', 'Fenbuconazole', 'Tebuconazole', 'Fipronil', 'Bitertanol', 'Boscalid',
+        'Buprofezin', 'Butachlor', 'Cyprodinil', 'Dicloran', 'Fenoxanil', 'Fluazifop', 'Fludioxonil',
+        'Flufenacet', 'Kresoxim methyl', 'Mecarbam', 'Mefenacet', 'Molinate', 'Nitrothal-Isopropyl',
+        'Alachlor', 'Piperonyl butoxide', 'Propanil', 'Propoxur', 'Silafluofen', 'Simazine',
+        'Tebufenpyrad', 'Atrazine', 'Tebuthiuron', 'Thiabendazole', 'Chlorfenapyr', 'Vinclozolin',
+        'Trifluralin', 'Chlorothalonil'
       ]
     }
   }
