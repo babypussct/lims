@@ -42,8 +42,8 @@ import { FormsModule } from '@angular/forms';
         }
       </div>
 
-      <!-- Layout 2: Dual inputs for loSo and hamLuong (SOP-03 & Lân hữu cơ style) -->
-      <div *ngIf="pointLabels.length === 0" [class]="'grid gap-3 grid-cols-2 sm:grid-cols-3 ' + (calibPoints.length === 6 ? 'md:grid-cols-6' : 'md:grid-cols-5')">
+      <!-- Layout 2: Triple inputs for Chuẩn, Số vial, Nồng độ -->
+      <div *ngIf="pointLabels.length === 0" [class]="'grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ' + (calibPoints.length === 6 ? 'xl:grid-cols-3' : '')">
         @for (pt of calibPoints; track $index) {
           <div [class]="'bg-slate-50/40 dark:bg-slate-955/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 transition duration-200 group ' + 
             (isFuchsiaRing ? 'hover:border-fuchsia-400/50 dark:hover:border-fuchsia-500/40' : 'hover:border-violet-400/50 dark:hover:border-violet-500/40')">
@@ -54,25 +54,37 @@ import { FormsModule } from '@angular/forms';
               </span>
               <span [class]="'w-1.5 h-1.5 rounded-full ' + (isFuchsiaRing ? 'bg-fuchsia-400' : 'bg-violet-400')"></span>
             </div>
-            <div>
-              <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Số vial</label>
-              <input type="text" 
-                     [(ngModel)]="pt['loSo']" 
-                     (ngModelChange)="onPointsChanged()"
-                     (focus)="$any($event.target).select()"
-                     placeholder="..."
-                     [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 outline-none text-center transition ' +
-                       (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
-            </div>
-            <div>
-              <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{{ valLabel }}</label>
-              <input type="text" 
-                     [(ngModel)]="pt['hamLuong']" 
-                     (ngModelChange)="onPointsChanged()"
-                     (focus)="$any($event.target).select()"
-                     placeholder="..."
-                     [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 outline-none text-center transition ' +
-                       (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mức chuẩn</label>
+                <input type="text" 
+                       [(ngModel)]="pt['loSo']" 
+                       (ngModelChange)="onPointsChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="C..."
+                       [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 outline-none text-center transition ' +
+                         (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
+              </div>
+              <div>
+                <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Số vial</label>
+                <input type="text" 
+                       [(ngModel)]="pt['vialNo']" 
+                       (ngModelChange)="onPointsChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="..."
+                       [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 outline-none text-center transition ' +
+                         (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
+              </div>
+              <div>
+                <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{{ valLabel }}</label>
+                <input type="text" 
+                       [(ngModel)]="pt['hamLuong']" 
+                       (ngModelChange)="onPointsChanged()"
+                       (focus)="$any($event.target).select()"
+                       placeholder="..."
+                       [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 outline-none text-center transition ' +
+                         (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
+              </div>
             </div>
           </div>
         }

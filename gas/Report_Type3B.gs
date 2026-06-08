@@ -1,4 +1,4 @@
-﻿
+
 function generateType3bReport(body, sopConfig, metadata, samples) {
   const printFormType = metadata.printFormType || 'formCheck';
   
@@ -180,8 +180,22 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
         }
       }
     }
-    
-    // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
+        // 2.1 Thay thế Blank và Spike (nếu có dấu chấm)
+      if (metadata.blankName) {
+        if (typeof replaceDotsSafely === 'function') {
+          replaceDotsSafely(element, 'Mẫu trắng:\\s*[\\.\\?]+', metadata.blankName);
+          replaceDotsSafely(element, 'Blank:\\s*[\\.\\?]+', metadata.blankName);
+        }
+      }
+      if (metadata.spikeName) {
+        if (typeof replaceDotsSafely === 'function') {
+          replaceDotsSafely(element, 'Mẫu thêm chuẩn:\\s*[\\.\\?]+', metadata.spikeName);
+          replaceDotsSafely(element, 'Thêm chuẩn:\\s*[\\.\\?]+', metadata.spikeName);
+          replaceDotsSafely(element, 'Spike:\\s*[\\.\\?]+', metadata.spikeName);
+        }
+      }
+
+      // 3. Thay thế các dòng checkLines dạng [ ] hoặc ☐ bằng helper đệ quy chọn lọc
     if (sopConfig.checkboxLines) {
       for (const [lineText, fieldName] of Object.entries(sopConfig.checkboxLines)) {
         const isChecked = metadata[fieldName] === true;
@@ -768,9 +782,9 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
         } catch(e) {}
       }
       
-      for (let r = numRows - 2; r < numRows; r++) {
+      for (let r = 0; r < numRows; r++) {
         const text = table.getRow(r).getText().toLowerCase();
-        if (text.includes('r2')) {
+        if (text.includes('r2') || text.includes('r²')) {
           const row = table.getRow(r);
           try {
             setCellText(row, row.getNumCells() - 1, (metadata.r2 || '').toString(), null, sopConfig.defaultFontSize);
@@ -820,9 +834,9 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
         } else if (sample.compoundResults && sample.compoundResults[compoundName] !== undefined) {
           kqVal = sample.compoundResults[compoundName];
         } else {
-          kqVal = sample[compoundName] || sample.kq || 'KPH';
+          kqVal = sample[compoundName] || sample.kq || 'ND';
         }
-        if (kqVal === 'N/A' || kqVal === '') kqVal = 'KPH';
+        if (kqVal === 'N/A' || kqVal === '') kqVal = 'ND';
         
         try {
           const chunkSize = sopConfig.maSoMauChunkSize || 0;

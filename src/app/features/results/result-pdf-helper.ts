@@ -21,7 +21,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
 
   const samplesPayload: any[] = [];
 
-  // 1. Thêm Blank vào đầu danh sách
+  // 1. ThÃƒÂªm Blank vÃƒÂ o Ã„â€˜Ã¡ÂºÂ§u danh sÃƒÂ¡ch
   const blankObj = currentDraft.resultData['QC_BLANK'] || {};
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
@@ -30,7 +30,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: blankObj['ghiChu'] || ''
   });
 
-  // 2. Thêm Spike vào vị trí thứ 2
+  // 2. ThÃƒÂªm Spike vÃƒÂ o vÃ¡Â»â€¹ trÃƒÂ­ thÃ¡Â»Â© 2
   const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
@@ -39,7 +39,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
-  // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
+  // 3. ThÃƒÂªm cÃƒÂ¡c mÃ¡ÂºÂ«u vÃƒÂ  cÃƒÂ¡c mÃ¡ÂºÂ«u SPIKE_N xen kÃ¡ÂºÂ½
   let selectedCount = 0;
   prefixSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
@@ -391,14 +391,14 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t'}`;
           }).join('; ');
         };
 
@@ -410,12 +410,24 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
 
     samplesPayload.push(rowData);
   } else {
-    filteredSamples.forEach((sampleCode: string, idx: number) => {
+    const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
+    let formDonSamples = [...filteredSamples];
+    if (isDon && currentConf.formType === 'type3b') {
+      formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
+      if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
+    }
+
+    formDonSamples.forEach((sampleCode: string, idx: number) => {
       const resObj = currentDraft.resultData[sampleCode] || {};
 
       if (currentConf.formType === 'type3b') {
+        let displayMaSoMau = sampleCode;
+        if (sampleCode === 'QC_BLANK') displayMaSoMau = currentDraft.page1Data['blankName'] || 'Blank';
+        else if (sampleCode === 'QC_SPIKE') displayMaSoMau = currentDraft.page1Data['spikeName'] || 'Spike';
+        else if (sampleCode === 'QC_FINAL') displayMaSoMau = 'FINAL';
+
         const rowData: Record<string, any> = {
-          maSoMau: sampleCode
+          maSoMau: displayMaSoMau
         };
 
         const chlorMap: Record<string, string> = {
@@ -556,7 +568,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -606,14 +618,14 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t'}`;
           }).join('; ');
         };
 
@@ -625,15 +637,26 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
 
     samplesPayload.push(rowData);
   } else {
-    filteredSamples.forEach((sampleCode: string) => {
+    let formDonSamples = [...filteredSamples];
+    if (isDon) {
+      formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
+      if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
+    }
+
+    formDonSamples.forEach((sampleCode: string) => {
       const resObj = currentDraft.resultData[sampleCode] || {};
+      let displayMaSoMau = sampleCode;
+      if (sampleCode === 'QC_BLANK') displayMaSoMau = currentDraft.page1Data['blankName'] || 'Blank';
+      else if (sampleCode === 'QC_SPIKE') displayMaSoMau = currentDraft.page1Data['spikeName'] || 'Spike';
+      else if (sampleCode === 'QC_FINAL') displayMaSoMau = 'FINAL';
+
       const rowData: Record<string, any> = {
-        maSoMau: sampleCode,
+        maSoMau: displayMaSoMau,
         khoiLuong: resObj['khoiLuong'] || '10.0',
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -691,7 +714,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '6',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -709,7 +732,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '7',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -764,7 +787,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -789,7 +812,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -809,7 +832,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '7',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,
@@ -909,7 +932,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -959,14 +982,14 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t'}`;
           }).join('; ');
         };
 
@@ -978,15 +1001,26 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
 
     samplesPayload.push(rowData);
   } else {
-    filteredSamples.forEach((sampleCode: string) => {
+    let formDonSamples = [...filteredSamples];
+    if (isDon) {
+      formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
+      if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
+    }
+
+    formDonSamples.forEach((sampleCode: string) => {
       const resObj = currentDraft.resultData[sampleCode] || {};
+      let displayMaSoMau = sampleCode;
+      if (sampleCode === 'QC_BLANK') displayMaSoMau = currentDraft.page1Data['blankName'] || 'Blank';
+      else if (sampleCode === 'QC_SPIKE') displayMaSoMau = currentDraft.page1Data['spikeName'] || 'Spike';
+      else if (sampleCode === 'QC_FINAL') displayMaSoMau = 'FINAL';
+
       const rowData: Record<string, any> = {
-        maSoMau: sampleCode,
+        maSoMau: displayMaSoMau,
         khoiLuong: resObj['khoiLuong'] || '10.0',
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -1045,7 +1079,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -1063,7 +1097,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -1120,7 +1154,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1145,7 +1179,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1165,7 +1199,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,
@@ -1247,7 +1281,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -1297,14 +1331,14 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Ã„ÂÃ¡ÂºÂ¡t'}`;
           }).join('; ');
         };
 
@@ -1316,15 +1350,26 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
 
     samplesPayload.push(rowData);
   } else {
-    filteredSamples.forEach((sampleCode: string) => {
+    let formDonSamples = [...filteredSamples];
+    if (isDon) {
+      formDonSamples.unshift('QC_BLANK', 'QC_SPIKE');
+      if (currentDraft.page1Data['hasFinal']) formDonSamples.push('QC_FINAL');
+    }
+
+    formDonSamples.forEach((sampleCode: string) => {
       const resObj = currentDraft.resultData[sampleCode] || {};
+      let displayMaSoMau = sampleCode;
+      if (sampleCode === 'QC_BLANK') displayMaSoMau = currentDraft.page1Data['blankName'] || 'Blank';
+      else if (sampleCode === 'QC_SPIKE') displayMaSoMau = currentDraft.page1Data['spikeName'] || 'Spike';
+      else if (sampleCode === 'QC_FINAL') displayMaSoMau = 'FINAL';
+
       const rowData: Record<string, any> = {
-        maSoMau: sampleCode,
+        maSoMau: displayMaSoMau,
         khoiLuong: resObj['khoiLuong'] || '10.0',
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -1383,7 +1428,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: blankMaps.results,
@@ -1401,7 +1446,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
     summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
@@ -1458,7 +1503,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1483,7 +1528,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃƒÂ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1503,7 +1548,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃƒÂ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
       summaryResult: 'N/A',
       compoundResults: finalMaps.results,
@@ -1540,4 +1585,6 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     samples: samplesPayload
   };
 }
+
+
 

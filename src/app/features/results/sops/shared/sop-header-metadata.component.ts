@@ -16,14 +16,14 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
       <!-- Signature Dates -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người phân tích</label>
           <input type="date" 
                  [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']" 
                  (ngModelChange)="onDataChanged()"
                  class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none">
         </div>
         <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
+          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký/ Người thẩm tra</label>
           <input type="date" 
                  [(ngModel)]="draft.page1Data['ngayNguoiThamTra']" 
                  (ngModelChange)="onDataChanged()"
