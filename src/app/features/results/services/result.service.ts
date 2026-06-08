@@ -299,10 +299,11 @@ export class ResultService {
               }, { merge: true });
             }
             
-            // Đồng bộ trạng thái và báo cáo (analysisResultSummary) xuống mẻ con
+            // Đồng bộ trạng thái, báo cáo (analysisResultSummary) và liên kết cha-con xuống mẻ con
             const childReqRef = this.getDocRef(childId);
             batch.update(childReqRef, {
               status: draft.status || metaData['status'] || 'draft',
+              parentMasterId: requestId, // Tự động phục hồi liên kết cho các mẻ cũ
               lastUpdated: serverTimestamp(),
               analysisResultSummary: summaryPayload
             });
