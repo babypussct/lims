@@ -52,14 +52,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
   const allFields = { ...metadata, ...sample };
   
   for (const element of elements) {
-    // 0. Khắc phục lỗi xuống dòng khi chuyển đổi sang PDF:
-    // Tự động rút ngắn chuỗi dấu chấm hoặc dấu ba chấm trước checkbox ND (bao gồm cả placeholder {{N1}} bắt đầu bằng {)
-    try {
-      element.replaceText('……+([\\s]*[☑☐□N{])', '…\\1');
-      element.replaceText('\\.{5,}([\\s]*[☑☐□N{])', '...\\1');
-    } catch (e) {
-      Logger.log('[TableFit] Lỗi rút ngắn dấu chấm: ' + e.toString());
-    }
+
 
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
@@ -142,11 +135,20 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               const labelText = row.getCell(0).getText().trim();
               
               let fieldName = null;
-              for (const [keyText, fName] of Object.entries(checkboxLines)) {
-                if (labelText.includes(keyText) || keyText.includes(labelText)) {
-                  fieldName = fName;
-                  break;
+              if (checkboxLines) {
+                for (const [keyText, fName] of Object.entries(checkboxLines)) {
+                  if (labelText.includes(keyText) || keyText.includes(labelText)) {
+                    fieldName = fName;
+                    break;
+                  }
                 }
+              }
+              // Fallback if not mapped
+              if (!fieldName) {
+                if (labelText.includes('Mẫu trắng') || labelText.includes('Blank')) fieldName = 'checkMauTrang';
+                else if (labelText.includes('Mẫu thêm chuẩn') || labelText.includes('Spike')) fieldName = 'checkMauThemChuan';
+                else if (labelText.includes('Hiệu suất thu hồi')) fieldName = 'checkHieuSuatThuHoi';
+                else if (labelText.includes('Độ chụm')) fieldName = 'checkDoChum';
               }
 
               if (fieldName && allFields[fieldName] !== undefined) {
@@ -179,15 +181,10 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               }
             }
           }
-        }
       }
     }
     
-    // 7. Khắc phục lỗi xuống dòng sau khi thay thế: Chạy lại một lần nữa để rút ngắn triệt để các dấu chấm
-    try {
-      element.replaceText('……+([\\s]*[☑☐□N])', '…\\1');
-      element.replaceText('\\.{5,}([\\s]*[☑☐□N])', '...\\1');
-    } catch (e) {}
+
   }
 }
 

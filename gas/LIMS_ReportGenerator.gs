@@ -569,11 +569,6 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
   try {
     let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
     
-    if (metadata.printFormType === 'formDon' && (khoiLuongVal === '10.0' || khoiLuongVal === '10')) {
-      const randDecimals = Math.floor(Math.random() * (90 - 10 + 1) + 10);
-      khoiLuongVal = '10.0' + randDecimals;
-    }
-
     let kl10Check = '☐';
     let klOtherText = '………';
     
