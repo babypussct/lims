@@ -385,7 +385,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               
               // Gạch trống QC trong segment
               for (let i = 0; i < 3; i++) {
-                _setNthQcCheckboxInCells(segmentCells, i, 'Đ(?!ạ)', false);
+                _setNthQcCheckboxInCells(segmentCells, i, 'Đ', false);
                 _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', false);
               }
               
@@ -443,7 +443,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
                   const checkDat = (qcStatus === 'Đạt' || qcStatus === '☑');
                   const checkKhongDat = (qcStatus === 'Không đạt' || qcStatus === '☒' || qcStatus === 'Không Đạt');
                   
-                  _setNthQcCheckboxInCells(segmentCells, i, 'Đ(?!ạ)', checkDat);
+                  _setNthQcCheckboxInCells(segmentCells, i, 'Đ', checkDat);
                   _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', checkKhongDat);
                 }
               }
@@ -547,7 +547,7 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
             ndCount++;
           }
           if (cellText.includes('đ') && !cellText.includes('kđ')) {
-            _replaceGenericCheckbox(cell, 'đ(?!ạ)', true);
+            _replaceGenericCheckbox(cell, 'đ', true);
           }
         }
       }
@@ -562,19 +562,33 @@ function _setNthQcCheckboxInCells(cells, n, labelPattern, isChecked) {
   for (const cell of cells) {
     let found = cell.findText(pattern);
     while (found) {
-      if (matchIndex === n) {
+      let isFalseMatch = false;
+      if (labelPattern === 'Đ' || labelPattern === 'đ') {
         try {
           const textElement = found.getElement().asText();
-          const start = found.getStartOffset();
-          const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
-          if (match) {
-            textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
-            textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+          const text = textElement.getText();
+          const nextIndex = found.getEndOffsetInclusive() + 1;
+          if (nextIndex < text.length && text.charAt(nextIndex) === 'ạ') {
+            isFalseMatch = true;
           }
         } catch(e) {}
-        return; // Đã tìm thấy và tick xong
       }
-      matchIndex++;
+
+      if (!isFalseMatch) {
+        if (matchIndex === n) {
+          try {
+            const textElement = found.getElement().asText();
+            const start = found.getStartOffset();
+            const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+            if (match) {
+              textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
+              textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+            }
+          } catch(e) {}
+          return; // Đã tìm thấy và tick xong
+        }
+        matchIndex++;
+      }
       found = cell.findText(pattern, found);
     }
   }
@@ -584,15 +598,29 @@ function _replaceGenericCheckbox(cell, labelPattern, isChecked) {
   const pattern = '([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*' + labelPattern;
   let found = cell.findText(pattern);
   while (found) {
-    try {
-      const textElement = found.getElement().asText();
-      const start = found.getStartOffset();
-      const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
-      if (match) {
-        textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
-        textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
-      }
-    } catch(e) {}
+    let isFalseMatch = false;
+    if (labelPattern === 'Đ' || labelPattern === 'đ') {
+      try {
+        const textElement = found.getElement().asText();
+        const text = textElement.getText();
+        const nextIndex = found.getEndOffsetInclusive() + 1;
+        if (nextIndex < text.length && text.charAt(nextIndex) === 'ạ') {
+          isFalseMatch = true;
+        }
+      } catch(e) {}
+    }
+
+    if (!isFalseMatch) {
+      try {
+        const textElement = found.getElement().asText();
+        const start = found.getStartOffset();
+        const match = textElement.getText().substring(start, found.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+        if (match) {
+          textElement.insertText(start + match.index, isChecked ? '☑' : '☐');
+          textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
+        }
+      } catch(e) {}
+    }
     found = cell.findText(pattern, found);
   }
 }

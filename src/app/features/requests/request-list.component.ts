@@ -96,12 +96,19 @@ import { Router } from '@angular/router';
                                     }
 
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-3 mb-2">
+                                         <div class="flex flex-wrap items-center gap-3 mb-2">
                                              @if (req.status === 'pending') {
                                                 <span class="px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider border border-orange-100 dark:border-orange-800/50">Chờ duyệt</span>
                                              } @else {
                                                 <span class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">Đã duyệt</span>
                                              }
+                                             
+                                             @if (req.isVirtualMaster) {
+                                                <span class="px-2.5 py-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-600 dark:text-fuchsia-400 text-[10px] font-black uppercase tracking-wider border border-fuchsia-100 dark:border-fuchsia-800/50 flex items-center gap-1.5 shadow-sm">
+                                                    <i class="fa-solid fa-crown text-[10px]"></i> MẺ MASTER ẢO
+                                                </span>
+                                             }
+
                                              <span class="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
                                                 <i class="fa-regular fa-calendar"></i>
                                                 {{ getAnalysisDate(req) }}

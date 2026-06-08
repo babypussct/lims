@@ -150,7 +150,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
-      let history = this.state.approvedRequests();
+      let history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
       const filter = this.selectedSopFilter();
       if (filter) {
           history = history.filter(r => r.sopName === filter);
@@ -251,7 +251,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // KANBAN COMPUTED
   kanbanBoard = computed<KanbanColumn[]>(() => {
-      const approvedReqs = this.state.approvedRequests();
+      const approvedReqs = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
       const groups = new Map<string, KanbanColumn>();
       
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
@@ -322,7 +322,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   chartKpis = computed(() => {
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-      let history = this.state.approvedRequests();
+      let history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
       
       const filter = this.selectedSopFilter();
       if (filter) {
@@ -554,7 +554,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const sopCounts = new Map<string, number>();
 
-      const history = this.state.approvedRequests();
+      const history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
       const filter = this.selectedSopFilter();
 
       history.forEach(req => {
@@ -760,6 +760,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   getLogActionText(action: string): string {
+      if (action === 'CREATE_VIRTUAL_MASTER') return 'đã tạo mẻ master ảo';
       if (action === 'SAVE_RESULT_DRAFT') return 'đã lưu nháp kết quả';
       if (action === 'PUBLISH_RESULT_REPORT') return 'đã xuất bản báo cáo';
       if (action === 'REVERT_RESULT_DRAFT') return 'đã hủy xuất bản báo cáo';

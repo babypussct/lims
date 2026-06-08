@@ -1608,6 +1608,22 @@ export class ResultListComponent implements OnInit, OnDestroy {
         batch.update(childRef, { parentMasterId: masterId });
       });
       
+      // 7. Tạo Audit Log
+      const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
+      batch.set(logRef, {
+        id: logId,
+        action: 'CREATE_VIRTUAL_MASTER',
+        details: `Đã tạo mẻ master ảo (gộp mẫu) cho ${masterId}`,
+        user: this.state.getCurrentUserName(),
+        timestamp: new Date(),
+        requestId: masterId,
+        sopBasicInfo: {
+            name: curveRun.sopName,
+            category: 'SOP'
+        }
+      });
+
       await batch.commit();
       
       // Close modal and deselect
