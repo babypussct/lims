@@ -362,7 +362,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           
                           <!-- Vial No -->
                           <td class="py-2.5 px-4 font-mono text-xs text-slate-655 dark:text-slate-400">
-                            {{ (draft()?.resultData?.[row.key])?.['loSo'] || '—' }}
+                            {{ getRowDataValue(row.key, 'loSo') || '—' }}
                           </td>
                           
                           <!-- Sample name -->
@@ -379,13 +379,13 @@ import { MasterTargetService } from '../targets/master-target.service';
                           <!-- Weight -->
                           @if (hasColumn('khoiLuong')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.['khoiLuong'] !== undefined && (draft()?.resultData?.[row.key])?.['khoiLuong'] !== null ? (draft()?.resultData?.[row.key])?.['khoiLuong'] : '—' }}
+                              {{ getRowDataValue(row.key, 'khoiLuong') !== '' ? getRowDataValue(row.key, 'khoiLuong') : '—' }}
                             </td>
                           }
                           <!-- Dilution -->
                           @if (hasColumn('heSoPhaLoang')) {
                             <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                              {{ (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== undefined && (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] !== null ? (draft()?.resultData?.[row.key])?.['heSoPhaLoang'] : '—' }}
+                              {{ getRowDataValue(row.key, 'heSoPhaLoang') !== '' ? getRowDataValue(row.key, 'heSoPhaLoang') : '—' }}
                             </td>
                           }
 
@@ -393,7 +393,7 @@ import { MasterTargetService } from '../targets/master-target.service';
                           @for (col of activeColumns(); track col) {
                             <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
                               @if (isTargetAssigned(row.key, col)) {
-                                {{ (draft()?.resultData?.[row.key])?.[col] !== undefined && (draft()?.resultData?.[row.key])?.[col] !== null ? ((draft()?.resultData?.[row.key])?.[col] === 'N/A' ? '' : (draft()?.resultData?.[row.key])?.[col]) : '—' }}
+                                {{ getRowDataValue(row.key, col) !== '' ? (getRowDataValue(row.key, col) === 'N/A' ? '' : getRowDataValue(row.key, col)) : '—' }}
                               } @else {
                                 <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
                               }
@@ -402,7 +402,7 @@ import { MasterTargetService } from '../targets/master-target.service';
 
                           <!-- Note -->
                           <td class="py-2.5 px-4 text-slate-500 dark:text-slate-400 text-xs italic">
-                            {{ (draft()?.resultData?.[row.key])?.['ghiChu'] || '' }}
+                            {{ getRowDataValue(row.key, 'ghiChu') }}
                           </td>
                         </tr>
                       }
@@ -757,6 +757,23 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const assigned = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
+  }
+
+  getRowDataValue(rowKey: string, field: string): string {
+    const d = this.draft();
+    if (!d || !d.resultData) return '';
+    const resObj = d.resultData[rowKey];
+    if (resObj && resObj[field] !== undefined && resObj[field] !== null && resObj[field] !== '') {
+      return String(resObj[field]);
+    }
+    // Fallback logic for prefix-specific final keys (e.g. QC_FINAL_QC_A) to main final key
+    if (rowKey.startsWith('QC_FINAL_QC_')) {
+      const mainFinal = d.resultData['QC_FINAL_QC_'];
+      if (mainFinal && mainFinal[field] !== undefined && mainFinal[field] !== null && mainFinal[field] !== '') {
+        return String(mainFinal[field]);
+      }
+    }
+    return '';
   }
 
   hasColumn(colKey: string): boolean {

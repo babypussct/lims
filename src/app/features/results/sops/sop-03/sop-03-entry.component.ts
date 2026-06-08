@@ -130,6 +130,51 @@ export class Sop03EntryComponent implements OnInit {
       if (!this.draft.resultData['QC_SPIKE']['loSo']) this.draft.resultData['QC_SPIKE']['loSo'] = '48';
     }
 
+    // Ensure all prefix-specific FINAL keys are initialized in resultData
+    const prefixes = new Set<string>();
+    (this.run.sampleList || []).forEach((sample: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(sample);
+      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+      prefixes.add(prefix);
+    });
+    prefixes.add(''); // Include main final key
+
+    // Look for any existing non-empty final result to use as source
+    let existingFinal: any = null;
+    for (const p of prefixes) {
+      const k = `QC_FINAL_QC_${p}`;
+      if (this.draft.resultData[k] && (this.draft.resultData[k]['kqTrifluralin'] || this.draft.resultData[k]['ghiChu'])) {
+        existingFinal = this.draft.resultData[k];
+        break;
+      }
+    }
+
+    const defaultLoSo = this.draft.resultData['QC_SPIKE']?.['loSo'] || '48';
+    prefixes.forEach(p => {
+      const key = `QC_FINAL_QC_${p}`;
+      if (!this.draft.resultData[key]) {
+        this.draft.resultData[key] = {
+          loSo: existingFinal?.['loSo'] || defaultLoSo,
+          kqTrifluralin: existingFinal?.['kqTrifluralin'] || '',
+          ghiChu: existingFinal?.['ghiChu'] || '',
+          selected: existingFinal?.['selected'] !== false
+        };
+      } else {
+        if (!this.draft.resultData[key]['loSo']) {
+          this.draft.resultData[key]['loSo'] = existingFinal?.['loSo'] || defaultLoSo;
+        }
+        if (this.draft.resultData[key]['kqTrifluralin'] === undefined) {
+          this.draft.resultData[key]['kqTrifluralin'] = existingFinal?.['kqTrifluralin'] || '';
+        }
+        if (this.draft.resultData[key]['ghiChu'] === undefined) {
+          this.draft.resultData[key]['ghiChu'] = existingFinal?.['ghiChu'] || '';
+        }
+        if (this.draft.resultData[key]['selected'] === undefined) {
+          this.draft.resultData[key]['selected'] = existingFinal?.['selected'] !== false;
+        }
+      }
+    });
+
     this.onBulkVialStartChange();
   }
 
@@ -217,8 +262,20 @@ export class Sop03EntryComponent implements OnInit {
     const allFinalKey = `QC_FINAL_QC_`;
     const sourceFinal = this.draft.resultData[allFinalKey];
     if (sourceFinal) {
-      Object.keys(this.draft.resultData).forEach(key => {
-        if (key.startsWith('QC_FINAL_QC_') && key !== allFinalKey) {
+      const prefixes = new Set<string>();
+      (this.run.sampleList || []).forEach((sample: string) => {
+        const startsWithLetter = /^[a-zA-Z]/.test(sample);
+        const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+        prefixes.add(prefix);
+      });
+      prefixes.add(''); // ensure allFinalKey is covered
+
+      prefixes.forEach(p => {
+        const key = `QC_FINAL_QC_${p}`;
+        if (key !== allFinalKey) {
+          if (!this.draft.resultData[key]) {
+            this.draft.resultData[key] = {};
+          }
           this.draft.resultData[key]['loSo'] = sourceFinal['loSo'] || '';
           this.draft.resultData[key]['kqTrifluralin'] = sourceFinal['kqTrifluralin'] || '';
           this.draft.resultData[key]['ghiChu'] = sourceFinal['ghiChu'] || '';
@@ -239,8 +296,18 @@ export class Sop03EntryComponent implements OnInit {
   propagateFinalQc(sourceKey: string) {
     const source = this.draft.resultData[sourceKey];
     if (!source) return;
-    Object.keys(this.draft.resultData).forEach(key => {
-      if (key.startsWith('QC_FINAL_QC_') && key !== sourceKey) {
+
+    const prefixes = new Set<string>();
+    (this.run.sampleList || []).forEach((sample: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(sample);
+      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+      prefixes.add(prefix);
+    });
+    prefixes.add(''); // ensure main final key is included
+
+    prefixes.forEach(p => {
+      const key = `QC_FINAL_QC_${p}`;
+      if (key !== sourceKey) {
         if (!this.draft.resultData[key]) {
           this.draft.resultData[key] = {};
         }

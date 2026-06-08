@@ -70,12 +70,22 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   // 4. FINAL row
   if (selectedCount > 0) {
     const finalKey = `QC_FINAL_QC_${prefixForReport}`;
-    const finalObj = currentDraft.resultData[finalKey] || {};
+    const mainFinal = currentDraft.resultData['QC_FINAL_QC_'] || {};
+    const prefixFinal = currentDraft.resultData[finalKey] || {};
+    const finalObj = {
+      loSo: prefixFinal['loSo'] || mainFinal['loSo'] || spikeObj['loSo'] || '2',
+      kqTrifluralin: prefixFinal['kqTrifluralin'] !== undefined && prefixFinal['kqTrifluralin'] !== '' 
+        ? prefixFinal['kqTrifluralin'] 
+        : (mainFinal['kqTrifluralin'] || ''),
+      ghiChu: prefixFinal['ghiChu'] !== undefined && prefixFinal['ghiChu'] !== ''
+        ? prefixFinal['ghiChu']
+        : (mainFinal['ghiChu'] || '')
+    };
     samplesPayload.push({
-      loSo: finalObj['loSo'] || spikeObj['loSo'] || '2',
+      loSo: finalObj.loSo,
       maSoMau: 'FINAL',
-      kqTrifluralin: finalObj['kqTrifluralin'] === 'N/A' ? '' : (finalObj['kqTrifluralin'] || ''),
-      ghiChu: finalObj['ghiChu'] || ''
+      kqTrifluralin: finalObj.kqTrifluralin === 'N/A' ? '' : finalObj.kqTrifluralin,
+      ghiChu: finalObj.ghiChu || ''
     });
   }
 
