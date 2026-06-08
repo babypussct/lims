@@ -20,75 +20,155 @@ import { MasterTargetService } from '../targets/master-target.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="h-full flex flex-col fade-in bg-slate-50/30 dark:bg-slate-955/10 p-6 space-y-6">
+    <div class="h-full flex flex-col animate-fade-in bg-slate-50/60 dark:bg-slate-900 p-4 lg:p-6 space-y-4 lg:space-y-5">
       
-      <!-- STICKY TOP HEADER -->
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 p-4 rounded-2xl shadow-xs">
-        <div class="flex items-center gap-3.5">
-          <button (click)="goBack()" 
-                  class="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-655 dark:text-slate-400 flex items-center justify-center transition active:scale-95 border border-slate-200/20 dark:border-slate-700/20">
-            <i class="fa-solid fa-arrow-left text-sm"></i>
-          </button>
-          <div>
-            <span class="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mb-0.5 flex items-center gap-2">
-              {{ run() ? run().sopName : 'Đang tải...' }}
-              @if (run()?.parentMasterId) {
-                <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
-                  <i class="fa-solid fa-link text-[7px] animate-pulse"></i> Đã gộp Master Ảo
+      <!-- TOP HEADER & METADATA RIBBON -->
+      <div class="flex flex-col gap-4 shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-4 lg:px-5 rounded-3xl shadow-sm">
+        <!-- Header Row -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <button (click)="goBack()" 
+                    class="w-10 h-10 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95 border border-slate-200/50 dark:border-slate-700">
+              <i class="fa-solid fa-arrow-left text-sm"></i>
+            </button>
+            <div>
+              <span class="text-[11px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mb-0.5 flex items-center gap-2">
+                {{ run() ? run().sopName : 'Đang tải...' }}
+                @if (run()?.parentMasterId) {
+                  <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-sm" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
+                    <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã gộp Master Ảo
+                  </a>
+                }
+              </span>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
+                Chi Tiết Kết Quả Mẻ Phân Tích
+              </h3>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          @if (run() && draft()) {
+            <div class="flex flex-wrap items-center gap-2">
+              @if (detectedPrefixes().length > 1) {
+                <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                  <button (click)="activeFilter.set('ALL')"
+                          [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                          class="transition duration-150">
+                    Tất cả
+                  </button>
+                  @for (prefix of detectedPrefixes(); track prefix) {
+                    <button (click)="activeFilter.set(prefix)"
+                            [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                            class="transition duration-150">
+                      {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (getCurrentDocsUrl()) {
+                <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                   class="px-3 py-2 text-xs font-bold text-blue-655 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 no-underline active:scale-95 shadow-sm">
+                  <i class="fa-brands fa-google-drive"></i>
+                  <span class="hidden md:inline">Mở Docs</span>
                 </a>
               }
-            </span>
-            <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
-              Chi Tiết Kết Quả Mẻ Phân Tích
-            </h3>
-          </div>
+
+              @if (getCurrentPdfUrl()) {
+                <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
+                        class="px-3 py-2 text-xs font-bold text-rose-655 dark:text-rose-455 bg-rose-50 dark:bg-rose-955/20 border border-rose-100/50 dark:border-rose-800/30 hover:bg-rose-100 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-sm" title="Mở modal xem PDF của hệ thống">
+                  <i class="fa-solid fa-expand"></i>
+                  <span class="hidden md:inline">PDF Toàn màn hình</span>
+                </button>
+              }
+
+              <button (click)="openQrModal()"
+                      class="px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-sm">
+                <i class="fa-solid fa-qrcode"></i>
+                <span class="hidden md:inline">Mã QR</span>
+              </button>
+
+              <button (click)="goToEditMode()"
+                      class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl shadow-sm transition-all duration-200 active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Chỉnh sửa số liệu</span>
+              </button>
+            </div>
+          }
         </div>
 
-        <!-- ACTION BUTTONS -->
-        @if (run() && draft()) {
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Filter Prefix selector if multi prefix -->
-            @if (detectedPrefixes().length > 1) {
-              <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                <button (click)="activeFilter.set('ALL')"
-                        [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
-                        class="transition duration-150">
-                  Tất cả
-                </button>
-                @for (prefix of detectedPrefixes(); track prefix) {
-                  <button (click)="activeFilter.set(prefix)"
-                          [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
-                          class="transition duration-150">
-                    {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
-                  </button>
+        <!-- Metadata Ribbon (Horizontal Data) -->
+        @if (run() && draft() && config()) {
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-nowrap overflow-x-auto custom-scrollbar gap-4 pb-2">
+            
+            <!-- Info Cards -->
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
+              <i class="fa-solid fa-barcode text-slate-400"></i>
+              <div>
+                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Mã mẻ</span>
+                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
+              <i class="fa-solid fa-microscope text-slate-400"></i>
+              <div>
+                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Thiết bị</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || '—' }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
+              <i class="fa-solid fa-user-astronaut text-slate-400"></i>
+              <div>
+                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Phân tích viên</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.user || '—' }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
+              <i class="fa-regular fa-calendar text-slate-400"></i>
+              <div>
+                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Ngày PT</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
+              <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border">
+                <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                  'bg-emerald-500': draft()?.status === 'completed',
+                  'bg-indigo-500': draft()?.status === 'draft',
+                  'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
+                }"></span>
+                {{ getStatusText() }}
+              </span>
+            </div>
+
+            <!-- Horizontal Divider -->
+            <div class="w-px bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
+
+            <!-- QC Flags Horizontal -->
+            @if (checkboxList().length > 0) {
+              <div class="flex items-center gap-2 shrink-0">
+                @for (qc of checkboxList(); track qc.key) {
+                  @if (isQcField(qc.key)) {
+                    @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
+                      <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-800/50 rounded-xl" title="{{ qc.label }}">
+                        <i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i>
+                        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 max-w-[120px] truncate">{{ qc.label }}</span>
+                      </div>
+                    } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
+                      <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50/80 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/50 rounded-xl" title="{{ qc.label }}">
+                        <i class="fa-solid fa-xmark-circle text-rose-500 text-xs"></i>
+                        <span class="text-[10px] font-bold text-rose-700 dark:text-rose-400 max-w-[120px] truncate">{{ qc.label }}</span>
+                      </div>
+                    }
+                  }
                 }
               </div>
             }
-
-            <!-- View raw file or open docs -->
-            @if (getCurrentDocsUrl()) {
-              <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                 class="px-3.5 py-2 text-xs font-bold text-blue-655 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 no-underline active:scale-95 shadow-3xs">
-                <i class="fa-brands fa-google-drive"></i>
-                <span class="hidden md:inline">Mở Docs</span>
-              </a>
-            }
-
-            <!-- PDF Viewer Modal Trigger -->
-            @if (getCurrentPdfUrl()) {
-              <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
-                      class="px-3.5 py-2 text-xs font-bold text-rose-655 dark:text-rose-455 bg-rose-50 dark:bg-rose-955/20 border border-rose-100/50 dark:border-rose-800/30 hover:bg-rose-100 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-3xs">
-                <i class="fa-solid fa-file-pdf"></i>
-                <span>Xem PDF</span>
-              </button>
-            }
-
-            <!-- Switch to Edit Mode (If allowed or draft) -->
-            <button (click)="goToEditMode()"
-                    class="px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition duration-150 active:scale-95 flex items-center gap-1.5">
-              <i class="fa-solid fa-pen-to-square"></i>
-              <span>Chỉnh sửa số liệu</span>
-            </button>
           </div>
         }
       </div>
@@ -102,369 +182,208 @@ import { MasterTargetService } from '../targets/master-target.service';
           </div>
         </div>
       } @else if (run() && draft() && config()) {
-        <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden">
           
-          <!-- LEFT PANEL: STATIC DATA VIEW (Scrollable sidebar - lg:col-span-4) -->
-          <div class="lg:col-span-4 flex flex-col space-y-6 overflow-y-auto pr-1 custom-scrollbar">
+          <!-- LEFT PANE: CHROMATOGRAPHY GRID (approx 55-60%) -->
+          <div class="lg:flex-[6] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
             
-            <!-- General metadata & status card -->
-            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
-              <h4 class="text-xs font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                <i class="fa-solid fa-circle-info mr-2 text-indigo-500"></i> Thông tin mẻ chạy
+            <!-- Header of Grid -->
+            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0">
+              <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng kết quả chạy
               </h4>
               
-              <div class="grid grid-cols-2 gap-3">
-                <div class="p-3 bg-slate-55 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80 col-span-2">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Mã mẻ chạy</span>
-                  <span class="font-mono font-extrabold text-xs text-slate-800 dark:text-slate-200 select-all block break-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
-                </div>
-                <div class="p-3 bg-slate-55 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80 col-span-2">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Thiết bị đo</span>
-                  <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || 'GC-MS/MS / LC-MS/MS' }}</span>
-                </div>
-                <div class="p-3 bg-slate-55 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Người phân tích</span>
-                  <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.user || '—' }}</span>
-                </div>
-                <div class="p-3 bg-slate-55 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày phân tích</span>
-                  <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
-                </div>
-                <div class="p-3 bg-slate-55 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Ngày ký sổ</span>
-                  <span class="font-bold text-xs text-slate-700 dark:text-slate-300 block">
-                    @if (draft()?.page1Data?.['ngayNguoiPhanTich'] || draft()?.page1Data?.['ngayNguoiThamTra']) {
-                      PT: {{ draft()?.page1Data?.['ngayNguoiPhanTich'] || '—' }}<br>
-                      TT: {{ draft()?.page1Data?.['ngayNguoiThamTra'] || '—' }}
-                    } @else {
-                      —
-                    }
-                  </span>
-                </div>
-                <div class="p-3 bg-slate-55 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800/80 flex flex-col justify-between">
-                  <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Trạng thái</span>
-                  <span [class]="getStatusClass()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide border mt-0.5">
-                    <span class="w-1 h-1 rounded-full" [ngClass]="{
-                      'bg-emerald-500': draft()?.status === 'completed',
-                      'bg-indigo-500': draft()?.status === 'draft',
-                      'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
-                    }"></span>
-                    {{ getStatusText() }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- QC Flags Card -->
-            @if (checkboxList().length > 0) {
-              <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
-                <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <i class="fa-solid fa-square-check mr-2 text-indigo-500"></i> Đánh giá chất lượng mẻ (QC Flags)
-                </h4>
-                
-                <div class="grid grid-cols-1 gap-2.5">
-                  @for (qc of checkboxList(); track qc.key) {
-                    @if (isQcField(qc.key)) {
-                      @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
-                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-emerald-50/40 dark:bg-emerald-955/20 shadow-2xs">
-                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
-                          <span class="px-2.5 py-0.5 bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-check text-[8px]"></i> Đạt
-                          </span>
-                        </div>
-                      } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
-                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-150 dark:border-slate-800/60 bg-rose-50/40 dark:bg-rose-955/20 shadow-2xs">
-                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
-                          <span class="px-2.5 py-0.5 bg-rose-100/80 dark:bg-rose-900/40 text-rose-700 dark:text-rose-455 border border-rose-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-xmark text-[8px]"></i> Không đạt
-                          </span>
-                        </div>
-                      }
-                    } @else {
-                      @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
-                        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-blue-50/40 dark:bg-blue-955/20 shadow-2xs">
-                          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 pr-2 leading-snug">{{ qc.label }}</span>
-                          <span class="px-2.5 py-0.5 bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-250/50 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
-                            <i class="fa-solid fa-info text-[8px]"></i> Ghi nhận
-                          </span>
-                        </div>
-                      }
-                    }
-                  }
-                </div>
-              </div>
-            }
-
-            <!-- Calibration Curve config -->
-            @if (hasCalibPoints()) {
-              <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 space-y-4 shrink-0">
-                <h4 class="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <i class="fa-solid fa-chart-line mr-2 text-indigo-500"></i> Các điểm hiệu chuẩn
-                </h4>
-                
-                <div class="grid grid-cols-3 gap-2">
-                  @for (pt of draft()?.page1Data?.['calibPoints']; track $index) {
-                    <div class="p-2.5 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-150 dark:border-slate-800/80 text-center space-y-1">
-                      <span class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Điểm {{ $index + 1 }}</span>
-                      <span class="block font-mono text-xs font-black text-slate-800 dark:text-slate-100">Lọ: {{ pt['loSo'] || '—' }}</span>
-                      <span class="block text-[9px] font-bold text-slate-500 dark:text-slate-400">{{ pt['hamLuong'] !== undefined ? pt['hamLuong'] + ' ppb' : (pt['vialNo'] ? 'Vial ' + pt['vialNo'] : '') }}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- RIGHT PANEL: INTERACTIVE TABS CONTAINER (lg:col-span-8) -->
-          <div class="lg:col-span-8 flex flex-col min-h-[500px]">
-            
-            <!-- Tabs Switcher Header -->
-            <div class="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-2 mb-4 shrink-0">
-              <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl">
-                <button (click)="activeViewTab.set('grid')"
-                        [class]="activeViewTab() === 'grid'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-sm'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold'"
-                        class="px-4 py-2 rounded-lg text-xs transition duration-150 flex items-center gap-1.5">
-                  <i class="fa-solid fa-table-cells"></i>
-                  <span>Lưới số liệu Chromatography</span>
-                </button>
-                
-                <button (click)="activeViewTab.set('qr')"
-                        [class]="activeViewTab() === 'qr'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-sm'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold'"
-                        class="px-4 py-2 rounded-lg text-xs transition duration-150 flex items-center gap-1.5">
-                  <i class="fa-solid fa-qrcode"></i>
-                  <span>Xác minh & QR Code</span>
-                </button>
-              </div>
-              
-              <div class="flex items-center gap-2">
-                @if (availableReports().length > 1 && activeFilter() === 'ALL') {
-                  <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mr-2">
-                    <span class="font-medium text-[9px] uppercase tracking-wider">Xem báo cáo:</span>
-                    <select [ngModel]="selectedPdfPrefix()" 
-                            (ngModelChange)="selectedPdfPrefix.set($event)"
-                            class="bg-slate-100 dark:bg-slate-850 text-slate-855 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2.5 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500">
-                      @for (report of availableReports(); track report.key) {
-                        <option [value]="report.key">{{ report.label }}</option>
-                      }
-                    </select>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Tab 1 content: Chromatography grid data -->
-            @if (activeViewTab() === 'grid') {
+              <!-- Sample tabs for 3b -->
               @if (config()?.formType === 'type3b') {
-                <!-- 3B STYLE: Sample tabs and compounds list -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 flex-1 min-h-[400px] flex flex-col space-y-4">
-                  
-                  <!-- Sample selection horizontal lists -->
-                  <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-3 border-b border-slate-155 dark:border-slate-800 shrink-0">
-                    <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shrink-0">Chọn mẫu:</span>
-                    @for (sample of run()?.sampleList; track sample; let idx = $index) {
-                      <button (click)="activeSampleCode.set(sample)"
-                              [class]="activeSampleCode() === sample
-                                ? 'bg-indigo-650 text-white font-extrabold shadow-sm border border-indigo-750'
-                                : 'bg-slate-50 dark:bg-slate-800 text-slate-655 dark:text-slate-400 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-100'"
-                              class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shrink-0 active:scale-95 transition duration-150">
-                        <span class="w-3.5 h-3.5 rounded-full bg-white/20 text-[9px] font-black flex items-center justify-center text-white">{{ idx + 1 }}</span>
-                        <span class="font-mono font-bold">{{ sample }}</span>
-                      </button>
-                    }
-                  </div>
-
-                  <!-- Compounds Table for selected sample -->
-                  <div class="flex-1 overflow-auto custom-scrollbar max-h-[500px]">
-                    <table class="w-full text-sm border-collapse text-left">
-                      <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-3xs">
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-16">STT</th>
-                          <th class="py-2.5 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Hoạt chất</th>
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">ND (N/A)</th>
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-36">Kết quả (µg/kg)</th>
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC1</th>
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC2</th>
-                          <th class="py-2.5 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-28">QC3</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                        @for (comp of config()?.compounds; track comp; let idx = $index) {
-                          <tr [ngClass]="{ 'opacity-60 bg-slate-50/20': !isTargetAssigned(activeSampleCode(), comp) }" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
-                            <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-400">
-                              @if (isTargetAssigned(activeSampleCode(), comp)) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[9px]"></i> }
-                            </td>
-                            <td class="py-2.5 px-4 font-extrabold text-xs text-slate-750 dark:text-slate-200">
-                              {{ getCompoundDisplayName(comp) }}
-                            </td>
-                            <td class="py-2.5 px-4 text-center">
-                              @if (isTargetAssigned(activeSampleCode(), comp)) {
-                                <span [class.text-amber-600]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" class="text-xs">
-                                  <i class="fa-regular text-sm" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
-                                </span>
-                              } @else {
-                                <span class="text-slate-350 dark:text-slate-700">—</span>
-                              }
-                            </td>
-                            <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
-                              @if (isTargetAssigned(activeSampleCode(), comp)) {
-                                {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
-                              } @else {
-                                <span class="text-slate-350 dark:text-slate-750 font-normal">N/A</span>
-                              }
-                            </td>
-                            
-                            <!-- QC statuses badges -->
-                            @for (qcNum of ['1', '2', '3']; track qcNum) {
-                              <td class="py-2 px-3 text-center">
-                                @if (isTargetAssigned(activeSampleCode(), comp)) {
-                                  @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-955/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250/25">Đạt</span>
-                                  } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 border border-rose-250/25">K.Đạt</span>
-                                  } @else {
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400 border border-slate-200/20">N/A</span>
-                                  }
-                                } @else {
-                                  <span class="text-slate-300 dark:text-slate-700">—</span>
-                                }
-                              </td>
-                            }
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              } @else {
-                <!-- TYPE 2 / 3A STYLE: Spreadsheet static grid -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-5 flex-1 min-h-[400px] flex flex-col space-y-4">
-                  <h4 class="text-xs font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                    <i class="fa-solid fa-table-cells mr-2 text-indigo-500"></i> Bảng kết quả mẻ chạy (Chromatography grid)
-                  </h4>
-                  
-                  <div class="flex-1 overflow-auto custom-scrollbar max-h-[500px]">
-                    <table class="w-full text-sm border-collapse text-left">
-                      <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-3xs">
-                          <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Vial No.</th>
-                          <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px]">Mẫu thử</th>
-                          
-                          <!-- Weight column if present -->
-                          @if (hasColumn('khoiLuong')) {
-                            <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Khối lượng</th>
-                          }
-                          <!-- Dilution column if present -->
-                          @if (hasColumn('heSoPhaLoang')) {
-                            <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Hệ số pha loãng</th>
-                          }
-
-                          <!-- Dynamic compounds columns -->
-                          @for (col of activeColumns(); track col) {
-                            <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[120px]">
-                              {{ columnDisplayNames()[col] || col }}
-                            </th>
-                          }
-                          
-                          <th class="py-3 px-4 font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[160px]">Ghi chú</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                        @for (row of getType2DisplayRows(); track row.key) {
-                          <tr [ngClass]="{
-                            'bg-indigo-50/10 dark:bg-indigo-955/5 font-semibold text-slate-900 dark:text-slate-100': row.isQC
-                          }" class="hover:bg-slate-50/40 dark:hover:bg-slate-850/10">
-                            
-                            <!-- Vial No -->
-                            <td class="py-2.5 px-4 font-mono text-xs text-slate-655 dark:text-slate-400">
-                              {{ getRowDataValue(row.key, 'loSo') || '—' }}
-                            </td>
-                            
-                            <!-- Sample name -->
-                            <td class="py-2.5 px-4">
-                              @if (row.isQC) {
-                                <span class="inline-flex items-center gap-1.5 text-xs text-indigo-650 dark:text-indigo-400 font-extrabold uppercase tracking-wide">
-                                  <i class="fa-solid fa-flask text-[10px]"></i> {{ row.label }}
-                                </span>
-                              } @else {
-                                <span class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 select-all">{{ row.label }}</span>
-                              }
-                            </td>
-
-                            <!-- Weight -->
-                            @if (hasColumn('khoiLuong')) {
-                              <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                                {{ getRowDataValue(row.key, 'khoiLuong') !== '' ? getRowDataValue(row.key, 'khoiLuong') : '—' }}
-                              </td>
-                            }
-                            <!-- Dilution -->
-                            @if (hasColumn('heSoPhaLoang')) {
-                              <td class="py-2.5 px-4 text-center font-mono text-xs text-slate-700 dark:text-slate-300">
-                                {{ getRowDataValue(row.key, 'heSoPhaLoang') !== '' ? getRowDataValue(row.key, 'heSoPhaLoang') : '—' }}
-                              </td>
-                            }
-
-                            <!-- Dynamic values -->
-                            @for (col of activeColumns(); track col) {
-                              <td class="py-2.5 px-4 text-center font-mono font-black text-xs text-slate-800 dark:text-slate-200">
-                                @if (isTargetAssigned(row.key, col)) {
-                                  {{ getRowDataValue(row.key, col) !== '' ? (getRowDataValue(row.key, col) === 'N/A' ? '' : getRowDataValue(row.key, col)) : '—' }}
-                                } @else {
-                                  <span class="text-slate-350 dark:text-slate-755 font-normal">N/A</span>
-                                }
-                              </td>
-                            }
-
-                            <!-- Note -->
-                            <td class="py-2.5 px-4 text-slate-500 dark:text-slate-400 text-xs italic">
-                              {{ getRowDataValue(row.key, 'ghiChu') }}
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
+                <div class="flex items-center gap-2 overflow-x-auto max-w-[60%] custom-scrollbar">
+                  @for (sample of run()?.sampleList; track sample; let idx = $index) {
+                    <button (click)="activeSampleCode.set(sample)"
+                            [class]="activeSampleCode() === sample
+                              ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20 border-transparent'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                            class="px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition-all duration-200">
+                      <span class="font-mono">{{ sample }}</span>
+                    </button>
+                  }
                 </div>
               }
-            }
+            </div>
 
-            <!-- Tab 2 content: QR & Traceability details -->
-            @if (activeViewTab() === 'qr') {
-              <div class="bg-gradient-to-br from-indigo-50/20 via-white to-pink-50/10 dark:from-slate-900 dark:to-slate-955 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xs p-8 flex flex-col items-center justify-center text-center space-y-6 flex-1 min-h-[400px]">
-                <div (click)="openQrModal()" class="shrink-0 bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-md border border-slate-150 dark:border-slate-700/60 cursor-pointer hover:scale-105 transition-transform group relative" title="Nhấn để phóng to mã QR">
-                  <canvas #qrCanvas class="w-40 h-44"></canvas>
-                  <div class="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <i class="fa-solid fa-expand text-slate-700 dark:text-slate-200 text-2xl drop-shadow-md"></i>
-                  </div>
-                </div>
+            <!-- Grid Content -->
+            <div class="flex-1 overflow-auto custom-scrollbar p-1">
+              @if (config()?.formType === 'type3b') {
+                <!-- TYPE 3B Grid -->
+                <table class="w-full text-sm border-collapse text-left whitespace-nowrap">
+                  <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-10 shadow-sm">
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-16">STT</th>
+                      <th class="py-3 px-4 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Hoạt chất</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">ND (N/A)</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-36">Kết quả (µg/kg)</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC1</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC2</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC3</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    @for (comp of config()?.compounds; track comp; let idx = $index) {
+                      <tr [ngClass]="{ 'opacity-50 bg-slate-50/30 dark:bg-slate-900/30': !isTargetAssigned(activeSampleCode(), comp) }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="py-3 px-4 text-center font-mono text-sm text-slate-400">
+                          @if (isTargetAssigned(activeSampleCode(), comp)) { {{ idx + 1 }} } @else { <i class="fa-solid fa-lock text-[10px]"></i> }
+                        </td>
+                        <td class="py-3 px-4 font-bold text-sm text-slate-700 dark:text-slate-200">
+                          {{ getCompoundDisplayName(comp) }}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                          @if (isTargetAssigned(activeSampleCode(), comp)) {
+                            <span [class.text-amber-500]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" class="text-sm">
+                              <i class="fa-regular" [class.fa-square-check]="(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']" [class.fa-square]="!(draft()?.resultData?.[activeSampleCode()] || {})[comp + '_nd']"></i>
+                            </span>
+                          } @else {
+                            <span class="text-slate-300 dark:text-slate-600">—</span>
+                          }
+                        </td>
+                        <td class="py-3 px-4 text-center font-mono font-semibold text-sm text-slate-800 dark:text-slate-200">
+                          @if (isTargetAssigned(activeSampleCode(), comp)) {
+                            {{ (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== undefined && (draft()?.resultData?.[activeSampleCode()] || {})[comp] !== null ? ((draft()?.resultData?.[activeSampleCode()] || {})[comp] === 'N/A' ? '—' : (draft()?.resultData?.[activeSampleCode()] || {})[comp]) : '—' }}
+                          } @else {
+                            <span class="text-slate-300 dark:text-slate-600 font-normal select-none">—</span>
+                          }
+                        </td>
+                        <!-- QC statuses badges -->
+                        @for (qcNum of ['1', '2', '3']; track qcNum) {
+                          <td class="py-3 px-4 text-center">
+                            @if (isTargetAssigned(activeSampleCode(), comp)) {
+                              @if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Đạt') {
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Đạt</span>
+                              } @else if ((draft()?.resultData?.[activeSampleCode()] || {})[comp + '_qc' + qcNum] === 'Không đạt') {
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-rose-100/50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400">K.Đạt</span>
+                              } @else {
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 select-none">—</span>
+                              }
+                            } @else {
+                              <span class="text-slate-300 dark:text-slate-600 select-none">—</span>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <!-- TYPE 2 / 3A Grid -->
+                <table class="w-full text-sm border-collapse text-left whitespace-nowrap">
+                  <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-10 shadow-sm">
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">Vial No.</th>
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[160px]">Mẫu thử</th>
+                      
+                      @if (hasColumn('khoiLuong')) {
+                        <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">Khối lượng</th>
+                      }
+                      @if (hasColumn('heSoPhaLoang')) {
+                        <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">HS Pha loãng</th>
+                      }
+
+                      @for (col of activeColumns(); track col) {
+                        <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[140px]">
+                          {{ columnDisplayNames()[col] || col }}
+                        </th>
+                      }
+                      
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[180px]">Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    @for (row of getType2DisplayRows(); track row.key) {
+                      <tr [ngClass]="{
+                        'bg-indigo-50/30 dark:bg-indigo-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC
+                      }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        
+                        <td class="py-3 px-5 font-mono text-sm text-slate-500 dark:text-slate-400">
+                          {{ getRowDataValue(row.key, 'loSo') || '—' }}
+                        </td>
+                        
+                        <td class="py-3 px-5">
+                          @if (row.isQC) {
+                            <span class="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wide">
+                              <i class="fa-solid fa-flask text-xs"></i> {{ row.label }}
+                            </span>
+                          } @else {
+                            <span class="font-mono text-sm font-semibold text-slate-800 dark:text-slate-200 select-all">{{ row.label }}</span>
+                          }
+                        </td>
+
+                        @if (hasColumn('khoiLuong')) {
+                          <td class="py-3 px-5 text-center font-mono text-sm text-slate-700 dark:text-slate-300">
+                            {{ getRowDataValue(row.key, 'khoiLuong') !== '' ? getRowDataValue(row.key, 'khoiLuong') : '—' }}
+                          </td>
+                        }
+                        @if (hasColumn('heSoPhaLoang')) {
+                          <td class="py-3 px-5 text-center font-mono text-sm text-slate-700 dark:text-slate-300">
+                            {{ getRowDataValue(row.key, 'heSoPhaLoang') !== '' ? getRowDataValue(row.key, 'heSoPhaLoang') : '—' }}
+                          </td>
+                        }
+
+                        @for (col of activeColumns(); track col) {
+                          <td class="py-3 px-5 text-center font-mono font-semibold text-sm text-slate-700 dark:text-slate-200">
+                            @if (isTargetAssigned(row.key, col)) {
+                              {{ getRowDataValue(row.key, col) !== '' ? (getRowDataValue(row.key, col) === 'N/A' ? '—' : getRowDataValue(row.key, col)) : '—' }}
+                            } @else {
+                              <span class="text-slate-300 dark:text-slate-600 font-normal select-none">—</span>
+                            }
+                          </td>
+                        }
+
+                        <td class="py-3 px-5 text-slate-500 dark:text-slate-400 text-sm italic">
+                          {{ getRowDataValue(row.key, 'ghiChu') }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+
+          <!-- RIGHT PANE: PDF PREVIEW (approx 40-45%) -->
+          <div class="lg:flex-[4] flex flex-col min-h-[400px] lg:min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden relative">
+            
+            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
+              <div class="flex items-center gap-3">
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
+                  <i class="fa-solid fa-file-pdf mr-2.5 text-rose-500"></i> Báo cáo PDF
+                </h4>
                 
-                <div class="max-w-md space-y-2">
-                  <h4 class="text-sm font-black text-slate-855 dark:text-slate-200 uppercase tracking-wider flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-shield-halved text-indigo-500"></i> Xác minh & Đối chiếu độc lập
-                  </h4>
-                  <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Sử dụng thiết bị di động quét mã QR này hoặc sử dụng các nút thao tác bên dưới để truy xuất nguồn gốc mẻ chạy độc lập, đối chiếu các loại hóa chất đã sử dụng và nhật ký quy trình.
-                  </p>
-                </div>
-                
-                <div class="flex items-center gap-3 pt-2">
-                  <button (click)="viewTraceability()" 
-                          class="px-6 py-2.5 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/10 active:scale-95 transition flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    <span>Mở trang đối chiếu</span>
-                  </button>
-                  <button (click)="copyTraceabilityLink()" 
-                          class="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-355 rounded-xl text-xs font-bold active:scale-95 transition border border-slate-200/50">
-                    <i class="fa-solid fa-copy"></i>
-                    <span>Sao chép liên kết</span>
-                  </button>
-                </div>
+                @if (availableReports().length > 1 && activeFilter() === 'ALL') {
+                  <select [ngModel]="selectedPdfPrefix()" 
+                          (ngModelChange)="selectedPdfPrefix.set($event)"
+                          class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm">
+                    @for (report of availableReports(); track report.key) {
+                      <option [value]="report.key">{{ report.label }}</option>
+                    }
+                  </select>
+                }
               </div>
-            }
+              
+              @if (safePdfUrl()) {
+                <button (click)="openPdfInModal(getCurrentPdfUrl()!)" 
+                        class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Mở PDF toàn màn hình (Modal hệ thống)">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+              }
+            </div>
 
+            <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
+              @if (safePdfUrl()) {
+                <iframe [src]="safePdfUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
+              } @else {
+                <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
+                  <i class="fa-regular fa-file-pdf text-4xl"></i>
+                  <p class="text-sm font-medium">Chưa có báo cáo PDF nào cho tùy chọn này.</p>
+                </div>
+              }
+            </div>
           </div>
         </div>
       } @else if (run() && !draft()) {
@@ -508,21 +427,35 @@ import { MasterTargetService } from '../targets/master-target.service';
         <div class="fixed inset-0 z-[100] flex items-center justify-center fade-in backdrop-blur-md bg-slate-900/60" (click)="isQrModalOpen.set(false)">
           <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6" (click)="$event.stopPropagation()">
             <div class="text-center space-y-2">
-              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Mã Đối Chiếu (QR Code)</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại thông minh quét mã này để truy cập trang xác minh nhật ký độc lập của hệ thống LIMS.</p>
+              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Xác Minh Mẻ Chạy</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại để quét hoặc truy cập vào liên kết đối chiếu độc lập của hệ thống LIMS.</p>
             </div>
             
             <div class="bg-white p-4 rounded-2xl shadow-inner border border-slate-200/60">
               <canvas #qrModalCanvas class="w-[240px] h-[240px]"></canvas>
             </div>
             
-            <button (click)="isQrModalOpen.set(false)" class="px-8 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-slate-700 rounded-xl text-xs font-black active:scale-95 transition mt-2 border border-slate-200/60 dark:border-slate-700">
+            <div class="flex items-center gap-3 w-full justify-center">
+              <button (click)="viewTraceability()" 
+                      class="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>Mở trang</span>
+              </button>
+              <button (click)="copyTraceabilityLink()" 
+                      class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-355 rounded-xl text-xs font-bold active:scale-95 transition border border-slate-200/50">
+                <i class="fa-solid fa-copy"></i>
+                <span>Copy Link</span>
+              </button>
+            </div>
+
+            <button (click)="isQrModalOpen.set(false)" class="w-full px-8 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-slate-700 rounded-xl text-xs font-black active:scale-95 transition mt-2 border border-slate-200/60 dark:border-slate-700">
               Đóng
             </button>
           </div>
         </div>
       }
     </div>
+
   `,
   styles: []
 })
@@ -1118,4 +1051,5 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return url;
   }
 }
+
 
