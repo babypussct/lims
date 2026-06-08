@@ -209,6 +209,7 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
     } catch (e) {
       console.warn('Failed to load master analytes', e);
     }
+    this.cleanUpPooledSampleResults();
     this.prefillUnassignedTargets();
   }
 
@@ -349,6 +350,51 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
       });
     });
 
+    if (changed) {
+      this.onDataChanged();
+    }
+  }
+
+  cleanUpPooledSampleResults() {
+    if (!this.run || !this.run.sampleList || !this.config.compounds) return;
+    let changed = false;
+    this.run.sampleList.forEach((sampleCode: string) => {
+      if (sampleCode.includes(';')) {
+        const row = this.draft.resultData[sampleCode];
+        if (row) {
+          this.config.compounds.forEach((c: string) => {
+            const val = row[c];
+            if (typeof val === 'string' && val.includes(':')) {
+              const parts = val.split(';');
+              let hasColon = false;
+              let allNegative = true;
+              for (const part of parts) {
+                if (part.includes(':')) {
+                  hasColon = true;
+                  const res = part.split(':')[1].trim().toUpperCase();
+                  if (!['KPH', 'ND', 'N/A', '—', ''].includes(res)) {
+                    allNegative = false;
+                  }
+                } else {
+                  const res = part.trim().toUpperCase();
+                  if (!['KPH', 'ND', 'N/A', '—', ''].includes(res)) {
+                    allNegative = false;
+                  }
+                }
+              }
+              if (hasColon && allNegative) {
+                row[c] = '';
+                row[`${c}_nd`] = true;
+                row[`${c}_qc1`] = 'Đạt';
+                row[`${c}_qc2`] = 'Đạt';
+                row[`${c}_qc3`] = 'Đạt';
+                changed = true;
+              }
+            }
+          });
+        }
+      }
+    });
     if (changed) {
       this.onDataChanged();
     }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
@@ -21,7 +21,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
 
   const samplesPayload: any[] = [];
 
-  // 1. Thêm Blank vào đầu danh sách
+  // 1. ThÃªm Blank vÃ o Ä‘áº§u danh sÃ¡ch
   const blankObj = currentDraft.resultData['QC_BLANK'] || {};
   samplesPayload.push({
     loSo: blankObj['loSo'] || '1',
@@ -30,7 +30,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: blankObj['ghiChu'] || ''
   });
 
-  // 2. Thêm Spike vào vị trí thứ 2
+  // 2. ThÃªm Spike vÃ o vá»‹ trÃ­ thá»© 2
   const spikeObj = currentDraft.resultData['QC_SPIKE'] || {};
   samplesPayload.push({
     loSo: spikeObj['loSo'] || '2',
@@ -39,7 +39,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
     ghiChu: spikeObj['ghiChu'] || ''
   });
 
-  // 3. Thêm các mẫu và các mẫu SPIKE_N xen kẽ
+  // 3. ThÃªm cÃ¡c máº«u vÃ  cÃ¡c máº«u SPIKE_N xen káº½
   let selectedCount = 0;
   prefixSamples.forEach((sampleCode: string) => {
     const resObj = currentDraft.resultData[sampleCode] || {};
@@ -355,12 +355,12 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
+          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
+          if (commonVal === 'N/A') {
             rowData[`${backendKey}_nd`] = true;
             rowData[backendKey] = '';
           } else {
@@ -373,7 +373,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
             return `${s}: ${displayVal}`;
           });
           rowData[backendKey] = resultParts.join('; ');
@@ -382,14 +382,14 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
           }).join('; ');
         };
 
@@ -460,7 +460,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             rowData[`${backendKey}_qc3`] = 'N/A';
           } else {
             const isNd = resObj[`${c}_nd`] === true;
-            rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
+            rowData[backendKey] = isNd ? '' : (val === 'N/A' || val === 'N/A' ? '' : val);
             rowData[`${backendKey}_nd`] = isNd;
             rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
             rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -548,7 +548,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -571,12 +571,12 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
+          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
+          if (commonVal === 'N/A') {
             rowData[`${backendKey}_nd`] = true;
             rowData[backendKey] = '';
           } else {
@@ -589,7 +589,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
             return `${s}: ${displayVal}`;
           });
           rowData[backendKey] = resultParts.join('; ');
@@ -598,14 +598,14 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
           }).join('; ');
         };
 
@@ -625,7 +625,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -642,7 +642,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
+          rowData[backendKey] = isNd ? '' : (val === 'N/A' || val === 'N/A' ? '' : val);
           rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -660,7 +660,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
       results[c] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
@@ -683,9 +683,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '6',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: blankMaps.results,
     compoundNotes: blankMaps.notes
   });
@@ -701,9 +701,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '7',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
     compoundNotes: spikeMaps.notes
   });
@@ -722,21 +722,21 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A');
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
     });
-    const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+    const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
+        return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
-      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
-      acc[c] = allKph ? 'KPH' : vals.join('; ');
+      const allKph = vals.every((v: string) => v === 'N/A' || v === '');
+      acc[c] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
 
@@ -756,7 +756,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -771,7 +771,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           detected.push(`${c}: ${resObj[c]}`);
         }
       });
-      const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+      const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
       
       const sMaps = buildCompoundMaps(s);
       runSamplesList.push({
@@ -781,7 +781,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -801,9 +801,9 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '7',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
-      summaryResult: 'KPH',
+      summaryResult: 'N/A',
       compoundResults: finalMaps.results,
       compoundNotes: finalMaps.notes
     });
@@ -900,7 +900,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -923,12 +923,12 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
+          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
+          if (commonVal === 'N/A') {
             rowData[`${backendKey}_nd`] = true;
             rowData[backendKey] = '';
           } else {
@@ -941,7 +941,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
             return `${s}: ${displayVal}`;
           });
           rowData[backendKey] = resultParts.join('; ');
@@ -950,14 +950,14 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
           }).join('; ');
         };
 
@@ -977,7 +977,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -994,7 +994,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
+          rowData[backendKey] = isNd ? '' : (val === 'N/A' || val === 'N/A' ? '' : val);
           rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -1012,7 +1012,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
       const backendKey = mapCompoundToKey(c);
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
@@ -1036,9 +1036,9 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: blankMaps.results,
     compoundNotes: blankMaps.notes
   });
@@ -1054,9 +1054,9 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
     compoundNotes: spikeMaps.notes
   });
@@ -1075,22 +1075,22 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A');
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
     });
-    const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+    const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
+        return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
-      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
+      const allKph = vals.every((v: string) => v === 'N/A' || v === '');
       const backendKey = mapCompoundToKey(c);
-      acc[backendKey] = allKph ? 'KPH' : vals.join('; ');
+      acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
 
@@ -1111,7 +1111,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1126,7 +1126,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           detected.push(`${c}: ${resObj[c]}`);
         }
       });
-      const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+      const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
       const sMaps = buildCompoundMaps(s);
       runSamplesList.push({
@@ -1136,7 +1136,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1156,9 +1156,9 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
-      summaryResult: 'KPH',
+      summaryResult: 'N/A',
       compoundResults: finalMaps.results,
       compoundNotes: finalMaps.notes
     });
@@ -1237,7 +1237,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['heSoPhaLoang'] || '1',
       hSoPhaLoang: currentDraft.resultData[filteredSamples[0]]?.['hSoPhaLoang'] || '1',
       loSo: currentDraft.resultData[filteredSamples[0]]?.['loSo'] || '',
-      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: currentDraft.resultData[filteredSamples[0]]?.['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: currentDraft.resultData[filteredSamples[0]]?.['checkHonHopLamSach'] || 'B1'
     };
 
@@ -1260,12 +1260,12 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : (sVal === 'N/A' ? '' : sVal || 'KPH'));
+          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
+          if (commonVal === 'N/A') {
             rowData[`${backendKey}_nd`] = true;
             rowData[backendKey] = '';
           } else {
@@ -1278,7 +1278,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'KPH' ? 'KPH' : sVal || 'KPH');
+            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
             return `${s}: ${displayVal}`;
           });
           rowData[backendKey] = resultParts.join('; ');
@@ -1287,14 +1287,14 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         const getMergedQc = (qcKey: string): string => {
           const uniqueQcs = new Set<string>(filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return (sRes[`${c}_${qcKey}`] as string) || 'Đạt';
+            return (sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t';
           }));
           if (uniqueQcs.size === 1) {
             return Array.from(uniqueQcs)[0];
           }
           return filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
-            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Đạt'}`;
+            return `${s}: ${(sRes[`${c}_${qcKey}`] as string) || 'Äáº¡t'}`;
           }).join('; ');
         };
 
@@ -1314,7 +1314,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1'
       };
 
@@ -1331,7 +1331,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
           rowData[`${backendKey}_qc3`] = 'N/A';
         } else {
           const isNd = resObj[`${c}_nd`] === true;
-          rowData[backendKey] = isNd ? '' : (val === 'KPH' || val === 'N/A' ? '' : val);
+          rowData[backendKey] = isNd ? '' : (val === 'N/A' || val === 'N/A' ? '' : val);
           rowData[`${backendKey}_nd`] = isNd;
           rowData[`${backendKey}_qc1`] = resObj[`${c}_qc1`] || '';
           rowData[`${backendKey}_qc2`] = resObj[`${c}_qc2`] || '';
@@ -1349,7 +1349,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'KPH' || resObj[c] === 'N/A';
+      const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
       const backendKey = mapCompoundToKey(c);
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
@@ -1373,9 +1373,9 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: blankRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: blankRes['hSoPhaLoang'] || '1',
     loSo: blankRes['loSo'] || '7',
-    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: blankRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: blankRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: blankMaps.results,
     compoundNotes: blankMaps.notes
   });
@@ -1391,9 +1391,9 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     heSoPhaLoang: spikeRes['heSoPhaLoang'] || '1',
     hSoPhaLoang: spikeRes['hSoPhaLoang'] || '1',
     loSo: spikeRes['loSo'] || '8',
-    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'không',
+    checkBoSungNuoc: spikeRes['checkBoSungNuoc'] || 'khÃ´ng',
     checkHonHopLamSach: spikeRes['checkHonHopLamSach'] || 'B1',
-    summaryResult: 'KPH',
+    summaryResult: 'N/A',
     compoundResults: spikeMaps.results,
     compoundNotes: spikeMaps.notes
   });
@@ -1412,22 +1412,22 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH');
+          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A');
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
     });
-    const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+    const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'KPH' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'KPH'));
+        return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
-      const allKph = vals.every((v: string) => v === 'KPH' || v === '');
+      const allKph = vals.every((v: string) => v === 'N/A' || v === '');
       const backendKey = mapCompoundToKey(c);
-      acc[backendKey] = allKph ? 'KPH' : vals.join('; ');
+      acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
 
@@ -1448,7 +1448,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
       hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
       loSo: resObj['loSo'] || '',
-      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
       summaryResult: summaryResult,
       compoundResults: compoundResults,
@@ -1463,7 +1463,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
           detected.push(`${c}: ${resObj[c]}`);
         }
       });
-      const summaryResult = detected.length > 0 ? detected.join('; ') : 'KPH';
+      const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
       const sMaps = buildCompoundMaps(s);
       runSamplesList.push({
@@ -1473,7 +1473,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         heSoPhaLoang: resObj['heSoPhaLoang'] || '1',
         hSoPhaLoang: resObj['hSoPhaLoang'] || '1',
         loSo: resObj['loSo'] || '',
-        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'không',
+        checkBoSungNuoc: resObj['checkBoSungNuoc'] || 'khÃ´ng',
         checkHonHopLamSach: resObj['checkHonHopLamSach'] || 'B1',
         summaryResult: summaryResult,
         compoundResults: sMaps.results,
@@ -1493,9 +1493,9 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       heSoPhaLoang: finalRes['heSoPhaLoang'] || '1',
       hSoPhaLoang: finalRes['hSoPhaLoang'] || '1',
       loSo: finalRes['loSo'] || '8',
-      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'không',
+      checkBoSungNuoc: finalRes['checkBoSungNuoc'] || 'khÃ´ng',
       checkHonHopLamSach: finalRes['checkHonHopLamSach'] || 'B1',
-      summaryResult: 'KPH',
+      summaryResult: 'N/A',
       compoundResults: finalMaps.results,
       compoundNotes: finalMaps.notes
     });
@@ -1529,3 +1529,4 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     samples: samplesPayload
   };
 }
+

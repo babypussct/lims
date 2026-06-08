@@ -528,10 +528,17 @@ function fillNhomCucResultsTableDirectly(element, sopConfig, sample, tableTextTo
     const kqRaw = (valRaw !== undefined && valRaw !== null) ? valRaw.toString().trim() : '';
     const isNd  = getSampleValue('_nd') === true;
 
-    const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'ND' || kqRaw.toUpperCase() === 'ND' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
-    const kqVal = isKph ? '' : kqRaw;
+    const kqUpper = kqRaw.toUpperCase();
+    const isKphString = kqUpper === 'KPH' || (kqUpper.includes(':') && kqUpper.split(';').every(p => {
+        const res = p.includes(':') ? p.split(':')[1].trim() : p.trim();
+        return res === 'KPH' || res === 'ND' || res === 'N/A' || res === '—' || res === '';
+    }));
     
-    const isDetected = (kqVal !== '' || isNd || kqRaw.toUpperCase() === 'KPH');
+    const isKph = kqUpper === 'ND' || kqUpper === 'N/A' || kqUpper === '—' || kqUpper === '' || isKphString;
+    const kqVal = isKph ? '' : kqRaw;
+
+    // NẾU kqRaw rỗng (isKph = true) nhưng isNd = true thì CHẮC CHẮN phải xử lý
+    const isDetected = (kqVal !== '' || isNd || isKphString);
     if (!isDetected) return;
 
     const numCells = row.getNumCells();

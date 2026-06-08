@@ -354,6 +354,7 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     } catch (e) {
       console.warn('Failed to load master analytes', e);
     }
+    this.cleanUpPooledSampleResults();
     this.prefillUnassignedTargets();
   }
 
@@ -470,6 +471,17 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
+
+    // Support pooled samples separated by ';'
+    const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
+    if (subCodes.length > 1) {
+      return subCodes.some(sc => {
+        const assigned = targetMap[sc];
+        if (!assigned || assigned.length === 0) return true;
+        return isCompoundAssigned(assigned, compound);
+      });
+    }
+
     const assigned = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
@@ -500,6 +512,51 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       });
     });
 
+    if (changed) {
+      this.onDataChanged();
+    }
+  }
+
+  cleanUpPooledSampleResults() {
+    if (!this.run || !this.run.sampleList || !this.config.compounds) return;
+    let changed = false;
+    this.run.sampleList.forEach((sampleCode: string) => {
+      if (sampleCode.includes(';')) {
+        const row = this.draft.resultData[sampleCode];
+        if (row) {
+          this.config.compounds.forEach((c: string) => {
+            const val = row[c];
+            if (typeof val === 'string' && val.includes(':')) {
+              const parts = val.split(';');
+              let hasColon = false;
+              let allNegative = true;
+              for (const part of parts) {
+                if (part.includes(':')) {
+                  hasColon = true;
+                  const res = part.split(':')[1].trim().toUpperCase();
+                  if (!['KPH', 'ND', 'N/A', '—', ''].includes(res)) {
+                    allNegative = false;
+                  }
+                } else {
+                  const res = part.trim().toUpperCase();
+                  if (!['KPH', 'ND', 'N/A', '—', ''].includes(res)) {
+                    allNegative = false;
+                  }
+                }
+              }
+              if (hasColon && allNegative) {
+                row[c] = '';
+                row[`${c}_nd`] = true;
+                row[`${c}_qc1`] = 'Đạt';
+                row[`${c}_qc2`] = 'Đạt';
+                row[`${c}_qc3`] = 'Đạt';
+                changed = true;
+              }
+            }
+          });
+        }
+      }
+    });
     if (changed) {
       this.onDataChanged();
     }

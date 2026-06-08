@@ -669,13 +669,18 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
     const kqRaw = (valRaw !== undefined && valRaw !== null) ? valRaw.toString().trim() : '';
     const isNd  = getSampleValue('_nd') === true;
 
-    // isKph chỉ định liệu giá trị này có phải là không phát hiện hay không
-    const isKph = (kqRaw === 'KPH' || kqRaw.toUpperCase() === 'KPH' || kqRaw === 'ND' || kqRaw.toUpperCase() === 'ND' || kqRaw === 'N/A' || kqRaw === '—' || kqRaw === '');
+    const kqUpper = kqRaw.toUpperCase();
+    const isKphString = kqUpper === 'KPH' || (kqUpper.includes(':') && kqUpper.split(';').every(p => {
+        const res = p.includes(':') ? p.split(':')[1].trim() : p.trim();
+        return res === 'KPH' || res === 'ND' || res === 'N/A' || res === '—' || res === '';
+    }));
+    
+    const isKph = kqUpper === 'ND' || kqUpper === 'N/A' || kqUpper === '—' || kqUpper === '' || isKphString;
     const kqVal = isKph ? '' : kqRaw;
     
     // Đã phát hiện (có kqVal) hoặc được đánh dấu ND
     // NẾU kqRaw rỗng (isKph = true) nhưng isNd = true thì CHẮC CHẮN phải xử lý
-    const isDetected = (kqVal !== '' || isNd || kqRaw.toUpperCase() === 'KPH');
+    const isDetected = (kqVal !== '' || isNd || isKphString);
 
     // Không có dữ liệu để xử lý → không chạm vào template
     if (!isDetected) return;
@@ -694,7 +699,8 @@ function fillLanHuuCoResultsTableDirectly(element, sopConfig, sample, tableTextT
       
       // Khớp duy nhất ký tự checkbox vì trong ô kết quả chỉ có 1 checkbox ND
       // Việc khớp đúng 1 ký tự đảm bảo 100% không bao giờ bị lỗi tràn Text element (boundary error)
-      replaceCheckboxSafely(kqCell, '[☐□☑]', isNd ? '☑' : '☐');
+      const isKhongPhatHien = isNd || isKphString;
+      replaceCheckboxSafely(kqCell, '[☐□☑]', isKhongPhatHien ? '☑' : '☐');
     } catch(e) {
       Logger.log('[fillSide kqCell] ' + (key || '') + ': ' + e.toString());
     }

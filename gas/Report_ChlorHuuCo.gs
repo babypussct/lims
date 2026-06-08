@@ -749,8 +749,18 @@ function fillType3bResultsTableDirectly(element, sopConfig, sample, isTargetAssi
         setCellText(row, 3, "☐ Đ           ☐ KĐ", 0, sopConfig.defaultFontSize || 9);
         setCellText(row, 4, "☐ Đ           ☐ KĐ", 0, sopConfig.defaultFontSize || 9);
       } else {
-        const kqVal = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
-        const ndVal = sample[key + '_nd'] === true ? '☑' : '☐';
+        const kqValRaw = sample[key] !== undefined && sample[key] !== null ? sample[key].toString() : '';
+        
+        const kqUpper = kqValRaw.toUpperCase();
+        const isKphString = kqUpper === 'KPH' || (kqUpper.includes(':') && kqUpper.split(';').every(p => {
+            const res = p.includes(':') ? p.split(':')[1].trim() : p.trim();
+            return res === 'KPH' || res === 'ND' || res === 'N/A' || res === '—' || res === '';
+        }));
+        
+        const isKph = kqUpper === 'ND' || kqUpper === 'N/A' || kqUpper === '—' || kqUpper === '' || isKphString;
+        const kqVal = isKph ? '' : kqValRaw;
+        
+        const ndVal = (sample[key + '_nd'] === true || isKphString) ? '☑' : '☐';
         
         const isDetected = (kqVal !== '' || ndVal === '☑');
         
