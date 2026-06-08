@@ -85,6 +85,20 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Chlorpyrifos methyl':            'chlorpyrofos_methyl',
   'Chlorpyriphos-methyl-desmethyl': 'chlorpyrofos-methyl-desmethyl',
   
+  // Pyrethroid (Nhóm Cúc)
+  'Cyfluthrin (Baythroid)': 'cyfluthrin_baythroid',
+  'CyfluthrinBaythroid':   'cyfluthrin_baythroid',
+  'lamda-Cyhalothrin':     'lambda_cyhalothrin',
+  'lamdaCyhalothrin':       'lambda_cyhalothrin',
+  'lambda-Cyhalothrin':    'lambda_cyhalothrin',
+  'lambdaCyhalothrin':      'lambda_cyhalothrin',
+  'Permethrin cis':        'permethrin_cis',
+  'PermethrinCis':         'permethrin_cis',
+  'Permethrin trans':      'permethrin_trans',
+  'PermethrinTrans':       'permethrin_trans',
+  'Cypermethrins':         'cypermethrin',
+  'Cypermethrin':          'cypermethrin',
+
   // Trifluralin / Dichlorvos
   'Trifluralin':   'trifluralin',
   'Dichlorvos':    'trichlorfondipterexdichlorvos',
