@@ -31,15 +31,15 @@ import { MasterTargetService } from '../targets/master-target.service';
           </button>
           <div>
             <span class="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mb-0.5 flex items-center gap-2">
-              {{ run() ? run().sopName : '�ang t?i...' }}
+              {{ run() ? run().sopName : 'Đang tải...' }}
               @if (run()?.parentMasterId) {
-                <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="M? ch?y n�y d� du?c g?p s? li?u. Nh?n d? di t?i Master ?o.">
-                  <i class="fa-solid fa-link text-[7px] animate-pulse"></i> �� g?p Master ?o
+                <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
+                  <i class="fa-solid fa-link text-[7px] animate-pulse"></i> Đã gộp Master Ảo
                 </a>
               }
             </span>
             <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
-              Chi Ti?t K?t Qu? M? Ph�n T�ch
+              Chi Tiết Kết Quả Mẻ Phân Tích
             </h3>
           </div>
         </div>

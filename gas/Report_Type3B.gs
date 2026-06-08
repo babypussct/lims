@@ -55,8 +55,8 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     // 0. Khắc phục lỗi xuống dòng khi chuyển đổi sang PDF:
     // Tự động rút ngắn chuỗi dấu chấm hoặc dấu ba chấm trước checkbox ND (bao gồm cả placeholder {{N1}} bắt đầu bằng {)
     try {
-      element.replaceText('……+([\\s]*[☑☐□N{])', '…$1');
-      element.replaceText('\\.{5,}([\\s]*[☑☐□N{])', '...$1');
+      element.replaceText('……+([\\s]*[☑☐□N{])', '…\\1');
+      element.replaceText('\\.{5,}([\\s]*[☑☐□N{])', '...\\1');
     } catch (e) {
       Logger.log('[TableFit] Lỗi rút ngắn dấu chấm: ' + e.toString());
     }
@@ -64,6 +64,9 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     // 1. Thay thế thông tin mẻ và mã số mẫu cơ bản
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
     element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
+    
+    // 1.1 Gọi hàm dùng chung để tick Checkbox Khối lượng, Loại mẫu, Tình trạng mẫu
+    fillCommonSampleCheckboxes(element, metadata, sample);
     
     // 2. Thay thế chữ ký và ngày tháng
     if (sopConfig.signaturePlaceholders) {
@@ -182,8 +185,8 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     
     // 7. Khắc phục lỗi xuống dòng sau khi thay thế: Chạy lại một lần nữa để rút ngắn triệt để các dấu chấm
     try {
-      element.replaceText('……+([\\s]*[☑☐□N])', '…$1');
-      element.replaceText('\\.{5,}([\\s]*[☑☐□N])', '...$1');
+      element.replaceText('……+([\\s]*[☑☐□N])', '…\\1');
+      element.replaceText('\\.{5,}([\\s]*[☑☐□N])', '...\\1');
     } catch (e) {}
   }
 }

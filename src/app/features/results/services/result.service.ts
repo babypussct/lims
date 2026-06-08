@@ -52,6 +52,46 @@ export class ResultService {
     }
   }
 
+  private async autoHealVirtualMaster(masterId: string, masterData: any): Promise<void> {
+    if (!masterData.childRequestIds || masterData.childRequestIds.length === 0) return;
+    
+    console.log(`[AutoHeal] Bắt đầu vá dữ liệu targetIds cho mẻ gộp ảo: ${masterId}`);
+    try {
+      const allTargetIds = new Set<string>();
+      const combinedSampleTargetMap: Record<string, string[]> = {};
+      
+      const childPromises = masterData.childRequestIds.map((id: string) => getDoc(this.getDocRef(id)));
+      const childSnaps = await Promise.all(childPromises);
+      
+      childSnaps.forEach(snap => {
+        if (snap.exists()) {
+          const r = snap.data() as any;
+          if (r['targetIds']) {
+            r['targetIds'].forEach((t: string) => allTargetIds.add(t));
+          }
+          if (r['sampleTargetMap']) {
+            Object.keys(r['sampleTargetMap']).forEach(sampleId => {
+              if (!combinedSampleTargetMap[sampleId]) {
+                combinedSampleTargetMap[sampleId] = [];
+              }
+              const existingTargets = new Set(combinedSampleTargetMap[sampleId]);
+              r['sampleTargetMap'][sampleId].forEach((t: string) => existingTargets.add(t));
+              combinedSampleTargetMap[sampleId] = Array.from(existingTargets);
+            });
+          }
+        }
+      });
+      
+      await updateDoc(this.getDocRef(masterId), {
+        targetIds: Array.from(allTargetIds),
+        sampleTargetMap: combinedSampleTargetMap
+      });
+      console.log(`[AutoHeal] Vá dữ liệu thành công cho ${masterId}`);
+    } catch (e) {
+      console.error(`[AutoHeal] Lỗi vá dữ liệu ${masterId}:`, e);
+    }
+  }
+
   /**
    * Đăng ký lắng nghe thay đổi thời gian thực của mẻ chạy (Request document)
    */
@@ -71,6 +111,14 @@ export class ResultService {
       if (!lastMeta) {
         callback(null, null);
         return;
+      }
+      
+      // Auto-heal old virtual masters that missed targetIds merging
+      if (lastMeta.isVirtualMaster && (!lastMeta.targetIds || !lastMeta.sampleTargetMap) && lastMeta.childRequestIds && !lastMeta._isHealing) {
+        lastMeta._isHealing = true; // prevent infinite loop before db updates
+        this.autoHealVirtualMaster(requestId, lastMeta).then(() => {
+          // Khi updateDoc xong, onSnapshot sẽ tự động kích hoạt lại emitMerged với dữ liệu mới
+        }).catch(err => console.error('Failed to auto-heal master:', err));
       }
       
       // Hỗ trợ tương thích ngược cho tài liệu cũ chưa thực hiện di chuyển

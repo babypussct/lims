@@ -1488,14 +1488,31 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const masterCurveId = this.masterCurveRunId();
     const curveRun = sops.find(r => r.id === masterCurveId) || sops[0];
     
-    // Combine sample lists uniquely
+    // Combine sample lists and target mappings uniquely
     const allSamples = new Set<string>();
+    const allTargetIds = new Set<string>();
+    const combinedSampleTargetMap: Record<string, string[]> = {};
+
     sops.forEach(r => {
       if (r.sampleList) {
         r.sampleList.forEach((s: string) => allSamples.add(s));
       }
+      if (r.targetIds) {
+        r.targetIds.forEach((t: string) => allTargetIds.add(t));
+      }
+      if (r.sampleTargetMap) {
+        Object.keys(r.sampleTargetMap).forEach(sampleId => {
+          if (!combinedSampleTargetMap[sampleId]) {
+            combinedSampleTargetMap[sampleId] = [];
+          }
+          const existingTargets = new Set(combinedSampleTargetMap[sampleId]);
+          r.sampleTargetMap[sampleId].forEach((t: string) => existingTargets.add(t));
+          combinedSampleTargetMap[sampleId] = Array.from(existingTargets);
+        });
+      }
     });
     const sampleList = Array.from(allSamples).sort();
+    const targetIds = Array.from(allTargetIds);
 
     try {
       this.isLoading.set(true);
@@ -1555,6 +1572,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
           analysisDate: this.unifiedDateString()
         },
         sampleList,
+        targetIds,
+        sampleTargetMap: combinedSampleTargetMap,
         status: 'approved' as const
       };
 

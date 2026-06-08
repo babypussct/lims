@@ -561,3 +561,100 @@ function uploadExcelAction(payload) {
     fileName: file.getName()
   };
 }
+
+/**
+ * Hàm chung để điền các checkbox dùng chung cho mọi SOP: Khối lượng mẫu, Loại mẫu, Tình trạng mẫu
+ */
+function fillCommonSampleCheckboxes(element, metadata, sample) {
+  try {
+    let khoiLuongVal = (sample.khoiLuong || metadata.khoiLuong || '10.0').toString().trim();
+    
+    if (metadata.printFormType === 'formDon' && (khoiLuongVal === '10.0' || khoiLuongVal === '10')) {
+      const randDecimals = Math.floor(Math.random() * (90 - 10 + 1) + 10);
+      khoiLuongVal = '10.0' + randDecimals;
+    }
+
+    let kl10Check = '☐';
+    let klOtherText = '………';
+    
+    if (khoiLuongVal === '10.0' || khoiLuongVal === '10') {
+      kl10Check = '☑';
+    } else {
+      klOtherText = khoiLuongVal;
+    }
+    
+    replaceCheckboxSafely(element, 'm\\s*=\\s*[☑☐□N]', kl10Check);
+    if (klOtherText !== '………') {
+      replaceDotsSafely(element, '10\\.0\\s*;\\s*[…\\.]+', klOtherText);
+    }
+    
+    // Ghi đè lại placeholder {{khoiLuong}} cho Form Đơn nếu nó tồn tại
+    element.replaceText('{{khoiLuong}}', khoiLuongVal);
+
+    const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
+    let isTuoi = loaiMauVal === 'Nông sản tươi';
+    let isKho = loaiMauVal === 'Nông sản khô';
+    let isThuySan = (loaiMauVal === 'Thuỷ sản' || loaiMauVal === 'Thủy sản');
+    let isLmKhac = !isTuoi && !isKho && !isThuySan;
+    let lmKhacText = isLmKhac ? loaiMauVal : '………';
+    
+    const tuoiCheck = isTuoi ? '☑' : '☐';
+    const khoCheck = isKho ? '☑' : '☐';
+    const thuySanCheck = isThuySan ? '☑' : '☐';
+    const lmKhacCheck = isLmKhac ? '☑' : '☐';
+
+    replaceCheckboxSafely(element, 'Loại mẫu:\\s*[☑☐□N]', tuoiCheck);
+    replaceCheckboxSafely(element, 'tươi\\s*;\\s*[☑☐□N]', khoCheck);
+    replaceCheckboxSafely(element, 'khô\\s*;\\s*[☑☐□N]', thuySanCheck);
+    replaceCheckboxSafely(element, 'sản\\s*;\\s*[☑☐□N]', lmKhacCheck);
+    if (isLmKhac) {
+      replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
+    }
+
+    const ttMauVal = (sample.tinhTrangMau || metadata.tinhTrangMau || 'Bình thường').toString().trim();
+    let isBinhThuong = ttMauVal === 'Bình thường';
+    let isTtKhac = !isBinhThuong;
+    let ttKhacText = isTtKhac ? ttMauVal : '………';
+    
+    const btCheck = isBinhThuong ? '☑' : '☐';
+    const ttKhacCheck = isTtKhac ? '☑' : '☐';
+
+    replaceCheckboxSafely(element, 'Tình trạng mẫu:\\s*[☑☐□N]', btCheck);
+    replaceCheckboxSafely(element, 'thường\\s*;\\s*[☑☐□N]', ttKhacCheck);
+    if (isTtKhac) {
+      replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', ttKhacText);
+    }
+
+    // Logic Phát hiện / Không phát hiện (Generic fallback if not specifically handled by SOP)
+    let isPhatHien = sample.checkCoMauPhatHien === true || metadata.checkCoMauPhatHien === true;
+    let isKhongPhatHien = sample.checkTatCaND === true || metadata.checkTatCaND === true;
+    
+    if (!isPhatHien && !isKhongPhatHien) {
+      let hasAnyResult = false;
+      for (const [key, val] of Object.entries(sample)) {
+        if (key.indexOf('_nd') === -1 && key !== 'maSoMau' && val !== null && val !== undefined && val.toString().trim() !== '' && val.toString().trim() !== 'N/A' && val.toString().trim() !== '—') {
+          hasAnyResult = true;
+          break;
+        }
+        if (key.indexOf('_nd') !== -1 && val === true) {
+          hasAnyResult = true;
+          break;
+        }
+      }
+      if (hasAnyResult) {
+        isPhatHien = true;
+      } else {
+        isKhongPhatHien = true;
+      }
+    }
+    
+    const phCheck = isPhatHien ? '☑' : '☐';
+    const kphCheck = isKhongPhatHien ? '☑' : '☐';
+
+    replaceCheckboxSafely(element, '[☑☐□N]\\s*Phát hiện', phCheck);
+    replaceCheckboxSafely(element, '[☑☐□N]\\s*Không phát hiện', kphCheck);
+
+  } catch(e) {
+    Logger.log('[fillCommonSampleCheckboxes] Error: ' + e.toString());
+  }
+}

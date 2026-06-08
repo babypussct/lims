@@ -37,6 +37,12 @@ function fillTextFields(body, sopConfig, metadata) {
     }
   }
 
+  // 2.1 Điền các Checkbox dùng chung (Khối lượng, Loại mẫu, Tình trạng) nếu có ở cấp độ biểu mẫu
+  // Truyền metadata vào vị trí sample vì đối với Type 2/3A, thông tin chung áp dụng cho toàn mẻ
+  if (typeof fillCommonSampleCheckboxes === 'function') {
+    fillCommonSampleCheckboxes(body, metadata, metadata);
+  }
+
   // 3. Custom: Xử lý điền Ngày tháng thông qua placeholder trên biểu mẫu (date1, date2)
   if (sopConfig.signaturePlaceholders) {
     for (const [placeholderText, fieldName] of Object.entries(sopConfig.signaturePlaceholders)) {
