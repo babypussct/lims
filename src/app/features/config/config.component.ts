@@ -41,6 +41,9 @@ import { ConfigRolesComponent } from './components/config-roles.component';
 
             <!-- TABS -->
             <div class="flex gap-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar whitespace-nowrap">
+                <button (click)="activeTab.set('profile')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'profile' ? 'border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
+                    <i class="fa-solid fa-id-badge"></i> Hồ sơ cá nhân
+                </button>
                 <button (click)="activeTab.set('general')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'general' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
                     <i class="fa-solid fa-server"></i> Hệ thống & Dữ liệu
                 </button>
@@ -67,8 +70,15 @@ import { ConfigRolesComponent } from './components/config-roles.component';
             @if (activeTab() === 'users') {
                 <app-config-users></app-config-users>
             }
+            @if (activeTab() === 'profile') {
+                <ng-container *ngTemplateOutlet="profileCard"></ng-container>
+            }
         } @else {
             <!-- NON-ADMIN VIEW (Profile Card Design) -->
+            <ng-container *ngTemplateOutlet="profileCard"></ng-container>
+        }
+
+        <ng-template #profileCard>
             <div class="max-w-3xl mx-auto pt-8">
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-soft-xl dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden relative">
                     <!-- Header Background -->
@@ -80,7 +90,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                         <!-- Avatar & Basic Info -->
                         <div class="relative -mt-12 mb-6 flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
                             <div class="w-28 h-28 rounded-2xl bg-white dark:bg-slate-800 p-1 shadow-lg dark:shadow-none shrink-0">
-                                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, state.avatarStyle(), auth.currentUser()?.photoURL)" 
+                                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)" 
                                      alt="Profile Avatar"
                                      class="w-full h-full rounded-xl bg-slate-100 dark:bg-slate-700 object-cover border border-slate-200 dark:border-slate-600">
                             </div>
@@ -121,6 +131,20 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                                         <i class="fa-regular fa-bell"></i> Cấp quyền Thông Báo
                                     </button>
                                 </div>
+                                
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-4">
+                                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Giao diện Avatar cá nhân</label>
+                                    <select [ngModel]="auth.currentUser()?.avatarStyle || ''" (ngModelChange)="saveMyAvatarStyle($event)" 
+                                            class="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:border-blue-500 dark:focus:border-blue-500 cursor-pointer">
+                                        <option value="">⚙️ Mặc định hệ thống</option>
+                                        <option value="google">📷 Ảnh Google (Chất lượng cao)</option>
+                                        <option value="bottts-neutral">🤖 Robot (Bottts Neutral)</option>
+                                        <option value="fun-emoji">😊 Biểu cảm (Fun Emoji)</option>
+                                        <option value="micah">🎨 Hiện đại (Micah)</option>
+                                        <option value="notionists">✏️ Vẽ tay (Notionists)</option>
+                                        <option value="initials">🔤 Chữ cái (Letters)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Right: Permissions -->
@@ -156,7 +180,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
                     <p class="text-xs text-slate-400 dark:text-slate-500">Để yêu cầu nâng cấp quyền hạn, vui lòng gửi UID cho Quản lý hệ thống.</p>
                 </div>
             </div>
-        }
+        </ng-template>
     </div>
   `
 })
@@ -168,7 +192,7 @@ export class ConfigComponent {
   
   getAvatarUrl = getAvatarUrl;
   
-  activeTab = signal<'general' | 'users' | 'safety' | 'roles'>('general');
+  activeTab = signal<'profile' | 'general' | 'users' | 'safety' | 'roles'>('general');
 
   availablePermissions = [
       { val: PERMISSIONS.INVENTORY_VIEW,  label: 'Xem Kho' },
@@ -191,6 +215,11 @@ export class ConfigComponent {
 
   hasPerm(u: any, p: string) { return u.permissions?.includes(p); }
   copyUid(uid: string) { navigator.clipboard.writeText(uid).then(() => this.toast.show('Đã copy UID!')); }
+
+  async saveMyAvatarStyle(style: string) {
+      await this.state.saveMyAvatarStyle(style);
+      this.toast.show('Đã cập nhật Avatar cá nhân!', 'success');
+  }
 
   async enableNotifications() {
       try {

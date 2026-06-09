@@ -78,8 +78,11 @@ export class StateService implements OnDestroy {
     return map;
   });
 
-  // NEW: Avatar Style Preference (Default: Initials for professional look)
-  avatarStyle = signal<string>('initials');
+  // NEW: Avatar Style Preference (Default: bottts-neutral for modern look)
+  avatarStyle = signal<string>('bottts-neutral');
+  
+  // NEW: Avatar Style Cache (maps displayName -> {avatarStyle, photoURL})
+  usersInfoCache = signal<Map<string, {avatarStyle: string, photoURL: string}>>(new Map());
 
   systemVersion = signal<string>('V1.0 FINAL');
   maintenanceMode = signal<boolean>(false);
@@ -186,6 +189,7 @@ export class StateService implements OnDestroy {
     this.requests.set([]); this.approvedRequests.set([]); this.standardRequests.set([]); this.allStandardRequests.set([]);
     this.logs.set([]);
     this.printableLogs.set([]);
+    this.usersInfoCache.set(new Map());
   }
 
   ngOnDestroy() { this.cleanupListeners(); }
@@ -303,6 +307,22 @@ export class StateService implements OnDestroy {
 
     // 6. Config — OPTIMIZED: 4 onSnapshot listeners → single loadConfig() call
     await this.loadConfig();
+
+    // 6.5. Users Info Cache for Avatar Rendering in Logs
+    const usersSub = onSnapshot(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), (s) => {
+        const cacheMap = new Map<string, {avatarStyle: string, photoURL: string}>();
+        s.forEach(d => {
+            const data = d.data();
+            if (data['displayName']) {
+                cacheMap.set(data['displayName'], {
+                    avatarStyle: data['avatarStyle'] || this.avatarStyle(),
+                    photoURL: data['photoURL'] || ''
+                });
+            }
+        });
+        this.usersInfoCache.set(cacheMap);
+    }, handleError('Users Cache'));
+    this.listeners.push(usersSub);
 
     // 7. System Force Reload Listener & Delta Sync Architecture
     let isFirstMetaLoad = true;
@@ -514,6 +534,23 @@ export class StateService implements OnDestroy {
     await setDoc(ref, { avatarStyle: style }, { merge: true });
     await this.updateConfigMetadata();
     await this.loadConfig();
+  }
+
+  async saveMyAvatarStyle(style: string) {
+    const user = this.auth.currentUser();
+    if (!user) return;
+    const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'users', user.uid);
+    await updateDoc(ref, { avatarStyle: style });
+    // currentUser signal is updated automatically by AuthService's listener
+  }
+
+  getUserAvatarOptions(displayName: string | undefined | null): { style: string, photoURL: string | null } {
+    if (!displayName) return { style: this.avatarStyle(), photoURL: null };
+    const cache = this.usersInfoCache().get(displayName);
+    if (cache) {
+        return { style: cache.avatarStyle, photoURL: cache.photoURL || null };
+    }
+    return { style: this.avatarStyle(), photoURL: null };
   }
 
   async saveMaintenanceConfig(mode: boolean, message: string, scheduledTime: string | null = null) {

@@ -148,7 +148,7 @@ export function sanitizeForFirebase<T>(obj: T): T {
  * - If style is 'google': use the real Google photo (photoUrl) if available, fallback to initials.
  * - Otherwise: always use DiceBear with the selected style (ignore photoUrl).
  */
-export function getAvatarUrl(name: string | undefined | null, style = 'initials', photoUrl?: string | null): string {
+export function getAvatarUrl(name: string | undefined | null, style = 'bottts-neutral', photoUrl?: string | null): string {
   // 1. When user explicitly chose Google photo style
   if (style === 'google') {
       if (photoUrl && photoUrl.trim() !== '') {

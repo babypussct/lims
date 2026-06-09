@@ -103,6 +103,7 @@ export interface UserProfile {
   permissions?: string[]; // Fallback hoặc Quyền cá nhân
   customPermissions?: string[]; // Quyền ghi đè cá nhân cho Staff
   photoURL?: string;
+  avatarStyle?: string;
   createdAt?: any;
 }
 

@@ -60,7 +60,7 @@ import { NotificationBellComponent } from '../../shared/components/notification-
             
             <!-- User Profile Header -->
             <div class="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 active:bg-slate-100 dark:active:bg-slate-800 transition" (click)="navTo('/config')">
-                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, 'initials', auth.currentUser()?.photoURL)" 
+                <img [src]="getAvatarUrl(auth.currentUser()?.displayName, auth.currentUser()?.avatarStyle || state.avatarStyle(), auth.currentUser()?.photoURL)" 
                      class="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 object-cover">
                 <div class="flex-1 min-w-0">
                     <div class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{{auth.currentUser()?.displayName}}</div>
