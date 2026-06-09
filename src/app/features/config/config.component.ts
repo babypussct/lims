@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService, PERMISSIONS } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
@@ -16,7 +17,7 @@ import { ConfigRolesComponent } from './components/config-roles.component';
 @Component({
   selector: 'app-config',
   standalone: true,
-  imports: [CommonModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
+  imports: [CommonModule, FormsModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
   template: `
     <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
         
