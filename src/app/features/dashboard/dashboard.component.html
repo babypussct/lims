@@ -257,56 +257,79 @@
             <div class="flex flex-col gap-4 lg:h-[560px] h-[360px]">
                 <!-- Activity Feed -->
                 <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-soft-xl dark:shadow-none p-4 overflow-hidden flex flex-col min-h-0 border border-slate-100 dark:border-slate-700">
-                    <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base mb-3 shrink-0">Hoạt động gần đây</h6>
-                <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
-                    <div class="relative border-l border-gray-200 dark:border-slate-700 ml-3 space-y-6 pb-2">
-                        @for (log of recentLogs(); track log.id) {
-                            <div class="relative pl-6">
-                                <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"
-                                     [ngClass]="{
-                                         'bg-fuchsia-500 dark:bg-fuchsia-400': log.action.includes('APPROVE') && !log.action.includes('STANDARD') && !log.action.includes('RESULT'),
-                                         'bg-blue-500 dark:bg-blue-400': log.action.includes('STOCK'),
-                                         'bg-orange-500 dark:bg-orange-400': log.action.includes('STANDARD'),
-                                         'bg-emerald-500 dark:bg-emerald-400': log.action === 'PUBLISH_RESULT_REPORT',
-                                         'bg-cyan-500 dark:bg-cyan-400': log.action.includes('RESULT') && log.action !== 'PUBLISH_RESULT_REPORT',
-                                         'bg-gray-400 dark:bg-slate-500': !log.action.includes('APPROVE') && !log.action.includes('STOCK') && !log.action.includes('STANDARD') && !log.action.includes('RESULT')
-                                     }">
-                                </div>
-                                <div class="flex flex-col">
-                                    <div class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
-                                    <div class="flex items-start gap-3">
-                                        <!-- UPDATED AVATAR CALL -->
-                                        <img [src]="getAvatar(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-bold text-gray-700 dark:text-slate-300 leading-tight">
-                                                <span class="text-gray-900 dark:text-slate-100">{{log.user}}</span> 
-                                                <span class="font-normal text-[10px] text-gray-500 dark:text-slate-400 ml-1 block sm:inline">{{getLogActionText(log.action)}}</span>
-                                            </div>
-                                            <p class="text-[10px] text-gray-500 dark:text-slate-400 mt-1 line-clamp-2 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700 font-medium">
-                                                {{log.details}}
-                                            </p>
-                                            @if (log.requestId) {
-                                                <div class="mt-2 flex gap-2">
-                                                    <button (click)="navTo('traceability/' + log.requestId)" class="text-[9px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition shadow-xs active:scale-95">
-                                                        <i class="fa-solid fa-qrcode mr-0.5"></i> Truy xuất
-                                                    </button>
-                                                    @if (log.action && (log.action.includes('RESULT') || log.action === 'PUBLISH_RESULT_REPORT' || log.action === 'DIRECT_APPROVE' || log.action === 'APPROVE_REQUEST')) {
-                                                        <button (click)="navTo('results/' + log.requestId)" class="text-[9px] bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-2 py-0.5 rounded text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 font-bold transition shadow-xs active:scale-95">
-                                                            <i class="fa-solid fa-vial mr-0.5"></i> Kết quả
-                                                        </button>
-                                                    }
+                    <div class="flex flex-col gap-3 mb-4 shrink-0">
+                        <div class="flex items-center justify-between">
+                            <h6 class="font-bold text-gray-700 dark:text-slate-200 capitalize text-base">Hoạt động gần đây</h6>
+                            <div class="relative w-1/2">
+                                <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" [ngModel]="logSearchTerm()" (ngModelChange)="logSearchTerm.set($event)" placeholder="Tìm kiếm..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-lg pl-8 pr-2 py-1.5 focus:outline-none focus:border-blue-500 transition text-slate-700 dark:text-slate-300">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                            @for(cat of ['ALL', 'SOP', 'STOCK', 'STANDARD', 'APPROVE', 'SYSTEM']; track cat) {
+                                <button (click)="logFilterCategory.set($any(cat))" 
+                                        class="px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all"
+                                        [ngClass]="logFilterCategory() === cat ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
+                                    {{cat === 'ALL' ? 'Tất cả' : cat === 'SOP' ? 'Kết quả' : cat === 'STOCK' ? 'Kho' : cat === 'STANDARD' ? 'Chuẩn' : cat === 'APPROVE' ? 'Duyệt' : 'Hệ thống'}}
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
+                        <div class="relative border-l border-gray-100 dark:border-slate-700/50 ml-4 space-y-6 pb-2">
+                            @for (group of recentLogsGrouped(); track group.dateStr) {
+                                <div class="relative">
+                                    <div class="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm py-1 -ml-6 pl-6 mb-3">
+                                        <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-900/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm">{{group.dateStr}}</span>
+                                    </div>
+                                    <div class="space-y-5">
+                                        @for (log of group.logs; track log.id) {
+                                            @let iconMeta = getLogIcon(log.action);
+                                            <div class="relative pl-6 group">
+                                                <div class="absolute -left-[14px] top-1 w-7 h-7 rounded-full border-4 border-white dark:border-slate-800 shadow-sm flex items-center justify-center {{iconMeta.bg}} z-0">
+                                                    <i class="fa-solid {{iconMeta.icon}} text-[10px] {{iconMeta.text}}"></i>
                                                 </div>
-                                            }
-                                        </div>
+                                                <div class="flex flex-col bg-transparent group-hover:bg-slate-50/50 dark:group-hover:bg-slate-700/20 rounded-xl p-1.5 -ml-1.5 transition-colors">
+                                                    <div class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">{{getTimeDiff(log.timestamp)}}</div>
+                                                    <div class="flex items-start gap-3">
+                                                        <img [src]="getAvatar(log.user)" class="w-8 h-8 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm object-cover bg-white dark:bg-slate-800 shrink-0" alt="Avatar">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="text-xs font-bold text-gray-700 dark:text-slate-300 leading-tight">
+                                                                <span class="text-gray-900 dark:text-slate-100">{{log.user}}</span> 
+                                                                <span class="font-normal text-[10px] text-gray-500 dark:text-slate-400 ml-1 inline-block">{{getLogActionText(log.action)}}</span>
+                                                            </div>
+                                                            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 line-clamp-3 bg-white dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700 font-medium shadow-sm leading-relaxed whitespace-pre-wrap">
+                                                                {{log.details}}
+                                                            </div>
+                                                            @if (log.requestId) {
+                                                                <div class="mt-2 flex gap-2">
+                                                                    <button (click)="navTo('traceability/' + log.requestId)" class="text-[9px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 font-bold transition shadow-xs active:scale-95 flex items-center">
+                                                                        <i class="fa-solid fa-qrcode mr-1"></i> Truy xuất
+                                                                    </button>
+                                                                    @if (log.action && (log.action.includes('RESULT') || log.action === 'PUBLISH_RESULT_REPORT' || log.action === 'DIRECT_APPROVE' || log.action === 'APPROVE_REQUEST')) {
+                                                                        <button (click)="navTo('results/' + log.requestId)" class="text-[9px] bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-2.5 py-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 font-bold transition shadow-xs active:scale-95 flex items-center">
+                                                                            <i class="fa-solid fa-vial mr-1"></i> Kết quả
+                                                                        </button>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
-                            </div>
-                        } @empty {
-                            <div class="text-center text-gray-400 dark:text-slate-500 text-sm py-10">Chưa có dữ liệu.</div>
-                        }
+                            } @empty {
+                                <div class="text-center text-gray-400 dark:text-slate-500 text-sm py-10 flex flex-col items-center justify-center">
+                                    <i class="fa-solid fa-inbox text-3xl mb-2 opacity-50"></i>
+                                    <span>Chưa có dữ liệu.</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
         </div>
         </div>
 

@@ -128,6 +128,80 @@ export class DashboardComponent implements OnInit, OnDestroy {
           .filter(r => r.status === 'PENDING_APPROVAL').length;
       return myPendingSopReqs + myPendingStdReqs;
   });
+  // Activity Feed Filters
+  logSearchTerm = signal<string>('');
+  logFilterCategory = signal<'ALL' | 'SOP' | 'STOCK' | 'STANDARD' | 'APPROVE' | 'SYSTEM'>('ALL');
+
+  recentLogsGrouped = computed(() => {
+      let logs = this.state.logs().slice(0, 50); // Fetch up to 50 logs for filtering
+      
+      const term = this.logSearchTerm().toLowerCase().trim();
+      if (term) {
+          logs = logs.filter(l => 
+              l.user.toLowerCase().includes(term) || 
+              (l.details && l.details.toLowerCase().includes(term)) ||
+              this.getLogActionText(l.action).toLowerCase().includes(term)
+          );
+      }
+
+      const category = this.logFilterCategory();
+      if (category !== 'ALL') {
+          logs = logs.filter(l => {
+              if (category === 'APPROVE') return l.action.includes('APPROVE') && !l.action.includes('STANDARD') && !l.action.includes('RESULT');
+              if (category === 'STOCK') return l.action.includes('STOCK');
+              if (category === 'STANDARD') return l.action.includes('STANDARD');
+              if (category === 'SOP') return l.action.includes('RESULT') || l.action === 'PUBLISH_RESULT_REPORT';
+              if (category === 'SYSTEM') return !l.action.includes('APPROVE') && !l.action.includes('STOCK') && !l.action.includes('STANDARD') && !l.action.includes('RESULT');
+              return true;
+          });
+      }
+
+      // Group by Date
+      const groups = new Map<string, any[]>();
+      logs.forEach(l => {
+          const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
+          const dateStr = this.formatDateStr(d);
+          if (!groups.has(dateStr)) groups.set(dateStr, []);
+          groups.get(dateStr)!.push(l);
+      });
+
+      return Array.from(groups.entries()).map(([dateStr, logs]) => ({
+          dateStr,
+          logs
+      }));
+  });
+
+  formatDateStr(d: Date): string {
+      const today = new Date();
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
+          return 'Hôm nay';
+      } else if (d.getDate() === yesterday.getDate() && d.getMonth() === yesterday.getMonth() && d.getFullYear() === yesterday.getFullYear()) {
+          return 'Hôm qua';
+      }
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  getLogIcon(action: string): { icon: string, bg: string, text: string } {
+      if (action.includes('APPROVE') && !action.includes('STANDARD') && !action.includes('RESULT')) {
+          return { icon: 'fa-check-double', bg: 'bg-fuchsia-100 dark:bg-fuchsia-900/30', text: 'text-fuchsia-600 dark:text-fuchsia-400' };
+      }
+      if (action.includes('STOCK')) {
+          return { icon: 'fa-box-open', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' };
+      }
+      if (action.includes('STANDARD')) {
+          return { icon: 'fa-flask', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' };
+      }
+      if (action === 'PUBLISH_RESULT_REPORT') {
+          return { icon: 'fa-file-signature', bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' };
+      }
+      if (action.includes('RESULT')) {
+          return { icon: 'fa-vial', bg: 'bg-cyan-100 dark:bg-cyan-900/30', text: 'text-cyan-600 dark:text-cyan-400' };
+      }
+      return { icon: 'fa-bolt', bg: 'bg-gray-100 dark:bg-slate-700', text: 'text-gray-600 dark:text-gray-300' };
+  }
+
   recentLogs = computed(() => this.state.logs().slice(0, 12)); 
   todayActivityCount = computed(() => {
       const todayStr = new Date().toISOString().split('T')[0];
