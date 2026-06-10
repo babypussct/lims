@@ -235,9 +235,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
       ngayNguoiThamTra: new Date().toISOString().split('T')[0],
       checkTatCaND: true,
-      checkCoMauPhatHien: false,
-      device: runDoc.inputs?.device || runDoc.inputs?.instrument || '',
-      thaoLuan: ''
+      checkCoMauPhatHien: false
     };
 
     if (isTrifluralin) {

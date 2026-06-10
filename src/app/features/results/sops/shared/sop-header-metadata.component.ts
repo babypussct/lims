@@ -31,26 +31,6 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
         </div>
       </div>
 
-      <!-- Device & Discussion -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thiết bị phân tích</label>
-          <input type="text" 
-                 [(ngModel)]="draft.page1Data['device']" 
-                 (ngModelChange)="onDataChanged()"
-                 placeholder="Ví dụ: GC-MS/MS / LC-MS/MS"
-                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none">
-        </div>
-        <div>
-          <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thảo luận / Nhận xét</label>
-          <input type="text" 
-                 [(ngModel)]="draft.page1Data['thaoLuan']" 
-                 (ngModelChange)="onDataChanged()"
-                 placeholder="Ý kiến thảo luận hoặc ghi chú kết quả..."
-                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none">
-        </div>
-      </div>
-
       <!-- Custom metadata inputs projected from parent -->
       <div class="empty:hidden">
         <ng-content select="[sop-metadata-extra]"></ng-content>
