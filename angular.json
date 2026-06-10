@@ -113,7 +113,7 @@
     "analytics": false,
     "cache": {
       "enabled": true,
-      "environment": "local"
+      "environment": "all"
     }
   }
 }
