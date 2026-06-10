@@ -3,9 +3,10 @@ import { Component, inject, signal, Input, OnInit, ElementRef, viewChild } from 
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { StateService } from '../../core/services/state.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { formatDate, formatNum, formatSampleList, naturalCompare } from '../../shared/utils/utils';
+import { formatDate, formatNum, formatSampleList, naturalCompare, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
 import { MasterTargetService } from '../targets/master-target.service';
@@ -219,8 +220,8 @@ declare let QRious: any;
                                 
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
                                    <div class="flex items-center gap-4">
-                                       <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xl text-slate-600 dark:text-slate-300 shadow-inner">
-                                           {{logData()?.user?.charAt(0)}}
+                                       <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner overflow-hidden shrink-0">
+                                           <img [src]="getAvatarUrl(logData()?.user, state.getUserAvatarOptions(logData()?.user).style, state.getUserAvatarOptions(logData()?.user).photoURL)" class="w-full h-full object-cover">
                                        </div>
                                        <div>
                                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Thực hiện bởi</div>
@@ -374,6 +375,7 @@ export class TraceabilityComponent implements OnInit {
   @Input() id?: string;
 
   auth = inject(AuthService);
+  state = inject(StateService);
   fb = inject(FirebaseService);
   toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
@@ -382,6 +384,7 @@ export class TraceabilityComponent implements OnInit {
   formatDate = formatDate;
   formatNum = formatNum;
   formatSampleList = formatSampleList;
+  getAvatarUrl = getAvatarUrl;
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);
