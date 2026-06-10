@@ -15,7 +15,7 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
   try {
     const maHoSoVal = (metadata.maHoSo || "").trim();
     if (maHoSoVal) {
-      replaceDotsSafely(body, '1\\.\\s*Mã hồ sơ\\s*:\\s*[\\.…]+', maHoSoVal);
+      replaceDotsSafely(body, '(?:1\\.\\s*)?Mã\\s*hồ\\s*sơ[^\\.…]*[\\.…]+', maHoSoVal);
     }
 
     const fVal = (metadata.heSoPhaLoang || "1").trim();

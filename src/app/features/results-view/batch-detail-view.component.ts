@@ -114,7 +114,7 @@ import { MasterTargetService } from '../targets/master-target.service';
               <i class="fa-solid fa-microscope text-slate-400"></i>
               <div>
                 <span class="block text-[9px] font-semibold text-slate-500 uppercase">Thiết bị</span>
-                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || '—' }}</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ draft()?.page1Data?.['device'] || run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || '—' }}</span>
               </div>
             </div>
 
@@ -131,6 +131,14 @@ import { MasterTargetService } from '../targets/master-target.service';
               <div>
                 <span class="block text-[9px] font-semibold text-slate-500 uppercase">Ngày PT</span>
                 <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0 max-w-[280px]">
+              <i class="fa-solid fa-comments text-slate-400"></i>
+              <div class="min-w-0">
+                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Thảo luận</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block truncate" [title]="draft()?.page1Data?.['thaoLuan'] || ''">{{ draft()?.page1Data?.['thaoLuan'] || '—' }}</span>
               </div>
             </div>
 
@@ -220,9 +228,9 @@ import { MasterTargetService } from '../targets/master-target.service';
                       <th class="py-3 px-4 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Hoạt chất</th>
                       <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">ND (N/A)</th>
                       <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-36">Kết quả (µg/kg)</th>
-                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC1</th>
-                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC2</th>
-                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">QC3</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-36">Độ thu hồi R%</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-36">Hệ số tuyến tính R2</th>
+                      <th class="py-3 px-4 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-36">Kết luận</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">

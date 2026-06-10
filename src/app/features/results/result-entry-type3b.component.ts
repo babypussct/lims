@@ -36,6 +36,26 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from './shared/compoun
           </div>
         </div>
 
+        <!-- Device & Discussion -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thiết bị phân tích</label>
+            <input type="text" 
+                   [(ngModel)]="draft.page1Data['device']" 
+                   (ngModelChange)="onDataChanged()"
+                   placeholder="Ví dụ: GC-MS/MS / LC-MS/MS"
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thảo luận / Nhận xét</label>
+            <input type="text" 
+                   [(ngModel)]="draft.page1Data['thaoLuan']" 
+                   (ngModelChange)="onDataChanged()"
+                   placeholder="Ý kiến thảo luận hoặc ghi chú kết quả..."
+                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+          </div>
+        </div>
+
         <!-- Checkbox & QC segment controls grid (Dynamic from SOP metadata configuration) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           @for (checkbox of checkboxList; track checkbox.key) {
@@ -166,9 +186,9 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from './shared/compoun
                 <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">Kết quả (µg/kg)</th>
                 
                 <!-- 3 QC Columns -->
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC1 (Đường chuẩn)</th>
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC2 (Thu hồi IS)</th>
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC3 (Độ lệch RT)</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Độ thu hồi R%</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Hệ số tuyến tính R2</th>
+                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Kết luận</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">

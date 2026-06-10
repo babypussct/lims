@@ -34,6 +34,26 @@ import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
           </div>
         </div>
 
+        <!-- Device & Discussion -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Thiết bị phân tích</label>
+            <input type="text" 
+                   [(ngModel)]="draft.page1Data['device']" 
+                   (ngModelChange)="onDataChanged()"
+                   placeholder="Ví dụ: GC-MS/MS / LC-MS/MS"
+                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase">Thảo luận / Nhận xét</label>
+            <input type="text" 
+                   [(ngModel)]="draft.page1Data['thaoLuan']" 
+                   (ngModelChange)="onDataChanged()"
+                   placeholder="Ý kiến thảo luận hoặc ghi chú kết quả..."
+                   class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none">
+          </div>
+        </div>
+
         <!-- Fipronil specific inputs (Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu) -->
         @if (isFipronil) {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-950/30">
