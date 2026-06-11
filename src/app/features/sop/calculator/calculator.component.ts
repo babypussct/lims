@@ -511,10 +511,85 @@ export class CalculatorComponent implements OnDestroy {
   createNew() { this.state.editingSop.set(null); this.router.navigate(['/editor']); }
   editDirect(sop: Sop, event: Event) { event.stopPropagation(); this.closeMenu(); this.state.editingSop.set(sop); this.router.navigate(['/editor']); }
   
-  async softDeleteSop(sop: Sop, event: Event) { /* ... same as original ... */ }
-  async duplicateSop(sop: Sop, event: Event) { /* ... same as original ... */ }
-  exportSop(sop: Sop, event: Event) { /* ... same as original ... */ }
-  async importSop(event: any) { /* ... same as original ... */ }
+  async softDeleteSop(sop: Sop, event: Event) {
+      event.stopPropagation();
+      if (await this.confirmation.confirm({ 
+          message: `Xóa quy trình "${sop.name}"?\nHành động này không thể hoàn tác.`, 
+          confirmText: 'Xóa vĩnh viễn', 
+          isDangerous: true 
+      })) {
+          try {
+              await this.sopService.deleteSop(sop.id);
+              this.toast.show('Đã xóa SOP');
+          } catch (e: any) {
+              this.toast.show('Lỗi xóa: ' + e.message, 'error');
+          }
+      }
+  }
+
+  async duplicateSop(sop: Sop, event: Event) {
+      event.stopPropagation();
+      if(await this.confirmation.confirm({ message: `Nhân bản SOP: "${sop.name}"?`, confirmText: 'Nhân bản' })) {
+          try {
+              const newSop: Sop = JSON.parse(JSON.stringify(sop));
+              newSop.id = generateSlug(sop.name + '_copy_' + Date.now());
+              newSop.name = `${sop.name} (Copy)`;
+              newSop.version = 1;
+              newSop.lastModified = null;
+              newSop.archivedAt = null;
+              
+              await this.sopService.saveSop(newSop);
+              this.toast.show('Đã nhân bản SOP!', 'success');
+          } catch(e: any) {
+              this.toast.show('Lỗi: ' + e.message, 'error');
+          }
+      }
+  }
+
+  exportSop(sop: Sop, event: Event) {
+      event.stopPropagation();
+      try {
+          const json = JSON.stringify(sop, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `SOP_${generateSlug(sop.name)}_${sop.version}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.toast.show('Đã tải xuống SOP.');
+      } catch (e) {
+          this.toast.show('Lỗi export JSON', 'error');
+      }
+  }
+
+  async importSop(event: any) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+          try {
+              const data = JSON.parse(e.target.result);
+              if (!data.name || !data.consumables) throw new Error("File JSON không hợp lệ (thiếu name/consumables)");
+              
+              data.id = generateSlug(data.name + '_' + Date.now());
+              data.version = 1;
+              data.lastModified = null;
+              data.archivedAt = null;
+
+              if(await this.confirmation.confirm({ message: `Import SOP: "${data.name}"?`, confirmText: 'Import' })) {
+                  await this.sopService.saveSop(data);
+                  this.toast.show('Import thành công!', 'success');
+              }
+          } catch(err: any) {
+              this.toast.show('Lỗi Import: ' + err.message, 'error');
+          } finally {
+              event.target.value = '';
+          }
+      };
+      reader.readAsText(file);
+  }
 
   // --- UPDATED: PDF SUPPORT WITH PREVIEW ---
   onPrintDraft(sop: Sop) {

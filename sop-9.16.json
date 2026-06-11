@@ -1,0 +1,679 @@
+{
+  "id": "9.16-tbvtv-water",
+  "category": "Hóa học",
+  "name": "XÁC ĐỊNH DƯ LƯỢNG THUỐC BẢO VỆ THỰC VẬT TRONG NƯỚC BẰNG GC-MS/MS",
+  "ref": "AOAC 990.06, AOAC 991.07",
+  "inputs": [
+    {
+      "var": "V",
+      "label": "Lượng mẫu",
+      "type": "number",
+      "default": 100.0,
+      "unitLabel": "ml"
+    }
+  ],
+  "variables": {
+    "V": "100"
+  },
+  "consumables": [
+    {
+      "name": "chlorpyrifos-d10-10ppm",
+      "_displayName": "Nội chuẩn Chlorpyrifos D10 10 ng/µl",
+      "formula": "20 * total_n",
+      "unit": "µl",
+      "type": "simple"
+    },
+    {
+      "name": "buffer-ph7",
+      "_displayName": "Đệm pH 7",
+      "formula": "5 * total_n",
+      "unit": "ml",
+      "type": "simple"
+    },
+    {
+      "name": "nacl",
+      "_displayName": "NaCl khan",
+      "formula": "10 * total_n",
+      "unit": "g",
+      "type": "simple"
+    },
+    {
+      "name": "ch2cl2",
+      "_displayName": "Dichloromethane (CH2Cl2)",
+      "formula": "90 * total_n",
+      "unit": "ml",
+      "type": "simple"
+    },
+    {
+      "name": "na2so4",
+      "_displayName": "Na2SO4 khan",
+      "formula": "10 * total_n",
+      "unit": "g",
+      "type": "simple"
+    },
+    {
+      "name": "toluene",
+      "_displayName": "Toluene",
+      "formula": "10 * total_n",
+      "unit": "ml",
+      "type": "simple"
+    }
+  ],
+  "targets": [
+    {
+      "id": "phosmet",
+      "name": "Phosmet",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "phosphamidon",
+      "name": "Phosphamidon",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "pirimiphos-methyl",
+      "name": "Pirimiphos methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "profenofos",
+      "name": "Profenofos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "triazophos",
+      "name": "Triazophos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "vamidothion",
+      "name": "Vamidothion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "difenoconazole",
+      "name": "Difenoconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "propiconazole",
+      "name": "Propiconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "chlorfenapyr",
+      "name": "Chlorfenapyr",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tetraconazole",
+      "name": "Tetraconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "hexaconazole",
+      "name": "Hexaconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "triadimenol",
+      "name": "Triadimenol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "paclobutrazol",
+      "name": "Paclobutrazol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "flutriafol",
+      "name": "Flutriafol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "imazalil",
+      "name": "Imazalil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "uniconazole",
+      "name": "Uniconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tricyclazole",
+      "name": "Tricyclazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cyproconazole",
+      "name": "Cyproconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "azoxystrobin",
+      "name": "Azoxystrobin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenbuconazole",
+      "name": "Fenbuconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tebuconazole",
+      "name": "Tebuconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "bitertanol",
+      "name": "Bitertanol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "boscalid",
+      "name": "Boscalid",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "butachlor",
+      "name": "Butachlor",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "buprofezin",
+      "name": "Buprofezin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "chlorothalonil",
+      "name": "Chlorothalonil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cyprodinil",
+      "name": "Cyprodinil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "dicloran",
+      "name": "Dicloran",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenoxanil",
+      "name": "Fenoxanil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fluazifop",
+      "name": "Fluazifop",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fludioxonil",
+      "name": "Fludioxonil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "flufenacet",
+      "name": "Flufenacet",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "flusilazole",
+      "name": "Flusilazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "kresoxim-methyl",
+      "name": "Kresoxim methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "mecarbam",
+      "name": "Mecarbam",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "mefenacet",
+      "name": "Mefenacet",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "molinate",
+      "name": "Molinate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "nitrothal-isopropyl",
+      "name": "Nitrothal-Isopropyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "alachlor",
+      "name": "Alachlor",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "piperonyl-butoxide",
+      "name": "Piperonyl butoxide",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "propanil",
+      "name": "Propanil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "propoxur",
+      "name": "Propoxur",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "silafluofen",
+      "name": "Silafluofen",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "simazine",
+      "name": "Simazine",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tebufenpyrad",
+      "name": "Tebufenpyrad",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "atrazine",
+      "name": "Atrazine",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tebuthiuron",
+      "name": "Tebuthiuron",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "thiabendazole",
+      "name": "Thiabendazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "vinclozolin",
+      "name": "Vinclozolin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "trifluralin",
+      "name": "Trifluralin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "bifenthrin",
+      "name": "Bifenthrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cyfluthrin-baythroid",
+      "name": "Cyfluthrin (Baythroid)",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "lamda-cyhalothrin",
+      "name": "lamda-Cyhalothrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "deltamethrin",
+      "name": "Deltamethrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tralomethrin",
+      "name": "Tralomethrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "ethofenprox",
+      "name": "Ethofenprox",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "permethrin-cis",
+      "name": "Permethrin cis",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "permethrin-trans",
+      "name": "Permethrin trans",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenpropathrin",
+      "name": "Fenpropathrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "silafluofen",
+      "name": "Silafluofen",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "flucythrinate",
+      "name": "Flucythrinate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenvalerate",
+      "name": "Fenvalerate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cypermethrins",
+      "name": "Cypermethrins",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tefluthrin",
+      "name": "Tefluthrin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "acephate",
+      "name": "Acephate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "azinphos-methyl",
+      "name": "Azinphos-methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cadusafos",
+      "name": "Cadusafos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "chlorpyrifos",
+      "name": "Chlorpyrifos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "chlorpyrifos-methyl",
+      "name": "Chlorpyrifos-methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "diazinon",
+      "name": "Diazinon",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "dimethoate",
+      "name": "Dimethoate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "edifenphos",
+      "name": "Edifenphos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "ethion",
+      "name": "Ethion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "ethoprophos-ethoprop",
+      "name": "Ethoprophos (Ethoprop)",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenitrothion",
+      "name": "Fenitrothion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenthion",
+      "name": "Fenthion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "iprobenfos",
+      "name": "Iprobenfos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "malathion",
+      "name": "Malathion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "mefenoxam",
+      "name": "Mefenoxam",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "metalaxyl",
+      "name": "Metalaxyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "methacrifos",
+      "name": "Methacrifos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "methidathion",
+      "name": "Methidathion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "monocrotophos",
+      "name": "Monocrotophos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "omethoate",
+      "name": "Omethoate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "parathion",
+      "name": "Parathion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "parathion-methyl",
+      "name": "Parathion-methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "phenthoate",
+      "name": "Phenthoate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "phorate",
+      "name": "Phorate",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "quinalphos",
+      "name": "Quinalphos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "ronnel-fenchlorphos",
+      "name": "Ronnel (Fenchlorphos)",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "aldrin",
+      "name": "Aldrin",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "bhc-alpha-benzene-hexachloride",
+      "name": "BHC-alpha (benzene hexachloride)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "bhc-beta",
+      "name": "BHC-beta",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "bhc-delta",
+      "name": "BHC-delta",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "bhc-epsilon",
+      "name": "BHC-epsilon",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "bhc-gamma-lindane-gamma-hch",
+      "name": "BHC-gamma (Lindane, gamma HCH)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "chlordane-cis-alpha",
+      "name": "Chlordane-cis (alpha)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "chlordane-oxy",
+      "name": "Chlordane-oxy",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "chlordane-trans-gamma",
+      "name": "Chlordane-trans (gamma)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "ddd-o-p",
+      "name": "DDD-o,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "ddd-p-p",
+      "name": "DDD-p,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "dde-o-p",
+      "name": "DDE-o,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "dde-p-p",
+      "name": "DDE-p,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "ddt-o-p",
+      "name": "DDT-o,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "ddt-p-p",
+      "name": "DDT-p,p'",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "dieldrin",
+      "name": "Dieldrin",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "endosulfan-i-alpha-isomer",
+      "name": "Endosulfan I (alpha isomer)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "endosulfan-ii-beta-isomer",
+      "name": "Endosulfan II (beta isomer)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "endosulfan-sulfate",
+      "name": "Endosulfan sulfate",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "endrin",
+      "name": "Endrin",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "heptachlor",
+      "name": "Heptachlor",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "heptachlor-endo-epoxide-isomer-a",
+      "name": "Heptachlor endo-epoxide (isomer A)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "heptachlor-exo-epoxide-isomer-b",
+      "name": "Heptachlor exo-epoxide (isomer B)",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "hexachlorobenzene",
+      "name": "Hexachlorobenzene",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "isodrin",
+      "name": "Isodrin",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "methoxychlor-p-p",
+      "name": "Methoxychlor, p,p'-",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "mirex",
+      "name": "Mirex",
+      "loq": "0.02 ppb"
+    },
+    {
+      "id": "pendimethalin",
+      "name": "Pendimethalin",
+      "loq": "0.02 ppb"
+    }
+  ]
+}

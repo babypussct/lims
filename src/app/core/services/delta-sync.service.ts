@@ -93,87 +93,40 @@ export class DeltaSyncService {
       onData([...memCache]);
     }
 
-    const colRef = collection(this.fb, config.collectionPath);
+    // Tạo entry ngay để các call khác có thể attach
+    const entry: SingletonEntry<T> = { unsub: () => {}, callbacks, memCache, config };
+    this._singletons.set(key, entry);
 
-    // Nếu cache rỗng → fetch initial batch trước
+    // Nếu cache rỗng → fetch initial batch async RỒI MỚI lắng nghe live
     if (memCache.length === 0) {
-      const constraints = config.queryConstraints || [];
-      const q = query(colRef, ...constraints, orderBy(sortField, sortDir), limit(maxCacheSize));
-      getDocs(q).then(snapshot => {
-        const items: T[] = [];
-        snapshot.forEach(doc => {
-          const data = doc.data() as T;
-          (data as any).id = doc.id;
-          this._normalizeTimestamps(data, sortField);
-          if (!isDeleted(data)) items.push(data);
-        });
-        memCache = items;
-        this._updateCacheAndCursor(memCache, config, sortField, sortDir, maxCacheSize);
-        // Cập nhật entry
-        const entry = this._singletons.get(key);
-        if (entry) {
-          entry.memCache = memCache;
-          entry.callbacks.forEach(cb => cb([...memCache]));
-        }
+      this._fetchInitialBatch<T>(config).then(items => {
+        const filteredItems = items.filter(d => !isDeleted(d));
+        const cursor = this._updateCacheAndCursor(filteredItems, config, sortField, sortDir, maxCacheSize);
+        entry.memCache = filteredItems;
+        
+        entry.callbacks.forEach(cb => cb([...filteredItems]));
+        
+        entry.unsub = this._setupSnapshotListener(config, cursor, filteredItems, sortField, sortDir, maxCacheSize, (data) => {
+          entry.memCache = data;
+          entry.callbacks.forEach(cb => cb([...data]));
+        }, isDeleted);
       }).catch(err => {
         console.warn(`[DeltaSync] Initial fetch failed for ${config.collectionPath}:`, err.message);
       });
-    }
-
-    // Phase 2: Live listener — bắt đầu từ CURSOR (cursor-based, không phải Timestamp.now())
-    const cursor = this._loadCursor(config.cursorKey);
-    const startConstraints = config.queryConstraints || [];
-    let liveQuery;
-    if (cursor > 0) {
-      liveQuery = query(colRef, ...startConstraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
     } else {
-      liveQuery = query(colRef, ...startConstraints, orderBy('lastUpdated', 'asc'));
+      // Phase 2: Live listener
+      const cursor = this._loadCursor(config.cursorKey);
+      entry.unsub = this._setupSnapshotListener(config, cursor, memCache, sortField, sortDir, maxCacheSize, (data) => {
+        entry.memCache = data;
+        entry.callbacks.forEach(cb => cb([...data]));
+      }, isDeleted);
     }
-
-    const unsub = onSnapshot(liveQuery, (snapshot) => {
-      if (snapshot.empty) return;
-
-      const entry = this._singletons.get(key);
-      if (!entry) return;
-
-      let hasChanges = false;
-      const items = [...entry.memCache];
-
-      snapshot.docChanges().forEach(change => {
-        const docData = change.doc.data() as T;
-        (docData as any).id = change.doc.id;
-        this._normalizeTimestamps(docData, sortField);
-
-        if (change.type === 'removed' || isDeleted(docData)) {
-          const idx = items.findIndex(i => i.id === docData.id);
-          if (idx !== -1) { items.splice(idx, 1); hasChanges = true; }
-        } else {
-          const idx = items.findIndex(i => i.id === docData.id);
-          if (idx !== -1) { items[idx] = docData; } else { items.unshift(docData); }
-          hasChanges = true;
-        }
-      });
-
-      if (hasChanges) {
-        entry.memCache = items;
-        this._updateCacheAndCursor(items, config, sortField, sortDir, maxCacheSize);
-        entry.callbacks.forEach(cb => cb([...items]));
-      }
-    }, (error) => {
-      console.warn(`[DeltaSync] Singleton listener error for ${config.collectionPath}:`, error.message);
-      if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
-        this.destroySingleton(key);
-      }
-    });
-
-    // Lưu entry vào Map
-    this._singletons.set(key, { unsub, callbacks, memCache, config });
 
     // Return unregister function
     return () => {
-      const entry = this._singletons.get(key);
-      if (entry) {
-        entry.callbacks = entry.callbacks.filter(cb => cb !== onData);
+      const e = this._singletons.get(key);
+      if (e) {
+        e.callbacks = e.callbacks.filter(cb => cb !== onData);
       }
     };
   }
@@ -300,7 +253,7 @@ export class DeltaSyncService {
     if (cursor > 0) {
       q = query(colRef, ...constraints, where('lastUpdated', '>', new Date(cursor * 1000)), orderBy('lastUpdated', 'asc'));
     } else {
-      q = query(colRef, ...constraints, orderBy('lastUpdated', 'asc'), limit(100));
+      q = query(colRef, ...constraints, orderBy('lastUpdated', 'desc'), limit(100));
     }
 
     return onSnapshot(q, (snapshot) => {
@@ -371,8 +324,10 @@ export class DeltaSyncService {
   ): number {
     // Sort
     items.sort((a: any, b: any) => {
-      const valA = a[sortField] || 0;
-      const valB = b[sortField] || 0;
+      let valA = a[sortField] || 0;
+      let valB = b[sortField] || 0;
+      if (valA && typeof valA === 'object' && 'seconds' in valA) valA = valA.seconds;
+      if (valB && typeof valB === 'object' && 'seconds' in valB) valB = valB.seconds;
       return sortDir === 'asc' ? valA - valB : valB - valA;
     });
 
