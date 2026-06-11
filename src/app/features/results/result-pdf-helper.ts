@@ -390,7 +390,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
+          rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -586,7 +586,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
             const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
+          rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -953,7 +953,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
             const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
+          rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -1305,7 +1305,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
             const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
+          rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
