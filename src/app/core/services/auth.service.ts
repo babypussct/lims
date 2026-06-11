@@ -9,7 +9,7 @@ import {
   onAuthStateChanged, 
   GoogleAuthProvider,
   setPersistence,
-  browserLocalPersistence,
+  browserSessionPersistence,
   EmailAuthProvider,
   reauthenticateWithCredential,
   linkWithCredential,
@@ -125,6 +125,11 @@ export class AuthService {
 
   constructor() {
     this.auth = getAuth(this.fb.app);
+
+    // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab
+    setPersistence(this.auth, browserSessionPersistence).catch(err => {
+      console.warn('[Auth] Failed to set session persistence:', err);
+    });
 
     // Tự động đồng bộ/di chuyển quyền của chính user đăng nhập lên Firestore nếu chưa khớp
     effect(() => {
@@ -286,8 +291,15 @@ export class AuthService {
         }
     }
 
+    const isGoogle = this.isGoogleUser();
     await signOut(this.auth);
-    this.router.navigate(['/']);
+
+    if (isGoogle) {
+        // Đăng xuất hoàn toàn khỏi tài khoản Google trên trình duyệt
+        window.location.href = 'https://accounts.google.com/Logout';
+    } else {
+        this.router.navigate(['/']);
+    }
   }
 
   private syncUser(firebaseUser: User) {
