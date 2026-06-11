@@ -63,6 +63,8 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Chlorpyrifos-methyl': 'chlorpyrofos_methyl',
   'ChlorpyrifosMethyl':  'chlorpyrofos_methyl',
   'Chlorpyrofos-methyl': 'chlorpyrofos_methyl',
+  'Chlorpyryfos-methyl': 'chlorpyrofos_methyl',
+  'ChlorpyryfosMethyl':  'chlorpyrofos_methyl',
   'Pirimiphos-methyl':   'pirimifos_methyl',
   'PirimiphosMethyl':     'pirimifos_methyl',
   'Pirimifos-methyl':    'pirimifos_methyl',
@@ -82,6 +84,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Fipronil sulfone':               'fipronil-sulfone',
   'Chlorpyrifos':                   'chlorpyrofos',
   'Chlorpyrofos':                   'chlorpyrofos',
+  'Chlorpyryfos':                   'chlorpyrofos',
   'Chlorpyrifos methyl':            'chlorpyrofos_methyl',
   'Chlorpyriphos-methyl-desmethyl': 'chlorpyrofos-methyl-desmethyl',
   

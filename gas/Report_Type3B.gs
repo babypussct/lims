@@ -148,12 +148,18 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
       
       const compLower = compoundName.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
       const isAssigned = assignedTargetIds.some(tId => {
-        const tLower = tId.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
-        // Bảo vệ: tránh Heptachlor khớp nhầm Heptachlor-epoxide
-        if (compLower === 'heptachlor' && tLower.includes('epoxide')) return false;
-        if (tLower === 'heptachlor' && compLower.includes('epoxide')) return false;
+        let tLower = tId.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
+        let cLower = compLower;
         
-        return tLower.includes(compLower) || compLower.includes(tLower);
+        // Chuẩn hóa đồng nhất chính tả giữa GAS và Firestore ID (ph -> f, chlorpyrifos -> chlorpyrofos)
+        tLower = tLower.replace(/ph/g, 'f').replace(/chlorpyri/g, 'chlorpyro').replace(/chlorpyry/g, 'chlorpyro');
+        cLower = cLower.replace(/ph/g, 'f').replace(/chlorpyri/g, 'chlorpyro').replace(/chlorpyry/g, 'chlorpyro');
+        
+        // Bảo vệ: tránh Heptachlor khớp nhầm Heptachlor-epoxide
+        if (cLower === 'heptachlor' && tLower.includes('epoxide')) return false;
+        if (tLower === 'heptachlor' && cLower.includes('epoxide')) return false;
+        
+        return tLower === cLower;
       });
       if (isAssigned) return true;
     }
@@ -322,20 +328,29 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             if (!cellText || cellText.length < 2) continue;
             
             let matchedCompound = null;
-            // 1. Ưu tiên khớp chính xác
-            for (const comp of sopConfig.compounds) {
-              if (cellText.toLowerCase() === comp.toLowerCase()) {
+            const normCell = cellText.toLowerCase().replace(/[-_\\s]/g, '');
+            const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
+            
+            // 1. Ưu tiên khớp chính xác (sau khi chuẩn hóa)
+            for (const comp of sortedComps) {
+              if (normCell === comp.toLowerCase().replace(/[-_\\s]/g, '')) {
                 matchedCompound = comp;
                 break;
               }
             }
             // 2. Khớp chuỗi con nếu không khớp chính xác
             if (!matchedCompound) {
-              for (const comp of sopConfig.compounds) {
-                if (cellText.toLowerCase().includes(comp.toLowerCase()) && cellText.length < 50) {
+              for (const comp of sortedComps) {
+                if (normCell.includes(comp.toLowerCase().replace(/[-_\\s]/g, '')) && cellText.length < 50) {
                   matchedCompound = comp;
                   break;
                 }
+              }
+            }
+            // 3. Xử lý các lỗi chính tả phổ biến trên biểu mẫu
+            if (!matchedCompound) {
+              if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos')) {
+                matchedCompound = normCell.includes('methyl') ? 'Chlorpyrifos-methyl' : 'Chlorpyrifos';
               }
             }
             
@@ -362,56 +377,18 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
             
             if (!isAssigned) {
-              // Hoạt chất KHÔNG được chỉ định -> Điền gạch ngang và để trống QC
-              let ndReplaced = false;
-              for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*ND');
-                if (foundNd) {
-                  try {
-                    const textElement = foundNd.getElement().asText();
-                    const start = foundNd.getStartOffset();
-                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
-                    if (match) {
-                      textElement.insertText(start + match.index, '☐');
-                      textElement.deleteText(start + match.index + 1, start + match.index + match[0].length);
-                    }
-                  } catch(e) {}
-                  ndReplaced = true;
-                  break;
-                }
-              }
-              
-              for (const cell of segmentCells) {
-                let foundDots = cell.findText('[…\\.]{2,}');
-                if (foundDots) {
-                  try {
-                    const dText = foundDots.getElement().asText();
-                    const dStart = foundDots.getStartOffset();
-                    const dMatch = dText.getText().substring(dStart, foundDots.getEndOffsetInclusive() + 1).match(/[…\.]{2,}/);
-                    if (dMatch) {
-                      dText.insertText(dStart + dMatch.index, '—');
-                      const charsToDelete = Math.min(1, dMatch[0].length);
-                      dText.deleteText(dStart + dMatch.index + 1, dStart + dMatch.index + charsToDelete);
-                    }
-                  } catch(e) {}
-                  break; // Chỉ gạch ngang 1 lần đầu tiên
-                }
-              }
-              
-              // Gạch trống QC trong segment
-              for (let i = 0; i < 3; i++) {
-                _setNthQcCheckboxInCells(segmentCells, i, 'Đ', false);
-                _setNthQcCheckboxInCells(segmentCells, i, 'KĐ', false);
-              }
+              // Hoạt chất KHÔNG được chỉ định (N/A) -> Để nguyên form mặc định (bỏ qua gạch ngang và uncheck QC)
+              continue;
               
             } else {
               // Hoạt chất ĐƯỢC CHỈ ĐỊNH -> Điền kết quả và QC
-              const resultVal = sample[compound] !== undefined && sample[compound] !== null ? sample[compound].toString() : '';
-              const isNd = sample[compound + '_nd'] === true;
+              const payloadKey = _getPayloadKey(compound);
+              const resultVal = sample[payloadKey] !== undefined && sample[payloadKey] !== null ? sample[payloadKey].toString() : '';
+              const isNd = sample[payloadKey + '_nd'] === true;
               const qcList = [
-                sample[compound + '_qc1'],
-                sample[compound + '_qc2'],
-                sample[compound + '_qc3']
+                sample[payloadKey + '_qc1'],
+                sample[payloadKey + '_qc2'],
+                sample[payloadKey + '_qc3']
               ];
               
               // 7.1. Tìm checkbox ND và điền kết quả (dấu chấm) trong segment
@@ -509,16 +486,24 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       if (!cellText || cellText.length < 2) continue;
       
       let matchedCompound = null;
-      for (const comp of sopConfig.compounds) {
-        if (cellText.toLowerCase() === comp.toLowerCase()) {
+      const normCell = cellText.toLowerCase().replace(/[-_\\s]/g, '');
+      const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
+      
+      for (const comp of sortedComps) {
+        if (normCell === comp.toLowerCase().replace(/[-_\\s]/g, '')) {
           matchedCompound = comp; break;
         }
       }
       if (!matchedCompound) {
-        for (const comp of sopConfig.compounds) {
-          if (cellText.toLowerCase().includes(comp.toLowerCase()) && cellText.length < 50) {
+        for (const comp of sortedComps) {
+          if (normCell.includes(comp.toLowerCase().replace(/[-_\\s]/g, '')) && cellText.length < 50) {
             matchedCompound = comp; break;
           }
+        }
+      }
+      if (!matchedCompound) {
+        if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos')) {
+          matchedCompound = normCell.includes('methyl') ? 'Chlorpyrifos-methyl' : 'Chlorpyrifos';
         }
       }
       if (matchedCompound) {
@@ -536,13 +521,12 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       
       const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
       if (!isAssigned) {
-        // Gạch trống các cột trong segment
-        for (let c = startCol + 1; c <= endCol; c++) {
-          try { row.getCell(c).setText("—"); } catch(e) {}
-        }
+        // Hoạt chất KHÔNG được chỉ định (N/A) -> Để nguyên form mặc định
+        continue;
       } else {
-        const kqVal = sample[compound] !== undefined && sample[compound] !== null ? sample[compound].toString() : '';
-        const ndVal = sample[compound + '_nd'] === true ? '☑' : '☐';
+        const payloadKey = _getPayloadKey(compound);
+        const kqVal = sample[payloadKey] !== undefined && sample[payloadKey] !== null ? sample[payloadKey].toString() : '';
+        const ndVal = sample[payloadKey + '_nd'] === true ? '☑' : '☐';
         const isDetected = (kqVal !== '' || ndVal === '☑');
         
         let ndCount = 0;
@@ -724,9 +708,20 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
   }
 }
 
-
-
-/**
+function _getPayloadKey(compoundName) {
+  const directMap = {
+    'Fipronil desulfinyl': 'FipronilDesulfinyl',
+    'Fipronil sulfide': 'FipronilSulfide',
+    'Fipronil sulfone': 'FipronilSulfone',
+    'Azinphos-methyl': 'AzinphosMethyl',
+    'Chlorpyrifos-methyl': 'ChlorpyrifosMethyl',
+    'Isofenphos-methyl': 'IsofenphosMethyl',
+    'Parathion-methyl': 'ParathionMethyl',
+    'Pirimiphos-methyl': 'PirimiphosMethyl'
+  };
+  if (directMap[compoundName]) return directMap[compoundName];
+  return compoundName.replace(/-([a-z])/gi, function(match, letter) { return letter.toUpperCase(); }).replace(/[-_,\s'\(\)]/g, '');
+}/**
  * Tu dong nhan dien va dien Bang Duong Chuan & Bang Ket Qua cho Form Don cua SOP Type 3B
  */
 function _fillFormDonTablesDynamically(pageElements, metadata, samples, compoundName, sopConfig) {
