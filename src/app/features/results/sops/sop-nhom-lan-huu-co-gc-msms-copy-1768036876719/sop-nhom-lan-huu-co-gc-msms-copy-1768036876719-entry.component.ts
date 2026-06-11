@@ -474,13 +474,15 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
     const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
     if (subCodes.length > 1) {
       return subCodes.some(sc => {
-        const assigned = targetMap[sc];
+        const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
+        const assigned = matchKey ? targetMap[matchKey] : null;
         if (!assigned || assigned.length === 0) return true;
         return isCompoundAssigned(assigned, compound);
       });
     }
 
-    const assigned = targetMap[sampleCode];
+    const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+    const assigned = matchKey ? targetMap[matchKey] : null;
     if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
   }
@@ -574,9 +576,6 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
         row[`${compound}_qc3`] = 'Đạt';
       } else {
         row[compound] = '';
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
       }
     }
     this.onDataChanged();
@@ -593,15 +592,9 @@ export class SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent implements OnI
       const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
       if (val.trim() !== '') {
         row[`${compound}_nd`] = false;
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
       } else {
-        // Khi xóa trống kết quả: Đưa về trạng thái ban đầu tinh khiết (chưa điền kết quả, chưa tích ND, QCs = N/A)
+        // Khi xóa trống kết quả: Đưa về trạng thái ban đầu tinh khiết
         row[`${compound}_nd`] = false;
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
       }
     }
     this.onDataChanged();

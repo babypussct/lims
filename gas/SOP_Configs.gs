@@ -151,8 +151,8 @@ const CONFIG = {
         'date2': 'ngayNguoiThamTra',
       },
       resultColumns: [
-        { key: 'Acephate' }, { key: 'AzinphosMethyl' }, { key: 'Cadusafos' }, { key: 'Chlorpyrifos' },
-        { key: 'ChlorpyrifosMethyl' }, { key: 'Diazinon' }, { key: 'Dimethoate' }, { key: 'Edifenphos' },
+        { key: 'Acephate' }, { key: 'AzinphosMethyl' }, { key: 'Cadusafos' }, { key: 'Chlorpyryfos' },
+        { key: 'ChlorpyryfosMethyl' }, { key: 'Diazinon' }, { key: 'Dimethoate' }, { key: 'Edifenphos' },
         { key: 'Ethion' }, { key: 'Ethoprophos' }, { key: 'Fenitrothion' }, { key: 'Fenthion' },
         { key: 'Fipronil' }, { key: 'FipronilSulfide' }, { key: 'FipronilSulfone' }, { key: 'FipronilDesulfinyl' },
         { key: 'Iprobenfos' }, { key: 'Malathion' }, { key: 'Mefenoxam' }, { key: 'Metalaxyl' },
@@ -163,7 +163,7 @@ const CONFIG = {
         { key: 'Chlorfenvinphos' }, { key: 'IsofenphosMethyl' }
       ],
       compounds: [
-        'Acephate', 'Azinphos-methyl', 'Cadusafos', 'Chlorpyrifos', 'Chlorpyrifos-methyl',
+        'Acephate', 'Azinphos-methyl', 'Cadusafos', 'Chlorpyryfos', 'Chlorpyryfos-methyl',
         'Diazinon', 'Dimethoate', 'Edifenphos', 'Ethion', 'Ethoprophos',
         'Fenitrothion', 'Fenthion', 'Fipronil', 'Fipronil sulfide', 'Fipronil sulfone',
         'Fipronil desulfinyl', 'Iprobenfos', 'Malathion', 'Mefenoxam', 'Metalaxyl',

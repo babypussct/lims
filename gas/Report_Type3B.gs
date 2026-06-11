@@ -143,7 +143,8 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     const codesToCheck = subCodes.length > 0 ? subCodes : [sampleCode];
     
     for (const sc of codesToCheck) {
-      const assignedTargetIds = sampleTargetMap[sc];
+      const matchKey = Object.keys(sampleTargetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
+      const assignedTargetIds = matchKey ? sampleTargetMap[matchKey] : null;
       if (!assignedTargetIds) return true; // Fallback an toàn nếu không tìm thấy cấu hình của mẫu
       
       const compLower = compoundName.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
@@ -349,8 +350,8 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             }
             // 3. Xử lý các lỗi chính tả phổ biến trên biểu mẫu
             if (!matchedCompound) {
-              if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos')) {
-                matchedCompound = normCell.includes('methyl') ? 'Chlorpyrifos-methyl' : 'Chlorpyrifos';
+              if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos') || normCell.includes('chlorpyrifos')) {
+                matchedCompound = normCell.includes('methyl') ? 'Chlorpyryfos-methyl' : 'Chlorpyryfos';
               }
             }
             
@@ -377,7 +378,31 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             const isAssigned = isTargetAssignedForGas(sample.maSoMau, compound);
             
             if (!isAssigned) {
-              // Hoạt chất KHÔNG được chỉ định (N/A) -> Để nguyên form mặc định (bỏ qua gạch ngang và uncheck QC)
+              // Hoạt chất KHÔNG được chỉ định (N/A) -> Tự động xoá trắng các dấu tick (nếu có sẵn trên form)
+              for (const cell of segmentCells) {
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*ND');
+                if (foundNd) {
+                  try {
+                    const textElement = foundNd.getElement().asText();
+                    const start = foundNd.getStartOffset();
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
+                    if (match) {
+                      const mStr = match[0].toLowerCase();
+                      if (mStr === '☑' || mStr.includes('x') || mStr.includes('v')) {
+                        const insertPos = start + match.index;
+                        textElement.insertText(insertPos, '☐');
+                        textElement.deleteText(insertPos + 1, insertPos + match[0].length);
+                      }
+                    }
+                  } catch(e) {}
+                }
+              }
+              _setNthQcCheckboxInCells(segmentCells, 0, 'Đ', false);
+              _setNthQcCheckboxInCells(segmentCells, 0, 'KĐ', false);
+              _setNthQcCheckboxInCells(segmentCells, 1, 'Đ', false);
+              _setNthQcCheckboxInCells(segmentCells, 1, 'KĐ', false);
+              _setNthQcCheckboxInCells(segmentCells, 2, 'Đ', false);
+              _setNthQcCheckboxInCells(segmentCells, 2, 'KĐ', false);
               continue;
               
             } else {
@@ -393,12 +418,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               
               // 7.1. Tìm checkbox ND và điền kết quả (dấu chấm) trong segment
               for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*\\]|\\(\\s*\\))\\s*ND');
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*ND');
                 if (foundNd) {
                   try {
                     const textElement = foundNd.getElement().asText();
                     const start = foundNd.getStartOffset();
-                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*\]|\(\s*\))/);
+                    const match = textElement.getText().substring(start, foundNd.getEndOffsetInclusive() + 1).match(/([☐□☑]|\[\s*[xXvV]?\s*\]|\(\s*[xXvV]?\s*\))/);
                     if (match) {
                       const insertPos = start + match.index;
                       const charToInsert = isNd ? '☑' : '☐';
@@ -502,8 +527,8 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
         }
       }
       if (!matchedCompound) {
-        if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos')) {
-          matchedCompound = normCell.includes('methyl') ? 'Chlorpyrifos-methyl' : 'Chlorpyrifos';
+        if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos') || normCell.includes('chlorpyrifos')) {
+          matchedCompound = normCell.includes('methyl') ? 'Chlorpyryfos-methyl' : 'Chlorpyryfos';
         }
       }
       if (matchedCompound) {
@@ -714,7 +739,8 @@ function _getPayloadKey(compoundName) {
     'Fipronil sulfide': 'FipronilSulfide',
     'Fipronil sulfone': 'FipronilSulfone',
     'Azinphos-methyl': 'AzinphosMethyl',
-    'Chlorpyrifos-methyl': 'ChlorpyrifosMethyl',
+    'Chlorpyrifos-methyl': 'ChlorpyryfosMethyl',
+    'Chlorpyryfos-methyl': 'ChlorpyryfosMethyl',
     'Isofenphos-methyl': 'IsofenphosMethyl',
     'Parathion-methyl': 'ParathionMethyl',
     'Pirimiphos-methyl': 'PirimiphosMethyl'

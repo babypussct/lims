@@ -10,7 +10,7 @@ import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
-import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { navigateGrid } from '../shared/sop-grid-helper';
 import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 
 @Component({
@@ -177,8 +177,8 @@ export class Sop01EntryComponent implements OnInit {
       'kqFipDesl': 'Fipronil desulfinyl',
       'kqFipSulf': 'Fipronil sulfide',
       'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyrifos',
-      'kqClpMe': 'Chlorpyrifos methyl',
+      'kqClp': 'Chlorpyryfos',
+      'kqClpMe': 'Chlorpyryfos-methyl',
       'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
     };
     const defaultName = customNames[colKey] || colKey;
@@ -204,7 +204,9 @@ export class Sop01EntryComponent implements OnInit {
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
-    const assigned = targetMap[sampleCode];
+
+    const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+    const assigned = matchKey ? targetMap[matchKey] : null;
     if (!assigned || assigned.length === 0) return true;
 
     const customNames: Record<string, string> = {
@@ -212,8 +214,8 @@ export class Sop01EntryComponent implements OnInit {
       'kqFipDesl': 'Fipronil desulfinyl',
       'kqFipSulf': 'Fipronil sulfide',
       'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyrifos',
-      'kqClpMe': 'Chlorpyrifos methyl',
+      'kqClp': 'Chlorpyryfos',
+      'kqClpMe': 'Chlorpyryfos-methyl',
       'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
     };
     const compound = customNames[col] || col;
@@ -228,7 +230,8 @@ export class Sop01EntryComponent implements OnInit {
     if (sampleList.length === 0) return true;
 
     return sampleList.some((sampleCode: string) => {
-      const assigned = targetMap[sampleCode];
+      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+      const assigned = matchKey ? targetMap[matchKey] : null;
       if (!assigned || assigned.length === 0) return true;
 
       const customNames: Record<string, string> = {
@@ -236,8 +239,8 @@ export class Sop01EntryComponent implements OnInit {
         'kqFipDesl': 'Fipronil desulfinyl',
         'kqFipSulf': 'Fipronil sulfide',
         'kqFipSulf2': 'Fipronil sulfone',
-        'kqClp': 'Chlorpyrifos',
-        'kqClpMe': 'Chlorpyrifos methyl',
+        'kqClp': 'Chlorpyryfos',
+        'kqClpMe': 'Chlorpyryfos-methyl',
         'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
       };
       const compound = customNames[col] || col;
@@ -399,19 +402,63 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   bulkFillND() {
-    bulkFillND(this.draft.resultData, this.run.sampleList, this.activeColumns, (key) => this.updateRecovery(key));
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+
+    allRowKeys.forEach((key: string) => {
+      const row = this.draft.resultData[key];
+      if (row) {
+        this.activeColumns.forEach((col: string) => {
+          if (!this.isTargetAssigned(key, col)) {
+            row[col] = 'N/A';
+          } else if (!row[col] || row[col].toString().trim() === '') {
+            row[col] = 'ND';
+          }
+        });
+        this.updateRecovery(key);
+      }
+    });
+
     this.draft.page1Data['checkTatCaND'] = true;
     this.draft.page1Data['checkCoMauPhatHien'] = false;
     this.onDataChanged();
   }
 
   bulkClearAll() {
-    bulkClearAll(this.draft.resultData, this.run.sampleList, this.activeColumns);
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    allRowKeys.forEach((key: string) => {
+      const row = this.draft.resultData[key];
+      if (row) {
+        this.activeColumns.forEach((col: string) => {
+          row[col] = this.isTargetAssigned(key, col) ? '' : 'N/A';
+        });
+        row['ghiChu'] = '';
+      }
+    });
     this.onDataChanged();
   }
 
   copyRowToAll(sourceKey: string) {
-    copyRowToAll(this.draft.resultData, this.run.sampleList, this.activeColumns, sourceKey, (key) => this.updateRecovery(key));
+    const sourceData = this.draft.resultData[sourceKey];
+    if (!sourceData) return;
+
+    const sampleList = this.run.sampleList || [];
+    sampleList.forEach((targetKey: string) => {
+      if (targetKey !== sourceKey) {
+        if (!this.draft.resultData[targetKey]) {
+          this.draft.resultData[targetKey] = { selected: true };
+        }
+        const destRow = this.draft.resultData[targetKey];
+        this.activeColumns.forEach((col: string) => {
+          if (!this.isTargetAssigned(targetKey, col)) {
+            destRow[col] = 'N/A';
+          } else {
+            const sourceValue = this.isTargetAssigned(sourceKey, col) ? sourceData[col] : '';
+            destRow[col] = (sourceValue === 'N/A' && this.isTargetAssigned(targetKey, col)) ? '' : (sourceValue || '');
+          }
+        });
+        this.updateRecovery(targetKey);
+      }
+    });
     this.onDataChanged();
   }
 

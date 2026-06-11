@@ -114,6 +114,15 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
 export function resolveCompoundDisplayName(compound: string, analytes: any[]): string {
   if (!analytes || analytes.length === 0) return compound;
 
+  // Special overrides for spelling preferred by the user
+  const lowerComp = compound.toLowerCase();
+  if (lowerComp === 'chlorpyryfos' || lowerComp === 'chlorpyrifos' || lowerComp === 'chlorpyrofos') {
+    return 'Chlorpyryfos';
+  }
+  if (lowerComp === 'chlorpyryfos-methyl' || lowerComp === 'chlorpyrifos-methyl' || lowerComp === 'chlorpyrofos-methyl' || lowerComp === 'chlorpyrifosmethyl' || lowerComp === 'chlorpyryfosmethyl') {
+    return 'Chlorpyryfos-methyl';
+  }
+
   // 1. Exact match by ID or Name (case-insensitive)
   const exactMatch = analytes.find(a =>
     a.id.toLowerCase() === compound.toLowerCase() ||

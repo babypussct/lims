@@ -313,13 +313,15 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
     if (subCodes.length > 1) {
       return subCodes.some(sc => {
-        const assigned = targetMap[sc];
+        const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
+        const assigned = matchKey ? targetMap[matchKey] : null;
         if (!assigned || assigned.length === 0) return true;
         return isCompoundAssigned(assigned, compound);
       });
     }
 
-    const assigned = targetMap[sampleCode];
+    const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+    const assigned = matchKey ? targetMap[matchKey] : null;
     if (!assigned || assigned.length === 0) return true;
     return isCompoundAssigned(assigned, compound);
   }
@@ -404,15 +406,14 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
       if (row[`${compound}_nd`]) {
+        // KPH/ND được check => Xóa trắng giá trị kết quả, QC tự động Đạt
         row[compound] = '';
         row[`${compound}_qc1`] = 'Đạt';
         row[`${compound}_qc2`] = 'Đạt';
         row[`${compound}_qc3`] = 'Đạt';
       } else {
+        // KPH/ND bỏ check => Xóa trắng giá trị, giữ QC trống để user tự chọn
         row[compound] = '';
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
       }
     }
     this.onDataChanged();
@@ -423,18 +424,12 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
       const rawVal = row[compound];
-      const val = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
-      if (val.trim() !== '') {
+      const val = rawVal !== undefined && rawVal !== null ? String(rawVal).trim() : '';
+      if (val !== '') {
+        // Có nhập giá trị => tự động bỏ check ND
         row[`${compound}_nd`] = false;
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
-      } else {
-        row[`${compound}_nd`] = false;
-        row[`${compound}_qc1`] = 'N/A';
-        row[`${compound}_qc2`] = 'N/A';
-        row[`${compound}_qc3`] = 'N/A';
       }
+      // Không thay đổi QC buttons — để user tự quyết định
     }
     this.onDataChanged();
   }

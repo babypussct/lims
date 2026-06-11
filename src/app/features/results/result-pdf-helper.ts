@@ -294,6 +294,42 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const sampleList = currentRun.sampleList || [];
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
+  const chlorMap: Record<string, string> = {
+    'BHC-alpha': 'BHCa',
+    'BHC-beta': 'BHCb',
+    'BHC-delta': 'BHCd',
+    'BHC-epsilon': 'BHCe',
+    'BHC-gamma': 'BHCg',
+    'Chlordane-cis': 'Chlordane_cis',
+    'Chlordane-oxy': 'Chlordane_oxy',
+    'Chlordane-trans': 'Chlordane_trans',
+    'DDD-o,p': 'DDD_op',
+    'DDD-p,p': 'DDD_pp',
+    'DDE-o,p': 'DDE_op',
+    'DDE-p,p': 'DDE_pp',
+    'DDT-o,p': 'DDT_op',
+    'DDT-p,p': 'DDT_pp',
+    'Endosulfan-I': 'Endosulfan1',
+    'Endosulfan-II': 'Endosulfan2',
+    'Endosulfan-sulfate': 'EndosulfanS',
+    'Heptachlor-epoxide-trans': 'HeptachlorA',
+    'Heptachlor-epoxide-cis': 'HeptachlorB',
+    'Hexachlorobenzene': 'HCB'
+  };
+
+  const mapCompoundToKey = (c: string): string => {
+    if (chlorMap[c]) return chlorMap[c];
+    if (c === 'Parathion-ethyl') return 'Parathion';
+    if (c === 'Ipobenfos') return 'Iprobenfos';
+    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+  };
+
+  const isAssigned = (sampleCode: string, compound: string): boolean => {
+    const assigned = sampleTargetMap[sampleCode];
+    if (!assigned) return true;
+    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+  };
+
   const filteredSamples = sampleList.filter((s: string) => {
     const resObj = currentDraft.resultData[s] || {};
     const startsWithLetter = /^[a-zA-Z]/.test(s);
@@ -311,42 +347,8 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
       maSoMau: mergedSampleCode
     };
 
-    const chlorMap: Record<string, string> = {
-      'BHC-alpha': 'BHCa',
-      'BHC-beta': 'BHCb',
-      'BHC-delta': 'BHCd',
-      'BHC-epsilon': 'BHCe',
-      'BHC-gamma': 'BHCg',
-      'Chlordane-cis': 'Chlordane_cis',
-      'Chlordane-oxy': 'Chlordane_oxy',
-      'Chlordane-trans': 'Chlordane_trans',
-      'DDD-o,p': 'DDD_op',
-      'DDD-p,p': 'DDD_pp',
-      'DDE-o,p': 'DDE_op',
-      'DDE-p,p': 'DDE_pp',
-      'DDT-o,p': 'DDT_op',
-      'DDT-p,p': 'DDT_pp',
-      'Endosulfan-I': 'Endosulfan1',
-      'Endosulfan-II': 'Endosulfan2',
-      'Endosulfan-sulfate': 'EndosulfanS',
-      'Heptachlor-epoxide-trans': 'HeptachlorA',
-      'Heptachlor-epoxide-cis': 'HeptachlorB',
-      'Hexachlorobenzene': 'HCB'
-    };
-
-    const mapCompoundToKey = (c: string): string => {
-      if (chlorMap[c]) return chlorMap[c];
-      if (c === 'Parathion-ethyl') return 'Parathion';
-      if (c === 'Ipobenfos') return 'Iprobenfos';
-      return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-    };
-
     const isAssignedToAny = (compound: string): boolean => {
-      return filteredSamples.some((s: string) => {
-        const assigned = sampleTargetMap[s];
-        if (!assigned) return true;
-        return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
-      });
+      return filteredSamples.some((s: string) => isAssigned(s, compound));
     };
 
     currentConf.compounds.forEach((c: string) => {
@@ -364,13 +366,16 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
+          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'N/A') {
+          if (commonVal === 'KPH') {
             rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else if (commonVal === 'N/A') {
+            rowData[`${backendKey}_nd`] = false;
             rowData[backendKey] = '';
           } else {
             rowData[`${backendKey}_nd`] = false;
@@ -382,10 +387,10 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
-            return `${s}: ${displayVal}`;
+            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.join('; ');
+          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -430,41 +435,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
           maSoMau: displayMaSoMau
         };
 
-        const chlorMap: Record<string, string> = {
-          'BHC-alpha': 'BHCa',
-          'BHC-beta': 'BHCb',
-          'BHC-delta': 'BHCd',
-          'BHC-epsilon': 'BHCe',
-          'BHC-gamma': 'BHCg',
-          'Chlordane-cis': 'Chlordane_cis',
-          'Chlordane-oxy': 'Chlordane_oxy',
-          'Chlordane-trans': 'Chlordane_trans',
-          'DDD-o,p': 'DDD_op',
-          'DDD-p,p': 'DDD_pp',
-          'DDE-o,p': 'DDE_op',
-          'DDE-p,p': 'DDE_pp',
-          'DDT-o,p': 'DDT_op',
-          'DDT-p,p': 'DDT_pp',
-          'Endosulfan-I': 'Endosulfan1',
-          'Endosulfan-II': 'Endosulfan2',
-          'Endosulfan-sulfate': 'EndosulfanS',
-          'Heptachlor-epoxide-trans': 'HeptachlorA',
-          'Heptachlor-epoxide-cis': 'HeptachlorB',
-          'Hexachlorobenzene': 'HCB'
-        };
 
-        const mapCompoundToKey = (c: string): string => {
-          if (chlorMap[c]) return chlorMap[c];
-          if (c === 'Parathion-ethyl') return 'Parathion';
-          if (c === 'Ipobenfos') return 'Iprobenfos';
-          return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-        };
-
-        const isAssigned = (sampleCode: string, compound: string): boolean => {
-          const assigned = sampleTargetMap[sampleCode];
-          if (!assigned) return true;
-          return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
-        };
 
         currentConf.compounds.forEach((c: string) => {
           const backendKey = mapCompoundToKey(c);
@@ -591,13 +562,16 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
+          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'N/A') {
+          if (commonVal === 'KPH') {
             rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else if (commonVal === 'N/A') {
+            rowData[`${backendKey}_nd`] = false;
             rowData[backendKey] = '';
           } else {
             rowData[`${backendKey}_nd`] = false;
@@ -609,10 +583,10 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
-            return `${s}: ${displayVal}`;
+            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.join('; ');
+          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -955,13 +929,16 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
+          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'N/A') {
+          if (commonVal === 'KPH') {
             rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else if (commonVal === 'N/A') {
+            rowData[`${backendKey}_nd`] = false;
             rowData[backendKey] = '';
           } else {
             rowData[`${backendKey}_nd`] = false;
@@ -973,10 +950,10 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
-            return `${s}: ${displayVal}`;
+            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.join('; ');
+          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
@@ -1304,13 +1281,16 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
           const sRes = currentDraft.resultData[s] || {};
           const isNd = sRes[`${c}_nd`] === true;
           const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : (sVal === 'N/A' ? '' : sVal || 'N/A'));
+          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
         }));
 
         if (uniqueVals.size === 1) {
           const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'N/A') {
+          if (commonVal === 'KPH') {
             rowData[`${backendKey}_nd`] = true;
+            rowData[backendKey] = '';
+          } else if (commonVal === 'N/A') {
+            rowData[`${backendKey}_nd`] = false;
             rowData[backendKey] = '';
           } else {
             rowData[`${backendKey}_nd`] = false;
@@ -1322,10 +1302,10 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'N/A' : (sVal === 'N/A' ? 'N/A' : sVal || 'N/A');
-            return `${s}: ${displayVal}`;
+            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
-          rowData[backendKey] = resultParts.join('; ');
+          rowData[backendKey] = resultParts.filter(p => !p.endsWith(':')).join('; ');
         }
 
         const getMergedQc = (qcKey: string): string => {
