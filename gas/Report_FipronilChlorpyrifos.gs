@@ -15,7 +15,38 @@ function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, sample
   try {
     const maHoSoVal = (metadata.maHoSo || "").trim();
     if (maHoSoVal) {
-      replaceDotsSafely(body, '(?:1\\.\\s*)?Mã\\s*hồ\\s*sơ[^\\.…]*[\\.…]+', maHoSoVal);
+      let found = body.findText('(?i)Mã\\s*hồ\\s*sơ[^:\\n]*:');
+      while (found) {
+        const textElement = found.getElement().asText();
+        const end = found.getEndOffsetInclusive();
+        const fullText = textElement.getText();
+        
+        let cursor = end + 1;
+        // Bỏ qua dấu cách ngay sau dấu hai chấm (nhưng không bỏ qua Tab)
+        while (cursor < fullText.length && fullText[cursor] === ' ') {
+          cursor++;
+        }
+        
+        let hasDots = false;
+        let dotsEnd = cursor;
+        while (dotsEnd < fullText.length && (fullText[dotsEnd] === '.' || fullText[dotsEnd] === '…')) {
+          hasDots = true;
+          dotsEnd++;
+        }
+        
+        if (hasDots) {
+          textElement.deleteText(cursor, dotsEnd - 1);
+          textElement.insertText(cursor, maHoSoVal);
+        } else {
+          if (end + 1 < fullText.length && fullText[end + 1] === ' ') {
+            textElement.insertText(end + 2, maHoSoVal);
+          } else {
+            textElement.insertText(end + 1, ' ' + maHoSoVal);
+          }
+        }
+        
+        found = body.findText('(?i)Mã\\s*hồ\\s*sơ[^:\\n]*:', found);
+      }
     }
 
     const fVal = (metadata.heSoPhaLoang || "1").trim();

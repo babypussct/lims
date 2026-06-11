@@ -1,19 +1,33 @@
 {
   "id": "9.16-tbvtv-water",
-  "category": "Hóa học",
-  "name": "XÁC ĐỊNH DƯ LƯỢNG THUỐC BẢO VỆ THỰC VẬT TRONG NƯỚC BẰNG GC-MS/MS",
+  "category": "NAFI6 H-9.16",
+  "name": "TBVTV Trong Nước - GC-MS/MS",
   "ref": "AOAC 990.06, AOAC 991.07",
   "inputs": [
     {
-      "var": "V",
-      "label": "Lượng mẫu",
+      "var": "n_sample",
+      "label": "Số lượng mẫu",
+      "type": "number",
+      "default": 1,
+      "unitLabel": "mẫu"
+    },
+    {
+      "var": "n_qc",
+      "label": "Số lượng QC",
+      "type": "number",
+      "default": 8,
+      "unitLabel": "mẫu"
+    },
+    {
+      "var": "w_sample",
+      "label": "Lượng mẫu (Thể tích)",
       "type": "number",
       "default": 100.0,
       "unitLabel": "ml"
     }
   ],
   "variables": {
-    "V": "100"
+    "w_sample": "100"
   },
   "consumables": [
     {
