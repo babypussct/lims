@@ -14,6 +14,7 @@ import { TargetService } from '../../targets/target.service';
 import { Sop, CalculatedItem, SopTarget, TargetGroup } from '../../../core/models/sop.model';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
+import { MasterTargetService } from '../../targets/master-target.service';
 import { UNIT_OPTIONS, formatNum, formatDate, generateSlug } from '../../../shared/utils/utils';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
@@ -37,6 +38,7 @@ export class SopEditorComponent implements OnDestroy {
   invService = inject(InventoryService);
   recipeService = inject(RecipeService);
   targetService = inject(TargetService); 
+  masterTargetService = inject(MasterTargetService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   calcService = inject(CalculatorService);
@@ -415,5 +417,31 @@ export class SopEditorComponent implements OnDestroy {
           this.toast.show('Tất cả chỉ tiêu trong bộ này đã có sẵn.', 'info');
       }
       this.showGroupModal.set(false);
+  }
+
+  async syncToMasterTargets() {
+      const rawTargets = this.form.value.targets as any[];
+      const validTargets = rawTargets.filter(t => t.id && t.name);
+      
+      if (validTargets.length === 0) {
+          this.toast.show('Không có chỉ tiêu hợp lệ để đồng bộ.', 'info');
+          return;
+      }
+
+      this.isLoading.set(true);
+      try {
+          const masterAnalytes: any[] = validTargets.map(t => ({
+              id: t.id,
+              name: t.name,
+              default_unit: t.unit || 'ppb'
+          }));
+
+          await this.masterTargetService.saveBatch(masterAnalytes);
+          this.toast.show(`Đã đồng bộ ${masterAnalytes.length} chỉ tiêu về thư viện chung!`, 'success');
+      } catch (e: any) {
+          this.toast.show('Lỗi đồng bộ: ' + (e.message || 'Unknown'), 'error');
+      } finally {
+          this.isLoading.set(false);
+      }
   }
 }
