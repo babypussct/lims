@@ -61,113 +61,18 @@
   ],
   "targets": [
     {
-      "id": "phosmet",
-      "name": "Phosmet",
+      "id": "alachlor",
+      "name": "Alachlor",
       "loq": "0.5 ppb"
     },
     {
-      "id": "phosphamidon",
-      "name": "Phosphamidon",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "pirimiphos-methyl",
-      "name": "Pirimiphos methyl",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "profenofos",
-      "name": "Profenofos",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "triazophos",
-      "name": "Triazophos",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "vamidothion",
-      "name": "Vamidothion",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "difenoconazole",
-      "name": "Difenoconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "propiconazole",
-      "name": "Propiconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "chlorfenapyr",
-      "name": "Chlorfenapyr",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "tetraconazole",
-      "name": "Tetraconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "hexaconazole",
-      "name": "Hexaconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "triadimenol",
-      "name": "Triadimenol",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "paclobutrazol",
-      "name": "Paclobutrazol",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "flutriafol",
-      "name": "Flutriafol",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "imazalil",
-      "name": "Imazalil",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "uniconazole",
-      "name": "Uniconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "tricyclazole",
-      "name": "Tricyclazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "cyproconazole",
-      "name": "Cyproconazole",
+      "id": "atrazine",
+      "name": "Atrazine",
       "loq": "0.5 ppb"
     },
     {
       "id": "azoxystrobin",
       "name": "Azoxystrobin",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "fenbuconazole",
-      "name": "Fenbuconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "tebuconazole",
-      "name": "Tebuconazole",
-      "loq": "0.5 ppb"
-    },
-    {
-      "id": "fipronil",
-      "name": "Fipronil",
       "loq": "0.5 ppb"
     },
     {
@@ -181,18 +86,28 @@
       "loq": "0.5 ppb"
     },
     {
-      "id": "butachlor",
-      "name": "Butachlor",
-      "loq": "0.5 ppb"
-    },
-    {
       "id": "buprofezin",
       "name": "Buprofezin",
       "loq": "0.5 ppb"
     },
     {
+      "id": "butachlor",
+      "name": "Butachlor",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "chlorfenapyr",
+      "name": "Chlorfenapyr",
+      "loq": "0.5 ppb"
+    },
+    {
       "id": "chlorothalonil",
       "name": "Chlorothalonil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "cyproconazole",
+      "name": "Cyproconazole",
       "loq": "0.5 ppb"
     },
     {
@@ -206,8 +121,23 @@
       "loq": "0.5 ppb"
     },
     {
+      "id": "difenoconazole",
+      "name": "Difenoconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fenbuconazole",
+      "name": "Fenbuconazole",
+      "loq": "0.5 ppb"
+    },
+    {
       "id": "fenoxanil",
       "name": "Fenoxanil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "fipronil",
+      "name": "Fipronil",
       "loq": "0.5 ppb"
     },
     {
@@ -228,6 +158,21 @@
     {
       "id": "flusilazole",
       "name": "Flusilazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "flutriafol",
+      "name": "Flutriafol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "hexaconazole",
+      "name": "Hexaconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "imazalil",
+      "name": "Imazalil",
       "loq": "0.5 ppb"
     },
     {
@@ -256,8 +201,18 @@
       "loq": "0.5 ppb"
     },
     {
-      "id": "alachlor",
-      "name": "Alachlor",
+      "id": "paclobutrazol",
+      "name": "Paclobutrazol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "phosmet",
+      "name": "Phosmet",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "phosphamidon",
+      "name": "Phosphamidon",
       "loq": "0.5 ppb"
     },
     {
@@ -266,8 +221,23 @@
       "loq": "0.5 ppb"
     },
     {
+      "id": "pirimiphos-methyl",
+      "name": "Pirimiphos methyl",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "profenofos",
+      "name": "Profenofos",
+      "loq": "0.5 ppb"
+    },
+    {
       "id": "propanil",
       "name": "Propanil",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "propiconazole",
+      "name": "Propiconazole",
       "loq": "0.5 ppb"
     },
     {
@@ -286,13 +256,13 @@
       "loq": "0.5 ppb"
     },
     {
-      "id": "tebufenpyrad",
-      "name": "Tebufenpyrad",
+      "id": "tebuconazole",
+      "name": "Tebuconazole",
       "loq": "0.5 ppb"
     },
     {
-      "id": "atrazine",
-      "name": "Atrazine",
+      "id": "tebufenpyrad",
+      "name": "Tebufenpyrad",
       "loq": "0.5 ppb"
     },
     {
@@ -301,18 +271,48 @@
       "loq": "0.5 ppb"
     },
     {
+      "id": "tetraconazole",
+      "name": "Tetraconazole",
+      "loq": "0.5 ppb"
+    },
+    {
       "id": "thiabendazole",
       "name": "Thiabendazole",
       "loq": "0.5 ppb"
     },
     {
-      "id": "vinclozolin",
-      "name": "Vinclozolin",
+      "id": "triadimenol",
+      "name": "Triadimenol",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "triazophos",
+      "name": "Triazophos",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "tricyclazole",
+      "name": "Tricyclazole",
       "loq": "0.5 ppb"
     },
     {
       "id": "trifluralin",
       "name": "Trifluralin",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "uniconazole",
+      "name": "Uniconazole",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "vamidothion",
+      "name": "Vamidothion",
+      "loq": "0.5 ppb"
+    },
+    {
+      "id": "vinclozolin",
+      "name": "Vinclozolin",
       "loq": "0.5 ppb"
     },
     {
@@ -361,7 +361,7 @@
       "loq": "0.5 ppb"
     },
     {
-      "id": "silafluofen",
+      "id": "silafluofen-2",
       "name": "Silafluofen",
       "loq": "0.5 ppb"
     },
@@ -446,23 +446,23 @@
       "loq": "0.5 ppb"
     },
     {
-      "id": "fipronil",
+      "id": "fipronil-2",
       "name": "Fipronil",
       "loq": "0.5 ppb"
     },
     {
-      "id": "fipronil",
-      "name": "Fipronil",
+      "id": "fipronil-sulfide",
+      "name": "Fipronil-sulfide",
       "loq": "0.5 ppb"
     },
     {
-      "id": "fipronil",
-      "name": "Fipronil",
+      "id": "fipronil-sulfone",
+      "name": "Fipronil-sulfone",
       "loq": "0.5 ppb"
     },
     {
-      "id": "fipronil",
-      "name": "Fipronil",
+      "id": "fipronil-desulfinyl",
+      "name": "Fipronil-desulfinyl",
       "loq": "0.5 ppb"
     },
     {
