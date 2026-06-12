@@ -518,8 +518,8 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       'Chlorpyrifos-methyl': 'Chlorpyrifos-methyl',
       'Chlorpyryfos': 'Chlorpyrifos',
       'Chlorpyryfos-methyl': 'Chlorpyrifos-methyl',
-      'Edifenphos': 'Edifenfos',
-      'Ethoprophos': 'Ethoprofos(Ethoprop)',
+      'Edifenphos': 'Edifenphos',
+      'Ethoprophos': 'Ethoprophos (Ethoprop)',
       'Ronnel': 'Ronnel (Fenchlorphos)'
     };
     if (directMap[c]) return directMap[c];
