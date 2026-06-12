@@ -159,7 +159,7 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
 
 let firestoreIdsCache: Set<string> | null = null;
 
-function getCanonicalId(name: string): string {
+export function getCanonicalId(name: string): string {
   if (!name) return '';
   const lowerName = name.toLowerCase();
 

@@ -315,6 +315,7 @@ export class Sop1767856825928EntryComponent implements OnInit, OnChanges {
         const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
         const assigned = matchKey ? targetMap[matchKey] : null;
         return isCompoundAssigned(assigned, compound, this.masterTargets());
+      });
     }
 
     const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
