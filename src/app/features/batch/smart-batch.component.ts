@@ -1,5 +1,6 @@
 
 import { Component, inject, signal, computed, effect } from '@angular/core';
+import { getCanonicalId } from '../results/shared/compound-id-resolver';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
@@ -131,7 +132,7 @@ export class SmartBatchComponent {
 
   // --- COMPUTED: GENERAL ---
   activeSops = computed(() => this.state.sops().filter(s => !s.isArchived));
-  allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.id && t.name) { targets.set(t.id, { id: t.id, name: t.name, uniqueKey: t.id }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
+  allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.name) { const canonical = getCanonicalId(t.name); if (!targets.has(canonical)) targets.set(canonical, { id: canonical, name: t.name, uniqueKey: canonical }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
 
   // COMPUTED MAPS: Thay thế getFilteredTargets() và getEligibleSops() method calls trong template
   // Tránh tính lại không cần thiết mỗi change detection cycle trong @for loops
@@ -155,7 +156,7 @@ export class SmartBatchComponent {
       const reqTargets = Array.from(block.selectedTargets);
       map.set(block.id, active.filter(sop => {
         if (!sop.targets) return false;
-        const ids = new Set(sop.targets.map(t => t.id));
+        const ids = new Set(sop.targets.map(t => getCanonicalId(t.name)));
         return reqTargets.every(id => ids.has(id));
       }));
     }
@@ -305,7 +306,7 @@ export class SmartBatchComponent {
       // Note: SOP can do *more* targets, but must cover *at least* the requested ones.
       return allSops.filter(sop => {
           if (!sop.targets) return false;
-          const sopTargetIds = new Set(sop.targets.map(t => t.id));
+          const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
           
           for (const reqId of Array.from(reqTargets)) {
               if (!sopTargetIds.has(reqId)) return false; // Missing one -> Invalid
@@ -349,7 +350,7 @@ export class SmartBatchComponent {
       const requiredTargets = Array.from(block.selectedTargets);
       return this.activeSops().filter(sop => {
           if (!sop.targets) return false;
-          const sopTargetIds = new Set(sop.targets.map(t => t.id));
+          const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
           return requiredTargets.every(reqId => sopTargetIds.has(reqId));
       });
   }
@@ -431,8 +432,8 @@ export class SmartBatchComponent {
                   if (forcedSop) {
                       const blockSamples = new Set(samples);
                       const blockTargetIds = new Set(block.selectedTargets);
-                      const batchTargets = (forcedSop.targets || []).filter(t => blockTargetIds.has(t.id));
-                      const validSopTargets = new Set(batchTargets.map(t => t.id));
+                      const batchTargets = (forcedSop.targets || []).filter(t => blockTargetIds.has(getCanonicalId(t.name)));
+                      const validSopTargets = new Set(batchTargets.map(t => getCanonicalId(t.name)));
                       
                       const blockTasks: AnalysisTask[] = [];
                       for (const sample of samples) {
@@ -500,7 +501,7 @@ export class SmartBatchComponent {
 
               const candidates = sops.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
-                  const sopTargetIds = new Set(sop.targets.map(t => t.id));
+                  const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
                   
                   // Filter tasks that this SOP can cover
                   const coverableTasks = remainingTasks.filter(t => sopTargetIds.has(t.targetId));
@@ -548,7 +549,7 @@ export class SmartBatchComponent {
               const batchSamples = new Set(bestFit.coverableTasks.map(t => t.sample));
               const batchTargetIds = new Set(bestFit.coverableTasks.map(t => t.targetId));
               // Only include targets relevant to the tasks being covered
-              const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(t.id));
+              const batchTargets = (bestFit.sop.targets || []).filter(t => batchTargetIds.has(getCanonicalId(t.name)));
 
               // Calculate Resources
               const inputs: Record<string, any> = {};
@@ -735,7 +736,7 @@ export class SmartBatchComponent {
   private recalculateBatchMetadata(tasks: AnalysisTask[], sop: Sop, originalBatch: ProposedBatch): Partial<ProposedBatch> {
       const uniqueSamples = new Set(tasks.map(t => t.sample));
       const uniqueTargetIds = new Set(tasks.map(t => t.targetId));
-      const batchTargets = (sop.targets || []).filter(t => uniqueTargetIds.has(t.id));
+      const batchTargets = (sop.targets || []).filter(t => uniqueTargetIds.has(getCanonicalId(t.name)));
       
       const newInputs = { ...originalBatch.inputValues };
       // Try to reset n_sample based on new size, but keep other manual inputs
