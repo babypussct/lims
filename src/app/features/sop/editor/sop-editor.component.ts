@@ -12,6 +12,8 @@ import { InventoryService } from '../../inventory/inventory.service';
 import { RecipeService } from '../../recipes/recipe.service'; 
 import { TargetService } from '../../targets/target.service';
 import { Sop, CalculatedItem, SopTarget, TargetGroup } from '../../../core/models/sop.model';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
 import { MasterTargetService } from '../../targets/master-target.service';
@@ -43,6 +45,7 @@ export class SopEditorComponent implements OnDestroy {
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   calcService = inject(CalculatorService);
+  fbService = inject(FirebaseService);
   router: Router = inject(Router);
   fb: FormBuilder = inject(FormBuilder);
   
@@ -475,6 +478,121 @@ export class SopEditorComponent implements OnDestroy {
           await this.masterTargetService.saveBatch(masterAnalytes);
       } catch (e) {
           console.warn('Auto-sync to master analytes failed', e);
+      }
+  }
+
+  // --- GIAI ĐOẠN 2: MIGRATION SCRIPT ---
+  async runFullMigration() {
+      if (!confirm('CẢNH BÁO: Quá trình này sẽ quét toàn bộ SOPs và Runs/Batches để cập nhật Target ID sang Canonical ID. Đảm bảo bạn đang không chạy tác vụ nào khác. Tiếp tục?')) return;
+      this.isLoading.set(true);
+      try {
+          // 1. Quét toàn bộ SOPs
+          const sops = await this.sopService.getAllSops();
+          const uuidToCanonical = new Map<string, string>();
+          let sopsUpdated = 0;
+          
+          for (const sop of sops) {
+              let changed = false;
+              if (sop.targets) {
+                  sop.targets.forEach(t => {
+                      if (t.name) {
+                          const canonical = getCanonicalId(t.name);
+                          if (t.id !== canonical) {
+                              uuidToCanonical.set(t.id, canonical); // Map old ID to new Canonical ID
+                              t.id = canonical;
+                              changed = true;
+                          }
+                      }
+                  });
+              }
+              if (changed) {
+                  await this.sopService.saveSop(sop);
+                  sopsUpdated++;
+              }
+          }
+          this.toast.show(`Đã cập nhật xong ${sopsUpdated} SOPs! Đang cập nhật Runs...`, 'info');
+
+          // 2. Quét toàn bộ Runs/Batches (Requests)
+          let runsUpdated = 0;
+          const reqRef = collection(this.fbService.db, 'artifacts', this.fbService.APP_ID, 'requests');
+          const reqSnap = await getDocs(reqRef);
+          
+          let batch = writeBatch(this.fbService.db);
+          let opCount = 0;
+
+          reqSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              let docChanged = false;
+              const updates: any = {};
+
+              // Update targetIds array if exists
+              if (data['targetIds'] && Array.isArray(data['targetIds'])) {
+                  const newTargetIds = data['targetIds'].map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
+                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data['targetIds'])) {
+                      updates['targetIds'] = Array.from(new Set(newTargetIds));
+                      docChanged = true;
+                  }
+              }
+
+              // Update sampleTargetMap at root level
+              if (data['sampleTargetMap']) {
+                  const newMap: any = {};
+                  let mapChanged = false;
+                  Object.keys(data['sampleTargetMap']).forEach(sampleId => {
+                      const oldArr = data['sampleTargetMap'][sampleId] || [];
+                      const newArr = oldArr.map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
+                      newMap[sampleId] = Array.from(new Set(newArr));
+                      if (JSON.stringify(newArr) !== JSON.stringify(oldArr)) mapChanged = true;
+                  });
+                  if (mapChanged) {
+                      updates['sampleTargetMap'] = newMap;
+                      docChanged = true;
+                  }
+              }
+
+              // Update sampleTargetMap inside inputs object
+              if (data['inputs'] && data['inputs']['sampleTargetMap']) {
+                  const inputsCopy = { ...data['inputs'] };
+                  const newMap: any = {};
+                  let mapChanged = false;
+                  Object.keys(inputsCopy['sampleTargetMap']).forEach(sampleId => {
+                      const oldArr = inputsCopy['sampleTargetMap'][sampleId] || [];
+                      const newArr = oldArr.map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
+                      newMap[sampleId] = Array.from(new Set(newArr));
+                      if (JSON.stringify(newArr) !== JSON.stringify(oldArr)) mapChanged = true;
+                  });
+                  if (mapChanged) {
+                      inputsCopy['sampleTargetMap'] = newMap;
+                      updates['inputs'] = inputsCopy;
+                      docChanged = true;
+                  }
+              }
+
+              if (docChanged) {
+                  batch.update(docSnap.ref, updates);
+                  opCount++;
+                  runsUpdated++;
+
+                  if (opCount >= 400) {
+                      // commit
+                      batch.commit();
+                      batch = writeBatch(this.fbService.db);
+                      opCount = 0;
+                  }
+              }
+          });
+
+          if (opCount > 0) {
+              await batch.commit();
+          }
+
+          this.toast.show(`Migration Hoàn Tất! Đã cập nhật ${sopsUpdated} SOPs và ${runsUpdated} Mẻ phân tích.`, 'success');
+
+      } catch (e: any) {
+          console.error(e);
+          this.toast.show('Lỗi migration: ' + e.message, 'error');
+      } finally {
+          this.isLoading.set(false);
       }
   }
 }

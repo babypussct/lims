@@ -2,37 +2,27 @@
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
-import { isCompoundAssigned, resolveTargetMasterInfo } from './shared/compound-id-resolver';
+import { isCompoundAssigned, resolveTargetMasterInfo, getCanonicalId } from './shared/compound-id-resolver';
 import { formatSampleList } from '../../shared/utils/utils';
 
-export const chlorMap: Record<string, string> = {
-  'BHC-alpha': 'BHCa',
-  'BHC-beta': 'BHCb',
-  'BHC-delta': 'BHCd',
-  'BHC-epsilon': 'BHCe',
-  'BHC-gamma': 'BHCg',
-  'Chlordane-cis': 'Chlordane_cis',
-  'Chlordane-oxy': 'Chlordane_oxy',
-  'Chlordane-trans': 'Chlordane_trans',
-  'DDD-o,p': 'DDD_op',
-  'DDD-p,p': 'DDD_pp',
-  'DDE-o,p': 'DDE_op',
-  'DDE-p,p': 'DDE_pp',
-  'DDT-o,p': 'DDT_op',
-  'DDT-p,p': 'DDT_pp',
-  'Endosulfan-I': 'Endosulfan1',
-  'Endosulfan-II': 'Endosulfan2',
-  'Endosulfan-sulfate': 'EndosulfanS',
-  'Heptachlor-epoxide-trans': 'HeptachlorA',
-  'Heptachlor-epoxide-cis': 'HeptachlorB',
-  'Hexachlorobenzene': 'HCB'
-};
-
 export function mapCompoundToKey(c: string): string {
-  if (chlorMap[c]) return chlorMap[c];
-  if (c === 'Parathion-ethyl') return 'Parathion';
-  if (c === 'Ipobenfos') return 'Iprobenfos';
-  return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+  return getCanonicalId(c);
+}
+
+export function buildTargetMetadata(compounds: string[], masterTargets: any[]) {
+  const targetInfo: any = {};
+  if (!compounds) return targetInfo;
+  compounds.forEach(c => {
+      const canonical = getCanonicalId(c);
+      const master = masterTargets?.find(t => t.id === canonical || t.name === c);
+      targetInfo[canonical] = {
+          displayName: master?.name || c,
+          unit: master?.default_unit || 'ppb',
+          lod: master?.default_lod || '',
+          loq: master?.default_loq || ''
+      };
+  });
+  return targetInfo;
 }
 
 export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
@@ -483,6 +473,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
       ...currentDraft.page1Data,
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate())
@@ -822,6 +813,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1164,6 +1156,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1506,6 +1499,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
