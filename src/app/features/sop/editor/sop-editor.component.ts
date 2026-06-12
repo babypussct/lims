@@ -16,6 +16,7 @@ import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
 import { MasterTargetService } from '../../targets/master-target.service';
 import { UNIT_OPTIONS, formatNum, formatDate, generateSlug } from '../../../shared/utils/utils';
+import { getCanonicalId } from '../../results/shared/compound-id-resolver';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 
@@ -255,9 +256,9 @@ export class SopEditorComponent implements OnDestroy {
     // 1. AUTO-FIX IDs FOR TARGETS BEFORE VALIDATION
     const rawTargets = formVal.targets as any[];
     rawTargets.forEach((t, index) => {
-        // If ID is empty but Name exists, generate ID
+        // If ID is empty but Name exists, generate Canonical ID
         if (!t.id && t.name) {
-            const newId = generateSlug(t.name);
+            const newId = getCanonicalId(t.name);
             this.targets.at(index).patchValue({ id: newId });
             t.id = newId; // Update local ref for next check
         }
@@ -309,7 +310,21 @@ export class SopEditorComponent implements OnDestroy {
       version: formVal.version || this.currentVersion() 
     };
     
-    try { await this.sopService.saveSop(sop); this.toast.show('Đã lưu quy trình thành công!'); this.state.selectedSop.set(sop); this.state.editingSop.set(null); this.router.navigate(['/calculator']); } catch(e: any) { this.toast.show('Lỗi lưu SOP: ' + (e.message || 'Unknown'), 'error'); } finally { this.isLoading.set(false); }
+    try { 
+        await this.sopService.saveSop(sop); 
+        this.toast.show('Đã lưu quy trình thành công!'); 
+        
+        // AUTO-SYNC TO MASTER TARGETS
+        await this.autoSyncToMasterTargets(sop.targets);
+        
+        this.state.selectedSop.set(sop); 
+        this.state.editingSop.set(null); 
+        this.router.navigate(['/calculator']); 
+    } catch(e: any) { 
+        this.toast.show('Lỗi lưu SOP: ' + (e.message || 'Unknown'), 'error'); 
+    } finally { 
+        this.isLoading.set(false); 
+    }
   }
 
   goBack() { this.state.editingSop.set(null); this.router.navigate(['/calculator']); }
@@ -374,7 +389,7 @@ export class SopEditorComponent implements OnDestroy {
       // If the user hasn't manually touched the ID field (pristine=true), auto-generate it.
       // Also update if ID is empty (just in case it was touched but cleared).
       if (idControl && (idControl.pristine || !idControl.value)) {
-          idControl.setValue(generateSlug(val));
+          idControl.setValue(getCanonicalId(val));
       }
   }
 
@@ -442,6 +457,24 @@ export class SopEditorComponent implements OnDestroy {
           this.toast.show('Lỗi đồng bộ: ' + (e.message || 'Unknown'), 'error');
       } finally {
           this.isLoading.set(false);
+      }
+  }
+
+  // Helper cho auto-sync khi save
+  private async autoSyncToMasterTargets(targets: SopTarget[] | undefined) {
+      if (!targets || targets.length === 0) return;
+      
+      const masterAnalytes: any[] = targets.map(t => ({
+          id: t.id,
+          name: t.name,
+          default_unit: t.unit || 'ppb',
+          // Optional: có thể lấy LOD/LOQ nếu cần ở đây
+      }));
+      
+      try {
+          await this.masterTargetService.saveBatch(masterAnalytes);
+      } catch (e) {
+          console.warn('Auto-sync to master analytes failed', e);
       }
   }
 }
