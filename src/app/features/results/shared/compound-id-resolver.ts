@@ -141,6 +141,36 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
   return compound;
 }
 
+let firestoreIdsCache: Set<string> | null = null;
+
+function getCanonicalId(name: string): string {
+  if (!name) return '';
+  const lowerName = name.toLowerCase();
+
+  if (!firestoreIdsCache) {
+    firestoreIdsCache = new Set(Object.values(COMPOUND_TO_FIRESTORE_ID).map(v => v.toLowerCase()));
+  }
+
+  // 0. If it's already a known canonical firestore ID
+  if (firestoreIdsCache.has(lowerName)) {
+    return lowerName;
+  }
+
+  // 1. Direct exact mapping match
+  const exact = COMPOUND_TO_FIRESTORE_ID[name];
+  if (exact) return exact.toLowerCase();
+
+  // 2. Case-insensitive mapping match
+  for (const key of Object.keys(COMPOUND_TO_FIRESTORE_ID)) {
+    if (key.toLowerCase() === lowerName) {
+      return COMPOUND_TO_FIRESTORE_ID[key].toLowerCase();
+    }
+  }
+
+  // 3. Fallback to slugified phonetic ID
+  return lowerName.replace(/[\s\-]/g, '_').replace(/ph/g, 'f');
+}
+
 /**
  * Determines if a compound is assigned to a sample based on the sample's target ID array
  */
@@ -148,32 +178,13 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
   if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
   if (!compound) return false;
 
-  // 1. Direct match: check if exact compound key or its lowercased version is in the array
-  const lowerCompound = compound.toLowerCase();
-  if (assignedTargetIds.some(tId => tId.toLowerCase() === lowerCompound)) {
-    return true;
-  }
+  const canonicalCompound = getCanonicalId(compound);
 
-  // 2. Map-based match: check if the resolved canonical Firestore ID is assigned
-  const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
-  if (firestoreId) {
-    const lowerId = firestoreId.toLowerCase();
-    if (assignedTargetIds.some(tId => tId.toLowerCase() === lowerId)) {
-      return true;
-    }
-  }
-
-  // 3. Slug-based match fallback: allow spaces to match underscores or hyphens
-  const slugified = lowerCompound.replace(/[\s\-]/g, '_');
-  if (assignedTargetIds.some(tId => tId.toLowerCase().replace(/[\s\-]/g, '_') === slugified)) {
-    return true;
-  }
-
-  // 4. Special phonetic fallback for 'ph' vs 'f'
-  const phoneticSlug = slugified.replace(/ph/g, 'f');
-  if (assignedTargetIds.some(tId => tId.toLowerCase().replace(/[\s\-]/g, '_').replace(/ph/g, 'f') === phoneticSlug)) {
-    return true;
-  }
-
-  return false;
+  return assignedTargetIds.some(tId => {
+    // Direct match just in case
+    if (tId.toLowerCase() === compound.toLowerCase()) return true;
+    
+    // Match by canonicalizing both sides
+    return getCanonicalId(tId) === canonicalCompound;
+  });
 }
