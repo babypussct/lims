@@ -511,13 +511,16 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       'Fipronil sulfide': 'FipronilSulfide',
       'Fipronil sulfone': 'FipronilSulfone',
       'Azinphos-methyl': 'AzinphosMethyl',
-      'Chlorpyrifos-methyl': 'ChlorpyrifosMethyl',
       'Isofenphos-methyl': 'IsofenphosMethyl',
       'Parathion-methyl': 'ParathionMethyl',
       'Pirimiphos-methyl': 'PirimiphosMethyl',
+      'Chlorpyrifos': 'Chlorpyrifos',
+      'Chlorpyrifos-methyl': 'Chlorpyrifos-methyl',
       'Chlorpyryfos': 'Chlorpyrifos',
-      'Chlorpyryfos-methyl': 'ChlorpyrifosMethyl',
-      'Ethoprophos': 'Ethoprophos'
+      'Chlorpyryfos-methyl': 'Chlorpyrifos-methyl',
+      'Edifenphos': 'Edifenfos',
+      'Ethoprophos': 'Ethoprofos(Ethoprop)',
+      'Ronnel': 'Ronnel (Fenchlorphos)'
     };
     if (directMap[c]) return directMap[c];
     return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');

@@ -106,6 +106,10 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Trifluralin':   'trifluralin',
   'Dichlorvos':    'trichlorfondipterexdichlorvos',
   'Trichlorfon':   'trichlorfondipterexdichlorvos',
+
+  // Others
+  'Ethoprophos': 'ethoprophos_ethoprop',
+  'Ethoprophos (Ethoprop)': 'ethoprophos_ethoprop',
 };
 
 /**
