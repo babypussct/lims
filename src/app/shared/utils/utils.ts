@@ -490,7 +490,7 @@ export function getSafeGoogleUrl(url: string | null | undefined, type: 'pdf' | '
         return url;
     }
     
-    // For Docs: transform /edit to /preview to enforce Read-Only mode
+    // For Docs (View Only): transform /edit to /preview to enforce Read-Only mode
     if (type === 'doc') {
         if (url.includes('docs.google.com/document/d/')) {
             return url.replace(/\/edit.*$/, '/preview');

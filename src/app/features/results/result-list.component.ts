@@ -377,9 +377,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
                     @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                       <button (click)="openReportHub(run); $event.stopPropagation()"
-                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
-                        <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                        <span>Báo cáo</span>
+                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-file-word text-blue-500 text-[11px]"></i>
+                        <span>Báo cáo Docs</span>
                       </button>
                     }
                     <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
@@ -491,9 +491,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                           <div class="flex items-center justify-end gap-2">
                             @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                               <button (click)="openReportHub(run); $event.stopPropagation()"
-                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 rounded-xl text-xs font-black transition active:scale-95">
-                                <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                                <span>Báo cáo</span>
+                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 rounded-xl text-xs font-black transition active:scale-95">
+                                <i class="fa-solid fa-file-word text-blue-500 text-[11px]"></i>
+                                <span>Báo cáo Docs</span>
                               </button>
                             }
                             <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
@@ -640,14 +640,10 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                      <a [href]="getSafeGoogleUrl((unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl), 'pdf')" target="_blank" rel="noopener noreferrer"
-                         class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                        <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
-                      </a>
                       @if (unifiedAllSamplesReport().docsUrl) {
                         <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                            class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                          <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS
+                          <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
                         </a>
                       }
                     </div>
@@ -669,15 +665,11 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                         }
                       </div>
                       <div class="flex items-center gap-2 shrink-0">
-                        @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).pdfUrl || getPrefixReportForSelected(pref).pdfViewUrl)) {
-                          <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                             class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                            <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
-                          </a>
+                        @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).docsUrl || getPrefixReportForSelected(pref).pdfUrl)) {
                           @if (getPrefixReportForSelected(pref).docsUrl) {
                             <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                                class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                              <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS
+                              <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
                             </a>
                           }
                         } @else {
@@ -741,13 +733,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             <div class="text-[9px] text-slate-400 mt-0.5">{{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm dd/MM/yy' }}</div>
                           </div>
                           <div class="flex items-center gap-1.5 shrink-0">
-                            <a [href]="getSafeGoogleUrl(hist.pdfViewUrl || hist.pdfUrl, 'pdf')" target="_blank" rel="noopener noreferrer"
-                               class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-300 hover:text-red-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Xem PDF bản này">
-                              <i class="fa-solid fa-file-pdf text-[10px]"></i>
-                            </a>
                             @if (hist.docsUrl) {
                               <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                                 class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này">
+                                 class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này (Xem)">
                                 <i class="fa-solid fa-file-word text-[10px]"></i>
                               </a>
                             }

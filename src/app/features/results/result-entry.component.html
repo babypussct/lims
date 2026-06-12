@@ -50,15 +50,10 @@
                     <span class="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Người in gần nhất: {{ draft()?.updatedBy }}</span>
                   </div>
                   <div class="flex items-center gap-1 shrink-0">
-                    <button (click)="openPdfPreview(draft()?.pdfViewUrl || draft()?.pdfUrl)"
-                            class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90"
-                            title="Xem PDF bản này">
-                      <i class="fa-solid fa-file-pdf text-[10px]"></i>
-                    </button>
                     @if (draft()?.docsUrl) {
                       <a [href]="getSafeGoogleUrl(draft()?.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                          class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 dark:text-blue-400 flex items-center justify-center transition active:scale-90 no-underline"
-                         title="Mở Docs bản này">
+                         title="Mở Docs bản này (Xem)">
                         <i class="fa-solid fa-file-word text-[10px]"></i>
                       </a>
                     }
@@ -81,17 +76,10 @@
                       <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Người in: {{ hist.publishedBy }}</span>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                      @if (hist.pdfUrl || hist.pdfViewUrl) {
-                        <button (click)="openPdfPreview(hist.pdfViewUrl || hist.pdfUrl)"
-                                class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90"
-                                title="Xem PDF bản này">
-                          <i class="fa-solid fa-file-pdf text-[10px]"></i>
-                        </button>
-                      }
                       @if (hist.docsUrl) {
                         <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                            class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 dark:text-blue-400 flex items-center justify-center transition active:scale-90 no-underline"
-                           title="Mở Docs bản này">
+                           title="Mở Docs bản này (Xem)">
                           <i class="fa-solid fa-file-word text-[10px]"></i>
                         </a>
                       }
@@ -127,18 +115,11 @@
         </button>
 
         <!-- View PDF / Open Docs if available for the active tab -->
-        @if (getCurrentPdfUrl()) {
-          <button (click)="openPdfPreview(getCurrentPdfUrl())"
-             class="px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:shadow active:scale-95 duration-150">
-            <i class="fa-solid fa-file-pdf"></i>
-            <span>Xem PDF</span>
-          </button>
-        }
         @if (getCurrentDocsUrl()) {
           <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
              class="px-4 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
-            <i class="fa-brands fa-google-drive"></i>
-            <span>Mở Docs</span>
+            <i class="fa-solid fa-file-word"></i>
+            <span>Mở Docs (Xem)</span>
           </a>
         }
  
@@ -202,23 +183,14 @@
                   <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                     Báo cáo & Tài liệu
                   </div>
-                  @if (getCurrentPdfUrl()) {
-                    <button (click)="closeActionsMenu(); openPdfPreview(getCurrentPdfUrl())"
-                       class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
-                      <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-file-pdf text-rose-500"></i>
-                      </div>
-                      <span>Xem PDF phiên bản này</span>
-                    </button>
-                  }
                   @if (getCurrentDocsUrl()) {
                     <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
                        (click)="closeActionsMenu()"
                        class="px-4 py-3.5 md:py-3 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 no-underline active:scale-[0.98]">
                       <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-                        <i class="fa-brands fa-google-drive text-blue-500"></i>
+                        <i class="fa-solid fa-file-word text-blue-500"></i>
                       </div>
-                      <span>Mở Docs phiên bản này</span>
+                      <span>Mở Docs phiên bản này (Xem)</span>
                     </a>
                   }
                   <div class="border-t border-slate-200 dark:border-slate-800 my-2 mx-2"></div>
@@ -363,14 +335,10 @@
                   <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ draft()?.updatedBy }}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button (click)="openPdfPreview(draft()?.pdfViewUrl || draft()?.pdfUrl)"
-                          class="px-3 py-2 bg-red-50 hover:bg-red-100/80 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1">
-                    <i class="fa-solid fa-file-pdf"></i> PDF
-                  </button>
                   @if (draft()?.docsUrl) {
                     <a [href]="getSafeGoogleUrl(draft()?.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                        class="px-3 py-2 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline">
-                      <i class="fa-solid fa-file-word"></i> DOCS
+                      <i class="fa-solid fa-file-word"></i> DOCS (XEM)
                     </a>
                   }
                 </div>
@@ -389,14 +357,10 @@
                     <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ getPrefixReport(pref).publishedBy || 'System' }}</span>
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0">
-                    <button (click)="openPdfPreview(getPrefixReport(pref).pdfViewUrl || getPrefixReport(pref).pdfUrl)"
-                            class="px-3 py-2 bg-red-50 hover:bg-red-100/80 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1">
-                      <i class="fa-solid fa-file-pdf"></i> PDF
-                    </button>
                     @if (getPrefixReport(pref).docsUrl) {
                       <a [href]="getSafeGoogleUrl(getPrefixReport(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                          class="px-3 py-2 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline">
-                        <i class="fa-solid fa-file-word"></i> DOCS
+                        <i class="fa-solid fa-file-word"></i> DOCS (XEM)
                       </a>
                     }
                   </div>
