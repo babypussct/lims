@@ -324,13 +324,20 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
+    // QC samples luôn cần hiển thị tất cả compounds
+    if (sampleCode.startsWith('QC_')) return true;
     if (!this.run) return true;
     const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
     if (!targetMap) return true;
-    const assigned = targetMap[sampleCode];
+    const assigned: string[] = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
+
+    // Fast path: canonical id direct match (DATA_VERSION 2)
+    if (assigned.includes(compound)) return true;
+    // Fallback: shim cho data v1 chưa migrate
     return isCompoundAssigned(assigned, compound, this.masterTargets());
   }
+
 
   prefillUnassignedTargets() {
     const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);

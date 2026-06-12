@@ -122,11 +122,66 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   // Others
   'Ethoprophos': 'ethoprophos_ethoprop',
   'Ethoprophos (Ethoprop)': 'ethoprophos_ethoprop',
+
+  // Chlor hữu cơ — simple-name compounds (canonical id = lowercase)
+  // Cần thiết cho migrateResultDataKeys() reverse-lookup từ draft v1 (capital key)
+  'Aldrin':        'aldrin',
+  'Dieldrin':      'dieldrin',
+  'Endrin':        'endrin',
+  'Heptachlor':    'heptachlor',
+  'Isodrin':       'isodrin',
+  'Mirex':         'mirex',
+  'Pendimethalin': 'pendimethalin',
 };
 
 /**
- * Resolves a friendly compound key (from configs/forms) to its display name from Firestore master_targets library
+ * SOP-01 (Fipronil/Chlorpyrifos) — Column key → canonical master_analyte.id
+ *
+ * SOP-01 dùng formType: 'type2' với column keys cố định (kqFip, kqClp, v.v.)
+ * thay vì compounds[] như type-3b. Những column keys này được lưu trong Firestore
+ * nên KHÔNG thể đổi tên. Thay vào đó, ta map chúng sang canonical id để
+ * isTargetAssigned() có thể so sánh trực tiếp với sampleTargetMap.
+ *
+ * QUAN TRỌNG: Đây là single source of truth cho SOP-01 column mapping.
+ * Mọi nơi cần display name hoặc canonical id của compound SOP-01 đều lấy từ đây.
  */
+export const SOP01_COLUMN_TO_CANONICAL: Record<string, string> = {
+  'kqFip':    'fipronil',
+  'kqFipDesl':'fipronil-desulfinyl',
+  'kqFipSulf':'fipronil-sulfide',
+  'kqFipSulf2':'fipronil-sulfone',
+  'kqClp':    'chlorpyrifos',
+  'kqClpMe':  'chlorpyrifos-methyl',
+  'kqClpMeDes':'chlorpyrifos-methyl-desmethyl'
+};
+
+/**
+ * Lấy display name cho một column key của SOP-01.
+ * Ưu tiên lookup từ masterTargets (canonical id → name).
+ * Fallback về tên cố định nếu chưa có masterTargets.
+ */
+export function getSop01DisplayName(colKey: string, masterTargets: any[]): string {
+  const canonicalId = SOP01_COLUMN_TO_CANONICAL[colKey];
+  if (!canonicalId) return colKey;
+
+  if (masterTargets && masterTargets.length > 0) {
+    const found = masterTargets.find(t => t.id === canonicalId);
+    if (found?.name) return found.name;
+  }
+
+  // Fallback display names khi chưa load masterTargets
+  const FALLBACK_NAMES: Record<string, string> = {
+    'fipronil': 'Fipronil',
+    'fipronil-desulfinyl': 'Fipronil desulfinyl',
+    'fipronil-sulfide': 'Fipronil sulfide',
+    'fipronil-sulfone': 'Fipronil sulfone',
+    'chlorpyrifos': 'Chlorpyrifos',
+    'chlorpyrifos-methyl': 'Chlorpyrifos-methyl',
+    'chlorpyrifos-methyl-desmethyl': 'Chlorpyrifos-methyl-desmethyl'
+  };
+  return FALLBACK_NAMES[canonicalId] || canonicalId;
+}
+
 export function resolveCompoundDisplayName(compound: string, analytes: any[]): string {
   if (!analytes || analytes.length === 0) return compound;
 

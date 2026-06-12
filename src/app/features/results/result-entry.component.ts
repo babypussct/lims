@@ -30,9 +30,7 @@ import {
   buildFipronilPdfPayload, 
   buildDichlorvosPdfPayload, 
   buildDefaultSopPdfPayload,
-  buildLanHuuCoPdfPayload,
-  buildChlorHuuCoPdfPayload,
-  buildNhomCucPdfPayload
+  buildUnifiedType3bPdfPayload
 } from './result-pdf-helper';
 
 @Component({
@@ -384,10 +382,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           // Cho dạng 3B (Chlor/Lân hữu cơ): Điền mặc định ND và QC đạt chỉ cho các hoạt chất được phân công
           const sampleTargetMap = runDoc.sampleTargetMap || (runDoc.inputs && runDoc.inputs.sampleTargetMap) || {};
           const isAssigned = (sCode: string, compound: string): boolean => {
-            const assigned = sampleTargetMap[sCode];
-            if (!assigned) return true;
+            const assigned: string[] = sampleTargetMap[sCode];
+            if (!assigned || assigned.length === 0) return true;
+            // Fast path: canonical id direct match (DATA_VERSION 2)
+            if (assigned.includes(compound)) return true;
+            // Fallback shim cho data v1
             return isCompoundAssigned(assigned, compound, this.masterTargets());
           };
+
 
           sopConf.compounds.forEach((c: string) => {
             if (isAssigned(sampleCode, c)) {
@@ -546,28 +548,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           this.formatAnalysisDate.bind(this),
           this.getRunDate.bind(this)
         );
-      } else if (key === 'lan-huu-co') {
-        reportPayload = buildLanHuuCoPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this),
-          this.masterTargets()
-        );
-      } else if (key === 'chlor-huu-co') {
-        reportPayload = buildChlorHuuCoPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this),
-          this.masterTargets()
-        );
-      } else if (key === 'nhom-cuc') {
-        reportPayload = buildNhomCucPdfPayload(
+      } else if (key === 'lan-huu-co' || key === 'chlor-huu-co' || key === 'nhom-cuc' || key === 'nhom-i' || currentConf.formType === 'type3b') {
+        // Unified builder cho tất cả SOP type-3b (compounds[] = canonical id)
+        reportPayload = buildUnifiedType3bPdfPayload(
           currentDraft,
           currentRun,
           activeFilter,

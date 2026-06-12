@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { calculateSop01Recovery } from './sop-01-engine';
 import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName, isCompoundAssigned } from '../../shared/compound-id-resolver';
+import { resolveCompoundDisplayName, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
 import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -172,17 +172,8 @@ export class Sop01EntryComponent implements OnInit {
   }
 
   formatColumnName(colKey: string): string {
-    const customNames: Record<string, string> = {
-      'kqFip': 'Fipronil',
-      'kqFipDesl': 'Fipronil desulfinyl',
-      'kqFipSulf': 'Fipronil sulfide',
-      'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyrifos',
-      'kqClpMe': 'Chlorpyrifos-methyl',
-      'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
-    };
-    const defaultName = customNames[colKey] || colKey;
-    return this.getCompoundDisplayName(defaultName);
+    // Dùng getSop01DisplayName() — lấy từ masterTargets nếu có, fallback về tên cố định
+    return getSop01DisplayName(colKey, this.masterTargets());
   }
 
   buildColumnDisplayNames() {
@@ -206,20 +197,19 @@ export class Sop01EntryComponent implements OnInit {
     if (!targetMap) return true;
 
     const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-    const assigned = matchKey ? targetMap[matchKey] : null;
+    const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
     if (!assigned || assigned.length === 0) return true;
 
-    const customNames: Record<string, string> = {
-      'kqFip': 'Fipronil',
-      'kqFipDesl': 'Fipronil desulfinyl',
-      'kqFipSulf': 'Fipronil sulfide',
-      'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyrifos',
-      'kqClpMe': 'Chlorpyrifos-methyl',
-      'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
-    };
-    const compound = customNames[col] || col;
-    return isCompoundAssigned(assigned, compound, this.masterTargets());
+    // Fast path: canonical id direct match (v2 data)
+    const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
+    if (canonicalId) {
+      if (assigned.includes(canonicalId)) return true;
+      // Fallback: case-insensitive (v1 data chưa migrate)
+      return assigned.some(tid => tid.toLowerCase() === canonicalId.toLowerCase());
+    }
+
+    // Col không có trong map → fallback so sánh trực tiếp
+    return assigned.some(tid => tid.toLowerCase() === col.toLowerCase());
   }
 
   isTargetAssignedToAnySample(col: string): boolean {
@@ -229,22 +219,18 @@ export class Sop01EntryComponent implements OnInit {
     const sampleList = this.run.sampleList || [];
     if (sampleList.length === 0) return true;
 
+    const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
     return sampleList.some((sampleCode: string) => {
       const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
-      const assigned = matchKey ? targetMap[matchKey] : null;
+      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
       if (!assigned || assigned.length === 0) return true;
 
-      const customNames: Record<string, string> = {
-        'kqFip': 'Fipronil',
-        'kqFipDesl': 'Fipronil desulfinyl',
-        'kqFipSulf': 'Fipronil sulfide',
-        'kqFipSulf2': 'Fipronil sulfone',
-        'kqClp': 'Chlorpyrifos',
-        'kqClpMe': 'Chlorpyrifos-methyl',
-        'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
-      };
-      const compound = customNames[col] || col;
-      return isCompoundAssigned(assigned, compound, this.masterTargets());
+      // Fast path: canonical id direct match (v2)
+      if (canonicalId) {
+        if (assigned.includes(canonicalId)) return true;
+        return assigned.some(tid => tid.toLowerCase() === canonicalId.toLowerCase());
+      }
+      return assigned.some(tid => tid.toLowerCase() === col.toLowerCase());
     });
   }
 
