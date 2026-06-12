@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
 import { ResultService } from './services/result.service';
+import { MasterTargetService } from '../targets/master-target.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { ResultEntryType2Component } from './result-entry-type2.component';
 import { ResultEntryType3bComponent } from './result-entry-type3b.component';
@@ -62,7 +63,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private resultService = inject(ResultService);
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
+  private masterService = inject(MasterTargetService);
   printService = inject(PrintService);
+
+  masterTargets = signal<any[]>([]);
 
   requestId = '';
   
@@ -206,6 +210,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         }
       }
       this.isLoading.set(false);
+    });
+
+    // Load Master Targets
+    this.masterService.getAll().then(targets => {
+      this.masterTargets.set(targets);
     });
 
     // Tải lịch sử in
@@ -544,7 +553,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           activeFilter,
           currentConf,
           this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
+          this.getRunDate.bind(this),
+          this.masterTargets()
         );
       } else if (key === 'chlor-huu-co') {
         reportPayload = buildChlorHuuCoPdfPayload(
@@ -553,7 +563,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           activeFilter,
           currentConf,
           this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
+          this.getRunDate.bind(this),
+          this.masterTargets()
         );
       } else if (key === 'nhom-cuc') {
         reportPayload = buildNhomCucPdfPayload(
@@ -562,7 +573,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           activeFilter,
           currentConf,
           this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
+          this.getRunDate.bind(this),
+          this.masterTargets()
         );
       } else if (key === 'fipronil-chlorpyrifos') {
         reportPayload = buildFipronilPdfPayload(

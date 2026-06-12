@@ -191,3 +191,35 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
     return getCanonicalId(tId) === canonicalCompound;
   });
 }
+
+/**
+ * Dynamically resolves a compound name from config against the live TargetMaster list.
+ * It uses exact matching, canonical matching, and prefix/substring matching to find the single source of truth.
+ * Returns the exact master target object (with id and name) if found, otherwise null.
+ */
+export function resolveTargetMasterInfo(compound: string, masterTargets: any[]): { id: string, name: string } | null {
+  if (!compound || !masterTargets || masterTargets.length === 0) return null;
+
+  const targetIdStr = getCanonicalId(compound);
+  
+  // 1. Match by exact ID or Canonical ID
+  let match = masterTargets.find(t => 
+    t.id === targetIdStr || 
+    getCanonicalId(t.id) === targetIdStr ||
+    getCanonicalId(t.name) === targetIdStr
+  );
+  if (match) return { id: match.id, name: match.name };
+
+  // 2. Match by exact Name (case-insensitive)
+  match = masterTargets.find(t => t.name.toLowerCase() === compound.toLowerCase());
+  if (match) return { id: match.id, name: match.name };
+
+  // 3. Match by partial substring (e.g. config "Ethoprophos" matches master "Ethoprophos (Ethoprop)")
+  match = masterTargets.find(t => 
+    t.name.toLowerCase().startsWith(compound.toLowerCase()) || 
+    compound.toLowerCase().startsWith(t.name.toLowerCase())
+  );
+  if (match) return { id: match.id, name: match.name };
+
+  return null;
+}

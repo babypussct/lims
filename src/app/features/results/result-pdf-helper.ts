@@ -2,7 +2,7 @@
  * Helper utility to build action payload for generating PDF reports for different SOPs.
  * Isolates complex QC sequencing and formatting from the main ResultEntryComponent.
  */
-import { isCompoundAssigned } from './shared/compound-id-resolver';
+import { isCompoundAssigned, resolveTargetMasterInfo } from './shared/compound-id-resolver';
 import { formatSampleList } from '../../shared/utils/utils';
 
 export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
@@ -491,7 +491,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   };
 }
 
-export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets: any[] = []): any {
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
@@ -506,23 +506,8 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   });
 
   const mapCompoundToKey = (c: string): string => {
-    const directMap: Record<string, string> = {
-      'Fipronil desulfinyl': 'FipronilDesulfinyl',
-      'Fipronil sulfide': 'FipronilSulfide',
-      'Fipronil sulfone': 'FipronilSulfone',
-      'Azinphos-methyl': 'AzinphosMethyl',
-      'Isofenphos-methyl': 'IsofenphosMethyl',
-      'Parathion-methyl': 'ParathionMethyl',
-      'Pirimiphos-methyl': 'PirimiphosMethyl',
-      'Chlorpyrifos': 'Chlorpyrifos',
-      'Chlorpyrifos-methyl': 'Chlorpyrifos-methyl',
-      'Chlorpyryfos': 'Chlorpyrifos',
-      'Chlorpyryfos-methyl': 'Chlorpyrifos-methyl',
-      'Edifenphos': 'Edifenphos',
-      'Ethoprophos': 'Ethoprophos (Ethoprop)',
-      'Ronnel': 'Ronnel (Fenchlorphos)'
-    };
-    if (directMap[c]) return directMap[c];
+    const info = resolveTargetMasterInfo(c, masterTargets);
+    if (info) return info.name;
     return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
   };
 
@@ -671,11 +656,12 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
+      const backendKey = mapCompoundToKey(c);
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
-      results[c] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
-      notes[c] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
+      results[backendKey] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
+      notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
     });
     return { results, notes };
   };
@@ -741,22 +727,24 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
+      const backendKey = mapCompoundToKey(c);
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
         return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
       const allKph = vals.every((v: string) => v === 'N/A' || v === '');
-      acc[c] = allKph ? 'N/A' : vals.join('; ');
+      acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
 
     const compoundNotes = currentConf.compounds.reduce((acc: any, c: string) => {
+      const backendKey = mapCompoundToKey(c);
       const notes = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
       });
-      acc[c] = notes.join('; ');
+      acc[backendKey] = notes.join('; ');
       return acc;
     }, {});
 
@@ -821,11 +809,12 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   }
 
   // Get active compounds to print (for formDon, only print the selected activeCompound)
-  const compoundsToPrint = isDon 
+  const activeCompoundsConfig = isDon 
     ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
     : currentConf.compounds.filter((c: string) => {
         return filteredSamples.some((s: string) => isAssigned(s, c));
       });
+  const compoundsToPrint = activeCompoundsConfig.map((c: string) => mapCompoundToKey(c));
 
   return {
     action: 'generate_pdf',
@@ -850,7 +839,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   };
 }
 
-export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets: any[] = []): any {
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
@@ -865,31 +854,8 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   });
 
   const mapCompoundToKey = (c: string): string => {
-    const chlorMap: Record<string, string> = {
-      'BHC-alpha': 'BHCa',
-      'BHC-beta': 'BHCb',
-      'BHC-delta': 'BHCd',
-      'BHC-epsilon': 'BHCe',
-      'BHC-gamma': 'BHCg',
-      'Chlordane-cis': 'Chlordane_cis',
-      'Chlordane-oxy': 'Chlordane_oxy',
-      'Chlordane-trans': 'Chlordane_trans',
-      'DDD-o,p': 'DDD_op',
-      'DDD-p,p': 'DDD_pp',
-      'DDE-o,p': 'DDE_op',
-      'DDE-p,p': 'DDE_pp',
-      'DDT-o,p': 'DDT_op',
-      'DDT-p,p': 'DDT_pp',
-      'Endosulfan-I': 'Endosulfan1',
-      'Endosulfan-II': 'Endosulfan2',
-      'Endosulfan-sulfate': 'EndosulfanS',
-      'Heptachlor-epoxide-trans': 'HeptachlorA',
-      'Heptachlor-epoxide-cis': 'HeptachlorB',
-      'Hexachlorobenzene': 'HCB'
-    };
-    if (chlorMap[c]) return chlorMap[c];
-    if (c === 'Parathion-ethyl') return 'Parathion';
-    if (c === 'Ipobenfos') return 'Iprobenfos';
+    const info = resolveTargetMasterInfo(c, masterTargets);
+    if (info) return info.name;
     return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
   };
 
@@ -1191,11 +1157,12 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   }
 
   // Get active compounds to print (for formDon, only print the selected activeCompound)
-  const compoundsToPrint = isDon 
+  const activeCompoundsConfig = isDon 
     ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
     : currentConf.compounds.filter((c: string) => {
         return filteredSamples.some((s: string) => isAssigned(s, c));
       });
+  const compoundsToPrint = activeCompoundsConfig.map((c: string) => mapCompoundToKey(c));
 
   return {
     action: 'generate_pdf',
@@ -1220,7 +1187,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   };
 }
 
-export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets: any[] = []): any {
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
@@ -1235,13 +1202,8 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
   });
 
   const mapCompoundToKey = (c: string): string => {
-    const directMap: Record<string, string> = {
-      'Cyfluthrin (Baythroid)': 'CyfluthrinBaythroid',
-      'lamda-Cyhalothrin': 'lamdaCyhalothrin',
-      'Permethrin cis': 'PermethrinCis',
-      'Permethrin trans': 'PermethrinTrans'
-    };
-    if (directMap[c]) return directMap[c];
+    const info = resolveTargetMasterInfo(c, masterTargets);
+    if (info) return info.name;
     return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s'()]/g, '');
   };
 
@@ -1543,11 +1505,12 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
   }
 
   // Get active compounds to print (for formDon, only print the selected activeCompound)
-  const compoundsToPrint = isDon 
+  const activeCompoundsConfig = isDon 
     ? [currentDraft.page1Data['activeCompound'] || currentConf.compounds[0]] 
     : currentConf.compounds.filter((c: string) => {
         return filteredSamples.some((s: string) => isAssigned(s, c));
       });
+  const compoundsToPrint = activeCompoundsConfig.map((c: string) => mapCompoundToKey(c));
 
   return {
     action: 'generate_pdf',
