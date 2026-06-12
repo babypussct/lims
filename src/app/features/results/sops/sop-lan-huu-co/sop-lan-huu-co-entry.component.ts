@@ -355,6 +355,7 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
     const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
     const assigned = matchKey ? targetMap[matchKey] : null;
     return isCompoundAssigned(assigned, compound, this.masterTargets());
+  }
 
   prefillUnassignedTargets() {
     const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
