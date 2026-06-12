@@ -318,7 +318,7 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
   };
 }
 
-export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets?: any[]): any {
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
@@ -327,7 +327,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+    return isCompoundAssigned(assigned, compound, masterTargets) || isCompoundAssigned(assigned, mapCompoundToKey(compound), masterTargets);
   };
 
   const filteredSamples = sampleList.filter((s: string) => {
@@ -510,7 +510,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, masterTargets);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
@@ -852,7 +852,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, masterTargets);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
@@ -1194,7 +1194,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, masterTargets);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';

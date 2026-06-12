@@ -386,7 +386,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           const isAssigned = (sCode: string, compound: string): boolean => {
             const assigned = sampleTargetMap[sCode];
             if (!assigned) return true;
-            return isCompoundAssigned(assigned, compound);
+            return isCompoundAssigned(assigned, compound, this.masterTargets());
           };
 
           sopConf.compounds.forEach((c: string) => {
@@ -601,7 +601,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           activeFilter,
           currentConf,
           this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
+          this.getRunDate.bind(this),
+          this.masterTargets()
         );
       }
 

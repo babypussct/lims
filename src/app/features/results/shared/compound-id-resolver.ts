@@ -190,7 +190,7 @@ function getCanonicalId(name: string): string {
 /**
  * Determines if a compound is assigned to a sample based on the sample's target ID array
  */
-export function isCompoundAssigned(assignedTargetIds: string[], compound: string): boolean {
+export function isCompoundAssigned(assignedTargetIds: string[], compound: string, masterTargets?: any[]): boolean {
   if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
   if (!compound) return false;
 
@@ -200,8 +200,17 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
     // Direct match just in case
     if (tId.toLowerCase() === compound.toLowerCase()) return true;
     
+    let targetName = tId;
+    if (masterTargets && masterTargets.length > 0) {
+      const found = masterTargets.find(t => t.id === tId);
+      if (found && found.name) {
+        targetName = found.name;
+        if (targetName.toLowerCase() === compound.toLowerCase()) return true;
+      }
+    }
+
     // Match by canonicalizing both sides
-    return getCanonicalId(tId) === canonicalCompound;
+    return getCanonicalId(tId) === canonicalCompound || getCanonicalId(targetName) === canonicalCompound;
   });
 }
 

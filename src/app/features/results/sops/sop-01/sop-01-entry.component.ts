@@ -219,7 +219,7 @@ export class Sop01EntryComponent implements OnInit {
       'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
     };
     const compound = customNames[col] || col;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, this.masterTargets());
   }
 
   isTargetAssignedToAnySample(col: string): boolean {
@@ -244,7 +244,7 @@ export class Sop01EntryComponent implements OnInit {
         'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
       };
       const compound = customNames[col] || col;
-      return isCompoundAssigned(assigned, compound);
+      return isCompoundAssigned(assigned, compound, this.masterTargets());
     });
   }
 

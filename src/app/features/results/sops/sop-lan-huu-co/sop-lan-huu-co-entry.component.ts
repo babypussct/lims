@@ -348,16 +348,12 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
       return subCodes.some(sc => {
         const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
         const assigned = matchKey ? targetMap[matchKey] : null;
-        if (!assigned || assigned.length === 0) return true;
-        return isCompoundAssigned(assigned, compound);
-      });
+        return isCompoundAssigned(assigned, compound, this.masterTargets());
     }
 
     const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
     const assigned = matchKey ? targetMap[matchKey] : null;
-    if (!assigned || assigned.length === 0) return true;
-    return isCompoundAssigned(assigned, compound);
-  }
+    return isCompoundAssigned(assigned, compound, this.masterTargets());
 
   prefillUnassignedTargets() {
     const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);

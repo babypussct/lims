@@ -329,7 +329,7 @@ export class ResultEntryType3bComponent implements OnInit {
     if (!targetMap) return true;
     const assigned = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, this.masterTargets());
   }
 
   prefillUnassignedTargets() {
