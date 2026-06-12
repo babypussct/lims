@@ -60,11 +60,11 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Azinphos-methyl':     'azinfos_methyl',
   'AzinphosMethyl':       'azinfos_methyl',
   'Azinfos-methyl':      'azinfos_methyl',
-  'Chlorpyrifos-methyl': 'chlorpyrofos_methyl',
-  'ChlorpyrifosMethyl':  'chlorpyrofos_methyl',
-  'Chlorpyrofos-methyl': 'chlorpyrofos_methyl',
-  'Chlorpyryfos-methyl': 'chlorpyrofos_methyl',
-  'ChlorpyryfosMethyl':  'chlorpyrofos_methyl',
+  'Chlorpyrifos-methyl': 'chlorpyrifos-methyl',
+  'ChlorpyrifosMethyl':  'chlorpyrifos-methyl',
+  'Chlorpyrofos-methyl': 'chlorpyrifos-methyl',
+  'Chlorpyryfos-methyl': 'chlorpyrifos-methyl',
+  'ChlorpyryfosMethyl':  'chlorpyrifos-methyl',
   'Pirimiphos-methyl':   'pirimifos_methyl',
   'PirimiphosMethyl':     'pirimifos_methyl',
   'Pirimifos-methyl':    'pirimifos_methyl',
@@ -82,11 +82,11 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Fipronil desulfinyl':            'fipronil-desulfinyl',
   'Fipronil sulfide':               'fipronil-sulfide',
   'Fipronil sulfone':               'fipronil-sulfone',
-  'Chlorpyrifos':                   'chlorpyrofos',
-  'Chlorpyrofos':                   'chlorpyrofos',
-  'Chlorpyryfos':                   'chlorpyrofos',
-  'Chlorpyrifos methyl':            'chlorpyrofos_methyl',
-  'Chlorpyriphos-methyl-desmethyl': 'chlorpyrofos-methyl-desmethyl',
+  'Chlorpyrifos':                   'chlorpyrifos',
+  'Chlorpyrofos':                   'chlorpyrifos',
+  'Chlorpyryfos':                   'chlorpyrifos',
+  'Chlorpyrifos methyl':            'chlorpyrifos-methyl',
+  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos-methyl-desmethyl',
   
   // Pyrethroid (Nhóm Cúc)
   'Cyfluthrin (Baythroid)': 'cyfluthrin_baythroid',
@@ -117,10 +117,10 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
   // Special overrides for spelling preferred by the user
   const lowerComp = compound.toLowerCase();
   if (lowerComp === 'chlorpyryfos' || lowerComp === 'chlorpyrifos' || lowerComp === 'chlorpyrofos') {
-    return 'Chlorpyryfos';
+    return 'Chlorpyrifos';
   }
   if (lowerComp === 'chlorpyryfos-methyl' || lowerComp === 'chlorpyrifos-methyl' || lowerComp === 'chlorpyrofos-methyl' || lowerComp === 'chlorpyrifosmethyl' || lowerComp === 'chlorpyryfosmethyl') {
-    return 'Chlorpyryfos-methyl';
+    return 'Chlorpyrifos-methyl';
   }
 
   // 1. Exact match by ID or Name (case-insensitive)

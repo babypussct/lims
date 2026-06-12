@@ -896,7 +896,7 @@ export class ResultEntryType2Component implements OnInit {
       'kqFipSulf2': 'Fipronil sulfone',
       'kqClp': 'Chlorpyrifos',
       'kqClpMe': 'Chlorpyrifos methyl',
-      'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl',
+      'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl',
       'kqTrifluralin': 'Trifluralin'
     };
     if (customNames[colKey]) {

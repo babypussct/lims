@@ -514,7 +514,10 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       'Chlorpyrifos-methyl': 'ChlorpyrifosMethyl',
       'Isofenphos-methyl': 'IsofenphosMethyl',
       'Parathion-methyl': 'ParathionMethyl',
-      'Pirimiphos-methyl': 'PirimiphosMethyl'
+      'Pirimiphos-methyl': 'PirimiphosMethyl',
+      'Chlorpyryfos': 'Chlorpyrifos',
+      'Chlorpyryfos-methyl': 'ChlorpyrifosMethyl',
+      'Ethoprophos': 'Ethoprophos'
     };
     if (directMap[c]) return directMap[c];
     return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');

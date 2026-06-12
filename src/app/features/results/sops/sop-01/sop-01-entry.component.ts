@@ -177,9 +177,9 @@ export class Sop01EntryComponent implements OnInit {
       'kqFipDesl': 'Fipronil desulfinyl',
       'kqFipSulf': 'Fipronil sulfide',
       'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyryfos',
-      'kqClpMe': 'Chlorpyryfos-methyl',
-      'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
+      'kqClp': 'Chlorpyrifos',
+      'kqClpMe': 'Chlorpyrifos-methyl',
+      'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
     };
     const defaultName = customNames[colKey] || colKey;
     return this.getCompoundDisplayName(defaultName);
@@ -214,9 +214,9 @@ export class Sop01EntryComponent implements OnInit {
       'kqFipDesl': 'Fipronil desulfinyl',
       'kqFipSulf': 'Fipronil sulfide',
       'kqFipSulf2': 'Fipronil sulfone',
-      'kqClp': 'Chlorpyryfos',
-      'kqClpMe': 'Chlorpyryfos-methyl',
-      'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
+      'kqClp': 'Chlorpyrifos',
+      'kqClpMe': 'Chlorpyrifos-methyl',
+      'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
     };
     const compound = customNames[col] || col;
     return isCompoundAssigned(assigned, compound);
@@ -239,9 +239,9 @@ export class Sop01EntryComponent implements OnInit {
         'kqFipDesl': 'Fipronil desulfinyl',
         'kqFipSulf': 'Fipronil sulfide',
         'kqFipSulf2': 'Fipronil sulfone',
-        'kqClp': 'Chlorpyryfos',
-        'kqClpMe': 'Chlorpyryfos-methyl',
-        'kqClpMeDes': 'Chlorpyriphos-methyl-desmethyl'
+        'kqClp': 'Chlorpyrifos',
+        'kqClpMe': 'Chlorpyrifos-methyl',
+        'kqClpMeDes': 'Chlorpyrifos-methyl-desmethyl'
       };
       const compound = customNames[col] || col;
       return isCompoundAssigned(assigned, compound);

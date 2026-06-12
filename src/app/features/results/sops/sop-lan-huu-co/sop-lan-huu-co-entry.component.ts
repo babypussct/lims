@@ -174,6 +174,39 @@ export class SopLanHuuCoEntryComponent implements OnInit, OnChanges {
         if (sRes['checkHonHopLamSach'] === undefined) {
           sRes['checkHonHopLamSach'] = 'B1';
         }
+
+        // Migrate old Chlorpyryfos keys to Chlorpyrifos
+        const migrationMap: Record<string, string> = {
+          'Chlorpyryfos': 'Chlorpyrifos',
+          'Chlorpyryfos-methyl': 'Chlorpyrifos-methyl'
+        };
+        Object.keys(migrationMap).forEach(oldKey => {
+          const newKey = migrationMap[oldKey];
+          if (sRes[oldKey] !== undefined) {
+            if (sRes[newKey] === undefined) sRes[newKey] = sRes[oldKey];
+            delete sRes[oldKey];
+          }
+          if (sRes[`${oldKey}_nd`] !== undefined) {
+            if (sRes[`${newKey}_nd`] === undefined) sRes[`${newKey}_nd`] = sRes[`${oldKey}_nd`];
+            delete sRes[`${oldKey}_nd`];
+          }
+          if (sRes[`${oldKey}_qc1`] !== undefined) {
+            if (sRes[`${newKey}_qc1`] === undefined) sRes[`${newKey}_qc1`] = sRes[`${oldKey}_qc1`];
+            delete sRes[`${oldKey}_qc1`];
+          }
+          if (sRes[`${oldKey}_qc2`] !== undefined) {
+            if (sRes[`${newKey}_qc2`] === undefined) sRes[`${newKey}_qc2`] = sRes[`${oldKey}_qc2`];
+            delete sRes[`${oldKey}_qc2`];
+          }
+          if (sRes[`${oldKey}_qc3`] !== undefined) {
+            if (sRes[`${newKey}_qc3`] === undefined) sRes[`${newKey}_qc3`] = sRes[`${oldKey}_qc3`];
+            delete sRes[`${oldKey}_qc3`];
+          }
+          if (sRes[`${oldKey}_ghiChu`] !== undefined) {
+            if (sRes[`${newKey}_ghiChu`] === undefined) sRes[`${newKey}_ghiChu`] = sRes[`${oldKey}_ghiChu`];
+            delete sRes[`${oldKey}_ghiChu`];
+          }
+        });
       });
     }
 
