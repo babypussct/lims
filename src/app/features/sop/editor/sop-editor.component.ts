@@ -487,14 +487,14 @@ export class SopEditorComponent implements OnDestroy {
       this.isLoading.set(true);
       try {
           // 1. Quét toàn bộ SOPs
-          const sops = await this.sopService.getAllSops();
+          const sops = await this.sopService.getAll();
           const uuidToCanonical = new Map<string, string>();
           let sopsUpdated = 0;
           
           for (const sop of sops) {
               let changed = false;
               if (sop.targets) {
-                  sop.targets.forEach(t => {
+                  sop.targets.forEach((t: any) => {
                       if (t.name) {
                           const canonical = getCanonicalId(t.name);
                           if (t.id !== canonical) {

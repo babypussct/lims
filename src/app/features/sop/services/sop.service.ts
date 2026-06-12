@@ -139,4 +139,11 @@ export class SopService {
       }
       return updatedCount;
   }
+
+  async getAll(): Promise<Sop[]> {
+    const appId = this.firebaseService.APP_ID;
+    const colRef = collection(this.firebaseService.db, `artifacts/${appId}/sops`);
+    const snapshot = await getDocs(colRef);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Sop));
+  }
 }
