@@ -11,45 +11,55 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'BHCe':            'bhc-epsilon',
   'BHCg':            'bhc-gamma_lindane_gamma_hch',
   'BHC-alpha':       'bhc-alpha_benzene_hexachloride',
+  'BHC-alpha (benzene hexachloride)': 'bhc-alpha_benzene_hexachloride',
   'BHC-beta':        'bhc-beta',
   'BHC-delta':       'bhc-delta',
   'BHC-epsilon':     'bhc-epsilon',
   'BHC-gamma':       'bhc-gamma_lindane_gamma_hch',
+  'BHC-gamma (Lindane, gamma HCH)': 'bhc-gamma_lindane_gamma_hch',
   
   // Chlordane
   'Chlordane_cis':   'chlordane-cis_alpha',
   'Chlordane_oxy':   'chlordane-oxy',
   'Chlordane_trans': 'chlordane-trans_gamma',
   'Chlordane-cis':   'chlordane-cis_alpha',
+  'Chlordane-cis (alpha)': 'chlordane-cis_alpha',
   'Chlordane-oxy':   'chlordane-oxy',
   'Chlordane-trans': 'chlordane-trans_gamma',
+  'Chlordane-trans (gamma)': 'chlordane-trans_gamma',
   
   // DDD / DDE / DDT
-  'DDD_op':  'ddd-op',   'DDD-o,p': 'ddd-op',
-  'DDD_pp':  'ddd-pp',   'DDD-p,p': 'ddd-pp',
-  'DDE_op':  'dde-op',   'DDE-o,p': 'dde-op',
-  'DDE_pp':  'dde-pp',   'DDE-p,p': 'dde-pp',
-  'DDT_op':  'ddt-op',   'DDT-o,p': 'ddt-op',
-  'DDT_pp':  'ddt-pp',   'DDT-p,p': 'ddt-pp',
+  'DDD_op':  'ddd-op',   'DDD-o,p': 'ddd-op',   "DDD-o,p'": 'ddd-op',
+  'DDD_pp':  'ddd-pp',   'DDD-p,p': 'ddd-pp',   "DDD-p,p'": 'ddd-pp',
+  'DDE_op':  'dde-op',   'DDE-o,p': 'dde-op',   "DDE-o,p'": 'dde-op',
+  'DDE_pp':  'dde-pp',   'DDE-p,p': 'dde-pp',   "DDE-p,p'": 'dde-pp',
+  'DDT_op':  'ddt-op',   'DDT-o,p': 'ddt-op',   "DDT-o,p'": 'ddt-op',
+  'DDT_pp':  'ddt-pp',   'DDT-p,p': 'ddt-pp',   "DDT-p,p'": 'ddt-pp',
   
   // Endosulfan
   'Endosulfan1':        'endosulfan_i_alpha_isomer',
   'Endosulfan2':        'endosulfan_ii_beta_isomer',
   'EndosulfanS':        'endosulfan_sulfate',
   'Endosulfan-I':       'endosulfan_i_alpha_isomer',
+  'Endosulfan I (alpha isomer)': 'endosulfan_i_alpha_isomer',
   'Endosulfan-II':      'endosulfan_ii_beta_isomer',
+  'Endosulfan II (beta isomer)': 'endosulfan_ii_beta_isomer',
   'Endosulfan-sulfate': 'endosulfan_sulfate',
+  'Endosulfan sulfate': 'endosulfan_sulfate',
   
   // Heptachlor epoxide isomers
   'HeptachlorA':              'heptachlor_endo-epoxide_isomer_a',
   'HeptachlorB':              'heptachlor_exo-epoxide_isomer_b',
   'Heptachlor-epoxide-trans': 'heptachlor_endo-epoxide_isomer_a',
+  'Heptachlor endo-epoxide (isomer A)': 'heptachlor_endo-epoxide_isomer_a',
   'Heptachlor-epoxide-cis':   'heptachlor_exo-epoxide_isomer_b',
+  'Heptachlor exo-epoxide (isomer B)': 'heptachlor_exo-epoxide_isomer_b',
   
   // Others
   'HCB':          'hexachlorobenzene',
   'Hexachlorobenzene': 'hexachlorobenzene',
   'Methoxychlor': 'methoxychlor_pp-',
+  "Methoxychlor, p,p'-": 'methoxychlor_pp-',
   
   // Organophosphate (Lân hữu cơ)
   'Ethoprofos':         'ethoprophos_ethoprop',
@@ -79,8 +89,11 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   // Fipronil group
   'Fipronil':                       'fipronil',
   'Fipronil desulfinyl':            'fipronil-desulfinyl',
+  'Fipronil-desulfinyl':            'fipronil-desulfinyl',
   'Fipronil sulfide':               'fipronil-sulfide',
+  'Fipronil-sulfide':               'fipronil-sulfide',
   'Fipronil sulfone':               'fipronil-sulfone',
+  'Fipronil-sulfone':               'fipronil-sulfone',
   'Chlorpyrifos':                   'chlorpyrifos',
   'Chlorpyrofos':                   'chlorpyrifos',
   'Chlorpyryfos':                   'chlorpyrifos',

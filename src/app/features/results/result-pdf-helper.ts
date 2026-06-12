@@ -505,18 +505,12 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     return isSelected && matchesFilter;
   });
 
-  const mapCompoundToKey = (c: string): string => {
-    const info = resolveTargetMasterInfo(c, masterTargets);
-    if (info) return info.name;
-    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-  };
-
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+    return isCompoundAssigned(assigned, compound);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
@@ -539,7 +533,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     };
 
     currentConf.compounds.forEach((c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const assigned = isAssignedToAny(c);
 
       if (!assigned) {
@@ -626,7 +620,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       };
 
       currentConf.compounds.forEach((c: string) => {
-        const backendKey = mapCompoundToKey(c);
+        const backendKey = c;
         const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
         const assigned = isAssigned(sampleCode, c);
         
@@ -656,7 +650,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const results: Record<string, string> = {};
     const notes: Record<string, string> = {};
     currentConf.compounds.forEach((c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
@@ -727,7 +721,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     const summaryResult = detected.length > 0 ? detected.join('; ') : 'N/A';
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const vals = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         const isNd = sRes[`${c}_nd`] === true;
@@ -739,7 +733,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     }, {});
 
     const compoundNotes = currentConf.compounds.reduce((acc: any, c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const notes = filteredSamples.map((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
         return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
@@ -814,7 +808,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     : currentConf.compounds.filter((c: string) => {
         return filteredSamples.some((s: string) => isAssigned(s, c));
       });
-  const compoundsToPrint = activeCompoundsConfig.map((c: string) => mapCompoundToKey(c));
+  const compoundsToPrint = activeCompoundsConfig;
 
   return {
     action: 'generate_pdf',
@@ -853,18 +847,12 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     return isSelected && matchesFilter;
   });
 
-  const mapCompoundToKey = (c: string): string => {
-    const info = resolveTargetMasterInfo(c, masterTargets);
-    if (info) return info.name;
-    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-  };
-
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+    return isCompoundAssigned(assigned, compound);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
@@ -887,7 +875,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     };
 
     currentConf.compounds.forEach((c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const assigned = isAssignedToAny(c);
 
       if (!assigned) {
@@ -974,7 +962,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       };
 
       currentConf.compounds.forEach((c: string) => {
-        const backendKey = mapCompoundToKey(c);
+        const backendKey = c;
         const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
         const assigned = isAssigned(sampleCode, c);
 
@@ -1006,7 +994,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
     currentConf.compounds.forEach((c: string) => {
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
       results[backendKey] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
       notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
@@ -1081,7 +1069,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
       const allKph = vals.every((v: string) => v === 'N/A' || v === '');
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
@@ -1091,7 +1079,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
         const sRes = currentDraft.resultData[sCode] || {};
         return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
       });
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       acc[backendKey] = notes.join('; ');
       return acc;
     }, {});
@@ -1201,18 +1189,12 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     return isSelected && matchesFilter;
   });
 
-  const mapCompoundToKey = (c: string): string => {
-    const info = resolveTargetMasterInfo(c, masterTargets);
-    if (info) return info.name;
-    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s'()]/g, '');
-  };
-
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
     if (!assigned) return true;
-    return isCompoundAssigned(assigned, compound) || isCompoundAssigned(assigned, mapCompoundToKey(compound));
+    return isCompoundAssigned(assigned, compound);
   };
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
@@ -1235,7 +1217,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     };
 
     currentConf.compounds.forEach((c: string) => {
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const assigned = isAssignedToAny(c);
 
       if (!assigned) {
@@ -1322,7 +1304,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       };
 
       currentConf.compounds.forEach((c: string) => {
-        const backendKey = mapCompoundToKey(c);
+        const backendKey = c;
         const val = resObj[c] !== undefined && resObj[c] !== null ? String(resObj[c]) : '';
         const assigned = isAssigned(sampleCode, c);
 
@@ -1354,7 +1336,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
     currentConf.compounds.forEach((c: string) => {
       const isNd = resObj[`${c}_nd`] === true || resObj[c] === 'ND' || resObj[c] === 'N/A' || resObj[c] === 'N/A';
       const val = resObj[c];
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       const displayVal = (val === 'N/A') ? '' : (val !== undefined && val !== null && String(val).trim() !== '' ? String(val) : 'ND');
       results[backendKey] = (val === 'N/A') ? '' : (isNd ? 'ND' : displayVal);
       notes[backendKey] = resObj[`${c}_ghiChu`] || resObj['ghiChu'] || '';
@@ -1429,7 +1411,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
       });
       const allKph = vals.every((v: string) => v === 'N/A' || v === '');
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
       return acc;
     }, {});
@@ -1439,7 +1421,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
         const sRes = currentDraft.resultData[sCode] || {};
         return sRes[`${c}_ghiChu`] || sRes['ghiChu'] || '';
       });
-      const backendKey = mapCompoundToKey(c);
+      const backendKey = c;
       acc[backendKey] = notes.join('; ');
       return acc;
     }, {});
