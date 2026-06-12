@@ -84,7 +84,20 @@ declare let QRious: any;
                             <span class="text-[15px]">Đăng nhập với Google</span>
                         </button>
 
-                        <div class="mt-8 flex flex-col gap-4">
+                        <!-- Shared Device Checkbox -->
+                        <div class="mt-5 flex items-center justify-center">
+                            <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 px-4 py-2 rounded-xl border border-white/60 shadow-sm hover:bg-white/60 transition-all">
+                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 group-hover:border-fuchsia-400 transition-colors" [class.bg-fuchsia-50]="isSharedDevice()" [class.border-fuchsia-500]="isSharedDevice()">
+                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer">
+                                    @if (isSharedDevice()) {
+                                        <i class="fa-solid fa-check text-[11px] text-fuchsia-600 animate-fade-in"></i>
+                                    }
+                                </div>
+                                <span class="text-[13px] font-semibold text-gray-500 group-hover:text-gray-700 transition-colors">Đây là máy tính dùng chung</span>
+                            </label>
+                        </div>
+
+                        <div class="mt-6 flex flex-col gap-4">
                             <button (click)="switchMode('qr')" class="inline-flex items-center justify-center gap-2 text-fuchsia-600 hover:text-fuchsia-700 font-bold text-[13px] transition px-4 py-2.5 rounded-xl hover:bg-fuchsia-50/50 border border-transparent hover:border-fuchsia-100/50">
                                 <i class="fa-solid fa-qrcode text-[15px]"></i>
                                 <span>Đăng nhập qua mã QR</span>
@@ -256,6 +269,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   
   mode = signal<'google' | 'password' | 'qr'>('google');
   logoutReason = signal<string | null>(null);
+  isSharedDevice = signal(false);
   
   email = '';
   password = '';
@@ -267,6 +281,15 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.logoutReason.set(reason);
       localStorage.removeItem('lims_logout_reason');
     }
+    const sharedPref = localStorage.getItem('lims_shared_device');
+    if (sharedPref === 'true') {
+      this.isSharedDevice.set(true);
+    }
+  }
+
+  toggleSharedDevice() {
+    this.isSharedDevice.set(!this.isSharedDevice());
+    localStorage.setItem('lims_shared_device', this.isSharedDevice() ? 'true' : 'false');
   }
   isLoading = signal(false);
   isGoogleLoading = signal(false);
@@ -445,11 +468,16 @@ export class LoginComponent implements OnInit, OnDestroy {
     } catch (e: any) {
         // auth/popup-blocked or COOP issues: AuthService already called signInWithRedirect,
         // page is navigating away — just show a brief message, don't treat as error
-        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        if (e.code === 'auth/popup-blocked') {
             this.errorMsg.set('Đang chuyển hướng đến Google đăng nhập...');
             return; // Page navigating away, no need to reset loading
         }
-        this.handleError(e, true);
+        if (e.code === 'auth/popup-closed-by-user') {
+            this.errorMsg.set('Đã hủy đăng nhập Google.');
+            // Let the finally block reset the loading spinners
+        } else {
+            this.handleError(e, true);
+        }
     } finally { 
         this.isLoading.set(false); 
         this.isGoogleLoading.set(false); 

@@ -227,7 +227,10 @@ export class AuthService {
             this.syncUser(this.auth.currentUser);
         }
     } catch (e: any) {
-        if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        if (e.code === 'auth/popup-closed-by-user') {
+            throw e; // Trả về cho component xử lý (không chuyển hướng)
+        }
+        if (e.code === 'auth/popup-blocked') {
             // ── 2. Popup blocked → Bulletproof Direct OpenID Connect Redirect ──
             console.warn('[Auth] Popup blocked or COOP issue. Falling back to manual OpenID Connect redirect.');
             this._authViaDirectOidc();
@@ -292,9 +295,10 @@ export class AuthService {
     }
 
     const isGoogle = this.isGoogleUser();
+    const isSharedDevice = localStorage.getItem('lims_shared_device') === 'true';
     await signOut(this.auth);
 
-    if (isGoogle) {
+    if (isGoogle && isSharedDevice) {
         // Đăng xuất hoàn toàn khỏi tài khoản Google trên trình duyệt
         window.location.href = 'https://accounts.google.com/Logout';
     } else {
