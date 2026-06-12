@@ -5,6 +5,36 @@
 import { isCompoundAssigned, resolveTargetMasterInfo } from './shared/compound-id-resolver';
 import { formatSampleList } from '../../shared/utils/utils';
 
+export const chlorMap: Record<string, string> = {
+  'BHC-alpha': 'BHCa',
+  'BHC-beta': 'BHCb',
+  'BHC-delta': 'BHCd',
+  'BHC-epsilon': 'BHCe',
+  'BHC-gamma': 'BHCg',
+  'Chlordane-cis': 'Chlordane_cis',
+  'Chlordane-oxy': 'Chlordane_oxy',
+  'Chlordane-trans': 'Chlordane_trans',
+  'DDD-o,p': 'DDD_op',
+  'DDD-p,p': 'DDD_pp',
+  'DDE-o,p': 'DDE_op',
+  'DDE-p,p': 'DDE_pp',
+  'DDT-o,p': 'DDT_op',
+  'DDT-p,p': 'DDT_pp',
+  'Endosulfan-I': 'Endosulfan1',
+  'Endosulfan-II': 'Endosulfan2',
+  'Endosulfan-sulfate': 'EndosulfanS',
+  'Heptachlor-epoxide-trans': 'HeptachlorA',
+  'Heptachlor-epoxide-cis': 'HeptachlorB',
+  'Hexachlorobenzene': 'HCB'
+};
+
+export function mapCompoundToKey(c: string): string {
+  if (chlorMap[c]) return chlorMap[c];
+  if (c === 'Parathion-ethyl') return 'Parathion';
+  if (c === 'Ipobenfos') return 'Iprobenfos';
+  return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
+}
+
 export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
   const sampleList = currentRun.sampleList || [];
   const checkedSamples = sampleList.filter((s: string) => {
@@ -293,36 +323,6 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const samplesPayload: any[] = [];
   const sampleList = currentRun.sampleList || [];
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
-
-  const chlorMap: Record<string, string> = {
-    'BHC-alpha': 'BHCa',
-    'BHC-beta': 'BHCb',
-    'BHC-delta': 'BHCd',
-    'BHC-epsilon': 'BHCe',
-    'BHC-gamma': 'BHCg',
-    'Chlordane-cis': 'Chlordane_cis',
-    'Chlordane-oxy': 'Chlordane_oxy',
-    'Chlordane-trans': 'Chlordane_trans',
-    'DDD-o,p': 'DDD_op',
-    'DDD-p,p': 'DDD_pp',
-    'DDE-o,p': 'DDE_op',
-    'DDE-p,p': 'DDE_pp',
-    'DDT-o,p': 'DDT_op',
-    'DDT-p,p': 'DDT_pp',
-    'Endosulfan-I': 'Endosulfan1',
-    'Endosulfan-II': 'Endosulfan2',
-    'Endosulfan-sulfate': 'EndosulfanS',
-    'Heptachlor-epoxide-trans': 'HeptachlorA',
-    'Heptachlor-epoxide-cis': 'HeptachlorB',
-    'Hexachlorobenzene': 'HCB'
-  };
-
-  const mapCompoundToKey = (c: string): string => {
-    if (chlorMap[c]) return chlorMap[c];
-    if (c === 'Parathion-ethyl') return 'Parathion';
-    if (c === 'Ipobenfos') return 'Iprobenfos';
-    return c.replace(/-([a-z])/gi, (_, letter) => letter.toUpperCase()).replace(/[-_,\s']/g, '');
-  };
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     const assigned = sampleTargetMap[sampleCode];
