@@ -17,6 +17,8 @@ export interface SopTarget {
   lod?: string; // Limit of Detection (e.g. "0.1 ppb")
   loq?: string; // Limit of Quantitation (e.g. "0.3 ppb")
   isMasterLinked?: boolean; // Flag to lock ID if imported from Master Library
+  // UI Helper (not saved to DB natively, used for local display overrides)
+  _displayName?: string;
 }
 
 export interface TargetGroup {

@@ -11,7 +11,7 @@ import { SopService } from '../services/sop.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../../core/services/print.service';
-import { Sop, CalculatedItem, CalculatedIngredient } from '../../../core/models/sop.model';
+import { Sop, CalculatedItem, CalculatedIngredient, TargetGroup } from '../../../core/models/sop.model';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
 import { Request } from '../../../core/models/request.model';
@@ -23,6 +23,7 @@ import { RecipeManagerComponent } from '../../recipes/recipe-manager.component';
 import { QuickGenerateSampleModalComponent } from '../../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { GHS_DICTIONARY } from '../../../core/services/pubchem.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { TargetService } from '../../targets/target.service';
 
 @Component({
   selector: 'app-calculator',
@@ -43,6 +44,7 @@ export class CalculatorComponent implements OnDestroy {
   private recipeService = inject(RecipeService);
   private calcService = inject(CalculatorService);
   private sopService = inject(SopService);
+  private targetService = inject(TargetService);
   private router: Router = inject(Router);
   private route: ActivatedRoute = inject(ActivatedRoute);
   private toast = inject(ToastService);
@@ -63,6 +65,7 @@ export class CalculatorComponent implements OnDestroy {
   selectedTargets = signal<Set<string>>(new Set());
   targetsOpen = signal(false);
   targetSearchTerm = signal('');
+  targetGroups = signal<TargetGroup[]>([]);
   
   // Custom Visual Selection Matrix State
   customSampleTargetMap = signal<Record<string, Set<string>>>({});
@@ -179,6 +182,8 @@ export class CalculatorComponent implements OnDestroy {
   editRequestIdSignal = signal<string | null>(null);
 
   constructor() {
+    this.targetService.getAllGroups().then(groups => this.targetGroups.set(groups));
+
     this.route.queryParams.subscribe(params => {
         this.editRequestIdSignal.set(params['editRequestId'] || null);
     });
@@ -419,6 +424,28 @@ export class CalculatorComponent implements OnDestroy {
               return next;
           });
       }
+  }
+
+  applyTargetGroup(groupId: string) {
+      if (!groupId) return;
+      const group = this.targetGroups().find(g => g.id === groupId);
+      if (!group) return;
+      
+      const sop = this.activeSop();
+      if (!sop || !sop.targets) return;
+
+      const groupTargetIds = new Set(group.targets.map(t => t.id));
+      const validIdsToSelect = sop.targets.filter(t => groupTargetIds.has(t.id)).map(t => t.id);
+      
+      this.selectedTargets.set(new Set(validIdsToSelect));
+      
+      this.customSampleTargetMap.update(map => {
+          const next = { ...map };
+          Object.keys(next).forEach(sample => {
+              next[sample] = new Set<string>(validIdsToSelect);
+          });
+          return next;
+      });
   }
 
   getPayloadData() {
