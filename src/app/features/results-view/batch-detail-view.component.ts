@@ -66,27 +66,6 @@ import { MasterTargetService } from '../targets/master-target.service';
                 </div>
               }
 
-              @if (getCurrentDocsUrl()) {
-                <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                   class="px-3 py-2 text-xs font-bold text-blue-655 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/20 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center gap-1.5 no-underline active:scale-95 shadow-sm">
-                  <i class="fa-brands fa-google-drive"></i>
-                  <span class="hidden md:inline">Mở Docs</span>
-                </a>
-              }
-
-              @if (getCurrentPdfUrl()) {
-                <button (click)="openPdfInModal(getCurrentPdfUrl()!)"
-                        class="px-3 py-2 text-xs font-bold text-rose-655 dark:text-rose-455 bg-rose-50 dark:bg-rose-955/20 border border-rose-100/50 dark:border-rose-800/30 hover:bg-rose-100 dark:hover:bg-rose-950/30 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-sm" title="Mở modal xem PDF của hệ thống">
-                  <i class="fa-solid fa-expand"></i>
-                  <span class="hidden md:inline">PDF Toàn màn hình</span>
-                </button>
-              }
-
-              <button (click)="openQrModal()"
-                      class="px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-sm">
-                <i class="fa-solid fa-qrcode"></i>
-                <span class="hidden md:inline">Mã QR</span>
-              </button>
 
               <button (click)="goToEditMode()"
                       class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl shadow-sm transition-all duration-200 active:scale-95 flex items-center gap-2">
@@ -110,13 +89,6 @@ import { MasterTargetService } from '../targets/master-target.service';
               </div>
             </div>
 
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
-              <i class="fa-solid fa-microscope text-slate-400"></i>
-              <div>
-                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Thiết bị</span>
-                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ draft()?.page1Data?.['device'] || run()?.inputs?.['device'] || run()?.inputs?.['instrument'] || '—' }}</span>
-              </div>
-            </div>
 
             <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
               <i class="fa-solid fa-user-astronaut text-slate-400"></i>
@@ -134,13 +106,6 @@ import { MasterTargetService } from '../targets/master-target.service';
               </div>
             </div>
 
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0 max-w-[280px]">
-              <i class="fa-solid fa-comments text-slate-400"></i>
-              <div class="min-w-0">
-                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Thảo luận</span>
-                <span class="font-bold text-xs text-slate-800 dark:text-slate-200 block truncate" [title]="draft()?.page1Data?.['thaoLuan'] || ''">{{ draft()?.page1Data?.['thaoLuan'] || '—' }}</span>
-              </div>
-            </div>
 
             <!-- Status -->
             <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
@@ -157,26 +122,12 @@ import { MasterTargetService } from '../targets/master-target.service';
             <!-- Horizontal Divider -->
             <div class="w-px bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
 
-            <!-- QC Flags Horizontal -->
-            @if (checkboxList().length > 0) {
-              <div class="flex items-center gap-2 shrink-0">
-                @for (qc of checkboxList(); track qc.key) {
-                  @if (isQcField(qc.key)) {
-                    @if (draft()?.page1Data?.[qc.key] === true || draft()?.page1Data?.[qc.key] === 'true') {
-                      <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-800/50 rounded-xl" title="{{ qc.label }}">
-                        <i class="fa-solid fa-check-circle text-emerald-500 text-xs"></i>
-                        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 max-w-[120px] truncate">{{ qc.label }}</span>
-                      </div>
-                    } @else if (draft()?.page1Data?.[qc.key] === false || draft()?.page1Data?.[qc.key] === 'false') {
-                      <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50/80 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/50 rounded-xl" title="{{ qc.label }}">
-                        <i class="fa-solid fa-xmark-circle text-rose-500 text-xs"></i>
-                        <span class="text-[10px] font-bold text-rose-700 dark:text-rose-400 max-w-[120px] truncate">{{ qc.label }}</span>
-                      </div>
-                    }
-                  }
-                }
+            <!-- QR Code Horizontal -->
+            <div class="flex items-center shrink-0 ml-1 cursor-pointer hover:opacity-80 transition-opacity" (click)="openQrModal()" title="Nhấn để phóng to mã QR truy xuất">
+              <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200/60">
+                <canvas #qrCanvas class="w-9 h-9"></canvas>
               </div>
-            }
+            </div>
           </div>
         }
       </div>
@@ -360,7 +311,7 @@ import { MasterTargetService } from '../targets/master-target.service';
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
               <div class="flex items-center gap-3">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                  <i class="fa-solid fa-file-pdf mr-2.5 text-rose-500"></i> Báo cáo PDF
+                  <i class="fa-solid fa-file-lines mr-2.5 text-blue-500"></i> DOCS PREVIEW
                 </h4>
                 
                 @if (availableReports().length > 1 && activeFilter() === 'ALL') {
@@ -374,21 +325,21 @@ import { MasterTargetService } from '../targets/master-target.service';
                 }
               </div>
               
-              @if (safePdfUrl()) {
-                <button (click)="openPdfInModal(getCurrentPdfUrl()!)" 
-                        class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Mở PDF toàn màn hình (Modal hệ thống)">
+              @if (safeDocsIframeUrl()) {
+                <button (click)="openPdfInModal(getCurrentDocsUrl()!)" 
+                        class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Mở Docs toàn màn hình (Modal hệ thống)">
                   <i class="fa-solid fa-expand"></i>
                 </button>
               }
             </div>
 
             <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
-              @if (safePdfUrl()) {
-                <iframe [src]="safePdfUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
+              @if (safeDocsIframeUrl()) {
+                <iframe [src]="safeDocsIframeUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
-                  <i class="fa-regular fa-file-pdf text-4xl"></i>
-                  <p class="text-sm font-medium">Chưa có báo cáo PDF nào cho tùy chọn này.</p>
+                  <i class="fa-regular fa-file-lines text-4xl"></i>
+                  <p class="text-sm font-medium">Chưa có Docs Preview nào cho tùy chọn này.</p>
                 </div>
               }
             </div>
@@ -526,40 +477,9 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return Array.from(prefixes).sort();
   });
 
-  // Safe PDF url calculated from current filter
-  safePdfUrl = computed<SafeResourceUrl | null>(() => {
-    const activeFilter = this.activeFilter();
-    let url: string | null = null;
-    const d = this.draft();
-    if (!d) return null;
-
-    if (activeFilter === 'ALL') {
-      const selected = this.selectedPdfPrefix();
-      if (selected && d.reports) {
-         const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
-         if (d.reports[reportKey]) {
-           url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
-         }
-      }
-      if (!url) {
-        url = d.pdfViewUrl || d.pdfUrl || null;
-        if (!url && d.reports) {
-          const prefixes = this.detectedPrefixes();
-          if (prefixes.length > 0) {
-            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-            if (d.reports[firstReportKey]) {
-              url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
-            }
-          }
-        }
-      }
-    } else {
-      const reports = d.reports || {};
-      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      const reportForFilter = reports[reportKey] || {};
-      url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
-    }
-
+  // Safe Docs Iframe url calculated from current filter
+  safeDocsIframeUrl = computed<SafeResourceUrl | null>(() => {
+    const url = this.getCurrentDocsUrl();
     if (!url) return null;
 
     // Convert to Google Drive preview embed format
@@ -1043,6 +963,10 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (fileDMatch && fileDMatch[1]) {
       return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
+    }
+    const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+    if (docDMatch && docDMatch[1]) {
+      return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
     }
     try {
       const urlObj = new URL(url);

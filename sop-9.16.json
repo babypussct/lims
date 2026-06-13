@@ -31,7 +31,7 @@
   },
   "consumables": [
     {
-      "name": "chlorpyrifos-d10-10ppm",
+      "name": "is_fipronil",
       "_displayName": "Nội chuẩn Chlorpyrifos D10 10 ng/µl",
       "formula": "20 * total_n",
       "unit": "µl",
@@ -39,34 +39,35 @@
     },
     {
       "name": "buffer-ph7",
+      "recipeId": "recipe_em_ph_7",
       "_displayName": "Đệm pH 7",
-      "formula": "5 * total_n",
-      "unit": "ml",
-      "type": "simple"
+      "formula": "1 * total_n",
+      "unit": "recipe",
+      "type": "shared_recipe"
     },
     {
-      "name": "nacl",
+      "name": "sodium_chloride_nacl",
       "_displayName": "NaCl khan",
       "formula": "10 * total_n",
       "unit": "g",
       "type": "simple"
     },
     {
-      "name": "ch2cl2",
+      "name": "dichloromethane_ch2cl2",
       "_displayName": "Dichloromethane (CH2Cl2)",
       "formula": "90 * total_n",
       "unit": "ml",
       "type": "simple"
     },
     {
-      "name": "na2so4",
+      "name": "na2so4_anhydrous",
       "_displayName": "Na2SO4 khan",
       "formula": "10 * total_n",
       "unit": "g",
       "type": "simple"
     },
     {
-      "name": "toluene",
+      "name": "toluen",
       "_displayName": "Toluene",
       "formula": "10 * total_n",
       "unit": "ml",
@@ -151,7 +152,7 @@
     },
     {
       "id": "fipronil",
-      "name": "Fipronil",
+      "name": "Fipronil (nhóm I)",
       "loq": "0.5 ppb"
     },
     {
@@ -261,7 +262,7 @@
     },
     {
       "id": "silafluofen",
-      "name": "Silafluofen",
+      "name": "Silafluofen (nhóm I)",
       "loq": "0.5 ppb"
     },
     {
@@ -376,7 +377,7 @@
     },
     {
       "id": "silafluofen-2",
-      "name": "Silafluofen",
+      "name": "Silafluofen (nhóm Cúc)",
       "loq": "0.5 ppb"
     },
     {
@@ -461,7 +462,7 @@
     },
     {
       "id": "fipronil-2",
-      "name": "Fipronil",
+      "name": "Fipronil (nhóm Lân)",
       "loq": "0.5 ppb"
     },
     {

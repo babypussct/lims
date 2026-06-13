@@ -813,6 +813,10 @@ function getGoogleDrivePreviewUrl(url: string | null | undefined): string {
   if (fileDMatch && fileDMatch[1]) {
     return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
   }
+  const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+  if (docDMatch && docDMatch[1]) {
+    return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
+  }
   try {
     const urlObj = new URL(url);
     const id = urlObj.searchParams.get('id');
