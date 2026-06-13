@@ -852,6 +852,29 @@ export class SmartBatchComponent {
       this.toast.show('Đã tách mẻ thành công.', 'success');
   }
 
+  // --- NEW: Remove Target From Batch directly ---
+  removeTargetFromBatch(batchIndex: number, targetId: string) {
+      this.batches.update(current => {
+          const next = [...current];
+          const batch = next[batchIndex];
+          if (!batch) return next;
+
+          const tasksToKeep = batch.tasks.filter(t => t.targetId !== targetId);
+
+          if (tasksToKeep.length === 0) {
+              next.splice(batchIndex, 1);
+          } else {
+              const updatedMeta = this.recalculateBatchMetadata(tasksToKeep, batch.sop, batch);
+              next[batchIndex] = {
+                  ...batch,
+                  ...updatedMeta
+              };
+          }
+          return next;
+      });
+      this.validateGlobalStock();
+  }
+
   // --- QUICK IMPORT LOGIC ---
   async openQuickImport(item: CalculatedItem | any) {
       if (!this.auth.canEditInventory()) {

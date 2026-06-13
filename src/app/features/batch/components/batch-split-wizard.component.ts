@@ -96,7 +96,7 @@ export interface SplitWizardState {
                                            [checked]="state().selectedTargets.has(t.id)" 
                                            (change)="toggleTarget(t.id)"
                                            class="w-5 h-5 md:w-4 md:h-4 accent-blue-600 rounded">
-                                    <span class="text-base md:text-sm font-bold text-slate-700 dark:text-slate-300">{{t.name}}</span>
+                                    <span class="text-base md:text-sm font-bold text-slate-700 dark:text-slate-300">{{t._displayName || t.name}}</span>
                                 </label>
                             }
                         </div>
