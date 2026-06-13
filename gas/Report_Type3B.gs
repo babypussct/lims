@@ -134,10 +134,15 @@ function fillType3bSample(body, sopConfig, metadata, sample) {
 function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
   const allFields = { ...metadata, ...sample };
   
-  // Bộ lọc chỉ định (Target Assignment Resolver)
+  // Bộ lọc chỉ định (Target Assignment Resolver) — V2: Canonical ID
   const sampleTargetMap = metadata.sampleTargetMap || (metadata.inputs && metadata.inputs.sampleTargetMap) || null;
-  const isTargetAssignedForGas = function(sampleCode, compoundName) {
-    if (!sampleTargetMap || !sampleCode || !compoundName) return true;
+  const isTargetAssignedForGas = function(sampleCode, compoundDisplayName) {
+    if (!sampleTargetMap || !sampleCode || !compoundDisplayName) return true;
+    
+    // Bước 1: Chuyển display name → canonical id qua COMPOUND_TO_CANONICAL
+    const canonicalId = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[compoundDisplayName])
+      ? COMPOUND_TO_CANONICAL[compoundDisplayName]
+      : compoundDisplayName.toLowerCase().replace(/[^a-z0-9\-_]/g, '');
     
     const subCodes = sampleCode.split(';').map(s => s.trim()).filter(Boolean);
     const codesToCheck = subCodes.length > 0 ? subCodes : [sampleCode];
@@ -145,24 +150,23 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     for (const sc of codesToCheck) {
       const matchKey = Object.keys(sampleTargetMap).find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
       const assignedTargetIds = matchKey ? sampleTargetMap[matchKey] : null;
-      if (!assignedTargetIds) return true; // Fallback an toàn nếu không tìm thấy cấu hình của mẫu
       
-      const compLower = compoundName.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
-      const isAssigned = assignedTargetIds.some(tId => {
-        let tLower = tId.toLowerCase().replace(/[^a-z0-9αβγδε]/g, '');
-        let cLower = compLower;
-        
-        // Chuẩn hóa đồng nhất chính tả giữa GAS và Firestore ID (ph -> f, chlorpyrifos -> chlorpyrofos)
-        tLower = tLower.replace(/ph/g, 'f').replace(/chlorpyri/g, 'chlorpyro').replace(/chlorpyry/g, 'chlorpyro');
-        cLower = cLower.replace(/ph/g, 'f').replace(/chlorpyri/g, 'chlorpyro').replace(/chlorpyry/g, 'chlorpyro');
-        
+      // Fallback an toàn: nếu không tìm thấy cấu hình của mẫu này → hiển thị tất cả
+      if (!assignedTargetIds || assignedTargetIds.length === 0) return true;
+      
+      // Bước 2: So sánh canonical id trực tiếp (fast path)
+      if (assignedTargetIds.includes(canonicalId)) return true;
+      
+      // Bước 3: Fallback fuzzy — cho dữ liệu cũ chưa migrate hoặc edge cases
+      const cNorm = canonicalId.replace(/[^a-z0-9]/g, '');
+      const hasMatch = assignedTargetIds.some(tId => {
+        const tNorm = tId.toLowerCase().replace(/[^a-z0-9]/g, '');
         // Bảo vệ: tránh Heptachlor khớp nhầm Heptachlor-epoxide
-        if (cLower === 'heptachlor' && tLower.includes('epoxide')) return false;
-        if (tLower === 'heptachlor' && cLower.includes('epoxide')) return false;
-        
-        return tLower === cLower;
+        if (cNorm === 'heptachlor' && tNorm.includes('epoxide')) return false;
+        if (tNorm === 'heptachlor' && cNorm.includes('epoxide')) return false;
+        return tNorm === cNorm;
       });
-      if (isAssigned) return true;
+      if (hasMatch) return true;
     }
     return false;
   };
@@ -734,18 +738,30 @@ function replaceCheckboxInElementRecursive(element, lineText, checkChar) {
 }
 
 function _getPayloadKey(compoundName) {
-  const directMap = {
+  // V2: Lookup canonical id từ COMPOUND_TO_CANONICAL — canonical id là Firestore key sau migration
+  if (typeof COMPOUND_TO_CANONICAL !== 'undefined') {
+    // 1. Khop chinh xac
+    if (COMPOUND_TO_CANONICAL[compoundName]) return COMPOUND_TO_CANONICAL[compoundName];
+    // 2. Case-insensitive fallback
+    const lowerName = compoundName.toLowerCase();
+    for (const key of Object.keys(COMPOUND_TO_CANONICAL)) {
+      if (key.toLowerCase() === lowerName) return COMPOUND_TO_CANONICAL[key];
+    }
+  }
+  // Legacy fallback: dữ liệu cũ chưa migrate (trước DATA_VERSION 2)
+  const legacyMap = {
     'Fipronil desulfinyl': 'FipronilDesulfinyl',
-    'Fipronil sulfide': 'FipronilSulfide',
-    'Fipronil sulfone': 'FipronilSulfone',
-    'Azinphos-methyl': 'AzinphosMethyl',
-    'Chlorpyrifos-methyl': 'ChlorpyryfosMethyl',
-    'Chlorpyryfos-methyl': 'ChlorpyryfosMethyl',
-    'Isofenphos-methyl': 'IsofenphosMethyl',
-    'Parathion-methyl': 'ParathionMethyl',
-    'Pirimiphos-methyl': 'PirimiphosMethyl'
+    'Fipronil sulfide':    'FipronilSulfide',
+    'Fipronil sulfone':    'FipronilSulfone',
+    'Azinphos-methyl':    'AzinphosMethyl',
+    'Chlorpyrifos-methyl':'ChlorpyryfosMethyl',
+    'Chlorpyryfos-methyl':'ChlorpyryfosMethyl',
+    'Isofenphos-methyl':  'IsofenphosMethyl',
+    'Parathion-methyl':   'ParathionMethyl',
+    'Pirimiphos-methyl':  'PirimiphosMethyl'
   };
-  if (directMap[compoundName]) return directMap[compoundName];
+  if (legacyMap[compoundName]) return legacyMap[compoundName];
+  // Últimate fallback: CamelCase normalize từ display string
   return compoundName.replace(/-([a-z])/gi, function(match, letter) { return letter.toUpperCase(); }).replace(/[-_,\s'\(\)]/g, '');
 }/**
  * Tu dong nhan dien va dien Bang Duong Chuan & Bang Ket Qua cho Form Don cua SOP Type 3B
