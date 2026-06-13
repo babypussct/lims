@@ -131,6 +131,7 @@ const COMPOUND_TO_CANONICAL = {
   'Phosmet':                        'phosmet',
   'Phosphamidon':                   'phosphamidon',
   'Pirimiphos-methyl':              'pirimifos_methyl',
+  'Pirimiphos methyl':              'pirimifos_methyl',  // nhom-i.compounds[] dùng space
   'PirimiphosMethyl':               'pirimifos_methyl',
   'Pirimifos-methyl':               'pirimifos_methyl',
   'Profenofos':                     'profenofos',
@@ -239,6 +240,8 @@ const CONFIG = {
     'nhom-cuc-don':           '1rlN0iNEG_beYHBX7VRsoJ6QQsMerKxian8OJni0Ha9A',   // Nhóm Cúc (GC-MS/MS) - Form Đơn
     'nhom-i':                 'PASTE_GOOGLE_DOC_ID_HERE',                       // Nhóm I (GC-MS/MS) - Form Check
     'nhom-i-don':             '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE',   // Nhóm I (GC-MS/MS) - Form Đơn
+    'tbvtv-trong-nuoc-gcmsms':      '1IOPpgtydsZegD0RNP246c0Rq5asvdU6RJZ7MJ1c1KCs',
+    'tbvtv-trong-nuoc-gcmsms-don':  '1cF4lX-lotjbV2GSDOqpsfwFuQK2TJcxg8w1RsCMMBLE',
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -458,6 +461,71 @@ const CONFIG = {
         'Alachlor', 'Piperonyl butoxide', 'Propanil', 'Propoxur', 'Silafluofen', 'Simazine',
         'Tebufenpyrad', 'Atrazine', 'Tebuthiuron', 'Thiabendazole', 'Chlorfenapyr', 'Vinclozolin',
         'Trifluralin', 'Chlorothalonil'
+      ]
+    },
+    'tbvtv-trong-nuoc-gcmsms': {
+      folderName: 'TBVTV trong nước (GC-MS/MS)',
+      formType: 'type3b',
+      defaultFontSize: 13,
+      columns: {},
+      checkboxLines: {},
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      },
+      resultColumns: [
+        { key: 'alachlor' }, { key: 'atrazine' }, { key: 'azoxystrobin' }, { key: 'bitertanol' }, { key: 'boscalid' },
+        { key: 'buprofezin' }, { key: 'butachlor' }, { key: 'chlorfenapyr' }, { key: 'chlorothalonil' }, { key: 'cyproconazole' },
+        { key: 'cyprodinil' }, { key: 'dicloran' }, { key: 'difenoconazole' }, { key: 'fenbuconazole' }, { key: 'fenoxanil' },
+        { key: 'fipronil' }, { key: 'fluazifop' }, { key: 'fludioxonil' }, { key: 'flufenacet' }, { key: 'flusilazole' },
+        { key: 'flutriafol' }, { key: 'hexaconazole' }, { key: 'imazalil' }, { key: 'kresoxim_methyl' }, { key: 'mecarbam' },
+        { key: 'mefenacet' }, { key: 'molinate' }, { key: 'nitrothal-isopropyl' }, { key: 'paclobutrazol' }, { key: 'phosmet' },
+        { key: 'phosphamidon' }, { key: 'piperonyl_butoxide' }, { key: 'pirimifos_methyl' }, { key: 'profenofos' }, { key: 'propanil' },
+        { key: 'propiconazole' }, { key: 'propoxur' }, { key: 'silafluofen' }, { key: 'simazine' }, { key: 'tebuconazole' },
+        { key: 'tebufenpyrad' }, { key: 'tebuthiuron' }, { key: 'tetraconazole' }, { key: 'thiabendazole' }, { key: 'triadimenol' },
+        { key: 'triazophos' }, { key: 'tricyclazole' }, { key: 'trifluralin' }, { key: 'uniconazole' }, { key: 'vamidothion' },
+        { key: 'vinclozolin' }, { key: 'bifenthrin' }, { key: 'cyfluthrin_baythroid' }, { key: 'lambda_cyhalothrin' }, { key: 'deltamethrin' },
+        { key: 'tralomethrin' }, { key: 'ethofenprox' }, { key: 'permethrin_cis' }, { key: 'permethrin_trans' }, { key: 'fenpropathrin' },
+        { key: 'flucythrinate' }, { key: 'fenvalerate' }, { key: 'cypermethrin' }, { key: 'tefluthrin' }, { key: 'acephate' },
+        { key: 'azinfos_methyl' }, { key: 'cadusafos' }, { key: 'chlorpyrifos' }, { key: 'chlorpyrifos-methyl' }, { key: 'diazinon' },
+        { key: 'dimethoate' }, { key: 'edifenfos' }, { key: 'ethion' }, { key: 'ethoprophos_ethoprop' }, { key: 'fenitrothion' },
+        { key: 'fenthion' }, { key: 'fipronil-sulfide' }, { key: 'fipronil-sulfone' }, { key: 'fipronil-desulfinyl' }, { key: 'iprobenfos' },
+        { key: 'malathion' }, { key: 'mefenoxam' }, { key: 'metalaxyl' }, { key: 'methacrifos' }, { key: 'methidathion' },
+        { key: 'monocrotophos' }, { key: 'omethoate' }, { key: 'parathion_ethyl' }, { key: 'parathion_methyl' }, { key: 'phenthoate' },
+        { key: 'phorate' }, { key: 'quinalphos' }, { key: 'ronnel_fenchlorphos' }, { key: 'aldrin' }, { key: 'bhc-alpha_benzene_hexachloride' },
+        { key: 'bhc-beta' }, { key: 'bhc-delta' }, { key: 'bhc-epsilon' }, { key: 'bhc-gamma_lindane_gamma_hch' }, { key: 'chlordane-cis_alpha' },
+        { key: 'chlordane-oxy' }, { key: 'chlordane-trans_gamma' }, { key: 'ddd-op' }, { key: 'ddd-pp' }, { key: 'dde-op' },
+        { key: 'dde-pp' }, { key: 'ddt-op' }, { key: 'ddt-pp' }, { key: 'dieldrin' }, { key: 'endosulfan_i_alpha_isomer' },
+        { key: 'endosulfan_ii_beta_isomer' }, { key: 'endosulfan_sulfate' }, { key: 'endrin' }, { key: 'heptachlor' }, { key: 'heptachlor_endo-epoxide_isomer_a' },
+        { key: 'heptachlor_exo-epoxide_isomer_b' }, { key: 'hexachlorobenzene' }, { key: 'isodrin' }, { key: 'methoxychlor_pp-' }, { key: 'mirex' },
+        { key: 'pendimethalin' }
+      ],
+      compounds: [
+        'Alachlor', 'Atrazine', 'Azoxystrobin', 'Bitertanol', 'Boscalid',
+        'Buprofezin', 'Butachlor', 'Chlorfenapyr', 'Chlorothalonil', 'Cyproconazole',
+        'Cyprodinil', 'Dicloran', 'Difenoconazole', 'Fenbuconazole', 'Fenoxanil',
+        'Fipronil', 'Fluazifop', 'Fludioxonil', 'Flufenacet', 'Flusilazole',
+        'Flutriafol', 'Hexaconazole', 'Imazalil', 'Kresoxim methyl', 'Mecarbam',
+        'Mefenacet', 'Molinate', 'Nitrothal-Isopropyl', 'Paclobutrazol', 'Phosmet',
+        'Phosphamidon', 'Piperonyl butoxide', 'Pirimifos-methyl', 'Profenofos', 'Propanil',
+        'Propiconazole', 'Propoxur', 'Silafluofen', 'Simazine', 'Tebuconazole',
+        'Tebufenpyrad', 'Tebuthiuron', 'Tetraconazole', 'Thiabendazole', 'Triadimenol',
+        'Triazophos', 'Tricyclazole', 'Trifluralin', 'Uniconazole', 'Vamidothion',
+        'Vinclozolin', 'Bifenthrin', 'Cyfluthrin (Baythroid)', 'lambda-Cyhalothrin', 'Deltamethrin',
+        'Tralomethrin', 'Ethofenprox', 'Permethrin cis', 'Permethrin trans', 'Fenpropathrin',
+        'Flucythrinate', 'Fenvalerate', 'Cypermethrins', 'Tefluthrin', 'Acephate',
+        'Azinfos-methyl', 'Cadusafos', 'Chlorpyryfos', 'Chlorpyrifos-methyl', 'Diazinon',
+        'Dimethoate', 'Edifenphos', 'Ethion', 'Ethoprophos (Ethoprop)', 'Fenitrothion',
+        'Fenthion', 'Fipronil-sulfide', 'Fipronil-sulfone', 'Fipronil-desulfinyl', 'Iprobenfos',
+        'Malathion', 'Mefenoxam', 'Metalaxyl', 'Methacrifos', 'Methidathion',
+        'Monocrotophos', 'Omethoate', 'Parathion-ethyl', 'Parathion-methyl', 'Phenthoate',
+        'Phorate', 'Quinalphos', 'Ronnel (Fenchlorphos)', 'Aldrin', 'BHC-alpha (benzene hexachloride)',
+        'BHC-beta', 'BHC-delta', 'BHC-epsilon', 'BHC-gamma (Lindane, gamma HCH)', 'Chlordane-cis (alpha)',
+        'Chlordane-oxy', 'Chlordane-trans (gamma)', 'DDD-o,p\'', 'DDD-p,p\'', 'DDE-o,p\'',
+        'DDE-p,p\'', 'DDT-o,p\'', 'DDT-p,p\'', 'Dieldrin', 'Endosulfan I (alpha isomer)',
+        'Endosulfan II (beta isomer)', 'Endosulfan sulfate', 'Endrin', 'Heptachlor', 'Heptachlor endo-epoxide (isomer A)',
+        'Heptachlor exo-epoxide (isomer B)', 'HCB', 'Isodrin', 'Methoxychlor, p,p\'-', 'Mirex',
+        'Pendimethalin'
       ]
     }
   }

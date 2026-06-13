@@ -419,6 +419,14 @@
                 (draftChanged)="onDraftChanged($event)">
               </app-sop-1767856825928-entry>
             }
+            @case ('tbvtv-trong-nuoc-gcmsms') {
+              <app-sop-tbvtv-trong-nuoc-gcmsms-entry
+                [run]="filteredRun()!"
+                [draft]="draft()!"
+                [config]="config()!"
+                (draftChanged)="onDraftChanged($event)">
+              </app-sop-tbvtv-trong-nuoc-gcmsms-entry>
+            }
             @default {
               <app-result-entry-type3b 
                 [run]="filteredRun()!" 

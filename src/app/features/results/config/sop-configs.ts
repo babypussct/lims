@@ -8,19 +8,19 @@ export const SOP_ID_MAP: Record<string, string> = {
   'SOP-02': 'lan-huu-co',             // Nhóm Lân hữu cơ (GC-MS/MS)
   'sop_1767856825928': 'nhom-cuc',    // Nhóm Cúc (GC-MS/MS)
   'sop_1767857642144': 'nhom-i',      // Nhóm I (GC-MS/MS)
-  // 'SOP-04': 'chlor-huu-co',        // (chưa cấu hình)
-  // 'SOP-05': 'lan-huu-co',          // (chưa cấu hình)
+  'tbvtv_trong_nuoc_-_gc-msms_1781168317030': 'tbvtv-trong-nuoc-gcmsms',
 };
 
 // ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────
 export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
-  { keywords: ['trifluralin'],                              configKey: 'trifluralin-gcms' },
-  { keywords: ['fipronil', 'chlorpyrifos'],                 configKey: 'fipronil-chlorpyrifos' },
-  { keywords: ['dichlorvos'],                               configKey: 'dichlorvos-gcms' },
+  { keywords: ['trifluralin'], configKey: 'trifluralin-gcms' },
+  { keywords: ['fipronil', 'chlorpyrifos'], configKey: 'fipronil-chlorpyrifos' },
+  { keywords: ['dichlorvos'], configKey: 'dichlorvos-gcms' },
   { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
-  { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'],     configKey: 'lan-huu-co' },
-  { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'],            configKey: 'nhom-cuc' },
-  { keywords: ['nhóm i', 'nhom i'],                         configKey: 'nhom-i' },
+  { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'], configKey: 'lan-huu-co' },
+  { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'], configKey: 'nhom-cuc' },
+  { keywords: ['nhóm i', 'nhom i'], configKey: 'nhom-i' },
+  { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
 ];
 
 export const ANGULAR_SOP_CONFIG: Record<string, {
@@ -48,15 +48,15 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       kqFipSulf2: 5, kqClp: 6, kqClpMe: 7, kqClpMeDes: 8
     },
     checkboxLines: {
-      'Tất cả mẫu thử đều không phát hiện':                           'checkTatCaND',
-      'Có mẫu thử phát hiện':                                          'checkCoMauPhatHien',
-      'Mẫu kiểm tra nội bộ':                                           'qcKiemTraNoiBo',
-      'Hệ số hồi quy tuyến tính':                                      'qcR2',
-      'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
-      'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':             'qcNhanDang',
-      'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':        'qcThemChuan',
-      'Độ thu hồi IS':                                                 'qcThuHoi',
-      'Đánh giá chung':                                                'qcDanhGiaChung'
+      'Tất cả mẫu thử đều không phát hiện': 'checkTatCaND',
+      'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
+      'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
+      'Hệ số hồi quy tuyến tính': 'qcR2',
+      'Độ lệch thời gian lưu': 'qcThoiGianLuu',
+      'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
+      'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',
+      'Độ thu hồi IS': 'qcThuHoi',
+      'Đánh giá chung': 'qcDanhGiaChung'
     },
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
   },
@@ -244,6 +244,45 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
       'vinclozolin',
       'trifluralin',
       'chlorothalonil'
+    ]
+  },
+  'tbvtv-trong-nuoc-gcmsms': {
+    formType: 'type3b',
+    columns: {},
+    checkboxLines: {},
+    signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' },
+    compounds: [
+      'alachlor', 'atrazine', 'azoxystrobin', 'bitertanol',
+      'boscalid', 'buprofezin', 'butachlor', 'chlorfenapyr',
+      'chlorothalonil', 'cyproconazole', 'cyprodinil', 'dicloran',
+      'difenoconazole', 'fenbuconazole', 'fenoxanil', 'fipronil',
+      'fluazifop', 'fludioxonil', 'flufenacet', 'flusilazole',
+      'flutriafol', 'hexaconazole', 'imazalil', 'kresoxim_methyl',
+      'mecarbam', 'mefenacet', 'molinate', 'nitrothal-isopropyl',
+      'paclobutrazol', 'phosmet', 'phosphamidon', 'piperonyl_butoxide',
+      'pirimifos_methyl', 'profenofos', 'propanil', 'propiconazole',
+      'propoxur', 'silafluofen', 'simazine', 'tebuconazole',
+      'tebufenpyrad', 'tebuthiuron', 'tetraconazole', 'thiabendazole',
+      'triadimenol', 'triazophos', 'tricyclazole', 'trifluralin',
+      'uniconazole', 'vamidothion', 'vinclozolin', 'bifenthrin',
+      'cyfluthrin_baythroid', 'lambda_cyhalothrin', 'deltamethrin', 'tralomethrin',
+      'ethofenprox', 'permethrin_cis', 'permethrin_trans', 'fenpropathrin',
+      'flucythrinate', 'fenvalerate', 'cypermethrin', 'tefluthrin',
+      'acephate', 'azinfos_methyl', 'cadusafos', 'chlorpyrifos',
+      'chlorpyrifos-methyl', 'diazinon', 'dimethoate', 'edifenfos',
+      'ethion', 'ethoprophos_ethoprop', 'fenitrothion', 'fenthion',
+      'fipronil-sulfide', 'fipronil-sulfone', 'fipronil-desulfinyl', 'iprobenfos',
+      'malathion', 'mefenoxam', 'metalaxyl', 'methacrifos',
+      'methidathion', 'monocrotophos', 'omethoate', 'parathion_ethyl',
+      'parathion_methyl', 'phenthoate', 'phorate', 'quinalphos',
+      'ronnel_fenchlorphos', 'aldrin', 'bhc-alpha_benzene_hexachloride', 'bhc-beta',
+      'bhc-delta', 'bhc-epsilon', 'bhc-gamma_lindane_gamma_hch', 'chlordane-cis_alpha',
+      'chlordane-oxy', 'chlordane-trans_gamma', 'ddd-op', 'ddd-pp',
+      'dde-op', 'dde-pp', 'ddt-op', 'ddt-pp',
+      'dieldrin', 'endosulfan_i_alpha_isomer', 'endosulfan_ii_beta_isomer', 'endosulfan_sulfate',
+      'endrin', 'heptachlor', 'heptachlor_endo-epoxide_isomer_a', 'heptachlor_exo-epoxide_isomer_b',
+      'hexachlorobenzene', 'isodrin', 'methoxychlor_pp-', 'mirex',
+      'pendimethalin'
     ]
   }
 };
