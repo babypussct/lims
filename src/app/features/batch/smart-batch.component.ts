@@ -736,7 +736,9 @@ export class SmartBatchComponent {
   private recalculateBatchMetadata(tasks: AnalysisTask[], sop: Sop, originalBatch: ProposedBatch): Partial<ProposedBatch> {
       const uniqueSamples = new Set(tasks.map(t => t.sample));
       const uniqueTargetIds = new Set(tasks.map(t => t.targetId));
-      const batchTargets = (sop.targets || []).filter(t => uniqueTargetIds.has(getCanonicalId(t.name)));
+      
+      // Use originalBatch.targets instead of sop.targets so manually removed targets don't come back
+      const batchTargets = (originalBatch.targets || []).filter(t => uniqueTargetIds.has(getCanonicalId(t.name)));
       
       const newInputs = { ...originalBatch.inputValues };
       // Try to reset n_sample based on new size, but keep other manual inputs
@@ -775,9 +777,17 @@ export class SmartBatchComponent {
       const tasksToMove: AnalysisTask[] = [];
       const tasksToKeep: AnalysisTask[] = [];
 
+      // Convert selectedTargets (which are SopTarget.id) to canonical IDs for matching with tasks
+      const selectedCanonicalIds = new Set(
+          Array.from(state.selectedTargets).map(id => {
+              const t = sourceBatch.targets.find(x => x.id === id);
+              return t ? getCanonicalId(t.name) : id;
+          })
+      );
+
       if (sourceBatch.tasks) {
           sourceBatch.tasks.forEach(t => {
-              if (state.selectedSamples.has(t.sample) && state.selectedTargets.has(t.targetId)) {
+              if (state.selectedSamples.has(t.sample) && selectedCanonicalIds.has(t.targetId)) {
                   tasksToMove.push(t);
               } else {
                   tasksToKeep.push(t);
