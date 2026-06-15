@@ -279,7 +279,7 @@ export class MasterTargetManagerComponent implements OnInit {
               const id = d.id;
               if (id.includes('-')) {
                   const newId = id.replace(/-/g, '_');
-                  const data = d.data();
+                  const data = d.data() as any;
                   data.id = newId;
                   batch.set(doc(db, `artifacts/${appId}/master_analytes`, newId), data);
                   batch.delete(doc(db, `artifacts/${appId}/master_analytes`, id));
@@ -292,7 +292,7 @@ export class MasterTargetManagerComponent implements OnInit {
           console.log('Migrating Target Groups...');
           const tgSnap = await getDocs(collection(db, `artifacts/${appId}/targetGroups`));
           for (const d of tgSnap.docs) {
-              const data = d.data();
+              const data = d.data() as any;
               let changed = false;
               if (data.id && data.id.includes('-')) {
                   data.id = data.id.replace(/-/g, '_');
@@ -323,7 +323,7 @@ export class MasterTargetManagerComponent implements OnInit {
           console.log('Migrating SOPs...');
           const sopsSnap = await getDocs(collection(db, `artifacts/${appId}/sops`));
           for (const d of sopsSnap.docs) {
-              const data = d.data();
+              const data = d.data() as any;
               let changed = false;
               if (data.targets && Array.isArray(data.targets)) {
                   data.targets.forEach((t: any) => {
@@ -344,7 +344,7 @@ export class MasterTargetManagerComponent implements OnInit {
           console.log('Migrating Requests...');
           const reqsSnap = await getDocs(collection(db, `artifacts/${appId}/requests`));
           for (const d of reqsSnap.docs) {
-              const data = d.data();
+              const data = d.data() as any;
               let changed = false;
 
               if (data.targetIds && Array.isArray(data.targetIds)) {
