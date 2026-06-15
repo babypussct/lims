@@ -414,7 +414,7 @@ export class MasterTargetManagerComponent implements OnInit {
           }
           await commitBatch();
 
-          this.toast.success('Migration completed successfully!');
+          this.toast.show('Migration completed successfully!', 'success');
           await this.loadData(); // Reload the list to remove duplicates from UI
       } catch (error: any) {
           console.error('Migration error:', error);
