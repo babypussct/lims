@@ -414,12 +414,11 @@ export class MasterTargetManagerComponent implements OnInit {
           }
           await commitBatch();
 
-          console.log('Migration Completed.');
-          this.toast.show('Data migration (- to _) completed successfully.', 'success');
-          this.loadData();
-      } catch (e: any) {
-          console.error('Migration error:', e);
-          this.toast.show('Migration failed: ' + e.message, 'error');
+          this.toast.success('Migration completed successfully!');
+          await this.loadData(); // Reload the list to remove duplicates from UI
+      } catch (error: any) {
+          console.error('Migration error:', error);
+          this.toast.show('Migration failed: ' + error.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }

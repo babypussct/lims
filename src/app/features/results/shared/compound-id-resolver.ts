@@ -5,36 +5,36 @@
 
 export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   // BHC isomers
-  'BHCa':            'bhc-alpha_benzene_hexachloride',
-  'BHCb':            'bhc-beta',
-  'BHCd':            'bhc-delta',
-  'BHCe':            'bhc-epsilon',
-  'BHCg':            'bhc-gamma_lindane_gamma_hch',
-  'BHC-alpha':       'bhc-alpha_benzene_hexachloride',
-  'BHC-alpha (benzene hexachloride)': 'bhc-alpha_benzene_hexachloride',
-  'BHC-beta':        'bhc-beta',
-  'BHC-delta':       'bhc-delta',
-  'BHC-epsilon':     'bhc-epsilon',
-  'BHC-gamma':       'bhc-gamma_lindane_gamma_hch',
-  'BHC-gamma (Lindane, gamma HCH)': 'bhc-gamma_lindane_gamma_hch',
+  'BHCa':            'bhc_alpha_benzene_hexachloride',
+  'BHCb':            'bhc_beta',
+  'BHCd':            'bhc_delta',
+  'BHCe':            'bhc_epsilon',
+  'BHCg':            'bhc_gamma_lindane_gamma_hch',
+  'BHC-alpha':       'bhc_alpha_benzene_hexachloride',
+  'BHC-alpha (benzene hexachloride)': 'bhc_alpha_benzene_hexachloride',
+  'BHC-beta':        'bhc_beta',
+  'BHC-delta':       'bhc_delta',
+  'BHC-epsilon':     'bhc_epsilon',
+  'BHC-gamma':       'bhc_gamma_lindane_gamma_hch',
+  'BHC-gamma (Lindane, gamma HCH)': 'bhc_gamma_lindane_gamma_hch',
   
   // Chlordane
-  'Chlordane_cis':   'chlordane-cis_alpha',
-  'Chlordane_oxy':   'chlordane-oxy',
-  'Chlordane_trans': 'chlordane-trans_gamma',
-  'Chlordane-cis':   'chlordane-cis_alpha',
-  'Chlordane-cis (alpha)': 'chlordane-cis_alpha',
-  'Chlordane-oxy':   'chlordane-oxy',
-  'Chlordane-trans': 'chlordane-trans_gamma',
-  'Chlordane-trans (gamma)': 'chlordane-trans_gamma',
+  'Chlordane_cis':   'chlordane_cis_alpha',
+  'Chlordane_oxy':   'chlordane_oxy',
+  'Chlordane_trans': 'chlordane_trans_gamma',
+  'Chlordane-cis':   'chlordane_cis_alpha',
+  'Chlordane-cis (alpha)': 'chlordane_cis_alpha',
+  'Chlordane-oxy':   'chlordane_oxy',
+  'Chlordane-trans': 'chlordane_trans_gamma',
+  'Chlordane-trans (gamma)': 'chlordane_trans_gamma',
   
   // DDD / DDE / DDT
-  'DDD_op':  'ddd-op',   'DDD-o,p': 'ddd-op',   "DDD-o,p'": 'ddd-op',
-  'DDD_pp':  'ddd-pp',   'DDD-p,p': 'ddd-pp',   "DDD-p,p'": 'ddd-pp',
-  'DDE_op':  'dde-op',   'DDE-o,p': 'dde-op',   "DDE-o,p'": 'dde-op',
-  'DDE_pp':  'dde-pp',   'DDE-p,p': 'dde-pp',   "DDE-p,p'": 'dde-pp',
-  'DDT_op':  'ddt-op',   'DDT-o,p': 'ddt-op',   "DDT-o,p'": 'ddt-op',
-  'DDT_pp':  'ddt-pp',   'DDT-p,p': 'ddt-pp',   "DDT-p,p'": 'ddt-pp',
+  'DDD_op':  'ddd_op',   'DDD-o,p': 'ddd_op',   "DDD-o,p'": 'ddd_op',
+  'DDD_pp':  'ddd_pp',   'DDD-p,p': 'ddd_pp',   "DDD-p,p'": 'ddd_pp',
+  'DDE_op':  'dde_op',   'DDE-o,p': 'dde_op',   "DDE-o,p'": 'dde_op',
+  'DDE_pp':  'dde_pp',   'DDE-p,p': 'dde_pp',   "DDE-p,p'": 'dde_pp',
+  'DDT_op':  'ddt_op',   'DDT-o,p': 'ddt_op',   "DDT-o,p'": 'ddt_op',
+  'DDT_pp':  'ddt_pp',   'DDT-p,p': 'ddt_pp',   "DDT-p,p'": 'ddt_pp',
   
   // Endosulfan
   'Endosulfan1':        'endosulfan_i_alpha_isomer',
@@ -48,18 +48,18 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Endosulfan sulfate': 'endosulfan_sulfate',
   
   // Heptachlor epoxide isomers
-  'HeptachlorA':              'heptachlor_endo-epoxide_isomer_a',
-  'HeptachlorB':              'heptachlor_exo-epoxide_isomer_b',
-  'Heptachlor-epoxide-trans': 'heptachlor_endo-epoxide_isomer_a',
-  'Heptachlor endo-epoxide (isomer A)': 'heptachlor_endo-epoxide_isomer_a',
-  'Heptachlor-epoxide-cis':   'heptachlor_exo-epoxide_isomer_b',
-  'Heptachlor exo-epoxide (isomer B)': 'heptachlor_exo-epoxide_isomer_b',
+  'HeptachlorA':              'heptachlor_endo_epoxide_isomer_a',
+  'HeptachlorB':              'heptachlor_exo_epoxide_isomer_b',
+  'Heptachlor-epoxide-trans': 'heptachlor_endo_epoxide_isomer_a',
+  'Heptachlor endo-epoxide (isomer A)': 'heptachlor_endo_epoxide_isomer_a',
+  'Heptachlor-epoxide-cis':   'heptachlor_exo_epoxide_isomer_b',
+  'Heptachlor exo-epoxide (isomer B)': 'heptachlor_exo_epoxide_isomer_b',
   
   // Others
   'HCB':          'hexachlorobenzene',
   'Hexachlorobenzene': 'hexachlorobenzene',
-  'Methoxychlor': 'methoxychlor_pp-',
-  "Methoxychlor, p,p'-": 'methoxychlor_pp-',
+  'Methoxychlor': 'methoxychlor_pp_',
+  "Methoxychlor, p,p'-": 'methoxychlor_pp_',
   
   // Organophosphate (Lân hữu cơ)
   'Ethoprofos':         'ethoprophos_ethoprop',
@@ -69,11 +69,11 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Azinphos-methyl':     'azinfos_methyl',
   'AzinphosMethyl':       'azinfos_methyl',
   'Azinfos-methyl':      'azinfos_methyl',
-  'Chlorpyrifos-methyl': 'chlorpyrifos-methyl',
-  'ChlorpyrifosMethyl':  'chlorpyrifos-methyl',
-  'Chlorpyrofos-methyl': 'chlorpyrifos-methyl',
-  'Chlorpyryfos-methyl': 'chlorpyrifos-methyl',
-  'ChlorpyryfosMethyl':  'chlorpyrifos-methyl',
+  'Chlorpyrifos-methyl': 'chlorpyrifos_methyl',
+  'ChlorpyrifosMethyl':  'chlorpyrifos_methyl',
+  'Chlorpyrofos-methyl': 'chlorpyrifos_methyl',
+  'Chlorpyryfos-methyl': 'chlorpyrifos_methyl',
+  'ChlorpyryfosMethyl':  'chlorpyrifos_methyl',
   'Pirimiphos-methyl':   'pirimifos_methyl',
   'PirimiphosMethyl':     'pirimifos_methyl',
   'Pirimifos-methyl':    'pirimifos_methyl',
@@ -88,17 +88,17 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   
   // Fipronil group
   'Fipronil':                       'fipronil',
-  'Fipronil desulfinyl':            'fipronil-desulfinyl',
-  'Fipronil-desulfinyl':            'fipronil-desulfinyl',
-  'Fipronil sulfide':               'fipronil-sulfide',
-  'Fipronil-sulfide':               'fipronil-sulfide',
-  'Fipronil sulfone':               'fipronil-sulfone',
-  'Fipronil-sulfone':               'fipronil-sulfone',
+  'Fipronil desulfinyl':            'fipronil_desulfinyl',
+  'Fipronil-desulfinyl':            'fipronil_desulfinyl',
+  'Fipronil sulfide':               'fipronil_sulfide',
+  'Fipronil-sulfide':               'fipronil_sulfide',
+  'Fipronil sulfone':               'fipronil_sulfone',
+  'Fipronil-sulfone':               'fipronil_sulfone',
   'Chlorpyrifos':                   'chlorpyrifos',
   'Chlorpyrofos':                   'chlorpyrifos',
   'Chlorpyryfos':                   'chlorpyrifos',
-  'Chlorpyrifos methyl':            'chlorpyrifos-methyl',
-  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos-methyl-desmethyl',
+  'Chlorpyrifos methyl':            'chlorpyrifos_methyl',
+  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos_methyl_desmethyl',
   
   // Pyrethroid (Nhóm Cúc)
   'Cyfluthrin (Baythroid)': 'cyfluthrin_baythroid',
@@ -142,9 +142,9 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Ethoprophos_ethoprop'             : 'ethoprophos_ethoprop',
   'Fenitrothion'                     : 'fenitrothion',
   'Fenthion'                         : 'fenthion',
-  'FipronilSulfide'                  : 'fipronil-sulfide',
-  'FipronilSulfone'                  : 'fipronil-sulfone',
-  'FipronilDesulfinyl'               : 'fipronil-desulfinyl',
+  'FipronilSulfide'                  : 'fipronil_sulfide',
+  'FipronilSulfone'                  : 'fipronil_sulfone',
+  'FipronilDesulfinyl'               : 'fipronil_desulfinyl',
   'Iprobenfos'                       : 'iprobenfos',
   'Malathion'                        : 'malathion',
   'Mefenoxam'                        : 'mefenoxam',
@@ -202,8 +202,8 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Mecarbam'                         : 'mecarbam',
   'Mefenacet'                        : 'mefenacet',
   'Molinate'                         : 'molinate',
-  'Nitrothal-Isopropyl'              : 'nitrothal-isopropyl',
-  'NitrothalIsopropyl'               : 'nitrothal-isopropyl',
+  'Nitrothal-Isopropyl'              : 'nitrothal_isopropyl',
+  'NitrothalIsopropyl'               : 'nitrothal_isopropyl',
   'Alachlor'                         : 'alachlor',
   'Piperonyl butoxide'               : 'piperonyl_butoxide',
   'PiperonylButoxide'                : 'piperonyl_butoxide',
@@ -232,12 +232,12 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
  */
 export const SOP01_COLUMN_TO_CANONICAL: Record<string, string> = {
   'kqFip':    'fipronil',
-  'kqFipDesl':'fipronil-desulfinyl',
-  'kqFipSulf':'fipronil-sulfide',
-  'kqFipSulf2':'fipronil-sulfone',
+  'kqFipDesl':'fipronil_desulfinyl',
+  'kqFipSulf':'fipronil_sulfide',
+  'kqFipSulf2':'fipronil_sulfone',
   'kqClp':    'chlorpyrifos',
-  'kqClpMe':  'chlorpyrifos-methyl',
-  'kqClpMeDes':'chlorpyrifos-methyl-desmethyl'
+  'kqClpMe':  'chlorpyrifos_methyl',
+  'kqClpMeDes':'chlorpyrifos_methyl_desmethyl'
 };
 
 /**
@@ -257,12 +257,12 @@ export function getSop01DisplayName(colKey: string, masterTargets: any[]): strin
   // Fallback display names khi chưa load masterTargets
   const FALLBACK_NAMES: Record<string, string> = {
     'fipronil': 'Fipronil',
-    'fipronil-desulfinyl': 'Fipronil desulfinyl',
-    'fipronil-sulfide': 'Fipronil sulfide',
-    'fipronil-sulfone': 'Fipronil sulfone',
+    'fipronil_desulfinyl': 'Fipronil desulfinyl',
+    'fipronil_sulfide': 'Fipronil sulfide',
+    'fipronil_sulfone': 'Fipronil sulfone',
     'chlorpyrifos': 'Chlorpyrifos',
-    'chlorpyrifos-methyl': 'Chlorpyrifos-methyl',
-    'chlorpyrifos-methyl-desmethyl': 'Chlorpyrifos-methyl-desmethyl'
+    'chlorpyrifos_methyl': 'Chlorpyrifos-methyl',
+    'chlorpyrifos_methyl_desmethyl': 'Chlorpyrifos-methyl-desmethyl'
   };
   return FALLBACK_NAMES[canonicalId] || canonicalId;
 }

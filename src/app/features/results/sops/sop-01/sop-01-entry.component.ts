@@ -481,7 +481,7 @@ export class Sop01EntryComponent implements OnInit {
           'chlorpyrifosmethyl': 'kqClpMe',
           'chlorpyrifos_methyl': 'kqClpMe',
           'chlorpyriphos-methyl-desmethyl': 'kqClpMeDes',
-          'chlorpyrifos-methyl-desmethyl': 'kqClpMeDes'
+          'chlorpyrifos_methyl_desmethyl': 'kqClpMeDes'
         };
 
         const displayRows = this.getDisplayRowsForFipronil();
