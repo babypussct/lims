@@ -276,14 +276,29 @@ export class MasterTargetManagerComponent implements OnInit {
           console.log('Migrating Master Analytes...');
           const analytesSnap = await getDocs(collection(db, `artifacts/${appId}/master_analytes`));
           for (const d of analytesSnap.docs) {
-              const id = d.id;
-              if (id.includes('-')) {
-                  const newId = id.replace(/-/g, '_');
-                  const data = d.data() as any;
-                  data.id = newId;
-                  batch.set(doc(db, `artifacts/${appId}/master_analytes`, newId), data);
-                  batch.delete(doc(db, `artifacts/${appId}/master_analytes`, id));
-                  opCount += 2;
+              const docId = d.id;
+              const data = d.data() as any;
+              let changed = false;
+              let newDocId = docId;
+
+              if (docId.includes('-')) {
+                  newDocId = docId.replace(/-/g, '_');
+                  changed = true;
+              }
+              if (data.id && data.id.includes('-')) {
+                  data.id = data.id.replace(/-/g, '_');
+                  changed = true;
+              }
+
+              if (changed) {
+                  if (newDocId !== docId) {
+                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, newDocId), data);
+                      batch.delete(doc(db, `artifacts/${appId}/master_analytes`, docId));
+                      opCount += 2;
+                  } else {
+                      batch.set(doc(db, `artifacts/${appId}/master_analytes`, docId), data);
+                      opCount++;
+                  }
                   if (opCount > 400) await commitBatch();
               }
           }
