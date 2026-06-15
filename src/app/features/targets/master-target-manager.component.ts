@@ -322,6 +322,7 @@ export class MasterTargetManagerComponent implements OnInit {
                   }
               }
               if (changed) {
+                  data.lastUpdated = serverTimestamp();
                   if (d.id.includes('-')) {
                       const newId = d.id.replace(/-/g, '_');
                       batch.set(doc(db, `artifacts/${appId}/target_groups`, newId), data);
@@ -350,6 +351,7 @@ export class MasterTargetManagerComponent implements OnInit {
                   });
               }
               if (changed) {
+                  data.lastUpdated = serverTimestamp();
                   batch.set(doc(db, `artifacts/${appId}/sops`, d.id), data);
                   opCount++;
                   if (opCount > 400) await commitBatch();
@@ -423,6 +425,7 @@ export class MasterTargetManagerComponent implements OnInit {
               }
               
               if (changed) {
+                  data.lastUpdated = serverTimestamp();
                   batch.set(doc(db, `artifacts/${appId}/requests`, d.id), data);
                   opCount++;
                   if (opCount > 400) await commitBatch();
