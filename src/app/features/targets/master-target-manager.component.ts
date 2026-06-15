@@ -290,7 +290,7 @@ export class MasterTargetManagerComponent implements OnInit {
           await commitBatch();
 
           console.log('Migrating Target Groups...');
-          const tgSnap = await getDocs(collection(db, `artifacts/${appId}/targetGroups`));
+          const tgSnap = await getDocs(collection(db, `artifacts/${appId}/target_groups`));
           for (const d of tgSnap.docs) {
               const data = d.data() as any;
               let changed = false;
@@ -308,11 +308,11 @@ export class MasterTargetManagerComponent implements OnInit {
               if (changed) {
                   if (d.id.includes('-')) {
                       const newId = d.id.replace(/-/g, '_');
-                      batch.set(doc(db, `artifacts/${appId}/targetGroups`, newId), data);
-                      batch.delete(doc(db, `artifacts/${appId}/targetGroups`, d.id));
+                      batch.set(doc(db, `artifacts/${appId}/target_groups`, newId), data);
+                      batch.delete(doc(db, `artifacts/${appId}/target_groups`, d.id));
                       opCount += 2;
                   } else {
-                      batch.set(doc(db, `artifacts/${appId}/targetGroups`, d.id), data);
+                      batch.set(doc(db, `artifacts/${appId}/target_groups`, d.id), data);
                       opCount++;
                   }
                   if (opCount > 400) await commitBatch();
