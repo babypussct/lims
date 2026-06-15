@@ -350,7 +350,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets());
+    return resolveCompoundDisplayName(compound, this.masterTargets(), this.config?.id || this.run?.sopId);
   }
 
   // ── Target Assignment ─────────────────────────────────────────────────────

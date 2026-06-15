@@ -412,7 +412,8 @@ export class TraceabilityComponent implements OnInit {
   }
 
   resolveCompoundName(compoundId: string): string {
-      return resolveCompoundDisplayName(compoundId, this.masterTargets());
+      const sopId = this.logData()?.printData?.sop?.id || this.logData()?.sopBasicInfo?.id || null;
+      return resolveCompoundDisplayName(compoundId, this.masterTargets(), sopId);
   }
 
   getAssociatedRequestId(): string | null {

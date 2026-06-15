@@ -9,14 +9,27 @@ export function mapCompoundToKey(c: string): string {
   return getCanonicalId(c);
 }
 
-export function buildTargetMetadata(compounds: string[], masterTargets: any[]) {
+export function getAssignedTargetsForSample(sampleCode: string, sampleTargetMap: Record<string, string[]>): string[] | null {
+  if (!sampleTargetMap || !sampleCode) return null;
+  const matchKey = Object.keys(sampleTargetMap)
+    .find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+  return matchKey ? sampleTargetMap[matchKey] : null;
+}
+
+export function buildTargetMetadata(compounds: string[], masterTargets: any[], sopIdOrConfigKey?: string | null) {
   const targetInfo: any = {};
   if (!compounds) return targetInfo;
   compounds.forEach(c => {
       const canonical = getCanonicalId(c);
       const master = masterTargets?.find(t => t.id === canonical || t.name === c);
+      let displayName = master?.name || c;
+      if (sopIdOrConfigKey !== '9.16-tbvtv-water' && sopIdOrConfigKey !== 'tbvtv-trong-nuoc-gcmsms') {
+          if (displayName === 'Fipronil (nhóm I)' || displayName === 'Fipronil (nhóm Lân)') {
+              displayName = 'Fipronil';
+          }
+      }
       targetInfo[canonical] = {
-          displayName: master?.name || c,
+          displayName: displayName,
           unit: master?.default_unit || 'ppb',
           lod: master?.default_lod || '',
           loq: master?.default_loq || ''
@@ -327,7 +340,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
-    const assigned = sampleTargetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound, masterTargets) || isCompoundAssigned(assigned, mapCompoundToKey(compound), masterTargets);
   };
@@ -485,7 +498,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
       ...currentDraft.page1Data,
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
-      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate())
@@ -511,7 +524,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
-    const assigned = sampleTargetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound, masterTargets);
   };
@@ -825,7 +838,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
-      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -854,7 +867,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
-    const assigned = sampleTargetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound, masterTargets);
   };
@@ -1168,7 +1181,7 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
-      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1197,7 +1210,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
   const sampleTargetMap = currentRun.sampleTargetMap || (currentRun.inputs && currentRun.inputs.sampleTargetMap) || {};
 
   const isAssigned = (sampleCode: string, compound: string): boolean => {
-    const assigned = sampleTargetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned) return true;
     return isCompoundAssigned(assigned, compound, masterTargets);
   };
@@ -1511,7 +1524,7 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       calibPoints: currentDraft.page1Data['calibPoints'] || [],
       r2: currentDraft.page1Data['r2'] || '',
       compoundsToPrint: compoundsToPrint,
-      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || []),
+      targetInfo: buildTargetMetadata(currentConf.compounds, masterTargets || [], currentConf.id),
       prefix: prefixForReport,
       sampleTargetMap: sampleTargetMap,
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
@@ -1568,7 +1581,7 @@ export function buildUnifiedType3bPdfPayload(
   const isAssigned = (sampleCode: string, compound: string): boolean => {
     // QC samples luôn có tất cả compounds
     if (sampleCode.startsWith('QC_')) return true;
-    const assigned = sampleTargetMap[sampleCode];
+    const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned || assigned.length === 0) return true;
     // Fast path: canonical id match
     if (assigned.includes(compound)) return true;
@@ -1581,13 +1594,17 @@ export function buildUnifiedType3bPdfPayload(
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
   const isGop = !isDon && currentDraft.page1Data['checkGopInChung'] === true;
 
-  // ── Build targetInfo (display names + units) ─────────────────────────────
-
   const targetInfo: Record<string, { displayName: string; unit: string; lod: string; loq: string }> = {};
   (currentConf.compounds as string[]).forEach(canonicalId => {
     const master = masterTargets.find(t => t.id === canonicalId);
+    let displayName = master?.name || canonicalId;
+    if (sopId !== '9.16-tbvtv-water' && sopId !== 'tbvtv-trong-nuoc-gcmsms') {
+      if (displayName === 'Fipronil (nhóm I)' || displayName === 'Fipronil (nhóm Lân)') {
+        displayName = 'Fipronil';
+      }
+    }
     targetInfo[canonicalId] = {
-      displayName: master?.name || canonicalId,
+      displayName: displayName,
       unit: master?.default_unit || 'ppb',
       lod: master?.default_lod || '',
       loq: master?.default_loq || ''

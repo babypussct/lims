@@ -301,7 +301,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
   }
 
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets());
+    return resolveCompoundDisplayName(compound, this.masterTargets(), this.config?.id || this.run?.sopId);
   }
 
   formatColumnName(colKey: string): string {

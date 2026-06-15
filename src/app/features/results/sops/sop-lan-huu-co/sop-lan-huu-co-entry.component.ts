@@ -58,8 +58,10 @@ export class SopLanHuuCoEntryComponent extends AbstractSopEntry implements OnCha
    */
   private migrateChlorpyryfosKeys() {
     const migrationMap: Record<string, string> = {
-      'Chlorpyryfos': 'Chlorpyrifos',
-      'Chlorpyryfos-methyl': 'Chlorpyrifos-methyl'
+      'Chlorpyryfos': 'chlorpyrifos',
+      'Chlorpyryfos-methyl': 'chlorpyrifos-methyl',
+      'Chlorpyrifos': 'chlorpyrifos',
+      'Chlorpyrifos-methyl': 'chlorpyrifos-methyl'
     };
 
     (this.run?.sampleList || []).forEach((sampleCode: string) => {

@@ -320,7 +320,7 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets());
+    return resolveCompoundDisplayName(compound, this.masterTargets(), this.config?.id || this.run?.sopId);
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {

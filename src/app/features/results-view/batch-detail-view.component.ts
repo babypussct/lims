@@ -594,14 +594,14 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       }
 
       // Translate display name through master Analytes DB
-      map[col] = resolveCompoundDisplayName(map[col], this.masterTargets()) + ' (µg/kg)';
+      map[col] = resolveCompoundDisplayName(map[col], this.masterTargets(), this.configKey() || this.run()?.sopId) + ' (µg/kg)';
     });
 
     this.columnDisplayNames.set(map);
   }
 
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets());
+    return resolveCompoundDisplayName(compound, this.masterTargets(), this.configKey() || this.run()?.sopId);
   }
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {

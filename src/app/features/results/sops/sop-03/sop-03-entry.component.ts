@@ -233,7 +233,7 @@ export class Sop03EntryComponent implements OnInit {
   }
 
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets());
+    return resolveCompoundDisplayName(compound, this.masterTargets(), this.config?.id || this.run?.sopId);
   }
 
   formatColumnName(colKey: string): string {

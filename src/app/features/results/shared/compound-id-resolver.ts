@@ -267,7 +267,7 @@ export function getSop01DisplayName(colKey: string, masterTargets: any[]): strin
   return FALLBACK_NAMES[canonicalId] || canonicalId;
 }
 
-export function resolveCompoundDisplayName(compound: string, analytes: any[]): string {
+export function resolveCompoundDisplayName(compound: string, analytes: any[], sopIdOrConfigKey?: string | null): string {
   if (!analytes || analytes.length === 0) return compound;
 
   // Special overrides for spelling preferred by the user
@@ -279,22 +279,32 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[]): s
     return 'Chlorpyrifos-methyl';
   }
 
+  let displayName = compound;
+
   // 1. Exact match by ID or Name (case-insensitive)
   const exactMatch = analytes.find(a =>
     a.id.toLowerCase() === compound.toLowerCase() ||
     a.name.toLowerCase() === compound.toLowerCase()
   );
-  if (exactMatch) return exactMatch.name;
-
-  // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
-  const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
-  if (firestoreId) {
-    const found = analytes.find(a => a.id === firestoreId);
-    if (found) return found.name;
+  if (exactMatch) {
+    displayName = exactMatch.name;
+  } else {
+    // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
+    const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
+    if (firestoreId) {
+      const found = analytes.find(a => a.id === firestoreId);
+      if (found) displayName = found.name;
+    }
   }
 
-  // 3. Fallback
-  return compound;
+  // Strip Fipronil group suffixes if not SOP 9.16
+  if (sopIdOrConfigKey !== '9.16-tbvtv-water' && sopIdOrConfigKey !== 'tbvtv-trong-nuoc-gcmsms') {
+    if (displayName === 'Fipronil (nhóm I)' || displayName === 'Fipronil (nhóm Lân)') {
+      return 'Fipronil';
+    }
+  }
+
+  return displayName;
 }
 
 let firestoreIdsCache: Set<string> | null = null;

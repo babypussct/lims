@@ -333,12 +333,12 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             if (!cellText || cellText.length < 2) continue;
             
             let matchedCompound = null;
-            const normCell = cellText.toLowerCase().replace(/[-_\\s]/g, '');
+            const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
             const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
             
             // 1. Ưu tiên khớp chính xác (sau khi chuẩn hóa)
             for (const comp of sortedComps) {
-              if (normCell === comp.toLowerCase().replace(/[-_\\s]/g, '')) {
+              if (normCell === comp.toLowerCase().replace(/[-_\\s',]/g, '')) {
                 matchedCompound = comp;
                 break;
               }
@@ -346,7 +346,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             // 2. Khớp chuỗi con nếu không khớp chính xác
             if (!matchedCompound) {
               for (const comp of sortedComps) {
-                if (normCell.includes(comp.toLowerCase().replace(/[-_\\s]/g, '')) && cellText.length < 50) {
+                if (normCell.includes(comp.toLowerCase().replace(/[-_\\s',]/g, '')) && cellText.length < 50) {
                   matchedCompound = comp;
                   break;
                 }
@@ -515,17 +515,17 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       if (!cellText || cellText.length < 2) continue;
       
       let matchedCompound = null;
-      const normCell = cellText.toLowerCase().replace(/[-_\\s]/g, '');
+      const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
       const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
       
       for (const comp of sortedComps) {
-        if (normCell === comp.toLowerCase().replace(/[-_\\s]/g, '')) {
+        if (normCell === comp.toLowerCase().replace(/[-_\\s',]/g, '')) {
           matchedCompound = comp; break;
         }
       }
       if (!matchedCompound) {
         for (const comp of sortedComps) {
-          if (normCell.includes(comp.toLowerCase().replace(/[-_\\s]/g, '')) && cellText.length < 50) {
+          if (normCell.includes(comp.toLowerCase().replace(/[-_\\s',]/g, '')) && cellText.length < 50) {
             matchedCompound = comp; break;
           }
         }
