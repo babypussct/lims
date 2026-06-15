@@ -314,12 +314,13 @@ export class MasterTargetManagerComponent implements OnInit {
                   data.id = data.id.replace(/-/g, '_');
                   changed = true;
               }
-              if (data.targetIds && Array.isArray(data.targetIds)) {
-                  const newTargetIds = data.targetIds.map((tid: string) => tid.includes('-') ? tid.replace(/-/g, '_') : tid);
-                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data.targetIds)) {
-                      data.targetIds = newTargetIds;
-                      changed = true;
-                  }
+              if (data.targets && Array.isArray(data.targets)) {
+                  data.targets.forEach((t: any) => {
+                      if (t.id && t.id.includes('-')) {
+                          t.id = t.id.replace(/-/g, '_');
+                          changed = true;
+                      }
+                  });
               }
               if (changed) {
                   data.lastUpdated = serverTimestamp();
