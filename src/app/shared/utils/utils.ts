@@ -120,9 +120,9 @@ export function generateSlug(text: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\_\_+/g, '_')
+    .replace(/[\s\-]+/g, '_')
+    .replace(/[^\w_]+/g, '')
+    .replace(/\_+/g, '_')
     .replace(/^_+/, '')
     .replace(/_+$/, '');
 }

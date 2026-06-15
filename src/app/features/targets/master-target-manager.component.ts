@@ -3,6 +3,7 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { MasterTargetService } from './master-target.service';
+import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { MasterAnalyte } from '../../core/models/sop.model';
@@ -32,6 +33,11 @@ import { Router } from '@angular/router';
             </div>
             
             <div class="flex gap-2">
+                <!-- Migrate Button -->
+                <button (click)="migrateHyphenToUnderscore()" [disabled]="isProcessing()" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Migrate Data (- to _)
+                </button>
+
                 <!-- Import Button -->
                 <button (click)="fileInput.click()" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95">
                     <i class="fa-solid fa-file-excel"></i> Import Excel
@@ -128,7 +134,7 @@ import { Router } from '@angular/router';
                             
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã ID (Slug)</label>
-                                <input formControlName="id" class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs font-mono text-slate-600 outline-none" readonly placeholder="Auto-generated">
+                                <input formControlName="id" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-indigo-500 transition bg-white" placeholder="Auto-generated hoặc tự điền...">
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
@@ -223,6 +229,7 @@ import { Router } from '@angular/router';
 })
 export class MasterTargetManagerComponent implements OnInit {
   masterService = inject(MasterTargetService);
+  firebase = inject(FirebaseService);
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   router: Router = inject(Router);
@@ -234,6 +241,7 @@ export class MasterTargetManagerComponent implements OnInit {
   showModal = signal(false);
   isEditing = signal(false);
   searchTerm = signal('');
+  editingItem = signal<MasterAnalyte | null>(null);
 
   // Import State
   importPreview = signal<MasterAnalyte[]>([]);
@@ -246,6 +254,176 @@ export class MasterTargetManagerComponent implements OnInit {
       default_unit: [''],
       description: ['']
   });
+
+  async migrateHyphenToUnderscore() {
+      if (!confirm('Are you sure you want to run the full migration replacing hyphens with underscores in IDs? This will modify master_analytes, targetGroups, sops, and requests.')) return;
+      this.isProcessing.set(true);
+      try {
+          const { getDocs, collection, writeBatch, doc } = await import('firebase/firestore');
+          const db = this.firebase.db;
+          const appId = this.firebase.APP_ID;
+          let batch = writeBatch(db);
+          let opCount = 0;
+
+          const commitBatch = async () => {
+              if (opCount > 0) {
+                  await batch.commit();
+                  batch = writeBatch(db);
+                  opCount = 0;
+              }
+          };
+
+          console.log('Migrating Master Analytes...');
+          const analytesSnap = await getDocs(collection(db, `artifacts/${appId}/master_analytes`));
+          for (const d of analytesSnap.docs) {
+              const id = d.id;
+              if (id.includes('-')) {
+                  const newId = id.replace(/-/g, '_');
+                  const data = d.data();
+                  data.id = newId;
+                  batch.set(doc(db, `artifacts/${appId}/master_analytes`, newId), data);
+                  batch.delete(doc(db, `artifacts/${appId}/master_analytes`, id));
+                  opCount += 2;
+                  if (opCount > 400) await commitBatch();
+              }
+          }
+          await commitBatch();
+
+          console.log('Migrating Target Groups...');
+          const tgSnap = await getDocs(collection(db, `artifacts/${appId}/targetGroups`));
+          for (const d of tgSnap.docs) {
+              const data = d.data();
+              let changed = false;
+              if (data.id && data.id.includes('-')) {
+                  data.id = data.id.replace(/-/g, '_');
+                  changed = true;
+              }
+              if (data.targetIds && Array.isArray(data.targetIds)) {
+                  const newTargetIds = data.targetIds.map((tid: string) => tid.includes('-') ? tid.replace(/-/g, '_') : tid);
+                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data.targetIds)) {
+                      data.targetIds = newTargetIds;
+                      changed = true;
+                  }
+              }
+              if (changed) {
+                  if (d.id.includes('-')) {
+                      const newId = d.id.replace(/-/g, '_');
+                      batch.set(doc(db, `artifacts/${appId}/targetGroups`, newId), data);
+                      batch.delete(doc(db, `artifacts/${appId}/targetGroups`, d.id));
+                      opCount += 2;
+                  } else {
+                      batch.set(doc(db, `artifacts/${appId}/targetGroups`, d.id), data);
+                      opCount++;
+                  }
+                  if (opCount > 400) await commitBatch();
+              }
+          }
+          await commitBatch();
+
+          console.log('Migrating SOPs...');
+          const sopsSnap = await getDocs(collection(db, `artifacts/${appId}/sops`));
+          for (const d of sopsSnap.docs) {
+              const data = d.data();
+              let changed = false;
+              if (data.targets && Array.isArray(data.targets)) {
+                  data.targets.forEach((t: any) => {
+                      if (t.id && t.id.includes('-')) {
+                          t.id = t.id.replace(/-/g, '_');
+                          changed = true;
+                      }
+                  });
+              }
+              if (changed) {
+                  batch.set(doc(db, `artifacts/${appId}/sops`, d.id), data);
+                  opCount++;
+                  if (opCount > 400) await commitBatch();
+              }
+          }
+          await commitBatch();
+
+          console.log('Migrating Requests...');
+          const reqsSnap = await getDocs(collection(db, `artifacts/${appId}/requests`));
+          for (const d of reqsSnap.docs) {
+              const data = d.data();
+              let changed = false;
+
+              if (data.targetIds && Array.isArray(data.targetIds)) {
+                  const newTargetIds = data.targetIds.map((tid: string) => tid.includes('-') ? tid.replace(/-/g, '_') : tid);
+                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data.targetIds)) {
+                      data.targetIds = newTargetIds;
+                      changed = true;
+                  }
+              }
+
+              if (data.tests && Array.isArray(data.tests)) {
+                  data.tests.forEach((test: any) => {
+                      if (test.targets && Array.isArray(test.targets)) {
+                          test.targets.forEach((t: any) => {
+                              if (t.id && t.id.includes('-')) {
+                                  t.id = t.id.replace(/-/g, '_');
+                                  changed = true;
+                              }
+                          });
+                      }
+                  });
+              }
+
+              if (data.sampleTargetMap) {
+                  for (const sampleId of Object.keys(data.sampleTargetMap)) {
+                      const arr = data.sampleTargetMap[sampleId];
+                      if (Array.isArray(arr)) {
+                          const newArr = arr.map((id: string) => id.includes('-') ? id.replace(/-/g, '_') : id);
+                          if (JSON.stringify(newArr) !== JSON.stringify(arr)) {
+                              data.sampleTargetMap[sampleId] = newArr;
+                              changed = true;
+                          }
+                      } else if (typeof arr === 'object' && arr !== null) {
+                          // In case it's a map not an array
+                          const tMap: any = arr;
+                          for (const k of Object.keys(tMap)) {
+                              if (k.includes('-')) {
+                                  const newK = k.replace(/-/g, '_');
+                                  tMap[newK] = tMap[k];
+                                  delete tMap[k];
+                                  changed = true;
+                              }
+                          }
+                      }
+                  }
+              }
+
+              if (data.analysisResult && data.analysisResult.resultData) {
+                  for (const sampleId of Object.keys(data.analysisResult.resultData)) {
+                      const rData = data.analysisResult.resultData[sampleId];
+                      for (const k of Object.keys(rData)) {
+                          if (k.includes('-')) {
+                              const newK = k.replace(/-/g, '_');
+                              rData[newK] = rData[k];
+                              delete rData[k];
+                              changed = true;
+                          }
+                      }
+                  }
+              }
+              
+              if (changed) {
+                  batch.set(doc(db, `artifacts/${appId}/requests`, d.id), data);
+                  opCount++;
+                  if (opCount > 400) await commitBatch();
+              }
+          }
+          await commitBatch();
+
+          console.log('Migration Completed.');
+          this.toast.show('Data migration (- to _) completed successfully.', 'success');
+          this.loadData();
+      } catch (e: any) {
+          console.error('Migration error:', e);
+          this.toast.show('Migration failed: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
 
   filteredItems = computed(() => {
       const term = this.searchTerm().toLowerCase().trim();
@@ -282,17 +460,19 @@ export class MasterTargetManagerComponent implements OnInit {
       this.showModal.set(true);
       if (item) {
           this.isEditing.set(true);
+          this.editingItem.set(item);
           this.form.patchValue(item);
-          this.form.controls.id.disable(); // ID is immutable
       } else {
           this.isEditing.set(false);
+          this.editingItem.set(null);
           this.form.reset();
-          this.form.controls.id.enable();
       }
+      this.form.controls.id.enable();
   }
 
   closeModal() {
       this.showModal.set(false);
+      this.editingItem.set(null);
   }
 
   onNameChange(event: any) {
@@ -307,15 +487,20 @@ export class MasterTargetManagerComponent implements OnInit {
       
       const val = this.form.getRawValue();
       const item: MasterAnalyte = {
-          id: val.id!,
-          name: val.name!,
-          cas_number: val.cas_number || '',
-          chemical_formula: val.chemical_formula || '',
-          default_unit: val.default_unit || '',
-          description: val.description || ''
+          id: (val.id || '').trim(),
+          name: (val.name || '').trim(),
+          cas_number: (val.cas_number || '').trim(),
+          chemical_formula: (val.chemical_formula || '').trim(),
+          default_unit: (val.default_unit || '').trim(),
+          description: (val.description || '').trim()
       };
 
       try {
+          const oldItem = this.editingItem();
+          if (this.isEditing() && oldItem && oldItem.id !== item.id) {
+              // ID changed: delete old document first
+              await this.masterService.delete(oldItem.id);
+          }
           await this.masterService.save(item);
           this.toast.show('Đã lưu thành công', 'success');
           this.closeModal();
