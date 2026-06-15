@@ -259,7 +259,7 @@ export class MasterTargetManagerComponent implements OnInit {
       if (!confirm('Are you sure you want to run the full migration replacing hyphens with underscores in IDs? This will modify master_analytes, targetGroups, sops, and requests.')) return;
       this.isProcessing.set(true);
       try {
-          const { getDocs, collection, writeBatch, doc } = await import('firebase/firestore');
+          const { getDocs, collection, writeBatch, doc, serverTimestamp } = await import('firebase/firestore');
           const db = this.firebase.db;
           const appId = this.firebase.APP_ID;
           let batch = writeBatch(db);
@@ -291,6 +291,7 @@ export class MasterTargetManagerComponent implements OnInit {
               }
 
               if (changed) {
+                  data.lastUpdated = serverTimestamp(); // BẮT BUỘC ĐỂ DELTASYNC NHẬN DIỆN THAY ĐỔI
                   if (newDocId !== docId) {
                       batch.set(doc(db, `artifacts/${appId}/master_analytes`, newDocId), data);
                       batch.delete(doc(db, `artifacts/${appId}/master_analytes`, docId));
@@ -429,8 +430,13 @@ export class MasterTargetManagerComponent implements OnInit {
           }
           await commitBatch();
 
-          this.toast.show('Migration completed successfully!', 'success');
-          await this.loadData(); // Reload the list to remove duplicates from UI
+          this.toast.show('Migration completed successfully! Reloading...', 'success');
+          
+          // Xóa cache cục bộ để DeltaSync tải lại toàn bộ danh sách mới nhất
+          localStorage.removeItem(`delta_master_analytes_${appId}`);
+          localStorage.removeItem(`delta_master_analytes_cursor_${appId}`);
+          
+          setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
           console.error('Migration error:', error);
           this.toast.show('Migration failed: ' + error.message, 'error');
