@@ -29,12 +29,12 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Chlordane-trans (gamma)': 'chlordane_trans_gamma',
   
   // DDD / DDE / DDT
-  'DDD_op':  'ddd_op',   'DDD-o,p': 'ddd_op',   "DDD-o,p'": 'ddd_op',
-  'DDD_pp':  'ddd_pp',   'DDD-p,p': 'ddd_pp',   "DDD-p,p'": 'ddd_pp',
-  'DDE_op':  'dde_op',   'DDE-o,p': 'dde_op',   "DDE-o,p'": 'dde_op',
-  'DDE_pp':  'dde_pp',   'DDE-p,p': 'dde_pp',   "DDE-p,p'": 'dde_pp',
-  'DDT_op':  'ddt_op',   'DDT-o,p': 'ddt_op',   "DDT-o,p'": 'ddt_op',
-  'DDT_pp':  'ddt_pp',   'DDT-p,p': 'ddt_pp',   "DDT-p,p'": 'ddt_pp',
+  'DDD_op':  'ddd_op',   'DDD-o,p': 'ddd_op',   "DDD-o,p'": 'ddd_op',  'ddd_o_p': 'ddd_op',
+  'DDD_pp':  'ddd_pp',   'DDD-p,p': 'ddd_pp',   "DDD-p,p'": 'ddd_pp',  'ddd_p_p': 'ddd_pp',
+  'DDE_op':  'dde_op',   'DDE-o,p': 'dde_op',   "DDE-o,p'": 'dde_op',  'dde_o_p': 'dde_op',
+  'DDE_pp':  'dde_pp',   'DDE-p,p': 'dde_pp',   "DDE-p,p'": 'dde_pp',  'dde_p_p': 'dde_pp',
+  'DDT_op':  'ddt_op',   'DDT-o,p': 'ddt_op',   "DDT-o,p'": 'ddt_op',  'ddt_o_p': 'ddt_op',
+  'DDT_pp':  'ddt_pp',   'DDT-p,p': 'ddt_pp',   "DDT-p,p'": 'ddt_pp',  'ddt_p_p': 'ddt_pp',
   
   // Endosulfan
   'Endosulfan1':        'endosulfan_i_alpha_isomer',
@@ -60,6 +60,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Hexachlorobenzene': 'hexachlorobenzene',
   'Methoxychlor': 'methoxychlor_pp_',
   "Methoxychlor, p,p'-": 'methoxychlor_pp_',
+  'methoxychlor_p_p': 'methoxychlor_pp_',
   
   // Organophosphate (Lân hữu cơ)
   'Ethoprofos':         'ethoprophos_ethoprop',
