@@ -60,28 +60,36 @@
           <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">3. Loại mẫu</label>
           <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-full custom-scrollbar">
             <button type="button"
-                    (click)="draft.page1Data['loaiMau'] = 'Nước sinh hoạt'; onDataChanged()"
-                    [class]="draft.page1Data['loaiMau'] === 'Nước sinh hoạt'
+                    (click)="draft.page1Data['loaiMau'] = 'Sinh hoạt'; onDataChanged()"
+                    [class]="draft.page1Data['loaiMau'] === 'Sinh hoạt'
                       ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                    title="Chọn Nước sinh hoạt">
-              Nước SH
+                    title="Chọn Sinh hoạt">
+              Sinh hoạt
             </button>
             <button type="button"
-                    (click)="draft.page1Data['loaiMau'] = 'Nước uống đóng chai'; onDataChanged()"
-                    [class]="draft.page1Data['loaiMau'] === 'Nước uống đóng chai'
+                    (click)="draft.page1Data['loaiMau'] = 'Uống'; onDataChanged()"
+                    [class]="draft.page1Data['loaiMau'] === 'Uống'
                       ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                    title="Chọn Nước uống đóng chai">
-              Nước đóng chai
+                    title="Chọn Uống">
+              Uống
             </button>
             <button type="button"
-                    (click)="draft.page1Data['loaiMau'] = 'Nước nguồn'; onDataChanged()"
-                    [class]="draft.page1Data['loaiMau'] === 'Nước nguồn'
+                    (click)="draft.page1Data['loaiMau'] = 'Sản xuất'; onDataChanged()"
+                    [class]="draft.page1Data['loaiMau'] === 'Sản xuất'
                       ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
                       : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                    title="Chọn Nước nguồn">
-              Nước nguồn
+                    title="Chọn Sản xuất">
+              Sản xuất
+            </button>
+            <button type="button"
+                    (click)="draft.page1Data['loaiMau'] = 'Nuôi trồng'; onDataChanged()"
+                    [class]="draft.page1Data['loaiMau'] === 'Nuôi trồng'
+                      ? 'px-2.5 py-2 text-xs font-extrabold rounded-xl bg-violet-600 text-white shadow-sm border border-violet-600 transition shrink-0 active:scale-95' 
+                      : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                    title="Chọn Nuôi trồng">
+              Nuôi trồng
             </button>
             <input type="text" 
                    [(ngModel)]="draft.page1Data['loaiMau']" 
@@ -221,13 +229,7 @@
             <span>Sinh TT Ngẫu nhiên (Tất cả)</span>
           </button>
 
-          <button *ngIf="draft.page1Data['printFormType'] === 'formCheck'"
-                  (click)="sampleBulkQC()" 
-                  type="button"
-                  class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-emerald-955/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
-            <i class="fa-solid fa-circle-check text-emerald-500"></i>
-            <span>Tất cả QC Đạt</span>
-          </button>
+
 
           <button (click)="copyActiveSampleToAll()" 
                   type="button"
@@ -248,9 +250,6 @@
               <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Hoạt chất</th>
               <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">KPH / ND</th>
               <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">Kết quả (µg/L)</th>
-              <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC1 (Độ thu hồi R%)</th>
-              <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC2 (Hệ số tuyến tính R2)</th>
-              <th *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-32">QC3 (Kết luận)</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -287,101 +286,6 @@
                          class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-center shadow-inner disabled:bg-slate-100/50 dark:disabled:bg-slate-900/30 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-100 dark:disabled:border-slate-850 disabled:cursor-not-allowed">
                 </td>
 
-                <!-- QC1 Toggle Button Group -->
-                <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
-                  <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
-                       [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
-                       [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc1', 'Đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      Đạt
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc1', 'Không đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc1'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      KĐ
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc1', 'N/A')"
-                            [class]="!draft.resultData[activeSampleCode()][compound + '_qc1'] || draft.resultData[activeSampleCode()][compound + '_qc1'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                            class="min-w-[24px]">
-                      N/A
-                    </button>
-                  </div>
-                </td>
-
-                <!-- QC2 Toggle Button Group -->
-                <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
-                  <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
-                       [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
-                       [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc2', 'Đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      Đạt
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc2', 'Không đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc2'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      KĐ
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc2', 'N/A')"
-                            [class]="!draft.resultData[activeSampleCode()][compound + '_qc2'] || draft.resultData[activeSampleCode()][compound + '_qc2'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                            class="min-w-[24px]">
-                      N/A
-                    </button>
-                  </div>
-                </td>
-
-                <!-- QC3 Toggle Button Group -->
-                <td *ngIf="draft.page1Data['printFormType'] === 'formCheck'" class="py-1 px-1.5 text-center">
-                  <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/80 select-none items-center shadow-3xs"
-                       [class.opacity-40]="!isTargetAssigned(activeSampleCode(), compound)"
-                       [class.pointer-events-none]="!isTargetAssigned(activeSampleCode(), compound)">
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc3', 'Đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      Đạt
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc3', 'Không đạt')"
-                            [class]="draft.resultData[activeSampleCode()][compound + '_qc3'] === 'Không đạt'
-                              ? 'px-2 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-2 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
-                            class="min-w-[32px]">
-                      KĐ
-                    </button>
-                    <button type="button"
-                            (click)="setCompoundQc(compound, 'qc3', 'N/A')"
-                            [class]="!draft.resultData[activeSampleCode()][compound + '_qc3'] || draft.resultData[activeSampleCode()][compound + '_qc3'] === 'N/A'
-                              ? 'px-1.5 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-3xs transition duration-150 active:scale-95' 
-                              : 'px-1.5 py-1 text-[9px] font-bold rounded text-slate-455 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
-                            class="min-w-[24px]">
-                      N/A
-                    </button>
-                  </div>
-                </td>
               </tr>
             }
           </tbody>

@@ -1583,10 +1583,9 @@ export function buildUnifiedType3bPdfPayload(
     if (sampleCode.startsWith('QC_')) return true;
     const assigned = getAssignedTargetsForSample(sampleCode, sampleTargetMap);
     if (!assigned || assigned.length === 0) return true;
-    // Fast path: canonical id match
-    if (assigned.includes(compound)) return true;
-    // Fallback: case-insensitive (cho data v1 chưa migrate)
-    return assigned.some(tid => tid.toLowerCase() === compound.toLowerCase());
+    
+    // Use the robust global resolver that handles all legacy IDs and phonetic fallbacks
+    return isCompoundAssigned(assigned, compound, masterTargets);
   };
 
   const filteredSamples = sampleList.filter(filterSample);
@@ -1866,6 +1865,9 @@ export function buildUnifiedType3bPdfPayload(
     sopId,
     metadata: {
       ...currentDraft.page1Data,
+      is100mlChecked: currentDraft.page1Data['is10gChecked'],
+      is100gChecked: currentDraft.page1Data['is10gChecked'],
+      is100Checked: currentDraft.page1Data['is10gChecked'],
       printFormType: currentDraft.page1Data['printFormType'] || 'formCheck',
       blankName: currentDraft.page1Data['blankName'] || 'BLANK',
       spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
