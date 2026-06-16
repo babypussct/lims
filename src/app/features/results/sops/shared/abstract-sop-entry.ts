@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
 import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName, COMPOUND_TO_FIRESTORE_ID } from '../../shared/compound-id-resolver';
+import { resolveCompoundDisplayName, COMPOUND_TO_FIRESTORE_ID, isCompoundAssigned, getCanonicalId } from '../../shared/compound-id-resolver';
 
 /**
  * Bản đồ ngược: canonical id → các display string cũ có thể xuất hiện trong draft data.
@@ -380,10 +380,8 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
           .find(k => k.toLowerCase().trim() === sc.toLowerCase().trim());
         const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
         if (!assigned || assigned.length === 0) return true;
-        // Direct canonical id match (fast path — v2)
-        if (assigned.includes(compound)) return true;
-        // Fallback shim (v1 legacy data)
-        return assigned.some(tid => tid.toLowerCase() === compound.toLowerCase());
+        
+        return isCompoundAssigned(assigned, compound, this.masterTargets());
       });
     }
 
@@ -392,10 +390,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
     if (!assigned || assigned.length === 0) return true;
 
-    // Direct canonical id match (fast path — v2)
-    if (assigned.includes(compound)) return true;
-    // Fallback shim: lowercase compare for any remaining v1 data
-    return assigned.some(tid => tid.toLowerCase() === compound.toLowerCase());
+    return isCompoundAssigned(assigned, compound, this.masterTargets());
   }
 
   /**
