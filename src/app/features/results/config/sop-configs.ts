@@ -8,7 +8,8 @@ export const SOP_ID_MAP: Record<string, string> = {
   'SOP-02': 'lan-huu-co',             // Nhóm Lân hữu cơ (GC-MS/MS)
   'sop_1767856825928': 'nhom-cuc',    // Nhóm Cúc (GC-MS/MS)
   'sop_1767857642144': 'nhom-i',      // Nhóm I (GC-MS/MS)
-  'tbvtv_trong_nuoc_-_gc-msms_1781168317030': 'tbvtv-trong-nuoc-gcmsms',
+  'tbvtv_trong_nuoc_-_gc-msms_1781345295676': 'tbvtv-trong-nuoc-gcmsms',
+  '9.16-tbvtv-water': 'tbvtv-trong-nuoc-gcmsms',
 };
 
 // ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────
@@ -20,7 +21,7 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'], configKey: 'lan-huu-co' },
   { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'], configKey: 'nhom-cuc' },
   { keywords: ['nhóm i', 'nhom i'], configKey: 'nhom-i' },
-  { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
+  { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc', '9.16-tbvtv-water'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
 ];
 
 export const ANGULAR_SOP_CONFIG: Record<string, {
