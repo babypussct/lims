@@ -365,6 +365,9 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
    *
    * Vẫn giữ fallback qua isCompoundAssigned() cho backward compat.
    */
+  private _assignedCache = new Map<string, boolean>();
+  private _lastTargetMapRef: any = null;
+
   isTargetAssigned(sampleCode: string, compound: string): boolean {
     if (!this.run) return true;
     if (this.run.isVirtualMaster) return true;
@@ -372,6 +375,22 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     const targetMap = this.run.sampleTargetMap ?? this.run.inputs?.sampleTargetMap;
     if (!targetMap) return true;
 
+    if (this._lastTargetMapRef !== targetMap) {
+      this._assignedCache.clear();
+      this._lastTargetMapRef = targetMap;
+    }
+
+    const cacheKey = `${sampleCode}_${compound}`;
+    if (this._assignedCache.has(cacheKey)) {
+      return this._assignedCache.get(cacheKey)!;
+    }
+
+    const result = this._computeIsTargetAssigned(sampleCode, compound, targetMap);
+    this._assignedCache.set(cacheKey, result);
+    return result;
+  }
+
+  private _computeIsTargetAssigned(sampleCode: string, compound: string, targetMap: any): boolean {
     // Hỗ trợ pooled samples (ví dụ: 'A001;A002')
     const subCodes = sampleCode.split(';').map((s: string) => s.trim()).filter(Boolean);
     if (subCodes.length > 1) {

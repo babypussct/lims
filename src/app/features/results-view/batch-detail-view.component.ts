@@ -600,17 +600,44 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     this.columnDisplayNames.set(map);
   }
 
+  private _displayNameCache = new Map<string, string>();
+
   getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets(), this.configKey() || this.run()?.sopId);
+    if (this._displayNameCache.has(compound)) {
+      return this._displayNameCache.get(compound)!;
+    }
+    const name = resolveCompoundDisplayName(compound, this.masterTargets(), this.configKey() || this.run()?.sopId);
+    this._displayNameCache.set(compound, name);
+    return name;
   }
+
+  private _assignedCache = new Map<string, boolean>();
+  private _lastTargetMapRef: any = null;
 
   isTargetAssigned(sampleCode: string, compound: string): boolean {
     if (!this.run()) return true;
     const targetMap = this.run().sampleTargetMap || (this.run().inputs && this.run().inputs.sampleTargetMap);
     if (!targetMap) return true;
+
+    if (this._lastTargetMapRef !== targetMap) {
+      this._assignedCache.clear();
+      this._lastTargetMapRef = targetMap;
+    }
+
+    const cacheKey = `${sampleCode}_${compound}`;
+    if (this._assignedCache.has(cacheKey)) {
+      return this._assignedCache.get(cacheKey)!;
+    }
+
     const assigned = targetMap[sampleCode];
-    if (!assigned || assigned.length === 0) return true;
-    return isCompoundAssigned(assigned, compound, this.masterTargets());
+    if (!assigned || assigned.length === 0) {
+      this._assignedCache.set(cacheKey, true);
+      return true;
+    }
+    
+    const result = isCompoundAssigned(assigned, compound, this.masterTargets());
+    this._assignedCache.set(cacheKey, result);
+    return result;
   }
 
   getRowDataValue(rowKey: string, field: string): string {
