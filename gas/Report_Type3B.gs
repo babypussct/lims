@@ -384,7 +384,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             if (!isAssigned) {
               // Hoạt chất KHÔNG được chỉ định (N/A) -> Tự động xoá trắng các dấu tick (nếu có sẵn trên form)
               for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*ND');
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
                 if (foundNd) {
                   try {
                     const textElement = foundNd.getElement().asText();
@@ -422,7 +422,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               
               // 7.1. Tìm checkbox ND và điền kết quả (dấu chấm) trong segment
               for (const cell of segmentCells) {
-                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))\\s*ND');
+                let foundNd = cell.findText('([☐□☑]|\\[\\s*[xXvV]?\\s*\\]|\\(\\s*[xXvV]?\\s*\\))[^A-Za-z0-9]*ND');
                 if (foundNd) {
                   try {
                     const textElement = foundNd.getElement().asText();
