@@ -21,7 +21,7 @@ export function buildTargetMetadata(compounds: string[], masterTargets: any[], s
   if (!compounds) return targetInfo;
   compounds.forEach(c => {
       const canonical = getCanonicalId(c);
-      const master = masterTargets?.find(t => t.id === canonical || t.name === c);
+      const master = resolveTargetMasterInfo(c, masterTargets || []);
       let displayName = master?.name || c;
       if (sopIdOrConfigKey !== '9.16-tbvtv-water' && sopIdOrConfigKey !== 'tbvtv-trong-nuoc-gcmsms') {
           if (displayName === 'Fipronil (nhóm I)' || displayName === 'Fipronil (nhóm Lân)') {
@@ -136,7 +136,7 @@ export function buildTrifluralinPdfPayload(currentDraft: any, currentRun: any, a
   };
 }
 
-export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets: any[] = []): any {
   const activeCols = Object.keys(currentConf.columns || {}).filter((c: string) => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
   const samplesPayload: any[] = [];
 
@@ -217,7 +217,7 @@ export function buildFipronilPdfPayload(currentDraft: any, currentRun: any, acti
     const canonicalId = SOP01_COLUMN_TO_CANONICAL[col] || col;
     targetInfo[col] = {
       canonicalId,
-      displayName: getSop01DisplayName(col, [])
+      displayName: getSop01DisplayName(col, masterTargets)
     };
   });
 
@@ -1596,7 +1596,7 @@ export function buildUnifiedType3bPdfPayload(
 
   const targetInfo: Record<string, { displayName: string; unit: string; lod: string; loq: string }> = {};
   (currentConf.compounds as string[]).forEach(canonicalId => {
-    const master = masterTargets.find(t => t.id === canonicalId);
+    const master = resolveTargetMasterInfo(canonicalId, masterTargets || []);
     let displayName = master?.name || canonicalId;
     if (sopId !== '9.16-tbvtv-water' && sopId !== 'tbvtv-trong-nuoc-gcmsms') {
       if (displayName === 'Fipronil (nhóm I)' || displayName === 'Fipronil (nhóm Lân)') {

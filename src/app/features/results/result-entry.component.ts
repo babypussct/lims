@@ -568,7 +568,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           activeFilter,
           currentConf,
           this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
+          this.getRunDate.bind(this),
+          this.masterTargets()
         );
       } else if (key === 'dichlorvos-gcms') {
         reportPayload = buildDichlorvosPdfPayload(

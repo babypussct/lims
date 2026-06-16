@@ -250,7 +250,11 @@ export function getSop01DisplayName(colKey: string, masterTargets: any[]): strin
   if (!canonicalId) return colKey;
 
   if (masterTargets && masterTargets.length > 0) {
-    const found = masterTargets.find(t => t.id === canonicalId);
+    const canonicalSearch = getCanonicalId(canonicalId);
+    const found = masterTargets.find(t => 
+      getCanonicalId(t.id) === canonicalSearch || 
+      getCanonicalId(t.name) === canonicalSearch
+    );
     if (found?.name) return found.name;
   }
 
@@ -289,11 +293,21 @@ export function resolveCompoundDisplayName(compound: string, analytes: any[], so
   if (exactMatch) {
     displayName = exactMatch.name;
   } else {
-    // 2. Direct Firestore ID lookup (verified against actual master_analytes database)
-    const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
-    if (firestoreId) {
-      const found = analytes.find(a => a.id === firestoreId);
-      if (found) displayName = found.name;
+    // 2. Match by Canonical ID
+    const canonicalCompound = getCanonicalId(compound);
+    const canonicalMatch = analytes.find(a => 
+        getCanonicalId(a.id) === canonicalCompound || 
+        getCanonicalId(a.name) === canonicalCompound
+    );
+    if (canonicalMatch) {
+        displayName = canonicalMatch.name;
+    } else {
+        // 3. Direct Firestore ID lookup (legacy)
+        const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
+        if (firestoreId) {
+          const found = analytes.find(a => a.id === firestoreId);
+          if (found) displayName = found.name;
+        }
     }
   }
 
@@ -352,7 +366,7 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
     
     let targetName = tId;
     if (masterTargets && masterTargets.length > 0) {
-      const found = masterTargets.find(t => t.id === tId);
+      const found = resolveTargetMasterInfo(tId, masterTargets);
       if (found && found.name) {
         targetName = found.name;
         if (targetName.toLowerCase() === compound.toLowerCase()) return true;
@@ -369,7 +383,7 @@ export function isCompoundAssigned(assignedTargetIds: string[], compound: string
  * It uses exact matching, canonical matching, and prefix/substring matching to find the single source of truth.
  * Returns the exact master target object (with id and name) if found, otherwise null.
  */
-export function resolveTargetMasterInfo(compound: string, masterTargets: any[]): { id: string, name: string } | null {
+export function resolveTargetMasterInfo(compound: string, masterTargets: any[]): any | null {
   if (!compound || !masterTargets || masterTargets.length === 0) return null;
 
   const targetIdStr = getCanonicalId(compound);
@@ -380,18 +394,18 @@ export function resolveTargetMasterInfo(compound: string, masterTargets: any[]):
     getCanonicalId(t.id) === targetIdStr ||
     getCanonicalId(t.name) === targetIdStr
   );
-  if (match) return { id: match.id, name: match.name };
+  if (match) return match;
 
   // 2. Match by exact Name (case-insensitive)
   match = masterTargets.find(t => t.name.toLowerCase() === compound.toLowerCase());
-  if (match) return { id: match.id, name: match.name };
+  if (match) return match;
 
-  // 3. Match by partial substring (e.g. config "Ethoprophos" matches master "Ethoprophos (Ethoprop)")
-  match = masterTargets.find(t => 
-    t.name.toLowerCase().startsWith(compound.toLowerCase()) || 
-    compound.toLowerCase().startsWith(t.name.toLowerCase())
-  );
-  if (match) return { id: match.id, name: match.name };
+  // 3. Fallback to Firestore ID config
+  const firestoreId = COMPOUND_TO_FIRESTORE_ID[compound];
+  if (firestoreId) {
+    match = masterTargets.find(t => t.id === firestoreId || getCanonicalId(t.id) === firestoreId);
+    if (match) return match;
+  }
 
   return null;
 }

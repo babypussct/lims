@@ -1,6 +1,6 @@
 
 import { Component, inject, signal, computed, effect } from '@angular/core';
-import { getCanonicalId } from '../results/shared/compound-id-resolver';
+import { getCanonicalId, resolveTargetMasterInfo } from '../results/shared/compound-id-resolver';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
@@ -438,7 +438,8 @@ export class SmartBatchComponent {
                       const blockTasks: AnalysisTask[] = [];
                       for (const sample of samples) {
                           for (const targetId of block.selectedTargets) {
-                              const tName = this.allAvailableTargets().find(t => t.id === targetId)?.name || targetId;
+                              const foundTarget = resolveTargetMasterInfo(targetId, this.allAvailableTargets());
+                              const tName = foundTarget?.name || targetId;
                               // Only mark 'covered: true' if the SOP ACTUALLY supports it
                               const isCovered = validSopTargets.has(targetId);
                               blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered });
@@ -480,7 +481,8 @@ export class SmartBatchComponent {
               
               for (const sample of samples) {
                   for (const targetId of block.selectedTargets) {
-                      const tName = this.allAvailableTargets().find(t => t.id === targetId)?.name || targetId;
+                      const foundTarget = resolveTargetMasterInfo(targetId, this.allAvailableTargets());
+                      const tName = foundTarget?.name || targetId;
                       allTasks.push({
                           sample,
                           targetId,

@@ -610,7 +610,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (!targetMap) return true;
     const assigned = targetMap[sampleCode];
     if (!assigned || assigned.length === 0) return true;
-    return isCompoundAssigned(assigned, compound);
+    return isCompoundAssigned(assigned, compound, this.masterTargets());
   }
 
   getRowDataValue(rowKey: string, field: string): string {
