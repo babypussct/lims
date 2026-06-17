@@ -333,20 +333,29 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             if (!cellText || cellText.length < 2) continue;
             
             let matchedCompound = null;
-            const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
             const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
-            
-            // 1. Ưu tiên khớp chính xác (sau khi chuẩn hóa)
+
+            // 1. Khớp theo Canonical ID (Độc lập chính tả)
+            const cellCanonical = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[cellText])
+              ? COMPOUND_TO_CANONICAL[cellText]
+              : cellText.toLowerCase().replace(/[^a-z0-9]/g, '');
+
             for (const comp of sortedComps) {
-              if (normCell === comp.toLowerCase().replace(/[-_\\s',]/g, '')) {
+              const compCanonical = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[comp])
+                ? COMPOUND_TO_CANONICAL[comp]
+                : comp.toLowerCase().replace(/[^a-z0-9]/g, '');
+              if (cellCanonical === compCanonical) {
                 matchedCompound = comp;
                 break;
               }
             }
-            // 2. Khớp chuỗi con nếu không khớp chính xác
+
+            // 2. Khớp chuỗi con nếu không khớp canonical
             if (!matchedCompound) {
+              const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
               for (const comp of sortedComps) {
-                if (normCell.includes(comp.toLowerCase().replace(/[-_\\s',]/g, '')) && cellText.length < 50) {
+                const compNorm = comp.toLowerCase().replace(/[-_\\s',]/g, '');
+                if ((normCell.includes(compNorm) || compNorm.includes(normCell)) && cellText.length < 50) {
                   matchedCompound = comp;
                   break;
                 }
@@ -354,6 +363,7 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
             }
             // 3. Xử lý các lỗi chính tả phổ biến trên biểu mẫu
             if (!matchedCompound) {
+              const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
               if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos') || normCell.includes('chlorpyrifos')) {
                 matchedCompound = normCell.includes('methyl') ? 'Chlorpyryfos-methyl' : 'Chlorpyryfos';
               }
@@ -515,22 +525,37 @@ function _fillGenericChromatogramTable(table, sample, sopConfig, isTargetAssigne
       if (!cellText || cellText.length < 2) continue;
       
       let matchedCompound = null;
-      const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
       const sortedComps = [...sopConfig.compounds].sort((a,b) => b.length - a.length);
-      
+
+      // 1. Khớp theo Canonical ID (Độc lập chính tả)
+      const cellCanonical = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[cellText])
+        ? COMPOUND_TO_CANONICAL[cellText]
+        : cellText.toLowerCase().replace(/[^a-z0-9]/g, '');
+
       for (const comp of sortedComps) {
-        if (normCell === comp.toLowerCase().replace(/[-_\\s',]/g, '')) {
-          matchedCompound = comp; break;
+        const compCanonical = (typeof COMPOUND_TO_CANONICAL !== 'undefined' && COMPOUND_TO_CANONICAL[comp])
+          ? COMPOUND_TO_CANONICAL[comp]
+          : comp.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cellCanonical === compCanonical) {
+          matchedCompound = comp;
+          break;
         }
       }
+
+      // 2. Khớp chuỗi con nếu không khớp canonical
       if (!matchedCompound) {
+        const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
         for (const comp of sortedComps) {
-          if (normCell.includes(comp.toLowerCase().replace(/[-_\\s',]/g, '')) && cellText.length < 50) {
-            matchedCompound = comp; break;
+          const compNorm = comp.toLowerCase().replace(/[-_\\s',]/g, '');
+          if ((normCell.includes(compNorm) || compNorm.includes(normCell)) && cellText.length < 50) {
+            matchedCompound = comp;
+            break;
           }
         }
       }
+      // 3. Xử lý các lỗi chính tả phổ biến trên biểu mẫu
       if (!matchedCompound) {
+        const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
         if (normCell.includes('chlorpyrofos') || normCell.includes('chlorpyriphos') || normCell.includes('chlorpyryfos') || normCell.includes('chlorpyrifos')) {
           matchedCompound = normCell.includes('methyl') ? 'Chlorpyryfos-methyl' : 'Chlorpyryfos';
         }
