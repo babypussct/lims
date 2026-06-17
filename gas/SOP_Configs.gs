@@ -84,12 +84,12 @@ const COMPOUND_TO_CANONICAL = {
  
   // ── Lân hữu cơ ────────────────────────────────────────────────────────────
   'Acephate':                       'acephate',
-  'Azinphos-methyl':                'azinfos_methyl',
-  'Azinphos methyl':                'azinfos_methyl',
-  'Azinfos methyl':                 'azinfos_methyl',
-  'AzinfosMethyl':                  'azinfos_methyl',
-  'AzinphosMethyl':                 'azinfos_methyl',
-  'Azinfos-methyl':                 'azinfos_methyl',
+  'Azinphos-methyl':                'azinphos_methyl',
+  'Azinphos methyl':                'azinphos_methyl',
+  'Azinfos methyl':                 'azinphos_methyl',
+  'AzinfosMethyl':                  'azinphos_methyl',
+  'AzinphosMethyl':                 'azinphos_methyl',
+  'Azinfos-methyl':                 'azinphos_methyl',
   'Cadusafos':                      'cadusafos',
   'Chlorpyrifos':                   'chlorpyrifos',
   'Chlorpyrifos methyl':            'chlorpyrifos_methyl',
@@ -102,8 +102,8 @@ const COMPOUND_TO_CANONICAL = {
   'ChlorpyrifosMethyl':             'chlorpyrifos_methyl',
   'Diazinon':                       'diazinon',
   'Dimethoate':                     'dimethoate',
-  'Edifenfos':                      'edifenfos',
-  'Edifenphos':                     'edifenfos',
+  'Edifenfos':                      'edifenphos',
+  'Edifenphos':                     'edifenphos',
   'Ethion':                         'ethion',
   'Ethoprophos':                    'ethoprophos_ethoprop',
   'Ethoprofos':                     'ethoprophos_ethoprop',
@@ -129,18 +129,18 @@ const COMPOUND_TO_CANONICAL = {
   'Methidathion':                   'methidathion',
   'Monocrotophos':                  'monocrotophos',
   'Omethoate':                      'omethoate',
-  'Parathion':                      'parathion_ethyl',
-  'Parathion-ethyl':                'parathion_ethyl',
+  'Parathion':                      'parathion',
+  'Parathion-ethyl':                'parathion',
   'Parathion-methyl':               'parathion_methyl',
   'ParathionMethyl':                'parathion_methyl',
   'Phenthoate':                     'phenthoate',
   'Phorate':                        'phorate',
   'Phosmet':                        'phosmet',
   'Phosphamidon':                   'phosphamidon',
-  'Pirimiphos-methyl':              'pirimifos_methyl',
-  'Pirimiphos methyl':              'pirimifos_methyl',  // nhom-i.compounds[] dùng space
-  'PirimiphosMethyl':               'pirimifos_methyl',
-  'Pirimifos-methyl':               'pirimifos_methyl',
+  'Pirimiphos-methyl':              'pirimiphos_methyl',
+  'Pirimiphos methyl':              'pirimiphos_methyl',  // nhom-i.compounds[] dùng space
+  'PirimiphosMethyl':               'pirimiphos_methyl',
+  'Pirimifos-methyl':               'pirimiphos_methyl',
   'Profenofos':                     'profenofos',
   'Quinalphos':                     'quinalphos',
   'Ronnel':                         'ronnel_fenchlorphos',
@@ -148,18 +148,18 @@ const COMPOUND_TO_CANONICAL = {
   'Triazophos':                     'triazophos',
   'Vamidothion':                    'vamidothion',
   'Chlorfenvinphos':                'chlorfenvinphos',
-  'Isofenphos-methyl':              'isofenfos_methyl',
-  'IsofenphosMethyl':               'isofenfos_methyl',
-  'Isofenfos-methyl':               'isofenfos_methyl',
+  'Isofenphos-methyl':              'isofenphos_methyl',
+  'IsofenphosMethyl':               'isofenphos_methyl',
+  'Isofenfos-methyl':               'isofenphos_methyl',
  
   // ── Nhóm Cúc (Pyrethroid) ─────────────────────────────────────────────────
   'Bifenthrin':                     'bifenthrin',
   'Cyfluthrin (Baythroid)':         'cyfluthrin_baythroid',
   'CyfluthrinBaythroid':            'cyfluthrin_baythroid',
-  'lamda-Cyhalothrin':              'lambda_cyhalothrin',
-  'lambda-Cyhalothrin':             'lambda_cyhalothrin',
-  'lamdaCyhalothrin':               'lambda_cyhalothrin',
-  'lambdaCyhalothrin':              'lambda_cyhalothrin',
+  'lamda-Cyhalothrin':              'lamda_cyhalothrin',
+  'lambda-Cyhalothrin':             'lamda_cyhalothrin',
+  'lamdaCyhalothrin':               'lamda_cyhalothrin',
+  'lambdaCyhalothrin':              'lamda_cyhalothrin',
   'Deltamethrin':                   'deltamethrin',
   'Tralomethrin':                   'tralomethrin',
   'Ethofenprox':                    'ethofenprox',
@@ -171,8 +171,8 @@ const COMPOUND_TO_CANONICAL = {
   'Silafluofen':                    'silafluofen',
   'Flucythrinate':                  'flucythrinate',
   'Fenvalerate':                    'fenvalerate',
-  'Cypermethrin':                   'cypermethrin',
-  'Cypermethrins':                  'cypermethrin',
+  'Cypermethrin':                   'cypermethrins',
+  'Cypermethrins':                  'cypermethrins',
   'Tefluthrin':                     'tefluthrin',
  
   // ── Nhóm I ────────────────────────────────────────────────────────────────
@@ -384,16 +384,16 @@ const CONFIG = {
       // resultColumns[].key = canonical master_analyte.id (DATA_VERSION 2)
       // Khớp với compounds[] trong ANGULAR_SOP_CONFIG['lan-huu-co']
       resultColumns: [
-        { key: 'acephate' }, { key: 'azinfos_methyl' }, { key: 'cadusafos' }, { key: 'chlorpyrifos' },
-        { key: 'chlorpyrifos_methyl' }, { key: 'diazinon' }, { key: 'dimethoate' }, { key: 'edifenfos' },
+        { key: 'acephate' }, { key: 'azinphos_methyl' }, { key: 'cadusafos' }, { key: 'chlorpyrifos' },
+        { key: 'chlorpyrifos_methyl' }, { key: 'diazinon' }, { key: 'dimethoate' }, { key: 'edifenphos' },
         { key: 'ethion' }, { key: 'ethoprophos_ethoprop' }, { key: 'fenitrothion' }, { key: 'fenthion' },
         { key: 'fipronil' }, { key: 'fipronil_sulfide' }, { key: 'fipronil_sulfone' }, { key: 'fipronil_desulfinyl' },
         { key: 'iprobenfos' }, { key: 'malathion' }, { key: 'mefenoxam' }, { key: 'metalaxyl' },
         { key: 'methacrifos' }, { key: 'methidathion' }, { key: 'monocrotophos' }, { key: 'omethoate' },
-        { key: 'parathion_ethyl' }, { key: 'parathion_methyl' }, { key: 'phenthoate' }, { key: 'phorate' },
-        { key: 'phosmet' }, { key: 'phosphamidon' }, { key: 'pirimifos_methyl' }, { key: 'profenofos' },
+        { key: 'parathion' }, { key: 'parathion_methyl' }, { key: 'phenthoate' }, { key: 'phorate' },
+        { key: 'phosmet' }, { key: 'phosphamidon' }, { key: 'pirimiphos_methyl' }, { key: 'profenofos' },
         { key: 'quinalphos' }, { key: 'ronnel_fenchlorphos' }, { key: 'triazophos' }, { key: 'vamidothion' },
-        { key: 'chlorfenvinphos' }, { key: 'isofenfos_methyl' }
+        { key: 'chlorfenvinphos' }, { key: 'isofenphos_methyl' }
       ],
       compounds: [
         'Acephate', 'Azinphos-methyl', 'Cadusafos', 'Chlorpyrifos', 'Chlorpyryfos-methyl',
@@ -419,10 +419,10 @@ const CONFIG = {
       // resultColumns[].key = canonical master_analyte.id (DATA_VERSION 2)
       // Khớp với compounds[] trong ANGULAR_SOP_CONFIG['nhom-cuc']
       resultColumns: [
-        { key: 'bifenthrin' }, { key: 'cyfluthrin_baythroid' }, { key: 'lambda_cyhalothrin' }, { key: 'deltamethrin' },
+        { key: 'bifenthrin' }, { key: 'cyfluthrin_baythroid' }, { key: 'lamda_cyhalothrin' }, { key: 'deltamethrin' },
         { key: 'tralomethrin' }, { key: 'ethofenprox' }, { key: 'permethrin_cis' }, { key: 'permethrin_trans' },
         { key: 'fenpropathrin' }, { key: 'silafluofen' }, { key: 'flucythrinate' }, { key: 'fenvalerate' },
-        { key: 'cypermethrin' }, { key: 'tefluthrin' }
+        { key: 'cypermethrins' }, { key: 'tefluthrin' }
       ],
       compounds: [
         'Bifenthrin', 'Cyfluthrin (Baythroid)', 'lamda-Cyhalothrin', 'Deltamethrin',
@@ -444,7 +444,7 @@ const CONFIG = {
       // resultColumns[].key = canonical master_analyte.id (DATA_VERSION 2)
       // Khớp với compounds[] trong ANGULAR_SOP_CONFIG['nhom-i']
       resultColumns: [
-        { key: 'phosmet' }, { key: 'phosphamidon' }, { key: 'pirimifos_methyl' }, { key: 'profenofos' },
+        { key: 'phosmet' }, { key: 'phosphamidon' }, { key: 'pirimiphos_methyl' }, { key: 'profenofos' },
         { key: 'triazophos' }, { key: 'vamidothion' }, { key: 'difenoconazole' }, { key: 'propiconazole' },
         { key: 'tetraconazole' }, { key: 'hexaconazole' }, { key: 'triadimenol' }, { key: 'paclobutrazol' },
         { key: 'flutriafol' }, { key: 'imazalil' }, { key: 'uniconazole' }, { key: 'tricyclazole' },
@@ -487,18 +487,18 @@ const CONFIG = {
         { key: 'fipronil' }, { key: 'fluazifop' }, { key: 'fludioxonil' }, { key: 'flufenacet' }, { key: 'flusilazole' },
         { key: 'flutriafol' }, { key: 'hexaconazole' }, { key: 'imazalil' }, { key: 'kresoxim_methyl' }, { key: 'mecarbam' },
         { key: 'mefenacet' }, { key: 'molinate' }, { key: 'nitrothal_isopropyl' }, { key: 'paclobutrazol' }, { key: 'phosmet' },
-        { key: 'phosphamidon' }, { key: 'piperonyl_butoxide' }, { key: 'pirimifos_methyl' }, { key: 'profenofos' }, { key: 'propanil' },
+        { key: 'phosphamidon' }, { key: 'piperonyl_butoxide' }, { key: 'pirimiphos_methyl' }, { key: 'profenofos' }, { key: 'propanil' },
         { key: 'propiconazole' }, { key: 'propoxur' }, { key: 'silafluofen' }, { key: 'simazine' }, { key: 'tebuconazole' },
         { key: 'tebufenpyrad' }, { key: 'tebuthiuron' }, { key: 'tetraconazole' }, { key: 'thiabendazole' }, { key: 'triadimenol' },
         { key: 'triazophos' }, { key: 'tricyclazole' }, { key: 'trifluralin' }, { key: 'uniconazole' }, { key: 'vamidothion' },
-        { key: 'vinclozolin' }, { key: 'bifenthrin' }, { key: 'cyfluthrin_baythroid' }, { key: 'lambda_cyhalothrin' }, { key: 'deltamethrin' },
+        { key: 'vinclozolin' }, { key: 'bifenthrin' }, { key: 'cyfluthrin_baythroid' }, { key: 'lamda_cyhalothrin' }, { key: 'deltamethrin' },
         { key: 'tralomethrin' }, { key: 'ethofenprox' }, { key: 'permethrin_cis' }, { key: 'permethrin_trans' }, { key: 'fenpropathrin' },
-        { key: 'flucythrinate' }, { key: 'fenvalerate' }, { key: 'cypermethrin' }, { key: 'tefluthrin' }, { key: 'acephate' },
-        { key: 'azinfos_methyl' }, { key: 'cadusafos' }, { key: 'chlorpyrifos' }, { key: 'chlorpyrifos_methyl' }, { key: 'diazinon' },
-        { key: 'dimethoate' }, { key: 'edifenfos' }, { key: 'ethion' }, { key: 'ethoprophos_ethoprop' }, { key: 'fenitrothion' },
+        { key: 'flucythrinate' }, { key: 'fenvalerate' }, { key: 'cypermethrins' }, { key: 'tefluthrin' }, { key: 'acephate' },
+        { key: 'azinphos_methyl' }, { key: 'cadusafos' }, { key: 'chlorpyrifos' }, { key: 'chlorpyrifos_methyl' }, { key: 'diazinon' },
+        { key: 'dimethoate' }, { key: 'edifenphos' }, { key: 'ethion' }, { key: 'ethoprophos_ethoprop' }, { key: 'fenitrothion' },
         { key: 'fenthion' }, { key: 'fipronil_sulfide' }, { key: 'fipronil_sulfone' }, { key: 'fipronil_desulfinyl' }, { key: 'iprobenfos' },
         { key: 'malathion' }, { key: 'mefenoxam' }, { key: 'metalaxyl' }, { key: 'methacrifos' }, { key: 'methidathion' },
-        { key: 'monocrotophos' }, { key: 'omethoate' }, { key: 'parathion_ethyl' }, { key: 'parathion_methyl' }, { key: 'phenthoate' },
+        { key: 'monocrotophos' }, { key: 'omethoate' }, { key: 'parathion' }, { key: 'parathion_methyl' }, { key: 'phenthoate' },
         { key: 'phorate' }, { key: 'quinalphos' }, { key: 'ronnel_fenchlorphos' }, { key: 'aldrin' }, { key: 'bhc_alpha_benzene_hexachloride' },
         { key: 'bhc_beta' }, { key: 'bhc_delta' }, { key: 'bhc_epsilon' }, { key: 'bhc_gamma_lindane_gamma_hch' }, { key: 'chlordane_cis_alpha' },
         { key: 'chlordane_oxy' }, { key: 'chlordane_trans_gamma' }, { key: 'ddd_op' }, { key: 'ddd_pp' }, { key: 'dde_op' },

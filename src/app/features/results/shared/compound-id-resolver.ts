@@ -64,26 +64,26 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   
   // Organophosphate (Lân hữu cơ)
   'Ethoprofos':         'ethoprophos_ethoprop',
-  'Isofenphos-methyl':   'isofenfos_methyl',
-  'IsofenphosMethyl':     'isofenfos_methyl',
-  'Isofenfos-methyl':    'isofenfos_methyl',
-  'Azinphos-methyl':     'azinfos_methyl',
-  'AzinphosMethyl':       'azinfos_methyl',
-  'Azinfos-methyl':      'azinfos_methyl',
+  'Isofenphos-methyl':   'isofenphos_methyl',
+  'IsofenphosMethyl':     'isofenphos_methyl',
+  'Isofenfos-methyl':    'isofenphos_methyl',
+  'Azinphos-methyl':     'azinphos_methyl',
+  'AzinphosMethyl':       'azinphos_methyl',
+  'Azinfos-methyl':      'azinphos_methyl',
   'Chlorpyrifos-methyl': 'chlorpyrifos_methyl',
   'ChlorpyrifosMethyl':  'chlorpyrifos_methyl',
   'Chlorpyrofos-methyl': 'chlorpyrifos_methyl',
   'Chlorpyryfos-methyl': 'chlorpyrifos_methyl',
   'ChlorpyryfosMethyl':  'chlorpyrifos_methyl',
-  'Pirimiphos-methyl':   'pirimifos_methyl',
-  'PirimiphosMethyl':     'pirimifos_methyl',
-  'Pirimifos-methyl':    'pirimifos_methyl',
+  'Pirimiphos-methyl':   'pirimiphos_methyl',
+  'PirimiphosMethyl':     'pirimiphos_methyl',
+  'Pirimifos-methyl':    'pirimiphos_methyl',
   'Parathion-methyl':    'parathion_methyl',
   'ParathionMethyl':     'parathion_methyl',
-  'Parathion':           'parathion_ethyl',
-  'Parathion-ethyl':     'parathion_ethyl',
-  'Edifenphos':          'edifenfos',
-  'Edifenfos':           'edifenfos',
+  'Parathion':           'parathion',
+  'Parathion-ethyl':     'parathion',
+  'Edifenphos':          'edifenphos',
+  'Edifenfos':           'edifenphos',
   'Ronnel':              'ronnel_fenchlorphos',
   'Ronnel (Fenchlorphos)':'ronnel_fenchlorphos',
   
@@ -104,16 +104,16 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   // Pyrethroid (Nhóm Cúc)
   'Cyfluthrin (Baythroid)': 'cyfluthrin_baythroid',
   'CyfluthrinBaythroid':   'cyfluthrin_baythroid',
-  'lamda-Cyhalothrin':     'lambda_cyhalothrin',
-  'lamdaCyhalothrin':       'lambda_cyhalothrin',
-  'lambda-Cyhalothrin':    'lambda_cyhalothrin',
-  'lambdaCyhalothrin':      'lambda_cyhalothrin',
+  'lamda-Cyhalothrin':     'lamda_cyhalothrin',
+  'lamdaCyhalothrin':       'lamda_cyhalothrin',
+  'lambda-Cyhalothrin':    'lamda_cyhalothrin',
+  'lambdaCyhalothrin':      'lamda_cyhalothrin',
   'Permethrin cis':        'permethrin_cis',
   'PermethrinCis':         'permethrin_cis',
   'Permethrin trans':      'permethrin_trans',
   'PermethrinTrans':       'permethrin_trans',
-  'Cypermethrins':         'cypermethrin',
-  'Cypermethrin':          'cypermethrin',
+  'Cypermethrins':         'cypermethrins',
+  'Cypermethrin':          'cypermethrins',
 
   // Trifluralin / Dichlorvos
   'Trifluralin':   'trifluralin',
@@ -158,7 +158,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Phorate'                          : 'phorate',
   'Phosmet'                          : 'phosmet',
   'Phosphamidon'                     : 'phosphamidon',
-  'Pirimiphos methyl'                : 'pirimifos_methyl',
+  'Pirimiphos methyl'                : 'pirimiphos_methyl',
   'Profenofos'                       : 'profenofos',
   'Quinalphos'                       : 'quinalphos',
   'Triazophos'                       : 'triazophos',
@@ -349,7 +349,7 @@ export function getCanonicalId(name: string): string {
   }
 
   // 3. Fallback to slugified phonetic ID
-  return lowerName.replace(/[\s\-]/g, '_').replace(/ph/g, 'f');
+  return lowerName.replace(/[\s\-]/g, '_');
 }
 
 /**
