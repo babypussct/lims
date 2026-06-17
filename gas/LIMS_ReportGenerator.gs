@@ -644,12 +644,12 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
     }
 
     // --- Bổ sung xử lý V = 100.0 (TBVTV Trong Nước) ---
-    let is100Checked = metadata.is100Checked === true || metadata.is100mlChecked === true || metadata.is100gChecked === true || metadata.is10gChecked === true;
+    let is100Checked = metadata.is100Checked === true || metadata.is100mlChecked === true || metadata.is100gChecked === true || metadata.is10gChecked === true || khoiLuongVal === '100.0' || khoiLuongVal === '100';
     let vCheck = is100Checked ? '☑' : '☐';
-    let vOtherText = !is100Checked && metadata.khoiLuongKhac ? metadata.khoiLuongKhac : '………';
+    let vOtherText = !is100Checked && (metadata.khoiLuongKhac || (khoiLuongVal !== '10.0' && khoiLuongVal !== '10')) ? (metadata.khoiLuongKhac || khoiLuongVal) : '………';
 
     replaceCheckboxSafely(element, 'V\\s*=\\s*' + cbPattern, vCheck);
-    if (!is100Checked && metadata.khoiLuongKhac) {
+    if (!is100Checked && vOtherText !== '………') {
       replaceDotsSafely(element, '100\\.0\\s*;\\s*[…\\.]+', vOtherText);
     }
 

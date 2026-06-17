@@ -350,12 +350,25 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
               }
             }
 
-            // 2. Khớp chuỗi con nếu không khớp canonical
+            // 1.5 Khớp chính xác hoàn toàn (bỏ qua ký tự đặc biệt)
+            if (!matchedCompound) {
+              const exactNormCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
+              for (const comp of sortedComps) {
+                if (comp.toLowerCase().replace(/[-_\\s',]/g, '') === exactNormCell) {
+                  matchedCompound = comp;
+                  break;
+                }
+              }
+            }
+
+            // 2. Khớp chuỗi con nếu không khớp canonical hay exact
             if (!matchedCompound) {
               const normCell = cellText.toLowerCase().replace(/[-_\\s',]/g, '');
               for (const comp of sortedComps) {
                 const compNorm = comp.toLowerCase().replace(/[-_\\s',]/g, '');
-                if ((normCell.includes(compNorm) || compNorm.includes(normCell)) && cellText.length < 50) {
+                // Chỉ cho phép cell text chứa tên hoạt chất (vd: cell có chữ (ND)), 
+                // hoặc ngược lại CHỈ KHI độ dài chênh lệch rất ít (tránh Parathion match Parathion-methyl)
+                if ((normCell.includes(compNorm) || (compNorm.includes(normCell) && compNorm.length - normCell.length <= 2)) && cellText.length < 50) {
                   matchedCompound = comp;
                   break;
                 }

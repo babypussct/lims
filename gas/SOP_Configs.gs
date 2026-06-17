@@ -532,7 +532,7 @@ const CONFIG = {
         'DDE-p,p\'', 'DDT-o,p\'', 'DDT-p,p\'', 'Dieldrin', 'Endosulfan I (alpha isomer)',
         'Endosulfan II (beta isomer)', 'Endosulfan sulfate', 'Endrin', 'Heptachlor', 'Heptachlor endo-epoxide (isomer A)',
         'Heptachlor exo-epoxide (isomer B)', 'Hexachlorobenzene', 'Isodrin', 'Methoxychlor, p,p\'-', 'Mirex',
-        'Pendimethalin'
+        'Pendimethalin', 'Pirimiphos methyl', 'lambda-Cyhalothrin', 'Edifenphos', 'Azinphos-methyl', 'Cypermethrins'
       ]
     }
   }
