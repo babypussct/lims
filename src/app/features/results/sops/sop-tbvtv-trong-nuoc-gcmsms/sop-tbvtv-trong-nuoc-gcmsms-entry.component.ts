@@ -43,6 +43,11 @@ export class SopTbvtvTrongNuocGcmsmsEntryComponent extends AbstractSopEntry impl
       this.draft.page1Data['khoiLuong'] = '100.0';
     }
 
+    // Khởi tạo trạng thái checkbox V = 100.0 ml mặc định là true (được chọn) nếu chưa có giá trị
+    if (this.draft.page1Data['is10gChecked'] === undefined) {
+      this.draft.page1Data['is10gChecked'] = true;
+    }
+
     (this.run?.sampleList || []).forEach((sampleCode: string) => {
       const sRes = this.draft.resultData[sampleCode];
       if (sRes && (!sRes['khoiLuong'] || sRes['khoiLuong'] === '10.0')) {

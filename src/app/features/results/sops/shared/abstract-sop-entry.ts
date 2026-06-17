@@ -436,6 +436,18 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
             row[`${c}_qc3`] = 'N/A';
             changed = true;
           }
+        } else {
+          // Hoạt chất được giao (assigned target) cho mẫu này
+          // Nếu đang là 'N/A' (do trước đó chưa giao, hoặc hoàn toàn chưa khởi tạo)
+          // -> Chuyển về trạng thái mặc định của hoạt chất được giao: ND = true, value = '', QC = 'Đạt'
+          if (row[c] === 'N/A' || row[c] === undefined || (row[c] === '' && row[`${c}_nd`] === undefined)) {
+            row[c] = '';
+            row[`${c}_nd`] = true;
+            row[`${c}_qc1`] = 'Đạt';
+            row[`${c}_qc2`] = 'Đạt';
+            row[`${c}_qc3`] = 'Đạt';
+            changed = true;
+          }
         }
       });
     });

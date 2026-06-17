@@ -1865,9 +1865,10 @@ export function buildUnifiedType3bPdfPayload(
     sopId,
     metadata: {
       ...currentDraft.page1Data,
-      is100mlChecked: currentDraft.page1Data['is10gChecked'],
-      is100gChecked: currentDraft.page1Data['is10gChecked'],
-      is100Checked: currentDraft.page1Data['is10gChecked'],
+      is100mlChecked: currentDraft.page1Data['is10gChecked'] !== false,
+      is100gChecked: currentDraft.page1Data['is10gChecked'] !== false,
+      is100Checked: currentDraft.page1Data['is10gChecked'] !== false,
+      is10gChecked: currentDraft.page1Data['is10gChecked'] !== false,
       printFormType: currentDraft.page1Data['printFormType'] || 'formCheck',
       blankName: currentDraft.page1Data['blankName'] || 'BLANK',
       spikeName: currentDraft.page1Data['spikeName'] || 'SPIKE',
