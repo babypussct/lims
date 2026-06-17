@@ -466,6 +466,15 @@
                 (draftChanged)="onDraftChanged($event)">
               </app-sop-1767857760184-entry>
             }
+            @case ('chloroform-gcms') {
+              <app-sop-chloroform-entry
+                [activeFilter]="activeFilter()"
+                [run]="filteredRun()!"
+                [draft]="draft()!"
+                [config]="config()!"
+                (draftChanged)="onDraftChanged($event)">
+              </app-sop-chloroform-entry>
+            }
             @case ('trifluralin-gcms') {
               <app-sop-03-entry
                 #sop03Grid

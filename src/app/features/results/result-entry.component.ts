@@ -25,6 +25,7 @@ import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop
 import { SopLanHuuCoEntryComponent } from './sops/sop-lan-huu-co/sop-lan-huu-co-entry.component';
 import { Sop1767856825928EntryComponent } from './sops/sop-1767856825928/sop-1767856825928-entry.component';
 import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nuoc-gcmsms/sop-tbvtv-trong-nuoc-gcmsms-entry.component';
+import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
 import { isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
@@ -50,7 +51,8 @@ import {
     SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent,
     SopLanHuuCoEntryComponent,
     Sop1767856825928EntryComponent,
-    SopTbvtvTrongNuocGcmsmsEntryComponent
+    SopTbvtvTrongNuocGcmsmsEntryComponent,
+    SopChloroformEntryComponent
   ],
   templateUrl: './result-entry.component.html'
 })
@@ -239,6 +241,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const isTrifluralin = runDoc.sopId === 'SOP-03' || (sopConf.columns && sopConf.columns.kqTrifluralin !== undefined);
     const isFipronil = runDoc.sopId === 'SOP-01' || (sopConf.columns && sopConf.columns.kqFip !== undefined);
     const isDichlorvos = runDoc.sopId === 'sop_1767857760184' || (sopConf.columns && sopConf.columns.kqDichlorvos !== undefined);
+    const isChloroform = runDoc.sopId === '9.20-chloroform' || (sopConf.columns && sopConf.columns.kqChloroform !== undefined);
 
     const defaultPage1: Record<string, any> = {
       ngayNguoiPhanTich: new Date().toISOString().split('T')[0],
@@ -295,6 +298,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       defaultPage1['qcDanhGiaChung'] = true;
       defaultPage1['qcKiemTraNoiBo'] = defaultPage1['hasCheckSample'] ? true : null;
       defaultPage1['qcNhanDang'] = null; // Exception: qcNhanDang starts as N/A
+    } else if (isChloroform) {
+      defaultPage1['r2'] = '0.999';
+      defaultPage1['blankName'] = '';
+      defaultPage1['spikeName'] = '';
+      defaultPage1['calibPoints'] = [
+        { loSo: '1', hamLuong: '0' },
+        { loSo: '2', hamLuong: '2' },
+        { loSo: '3', hamLuong: '5' },
+        { loSo: '4', hamLuong: '10' },
+        { loSo: '5', hamLuong: '20' },
+        { loSo: '6', hamLuong: '50' }
+      ];
     } else if (sopConf.checkboxLines) {
       // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
       Object.values(sopConf.checkboxLines).forEach((field: any) => {

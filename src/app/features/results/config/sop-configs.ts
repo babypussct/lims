@@ -4,6 +4,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   'SOP-01': 'fipronil-chlorpyrifos',  // FORM_GOC_FIP_CHLORFOS_9_21.docx
   'SOP-03': 'trifluralin-gcms',       // FORM_GOC_TRIFLURALIN_9_3.docx
   'sop_1767857760184': 'dichlorvos-gcms', // Dichlorvos/Dipterex(Trichlorfon) (GC-MS & GC-MS/MS)
+  '9.20-chloroform': 'chloroform-gcms', // Chloroform (GC-MS/MS)
   'nhom_lan_huu_co_gc-msms_copy_1768036876719': 'chlor-huu-co', // Nhóm Chlor hữu cơ (GC-MS/MS) (filebieumau_FORM_TRANG4.docx)
   'SOP-02': 'lan-huu-co',             // Nhóm Lân hữu cơ (GC-MS/MS)
   'sop_1767856825928': 'nhom-cuc',    // Nhóm Cúc (GC-MS/MS)
@@ -15,6 +16,7 @@ export const SOP_ID_MAP: Record<string, string> = {
 // ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────
 export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['trifluralin'], configKey: 'trifluralin-gcms' },
+  { keywords: ['chloroform'], configKey: 'chloroform-gcms' },
   { keywords: ['fipronil', 'chlorpyrifos'], configKey: 'fipronil-chlorpyrifos' },
   { keywords: ['dichlorvos'], configKey: 'dichlorvos-gcms' },
   { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
@@ -32,6 +34,11 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
   maSoMauChunkSize?: number;
   compounds?: string[]; // Dành riêng cho Dạng 3B
 }> = {
+  'chloroform-gcms': {
+    formType: 'type3a',
+    columns: { maSoMau: 0, khoiLuong: 1, heSoPhaLoang: 2, loSo: 3, kqChloroform: 4 },
+    signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
+  },
   'trifluralin-gcms': {
     formType: 'type2',
     columns: { loSo: 0, maSoMau: 1, kqTrifluralin: 2, ghiChu: 3 },

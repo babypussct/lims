@@ -1,0 +1,100 @@
+{
+  "id": "9.20-chloroform",
+  "category": "NAFI6 H-9.20",
+  "name": "Xác định dư lượng Chloroform - GC-MS/MS",
+  "ref": "Clinical Chemistry, Vol 26, No. 1, 1980",
+  "version": 3,
+  "inputs": [
+    {
+      "var": "n_sample",
+      "label": "Số lượng mẫu",
+      "type": "number",
+      "default": 1,
+      "step": 1,
+      "unitLabel": "mẫu"
+    },
+    {
+      "var": "n_qc",
+      "label": "Số lượng QC",
+      "type": "number",
+      "default": 8,
+      "step": 1,
+      "unitLabel": "mẫu"
+    },
+    {
+      "var": "loai_mau",
+      "label": "Loại nền mẫu",
+      "type": "select",
+      "default": "Thực phẩm",
+      "options": [
+        { "value": "Thực phẩm", "label": "Thực phẩm" },
+        { "value": "Nước sạch", "label": "Nước sạch" }
+      ]
+    }
+  ],
+  "variables": {
+    "total_n": "n_sample + n_qc"
+  },
+  "consumables": [
+    {
+      "name": "cyclohexan",
+      "_displayName": "Dung môi Cyclohexan (PA)",
+      "formula": "5 * total_n + 6",
+      "unit": "ml",
+      "type": "simple",
+      "base_note": "5ml/mẫu + 6ml pha đường chuẩn C0-C5"
+    },
+    {
+      "name": "psa",
+      "_displayName": "Bột PSA (Làm sạch mẫu)",
+      "formula": "0.25 * total_n",
+      "unit": "g",
+      "type": "simple",
+      "condition": "loai_mau === 'Thực phẩm'",
+      "base_note": "Chỉ dùng cho nền Thực phẩm"
+    },
+    {
+      "name": "c18",
+      "_displayName": "Bột C18 (Làm sạch mẫu)",
+      "formula": "0.25 * total_n",
+      "unit": "g",
+      "type": "simple",
+      "condition": "loai_mau === 'Thực phẩm'",
+      "base_note": "Chỉ dùng cho nền Thực phẩm"
+    },
+    {
+      "name": "nuoc_cat",
+      "_displayName": "Nước cất 2 lần",
+      "formula": "5 * total_n",
+      "unit": "ml",
+      "type": "simple",
+      "condition": "loai_mau === 'Thực phẩm'",
+      "base_note": "Chỉ dùng cho nền Thực phẩm"
+    },
+    {
+      "name": "chloroform_working_std",
+      "_displayName": "Chuẩn làm việc Chloroform 100 ng/mL",
+      "formula": "870",
+      "unit": "µl",
+      "type": "simple",
+      "base_note": "Pha đường chuẩn làm việc C0-C5 (cố định 870 µL/mẻ)"
+    },
+    {
+      "name": "chloroform_intermediate_std",
+      "_displayName": "Chuẩn trung gian Chloroform 1000 ng/mL (cho QC Spike)",
+      "formula": "loai_mau === 'Thực phẩm' ? 25 * n_qc : 50 * n_qc",
+      "unit": "µl",
+      "type": "simple",
+      "base_note": "Spike LOQ: Thực phẩm dùng 25 µL, Nước sạch dùng 50 µL mỗi mẫu QC"
+    }
+  ],
+  "targets": [
+    {
+      "id": "chloroform",
+      "name": "Chloroform",
+      "unit": "ppb",
+      "lod": "2 ppb",
+      "loq": "5 ppb"
+    }
+  ]
+}

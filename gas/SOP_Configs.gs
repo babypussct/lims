@@ -242,6 +242,7 @@ const CONFIG = {
     'trifluralin-gcms':       '1FN0onAiYBuSBiQk3DWQQGXTxvhHaI8VSaxD2qgUUAxY',   // SOP-03 | FORM_GOC_TRIFLURALIN_9_3.docx
     'fipronil-chlorpyrifos':  '1LTP7q3pIW9IBIbJPzFmX43Sr3QxGj70MoBLity0HLVw',          // SOP-01 | FORM_GOC_FIP_CHLORFOS_9_21.docx
     'dichlorvos-gcms':        '15Vg_kdrEx1DQ-LyLuZVo8sKnjW7JFV7mQDAEE3xKywY',   // Dichlorvos/Dipterex(Trichlorfon)
+    'chloroform-gcms':        '1Qfg1k_Y3GLWhOj9oCoQW6sahMNoVN7GhU6u5NMSYrBo',   // Chloroform (GC-MS/MS)
     'chlor-huu-co':           '1xQNkNRcPtfmQjwyv5F2qx1E2VbCmeuPbnfCK3_AgAGQ',   // (filebieumau_FORM_TRANG4.docx)
     'lan-huu-co':             '1nSWI-KDXhcnzZK3k0X5o0Wn2rXQ2XeRx87jx8WJAM60',   // SOP-02 | TÊN Nhóm Lân hữu cơ (GC-MS/MS)
     'nhom-cuc':               '1ugk8Xx-LHYD7xrarxE01pG96fIA5Po7OMdjQ8htrys0',   // Nhóm Cúc (GC-MS/MS) - Form Check
@@ -325,6 +326,26 @@ const CONFIG = {
         heSoPhaLoang:  2, // Hệ số pha loãng F
         loSo:          3, // Số vial / Lọ số
         kqDichlorvos:  4  // Kết quả (ng/g)
+      },
+      headerRows: 1,
+      textReplacements: {},
+      checkboxLines: {},
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      }
+    },
+    'chloroform-gcms': {
+      folderName: 'Chloroform (GC-MS/MS)',
+      formType: 'type3a',
+      defaultFontSize: 13,
+      sampleTableIndex: 1,
+      columns: {
+        maSoMau:       0, // Mã số mẫu
+        khoiLuong:     1, // Khối lượng (g)
+        heSoPhaLoang:  2, // Hệ số pha loãng F
+        loSo:          3, // Số vial / Lọ số
+        kqChloroform:  4  // Kết quả (ppb)
       },
       headerRows: 1,
       textReplacements: {},
