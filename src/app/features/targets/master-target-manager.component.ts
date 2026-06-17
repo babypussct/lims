@@ -38,6 +38,11 @@ import { Router } from '@angular/router';
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Migrate Data (- to _)
                 </button>
 
+                <!-- Export Button -->
+                <button (click)="exportToExcel()" [disabled]="isProcessing() || isLoading() || items().length === 0" class="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                    <i class="fa-solid fa-file-export"></i> Export Excel
+                </button>
+
                 <!-- Import Button -->
                 <button (click)="fileInput.click()" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-bold text-xs transition flex items-center gap-2 active:scale-95">
                     <i class="fa-solid fa-file-excel"></i> Import Excel
@@ -637,6 +642,43 @@ export class MasterTargetManagerComponent implements OnInit {
           this.loadData();
       } catch (e: any) {
           this.toast.show('Lỗi lưu import: ' + e.message, 'error');
+      } finally {
+          this.isProcessing.set(false);
+      }
+  }
+
+  async exportToExcel() {
+      this.isProcessing.set(true);
+      try {
+          const XLSX = await import('xlsx');
+          const dataToExport = this.items().map(item => ({
+              'Mã ID': item.id,
+              'Tên Chỉ tiêu': item.name,
+              'Số CAS': item.cas_number || '',
+              'Công thức hóa học': item.chemical_formula || '',
+              'Đơn vị mặc định': item.default_unit || 'ppb',
+              'Mô tả / Ghi chú': item.description || ''
+          }));
+
+          const ws = XLSX.utils.json_to_sheet(dataToExport);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Master Analytes");
+
+          // Auto-adjust column width
+          const maxLens = dataToExport.reduce((acc: any, row: any) => {
+              Object.keys(row).forEach(key => {
+                  const val = row[key]?.toString() || '';
+                  acc[key] = Math.max(acc[key] || 10, val.length, key.length);
+              });
+              return acc;
+          }, {});
+          ws['!cols'] = Object.keys(maxLens).map(key => ({ wch: maxLens[key] + 3 }));
+
+          const fileName = `LIMS_Master_Analytes.xlsx`;
+          XLSX.writeFile(wb, fileName);
+          this.toast.show('Xuất file Excel thành công!', 'success');
+      } catch (e: any) {
+          this.toast.show('Lỗi xuất file: ' + e.message, 'error');
       } finally {
           this.isProcessing.set(false);
       }
