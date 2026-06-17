@@ -215,17 +215,7 @@ const COMPOUND_TO_CANONICAL = {
   'Chlorothalonil':                 'chlorothalonil',
  
   // ── Fipronil / Chlorpyrifos (SOP-01 — dùng cho context khác nếu cần) ─────
-  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos_methyl_desmethyl',Tebufenpyrad':                   'tebufenpyrad',
-  'Atrazine':                       'atrazine',
-  'Tebuthiuron':                    'tebuthiuron',
-  'Thiabendazole':                  'thiabendazole',
-  'Chlorfenapyr':                   'chlorfenapyr',
-  'Vinclozolin':                    'vinclozolin',
-  'Trifluralin':                    'trifluralin',
-  'Chlorothalonil':                 'chlorothalonil',
-
-  // ── Fipronil / Chlorpyrifos (SOP-01 — dùng cho context khác nếu cần) ─────
-  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos_methyl-desmethyl',
+  'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos_methyl_desmethyl',
 
   // ── Trifluralin / Dichlorvos ──────────────────────────────────────────────
   'Dichlorvos':                     'trichlorfondipterexdichlorvos',
