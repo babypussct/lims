@@ -65,6 +65,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   // Organophosphate (Lân hữu cơ)
   'Ethoprofos':         'ethoprophos_ethoprop',
   'Isofenphos-methyl':   'isofenphos_methyl',
+  'Isofenphos methyl':    'isofenphos_methyl',
   'IsofenphosMethyl':     'isofenphos_methyl',
   'Isofenfos-methyl':    'isofenphos_methyl',
   'Azinphos-methyl':     'azinphos_methyl',

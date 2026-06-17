@@ -149,6 +149,7 @@ const COMPOUND_TO_CANONICAL = {
   'Vamidothion':                    'vamidothion',
   'Chlorfenvinphos':                'chlorfenvinphos',
   'Isofenphos-methyl':              'isofenphos_methyl',
+  'Isofenphos methyl':               'isofenphos_methyl',
   'IsofenphosMethyl':               'isofenphos_methyl',
   'Isofenfos-methyl':               'isofenphos_methyl',
  
