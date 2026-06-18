@@ -1,6 +1,7 @@
 
 import { Routes } from '@angular/router';
 import { permissionGuard } from './core/guards/permission.guard';
+import { canDeactivateResultEntry } from './core/guards/pending-changes.guard';
 import { PERMISSIONS } from './core/services/auth.service';
 
 export const routes: Routes = [
@@ -100,6 +101,7 @@ export const routes: Routes = [
     path: 'results/:id',
     loadComponent: () => import('./features/results/result-entry.component').then(m => m.ResultEntryComponent),
     canActivate: [permissionGuard],
+    canDeactivate: [canDeactivateResultEntry],
     data: { permission: PERMISSIONS.SOP_VIEW }
   },
   {

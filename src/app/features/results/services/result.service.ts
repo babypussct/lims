@@ -40,7 +40,10 @@ export class ResultService {
       // Xóa reference parentMasterId trên các mẻ con
       for (const childId of childIds) {
         const childRef = this.getDocRef(childId);
-        batch.update(childRef, { parentMasterId: deleteField() });
+        batch.update(childRef, { 
+          parentMasterId: deleteField(),
+          lastUpdated: serverTimestamp()
+        });
       }
 
       // Xóa document của mẻ gộp (dùng soft-delete để tương thích với DeltaSync)
@@ -135,7 +138,8 @@ export class ResultService {
       
       await updateDoc(this.getDocRef(masterId), {
         targetIds: Array.from(allTargetIds),
-        sampleTargetMap: combinedSampleTargetMap
+        sampleTargetMap: combinedSampleTargetMap,
+        lastUpdated: serverTimestamp()
       });
       console.log(`[AutoHeal] Vá dữ liệu thành công cho ${masterId}`);
     } catch (e) {
@@ -1030,6 +1034,57 @@ export class ResultService {
       console.error('Error resetting results:', e);
       this.toast.show('Lỗi reset kết quả: ' + e.message, 'error');
       return null;
+    }
+  }
+
+  /**
+   * Giành/Thiết lập khóa chỉnh sửa mẻ chạy
+   */
+  async acquireLock(requestId: string, email: string, displayName: string): Promise<void> {
+    try {
+      const ref = this.getDocRef(requestId);
+      await updateDoc(ref, {
+        lockedBy: email,
+        lockedByName: displayName,
+        lockedAt: serverTimestamp(),
+        lastActiveAt: serverTimestamp(),
+        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      });
+    } catch (e: any) {
+      console.warn('[ResultService] Failed to acquire lock:', e.message);
+    }
+  }
+
+  /**
+   * Cập nhật thời điểm hoạt động cuối cùng của người đang giữ khóa (Heartbeat)
+   */
+  async updateHeartbeat(requestId: string): Promise<void> {
+    try {
+      const ref = this.getDocRef(requestId);
+      await updateDoc(ref, {
+        lastActiveAt: serverTimestamp(),
+        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      });
+    } catch (e: any) {
+      console.warn('[ResultService] Failed to update heartbeat:', e.message);
+    }
+  }
+
+  /**
+   * Giải phóng khóa chỉnh sửa mẻ chạy
+   */
+  async releaseLock(requestId: string): Promise<void> {
+    try {
+      const ref = this.getDocRef(requestId);
+      await updateDoc(ref, {
+        lockedBy: deleteField(),
+        lockedByName: deleteField(),
+        lockedAt: deleteField(),
+        lastActiveAt: deleteField(),
+        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      });
+    } catch (e: any) {
+      console.warn('[ResultService] Failed to release lock:', e.message);
     }
   }
 }

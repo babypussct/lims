@@ -1,10 +1,10 @@
 <div class="space-y-6">
-
   <!-- 1. Metadata Form & Checkboxes -->
   <app-sop-header-metadata
     [title]="'Thông tin chung & Đánh giá (SOP: ' + (run?.sopCode || 'sop_1767857760184') + ')'"
     [draft]="draft"
     [checkboxList]="[]"
+    [isReadOnly]="isReadOnly"
     (draftChanged)="onDataChanged()">
     
     <!-- Method Toggle & FINAL option -->
@@ -14,6 +14,7 @@
         <div class="flex gap-2">
           <button type="button" 
                   (click)="setMethod('GC/MS')" 
+                  [disabled]="isReadOnly"
                   [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
                   [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
                   [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MS'"
@@ -23,13 +24,14 @@
                   [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
                   [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
                   [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MS'"
-                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50">
             <i class="fa-solid fa-microscope text-sm"></i>
             <span>GC/MS</span>
           </button>
           
           <button type="button" 
                   (click)="setMethod('GC/MSMS')" 
+                  [disabled]="isReadOnly"
                   [class.bg-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
                   [class.text-white]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
                   [class.border-cyan-600]="draft.page1Data['dichlorvosMethod'] === 'GC/MSMS'"
@@ -39,7 +41,7 @@
                   [class.dark:text-slate-300]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
                   [class.border-slate-200]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
                   [class.dark:border-slate-800]="draft.page1Data['dichlorvosMethod'] !== 'GC/MSMS'"
-                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95">
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50">
             <i class="fa-solid fa-flask-vials text-sm"></i>
             <span>GC/MS/MS</span>
           </button>
@@ -60,8 +62,9 @@
         <input type="number" 
                [(ngModel)]="bulkCalibVialStart" 
                (ngModelChange)="onBulkCalibVialStartChange()"
+               [disabled]="isReadOnly"
                placeholder="Bắt đầu" 
-               class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+               class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none disabled:opacity-75">
         <span class="text-slate-400">-</span>
         <input type="number" 
                [ngModel]="bulkCalibVialEnd" 
@@ -69,7 +72,8 @@
                placeholder="Kết thúc" 
                class="w-14 bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/40 rounded px-1.5 py-0.5 text-center text-slate-455 dark:text-slate-500 font-bold outline-none cursor-not-allowed">
         <button (click)="applyCalibVials()" 
-                class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                [disabled]="isReadOnly"
+                class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
           <i class="fa-solid fa-check"></i>
           <span>Áp dụng</span>
         </button>
@@ -84,9 +88,10 @@
           <input type="text" 
                  [(ngModel)]="draft.page1Data['blankName']" 
                  (ngModelChange)="onDataChanged()"
+                 [readonly]="isReadOnly"
                  (focus)="$any($event.target).select()"
                  placeholder="BLANK"
-                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
         </div>
         
         <div>
@@ -94,9 +99,10 @@
           <input type="text" 
                  [(ngModel)]="draft.page1Data['spikeName']" 
                  (ngModelChange)="onDataChanged()"
+                 [readonly]="isReadOnly"
                  (focus)="$any($event.target).select()"
                  placeholder="SPIKE"
-                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
         </div>
 
         <div>
@@ -104,18 +110,24 @@
           <input type="text" 
                  [(ngModel)]="draft.page1Data['r2']" 
                  (ngModelChange)="onDataChanged()"
+                 [readonly]="isReadOnly"
                  (focus)="$any($event.target).select()"
                  placeholder="Ví dụ: 0.9992..."
-                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+                 class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-extrabold text-indigo-655 dark:text-indigo-400 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
         </div>
         
         <div>
           <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Mẫu QC FINAL</label>
-          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 cursor-pointer select-none transition hover:bg-slate-50 dark:hover:bg-slate-850">
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 select-none transition"
+                 [class.cursor-pointer]="!isReadOnly"
+                 [class.cursor-not-allowed]="isReadOnly"
+                 [class.hover:bg-slate-50]="!isReadOnly"
+                 [class.dark:hover:bg-slate-850]="!isReadOnly">
             <input type="checkbox" 
                    [(ngModel)]="draft.page1Data['hasFinal']" 
                    (ngModelChange)="onFinalToggled()"
-                   class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                   [disabled]="isReadOnly"
+                   class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700 disabled:opacity-75">
             <span class="text-xs font-bold text-slate-750 dark:text-slate-250">Thêm mẫu kiểm tra cuối mẻ (FINAL)</span>
           </label>
         </div>
@@ -134,7 +146,8 @@
           pointPrefix="Chuẩn C"
           [isSuffixVisible]="false"
           [isFuchsiaRing]="false"
-          (pointsChanged)="onCalibrationPointsChanged()">
+          [isReadOnly]="isReadOnly"
+          (pointsChanged)="onBulkCalibPointsChanged()">
         </app-sop-calibration-points>
       </div>
     </div>
@@ -151,14 +164,16 @@
         <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
         
         <button (click)="bulkFillND()" 
-                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                [disabled]="isReadOnly"
+                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Đặt toàn bộ các ô kết quả chưa điền là ND">
           <i class="fa-solid fa-pen-clip"></i>
           <span>Điền ND ô trống</span>
         </button>
 
         <button (click)="bulkClearAll()" 
-                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-red-50 dark:hover:bg-red-955/20 text-slate-655 dark:text-slate-455 hover:text-red-655 dark:hover:text-red-400 border border-slate-200/60 dark:border-slate-800 hover:border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                [disabled]="isReadOnly"
+                class="px-3 py-1.5 bg-slate-50 dark:bg-slate-955 hover:bg-red-50 dark:hover:bg-red-955/20 text-slate-655 dark:text-slate-455 hover:text-red-655 dark:hover:text-red-400 border border-slate-200/60 dark:border-slate-800 hover:border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Xóa toàn bộ các ô kết quả của bảng">
           <i class="fa-solid fa-trash-can"></i>
           <span>Xóa hết bảng</span>
@@ -166,19 +181,22 @@
 
         <!-- Quick Vial Input -->
         <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
-          <span class="font-bold text-slate-500 dark:text-slate-400">Lọ số:</span>
+          <span class="font-bold text-slate-550 dark:text-slate-400">Lọ số:</span>
           <input type="number" 
                  [(ngModel)]="bulkVialStart" 
                  (ngModelChange)="onBulkVialStartChange()"
+                 [disabled]="isReadOnly"
                  placeholder="Bắt đầu" 
-                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none disabled:opacity-75">
           <span class="text-slate-400">-</span>
           <input type="number" 
                  [(ngModel)]="bulkVialEnd" 
+                 [disabled]="isReadOnly"
                  placeholder="Kết thúc" 
-                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+                 class="w-14 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none disabled:opacity-75">
           <button (click)="applyBulkVials()" 
-                  class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                  [disabled]="isReadOnly"
+                  class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
             <i class="fa-solid fa-check"></i>
             <span>Áp dụng</span>
           </button>
@@ -195,7 +213,8 @@
               <input type="checkbox"
                      [checked]="isAllSelected()"
                      (change)="toggleSelectAll($event)"
-                     class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500">
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 disabled:opacity-75">
             </th>
             <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs w-28 bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Lọ số</th>
             <th class="py-3 px-4 text-left font-black text-slate-455 dark:text-slate-500 text-xs min-w-[140px] bg-slate-50 dark:bg-slate-900 uppercase tracking-wider">Mẫu thử</th>
@@ -222,7 +241,8 @@
                 <input type="checkbox"
                        [(ngModel)]="draft.resultData[row.key]['selected']"
                        (ngModelChange)="onDataChanged()"
-                       class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500">
+                       [disabled]="isReadOnly"
+                       class="w-4 h-4 rounded text-cyan-600 border-slate-350 focus:ring-cyan-500 disabled:opacity-75">
               </td>
               <td class="py-1.5 px-2 w-28">
                 <input type="text"
@@ -230,10 +250,11 @@
                        (ngModelChange)="onDataChanged()"
                        [id]="'cell-' + rowIdx + '-loSo'"
                        [disabled]="row.key === 'QC_FINAL'"
+                       [readonly]="isReadOnly"
                        (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 1)"
                        (focus)="$any($event.target).select()"
                        placeholder="Vial..."
-                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
+                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
               </td>
               <td class="py-2.5 px-4">
                 @if (row.key.startsWith('QC_')) {
@@ -252,10 +273,11 @@
                          (ngModelChange)="onCellChanged(row.key)"
                          [id]="'cell-' + rowIdx + '-' + col"
                          [disabled]="row.key === 'QC_FINAL' && col !== 'kqDichlorvos'"
+                         [readonly]="isReadOnly"
                          (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 2)"
                          (focus)="$any($event.target).select()"
                          placeholder="..."
-                         class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed">
+                         class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none text-center transition disabled:opacity-75 disabled:cursor-not-allowed read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
                 </td>
               }
               
@@ -264,14 +286,16 @@
                        [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                        (ngModelChange)="onDataChanged()"
                        [id]="'cell-' + rowIdx + '-ghiChu'"
+                       [readonly]="isReadOnly"
                        (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length + 2)"
                        (focus)="$any($event.target).select()"
                        placeholder="Ghi chú..."
-                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-355 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition">
+                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-355 focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition read-only:bg-slate-100/50 dark:read-only:bg-slate-850/40">
               </td>
               <td class="py-1.5 px-4 text-center">
                 <button (click)="copyRowToAll(row.key)" 
-                        class="w-7 h-7 inline-flex items-center justify-center bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-black transition active:scale-95 duration-100 shadow-xs"
+                        [disabled]="isReadOnly"
+                        class="w-7 h-7 inline-flex items-center justify-center bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-black transition active:scale-95 duration-100 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Sao chép kết quả dòng này cho tất cả dòng khác">
                   <i class="fa-solid fa-copy"></i>
                 </button>

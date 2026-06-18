@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, ViewChild, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -15,6 +15,7 @@ import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { PrintService } from '../../core/services/print.service';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { AuthService } from '../../core/services/auth.service';
 
 // Isolated SOP presentational components
 import { Sop01EntryComponent } from './sops/sop-01/sop-01-entry.component';
@@ -67,7 +68,42 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
   private masterService = inject(MasterTargetService);
+  private auth = inject(AuthService);
   printService = inject(PrintService);
+
+  // Locking mechanism variables
+  private heartbeatInterval: any;
+  private hasUnsavedChangesActivity = false;
+  private previousLockedBy: string | null = null;
+
+  isReadOnly = computed(() => {
+    const d = this.draft();
+    const r = this.run();
+    const user = this.auth.currentUser();
+    
+    if (d?.status === 'completed') return true;
+    if (r?.lockedBy && user && r.lockedBy !== user.email) return true;
+    return false;
+  });
+
+  lockedByOthers = computed(() => {
+    const r = this.run();
+    const user = this.auth.currentUser();
+    return r?.lockedBy && user && r.lockedBy !== user.email;
+  });
+
+  @HostListener('document:keyup')
+  @HostListener('document:click')
+  onUserActivity() {
+    this.hasUnsavedChangesActivity = true;
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any) {
+    if (this.autoSaveStatus() === 'modified') {
+      $event.returnValue = true;
+    }
+  }
 
   masterTargets = signal<any[]>([]);
 
@@ -168,10 +204,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Initialize auto-save subscription with 10s debounce
+    // Initialize auto-save subscription with 5s debounce (Optimized)
     this.autoSaveSub = this.draftChangeSubject.pipe(
-      debounceTime(10000)
+      debounceTime(5000)
     ).subscribe(async (updatedDraft) => {
+      // Chỉ lưu tự động nếu mình đang giữ khóa hoặc tài liệu chưa khóa
+      const r = this.run();
+      const user = this.auth.currentUser();
+      const isLockedByOthers = r?.lockedBy && user && r.lockedBy !== user.email;
+      if (isLockedByOthers) {
+        return; // Không lưu đè dữ liệu nếu bị người khác giành khóa
+      }
+
       this.autoSaveStatus.set('saving');
       const success = await this.resultService.saveDraft(this.requestId, updatedDraft, false);
       if (success) {
@@ -180,6 +224,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.autoSaveStatus.set('modified');
       }
     });
+
+    // Cập nhật heartbeat định kỳ để cập nhật lastActiveAt (Optimized 1 - Throttled)
+    this.heartbeatInterval = setInterval(async () => {
+      const r = this.run();
+      const user = this.auth.currentUser();
+      if (r && user && r.lockedBy === user.email && this.hasUnsavedChangesActivity) {
+        this.hasUnsavedChangesActivity = false;
+        await this.resultService.updateHeartbeat(this.requestId);
+      }
+    }, 60000);
     
     // Read prefix from route query params
     this.route.queryParams.subscribe(params => {
@@ -193,6 +247,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     // Subscribe to real-time changes of the request document
     this.unsubscribeFromDraft = this.resultService.subscribeToDraft(this.requestId, async (draftDoc: any, runDoc: any) => {
       if (runDoc) {
+        const user = this.auth.currentUser();
+
+        // Phát hiện bị giành khóa chỉnh sửa (Take Over - Optimized 2)
+        if (this.previousLockedBy && user && this.previousLockedBy === user.email && runDoc.lockedBy && runDoc.lockedBy !== user.email) {
+          this.toast.show(`Quyền chỉnh sửa mẻ này đã bị giành bởi ${runDoc.lockedByName || 'người dùng khác'}. Trạng thái của bạn chuyển về Chỉ xem.`, 'warning');
+          
+          // Lưu backup cục bộ phần thay đổi chưa kịp lưu
+          if (this.draft()) {
+            try {
+              localStorage.setItem(`backup_draft_${user.email}_${this.requestId}`, JSON.stringify(this.draft()));
+              console.log('[Locking] Unsaved changes backed up to localStorage');
+            } catch (e) {
+              console.warn('[Locking] Local backup write failed', e);
+            }
+          }
+        }
+
+        this.previousLockedBy = runDoc.lockedBy || null;
         this.run.set(runDoc);
         
         const sopObj = this.state.sops().find((s: any) => s.id === runDoc.sopId) || null;
@@ -210,6 +282,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           // Cập nhật draft signal thời gian thực
           this.draft.set(draftDoc);
+        }
+
+        // Tự động giành khóa khi vào mẻ tự do
+        if (user && !runDoc.lockedBy && runDoc.status !== 'completed') {
+          await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
         }
       }
       this.isLoading.set(false);
@@ -235,6 +312,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
     if (this.autoSaveSub) {
       this.autoSaveSub.unsubscribe();
+    }
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+    
+    // Giải phóng khóa khi thoát trang nếu mình là người giữ khóa
+    const r = this.run();
+    const user = this.auth.currentUser();
+    if (r && user && r.lockedBy === user.email) {
+      this.resultService.releaseLock(this.requestId);
     }
   }
 
@@ -476,6 +563,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Giành quyền chỉnh sửa mẻ chạy (Take Over)
+   */
+  async takeOverLock() {
+    const user = this.auth.currentUser();
+    const run = this.run();
+    if (!user || !run) return;
+    
+    const confirmed = confirm(
+      `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem. Dữ liệu chưa lưu của họ có thể bị mất.`
+    );
+    if (confirmed) {
+      this.isLoading.set(true);
+      await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+      this.isLoading.set(false);
+      this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
+    }
+  }
+
+  /**
    * Phục hồi bản in trước đó (Fallback backup)
    */
   async restoreBackup() {
@@ -538,6 +644,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.isPublishing.set(true);
 
     try {
+      this.autoSaveStatus.set('saving');
+      const saveSuccess = await this.resultService.saveDraft(this.requestId, currentDraft, true);
+      if (!saveSuccess) {
+        this.toast.show('Không thể lưu dữ liệu nháp mới nhất trước khi tạo PDF!', 'error');
+        this.isPublishing.set(false);
+        this.autoSaveStatus.set('modified');
+        return;
+      }
+      this.autoSaveStatus.set('synced');
+
       const activeFilter = this.activeFilter();
       const prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
       const key = this.configKey();

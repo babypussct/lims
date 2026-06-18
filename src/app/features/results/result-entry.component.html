@@ -252,6 +252,33 @@
         </div>
       </div>
     } @else if (run() && draft() && config()) {
+      <!-- Locking warning banner (Optimized Option A) -->
+      @if (lockedByOthers()) {
+        <div class="bg-red-50/50 dark:bg-red-950/20 border border-red-200/40 dark:border-red-900/30 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-200/20 shrink-0">
+              <i class="fa-solid fa-lock text-base"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-black uppercase tracking-wider text-red-800 dark:text-red-400">Chỉ xem — Mẻ chạy đang bị khóa chỉnh sửa</h4>
+              <p class="text-[11px] text-red-650 dark:text-red-300 font-semibold mt-1">
+                KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ chạy này từ lúc <strong>{{ run()?.lockedAt?.toDate() | date: 'HH:mm dd/MM/yyyy' }}</strong>.
+                <br>
+                <span class="text-[10px] text-red-500 dark:text-red-400 flex items-center gap-1.5 mt-1">
+                  <i class="fa-solid fa-clock-pulse animate-pulse"></i> Hoạt động cuối: <strong>{{ run()?.lastActiveAt?.toDate() | date: 'HH:mm:ss' }}</strong>
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          <button (click)="takeOverLock()"
+                  class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-red-500/10">
+            <i class="fa-solid fa-unlock-keyhole"></i>
+            <span>Giành quyền chỉnh sửa</span>
+          </button>
+        </div>
+      }
+
       <!-- Run Metadata Info Banner -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 overflow-hidden transition-all duration-300">
         <!-- Header Section (Clickable to Toggle) -->
@@ -395,53 +422,69 @@
         @if (ENABLE_MODULAR_SOPS) {
           @switch (configKey()) {
             @case ('chlor-huu-co') {
-              <app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-nhom-lan-huu-co-gc-msms-copy-1768036876719-entry>
+              </div>
             }
             @case ('lan-huu-co') {
-              <app-sop-lan-huu-co-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-lan-huu-co-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-lan-huu-co-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-lan-huu-co-entry>
+              </div>
             }
             @case ('nhom-cuc') {
-              <app-sop-1767856825928-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-1767856825928-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-1767856825928-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-1767856825928-entry>
+              </div>
             }
             @case ('tbvtv-trong-nuoc-gcmsms') {
-              <app-sop-tbvtv-trong-nuoc-gcmsms-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-tbvtv-trong-nuoc-gcmsms-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-tbvtv-trong-nuoc-gcmsms-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-tbvtv-trong-nuoc-gcmsms-entry>
+              </div>
             }
             @default {
-              <app-result-entry-type3b 
-                [run]="filteredRun()!" 
-                [draft]="draft()!" 
-                [config]="config()!" 
-                (draftChanged)="onDraftChanged($event)">
-              </app-result-entry-type3b>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-result-entry-type3b 
+                  [run]="filteredRun()!" 
+                  [draft]="draft()!" 
+                  [config]="config()!" 
+                  (draftChanged)="onDraftChanged($event)">
+                </app-result-entry-type3b>
+              </div>
             }
           }
         } @else {
-          <app-result-entry-type3b 
-            [run]="filteredRun()!" 
-            [draft]="draft()!" 
-            [config]="config()!" 
-            (draftChanged)="onDraftChanged($event)">
-          </app-result-entry-type3b>
+          <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+            <app-result-entry-type3b 
+              [run]="filteredRun()!" 
+              [draft]="draft()!" 
+              [config]="config()!" 
+              (draftChanged)="onDraftChanged($event)">
+            </app-result-entry-type3b>
+          </div>
         }
       } 
       <!-- Render Type 2 / 3A Component (Grid spreadsheet) -->
@@ -450,12 +493,14 @@
           <!-- New Modular Strategy Pattern rendering -->
           @switch (configKey()) {
             @case ('fipronil-chlorpyrifos') {
-              <app-sop-01-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-01-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-01-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-01-entry>
+              </div>
             }
             @case ('dichlorvos-gcms') {
               <app-sop-1767857760184-entry
@@ -463,46 +508,55 @@
                 [run]="filteredRun()!"
                 [draft]="draft()!"
                 [config]="config()!"
+                [isReadOnly]="isReadOnly()"
                 (draftChanged)="onDraftChanged($event)">
               </app-sop-1767857760184-entry>
             }
             @case ('chloroform-gcms') {
-              <app-sop-chloroform-entry
-                [activeFilter]="activeFilter()"
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-chloroform-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-chloroform-entry
+                  [activeFilter]="activeFilter()"
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-chloroform-entry>
+              </div>
             }
             @case ('trifluralin-gcms') {
-              <app-sop-03-entry
-                #sop03Grid
-                [activeFilter]="activeFilter()"
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-03-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-03-entry
+                  #sop03Grid
+                  [activeFilter]="activeFilter()"
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-03-entry>
+              </div>
             }
             @default {
-              <app-sop-default-type2-entry
-                [run]="filteredRun()!"
-                [draft]="draft()!"
-                [config]="config()!"
-                (draftChanged)="onDraftChanged($event)">
-              </app-sop-default-type2-entry>
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-default-type2-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-default-type2-entry>
+              </div>
             }
           }
         } @else {
           <!-- Fallback to Legacy Monolithic Type 2 Grid -->
-          <app-result-entry-type2 
-            #type2Grid
-            [run]="filteredRun()!" 
-            [draft]="draft()!" 
-            [config]="config()!" 
-            (draftChanged)="onDraftChanged($event)">
-          </app-result-entry-type2>
+          <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+            <app-result-entry-type2 
+              #type2Grid
+              [run]="filteredRun()!" 
+              [draft]="draft()!" 
+              [config]="config()!" 
+              (draftChanged)="onDraftChanged($event)">
+            </app-result-entry-type2>
+          </div>
         }
       }
     } @else {

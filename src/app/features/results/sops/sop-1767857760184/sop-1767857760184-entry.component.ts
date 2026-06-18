@@ -1,12 +1,10 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
+import { Component, Input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
-import { MasterTargetService } from '../../../targets/master-target.service';
-import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
+import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
-import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
 
 @Component({
   selector: 'app-sop-1767857760184-entry',
@@ -14,30 +12,18 @@ import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/
   imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
   templateUrl: './sop-1767857760184-entry.component.html'
 })
-export class Sop1767857760184EntryComponent implements OnInit {
-  @Input() run!: any;
-  @Input() draft!: AnalysisResultDraft;
-  @Input() config!: any;
+export class Sop1767857760184EntryComponent extends AbstractSopEntry implements OnInit {
   @Input() activeFilter: string = 'ALL';
-  @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
-  private masterTargetService = inject(MasterTargetService);
-  masterTargets = signal<any[]>([]);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
-
-  // Bulk vial properties
-  bulkVialStart = 1;
-  bulkVialEnd = 1;
-  bulkCalibVialStart = 1;
-  bulkCalibVialEnd = 6;
 
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
     const totalCount = regularSamples.length;
     const selectedCount = regularSamples.filter((s: string) => this.draft.resultData[s]?.['selected'] !== false).length;
     
-    // Fill progress (leaving blank means ND, which is a completed result)
+    // Fill progress
     let filledCount = 0;
     regularSamples.forEach((s: string) => {
       const row = this.draft.resultData[s];
@@ -76,13 +62,9 @@ export class Sop1767857760184EntryComponent implements OnInit {
     };
   }
 
-  async ngOnInit() {
-    try {
-      const analytes = await this.masterTargetService.getAll();
-      this.masterTargets.set(analytes);
-    } catch (e) {
-      console.warn('Failed to load master analytes', e);
-    }
+  override async ngOnInit() {
+    // Gọi OnInit của lớp cha để tải master targets và thiết lập cấu trúc cơ bản
+    await super.ngOnInit();
 
     const cols = Object.keys(this.config.columns || {});
     this.activeColumns = cols.filter((c: string) => c !== 'loSo' && c !== 'maSoMau' && c !== 'ghiChu');
@@ -201,73 +183,6 @@ export class Sop1767857760184EntryComponent implements OnInit {
     this.onBulkVialStartChange();
   }
 
-  onBulkVialStartChange() {
-    const start = parseInt(String(this.bulkVialStart), 10);
-    if (!isNaN(start)) {
-      const count = this.getVisibleRegularSamples().length;
-      this.bulkVialEnd = start + Math.max(0, count - 1);
-    }
-  }
-
-  onBulkCalibVialStartChange() {
-    const start = parseInt(String(this.bulkCalibVialStart), 10);
-    if (!isNaN(start)) {
-      const isMSMS = this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS';
-      this.bulkCalibVialEnd = start + (isMSMS ? 4 : 5);
-    }
-  }
-
-  applyCalibVials() {
-    const start = parseInt(String(this.bulkCalibVialStart), 10);
-    if (isNaN(start)) return;
-    const calibPoints = this.draft.page1Data['calibPoints'];
-    if (calibPoints && calibPoints.length > 0) {
-      calibPoints.forEach((pt: any, idx: number) => {
-        pt['loSo'] = String(start + idx);
-      });
-      this.syncSpreadsheetVialsFromCalibration();
-      this.onDataChanged();
-    }
-  }
-
-  syncSpreadsheetVialsFromCalibration() {
-    const calibPoints = this.draft.page1Data['calibPoints'];
-    if (!calibPoints || calibPoints.length === 0) return;
-    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
-    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
-    if (isNaN(lastCalibVial)) return;
-
-    const isMSMS = this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS';
-    const blankDiff = isMSMS ? 2 : 1;
-    const spikeDiff = isMSMS ? 3 : 2;
-
-    if (this.draft.resultData['QC_BLANK']) {
-      this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + blankDiff);
-    }
-    if (this.draft.resultData['QC_SPIKE']) {
-      this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + spikeDiff);
-    }
-    
-    const regularSamples = this.getVisibleRegularSamples();
-    regularSamples.forEach((sampleCode: string, idx: number) => {
-      if (this.draft.resultData[sampleCode]) {
-        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + spikeDiff + 1 + idx);
-      }
-    });
-
-    if (this.draft.resultData['QC_FINAL']) {
-      this.draft.resultData['QC_FINAL']['loSo'] = String(lastCalibVial + spikeDiff);
-    }
-
-    this.bulkVialStart = lastCalibVial + spikeDiff + 1;
-    this.onBulkVialStartChange();
-  }
-
-  onCalibrationPointsChanged() {
-    this.syncSpreadsheetVialsFromCalibration();
-    this.onDataChanged();
-  }
-
   getVisibleRegularSamples(): string[] {
     return this.run.sampleList || [];
   }
@@ -286,25 +201,6 @@ export class Sop1767857760184EntryComponent implements OnInit {
         this.draft.resultData[s] = {};
       }
       this.draft.resultData[s]['selected'] = checked;
-    });
-    this.onDataChanged();
-  }
-
-  applyBulkVials() {
-    const start = parseInt(String(this.bulkVialStart), 10);
-    const end = parseInt(String(this.bulkVialEnd), 10);
-    if (isNaN(start) || isNaN(end) || start > end) {
-      return;
-    }
-    const visible = this.getVisibleRegularSamples();
-    visible.forEach((sample: string, idx: number) => {
-      const val = start + idx;
-      if (val <= end) {
-        if (!this.draft.resultData[sample]) {
-          this.draft.resultData[sample] = { selected: true };
-        }
-        this.draft.resultData[sample]['loSo'] = String(val);
-      }
     });
     this.onDataChanged();
   }
@@ -374,10 +270,6 @@ export class Sop1767857760184EntryComponent implements OnInit {
     return this.formatColumnName(colKey);
   }
 
-  getCompoundDisplayName(compound: string): string {
-    return resolveCompoundDisplayName(compound, this.masterTargets(), this.config?.id || this.run?.sopId);
-  }
-
   formatColumnName(colKey: string): string {
     let name = colKey.replace(/^kq/, '');
     name = name.replace(/([A-Z])/g, ' $1').trim();
@@ -412,7 +304,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
     this.onDataChanged();
   }
 
-  onDataChanged() {
+  override onDataChanged() {
     // Sync FINAL vial, weight and dilution from SPIKE
     if (this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';

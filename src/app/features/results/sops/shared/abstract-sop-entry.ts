@@ -51,6 +51,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() isReadOnly = false;
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
   // ── Dependencies ──────────────────────────────────────────────────────────
