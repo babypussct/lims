@@ -31,6 +31,8 @@ export class Sop03EntryComponent implements OnInit {
   // Bulk vial properties
   bulkVialStart = 1;
   bulkVialEnd = 1;
+  bulkCalibVialStart = 41;
+  bulkCalibVialEnd = 46;
 
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
@@ -175,6 +177,15 @@ export class Sop03EntryComponent implements OnInit {
       }
     });
 
+    const calPoints = this.draft.page1Data['calibPoints'];
+    if (calPoints && calPoints.length > 0) {
+      this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || 41;
+    } else {
+      this.bulkCalibVialStart = 41;
+    }
+    this.onBulkCalibVialStartChange();
+    this.syncSpreadsheetVialsFromCalibration();
+
     this.onBulkVialStartChange();
   }
 
@@ -184,6 +195,71 @@ export class Sop03EntryComponent implements OnInit {
       const count = this.getVisibleRegularSamples().length;
       this.bulkVialEnd = start + Math.max(0, count - 1);
     }
+  }
+
+  onBulkCalibVialStartChange() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (!isNaN(start)) {
+      this.bulkCalibVialEnd = start + 5;
+    }
+  }
+
+  applyCalibVials() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (isNaN(start)) return;
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (calibPoints && calibPoints.length > 0) {
+      calibPoints.forEach((pt: any, idx: number) => {
+        pt['loSo'] = String(start + idx);
+      });
+      this.syncSpreadsheetVialsFromCalibration();
+      this.onDataChanged();
+    }
+  }
+
+  syncSpreadsheetVialsFromCalibration() {
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (!calibPoints || calibPoints.length === 0) return;
+    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
+    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    if (isNaN(lastCalibVial)) return;
+
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + 1);
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + 2);
+    }
+    
+    const regularSamples = this.getVisibleRegularSamples();
+    regularSamples.forEach((sampleCode: string, idx: number) => {
+      if (this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + 3 + idx);
+      }
+    });
+
+    const prefixes = new Set<string>();
+    (this.run.sampleList || []).forEach((sample: string) => {
+      const startsWithLetter = /^[a-zA-Z]/.test(sample);
+      const prefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
+      prefixes.add(prefix);
+    });
+    prefixes.add('');
+
+    prefixes.forEach(p => {
+      const key = `QC_FINAL_QC_${p}`;
+      if (this.draft.resultData[key]) {
+        this.draft.resultData[key]['loSo'] = String(lastCalibVial + 2);
+      }
+    });
+
+    this.bulkVialStart = lastCalibVial + 3;
+    this.onBulkVialStartChange();
+  }
+
+  onCalibrationPointsChanged() {
+    this.syncSpreadsheetVialsFromCalibration();
+    this.onDataChanged();
   }
 
   getVisibleRegularSamples(): string[] {

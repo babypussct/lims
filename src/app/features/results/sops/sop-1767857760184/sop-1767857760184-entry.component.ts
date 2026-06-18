@@ -29,6 +29,8 @@ export class Sop1767857760184EntryComponent implements OnInit {
   // Bulk vial properties
   bulkVialStart = 1;
   bulkVialEnd = 1;
+  bulkCalibVialStart = 1;
+  bulkCalibVialEnd = 6;
 
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
@@ -186,6 +188,16 @@ export class Sop1767857760184EntryComponent implements OnInit {
       this.onDataChanged();
     }
 
+    const method = this.draft.page1Data['dichlorvosMethod'] || 'GC/MS';
+    const calPoints = this.draft.page1Data['calibPoints'];
+    if (calPoints && calPoints.length > 0) {
+      this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || (method === 'GC/MSMS' ? 1 : 51);
+    } else {
+      this.bulkCalibVialStart = method === 'GC/MSMS' ? 1 : 51;
+    }
+    this.onBulkCalibVialStartChange();
+    this.syncSpreadsheetVialsFromCalibration();
+
     this.onBulkVialStartChange();
   }
 
@@ -195,6 +207,65 @@ export class Sop1767857760184EntryComponent implements OnInit {
       const count = this.getVisibleRegularSamples().length;
       this.bulkVialEnd = start + Math.max(0, count - 1);
     }
+  }
+
+  onBulkCalibVialStartChange() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (!isNaN(start)) {
+      const isMSMS = this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS';
+      this.bulkCalibVialEnd = start + (isMSMS ? 4 : 5);
+    }
+  }
+
+  applyCalibVials() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (isNaN(start)) return;
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (calibPoints && calibPoints.length > 0) {
+      calibPoints.forEach((pt: any, idx: number) => {
+        pt['loSo'] = String(start + idx);
+      });
+      this.syncSpreadsheetVialsFromCalibration();
+      this.onDataChanged();
+    }
+  }
+
+  syncSpreadsheetVialsFromCalibration() {
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (!calibPoints || calibPoints.length === 0) return;
+    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
+    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    if (isNaN(lastCalibVial)) return;
+
+    const isMSMS = this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS';
+    const blankDiff = isMSMS ? 2 : 1;
+    const spikeDiff = isMSMS ? 3 : 2;
+
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + blankDiff);
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + spikeDiff);
+    }
+    
+    const regularSamples = this.getVisibleRegularSamples();
+    regularSamples.forEach((sampleCode: string, idx: number) => {
+      if (this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + spikeDiff + 1 + idx);
+      }
+    });
+
+    if (this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = String(lastCalibVial + spikeDiff);
+    }
+
+    this.bulkVialStart = lastCalibVial + spikeDiff + 1;
+    this.onBulkVialStartChange();
+  }
+
+  onCalibrationPointsChanged() {
+    this.syncSpreadsheetVialsFromCalibration();
+    this.onDataChanged();
   }
 
   getVisibleRegularSamples(): string[] {
@@ -252,7 +323,8 @@ export class Sop1767857760184EntryComponent implements OnInit {
         { loSo: '55', hamLuong: '30' },
         { loSo: '56', hamLuong: '40' }
       ];
-      this.bulkVialStart = 1;
+      this.bulkVialStart = 59;
+      this.bulkCalibVialStart = 51;
       
       // Update vials for QC rows directly in resultData
       if (this.draft.resultData['QC_BLANK']) this.draft.resultData['QC_BLANK']['loSo'] = '57';
@@ -267,6 +339,7 @@ export class Sop1767857760184EntryComponent implements OnInit {
         { loSo: '5', hamLuong: '50' }
       ];
       this.bulkVialStart = 9;
+      this.bulkCalibVialStart = 1;
       
       // Update vials for QC rows directly in resultData
       if (this.draft.resultData['QC_BLANK']) this.draft.resultData['QC_BLANK']['loSo'] = '7';
@@ -274,7 +347,8 @@ export class Sop1767857760184EntryComponent implements OnInit {
       if (this.draft.resultData['QC_FINAL']) this.draft.resultData['QC_FINAL']['loSo'] = '8';
     }
     
-    this.onBulkVialStartChange();
+    this.onBulkCalibVialStartChange();
+    this.syncSpreadsheetVialsFromCalibration();
     this.onDataChanged();
   }
 

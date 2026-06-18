@@ -403,10 +403,32 @@
 
     <!-- 1. Calibration Curve Parameters -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-      <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-        <i class="fa-solid fa-chart-line mr-2 text-violet-500 text-sm"></i>
-        Khai báo Đường chuẩn & QC sắc ký
-      </h4>
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-chart-line mr-2 text-violet-500 text-sm"></i>
+          Khai báo Đường chuẩn & QC sắc ký
+        </h4>
+        <!-- Quick Vial input for Calibration -->
+        <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
+          <span class="font-bold text-slate-550 dark:text-slate-400">Vial chuẩn:</span>
+          <input type="number" 
+                 [(ngModel)]="bulkCalibVialStart" 
+                 (ngModelChange)="onBulkCalibVialStartChange()"
+                 placeholder="Bắt đầu" 
+                 class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+          <span class="text-slate-400">-</span>
+          <input type="number" 
+                 [ngModel]="bulkCalibVialEnd" 
+                 readonly
+                 placeholder="Kết thúc" 
+                 class="w-14 bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/40 rounded px-1.5 py-0.5 text-center text-slate-455 dark:text-slate-500 font-bold outline-none cursor-not-allowed">
+          <button (click)="applyCalibVials()" 
+                  class="px-2.5 py-1 bg-violet-650 hover:bg-violet-750 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+            <i class="fa-solid fa-check"></i>
+            <span>Áp dụng</span>
+          </button>
+        </div>
+      </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left Side: R^2, Blank Name, Spike Name, QC FINAL -->
@@ -462,7 +484,7 @@
             pointPrefix="Chuẩn C"
             [isSuffixVisible]="false"
             [isFuchsiaRing]="false"
-            (pointsChanged)="onDataChanged()">
+            (pointsChanged)="onBulkCalibPointsChanged()">
           </app-sop-calibration-points>
         </div>
       </div>
@@ -485,6 +507,26 @@
               <option [value]="c">{{ compoundDisplayNames()[c] || c }}</option>
             }
           </select>
+
+          <!-- Quick Vial Input for samples -->
+          <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
+            <span class="font-bold text-slate-550 dark:text-slate-400">Lọ số:</span>
+            <input type="number" 
+                   [(ngModel)]="bulkVialStart" 
+                   (ngModelChange)="onBulkVialStartChange()"
+                   placeholder="Bắt đầu" 
+                   class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+            <span class="text-slate-400">-</span>
+            <input type="number" 
+                   [(ngModel)]="bulkVialEnd" 
+                   placeholder="Kết thúc" 
+                   class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-violet-500 outline-none">
+            <button (click)="applyBulkVials()" 
+                    class="px-2.5 py-1 bg-violet-650 hover:bg-violet-750 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+              <i class="fa-solid fa-check"></i>
+              <span>Áp dụng</span>
+            </button>
+          </div>
 
           <button (click)="bulkFillNDFormDon()" 
                   class="px-2 py-1 bg-slate-50 dark:bg-slate-955 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200/60 dark:border-slate-800 hover:border-amber-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
@@ -530,8 +572,9 @@
                   <input type="text"
                          [(ngModel)]="draft.resultData[row.key]['khoiLuong']"
                          (ngModelChange)="onDataChanged()"
+                         [disabled]="row.key === 'QC_FINAL'"
                          (focus)="$any($event.target).select()"
-                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
+                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                 </td>
 
                 <!-- Dilution (heSoPhaLoang / hSoPhaLoang) -->
@@ -539,8 +582,9 @@
                   <input type="text"
                          [(ngModel)]="draft.resultData[row.key]['heSoPhaLoang']"
                          (ngModelChange)="syncDilution(row.key)"
+                         [disabled]="row.key === 'QC_FINAL'"
                          (focus)="$any($event.target).select()"
-                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
+                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                 </td>
 
                 <!-- Vial Number (loSo) -->
@@ -548,8 +592,9 @@
                   <input type="text"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
                          (ngModelChange)="onDataChanged()"
+                         [disabled]="row.key === 'QC_FINAL'"
                          (focus)="$any($event.target).select()"
-                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition">
+                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-mono font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-violet-500 outline-none transition disabled:opacity-75 disabled:cursor-not-allowed">
                 </td>
 
                 <!-- Kết quả (ng/g) -->

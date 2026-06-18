@@ -151,6 +151,7 @@ export class SopChloroformEntryComponent implements OnInit {
 
     this.onBulkVialStartChange();
     this.onBulkCalibVialStartChange();
+    this.syncSpreadsheetVialsFromCalibration();
     this.updateChloroformRecovery('QC_SPIKE');
     this.updateChloroformRecovery('QC_FINAL');
   }
@@ -178,8 +179,51 @@ export class SopChloroformEntryComponent implements OnInit {
       calibPoints.forEach((pt: any, idx: number) => {
         pt['loSo'] = String(start + idx);
       });
+      this.syncSpreadsheetVialsFromCalibration();
       this.onDataChanged();
     }
+  }
+
+  syncSpreadsheetVialsFromCalibration() {
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (!calibPoints || calibPoints.length < 6) return;
+    
+    // Lấy lọ số của điểm chuẩn cuối cùng (C5 ở index 5)
+    const lastCalibVialStr = calibPoints[5]?.loSo;
+    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    if (isNaN(lastCalibVial)) return;
+
+    // Cập nhật QC_BLANK
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + 1);
+    }
+
+    // Cập nhật QC_SPIKE
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + 2);
+    }
+
+    // Cập nhật các mẫu thử thông thường
+    const regularSamples = this.getVisibleRegularSamples();
+    regularSamples.forEach((sampleCode: string, idx: number) => {
+      if (this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + 3 + idx);
+      }
+    });
+
+    // Cập nhật QC_FINAL (đồng bộ từ QC_SPIKE)
+    if (this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = String(lastCalibVial + 2);
+    }
+
+    // Cập nhật bulkVialStart và bulkVialEnd để đồng bộ
+    this.bulkVialStart = lastCalibVial + 3;
+    this.onBulkVialStartChange();
+  }
+
+  onCalibrationPointsChanged() {
+    this.syncSpreadsheetVialsFromCalibration();
+    this.onDataChanged();
   }
 
   updateChloroformRecovery(key: string) {

@@ -62,6 +62,12 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   activeSampleCode = signal<string>('');
   checkboxList: { key: string; label: string }[] = [];
 
+  // ── Bulk Vial State ───────────────────────────────────────────────────────
+  bulkCalibVialStart = 1;
+  bulkCalibVialEnd = 5;
+  bulkVialStart = 9;
+  bulkVialEnd = 9;
+
   // ── Computed ──────────────────────────────────────────────────────────────
   /** Danh sách hoạt chất được giao cho ít nhất 1 mẫu (dùng cho Form Đơn) */
   assignedCompoundsForFormDon = computed(() => {
@@ -122,6 +128,18 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
     // 9. Hook cho SOP đặc thù (override trong subclass nếu cần)
     this.onSopSpecificInit?.();
+
+    // 9.5 Khởi tạo bulk vial start cho đường chuẩn và mẫu thử nếu chạy Form Đơn
+    if (this.draft.page1Data['printFormType'] === 'formDon') {
+      const calPoints = this.draft.page1Data['calibPoints'];
+      if (calPoints && calPoints.length > 0) {
+        this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || 1;
+      } else {
+        this.bulkCalibVialStart = 1;
+      }
+      this.onBulkCalibVialStartChange();
+      this.syncSpreadsheetVialsFromCalibration();
+    }
 
     // 10. Load master analytes từ Firestore (async — thực hiện sau các init đồng bộ)
     await this.loadMasterAnalytes();
@@ -513,6 +531,87 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     this.draftChanged.emit(this.draft);
   }
 
+  onBulkCalibVialStartChange() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (!isNaN(start)) {
+      const calibPoints = this.draft.page1Data['calibPoints'];
+      const count = calibPoints ? calibPoints.length : 5;
+      this.bulkCalibVialEnd = start + Math.max(0, count - 1);
+    }
+  }
+
+  applyCalibVials() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (isNaN(start)) return;
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (calibPoints && calibPoints.length > 0) {
+      calibPoints.forEach((pt: any, idx: number) => {
+        pt['loSo'] = String(start + idx);
+      });
+      this.syncSpreadsheetVialsFromCalibration();
+      this.onDataChanged();
+    }
+  }
+
+  syncSpreadsheetVialsFromCalibration() {
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (!calibPoints || calibPoints.length === 0) return;
+    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
+    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    if (isNaN(lastCalibVial)) return;
+
+    const len = calibPoints.length;
+    const blankDiff = len === 5 ? 2 : 1;
+    const spikeDiff = len === 5 ? 3 : 2;
+
+    if (this.draft.resultData['QC_BLANK']) {
+      this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + blankDiff);
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + spikeDiff);
+    }
+
+    const regularSamples = this.run?.sampleList || [];
+    regularSamples.forEach((sampleCode: string, idx: number) => {
+      if (this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + spikeDiff + 1 + idx);
+      }
+    });
+
+    if (this.draft.resultData['QC_FINAL']) {
+      this.draft.resultData['QC_FINAL']['loSo'] = String(lastCalibVial + spikeDiff);
+    }
+
+    this.bulkVialStart = lastCalibVial + spikeDiff + 1;
+    this.onBulkVialStartChange();
+  }
+
+  onBulkCalibPointsChanged() {
+    this.syncSpreadsheetVialsFromCalibration();
+    this.onDataChanged();
+  }
+
+  onBulkVialStartChange() {
+    const start = parseInt(String(this.bulkVialStart), 10);
+    if (!isNaN(start)) {
+      const count = (this.run?.sampleList || []).length;
+      this.bulkVialEnd = start + Math.max(0, count - 1);
+    }
+  }
+
+  applyBulkVials() {
+    const start = parseInt(String(this.bulkVialStart), 10);
+    if (isNaN(start)) return;
+    const regularSamples = this.run?.sampleList || [];
+    regularSamples.forEach((sampleCode: string, idx: number) => {
+      if (this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode]['loSo'] = String(start + idx);
+      }
+    });
+    this.onBulkVialStartChange();
+    this.onDataChanged();
+  }
+
   protected syncFinalFromSpike() {
     const spike = this.draft.resultData['QC_SPIKE'];
     const final = this.draft.resultData['QC_FINAL'];
@@ -759,8 +858,16 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     if (this.draft.resultData['QC_FINAL'])
       this.draft.resultData['QC_FINAL']['loSo'] = defaultSpikeVial;
 
-    if (type === 'formDon' && !this.draft.page1Data['r2']) {
-      this.draft.page1Data['r2'] = '0.999';
+    if (type === 'formDon') {
+      if (!this.draft.page1Data['r2']) {
+        this.draft.page1Data['r2'] = '0.999';
+      }
+      const calPoints = this.draft.page1Data['calibPoints'];
+      if (calPoints && calPoints.length > 0) {
+        this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || 1;
+      }
+      this.onBulkCalibVialStartChange();
+      this.syncSpreadsheetVialsFromCalibration();
     }
 
     this.onSetPrintFormType(type);
