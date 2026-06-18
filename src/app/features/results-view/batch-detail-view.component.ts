@@ -22,53 +22,55 @@ import { MasterTargetService } from '../targets/master-target.service';
   template: `
     <div class="h-full flex flex-col animate-fade-in bg-slate-50/60 dark:bg-slate-900 p-4 lg:p-6 space-y-4 lg:space-y-5">
       
-      <!-- TOP HEADER & METADATA RIBBON -->
-      <div class="flex flex-col gap-4 shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-4 lg:px-5 rounded-3xl shadow-sm">
-        <!-- Header Row -->
+      <!-- TOP HEADER & BREADCRUMBS -->
+      <div class="flex flex-col gap-4 shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-4 lg:p-5 rounded-3xl shadow-sm">
+        <!-- Title and actions row -->
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3.5">
             <button (click)="goBack()" 
-                    class="w-10 h-10 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95 border border-slate-200/50 dark:border-slate-700">
-              <i class="fa-solid fa-arrow-left text-sm"></i>
+                    class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95 border border-slate-200/50 dark:border-slate-700">
+              <i class="fa-solid fa-arrow-left text-xs"></i>
             </button>
             <div>
-              <span class="text-[11px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mb-0.5 flex items-center gap-2">
-                {{ run() ? run().sopName : 'Đang tải...' }}
+              <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+                <span>Kết quả phân tích</span>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-600"></i>
+                <span class="text-indigo-600 dark:text-indigo-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
+              </div>
+              <h3 class="text-lg font-extrabold text-slate-800 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
+                Chi Tiết Kết Quả Mẻ Phân Tích
+                
+                @if (run() && draft() && config()) {
+                  <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border shadow-xs">
+                    <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
+                      'bg-emerald-500': draft()?.status === 'completed',
+                      'bg-indigo-500': draft()?.status === 'draft',
+                      'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
+                    }"></span>
+                    {{ getStatusText() }}
+                  </span>
+                }
+
                 @if (run()?.parentMasterId) {
-                  <a [routerLink]="['/results', run().parentMasterId]" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-sm" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
+                  <a [routerLink]="['/results', run().parentMasterId]" class="px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-955/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-extrabold uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
                     <i class="fa-solid fa-link text-[8px] animate-pulse"></i> Đã gộp Master Ảo
                   </a>
                 }
-              </span>
-              <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
-                Chi Tiết Kết Quả Mẻ Phân Tích
               </h3>
             </div>
           </div>
 
           <!-- Action Buttons -->
-          @if (run() && draft()) {
-            <div class="flex flex-wrap items-center gap-2">
-              @if (detectedPrefixes().length > 1) {
-                <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                  <button (click)="activeFilter.set('ALL')"
-                          [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
-                          class="transition duration-150">
-                    Tất cả
-                  </button>
-                  @for (prefix of detectedPrefixes(); track prefix) {
-                    <button (click)="activeFilter.set(prefix)"
-                            [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-[10px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-xs' : 'px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
-                            class="transition duration-150">
-                      {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
-                    </button>
-                  }
-                </div>
-              }
-
+          @if (run() && draft() && config()) {
+            <div class="flex items-center gap-2 shrink-0">
+              <button (click)="openQrModal()"
+                      class="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition duration-200 active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-qrcode text-indigo-500"></i>
+                <span>Mã QR</span>
+              </button>
 
               <button (click)="goToEditMode()"
-                      class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl shadow-sm transition-all duration-200 active:scale-95 flex items-center gap-2">
+                      class="px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-755 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2">
                 <i class="fa-solid fa-pen-to-square"></i>
                 <span>Chỉnh sửa số liệu</span>
               </button>
@@ -76,57 +78,29 @@ import { MasterTargetService } from '../targets/master-target.service';
           }
         </div>
 
-        <!-- Metadata Ribbon (Horizontal Data) -->
+        <!-- Metadata row -->
         @if (run() && draft() && config()) {
-          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-nowrap overflow-x-auto custom-scrollbar gap-4 pb-2">
+          <div class="pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-barcode text-slate-400 dark:text-slate-600 text-[11px]"></i>
+              <span>Mã mẻ:</span>
+              <span class="font-mono font-bold text-slate-700 dark:text-slate-300 select-all">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
+            </div>
             
-            <!-- Info Cards -->
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
-              <i class="fa-solid fa-barcode text-slate-400"></i>
-              <div>
-                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Mã mẻ</span>
-                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.inputs?.['batchCode'] || run()?.id }}</span>
-              </div>
+            <div class="text-slate-300 dark:text-slate-700 select-none">•</div>
+
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-user-astronaut text-slate-400 dark:text-slate-600 text-[11px]"></i>
+              <span>Phân tích viên:</span>
+              <span class="font-bold text-slate-700 dark:text-slate-300">{{ run()?.user || '—' }}</span>
             </div>
 
+            <div class="text-slate-300 dark:text-slate-700 select-none">•</div>
 
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
-              <i class="fa-solid fa-user-astronaut text-slate-400"></i>
-              <div>
-                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Phân tích viên</span>
-                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.user || '—' }}</span>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
-              <i class="fa-regular fa-calendar text-slate-400"></i>
-              <div>
-                <span class="block text-[9px] font-semibold text-slate-500 uppercase">Ngày PT</span>
-                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
-              </div>
-            </div>
-
-
-            <!-- Status -->
-            <div class="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/30 px-3 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shrink-0">
-              <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border">
-                <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                  'bg-emerald-500': draft()?.status === 'completed',
-                  'bg-indigo-500': draft()?.status === 'draft',
-                  'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
-                }"></span>
-                {{ getStatusText() }}
-              </span>
-            </div>
-
-            <!-- Horizontal Divider -->
-            <div class="w-px bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
-
-            <!-- QR Code Horizontal -->
-            <div class="flex items-center shrink-0 ml-1 cursor-pointer hover:opacity-80 transition-opacity" (click)="openQrModal()" title="Nhấn để phóng to mã QR truy xuất">
-              <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200/60">
-                <canvas #qrCanvas class="w-9 h-9"></canvas>
-              </div>
+            <div class="flex items-center gap-1.5">
+              <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-600 text-[11px]"></i>
+              <span>Ngày phân tích:</span>
+              <span class="font-bold text-slate-700 dark:text-slate-300">{{ run()?.analysisDate ? (run()!.analysisDate | date:'dd/MM/yyyy') : '—' }}</span>
             </div>
           </div>
         }
@@ -141,16 +115,40 @@ import { MasterTargetService } from '../targets/master-target.service';
           </div>
         </div>
       } @else if (run() && draft() && config()) {
-        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden">
+        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[600px]">
           
           <!-- LEFT PANE: CHROMATOGRAPHY GRID (approx 55-60%) -->
           <div class="lg:flex-[6] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
             
             <!-- Header of Grid -->
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0">
-              <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng kết quả chạy
-              </h4>
+              <div class="flex items-center gap-3">
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0">
+                  <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng kết quả chạy
+                </h4>
+                
+                <!-- Prefix filter tabs -->
+                @if (detectedPrefixes().length > 1) {
+                  <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 ml-2">
+                    <button (click)="activeFilter.set('ALL')"
+                            [class]="activeFilter() === 'ALL'
+                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
+                              : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                            class="transition duration-150">
+                      Tất cả
+                    </button>
+                    @for (prefix of detectedPrefixes(); track prefix) {
+                      <button (click)="activeFilter.set(prefix)"
+                              [class]="activeFilter() === prefix
+                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 rounded shadow-xs'
+                                : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                              class="transition duration-150">
+                        {{ prefix === '' ? 'Không tiền tố' : prefix }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
               
               <!-- Sample tabs for 3b -->
               @if (config()?.formType === 'type3b') {
@@ -234,8 +232,8 @@ import { MasterTargetService } from '../targets/master-target.service';
                 <table class="w-full text-sm border-collapse text-left whitespace-nowrap">
                   <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-10 shadow-sm">
-                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">Vial No.</th>
-                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[160px]">Mẫu thử</th>
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700">Vial No.</th>
+                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[160px] sticky left-24 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">Mẫu thử</th>
                       
                       @if (hasColumn('khoiLuong')) {
                         <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">Khối lượng</th>
@@ -256,14 +254,15 @@ import { MasterTargetService } from '../targets/master-target.service';
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     @for (row of getType2DisplayRows(); track row.key) {
                       <tr [ngClass]="{
-                        'bg-indigo-50/30 dark:bg-indigo-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC
-                      }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        'bg-indigo-50/30 dark:bg-indigo-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC,
+                        'bg-white dark:bg-slate-900': !row.isQC
+                      }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
                         
-                        <td class="py-3 px-5 font-mono text-sm text-slate-500 dark:text-slate-400">
+                        <td class="py-3 px-5 font-mono text-sm text-slate-500 dark:text-slate-400 w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80">
                           {{ getRowDataValue(row.key, 'loSo') || '—' }}
                         </td>
                         
-                        <td class="py-3 px-5">
+                        <td class="py-3 px-5 sticky left-24 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">
                           @if (row.isQC) {
                             <span class="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wide">
                               <i class="fa-solid fa-flask text-xs"></i> {{ row.label }}
@@ -306,7 +305,7 @@ import { MasterTargetService } from '../targets/master-target.service';
           </div>
 
           <!-- RIGHT PANE: PDF PREVIEW (approx 40-45%) -->
-          <div class="lg:flex-[4] flex flex-col min-h-[400px] lg:min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden relative">
+          <div class="lg:flex-[4] flex flex-col min-h-[400px] lg:min-h-[600px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden relative">
             
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
               <div class="flex items-center gap-3">
