@@ -787,6 +787,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
+  async triggerUnlockToEdit() {
+    if (this.isProcessing()) return;
+    const confirmed = confirm('Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nSau khi chỉnh sửa xong, lần xuất bản tiếp theo sẽ tạo ra một bản báo cáo phiên bản mới (tăng 1 version) mà không xóa bản cũ.');
+    if (!confirmed) return;
+
+    this.isSavingDraft.set(true);
+    try {
+      const updated = await this.resultService.unlockToEdit(this.requestId);
+      if (updated) {
+        this.draft.set(updated);
+        // Reload lịch sử
+        const hist = await this.resultService.getHistory(this.requestId);
+        this.historyList.set(hist);
+      }
+    } finally {
+      this.isSavingDraft.set(false);
+    }
+  }
+
   // Reset results modal actions
   openResetModal() {
     this.resetConfirmText.set('');

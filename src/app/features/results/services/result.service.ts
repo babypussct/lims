@@ -853,6 +853,47 @@ export class ResultService {
   }
 
   /**
+   * Mở khóa và chỉnh sửa (Chỉ chuyển status về draft, giữ nguyên các trường khác để tăng ver khi xuất bản lại)
+   */
+  async unlockToEdit(requestId: string): Promise<AnalysisResultDraft | null> {
+    try {
+      const currentDraft = await this.getDraft(requestId);
+      if (!currentDraft) {
+        throw new Error('Mẻ chạy không tồn tại!');
+      }
+
+      if (currentDraft.status !== 'completed') {
+        this.toast.show('Mẻ chạy không ở trạng thái hoàn thành!', 'info');
+        return null;
+      }
+
+      const updatedResult: Partial<AnalysisResultDraft> = {
+        status: 'draft'
+      };
+
+      const saved = await this.saveDraft(requestId, updatedResult);
+      if (!saved) {
+        throw new Error('Không thể cập nhật trạng thái nháp của mẻ chạy!');
+      }
+
+      await this.logActivity(
+        'UNLOCK_RESULT_EDIT',
+        `Mở khóa chỉnh sửa mẻ chạy (chuẩn bị tăng phiên bản): ${currentDraft.sopName} (ID: ${requestId})`,
+        requestId,
+        currentDraft.sopId || '',
+        currentDraft.sopName || ''
+      );
+
+      this.toast.show('Đã mở khóa kết quả mẻ chạy để chỉnh sửa!', 'success');
+      return await this.getDraft(requestId);
+    } catch (e: any) {
+      console.error('Error unlocking to edit:', e);
+      this.toast.show('Lỗi mở khóa: ' + e.message, 'error');
+      return null;
+    }
+  }
+
+  /**
    * Xóa sạch kết quả nhập liệu và dọn dẹp toàn bộ file báo cáo cũ trên Drive
    */
   async resetResults(requestId: string): Promise<AnalysisResultDraft | null> {
