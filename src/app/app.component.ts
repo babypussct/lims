@@ -74,17 +74,20 @@ import { filter } from 'rxjs/operators';
                [class.text-red-800]="t.type === 'error'"
                [class.border-l-blue-500]="t.type === 'info'" 
                [class.text-blue-800]="t.type === 'info'"
+               [class.border-l-amber-500]="t.type === 'warning'" 
+               [class.text-amber-800]="t.type === 'warning'"
                [class.border-y-white]="true" 
                [class.border-r-white]="true">
                <div class="flex items-center gap-4">
                   <div class="shrink-0 text-xl">
                      @if(t.type === 'success') { <i class="fa-solid fa-circle-check text-emerald-500"></i> }
                      @else if(t.type === 'error') { <i class="fa-solid fa-circle-xmark text-red-500"></i> }
+                     @else if(t.type === 'warning') { <i class="fa-solid fa-circle-exclamation text-amber-500"></i> }
                      @else { <i class="fa-solid fa-circle-info text-blue-500"></i> }
                   </div>
                   <div class="flex-1">
                       <div class="text-xs font-bold uppercase opacity-60 tracking-wider">
-                         {{ t.type === 'success' ? 'Thành công' : t.type === 'error' ? 'Lỗi' : 'Thông báo' }}
+                         {{ t.type === 'success' ? 'Thành công' : t.type === 'error' ? 'Lỗi' : t.type === 'warning' ? 'Cảnh báo' : 'Thông báo' }}
                       </div>
                       <div class="text-sm font-bold leading-tight">{{t.message}}</div>
                   </div>

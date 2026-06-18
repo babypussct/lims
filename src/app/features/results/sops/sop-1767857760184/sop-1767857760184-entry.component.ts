@@ -248,7 +248,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
     this.onDataChanged();
   }
 
-  onFinalToggled() {
+  override onFinalToggled() {
     if (this.draft.page1Data['hasFinal']) {
       const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS' ? '8' : '58');
       this.draft.resultData['QC_FINAL'] = {

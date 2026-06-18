@@ -20,7 +20,7 @@ import { FormsModule } from '@angular/forms';
                ($index === 3 ? 'border-t-indigo-500 border-slate-200 dark:border-slate-800/80' : 'border-t-purple-500 border-slate-200 dark:border-slate-800/80')))) + 
             ' rounded-2xl p-3 text-center shadow-sm hover:shadow-md transition duration-200'"
             style="content-visibility: auto;">
-            <span [class]="'inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-black mb-1.5 uppercase ' +
+          <span [class]="'inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-black mb-1.5 uppercase ' +
               ($index === 0 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 
                ($index === 1 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' : 
                 ($index === 2 ? 'bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400' : 
@@ -36,6 +36,7 @@ import { FormsModule } from '@angular/forms';
                    (ngModelChange)="onPointsChanged()"
                    (focus)="$any($event.target).select()"
                    placeholder="Vial..."
+                   [disabled]="isReadOnly"
                    [class]="'w-full text-center bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl py-1.5 px-2 text-xs text-slate-800 dark:text-slate-100 font-extrabold focus:ring-2 focus:border-fuchsia-500 transition outline-none shadow-inner ' + 
                      (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
           </div>
@@ -62,6 +63,7 @@ import { FormsModule } from '@angular/forms';
                        (ngModelChange)="onPointsChanged()"
                        (focus)="$any($event.target).select()"
                        placeholder="C..."
+                       [disabled]="isReadOnly"
                        [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 outline-none text-center transition ' +
                          (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
               </div>
@@ -72,6 +74,7 @@ import { FormsModule } from '@angular/forms';
                        (ngModelChange)="onPointsChanged()"
                        (focus)="$any($event.target).select()"
                        placeholder="..."
+                       [disabled]="isReadOnly"
                        [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 outline-none text-center transition ' +
                          (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
               </div>
@@ -82,6 +85,7 @@ import { FormsModule } from '@angular/forms';
                        (ngModelChange)="onPointsChanged()"
                        (focus)="$any($event.target).select()"
                        placeholder="..."
+                       [disabled]="isReadOnly"
                        [class]="'w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 rounded-lg px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 outline-none text-center transition ' +
                          (isFuchsiaRing ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500' : 'focus:ring-violet-500/10 focus:border-violet-500')">
               </div>
@@ -90,7 +94,8 @@ import { FormsModule } from '@angular/forms';
         }
       </div>
     </div>
-  `
+  `,
+  styles: []
 })
 export class SopCalibrationPointsComponent {
   @Input() title: string = 'Các Điểm Đường chuẩn';
@@ -101,6 +106,7 @@ export class SopCalibrationPointsComponent {
   @Input() isSuffixVisible: boolean = true;
   @Input() valLabel: string = 'Hàm lượng';
   @Input() isFuchsiaRing: boolean = true;
+  @Input() isReadOnly: boolean = false;
 
   @Output() pointsChanged = new EventEmitter<any[]>();
 

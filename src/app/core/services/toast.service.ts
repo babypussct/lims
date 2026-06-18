@@ -4,7 +4,7 @@ import { Injectable, signal } from '@angular/core';
 export interface Toast {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   persistent?: boolean; // Không tự đóng, dùng cho thông báo quan trọng
   action?: () => void;  // Hành động khi bấm vào Toast
 }
@@ -13,7 +13,7 @@ export interface Toast {
 export class ToastService {
   toasts = signal<Toast[]>([]);
 
-  show(message: string, type: 'success' | 'error' | 'info' = 'success', persistent = false, action?: () => void) {
+  show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success', persistent = false, action?: () => void) {
     const id = Date.now();
     this.toasts.update(current => [...current, { id, message, type, persistent, action }]);
     if (!persistent) {
