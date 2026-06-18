@@ -39,10 +39,10 @@
     {
       "name": "cyclohexan",
       "_displayName": "Dung môi Cyclohexan (PA)",
-      "formula": "5 * total_n + 6",
+      "formula": "5 * total_n + 37",
       "unit": "ml",
       "type": "simple",
-      "base_note": "5ml/mẫu + 6ml pha đường chuẩn C0-C5"
+      "base_note": "5ml/mẫu + 37ml pha các dung dịch chuẩn từ đầu đến dựng đường chuẩn (20ml pha chuẩn gốc 1mg/mL + 10ml pha chuẩn trung gian 10ug/mL + 0.9ml pha chuẩn trung gian 1000ng/mL + 0.9ml pha chuẩn làm việc 100ng/mL + 5.13ml pha C0-C5 + hao hụt)"
     },
     {
       "name": "psa",
@@ -72,20 +72,12 @@
       "base_note": "Chỉ dùng cho nền Thực phẩm"
     },
     {
-      "name": "chloroform_working_std",
-      "_displayName": "Chuẩn làm việc Chloroform 100 ng/mL",
-      "formula": "870",
-      "unit": "µl",
+      "name": "chloroform_pa_std",
+      "_displayName": "Chất chuẩn Chloroform PA (Gốc)",
+      "formula": "20",
+      "unit": "mg",
       "type": "simple",
-      "base_note": "Pha đường chuẩn làm việc C0-C5 (cố định 870 µL/mẻ)"
-    },
-    {
-      "name": "chloroform_intermediate_std",
-      "_displayName": "Chuẩn trung gian Chloroform 1000 ng/mL (cho QC Spike)",
-      "formula": "loai_mau === 'Thực phẩm' ? 25 * n_qc : 50 * n_qc",
-      "unit": "µl",
-      "type": "simple",
-      "base_note": "Spike LOQ: Thực phẩm dùng 25 µL, Nước sạch dùng 50 µL mỗi mẫu QC"
+      "base_note": "Tiêu hao cố định 20 mg mỗi mẻ để pha mới hoàn toàn dung dịch chuẩn gốc 1 mg/mL"
     }
   ],
   "targets": [

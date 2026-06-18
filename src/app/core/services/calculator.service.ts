@@ -51,11 +51,21 @@ export class CalculatorService {
       safetyConfig?: SafetyConfig
   ): CalculatedItem[] {
     
-    // 1. Prepare Context from Inputs
-    const ctx: Record<string, any> = { ...inputValues };
+    // 1. Prepare Context from Inputs with safe type casting (prevent string concatenation like "1" + "2" = "12")
+    const ctx: Record<string, any> = {};
     sop.inputs.forEach(inp => {
-      if (ctx[inp.var] === undefined) {
-        ctx[inp.var] = inp.default;
+      let val = inputValues[inp.var] !== undefined ? inputValues[inp.var] : inp.default;
+      if (inp.type === 'number') {
+        const num = Number(val);
+        val = isNaN(num) ? 0 : num;
+      }
+      ctx[inp.var] = val;
+    });
+
+    // Copy other fields from inputValues that are not in sop.inputs
+    Object.keys(inputValues).forEach(key => {
+      if (ctx[key] === undefined) {
+        ctx[key] = inputValues[key];
       }
     });
 
