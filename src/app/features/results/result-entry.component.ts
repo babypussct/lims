@@ -82,15 +82,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const user = this.auth.currentUser();
     
     if (d?.status === 'completed') return true;
-    if (r?.lockedBy && user && r.lockedBy !== user.email) return true;
+    if (r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase()) return true;
     return false;
   });
 
   lockedByOthers = computed(() => {
     const r = this.run();
     const user = this.auth.currentUser();
-    return r?.lockedBy && user && r.lockedBy !== user.email;
+    return r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase();
   });
+
+  convertToDate(timestamp: any): Date | null {
+    if (!timestamp) return null;
+    if (timestamp instanceof Date) return timestamp;
+    if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (timestamp.seconds !== undefined) return new Date(timestamp.seconds * 1000);
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return null;
+  }
 
   @HostListener('document:keyup')
   @HostListener('document:click')
@@ -194,6 +203,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.activeFilter.set(prefixes[0]);
       }
     }, { allowSignalWrites: true });
+
+    // Tự động giành khóa một cách phản ứng (Reactive Lock Acquisition)
+    effect(() => {
+      const user = this.auth.currentUser();
+      const runDoc = this.run();
+      if (user && runDoc && !runDoc.lockedBy && runDoc.status !== 'completed') {
+        this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+      }
+    });
   }
 
   ngOnInit() {
@@ -282,11 +300,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           // Cập nhật draft signal thời gian thực
           this.draft.set(draftDoc);
-        }
-
-        // Tự động giành khóa khi vào mẻ tự do
-        if (user && !runDoc.lockedBy && runDoc.status !== 'completed') {
-          await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
         }
       }
       this.isLoading.set(false);

@@ -336,6 +336,11 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             <i class="fa-solid fa-link text-[7px]"></i> Đã gộp
                           </a>
                         }
+                        @if (run.lockedBy) {
+                          <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                            <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
+                          </span>
+                        }
                       </div>
                       <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1">
                         <i class="fa-regular fa-calendar text-[9px]"></i>
@@ -443,6 +448,11 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs">{{ run.sopName }}</span>
                             @if (run.isVirtualMaster) {
                               <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
+                            }
+                            @if (run.lockedBy) {
+                              <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                                <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
+                              </span>
                             }
                           </div>
                           <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id }}</div>
@@ -1330,14 +1340,17 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   getRunDate(run: any): string {
     if (run.analysisDate) return run.analysisDate;
-    if (run.approvedAt?.toDate) {
-      const d = run.approvedAt.toDate();
-      const offset = d.getTimezoneOffset();
-      const local = new Date(d.getTime() - (offset * 60 * 1000));
-      return local.toISOString().split('T')[0];
-    }
-    if (run.timestamp?.toDate) {
-      const d = run.timestamp.toDate();
+    
+    const convert = (ts: any) => {
+      if (!ts) return null;
+      if (ts instanceof Date) return ts;
+      if (typeof ts.toDate === 'function') return ts.toDate();
+      if (ts.seconds !== undefined) return new Date(ts.seconds * 1000);
+      return new Date(ts);
+    };
+
+    const d = convert(run.approvedAt || run.timestamp);
+    if (d && !isNaN(d.getTime())) {
       const offset = d.getTimezoneOffset();
       const local = new Date(d.getTime() - (offset * 60 * 1000));
       return local.toISOString().split('T')[0];

@@ -262,10 +262,10 @@
             <div>
               <h4 class="text-xs font-black uppercase tracking-wider text-red-800 dark:text-red-400">Chỉ xem — Mẻ chạy đang bị khóa chỉnh sửa</h4>
               <p class="text-[11px] text-red-650 dark:text-red-300 font-semibold mt-1">
-                KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ chạy này từ lúc <strong>{{ run()?.lockedAt?.toDate() | date: 'HH:mm dd/MM/yyyy' }}</strong>.
+                KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ chạy này từ lúc <strong>{{ convertToDate(run()?.lockedAt) | date: 'HH:mm dd/MM/yyyy' }}</strong>.
                 <br>
                 <span class="text-[10px] text-red-500 dark:text-red-400 flex items-center gap-1.5 mt-1">
-                  <i class="fa-solid fa-clock-pulse animate-pulse"></i> Hoạt động cuối: <strong>{{ run()?.lastActiveAt?.toDate() | date: 'HH:mm:ss' }}</strong>
+                  <i class="fa-solid fa-clock-pulse animate-pulse"></i> Hoạt động cuối: <strong>{{ convertToDate(run()?.lastActiveAt) | date: 'HH:mm:ss' }}</strong>
                 </span>
               </p>
             </div>
@@ -353,7 +353,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
             <!-- Báo cáo chung (Tất cả mẫu) -->
-            @if (draft()?.pdfUrl || draft()?.pdfViewUrl) {
+            @if (draft()?.pdfUrl || draft()?.pdfViewUrl || draft()?.docsUrl) {
               <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-3.5 hover:shadow-xs transition">
                 <div class="min-w-0">
                   <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
@@ -361,12 +361,10 @@
                   <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ draft()?.updatedBy }}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  @if (draft()?.docsUrl) {
-                    <button (click)="openPdfPreview(draft()?.docsUrl)"
-                       class="px-3 py-2 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
-                      <i class="fa-solid fa-file-word"></i> DOCS (XEM)
-                    </button>
-                  }
+                  <button (click)="openPdfPreview(draft()?.pdfViewUrl || draft()?.pdfUrl || draft()?.docsUrl, draft()?.docsUrl)"
+                     class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-955/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
+                    <i class="fa-solid fa-file-pdf"></i> XEM PDF
+                  </button>
                 </div>
               </div>
             }
@@ -383,10 +381,10 @@
                     <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ getPrefixReport(pref).publishedBy || 'System' }}</span>
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0">
-                    @if (getPrefixReport(pref).docsUrl) {
-                      <button (click)="openPdfPreview(getPrefixReport(pref).docsUrl)"
-                         class="px-3 py-2 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
-                        <i class="fa-solid fa-file-word"></i> DOCS (XEM)
+                    @if (getPrefixReport(pref).pdfViewUrl || getPrefixReport(pref).pdfUrl || getPrefixReport(pref).docsUrl) {
+                      <button (click)="openPdfPreview(getPrefixReport(pref).pdfViewUrl || getPrefixReport(pref).pdfUrl || getPrefixReport(pref).docsUrl, getPrefixReport(pref).docsUrl)"
+                         class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-955/20 dark:hover:bg-red-900/40 dark:text-red-455 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
+                        <i class="fa-solid fa-file-pdf"></i> XEM PDF
                       </button>
                     }
                   </div>
