@@ -277,6 +277,30 @@
             <span>Giành quyền chỉnh sửa</span>
           </button>
         </div>
+      } @else if (draft()?.status === 'completed') {
+        <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/40 dark:border-emerald-900/30 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/20 shrink-0">
+              <i class="fa-solid fa-circle-check text-base"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-400">Đã xuất bản — Mẻ chạy ở chế độ Chỉ xem</h4>
+              <p class="text-[11px] text-emerald-650 dark:text-emerald-300 font-semibold mt-1">
+                Mẻ chạy này đã được xuất bản kết quả hoàn thành. Số liệu hiện đang được khóa để bảo vệ tính toàn vẹn của báo cáo.
+                <br>
+                <span class="text-[10px] text-emerald-500 dark:text-emerald-400 flex items-center gap-1.5 mt-1">
+                  Người duyệt cuối: <strong>{{ draft()?.updatedBy || 'Chưa rõ' }}</strong> lúc <strong>{{ convertToDate(draft()?.updatedAt) | date: 'HH:mm dd/MM/yyyy' }}</strong>
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          <button (click)="triggerRevertToDraft()"
+                  class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
+            <i class="fa-solid fa-unlock"></i>
+            <span>Hủy xuất bản để chỉnh sửa</span>
+          </button>
+        </div>
       }
 
       <!-- Run Metadata Info Banner -->

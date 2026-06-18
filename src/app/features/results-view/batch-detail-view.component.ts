@@ -749,6 +749,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const isTrifluralin = conf.id === 'trifluralin-gcms';
     const isFipronil = conf.id === 'fipronil-chlorpyrifos';
     const isDichlorvos = conf.id === 'dichlorvos-gcms';
+    const isChloroform = conf.id === 'chloroform-gcms';
 
     const list: any[] = [];
 
@@ -791,6 +792,32 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       list.push({ key: 'QC_FINAL', label: 'FINAL', isQC: true });
     } 
     else if (isDichlorvos) {
+      // Blank
+      const blankName = d.page1Data?.['blankName'] || 'Blank';
+      list.push({ key: 'QC_BLANK', label: blankName, isQC: true });
+
+      // Spike
+      const spikeName = d.page1Data?.['spikeName'] || 'Spike';
+      list.push({ key: 'QC_SPIKE', label: spikeName, isQC: true });
+
+      // Regular samples (filtered by activeFilter)
+      const sampleList = r.sampleList || [];
+      const filteredSamples = sampleList.filter((s: string) => {
+        const startsWithLetter = /^[a-zA-Z]/.test(s);
+        const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+        return activeFilter === 'ALL' || prefix === activeFilter;
+      });
+
+      filteredSamples.forEach((sampleCode: string) => {
+        list.push({ key: sampleCode, label: sampleCode, isQC: false });
+      });
+
+      // FINAL (optional)
+      if (d.page1Data?.['hasFinal']) {
+        list.push({ key: 'QC_FINAL', label: 'FINAL', isQC: true });
+      }
+    }
+    else if (isChloroform) {
       // Blank
       const blankName = d.page1Data?.['blankName'] || 'Blank';
       list.push({ key: 'QC_BLANK', label: blankName, isQC: true });
@@ -880,6 +907,18 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
             isQC: true
           });
         }
+      });
+    }
+    else {
+      // General fallback for default Type 2 SOPs: list all regular samples
+      const sampleList = r.sampleList || [];
+      const filteredSamples = sampleList.filter((s: string) => {
+        const startsWithLetter = /^[a-zA-Z]/.test(s);
+        const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+        return activeFilter === 'ALL' || prefix === activeFilter;
+      });
+      filteredSamples.forEach((sampleCode: string) => {
+        list.push({ key: sampleCode, label: sampleCode, isQC: false });
       });
     }
 
