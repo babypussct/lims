@@ -309,8 +309,8 @@ import { MasterTargetService } from '../targets/master-target.service';
             
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
               <div class="flex items-center gap-3">
-                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-                  <i class="fa-solid fa-file-lines mr-2.5 text-blue-500"></i> DOCS PREVIEW
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0">
+                  <i class="fa-solid fa-file-pdf mr-2.5 text-red-500"></i> PDF PREVIEW
                 </h4>
                 
                 @if (availableReports().length > 1 && activeFilter() === 'ALL') {
@@ -324,21 +324,32 @@ import { MasterTargetService } from '../targets/master-target.service';
                 }
               </div>
               
-              @if (safeDocsIframeUrl()) {
-                <button (click)="openPdfInModal(getCurrentDocsUrl()!)" 
-                        class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Mở Docs toàn màn hình (Modal hệ thống)">
-                  <i class="fa-solid fa-expand"></i>
-                </button>
-              }
+              <div class="flex items-center gap-3">
+                @if (getCurrentDocsUrl()) {
+                  <a [href]="getCurrentDocsUrl()" target="_blank" rel="noopener noreferrer"
+                     class="px-2.5 py-1 text-[10px] font-bold text-slate-650 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg border border-slate-200/60 dark:border-slate-700/80 transition flex items-center gap-1.5 no-underline shadow-xs cursor-pointer"
+                     title="Mở Google Docs gốc để xem/chỉnh sửa ở cửa sổ mới">
+                    <i class="fa-solid fa-file-word text-blue-500"></i>
+                    <span>Google Docs</span>
+                  </a>
+                }
+
+                @if (safePdfIframeUrl()) {
+                  <button (click)="openPdfInModal(getCurrentPdfUrl()!)" 
+                          class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Mở PDF toàn màn hình (Modal hệ thống)">
+                    <i class="fa-solid fa-expand"></i>
+                  </button>
+                }
+              </div>
             </div>
 
             <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
-              @if (safeDocsIframeUrl()) {
-                <iframe [src]="safeDocsIframeUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
+              @if (safePdfIframeUrl()) {
+                <iframe [src]="safePdfIframeUrl()" class="w-full h-full border-none absolute inset-0 z-0" allow="autoplay"></iframe>
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
-                  <i class="fa-regular fa-file-lines text-4xl"></i>
-                  <p class="text-sm font-medium">Chưa có Docs Preview nào cho tùy chọn này.</p>
+                  <i class="fa-regular fa-file-pdf text-4xl"></i>
+                  <p class="text-sm font-medium">Chưa có PDF Preview nào cho tùy chọn này.</p>
                 </div>
               }
             </div>
@@ -479,6 +490,16 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   // Safe Docs Iframe url calculated from current filter
   safeDocsIframeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.getCurrentDocsUrl();
+    if (!url) return null;
+
+    // Convert to Google Drive preview embed format
+    const previewUrl = this.getGoogleDrivePreviewUrl(url);
+    return this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+  });
+
+  // Safe PDF Iframe url calculated from current filter
+  safePdfIframeUrl = computed<SafeResourceUrl | null>(() => {
+    const url = this.getCurrentPdfUrl();
     if (!url) return null;
 
     // Convert to Google Drive preview embed format

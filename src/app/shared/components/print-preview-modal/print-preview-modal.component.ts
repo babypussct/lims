@@ -116,6 +116,15 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
                         
                         <!-- Right Side Actions -->
                         <div class="flex items-center gap-2 flex-wrap">
+                            <!-- Google Docs Button -->
+                            @if (printService.docsUrl()) {
+                                <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
+                                   class="px-3.5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer border border-slate-700">
+                                    <i class="fa-solid fa-file-word text-blue-400"></i>
+                                    <span>GOOGLE DOCS</span>
+                                </a>
+                            }
+
                             <!-- Open in New Tab Button -->
                             <a [href]="rawPdfUrl()" target="_blank" rel="noopener noreferrer"
                                class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer">

@@ -37,6 +37,7 @@ export class PrintService {
   // NEW PDF VIEWING STATE
   isPreviewPdfOpen = signal<boolean>(false);
   pdfUrl = signal<string | null>(null);
+  docsUrl = signal<string | null>(null);
   pdfTitle = signal<string>('');
   pdfVersion = signal<number>(1);
   pdfAnalyst = signal<string>('Chưa rõ');
@@ -68,8 +69,9 @@ export class PrintService {
   }
 
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
-  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe') {
+  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
       this.pdfUrl.set(url);
+      this.docsUrl.set(docsUrl || null);
       this.pdfTitle.set(title);
       this.pdfVersion.set(version);
       this.pdfAnalyst.set(analyst);
@@ -102,6 +104,7 @@ export class PrintService {
   closePdfPreview() {
       this.isPreviewPdfOpen.set(false);
       this.pdfUrl.set(null);
+      this.docsUrl.set(null);
       this.onRepublishCallback.set(null);
   }
 

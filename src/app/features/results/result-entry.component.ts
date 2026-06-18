@@ -927,11 +927,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.router.navigate(['/results']);
   }
 
-  openPdfPreview(url: string | null | undefined) {
-    if (!url) return;
+  openPdfPreview(pdfUrl: string | null | undefined, docsUrl?: string | null | undefined) {
+    if (!pdfUrl) return;
     const activeFilter = this.activeFilter();
     const filterName = activeFilter === 'ALL' ? 'Tất cả mẫu' : (activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`);
-    const previewUrl = getGoogleDrivePreviewUrl(url);
+    const previewUrl = getGoogleDrivePreviewUrl(pdfUrl);
+    const docPreviewUrl = docsUrl ? getGoogleDrivePreviewUrl(docsUrl) : undefined;
 
     this.printService.openPdfPreview(
       previewUrl,
@@ -941,7 +942,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.draft()?.updatedAt,
       async () => {
         await this.triggerPublishReport();
-      }
+      },
+      'iframe',
+      docPreviewUrl
     );
   }
 }
