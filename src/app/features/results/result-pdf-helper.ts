@@ -333,6 +333,104 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
   };
 }
 
+export function buildChloroformPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string): any {
+  const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
+  const samplesPayload: any[] = [];
+
+  const getQcRow = (key: string, label: string) => {
+    const resObj = currentDraft.resultData[key] || {};
+    const rowData: Record<string, any> = {
+      loSo: resObj['loSo'] || '',
+      maSoMau: label,
+      ghiChu: resObj['ghiChu'] || ''
+    };
+    Object.keys(currentConf.columns).forEach((col: string) => {
+      if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+        if (col === 'kqChloroform') {
+          let mergedVal = resObj['kqChloroform'] || '';
+          let note = (resObj['ghiChu'] || '').trim();
+          if (note) {
+            if (!note.startsWith('(') || !note.endsWith(')')) {
+              note = `(${note})`;
+            }
+            mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
+          }
+          rowData[col] = mergedVal;
+        } else {
+          const val = resObj[col];
+          rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
+        }
+      }
+    });
+    return rowData;
+  };
+
+  // 1. Blank
+  const blankName = currentDraft.page1Data['blankName'] || 'Blank';
+  samplesPayload.push(getQcRow('QC_BLANK', blankName));
+
+  // 2. Spike
+  const spikeName = currentDraft.page1Data['spikeName'] || 'Spike';
+  samplesPayload.push(getQcRow('QC_SPIKE', spikeName));
+
+  // 3. Regular samples
+  const sampleList = currentRun.sampleList || [];
+  const filteredSamples = sampleList.filter((s: string) => {
+    const resObj = currentDraft.resultData[s] || {};
+    const startsWithLetter = /^[a-zA-Z]/.test(s);
+    const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+    const isSelected = resObj['selected'] !== false;
+    const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+    return isSelected && matchesFilter;
+  });
+
+  filteredSamples.forEach((sampleCode: string) => {
+    const resObj = currentDraft.resultData[sampleCode] || {};
+    const rowData: Record<string, any> = {
+      loSo: resObj['loSo'] || '',
+      maSoMau: sampleCode,
+      ghiChu: resObj['ghiChu'] || ''
+    };
+    Object.keys(currentConf.columns).forEach((col: string) => {
+      if (col !== 'loSo' && col !== 'maSoMau' && col !== 'ghiChu') {
+        if (col === 'kqChloroform') {
+          let mergedVal = resObj['kqChloroform'] || '';
+          let note = (resObj['ghiChu'] || '').trim();
+          if (note) {
+            if (!note.startsWith('(') || !note.endsWith(')')) {
+              note = `(${note})`;
+            }
+            mergedVal = mergedVal ? `${mergedVal} ${note}` : note;
+          }
+          rowData[col] = mergedVal;
+        } else {
+          const val = resObj[col];
+          rowData[col] = (val !== undefined && val !== null && val !== 'N/A') ? val : '';
+        }
+      }
+    });
+    samplesPayload.push(rowData);
+  });
+
+  // 4. FINAL (optional)
+  if (currentDraft.page1Data['hasFinal']) {
+    samplesPayload.push(getQcRow('QC_FINAL', 'FINAL'));
+  }
+
+  return {
+    action: 'generate_pdf',
+    sopId: 'chloroform-gcms',
+    metadata: {
+      ...currentDraft.page1Data,
+      prefix: prefixForReport,
+      ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
+      ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
+      ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate())
+    },
+    samples: samplesPayload
+  };
+}
+
 export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, activeFilter: string, currentConf: any, formatAnalysisDate: (d: string) => string, getRunDate: () => string, masterTargets?: any[]): any {
   const prefixForReport = activeFilter === 'ALL' ? '' : activeFilter;
   const samplesPayload: any[] = [];

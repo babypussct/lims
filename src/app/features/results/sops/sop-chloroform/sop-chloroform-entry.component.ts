@@ -28,6 +28,8 @@ export class SopChloroformEntryComponent implements OnInit {
 
   bulkVialStart = 1;
   bulkVialEnd = 1;
+  bulkCalibVialStart = 1;
+  bulkCalibVialEnd = 6;
 
   async ngOnInit() {
     try {
@@ -148,6 +150,9 @@ export class SopChloroformEntryComponent implements OnInit {
     }
 
     this.onBulkVialStartChange();
+    this.onBulkCalibVialStartChange();
+    this.updateChloroformRecovery('QC_SPIKE');
+    this.updateChloroformRecovery('QC_FINAL');
   }
 
   onBulkVialStartChange() {
@@ -155,6 +160,39 @@ export class SopChloroformEntryComponent implements OnInit {
     if (!isNaN(start)) {
       const count = this.getVisibleRegularSamples().length;
       this.bulkVialEnd = start + Math.max(0, count - 1);
+    }
+  }
+
+  onBulkCalibVialStartChange() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (!isNaN(start)) {
+      this.bulkCalibVialEnd = start + 5;
+    }
+  }
+
+  applyCalibVials() {
+    const start = parseInt(String(this.bulkCalibVialStart), 10);
+    if (isNaN(start)) return;
+    const calibPoints = this.draft.page1Data['calibPoints'];
+    if (calibPoints && calibPoints.length > 0) {
+      calibPoints.forEach((pt: any, idx: number) => {
+        pt['loSo'] = String(start + idx);
+      });
+      this.onDataChanged();
+    }
+  }
+
+  updateChloroformRecovery(key: string) {
+    const row = this.draft.resultData[key];
+    if (!row) return;
+    const val = parseFloat(row['kqChloroform'] || '');
+    if (!isNaN(val)) {
+      const loaiMau = this.draft.page1Data['loai_mau'] || this.run?.inputs?.['loai_mau'] || 'Thực phẩm';
+      const spikeTheoretical = loaiMau === 'Nước sạch' ? 10.0 : 5.0;
+      const rec = ((val / spikeTheoretical) * 100).toFixed(1);
+      row['ghiChu'] = `${rec}%`;
+    } else {
+      row['ghiChu'] = '';
     }
   }
 
@@ -219,6 +257,9 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   onCellChanged(key: string) {
+    if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
+      this.updateChloroformRecovery(key);
+    }
     this.onDataChanged();
   }
 
@@ -245,6 +286,8 @@ export class SopChloroformEntryComponent implements OnInit {
       this.draft.resultData['QC_FINAL']['khoiLuong'] = this.draft.resultData['QC_SPIKE']['khoiLuong'] || '';
       this.draft.resultData['QC_FINAL']['heSoPhaLoang'] = this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] || '';
     }
+    this.updateChloroformRecovery('QC_SPIKE');
+    this.updateChloroformRecovery('QC_FINAL');
     this.draftChanged.emit(this.draft);
   }
 

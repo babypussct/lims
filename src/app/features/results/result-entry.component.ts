@@ -32,7 +32,8 @@ import {
   buildFipronilPdfPayload, 
   buildDichlorvosPdfPayload, 
   buildDefaultSopPdfPayload,
-  buildUnifiedType3bPdfPayload
+  buildUnifiedType3bPdfPayload,
+  buildChloroformPdfPayload
 } from './result-pdf-helper';
 
 @Component({
@@ -588,6 +589,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         );
       } else if (key === 'dichlorvos-gcms') {
         reportPayload = buildDichlorvosPdfPayload(
+          currentDraft,
+          currentRun,
+          activeFilter,
+          currentConf,
+          this.formatAnalysisDate.bind(this),
+          this.getRunDate.bind(this)
+        );
+      } else if (key === 'chloroform-gcms') {
+        reportPayload = buildChloroformPdfPayload(
           currentDraft,
           currentRun,
           activeFilter,
