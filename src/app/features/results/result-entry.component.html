@@ -200,13 +200,13 @@
                   Quản trị mẻ chạy
                 </div>
                 @if (draft()?.status === 'completed') {
-                  <button (click)="closeActionsMenu(); triggerRevertToDraft()" 
+                  <button (click)="closeActionsMenu(); triggerUnlockToEdit()" 
                           [disabled]="isProcessing()"
-                          class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                          class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-955/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
                     <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                      <i class="fa-solid fa-unlock text-amber-500"></i>
+                      <i class="fa-solid fa-unlock-keyhole text-amber-500"></i>
                     </div>
-                    <span>Hủy xuất bản kết quả</span>
+                    <span>Mở khóa và chỉnh sửa</span>
                   </button>
                 }
                 <button (click)="closeActionsMenu(); openResetModal()"

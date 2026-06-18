@@ -768,24 +768,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Hủy xuất bản kết quả (Mở khóa chỉnh sửa)
    */
-  async triggerRevertToDraft() {
-    if (this.isProcessing()) return;
-    const confirmed = confirm('Bạn có chắc chắn muốn hủy xuất bản mẻ này? Bản in hiện tại sẽ được lưu trữ (Archived) và mẻ chạy sẽ quay về trạng thái bản nháp.');
-    if (!confirmed) return;
 
-    this.isSavingDraft.set(true);
-    try {
-      const updated = await this.resultService.revertToDraft(this.requestId);
-      if (updated) {
-        this.draft.set(updated);
-        // Reload lịch sử
-        const hist = await this.resultService.getHistory(this.requestId);
-        this.historyList.set(hist);
-      }
-    } finally {
-      this.isSavingDraft.set(false);
-    }
-  }
 
   async triggerUnlockToEdit() {
     if (this.isProcessing()) return;
