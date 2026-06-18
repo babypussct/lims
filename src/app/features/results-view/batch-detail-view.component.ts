@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 declare let QRious: any;
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { StateService } from '../../core/services/state.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from '../results/services/result.service';
 import { PrintService } from '../../core/services/print.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -70,9 +71,12 @@ import { MasterTargetService } from '../targets/master-target.service';
               </button>
 
               <button (click)="goToEditMode()"
-                      class="px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-755 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2">
-                <i class="fa-solid fa-pen-to-square"></i>
-                <span>Chỉnh sửa số liệu</span>
+                      [class]="lockedByOthers() 
+                        ? 'px-4 py-2 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'
+                        : 'px-4 py-2 text-xs font-black text-white bg-indigo-650 hover:bg-indigo-755 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 flex items-center gap-2 cursor-pointer'"
+                      [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
+                <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()"></i>
+                <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
               </button>
             </div>
           }
@@ -115,6 +119,28 @@ import { MasterTargetService } from '../targets/master-target.service';
           </div>
         </div>
       } @else if (run() && draft() && config()) {
+        <!-- Locking warning banner for View-Only Details -->
+        @if (lockedByOthers()) {
+          <div class="bg-amber-50/50 dark:bg-amber-955/20 border border-amber-200/40 dark:border-amber-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300 shrink-0">
+            <div class="flex items-start gap-3.5">
+              <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/20 shrink-0">
+                <i class="fa-solid fa-lock text-sm animate-pulse"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">Mẻ chạy đang được chỉnh sửa</h4>
+                <p class="text-[11px] text-amber-650 dark:text-amber-300 font-semibold mt-0.5">
+                  KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ này từ lúc <strong>{{ convertToDate(run()?.lockedAt) | date: 'HH:mm dd/MM/yyyy' }}</strong>. Số liệu hiển thị có thể thay đổi liên tục.
+                </p>
+              </div>
+            </div>
+            <button (click)="takeOverLock()"
+                    class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
+              <i class="fa-solid fa-unlock-keyhole"></i>
+              <span>Giành quyền chỉnh sửa</span>
+            </button>
+          </div>
+        }
+
         <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[600px]">
           
           <!-- LEFT PANE: CHROMATOGRAPHY GRID (approx 55-60%) -->
@@ -437,6 +463,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
   private masterTargetService = inject(MasterTargetService);
+  private auth = inject(AuthService);
 
   requestId = '';
   isLoading = signal(true);
@@ -485,6 +512,12 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     });
     
     return Array.from(prefixes).sort();
+  });
+
+  lockedByOthers = computed(() => {
+    const r = this.run();
+    const user = this.auth.currentUser();
+    return r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase();
   });
 
   // Safe Docs Iframe url calculated from current filter
@@ -953,6 +986,32 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       return 'bg-indigo-50 dark:bg-indigo-955/20 text-indigo-700 dark:text-indigo-400 border-indigo-200/40 dark:border-indigo-900/30';
     }
     return 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30';
+  }
+
+  convertToDate(timestamp: any): Date | null {
+    if (!timestamp) return null;
+    if (timestamp instanceof Date) return timestamp;
+    if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (timestamp.seconds !== undefined) return new Date(timestamp.seconds * 1000);
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return null;
+  }
+
+  async takeOverLock() {
+    const user = this.auth.currentUser();
+    const run = this.run();
+    if (!user || !run) return;
+    
+    const confirmed = confirm(
+      `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển sang màn hình Nhập kết quả. Thao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem.`
+    );
+    if (confirmed) {
+      this.isLoading.set(true);
+      await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+      this.isLoading.set(false);
+      this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
+      this.goToEditMode();
+    }
   }
 
   goToEditMode() {
