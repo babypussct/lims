@@ -52,4 +52,10 @@ export interface Request {
   isVirtualMaster?: boolean;
   childRequestIds?: string[];
   parentMasterId?: string;
+
+  // Locking mechanism fields
+  lockedBy?: string;
+  lockedByName?: string;
+  lockedAt?: any;
+  lastActiveAt?: any;
 }
