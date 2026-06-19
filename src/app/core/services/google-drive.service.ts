@@ -580,4 +580,24 @@ export class GoogleDriveService {
     return data.files || [];
   }
 
+  /**
+   * Fetch metadata of a specific file/folder using API Key
+   */
+  async getFileMetadata(fileId: string): Promise<any> {
+    const config = (environment as any).googleDrive;
+    if (!config?.apiKey) {
+      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+    }
+
+    const fields = 'id,name,mimeType,parents';
+    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=${encodeURIComponent(fields)}&key=${config.apiKey}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Không thể lấy thông tin tệp/thư mục: ${err?.error?.message || res.status}`);
+    }
+    return await res.json();
+  }
+
 }
