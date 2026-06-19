@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 
 interface DriveItem {
@@ -22,7 +23,7 @@ interface Breadcrumb {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6">
+    <div class="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative">
       
       <!-- Header & Breadcrumb -->
       <div class="mb-6">
@@ -126,11 +127,34 @@ interface Breadcrumb {
           </div>
         }
       </div>
+
+      <!-- File Preview Modal -->
+      @if (previewUrl()) {
+        <div class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex flex-col p-4 md:p-8 animate-fade-in">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-white font-bold text-lg px-2 line-clamp-1 flex-1">{{ previewName() }}</h3>
+            <div class="flex items-center gap-3">
+              <!-- Nút mở tab mới nếu muốn -->
+              <a [href]="originalLink()" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
+                <i class="fa-solid fa-external-link-alt"></i>
+              </a>
+              <button (click)="closePreview()" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
+                <i class="fa-solid fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-700 flex">
+            <!-- Iframe xem trước file -->
+            <iframe [src]="previewUrl()" class="w-full h-full border-none flex-1"></iframe>
+          </div>
+        </div>
+      }
     </div>
   `
 })
 export class DocumentsComponent implements OnInit {
   private driveService = inject(GoogleDriveService);
+  private sanitizer = inject(DomSanitizer);
 
   readonly ROOT_FOLDER_ID = '19N6TRGCUuWX9N7ZaB1H5P3hygeeCUJUN';
   readonly ROOT_FOLDER_NAME = 'Phiếu giao nhận mẫu';
@@ -140,8 +164,12 @@ export class DocumentsComponent implements OnInit {
   error = signal<string | null>(null);
   
   folderStack = signal<Breadcrumb[]>([{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }]);
-  
   currentFolderId = signal<string>(this.ROOT_FOLDER_ID);
+
+  // Preview State
+  previewUrl = signal<SafeResourceUrl | null>(null);
+  previewName = signal<string>('');
+  originalLink = signal<string>('');
 
   ngOnInit() {
     this.loadFolder(this.ROOT_FOLDER_ID);
@@ -170,10 +198,19 @@ export class DocumentsComponent implements OnInit {
       this.currentFolderId.set(item.id);
       this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
       this.loadFolder(item.id);
-    } else if (item.webViewLink) {
-      // Open file in new tab
-      window.open(item.webViewLink, '_blank');
+    } else {
+      // Preview file inside the app
+      const url = \`https://drive.google.com/file/d/\${item.id}/preview\`;
+      this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+      this.previewName.set(item.name);
+      this.originalLink.set(item.webViewLink || '');
     }
+  }
+
+  closePreview() {
+    this.previewUrl.set(null);
+    this.previewName.set('');
+    this.originalLink.set('');
   }
 
   goToBreadcrumb(index: number) {
