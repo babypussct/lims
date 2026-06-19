@@ -9,6 +9,12 @@ export function mapCompoundToKey(c: string): string {
   return getCanonicalId(c);
 }
 
+export function isDetectedValue(val: any): boolean {
+  if (val === undefined || val === null) return false;
+  const s = String(val).trim().toUpperCase();
+  return s !== '' && s !== 'KPH' && s !== 'ND' && s !== 'N/A' && s !== '—';
+}
+
 export function getAssignedTargetsForSample(sampleCode: string, sampleTargetMap: Record<string, string[]>): string[] | null {
   if (!sampleTargetMap || !sampleCode) return null;
   const matchKey = Object.keys(sampleTargetMap)
@@ -478,8 +484,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          currentDraft.resultData[s]?.[c] && 
-          currentDraft.resultData[s]?.[c] !== 'N/A'
+          isDetectedValue(currentDraft.resultData[s]?.[c])
         );
 
         if (!hasDetection) {
@@ -491,7 +496,7 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'KPH' : sVal);
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -651,8 +656,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          currentDraft.resultData[s]?.[c] && 
-          currentDraft.resultData[s]?.[c] !== 'N/A'
+          isDetectedValue(currentDraft.resultData[s]?.[c])
         );
 
         if (!hasDetection) {
@@ -664,7 +668,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'KPH' : sVal);
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -804,12 +808,14 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
     currentConf.compounds.forEach((c: string) => {
       const isDet = filteredSamples.some((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
-        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c] && sRes[c] !== 'N/A';
+        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && isDetectedValue(sRes[c]);
       });
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A');
+          const isNd = sRes[`${c}_nd`] === true;
+          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+          return !isAssigned(sCode, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'KPH' : sVal);
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
@@ -825,8 +831,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          currentDraft.resultData[s]?.[c] && 
-          currentDraft.resultData[s]?.[c] !== 'N/A'
+          isDetectedValue(currentDraft.resultData[s]?.[c])
         );
         if (!hasDetection) {
           acc[backendKey] = 'ND';
@@ -836,7 +841,8 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
             if (!isAssigned(s, c)) return `${s}: N/A`;
             const isNd = sRes[`${c}_nd`] === true;
             const val = sRes[c] || '';
-            return `${s}: ${isNd ? 'ND' : val}`;
+            const displayVal = (isNd || !isDetectedValue(val)) ? 'ND' : val;
+            return `${s}: ${displayVal}`;
           });
           acc[backendKey] = parts.join('; ');
         }
@@ -1788,11 +1794,11 @@ export function buildUnifiedType3bPdfPayload(
         rowData[`${c}_qc1`] = 'N/A';
         rowData[`${c}_qc2`] = 'N/A';
         rowData[`${c}_qc3`] = 'N/A';
+      } else {
         const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          currentDraft.resultData[s]?.[c] && 
-          currentDraft.resultData[s]?.[c] !== 'N/A'
+          isDetectedValue(currentDraft.resultData[s]?.[c])
         );
 
         if (!hasDetection) {
@@ -1804,7 +1810,7 @@ export function buildUnifiedType3bPdfPayload(
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'KPH' : sVal);
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[c] = resultParts.filter(p => !p.endsWith(':')).join('; ');
@@ -1881,14 +1887,16 @@ export function buildUnifiedType3bPdfPayload(
     const resObj0 = currentDraft.resultData[s0] || {};
     const detected: string[] = [];
     (currentConf.compounds as string[]).forEach(c => {
-      const isDet = filteredSamples.some(sCode => {
+      const isDet = filteredSamples.some((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
-        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && sRes[c] && sRes[c] !== 'N/A';
+        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && isDetectedValue(sRes[c]);
       });
       if (isDet) {
-        const vals = filteredSamples.map(sCode => {
+        const vals = filteredSamples.map((sCode: string) => {
           const sRes = currentDraft.resultData[sCode] || {};
-          return (sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A');
+          const isNd = sRes[`${c}_nd`] === true;
+          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
+          return !isAssigned(sCode, c) ? 'N/A' : (isNd || !isDetectedValue(sVal) ? 'KPH' : sVal);
         }).join('; ');
         detected.push(`${c}: ${vals}`);
       }
@@ -1902,8 +1910,7 @@ export function buildUnifiedType3bPdfPayload(
         const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
-          currentDraft.resultData[s]?.[c] && 
-          currentDraft.resultData[s]?.[c] !== 'N/A'
+          isDetectedValue(currentDraft.resultData[s]?.[c])
         );
         if (!hasDetection) {
           acc[c] = 'ND';
@@ -1913,7 +1920,8 @@ export function buildUnifiedType3bPdfPayload(
             if (!isAssigned(s, c)) return `${s}: N/A`;
             const isNd = sRes[`${c}_nd`] === true;
             const val = sRes[c] || '';
-            return `${s}: ${isNd ? 'ND' : val}`;
+            const displayVal = (isNd || !isDetectedValue(val)) ? 'ND' : val;
+            return `${s}: ${displayVal}`;
           });
           acc[c] = parts.join('; ');
         }
