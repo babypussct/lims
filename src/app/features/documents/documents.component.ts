@@ -185,7 +185,7 @@ type ViewMode = 'list' | 'grid';
                     <th class="py-3 px-4 w-12 text-center">Loại</th>
                     
                     <th class="py-3 px-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group" 
-                        [class.bg-slate-100/80]="sortCol() === 'name'" [class.dark:bg-slate-900/80]="sortCol() === 'name'"
+                        [class.bg-slate-100]="sortCol() === 'name'" [class.dark:bg-slate-800]="sortCol() === 'name'"
                         [class.text-fuchsia-600]="sortCol() === 'name'" [class.dark:text-fuchsia-400]="sortCol() === 'name'"
                         (click)="toggleSort('name')">
                       <div class="flex items-center gap-2">
@@ -199,7 +199,7 @@ type ViewMode = 'list' | 'grid';
                     </th>
                     
                     <th class="py-3 px-4 w-28 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden sm:table-cell" 
-                        [class.bg-slate-100/80]="sortCol() === 'size'" [class.dark:bg-slate-900/80]="sortCol() === 'size'"
+                        [class.bg-slate-100]="sortCol() === 'size'" [class.dark:bg-slate-800]="sortCol() === 'size'"
                         [class.text-fuchsia-600]="sortCol() === 'size'" [class.dark:text-fuchsia-400]="sortCol() === 'size'"
                         (click)="toggleSort('size')">
                       <div class="flex items-center gap-2">
@@ -213,7 +213,7 @@ type ViewMode = 'list' | 'grid';
                     </th>
                     
                     <th class="py-3 px-4 w-44 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden md:table-cell" 
-                        [class.bg-slate-100/80]="sortCol() === 'modifiedTime'" [class.dark:bg-slate-900/80]="sortCol() === 'modifiedTime'"
+                        [class.bg-slate-100]="sortCol() === 'modifiedTime'" [class.dark:bg-slate-800]="sortCol() === 'modifiedTime'"
                         [class.text-fuchsia-600]="sortCol() === 'modifiedTime'" [class.dark:text-fuchsia-400]="sortCol() === 'modifiedTime'"
                         (click)="toggleSort('modifiedTime')">
                       <div class="flex items-center gap-2">
