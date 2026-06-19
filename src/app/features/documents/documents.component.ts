@@ -1,7 +1,10 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 
 interface DriveItem {
@@ -13,6 +16,7 @@ interface DriveItem {
   iconLink?: string;
   modifiedTime?: string;
   size?: string;
+  thumbnailLink?: string;
 }
 
 interface Breadcrumb {
@@ -29,7 +33,7 @@ type ViewMode = 'list' | 'grid';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative">
+    <div class="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative animate-fade-in">
       
       <!-- Header -->
       <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -72,16 +76,22 @@ type ViewMode = 'list' | 'grid';
 
       <!-- Breadcrumbs -->
       <div class="mb-6 flex items-center text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar">
-        @for (bc of folderStack(); track bc.id; let i = $index; let last = $last) {
-          <div class="flex items-center cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors whitespace-nowrap"
-               [class.text-fuchsia-600]="last"
-               [class.dark:text-fuchsia-400]="last"
-               (click)="goToBreadcrumb(i)">
-            @if (i === 0) {
-              <i class="fa-solid fa-home mr-1.5"></i>
-            }
-            <span>{{ bc.name }}</span>
-          </div>
+        @for (bcItem of collapsedFolderStack(); track bcItem.item.id || bcItem.originalIndex; let i = $index; let last = $last) {
+          @if (bcItem.isEllipsis) {
+            <div class="flex items-center text-slate-400 cursor-default select-none px-1">
+              <span>...</span>
+            </div>
+          } @else {
+            <div class="flex items-center cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors whitespace-nowrap"
+                 [class.text-fuchsia-600]="last"
+                 [class.dark:text-fuchsia-400]="last"
+                 (click)="goToBreadcrumb(bcItem.originalIndex)">
+              @if (bcItem.originalIndex === 0) {
+                <i class="fa-solid fa-home mr-1.5"></i>
+              }
+              <span>{{ bcItem.item.name }}</span>
+            </div>
+          }
           @if (!last) {
             <i class="fa-solid fa-chevron-right mx-2 text-slate-400 text-xs shrink-0"></i>
           }
@@ -97,12 +107,12 @@ type ViewMode = 'list' | 'grid';
             <div class="relative flex-1">
               <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input type="text" 
-                     [ngModel]="searchTerm()" 
-                     (ngModelChange)="searchTerm.set($event)"
+                     [ngModel]="searchInputValue()" 
+                     (ngModelChange)="onSearchChange($event)"
                      placeholder="Tìm tài liệu trong thư mục hiện tại..." 
                      class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-shadow">
-              @if (searchTerm()) {
-                <button (click)="searchTerm.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              @if (searchInputValue()) {
+                <button (click)="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                   <i class="fa-solid fa-times"></i>
                 </button>
               }
@@ -112,16 +122,6 @@ type ViewMode = 'list' | 'grid';
             {{ displayFiles().length }} mục
           </div>
         </div>
-
-        @if (loading()) {
-          <div class="absolute inset-0 z-20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center transition-all">
-            <div class="flex flex-col items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700">
-              <i class="fa-solid fa-circle-notch fa-spin text-4xl text-fuchsia-500 mb-4"></i>
-              <span class="text-slate-700 dark:text-slate-200 font-semibold text-lg">Đang tải dữ liệu...</span>
-              <span class="text-slate-400 text-sm mt-1">Vui lòng chờ trong giây lát</span>
-            </div>
-          </div>
-        }
 
         <!-- Error State -->
         @if (error()) {
@@ -137,9 +137,9 @@ type ViewMode = 'list' | 'grid';
           </div>
         }
 
-        <!-- Empty State -->
+        <!-- Empty State (No loading, no files) -->
         @if (!loading() && !error() && files().length === 0) {
-          <div class="p-8 text-center flex-1 flex flex-col items-center justify-center">
+          <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
             <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
             <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Thư mục trống</h3>
             <p class="text-sm text-slate-400 mt-1">Không có tài liệu nào trong thư mục này.</p>
@@ -148,7 +148,7 @@ type ViewMode = 'list' | 'grid';
 
         <!-- Search Empty State -->
         @if (!loading() && !error() && files().length > 0 && displayFiles().length === 0) {
-          <div class="p-8 text-center flex-1 flex flex-col items-center justify-center">
+          <div class="p-8 text-center flex-1 flex flex-col items-center justify-center animate-fade-in">
             <i class="fa-solid fa-search text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
             <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Không tìm thấy kết quả</h3>
             <p class="text-sm text-slate-400 mt-1">Thử tìm với từ khóa khác xem sao.</p>
@@ -156,15 +156,13 @@ type ViewMode = 'list' | 'grid';
         }
 
         <!-- File List (List View) -->
-        @if (!error() && displayFiles().length > 0 && viewMode() === 'list') {
+        @if (!error() && (displayFiles().length > 0 || (loading() && files().length === 0)) && viewMode() === 'list') {
           <div class="overflow-y-auto flex-1 custom-scrollbar">
             <table class="w-full text-left border-collapse min-w-[700px]">
               <thead class="sticky top-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">Loại</th>
-                  
-                  <th class="py-3 px-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group"
-                      (click)="toggleSort('name')">
+                  <th class="py-3 px-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group" (click)="toggleSort('name')">
                     <div class="flex items-center gap-2">
                       Tên tài liệu
                       <i class="fa-solid" 
@@ -174,9 +172,7 @@ type ViewMode = 'list' | 'grid';
                          [class.fa-sort-down]="sortCol() === 'name' && sortDir() === 'desc'"></i>
                     </div>
                   </th>
-                  
-                  <th class="py-3 px-4 w-28 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden sm:table-cell"
-                      (click)="toggleSort('size')">
+                  <th class="py-3 px-4 w-28 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden sm:table-cell" (click)="toggleSort('size')">
                     <div class="flex items-center gap-2">
                       Kích thước
                       <i class="fa-solid" 
@@ -186,9 +182,7 @@ type ViewMode = 'list' | 'grid';
                          [class.fa-sort-down]="sortCol() === 'size' && sortDir() === 'desc'"></i>
                     </div>
                   </th>
-                  
-                  <th class="py-3 px-4 w-44 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden md:table-cell"
-                      (click)="toggleSort('modifiedTime')">
+                  <th class="py-3 px-4 w-44 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group hidden md:table-cell" (click)="toggleSort('modifiedTime')">
                     <div class="flex items-center gap-2">
                       Ngày cập nhật
                       <i class="fa-solid" 
@@ -198,84 +192,127 @@ type ViewMode = 'list' | 'grid';
                          [class.fa-sort-down]="sortCol() === 'modifiedTime' && sortDir() === 'desc'"></i>
                     </div>
                   </th>
-
                   <th class="py-3 px-4 w-16 text-center">Tải</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
-                @for (item of displayFiles(); track item.id) {
-                  <tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors cursor-pointer active:bg-slate-100 dark:active:bg-slate-700"
-                      (click)="onItemClick(item)">
-                    <td class="py-3 px-4 text-center">
-                      @if (isFolder(item)) {
-                        <i class="fa-solid fa-folder text-yellow-400 text-xl group-hover:scale-110 transition-transform"></i>
-                      } @else {
-                        <img [src]="getHighResIcon(item.iconLink)" class="w-6 h-6 mx-auto object-contain" onerror="this.src='assets/images/file.png'" alt="icon">
-                      }
-                    </td>
-                    <td class="py-3 px-4">
-                      <div class="font-medium text-slate-800 dark:text-slate-200 text-[14px] group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors line-clamp-2">
-                        {{ item.name }}
-                      </div>
-                    </td>
-                    <td class="py-3 px-4 text-sm text-slate-500 hidden sm:table-cell whitespace-nowrap">
-                      {{ formatSize(item.size) }}
-                    </td>
-                    <td class="py-3 px-4 text-sm text-slate-500 hidden md:table-cell whitespace-nowrap">
-                      {{ formatDate(item.modifiedTime) }}
-                    </td>
-                    <td class="py-3 px-4 text-center">
-                      @if (!isFolder(item) && item.webContentLink) {
-                        <button (click)="downloadItem(item, $event)" 
-                                class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-fuchsia-100 hover:text-fuchsia-600 dark:hover:bg-fuchsia-900/50 dark:hover:text-fuchsia-400 transition-colors flex items-center justify-center mx-auto"
-                                title="Tải xuống">
-                          <i class="fa-solid fa-download"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
+
+              <!-- Skeleton rows -->
+              @if (loading() && files().length === 0) {
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 animate-pulse">
+                  @for (item of [1, 2, 3, 4, 5]; track item) {
+                    <tr>
+                      <td class="py-4 px-4 text-center">
+                        <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 mx-auto"></div>
+                      </td>
+                      <td class="py-4 px-4">
+                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                      </td>
+                      <td class="py-4 px-4 hidden sm:table-cell">
+                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
+                      </td>
+                      <td class="py-4 px-4 hidden md:table-cell">
+                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28"></div>
+                      </td>
+                      <td class="py-4 px-4 text-center">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto"></div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              } @else {
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 animate-fade-in">
+                  @for (item of displayFiles(); track item.id) {
+                    <tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors cursor-pointer active:bg-slate-100 dark:active:bg-slate-700"
+                        (click)="onItemClick(item)">
+                      <td class="py-3 px-4 text-center">
+                        <i class="fa-solid {{ getFileTypeStyle(item).icon }} text-xl group-hover:scale-110 transition-transform"></i>
+                      </td>
+                      <td class="py-3 px-4">
+                        <div class="font-medium text-slate-800 dark:text-slate-200 text-[14px] group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors line-clamp-2">
+                          {{ item.name }}
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 text-sm text-slate-500 hidden sm:table-cell whitespace-nowrap">
+                        {{ formatSize(item.size, item) }}
+                      </td>
+                      <td class="py-3 px-4 text-sm text-slate-500 hidden md:table-cell whitespace-nowrap">
+                        {{ formatDate(item.modifiedTime) }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        @if (!isFolder(item) && item.webContentLink) {
+                          <button (click)="downloadItem(item, $event)" 
+                                  class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-fuchsia-100 hover:text-fuchsia-600 dark:hover:bg-fuchsia-900/50 dark:hover:text-fuchsia-400 transition-colors flex items-center justify-center mx-auto"
+                                  title="Tải xuống">
+                            <i class="fa-solid fa-download"></i>
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              }
             </table>
           </div>
         }
 
         <!-- Grid View -->
-        @if (!error() && displayFiles().length > 0 && viewMode() === 'grid') {
+        @if (!error() && (displayFiles().length > 0 || (loading() && files().length === 0)) && viewMode() === 'grid') {
           <div class="overflow-y-auto flex-1 custom-scrollbar p-4">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              @for (item of displayFiles(); track item.id) {
-                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col hover:border-fuchsia-300 dark:hover:border-fuchsia-700 hover:shadow-md transition-all cursor-pointer group"
-                     (click)="onItemClick(item)">
-                  
-                  <div class="flex-1 flex flex-col items-center justify-center py-4 relative">
-                    @if (isFolder(item)) {
-                      <i class="fa-solid fa-folder text-yellow-400 text-5xl group-hover:scale-110 transition-transform"></i>
-                    } @else {
-                      <img [src]="getHighResIcon(item.iconLink)" class="w-16 h-16 group-hover:scale-110 transition-transform object-contain" onerror="this.src='assets/images/file.png'" alt="icon">
-                    }
+            @if (loading() && files().length === 0) {
+              <!-- Skeleton Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
+                @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track item) {
+                  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
+                    <div class="flex-1 flex flex-col items-center justify-center py-4">
+                      <div class="w-16 h-16 rounded bg-slate-200 dark:bg-slate-700"></div>
+                    </div>
+                    <div class="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-3 space-y-2">
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mx-auto"></div>
+                      <div class="flex justify-between items-center mt-2">
+                        <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-12"></div>
+                        <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-8"></div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-fade-in">
+                @for (item of displayFiles(); track item.id) {
+                  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col hover:border-fuchsia-300 dark:hover:border-fuchsia-700 hover:shadow-md transition-all cursor-pointer group"
+                       (click)="onItemClick(item)">
                     
-                    @if (!isFolder(item) && item.webContentLink) {
-                      <button (click)="downloadItem(item, $event)" 
-                              class="absolute top-0 right-0 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-                              title="Tải xuống">
-                        <i class="fa-solid fa-download text-xs"></i>
-                      </button>
-                    }
-                  </div>
-                  
-                  <div class="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-3">
-                    <div class="font-medium text-slate-800 dark:text-slate-200 text-sm line-clamp-2 text-center group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors" [title]="item.name">
-                      {{ item.name }}
+                    <div class="flex-1 flex flex-col items-center justify-center py-4 relative min-h-[96px]">
+                      @if (isFolder(item)) {
+                        <i class="fa-solid fa-folder text-yellow-400 text-5xl group-hover:scale-110 transition-transform"></i>
+                      } @else if (item.thumbnailLink) {
+                        <img [src]="item.thumbnailLink" class="w-16 h-16 rounded shadow-sm border border-slate-150 dark:border-slate-700 object-cover group-hover:scale-110 transition-transform" onerror="this.style.display='none'" alt="thumbnail">
+                      } @else {
+                        <i class="fa-solid {{ getFileTypeStyle(item).icon }} text-5xl group-hover:scale-110 transition-transform"></i>
+                      }
+                      
+                      @if (!isFolder(item) && item.webContentLink) {
+                        <button (click)="downloadItem(item, $event)" 
+                                class="absolute top-0 right-0 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                title="Tải xuống">
+                          <i class="fa-solid fa-download text-xs"></i>
+                        </button>
+                      }
                     </div>
-                    <div class="flex justify-between items-center mt-2">
-                      <span class="text-xs text-slate-400">{{ formatDate(item.modifiedTime, true) }}</span>
-                      <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ formatSize(item.size) }}</span>
+                    
+                    <div class="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-3">
+                      <div class="font-medium text-slate-800 dark:text-slate-200 text-sm line-clamp-2 text-center group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors" [title]="item.name">
+                        {{ item.name }}
+                      </div>
+                      <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs text-slate-400">{{ formatDate(item.modifiedTime, true) }}</span>
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ formatSize(item.size, item) }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              }
-            </div>
+                }
+              </div>
+            }
           </div>
         }
       </div>
@@ -286,6 +323,10 @@ type ViewMode = 'list' | 'grid';
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-white font-bold text-lg px-2 line-clamp-1 flex-1">{{ previewName() }}</h3>
             <div class="flex items-center gap-3">
+               <!-- Print button -->
+               <button (click)="printFile()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg" title="In tài liệu">
+                 <i class="fa-solid fa-print"></i>
+               </button>
               <!-- Download button in modal -->
                @if (previewContentLink()) {
                 <a [href]="previewContentLink()" class="w-10 h-10 rounded-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white flex items-center justify-center transition-colors shadow-lg" title="Tải xuống">
@@ -295,30 +336,61 @@ type ViewMode = 'list' | 'grid';
               <a [href]="originalLink()" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
                 <i class="fa-solid fa-external-link-alt"></i>
               </a>
-              <button (click)="closePreview()" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
+              <button (click)="closePreview(true)" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
                 <i class="fa-solid fa-times text-xl"></i>
               </button>
             </div>
           </div>
-          <div class="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-700 flex">
-            <iframe [src]="previewUrl()" class="w-full h-full border-none flex-1"></iframe>
+          <div class="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-700 flex relative">
+            @if (previewLoading()) {
+              <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 z-10 animate-fade-in">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-fuchsia-500 mb-2"></i>
+                <span class="text-slate-500 dark:text-slate-400 text-sm">Đang tải bản xem trước...</span>
+              </div>
+            }
+            <iframe [src]="previewUrl()" (load)="previewLoading.set(false)" class="w-full h-full border-none flex-1"></iframe>
+          </div>
+          <!-- Fallback Help Note -->
+          <div class="mt-3 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2 px-2 shrink-0">
+            <span class="flex items-center gap-1.5 text-center sm:text-left">
+              <i class="fa-solid fa-circle-info text-fuchsia-400 text-sm"></i>
+              Trình xem trước không hiển thị? Hãy đảm bảo đã đăng nhập Google hoặc tắt chặn cookie bên thứ ba.
+            </span>
+            <a [href]="originalLink()" target="_blank" class="text-fuchsia-400 hover:text-fuchsia-300 font-bold flex items-center gap-1 underline transition-colors">
+              Mở tệp trong tab mới <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
           </div>
         </div>
       }
     </div>
-  `
+  `,
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+  `]
 })
-export class DocumentsComponent implements OnInit {
+export class DocumentsComponent implements OnInit, OnDestroy {
   private driveService = inject(GoogleDriveService);
   private sanitizer = inject(DomSanitizer);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   readonly ROOT_FOLDER_ID = '19N6TRGCUuWX9N7ZaB1H5P3hygeeCUJUN';
   readonly ROOT_FOLDER_NAME = 'Phiếu giao nhận mẫu';
 
-  // ⚡ 1. Caching
-  private folderCache = new Map<string, DriveItem[]>();
-
-  // Raw State
+  // Signals
   files = signal<DriveItem[]>([]);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -326,28 +398,49 @@ export class DocumentsComponent implements OnInit {
   folderStack = signal<Breadcrumb[]>([{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }]);
   currentFolderId = signal<string>(this.ROOT_FOLDER_ID);
   
-  // View & Mode State
   viewMode = signal<ViewMode>('list');
 
-  // Search & Sort State
+  // Search state (decoupled with debounce)
+  searchInputValue = signal<string>('');
   searchTerm = signal<string>('');
-  sortCol = signal<SortColumn>('modifiedTime'); // Đặt sort mặc định là Ngày cập nhật
-  sortDir = signal<SortDirection>('desc');      // Mới nhất lên đầu
+  private searchSubject = new Subject<string>();
+  
+  sortCol = signal<SortColumn>('modifiedTime');
+  sortDir = signal<SortDirection>('desc');
 
-  // Preview State
+  // Preview signals
   previewUrl = signal<SafeResourceUrl | null>(null);
   previewName = signal<string>('');
   originalLink = signal<string>('');
   previewContentLink = signal<string>('');
+  previewLoading = signal<boolean>(true);
 
-  // Computed state for UI display
+  // Subscriptions
+  private routeSub?: Subscription;
+  private searchSub?: Subscription;
+
+  // Collapsed breadcrumbs computed
+  collapsedFolderStack = computed(() => {
+    const stack = this.folderStack();
+    if (stack.length <= 3) {
+      return stack.map((item, index) => ({ item, originalIndex: index, isEllipsis: false }));
+    }
+    return [
+      { item: stack[0], originalIndex: 0, isEllipsis: false },
+      { item: { id: '', name: '...' }, originalIndex: -1, isEllipsis: true },
+      { item: stack[stack.length - 2], originalIndex: stack.length - 2, isEllipsis: false },
+      { item: stack[stack.length - 1], originalIndex: stack.length - 1, isEllipsis: false }
+    ];
+  });
+
+  // Display files computed
   displayFiles = computed(() => {
     let arr = [...this.files()];
-    const term = this.searchTerm().toLowerCase().trim();
+    const term = this.removeDiacritics(this.searchTerm().trim().toLowerCase());
     
-    // 1. Filter (Local filter)
+    // 1. Filter
     if (term) {
-      arr = arr.filter(f => f.name.toLowerCase().includes(term));
+      arr = arr.filter(f => this.removeDiacritics(f.name).toLowerCase().includes(term));
     }
 
     // 2. Sort
@@ -355,7 +448,6 @@ export class DocumentsComponent implements OnInit {
     const dir = this.sortDir() === 'asc' ? 1 : -1;
 
     arr.sort((a, b) => {
-      // Folders always on top
       const aIsFolder = this.isFolder(a);
       const bIsFolder = this.isFolder(b);
       if (aIsFolder && !bIsFolder) return -1;
@@ -384,26 +476,83 @@ export class DocumentsComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.loadFolder(this.ROOT_FOLDER_ID);
+    // 1. Listen to URL parameter changes
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      const pathParam = params['path'];
+      const previewId = params['previewId'];
+      const previewName = params['previewName'];
+
+      // Restore stack and folder
+      if (pathParam) {
+        try {
+          const stack = JSON.parse(pathParam) as Breadcrumb[];
+          if (stack.length > 0) {
+            this.folderStack.set(stack);
+            const targetFolderId = stack[stack.length - 1].id;
+            if (this.currentFolderId() !== targetFolderId) {
+              this.loadFolder(targetFolderId);
+            } else if (this.files().length === 0 && !this.loading()) {
+              this.loadFolder(targetFolderId);
+            }
+          }
+        } catch (e) {
+          console.error('Lỗi parse path URL:', e);
+          this.loadFolder(this.ROOT_FOLDER_ID);
+        }
+      } else {
+        const defaultStack = [{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }];
+        this.folderStack.set(defaultStack);
+        this.loadFolder(this.ROOT_FOLDER_ID);
+      }
+
+      // Restore preview modal
+      if (previewId && previewName) {
+        const url = `https://drive.google.com/file/d/${previewId}/preview`;
+        this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+        this.previewName.set(previewName);
+        this.originalLink.set(`https://drive.google.com/file/d/${previewId}/view`);
+        this.previewContentLink.set(`https://drive.google.com/uc?export=download&id=${previewId}`);
+      } else {
+        this.closePreview(false); // update signal only, no routing loop
+      }
+    });
+
+    // 2. Search debouncing
+    this.searchSub = this.searchSubject.pipe(
+      debounceTime(300)
+    ).subscribe(term => {
+      this.searchTerm.set(term);
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.routeSub) this.routeSub.unsubscribe();
+    if (this.searchSub) this.searchSub.unsubscribe();
   }
 
   async loadFolder(folderId: string, skipCache = false) {
     this.loading.set(true);
     this.error.set(null);
-    this.searchTerm.set('');
     this.currentFolderId.set(folderId);
 
-    // Kiểm tra Cache trước (nếu không bắt buộc làm mới)
-    if (!skipCache && this.folderCache.has(folderId)) {
-      this.files.set(this.folderCache.get(folderId)!);
-      this.loading.set(false);
-      return;
+    // Reset local search inputs
+    this.searchInputValue.set('');
+    this.searchTerm.set('');
+
+    // Check service cache
+    if (!skipCache) {
+      const cached = this.driveService.getCachedFolder(folderId);
+      if (cached) {
+        this.files.set(cached);
+        this.loading.set(false);
+        return;
+      }
     }
 
     try {
       const items = await this.driveService.getFolderContents(folderId);
       this.files.set(items);
-      this.folderCache.set(folderId, items); // Lưu vào Cache
+      this.driveService.setCachedFolder(folderId, items);
     } catch (err: any) {
       this.error.set(err.message || 'Có lỗi xảy ra khi tải thư mục.');
     } finally {
@@ -412,7 +561,9 @@ export class DocumentsComponent implements OnInit {
   }
 
   forceRefresh() {
-    this.loadFolder(this.currentFolderId(), true); // skip cache
+    // Clear service cache for the current folder
+    this.driveService.clearCache(this.currentFolderId());
+    this.loadFolder(this.currentFolderId(), true);
   }
 
   toggleSort(col: SortColumn) {
@@ -420,7 +571,6 @@ export class DocumentsComponent implements OnInit {
       this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
     } else {
       this.sortCol.set(col);
-      // Nếu chọn cột Date, mặc định desc tốt hơn. Các cột khác asc.
       this.sortDir.set(col === 'modifiedTime' ? 'desc' : 'asc');
     }
   }
@@ -431,21 +581,23 @@ export class DocumentsComponent implements OnInit {
 
   onItemClick(item: DriveItem) {
     if (this.isFolder(item)) {
-      this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
-      this.loadFolder(item.id);
+      const newStack = [...this.folderStack(), { id: item.id, name: item.name }];
+      this.router.navigate([], {
+        queryParams: { path: JSON.stringify(newStack) },
+        queryParamsHandling: 'merge'
+      });
     } else {
-      const url = `https://drive.google.com/file/d/${item.id}/preview`;
-      this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
-      this.previewName.set(item.name);
-      this.originalLink.set(item.webViewLink || '');
-      this.previewContentLink.set(item.webContentLink || '');
+      this.previewLoading.set(true);
+      this.router.navigate([], {
+        queryParams: { previewId: item.id, previewName: item.name },
+        queryParamsHandling: 'merge'
+      });
     }
   }
 
   downloadItem(item: DriveItem, event: Event) {
-    event.stopPropagation(); // Không cho nổi bọt làm mở Preview Modal
+    event.stopPropagation();
     if (item.webContentLink) {
-      // Dùng thẻ a ẩn để kích hoạt tải xuống
       const a = document.createElement('a');
       a.href = item.webContentLink;
       a.target = '_blank';
@@ -455,23 +607,51 @@ export class DocumentsComponent implements OnInit {
     }
   }
 
-  closePreview() {
+  closePreview(updateUrl = true) {
     this.previewUrl.set(null);
     this.previewName.set('');
     this.originalLink.set('');
     this.previewContentLink.set('');
+    this.previewLoading.set(false);
+
+    if (updateUrl) {
+      this.router.navigate([], {
+        queryParams: { previewId: null, previewName: null },
+        queryParamsHandling: 'merge'
+      });
+    }
   }
 
   goToBreadcrumb(index: number) {
     const stack = this.folderStack();
     if (index === stack.length - 1) return; 
 
-    const targetFolder = stack[index];
-    this.folderStack.set(stack.slice(0, index + 1));
-    this.loadFolder(targetFolder.id); // Sẽ load tức thì vì có cache
+    const targetStack = stack.slice(0, index + 1);
+    this.router.navigate([], {
+      queryParams: { path: JSON.stringify(targetStack) },
+      queryParamsHandling: 'merge'
+    });
   }
 
-  formatSize(bytes?: string): string {
+  onSearchChange(value: string) {
+    this.searchInputValue.set(value);
+    this.searchSubject.next(value);
+  }
+
+  clearSearch() {
+    this.searchInputValue.set('');
+    this.searchTerm.set('');
+  }
+
+  printFile() {
+    const link = this.originalLink();
+    if (link) {
+      window.open(link, '_blank');
+    }
+  }
+
+  formatSize(bytes?: string, item?: DriveItem): string {
+    if (item && this.isFolder(item)) return 'Thư mục';
     if (!bytes) return '--';
     const b = parseInt(bytes, 10);
     if (isNaN(b)) return '--';
@@ -495,9 +675,33 @@ export class DocumentsComponent implements OnInit {
     });
   }
 
-  getHighResIcon(link?: string): string {
-    if (!link) return 'assets/images/file.png';
-    // Thay thế kích thước /16/ thành /64/ để hình ảnh sắc nét khi phóng to
-    return link.replace('/16/', '/64/');
+  private removeDiacritics(str: string): string {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd');
+  }
+
+  getFileTypeStyle(item: DriveItem): { icon: string, color: string } {
+    if (this.isFolder(item)) {
+      return { icon: 'fa-folder text-yellow-400', color: 'text-yellow-400' };
+    }
+    const name = item.name.toLowerCase();
+    if (name.endsWith('.pdf')) {
+      return { icon: 'fa-file-pdf text-red-500', color: 'text-red-500' };
+    }
+    if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv') || item.mimeType === 'application/vnd.google-apps.spreadsheet') {
+      return { icon: 'fa-file-excel text-emerald-600', color: 'text-emerald-600' };
+    }
+    if (name.endsWith('.docx') || name.endsWith('.doc') || item.mimeType === 'application/vnd.google-apps.document') {
+      return { icon: 'fa-file-word text-blue-500', color: 'text-blue-500' };
+    }
+    if (name.endsWith('.zip') || name.endsWith('.rar') || name.endsWith('.7z')) {
+      return { icon: 'fa-file-zipper text-amber-600', color: 'text-amber-600' };
+    }
+    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.gif')) {
+      return { icon: 'fa-file-image text-teal-500', color: 'text-teal-500' };
+    }
+    return { icon: 'fa-file text-slate-400', color: 'text-slate-400' };
   }
 }

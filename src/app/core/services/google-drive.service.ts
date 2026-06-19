@@ -22,6 +22,30 @@ export class GoogleDriveService {
   isReady = signal(false);
   isAuthenticated = signal(false); // true once an access token is obtained
 
+  // Thêm bộ nhớ đệm (caching) cho thư mục
+  private folderCache = new Map<string, { items: any[], timestamp: number }>();
+  private readonly CACHE_TTL = 3 * 60 * 1000; // Cache trong 3 phút (3 * 60 * 1000 ms)
+
+  getCachedFolder(folderId: string): any[] | null {
+    const cached = this.folderCache.get(folderId);
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.items;
+    }
+    return null;
+  }
+
+  setCachedFolder(folderId: string, items: any[]): void {
+    this.folderCache.set(folderId, { items, timestamp: Date.now() });
+  }
+
+  clearCache(folderId?: string): void {
+    if (folderId) {
+      this.folderCache.delete(folderId);
+    } else {
+      this.folderCache.clear();
+    }
+  }
+
   constructor() {
       // Restore token from redirect auth (set by index.html pre-bootstrap script)
       const savedToken = sessionStorage.getItem('__gd_token');
@@ -542,7 +566,7 @@ export class GoogleDriveService {
     }
 
     const query = `'${folderId}' in parents and trashed=false`;
-    const fields = 'files(id, name, mimeType, webViewLink, webContentLink, iconLink, modifiedTime, size)';
+    const fields = 'files(id, name, mimeType, webViewLink, webContentLink, iconLink, modifiedTime, size, thumbnailLink)';
     const orderBy = 'folder,name';
 
     const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=${encodeURIComponent(orderBy)}&key=${config.apiKey}`;
