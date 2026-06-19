@@ -531,4 +531,28 @@ export class GoogleDriveService {
 
     return `CoA_${safeName}_${safeLot}.${ext}`;
   }
+
+  /**
+   * Fetch contents of a specific public folder using API Key
+   */
+  async getFolderContents(folderId: string): Promise<any[]> {
+    const config = (environment as any).googleDrive;
+    if (!config?.apiKey) {
+      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
+    }
+
+    const query = `'${folderId}' in parents and trashed=false`;
+    const fields = 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size)';
+    const orderBy = 'folder,name';
+
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=${encodeURIComponent(orderBy)}&key=${config.apiKey}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Không thể lấy danh sách thư mục: ${err?.error?.message || res.status}`);
+    }
+    const data = await res.json();
+    return data.files || [];
+  }
 }

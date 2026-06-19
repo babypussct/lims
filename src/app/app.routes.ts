@@ -122,6 +122,12 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.REPORT_VIEW }
   },
   {
+    path: 'documents',
+    loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
     path: 'printing',
     loadComponent: () => import('./features/requests/print-queue.component').then(m => m.PrintQueueComponent),
     canActivate: [permissionGuard],
