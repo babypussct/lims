@@ -123,9 +123,7 @@ export const routes: Routes = [
   },
   {
     path: 'documents',
-    loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.SOP_VIEW }
+    loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent)
   },
   {
     path: 'printing',

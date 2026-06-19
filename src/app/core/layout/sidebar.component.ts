@@ -233,7 +233,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       items: [
         { name: 'Trang chủ', icon: 'fa-house', path: 'dashboard', activeMatch: ['/dashboard'] },
         { name: 'Báo cáo', icon: 'fa-chart-pie', path: 'stats', activeMatch: ['/stats'], hidden: !this.auth.canViewReports() },
-        { name: 'Tài liệu & Biểu mẫu', icon: 'fa-folder-open', path: 'documents', activeMatch: ['/documents'], hidden: !this.auth.canViewSop() }
+        { name: 'Phiếu giao nhận mẫu', icon: 'fa-folder-open', path: 'documents', activeMatch: ['/documents'] }
       ]
     },
     {

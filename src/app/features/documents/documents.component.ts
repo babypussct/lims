@@ -28,7 +28,7 @@ interface Breadcrumb {
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
           <i class="fa-solid fa-folder-open text-fuchsia-500"></i>
-          Tài liệu & Thông tin mẫu
+          Phiếu giao nhận mẫu
         </h1>
         
         <!-- Breadcrumbs -->
@@ -79,8 +79,7 @@ interface Breadcrumb {
         <!-- Empty State -->
         @if (!loading() && !error() && files().length === 0) {
           <div class="p-8 text-center flex-1 flex flex-col items-center justify-center">
-            <img src="assets/images/empty-folder.svg" alt="Empty" class="w-32 opacity-50 mb-4" onerror="this.style.display='none'">
-            <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-600 mb-4" [class.hidden]="!this['onerror']"></i>
+            <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-600 mb-4"></i>
             <h3 class="text-lg font-medium text-slate-600 dark:text-slate-400">Thư mục trống</h3>
             <p class="text-sm text-slate-400 mt-1">Không có tài liệu nào trong thư mục này.</p>
           </div>
@@ -134,7 +133,7 @@ export class DocumentsComponent implements OnInit {
   private driveService = inject(GoogleDriveService);
 
   readonly ROOT_FOLDER_ID = '19N6TRGCUuWX9N7ZaB1H5P3hygeeCUJUN';
-  readonly ROOT_FOLDER_NAME = 'Tài liệu chung';
+  readonly ROOT_FOLDER_NAME = 'Phiếu giao nhận mẫu';
 
   files = signal<DriveItem[]>([]);
   loading = signal<boolean>(true);
