@@ -475,32 +475,23 @@ export function buildDefaultSopPdfPayload(currentDraft: any, currentRun: any, ac
         rowData[`${backendKey}_qc2`] = 'N/A';
         rowData[`${backendKey}_qc3`] = 'N/A';
       } else {
-        const uniqueVals = new Set<string>(filteredSamples.map((s: string) => {
-          const sRes = currentDraft.resultData[s] || {};
-          const isNd = sRes[`${c}_nd`] === true;
-          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
-        }));
+        const hasDetection = filteredSamples.some((s: string) => 
+          isAssigned(s, c) && 
+          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
+          currentDraft.resultData[s]?.[c] && 
+          currentDraft.resultData[s]?.[c] !== 'N/A'
+        );
 
-        if (uniqueVals.size === 1) {
-          const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
-            rowData[`${backendKey}_nd`] = true;
-            rowData[backendKey] = '';
-          } else if (commonVal === 'N/A') {
-            rowData[`${backendKey}_nd`] = false;
-            rowData[backendKey] = '';
-          } else {
-            rowData[`${backendKey}_nd`] = false;
-            rowData[backendKey] = commonVal;
-          }
+        if (!hasDetection) {
+          rowData[`${backendKey}_nd`] = true;
+          rowData[backendKey] = '';
         } else {
           rowData[`${backendKey}_nd`] = false;
           const resultParts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -657,32 +648,23 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         rowData[`${backendKey}_qc2`] = 'N/A';
         rowData[`${backendKey}_qc3`] = 'N/A';
       } else {
-        const uniqueVals = new Set<string>(filteredSamples.map((s: string) => {
-          const sRes = currentDraft.resultData[s] || {};
-          const isNd = sRes[`${c}_nd`] === true;
-          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
-        }));
+        const hasDetection = filteredSamples.some((s: string) => 
+          isAssigned(s, c) && 
+          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
+          currentDraft.resultData[s]?.[c] && 
+          currentDraft.resultData[s]?.[c] !== 'N/A'
+        );
 
-        if (uniqueVals.size === 1) {
-          const commonVal = Array.from(uniqueVals)[0];
-          if (commonVal === 'KPH') {
-            rowData[`${backendKey}_nd`] = true;
-            rowData[backendKey] = '';
-          } else if (commonVal === 'N/A') {
-            rowData[`${backendKey}_nd`] = false;
-            rowData[backendKey] = '';
-          } else {
-            rowData[`${backendKey}_nd`] = false;
-            rowData[backendKey] = commonVal;
-          }
+        if (!hasDetection) {
+          rowData[`${backendKey}_nd`] = true;
+          rowData[backendKey] = '';
         } else {
           rowData[`${backendKey}_nd`] = false;
           const resultParts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[backendKey] = resultParts.filter((p: string) => !p.endsWith(':')).join('; ');
@@ -836,13 +818,29 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
       const backendKey = c;
-      const vals = filteredSamples.map((sCode: string) => {
-        const sRes = currentDraft.resultData[sCode] || {};
-        const isNd = sRes[`${c}_nd`] === true;
-        return isNd ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
-      });
-      const allKph = vals.every((v: string) => v === 'N/A' || v === '');
-      acc[backendKey] = allKph ? 'N/A' : vals.join('; ');
+      const assigned = filteredSamples.some(s => isAssigned(s, c));
+      if (!assigned) {
+        acc[backendKey] = 'N/A';
+      } else {
+        const hasDetection = filteredSamples.some(s => 
+          isAssigned(s, c) && 
+          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
+          currentDraft.resultData[s]?.[c] && 
+          currentDraft.resultData[s]?.[c] !== 'N/A'
+        );
+        if (!hasDetection) {
+          acc[backendKey] = 'ND';
+        } else {
+          const parts = filteredSamples.map(s => {
+            const sRes = currentDraft.resultData[s] || {};
+            if (!isAssigned(s, c)) return `${s}: N/A`;
+            const isNd = sRes[`${c}_nd`] === true;
+            const val = sRes[c] || '';
+            return `${s}: ${isNd ? 'ND' : val}`;
+          });
+          acc[backendKey] = parts.join('; ');
+        }
+      }
       return acc;
     }, {});
 
@@ -1791,24 +1789,23 @@ export function buildUnifiedType3bPdfPayload(
         rowData[`${c}_qc2`] = 'N/A';
         rowData[`${c}_qc3`] = 'N/A';
       } else {
-        const uniqueVals = new Set<string>(filteredSamples.map(s => {
-          const sRes = currentDraft.resultData[s] || {};
-          const isNd = sRes[`${c}_nd`] === true;
-          const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-          return isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
-        }));
+        const hasDetection = filteredSamples.some(s => 
+          isAssigned(s, c) && 
+          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
+          currentDraft.resultData[s]?.[c] && 
+          currentDraft.resultData[s]?.[c] !== 'N/A'
+        );
 
-        if (uniqueVals.size === 1) {
-          const commonVal = Array.from(uniqueVals)[0];
-          rowData[`${c}_nd`] = commonVal === 'KPH';
-          rowData[c] = (commonVal === 'KPH' || commonVal === 'N/A') ? '' : commonVal;
+        if (!hasDetection) {
+          rowData[`${c}_nd`] = true;
+          rowData[c] = '';
         } else {
           rowData[`${c}_nd`] = false;
           const resultParts = filteredSamples.map(s => {
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
-            const displayVal = isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || '');
+            const displayVal = !isAssigned(s, c) ? 'N/A' : (isNd ? 'KPH' : (sVal === 'N/A' ? 'N/A' : sVal || ''));
             return displayVal ? `${s}: ${displayVal}` : `${s}:`;
           });
           rowData[c] = resultParts.filter(p => !p.endsWith(':')).join('; ');
@@ -1899,11 +1896,29 @@ export function buildUnifiedType3bPdfPayload(
     });
 
     const compoundResults = (currentConf.compounds as string[]).reduce((acc: any, c: string) => {
-      const vals = filteredSamples.map(sCode => {
-        const sRes = currentDraft.resultData[sCode] || {};
-        return sRes[`${c}_nd`] === true ? 'N/A' : ((sRes[c] === 'N/A') ? '' : (sRes[c] || 'N/A'));
-      });
-      acc[c] = vals.every(v => v === 'N/A' || v === '') ? 'N/A' : vals.join('; ');
+      const assigned = filteredSamples.some(s => isAssigned(s, c));
+      if (!assigned) {
+        acc[c] = 'N/A';
+      } else {
+        const hasDetection = filteredSamples.some(s => 
+          isAssigned(s, c) && 
+          currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
+          currentDraft.resultData[s]?.[c] && 
+          currentDraft.resultData[s]?.[c] !== 'N/A'
+        );
+        if (!hasDetection) {
+          acc[c] = 'ND';
+        } else {
+          const parts = filteredSamples.map(s => {
+            const sRes = currentDraft.resultData[s] || {};
+            if (!isAssigned(s, c)) return `${s}: N/A`;
+            const isNd = sRes[`${c}_nd`] === true;
+            const val = sRes[c] || '';
+            return `${s}: ${isNd ? 'ND' : val}`;
+          });
+          acc[c] = parts.join('; ');
+        }
+      }
       return acc;
     }, {});
 
