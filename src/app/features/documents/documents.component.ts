@@ -2,11 +2,9 @@ import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener, V
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
-import { ToastService } from '../../core/services/toast.service';
 
 interface DriveItem {
   id: string;
@@ -64,14 +62,6 @@ type ViewMode = 'list' | 'grid';
               <i class="fa-solid fa-border-all"></i>
             </button>
           </div>
-
-          <!-- Share Link Button -->
-          <button (click)="copyFolderLink()" 
-                  class="h-10 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-                  title="Sao chép liên kết thư mục">
-            <i class="fa-solid fa-share-nodes text-fuchsia-500"></i>
-            <span class="hidden sm:inline text-sm font-medium">Chia sẻ</span>
-          </button>
 
           <!-- Refresh Button -->
           <button (click)="forceRefresh()" 
@@ -379,10 +369,6 @@ type ViewMode = 'list' | 'grid';
                <button (click)="printFile()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg" title="In tài liệu">
                  <i class="fa-solid fa-print"></i>
                </button>
-               <!-- Copy file link button -->
-               <button (click)="copyFileLink()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg" title="Sao chép liên kết tệp">
-                 <i class="fa-solid fa-share-nodes"></i>
-               </button>
               <!-- Download button in modal -->
                @if (previewContentLink()) {
                 <a [href]="previewContentLink()" class="w-10 h-10 rounded-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white flex items-center justify-center transition-colors shadow-lg" title="Tải xuống">
@@ -392,7 +378,7 @@ type ViewMode = 'list' | 'grid';
               <a [href]="originalLink()" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
                 <i class="fa-solid fa-external-link-alt"></i>
               </a>
-              <button (click)="closePreview(true)" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
+              <button (click)="closePreview()" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
                 <i class="fa-solid fa-times text-xl"></i>
               </button>
             </div>
@@ -440,9 +426,6 @@ type ViewMode = 'list' | 'grid';
 export class DocumentsComponent implements OnInit, OnDestroy {
   private driveService = inject(GoogleDriveService);
   private sanitizer = inject(DomSanitizer);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private toastService = inject(ToastService);
 
   @ViewChild('searchInput') searchInputElement!: ElementRef<HTMLInputElement>;
 
@@ -476,7 +459,6 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   previewLoading = signal<boolean>(true);
 
   // Subscriptions
-  private routeSub?: Subscription;
   private searchSub?: Subscription;
   private onlineListener?: () => void;
   private offlineListener?: () => void;
@@ -540,72 +522,13 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   @HostListener('window:keydown.escape')
   handleEscape() {
     if (this.previewUrl()) {
-      this.closePreview(true);
+      this.closePreview();
     }
   }
 
   ngOnInit() {
-    // 1. Listen to URL parameter changes
-    this.routeSub = this.route.queryParams.subscribe(async params => {
-      const folderId = params['folderId'];
-      const previewId = params['previewId'];
-      const previewName = params['previewName'];
-
-      // Restore stack and folder
-      if (folderId) {
-        const currentStack = this.folderStack();
-        const lastInStack = currentStack[currentStack.length - 1];
-
-        if (lastInStack && lastInStack.id === folderId) {
-          // Normal navigation - stack is already correct
-          if (this.currentFolderId() !== folderId) {
-            this.loadFolder(folderId);
-          }
-        } else {
-          // Direct load / Refresh - reconstruct simplified stack
-          if (folderId === this.ROOT_FOLDER_ID) {
-            this.folderStack.set([{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }]);
-          } else {
-            // Temporary loader name in breadcrumbs
-            this.folderStack.set([
-              { id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME },
-              { id: folderId, name: 'Đang tải...' }
-            ]);
-            
-            // Fetch folder name asynchronously
-            try {
-              const meta = await this.driveService.getFileMetadata(folderId);
-              this.folderStack.set([
-                { id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME },
-                { id: folderId, name: meta.name || 'Thư mục' }
-              ]);
-            } catch (e) {
-              console.error('Không thể lấy tên thư mục:', e);
-              this.folderStack.set([
-                { id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME },
-                { id: folderId, name: 'Thư mục' }
-              ]);
-            }
-          }
-          this.loadFolder(folderId);
-        }
-      } else {
-        const defaultStack = [{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }];
-        this.folderStack.set(defaultStack);
-        this.loadFolder(this.ROOT_FOLDER_ID);
-      }
-
-      // Restore preview modal
-      if (previewId && previewName) {
-        const url = `https://drive.google.com/file/d/${previewId}/preview`;
-        this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
-        this.previewName.set(previewName);
-        this.originalLink.set(`https://drive.google.com/file/d/${previewId}/view`);
-        this.previewContentLink.set(`https://drive.google.com/uc?export=download&id=${previewId}`);
-      } else {
-        this.closePreview(false); // update signal only, no routing loop
-      }
-    });
+    // Load root folder
+    this.loadFolder(this.ROOT_FOLDER_ID);
 
     // 2. Search debouncing
     this.searchSub = this.searchSubject.pipe(
@@ -625,7 +548,6 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.routeSub) this.routeSub.unsubscribe();
     if (this.searchSub) this.searchSub.unsubscribe();
     if (this.onlineListener) window.removeEventListener('online', this.onlineListener);
     if (this.offlineListener) window.removeEventListener('offline', this.offlineListener);
@@ -689,29 +611,24 @@ export class DocumentsComponent implements OnInit, OnDestroy {
 
   onItemClick(item: DriveItem) {
     if (this.isFolder(item)) {
-      // Cập nhật stack cục bộ trước để giữ lại toàn bộ breadcrumbs khi click
       this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
-      this.router.navigate([], {
-        queryParams: { folderId: item.id },
-        queryParamsHandling: 'merge'
-      });
+      this.loadFolder(item.id);
     } else {
       if (!this.isOnline()) {
-        this.toastService.show('Không thể xem tệp khi ngoại tuyến.', 'warning');
         return;
       }
       this.previewLoading.set(true);
-      this.router.navigate([], {
-        queryParams: { previewId: item.id, previewName: item.name },
-        queryParamsHandling: 'merge'
-      });
+      const url = `https://drive.google.com/file/d/${item.id}/preview`;
+      this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+      this.previewName.set(item.name);
+      this.originalLink.set(`https://drive.google.com/file/d/${item.id}/view`);
+      this.previewContentLink.set(`https://drive.google.com/uc?export=download&id=${item.id}`);
     }
   }
 
   downloadItem(item: DriveItem, event: Event) {
     event.stopPropagation();
     if (!this.isOnline()) {
-      this.toastService.show('Không thể tải xuống khi ngoại tuyến.', 'warning');
       return;
     }
     if (item.webContentLink) {
@@ -724,19 +641,12 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     }
   }
 
-  closePreview(updateUrl = true) {
+  closePreview() {
     this.previewUrl.set(null);
     this.previewName.set('');
     this.originalLink.set('');
     this.previewContentLink.set('');
     this.previewLoading.set(false);
-
-    if (updateUrl) {
-      this.router.navigate([], {
-        queryParams: { previewId: null, previewName: null },
-        queryParamsHandling: 'merge'
-      });
-    }
   }
 
   goToBreadcrumb(index: number) {
@@ -745,10 +655,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
 
     const targetStack = stack.slice(0, index + 1);
     this.folderStack.set(targetStack);
-    this.router.navigate([], {
-      queryParams: { folderId: targetStack[targetStack.length - 1].id },
-      queryParamsHandling: 'merge'
-    });
+    this.loadFolder(targetStack[targetStack.length - 1].id);
   }
 
   onSearchChange(value: string) {
@@ -769,29 +676,6 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     if (link) {
       window.open(link, '_blank');
     }
-  }
-
-  copyFolderLink() {
-    const origin = window.location.origin + window.location.pathname;
-    const folderUrl = `${origin}#/documents?folderId=${this.currentFolderId()}`;
-    
-    navigator.clipboard.writeText(folderUrl).then(() => {
-      this.toastService.show('Đã sao chép liên kết thư mục vào bộ nhớ tạm!', 'success');
-    }).catch(err => {
-      console.error('Lỗi sao chép:', err);
-      this.toastService.show('Không thể sao chép liên kết. Vui lòng thử lại.', 'error');
-    });
-  }
-
-  copyFileLink() {
-    const currentUrl = window.location.href;
-    
-    navigator.clipboard.writeText(currentUrl).then(() => {
-      this.toastService.show('Đã sao chép liên kết tài liệu vào bộ nhớ tạm!', 'success');
-    }).catch(err => {
-      console.error('Lỗi sao chép:', err);
-      this.toastService.show('Không thể sao chép liên kết. Vui lòng thử lại.', 'error');
-    });
   }
 
   formatSize(bytes?: string, item?: DriveItem): string {
