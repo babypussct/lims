@@ -157,7 +157,7 @@ import { resolveCompoundDisplayName, isCompoundAssigned } from './shared/compoun
             <button (click)="sampleBulkFillND()" 
                     class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
               <i class="fa-solid fa-pen-nib text-amber-500"></i>
-              <span>Đặt tất cả KPH</span>
+              <span>Đặt tất cả ND</span>
             </button>
 
             <button (click)="sampleBulkQC()" 
@@ -388,7 +388,7 @@ export class ResultEntryType3bComponent implements OnInit {
     const row = this.draft.resultData[active];
     if (row) {
       if (row[`${compound}_nd`]) {
-        row[compound] = 'KPH';
+        row[compound] = 'ND';
       } else {
         row[compound] = '';
       }
@@ -403,11 +403,12 @@ export class ResultEntryType3bComponent implements OnInit {
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row) {
-      const val = row[compound];
-      if (val && val !== 'KPH' && val !== 'ND') {
-        row[`${compound}_nd`] = false;
-      } else if (!val || val === 'KPH' || val === 'ND') {
+      const val = String(row[compound] || '').trim().toUpperCase();
+      if (val === 'KPH' || val === 'ND' || val === '') {
         row[`${compound}_nd`] = true;
+        if (val === 'KPH') row[compound] = 'ND';
+      } else {
+        row[`${compound}_nd`] = false;
       }
     }
     this.onDataChanged();
@@ -422,7 +423,7 @@ export class ResultEntryType3bComponent implements OnInit {
     if (row && this.config.compounds) {
       this.config.compounds.forEach((c: string) => {
         if (this.isTargetAssigned(active, c)) {
-          row[c] = 'KPH';
+          row[c] = 'ND';
           row[`${c}_nd`] = true;
         }
       });
@@ -464,7 +465,7 @@ export class ResultEntryType3bComponent implements OnInit {
           this.config.compounds.forEach((c: string) => {
             // Sao chép chỉ khi hoạt chất đó được gán chung trên cả 2 mẫu nguồn và đích
             if (this.isTargetAssigned(sourceSample, c) && this.isTargetAssigned(sampleCode, c)) {
-              destRow[c] = sourceData[c] || 'KPH';
+              destRow[c] = sourceData[c] || 'ND';
               destRow[`${c}_nd`] = sourceData[`${c}_nd`] !== false;
               destRow[`${c}_qc1`] = sourceData[`${c}_qc1`] || 'Đạt';
               destRow[`${c}_qc2`] = sourceData[`${c}_qc2`] || 'Đạt';
