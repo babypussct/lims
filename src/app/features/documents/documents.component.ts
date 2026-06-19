@@ -337,13 +337,13 @@ type ViewMode = 'list' | 'grid';
                              [title]="item.name">
                           {{ item.name }}
                         </div>
-                        <div class="flex justify-between items-center mt-2">
-                          <span class="text-xs text-slate-400"
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mt-2">
+                          <span class="text-[11px] text-slate-400"
                                 [class.text-fuchsia-500]="sortCol() === 'modifiedTime'"
                                 [class.dark:text-fuchsia-400]="sortCol() === 'modifiedTime'">
                             {{ formatDate(item.modifiedTime, true) }}
                           </span>
-                          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400"
+                          <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 sm:text-right"
                                 [class.text-fuchsia-500]="sortCol() === 'size'"
                                 [class.dark:text-fuchsia-400]="sortCol() === 'size'">
                             {{ formatSize(item.size, item) }}
@@ -362,9 +362,9 @@ type ViewMode = 'list' | 'grid';
       <!-- File Preview Modal -->
       @if (previewUrl()) {
         <div class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex flex-col p-4 md:p-8 animate-fade-in">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-white font-bold text-lg px-2 line-clamp-1 flex-1">{{ previewName() }}</h3>
-            <div class="flex items-center gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+            <h3 class="text-white font-bold text-base md:text-lg px-2 line-clamp-1 sm:line-clamp-2 flex-1">{{ previewName() }}</h3>
+            <div class="flex items-center gap-3 self-end sm:self-auto">
                <!-- Print button -->
                <button (click)="printFile()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg" title="In tài liệu">
                  <i class="fa-solid fa-print"></i>
