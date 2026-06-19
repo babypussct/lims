@@ -75,7 +75,7 @@ type ViewMode = 'list' | 'grid';
       </div>
 
       <!-- Breadcrumbs -->
-      <div class="mb-6 flex items-center text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar">
+      <div class="mb-6 flex items-center text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-none">
         @for (bcItem of collapsedFolderStack(); track bcItem.item.id || bcItem.originalIndex; let i = $index; let last = $last) {
           @if (bcItem.isEllipsis) {
             <div class="flex items-center text-slate-400 cursor-default select-none px-1">
@@ -110,7 +110,7 @@ type ViewMode = 'list' | 'grid';
                      type="text" 
                      [ngModel]="searchInputValue()" 
                      (ngModelChange)="onSearchChange($event)"
-                     placeholder="Tìm tài liệu trong thư mục hiện tại..." 
+                     [placeholder]="isMobile() ? 'Tìm tài liệu...' : 'Tìm tài liệu trong thư mục hiện tại...'" 
                      class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-shadow">
               @if (searchInputValue()) {
                 <button (click)="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
@@ -169,7 +169,50 @@ type ViewMode = 'list' | 'grid';
           <!-- File List (List View) -->
           @if (!error() && (displayFiles().length > 0 || (loading() && files().length === 0)) && viewMode() === 'list') {
             <div class="overflow-y-auto flex-1 custom-scrollbar">
-              <table class="w-full text-left border-collapse min-w-[700px]">
+              
+              <!-- Mobile List View (visible on <640px screens) -->
+              <div class="block sm:hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                @if (loading() && files().length === 0) {
+                  @for (item of [1, 2, 3, 4, 5]; track item) {
+                    <div class="p-4 flex items-center gap-3 animate-pulse">
+                      <div class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                      <div class="flex-1 space-y-2">
+                        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                        <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  @for (item of displayFiles(); track item.id) {
+                    <div class="p-4 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer active:bg-slate-100 dark:active:bg-slate-700"
+                         (click)="onItemClick(item)">
+                      <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                        <i class="fa-solid {{ getFileTypeStyle(item).icon }} text-lg"></i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="font-medium text-slate-800 dark:text-slate-200 text-sm line-clamp-2 leading-snug">
+                          {{ item.name }}
+                        </div>
+                        <div class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1.5">
+                          <span>{{ formatSize(item.size, item) }}</span>
+                          @if (item.modifiedTime) {
+                            <span>•</span>
+                            <span>{{ formatDate(item.modifiedTime, true) }}</span>
+                          }
+                        </div>
+                      </div>
+                      <div class="shrink-0 text-slate-400 dark:text-slate-600 pr-1">
+                        @if (isFolder(item)) {
+                          <i class="fa-solid fa-chevron-right text-xs"></i>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Desktop table view (hidden on mobile, visible on sm and larger) -->
+              <table class="hidden sm:table w-full text-left border-collapse min-w-[700px]">
                 <thead class="sticky top-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   <tr>
                     <th class="py-3 px-4 w-12 text-center">Loại</th>
@@ -323,7 +366,7 @@ type ViewMode = 'list' | 'grid';
                         
                         @if (!isFolder(item) && item.webContentLink) {
                           <button (click)="downloadItem(item, $event)" 
-                                  class="absolute top-0 right-0 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                  class="hidden sm:flex absolute top-0 right-0 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-0 group-hover:opacity-100"
                                   title="Tải xuống">
                             <i class="fa-solid fa-download text-xs"></i>
                           </button>
@@ -363,22 +406,22 @@ type ViewMode = 'list' | 'grid';
       @if (previewUrl()) {
         <div class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex flex-col p-4 md:p-8 animate-fade-in">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-            <h3 class="text-white font-bold text-base md:text-lg px-2 line-clamp-1 sm:line-clamp-2 flex-1">{{ previewName() }}</h3>
-            <div class="flex items-center gap-3 self-end sm:self-auto">
+            <h3 class="text-white font-bold text-base md:text-lg px-2 text-center sm:text-left line-clamp-2 flex-1">{{ previewName() }}</h3>
+            <div class="flex items-center gap-3 justify-end w-full sm:w-auto">
                <!-- Print button -->
-               <button (click)="printFile()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg" title="In tài liệu">
+               <button (click)="printFile()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-lg animate-fade-in" title="In tài liệu">
                  <i class="fa-solid fa-print"></i>
                </button>
-              <!-- Download button in modal -->
+              <!-- Download button in modal (hidden on mobile, visible on desktop) -->
                @if (previewContentLink()) {
-                <a [href]="previewContentLink()" class="w-10 h-10 rounded-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white flex items-center justify-center transition-colors shadow-lg" title="Tải xuống">
+                <a [href]="previewContentLink()" class="hidden sm:flex w-10 h-10 rounded-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white items-center justify-center transition-colors shadow-lg" title="Tải xuống">
                   <i class="fa-solid fa-download"></i>
                 </a>
                }
-              <a [href]="originalLink()" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
+              <a [href]="originalLink()" target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Mở trong tab mới">
                 <i class="fa-solid fa-external-link-alt"></i>
               </a>
-              <button (click)="closePreview()" class="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
+              <button (click)="closePreview()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg" title="Đóng">
                 <i class="fa-solid fa-times text-xl"></i>
               </button>
             </div>
@@ -398,7 +441,7 @@ type ViewMode = 'list' | 'grid';
               <i class="fa-solid fa-circle-info text-fuchsia-400 text-sm"></i>
               Trình xem trước không hiển thị? Hãy đảm bảo đã đăng nhập Google hoặc tắt chặn cookie bên thứ ba.
             </span>
-            <a [href]="originalLink()" target="_blank" class="text-fuchsia-400 hover:text-fuchsia-300 font-bold flex items-center gap-1 underline transition-colors">
+            <a [href]="originalLink()" target="_blank" class="px-3 py-1.5 bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-400 hover:text-fuchsia-300 font-bold flex items-center gap-1.5 rounded-lg border border-fuchsia-500/30 transition-colors cursor-pointer">
               Mở tệp trong tab mới <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
             </a>
           </div>
@@ -421,6 +464,13 @@ type ViewMode = 'list' | 'grid';
     .dark .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #475569;
     }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   `]
 })
 export class DocumentsComponent implements OnInit, OnDestroy {
@@ -437,6 +487,8 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
   isOnline = signal<boolean>(navigator.onLine);
+  windowWidth = signal<number>(window.innerWidth);
+  isMobile = computed(() => this.windowWidth() < 640);
   
   folderStack = signal<Breadcrumb[]>([{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }]);
   currentFolderId = signal<string>(this.ROOT_FOLDER_ID);
@@ -524,6 +576,11 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     if (this.previewUrl()) {
       this.closePreview();
     }
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.windowWidth.set(window.innerWidth);
   }
 
   ngOnInit() {
