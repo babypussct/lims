@@ -200,7 +200,7 @@ export class DocumentsComponent implements OnInit {
       this.loadFolder(item.id);
     } else {
       // Preview file inside the app
-      const url = \`https://drive.google.com/file/d/\${item.id}/preview\`;
+      const url = `https://drive.google.com/file/d/${item.id}/preview`;
       this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
       this.previewName.set(item.name);
       this.originalLink.set(item.webViewLink || '');
