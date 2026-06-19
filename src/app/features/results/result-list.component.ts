@@ -336,7 +336,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             <i class="fa-solid fa-link text-[7px]"></i> Đã gộp
                           </a>
                         }
-                        @if (run.lockedBy) {
+                        @if (isRunLocked(run)) {
                           <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
                             <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
                           </span>
@@ -449,7 +449,7 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             @if (run.isVirtualMaster) {
                               <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Master ảo</span>
                             }
-                            @if (run.lockedBy) {
+                            @if (isRunLocked(run)) {
                               <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs animate-pulse" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
                                 <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
                               </span>
@@ -1336,6 +1336,24 @@ export class ResultListComponent implements OnInit, OnDestroy {
       default: 
         return 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30';
     }
+  }
+
+  isRunLocked(run: any): boolean {
+    if (!run?.lockedBy) return false;
+    if (run.lastActiveAt) {
+      const convert = (ts: any) => {
+        if (!ts) return null;
+        if (ts instanceof Date) return ts;
+        if (typeof ts.toDate === 'function') return ts.toDate();
+        if (ts.seconds !== undefined) return new Date(ts.seconds * 1000);
+        return new Date(ts);
+      };
+      const lastActive = convert(run.lastActiveAt);
+      if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
+        return false;
+      }
+    }
+    return true;
   }
 
   getRunDate(run: any): string {

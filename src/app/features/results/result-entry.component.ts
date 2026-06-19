@@ -82,14 +82,30 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const user = this.auth.currentUser();
     
     if (d?.status === 'completed') return true;
-    if (r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase()) return true;
+    if (r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase()) {
+      if (r.lastActiveAt) {
+        const lastActive = this.convertToDate(r.lastActiveAt);
+        if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
+          return false;
+        }
+      }
+      return true;
+    }
     return false;
   });
 
   lockedByOthers = computed(() => {
     const r = this.run();
     const user = this.auth.currentUser();
-    return r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase();
+    if (!r?.lockedBy || !user || r.lockedBy.toLowerCase() === user.email.toLowerCase()) return false;
+    
+    if (r.lastActiveAt) {
+      const lastActive = this.convertToDate(r.lastActiveAt);
+      if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
+        return false;
+      }
+    }
+    return true;
   });
 
   convertToDate(timestamp: any): Date | null {
@@ -111,6 +127,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   unloadNotification($event: any) {
     if (this.autoSaveStatus() === 'modified') {
       $event.returnValue = true;
+    }
+    this.releaseLockIfNeeded();
+  }
+
+  @HostListener('window:unload')
+  onUnload() {
+    this.releaseLockIfNeeded();
+  }
+
+  private releaseLockIfNeeded() {
+    const r = this.run();
+    const user = this.auth.currentUser();
+    if (r && user && r.lockedBy === user.email) {
+      this.resultService.releaseLock(this.requestId);
     }
   }
 
@@ -208,8 +238,18 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     effect(() => {
       const user = this.auth.currentUser();
       const runDoc = this.run();
-      if (user && runDoc && !runDoc.lockedBy && runDoc.status !== 'completed') {
-        this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+      if (user && runDoc && runDoc.status !== 'completed') {
+        const isLockedByMe = runDoc.lockedBy?.toLowerCase() === user.email.toLowerCase();
+        let isStale = false;
+        if (runDoc.lockedBy && !isLockedByMe && runDoc.lastActiveAt) {
+          const lastActive = this.convertToDate(runDoc.lastActiveAt);
+          if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
+            isStale = true;
+          }
+        }
+        if (!runDoc.lockedBy || isStale) {
+          this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+        }
       }
     });
   }

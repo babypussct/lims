@@ -517,7 +517,15 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   lockedByOthers = computed(() => {
     const r = this.run();
     const user = this.auth.currentUser();
-    return r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase();
+    if (!r?.lockedBy || !user || r.lockedBy.toLowerCase() === user.email.toLowerCase()) return false;
+    
+    if (r.lastActiveAt) {
+      const lastActive = this.convertToDate(r.lastActiveAt);
+      if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
+        return false;
+      }
+    }
+    return true;
   });
 
   // Safe Docs Iframe url calculated from current filter
