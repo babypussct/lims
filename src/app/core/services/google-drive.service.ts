@@ -556,30 +556,4 @@ export class GoogleDriveService {
     return data.files || [];
   }
 
-  /**
-   * Global search across all public files accessible by API Key
-   */
-  async searchGlobal(term: string): Promise<any[]> {
-    const config = (environment as any).googleDrive;
-    if (!config?.apiKey) {
-      throw new Error('Chưa cấu hình Google Drive API Key trong environment.');
-    }
-
-    // Escape single quotes in term
-    const safeTerm = term.replace(/'/g, "\\'");
-    const query = `name contains '${safeTerm}' and trashed=false`;
-    const fields = 'files(id, name, mimeType, webViewLink, webContentLink, iconLink, modifiedTime, size)';
-    // Can't reliably order by folder globally, order by modifiedTime
-    const orderBy = 'modifiedTime desc';
-
-    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=${encodeURIComponent(orderBy)}&key=${config.apiKey}`;
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`Không thể tìm kiếm: ${err?.error?.message || res.status}`);
-    }
-    const data = await res.json();
-    return data.files || [];
-  }
 }

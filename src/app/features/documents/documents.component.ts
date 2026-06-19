@@ -72,34 +72,24 @@ type ViewMode = 'list' | 'grid';
 
       <!-- Breadcrumbs -->
       <div class="mb-6 flex items-center text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar">
-        @if (isGlobalSearch()) {
-          <div class="flex items-center text-fuchsia-600 dark:text-fuchsia-400">
-            <i class="fa-solid fa-globe mr-2"></i>
-            <span>Kết quả tìm kiếm toàn cục</span>
-            <button (click)="cancelGlobalSearch()" class="ml-4 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-slate-500 hover:text-slate-700 dark:hover:text-white transition-colors">
-              <i class="fa-solid fa-times mr-1"></i>Đóng
-            </button>
-          </div>
-        } @else {
-          @for (bc of folderStack(); track bc.id; let i = $index; let last = $last) {
-            <div class="flex items-center cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors whitespace-nowrap"
-                 [class.text-fuchsia-600]="last"
-                 [class.dark:text-fuchsia-400]="last"
-                 (click)="goToBreadcrumb(i)">
-              @if (i === 0) {
-                <i class="fa-solid fa-home mr-1.5"></i>
-              }
-              <span>{{ bc.name }}</span>
-            </div>
-            @if (!last) {
-              <i class="fa-solid fa-chevron-right mx-2 text-slate-400 text-xs shrink-0"></i>
+        @for (bc of folderStack(); track bc.id; let i = $index; let last = $last) {
+          <div class="flex items-center cursor-pointer hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors whitespace-nowrap"
+               [class.text-fuchsia-600]="last"
+               [class.dark:text-fuchsia-400]="last"
+               (click)="goToBreadcrumb(i)">
+            @if (i === 0) {
+              <i class="fa-solid fa-home mr-1.5"></i>
             }
+            <span>{{ bc.name }}</span>
+          </div>
+          @if (!last) {
+            <i class="fa-solid fa-chevron-right mx-2 text-slate-400 text-xs shrink-0"></i>
           }
         }
       </div>
 
       <!-- Content Area -->
-      <div class="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-soft-xl border border-slate-200 dark:border-slate-700 flex flex-col relative overflow-hidden">
+      <div class="flex-1 min-h-[500px] bg-white dark:bg-slate-800 rounded-xl shadow-soft-xl border border-slate-200 dark:border-slate-700 flex flex-col relative overflow-hidden">
         
         <!-- Toolbar: Search & Filter -->
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center gap-3 bg-slate-50/50 dark:bg-slate-900/50">
@@ -109,8 +99,7 @@ type ViewMode = 'list' | 'grid';
               <input type="text" 
                      [ngModel]="searchTerm()" 
                      (ngModelChange)="searchTerm.set($event)"
-                     (keyup.enter)="triggerGlobalSearch()"
-                     placeholder="Tìm tài liệu..." 
+                     placeholder="Tìm tài liệu trong thư mục hiện tại..." 
                      class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-shadow">
               @if (searchTerm()) {
                 <button (click)="searchTerm.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
@@ -118,14 +107,6 @@ type ViewMode = 'list' | 'grid';
                 </button>
               }
             </div>
-            
-            <button (click)="triggerGlobalSearch()" 
-                    [disabled]="!searchTerm().trim()"
-                    class="h-[38px] px-3 bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/50 rounded-lg border border-fuchsia-200 dark:border-fuchsia-800/50 transition-colors flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Tìm sâu trên toàn bộ Drive">
-              <i class="fa-solid fa-bolt"></i>
-              <span class="text-sm font-semibold hidden md:inline">Tìm Toàn cục</span>
-            </button>
           </div>
           <div class="text-sm text-slate-500 dark:text-slate-400 sm:ml-auto shrink-0 font-medium bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
             {{ displayFiles().length }} mục
@@ -133,10 +114,11 @@ type ViewMode = 'list' | 'grid';
         </div>
 
         @if (loading()) {
-          <div class="absolute inset-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm flex items-center justify-center">
-            <div class="flex flex-col items-center">
-              <i class="fa-solid fa-circle-notch fa-spin text-3xl text-fuchsia-500 mb-3"></i>
-              <span class="text-slate-600 dark:text-slate-300 font-medium">Đang tải dữ liệu...</span>
+          <div class="absolute inset-0 z-20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center transition-all">
+            <div class="flex flex-col items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700">
+              <i class="fa-solid fa-circle-notch fa-spin text-4xl text-fuchsia-500 mb-4"></i>
+              <span class="text-slate-700 dark:text-slate-200 font-semibold text-lg">Đang tải dữ liệu...</span>
+              <span class="text-slate-400 text-sm mt-1">Vui lòng chờ trong giây lát</span>
             </div>
           </div>
         }
@@ -174,7 +156,7 @@ type ViewMode = 'list' | 'grid';
         }
 
         <!-- File List (List View) -->
-        @if (!loading() && !error() && displayFiles().length > 0 && viewMode() === 'list') {
+        @if (!error() && displayFiles().length > 0 && viewMode() === 'list') {
           <div class="overflow-y-auto flex-1 custom-scrollbar">
             <table class="w-full text-left border-collapse min-w-[700px]">
               <thead class="sticky top-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm z-10 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -228,7 +210,7 @@ type ViewMode = 'list' | 'grid';
                       @if (isFolder(item)) {
                         <i class="fa-solid fa-folder text-yellow-400 text-xl group-hover:scale-110 transition-transform"></i>
                       } @else {
-                        <img [src]="item.iconLink" class="w-6 h-6 mx-auto" onerror="this.src='assets/images/file.png'" alt="icon">
+                        <img [src]="getHighResIcon(item.iconLink)" class="w-6 h-6 mx-auto object-contain" onerror="this.src='assets/images/file.png'" alt="icon">
                       }
                     </td>
                     <td class="py-3 px-4">
@@ -259,7 +241,7 @@ type ViewMode = 'list' | 'grid';
         }
 
         <!-- Grid View -->
-        @if (!loading() && !error() && displayFiles().length > 0 && viewMode() === 'grid') {
+        @if (!error() && displayFiles().length > 0 && viewMode() === 'grid') {
           <div class="overflow-y-auto flex-1 custom-scrollbar p-4">
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               @for (item of displayFiles(); track item.id) {
@@ -270,7 +252,7 @@ type ViewMode = 'list' | 'grid';
                     @if (isFolder(item)) {
                       <i class="fa-solid fa-folder text-yellow-400 text-5xl group-hover:scale-110 transition-transform"></i>
                     } @else {
-                      <img [src]="item.iconLink?.replace('16', '64')" class="w-16 h-16 group-hover:scale-110 transition-transform object-contain" onerror="this.src='assets/images/file.png'" alt="icon">
+                      <img [src]="getHighResIcon(item.iconLink)" class="w-16 h-16 group-hover:scale-110 transition-transform object-contain" onerror="this.src='assets/images/file.png'" alt="icon">
                     }
                     
                     @if (!isFolder(item) && item.webContentLink) {
@@ -346,7 +328,6 @@ export class DocumentsComponent implements OnInit {
   
   // View & Mode State
   viewMode = signal<ViewMode>('list');
-  isGlobalSearch = signal<boolean>(false);
 
   // Search & Sort State
   searchTerm = signal<string>('');
@@ -365,7 +346,7 @@ export class DocumentsComponent implements OnInit {
     const term = this.searchTerm().toLowerCase().trim();
     
     // 1. Filter (Local filter)
-    if (term && !this.isGlobalSearch()) {
+    if (term) {
       arr = arr.filter(f => f.name.toLowerCase().includes(term));
     }
 
@@ -410,7 +391,6 @@ export class DocumentsComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     this.searchTerm.set('');
-    this.isGlobalSearch.set(false);
     this.currentFolderId.set(folderId);
 
     // Kiểm tra Cache trước (nếu không bắt buộc làm mới)
@@ -432,36 +412,7 @@ export class DocumentsComponent implements OnInit {
   }
 
   forceRefresh() {
-    if (this.isGlobalSearch()) {
-      this.triggerGlobalSearch();
-    } else {
-      this.loadFolder(this.currentFolderId(), true); // skip cache
-    }
-  }
-
-  async triggerGlobalSearch() {
-    const term = this.searchTerm().trim();
-    if (!term) return;
-
-    this.loading.set(true);
-    this.error.set(null);
-    this.isGlobalSearch.set(true);
-
-    try {
-      const items = await this.driveService.searchGlobal(term);
-      this.files.set(items);
-    } catch (err: any) {
-      this.error.set(err.message || 'Lỗi tìm kiếm toàn cục.');
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  cancelGlobalSearch() {
-    this.isGlobalSearch.set(false);
-    this.searchTerm.set('');
-    // Quay lại thư mục đang xem dở
-    this.loadFolder(this.currentFolderId());
+    this.loadFolder(this.currentFolderId(), true); // skip cache
   }
 
   toggleSort(col: SortColumn) {
@@ -480,14 +431,8 @@ export class DocumentsComponent implements OnInit {
 
   onItemClick(item: DriveItem) {
     if (this.isFolder(item)) {
-      if (this.isGlobalSearch()) {
-        // Nếu tìm toàn cục mà ấn vào folder, ta lấy đó làm gốc mới và dọn breadcrumb cũ
-        this.folderStack.set([{ id: this.ROOT_FOLDER_ID, name: this.ROOT_FOLDER_NAME }, { id: item.id, name: item.name }]);
-        this.loadFolder(item.id);
-      } else {
-        this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
-        this.loadFolder(item.id);
-      }
+      this.folderStack.update(stack => [...stack, { id: item.id, name: item.name }]);
+      this.loadFolder(item.id);
     } else {
       const url = `https://drive.google.com/file/d/${item.id}/preview`;
       this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -519,7 +464,7 @@ export class DocumentsComponent implements OnInit {
 
   goToBreadcrumb(index: number) {
     const stack = this.folderStack();
-    if (index === stack.length - 1 && !this.isGlobalSearch()) return; 
+    if (index === stack.length - 1) return; 
 
     const targetFolder = stack[index];
     this.folderStack.set(stack.slice(0, index + 1));
@@ -548,5 +493,11 @@ export class DocumentsComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  getHighResIcon(link?: string): string {
+    if (!link) return 'assets/images/file.png';
+    // Thay thế kích thước /16/ thành /64/ để hình ảnh sắc nét khi phóng to
+    return link.replace('/16/', '/64/');
   }
 }
