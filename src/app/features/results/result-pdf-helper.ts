@@ -818,11 +818,11 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
 
     const compoundResults = currentConf.compounds.reduce((acc: any, c: string) => {
       const backendKey = c;
-      const assigned = filteredSamples.some(s => isAssigned(s, c));
+      const assigned = filteredSamples.some((s: string) => isAssigned(s, c));
       if (!assigned) {
         acc[backendKey] = 'N/A';
       } else {
-        const hasDetection = filteredSamples.some(s => 
+        const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
           currentDraft.resultData[s]?.[c] && 
@@ -831,7 +831,7 @@ export function buildLanHuuCoPdfPayload(currentDraft: any, currentRun: any, acti
         if (!hasDetection) {
           acc[backendKey] = 'ND';
         } else {
-          const parts = filteredSamples.map(s => {
+          const parts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             if (!isAssigned(s, c)) return `${s}: N/A`;
             const isNd = sRes[`${c}_nd`] === true;
@@ -1788,8 +1788,7 @@ export function buildUnifiedType3bPdfPayload(
         rowData[`${c}_qc1`] = 'N/A';
         rowData[`${c}_qc2`] = 'N/A';
         rowData[`${c}_qc3`] = 'N/A';
-      } else {
-        const hasDetection = filteredSamples.some(s => 
+        const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
           currentDraft.resultData[s]?.[c] && 
@@ -1801,7 +1800,7 @@ export function buildUnifiedType3bPdfPayload(
           rowData[c] = '';
         } else {
           rowData[`${c}_nd`] = false;
-          const resultParts = filteredSamples.map(s => {
+          const resultParts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             const isNd = sRes[`${c}_nd`] === true;
             const sVal = sRes[c] !== undefined && sRes[c] !== null ? String(sRes[c]) : '';
@@ -1896,11 +1895,11 @@ export function buildUnifiedType3bPdfPayload(
     });
 
     const compoundResults = (currentConf.compounds as string[]).reduce((acc: any, c: string) => {
-      const assigned = filteredSamples.some(s => isAssigned(s, c));
+      const assigned = filteredSamples.some((s: string) => isAssigned(s, c));
       if (!assigned) {
         acc[c] = 'N/A';
       } else {
-        const hasDetection = filteredSamples.some(s => 
+        const hasDetection = filteredSamples.some((s: string) => 
           isAssigned(s, c) && 
           currentDraft.resultData[s]?.[`${c}_nd`] !== true && 
           currentDraft.resultData[s]?.[c] && 
@@ -1909,7 +1908,7 @@ export function buildUnifiedType3bPdfPayload(
         if (!hasDetection) {
           acc[c] = 'ND';
         } else {
-          const parts = filteredSamples.map(s => {
+          const parts = filteredSamples.map((s: string) => {
             const sRes = currentDraft.resultData[s] || {};
             if (!isAssigned(s, c)) return `${s}: N/A`;
             const isNd = sRes[`${c}_nd`] === true;
