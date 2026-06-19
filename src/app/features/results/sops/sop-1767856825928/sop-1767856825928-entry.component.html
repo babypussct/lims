@@ -84,8 +84,8 @@
               Thủy sản
             </button>
             <input type="text" 
-                   [(ngModel)]="draft.page1Data['loaiMau']" 
-                   (ngModelChange)="onDataChanged()"
+                   [ngModel]="['Nông sản tươi', 'Nông sản khô', 'Thủy sản', 'Thuỷ sản'].includes(draft.page1Data['loaiMau']) ? '' : draft.page1Data['loaiMau']" 
+                   (ngModelChange)="draft.page1Data['loaiMau'] = $event; onDataChanged()"
                    placeholder="Khác..."
                    class="w-full min-w-[70px] bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
           </div>
@@ -104,8 +104,8 @@
               Bình thường
             </button>
             <input type="text" 
-                   [(ngModel)]="draft.page1Data['tinhTrangMau']" 
-                   (ngModelChange)="onDataChanged()"
+                   [ngModel]="draft.page1Data['tinhTrangMau'] === 'Bình thường' ? '' : draft.page1Data['tinhTrangMau']" 
+                   (ngModelChange)="draft.page1Data['tinhTrangMau'] = $event; onDataChanged()"
                    placeholder="Khác..."
                    class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition outline-none">
           </div>

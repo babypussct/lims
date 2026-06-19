@@ -148,6 +148,11 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     // 11. Sau khi có master analytes, làm sạch và điền N/A
     this.cleanUpPooledSampleResults();
     this.prefillUnassignedTargets();
+
+    // 12. Trigger update to ensure UI renders default states correctly when opening new form
+    setTimeout(() => {
+      this.onDataChanged();
+    }, 100);
   }
 
   // ── Hook cho SOP đặc thù ─────────────────────────────────────────────────
@@ -166,6 +171,9 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
     if (p['printFormType'] === undefined)
       p['printFormType'] = 'formCheck';
+
+    if (p['is10gChecked'] === undefined)
+      p['is10gChecked'] = true;
 
     if (!p['khoiLuong'])
       p['khoiLuong'] = '10.0';
@@ -664,6 +672,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   on10gCheckChange(event: any) {
+    const oldKhoiLuong = this.draft.page1Data['khoiLuong'] || '10.0';
     this.draft.page1Data['is10gChecked'] = event.target.checked;
     if (this.draft.page1Data['is10gChecked']) {
       this.draft.page1Data['khoiLuongKhac'] = '';
@@ -671,10 +680,12 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     } else {
       this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'] || '';
     }
+    this.syncMassToSamples(oldKhoiLuong, this.draft.page1Data['khoiLuong']);
     this.onDataChanged();
   }
 
   onKhoiLuongKhacChange() {
+    const oldKhoiLuong = this.draft.page1Data['khoiLuong'] || '10.0';
     if (this.draft.page1Data['khoiLuongKhac']) {
       this.draft.page1Data['is10gChecked'] = false;
       this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'];
@@ -682,7 +693,21 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
       this.draft.page1Data['is10gChecked'] = true;
       this.draft.page1Data['khoiLuong'] = '10.0';
     }
+    this.syncMassToSamples(oldKhoiLuong, this.draft.page1Data['khoiLuong']);
     this.onDataChanged();
+  }
+
+  protected syncMassToSamples(oldMass: string, newMass: string) {
+    if (oldMass === newMass || !newMass) return;
+    (this.run?.sampleList || []).forEach((sampleCode: string) => {
+      const row = this.draft.resultData[sampleCode];
+      if (row) {
+        // Chỉ đồng bộ nếu khối lượng hiện tại của mẫu bằng với khối lượng chung CŨ hoặc đang trống
+        if (!row['khoiLuong'] || row['khoiLuong'] === oldMass) {
+          row['khoiLuong'] = newMass;
+        }
+      }
+    });
   }
 
   /** Ngẫu nhiên hoá khối lượng mẫu (dùng cho formDon thực tế) */
