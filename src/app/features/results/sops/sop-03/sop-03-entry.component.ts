@@ -99,15 +99,28 @@ export class Sop03EntryComponent implements OnInit {
 
     // Đảm bảo các trường dữ liệu cần thiết của Trifluralin luôn được khởi tạo
     if (!this.draft.page1Data) this.draft.page1Data = {};
-    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length === 0) {
+    const existingCalibPoints = this.draft.page1Data['calibPoints'];
+    if (!existingCalibPoints || existingCalibPoints.length === 0) {
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '41', hamLuong: '0' },
-        { loSo: '42', hamLuong: '0.5' },
-        { loSo: '43', hamLuong: '1.0' },
-        { loSo: '44', hamLuong: '5.0' },
-        { loSo: '45', hamLuong: '10.0' },
-        { loSo: '46', hamLuong: '30.0' }
+        { loSo: 'C0', vialNo: '41', hamLuong: '0' },
+        { loSo: 'C1', vialNo: '42', hamLuong: '0.5' },
+        { loSo: 'C2', vialNo: '43', hamLuong: '1.0' },
+        { loSo: 'C3', vialNo: '44', hamLuong: '5.0' },
+        { loSo: 'C4', vialNo: '45', hamLuong: '10.0' },
+        { loSo: 'C5', vialNo: '46', hamLuong: '30.0' }
       ];
+    } else {
+      // Migration dữ liệu cũ
+      existingCalibPoints.forEach((pt: any, idx: number) => {
+        if (!pt.vialNo) {
+          if (/^\d+$/.test(String(pt.loSo || ''))) {
+            pt.vialNo = pt.loSo;
+          }
+        }
+        if (!pt.loSo || /^\d+$/.test(String(pt.loSo))) {
+          pt.loSo = `C${idx}`;
+        }
+      });
     }
     if (this.draft.page1Data['r2'] === undefined || this.draft.page1Data['r2'] === '') {
       this.draft.page1Data['r2'] = '0.999';
@@ -179,7 +192,8 @@ export class Sop03EntryComponent implements OnInit {
 
     const calPoints = this.draft.page1Data['calibPoints'];
     if (calPoints && calPoints.length > 0) {
-      this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || 41;
+      const firstVial = calPoints[0]?.vialNo || calPoints[0]?.loSo;
+      this.bulkCalibVialStart = parseInt(String(firstVial), 10) || 41;
     } else {
       this.bulkCalibVialStart = 41;
     }
@@ -210,7 +224,7 @@ export class Sop03EntryComponent implements OnInit {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (calibPoints && calibPoints.length > 0) {
       calibPoints.forEach((pt: any, idx: number) => {
-        pt['loSo'] = String(start + idx);
+        pt['vialNo'] = String(start + idx); // Điền số vial, giữ tên điểm loSo
       });
       this.syncSpreadsheetVialsFromCalibration();
       this.onDataChanged();
@@ -220,8 +234,10 @@ export class Sop03EntryComponent implements OnInit {
   syncSpreadsheetVialsFromCalibration() {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (!calibPoints || calibPoints.length === 0) return;
-    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
-    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    // Đọc số vial từ vialNo. Fallback loSo nếu là số (dữ liệu cũ)
+    const lastPt = calibPoints[calibPoints.length - 1];
+    const lastVialStr = lastPt?.vialNo || ((/^\d+$/.test(String(lastPt?.loSo || ''))) ? lastPt?.loSo : undefined);
+    const lastCalibVial = parseInt(String(lastVialStr), 10);
     if (isNaN(lastCalibVial)) return;
 
     if (this.draft.resultData['QC_BLANK']) {

@@ -821,11 +821,12 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
     
     const headerRowText = table.getRow(0).getText().toLowerCase();
     
-    // 1. Nhan dien Bang Duong Chuan (ASCII-only matching)
-    let isCalib = headerRowText.includes('vial') && (headerRowText.includes('ml') || headerRowText.includes('ng/ml'));
+    // 1. Nhan dien Bang Duong Chuan (ASCII-only matching + Vietnamese)
+    let isCalib = (headerRowText.includes('vial') || headerRowText.includes('điểm chuẩn') || headerRowText.includes('diem chuan')) && 
+                  (headerRowText.includes('ml') || headerRowText.includes('ng/ml') || headerRowText.includes('nồng độ') || headerRowText.includes('nong do'));
     if (!isCalib && numRows >= 5) {
       const lastRowText = table.getRow(numRows - 1).getText().toLowerCase();
-      if (lastRowText.includes('r2') || lastRowText.includes('r2')) isCalib = true;
+      if (lastRowText.includes('r2') || lastRowText.includes('r²')) isCalib = true;
     }
     
     if (isCalib) {
@@ -837,9 +838,9 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
       for (let c = 0; c < hRow.getNumCells(); c++) {
         const txt = hRow.getCell(c).getText().toLowerCase();
         if (c === 0) loSoCol = c;
-        if (txt.includes('vial')) vialCol = c;
-        if (txt.includes('ml')) kqCol = c;
-        if (txt.includes('area')) areaCol = c;
+        if (txt.includes('vial') || txt.includes('lọ số') || txt.includes('lo so')) vialCol = c;
+        if (txt.includes('ml') || txt.includes('nồng độ') || txt.includes('nong do')) kqCol = c;
+        if (txt.includes('area') || txt.includes('diện tích') || txt.includes('dien tich')) areaCol = c;
       }
       
       if (loSoCol === -1) loSoCol = 0;
@@ -862,27 +863,49 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
         if (text.includes('r2') || text.includes('r²')) {
           const row = table.getRow(r);
           try {
-            setCellText(row, row.getNumCells() - 1, (metadata.r2 || '').toString(), null, sopConfig.defaultFontSize);
+            const targetCell = row.getCell(row.getNumCells() - 1);
+            const cellText = targetCell.getText();
+            const r2Val = (metadata.r2 || '').toString();
+            
+            if (cellText.includes('…') || cellText.includes('...')) {
+              if (typeof replaceDotsSafely === 'function') {
+                replaceDotsSafely(targetCell, '[…\\.]{2,}', r2Val);
+              } else {
+                targetCell.editAsText().appendText(' ' + r2Val);
+              }
+            } else if (row.getNumCells() === 1 && cellText.trim().length > 0 && !cellText.includes(r2Val)) {
+              // Single cell merged row, append to text instead of clearing
+              targetCell.editAsText().appendText(' ' + r2Val);
+            } else {
+              setCellText(row, row.getNumCells() - 1, r2Val, null, sopConfig.defaultFontSize);
+            }
           } catch(e) {}
         }
       }
       continue;
     }
     
-    // 2. Nhan dien Bang Ket Qua (ASCII-only matching)
+    // 2. Nhan dien Bang Ket Qua (ASCII-only matching + Vietnamese)
     let isResultTable = headerRowText.includes('vial') && headerRowText.includes('(g)');
+    if (!isResultTable) {
+      if (headerRowText.includes('khối lượng') || headerRowText.includes('khoi luong') || headerRowText.includes('mã số') || headerRowText.includes('mẫu thử')) {
+        isResultTable = true;
+      }
+    }
+    
     if (isResultTable) {
       Logger.log('[FormDon-Type3B] Found Results Table for ' + compoundName);
       
       const hRow = table.getRow(0);
-      let maSoMauCol = -1, khoiLuongCol = -1, fCol = -1, loSoCol = -1, kqCol = -1;
+      let maSoMauCol = -1, khoiLuongCol = -1, fCol = -1, loSoCol = -1, kqCol = -1, ghiChuCol = -1;
       for (let c = 0; c < hRow.getNumCells(); c++) {
         const txt = hRow.getCell(c).getText().toLowerCase();
         if (c === 0) maSoMauCol = c;
-        if (txt.includes('(g)') && !txt.includes('g/g')) khoiLuongCol = c;
-        if (txt.includes(' f') || txt.endsWith('f') || txt === 'f') fCol = c;
-        if (txt.includes('vial') || txt.includes('batch')) loSoCol = c;
-        if (txt.includes('g/g')) kqCol = c;
+        if ((txt.includes('(g)') && !txt.includes('g/g')) || txt.includes('khối lượng') || txt.includes('khoi luong')) khoiLuongCol = c;
+        if (txt.includes(' f') || txt.endsWith('f') || txt === 'f' || txt.includes('pha loãng') || txt.includes('pha loang')) fCol = c;
+        if (txt.includes('vial') || txt.includes('batch') || txt.includes('lọ số') || txt.includes('lo so')) loSoCol = c;
+        if (txt.includes('g/g') || txt.includes('kết quả') || txt.includes('ket qua') || txt.includes('nồng độ') || txt.includes('nong do')) kqCol = c;
+        if (txt.includes('ghi chú') || txt.includes('ghi chu') || txt.includes('note')) ghiChuCol = c;
       }
       
       if (maSoMauCol === -1) maSoMauCol = 0;
@@ -890,6 +913,7 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
       if (fCol === -1) fCol = 2;
       if (loSoCol === -1) loSoCol = 3;
       if (kqCol === -1) kqCol = 4;
+      // Không gán mặc định cho ghiChuCol vì nó có thể không tồn tại
       
       const backendKey = (compoundName || '').replace(/[^a-zA-Z0-9_]/g, '');
       let rowIdx = 1;
@@ -920,6 +944,7 @@ function _fillFormDonTablesDynamically(pageElements, metadata, samples, compound
           if (fCol >= 0 && fCol < row.getNumCells()) setCellText(row, fCol, (sample.heSoPhaLoang || sample.hSoPhaLoang || '1').toString(), null, sopConfig.defaultFontSize);
           if (loSoCol >= 0 && loSoCol < row.getNumCells()) setCellText(row, loSoCol, (sample.loSo || '').toString(), null, sopConfig.defaultFontSize);
           if (kqCol >= 0 && kqCol < row.getNumCells()) setCellText(row, kqCol, (kqVal || '').toString(), null, sopConfig.defaultFontSize);
+          if (ghiChuCol >= 0 && ghiChuCol < row.getNumCells()) setCellText(row, ghiChuCol, (sample.ghiChu || '').toString(), null, sopConfig.defaultFontSize);
         } catch(e) {}
         
         rowIdx++;

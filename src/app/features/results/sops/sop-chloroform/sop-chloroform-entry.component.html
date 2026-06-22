@@ -130,13 +130,34 @@
                  class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
           <span class="text-slate-400">-</span>
           <input type="number" 
-                 [(ngModel)]="bulkVialEnd" 
+                 [ngModel]="bulkVialEnd"
+                 readonly
                  placeholder="Kết thúc" 
-                 class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+                 class="w-14 bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/40 rounded px-1.5 py-0.5 text-center text-slate-450 dark:text-slate-500 font-bold outline-none cursor-not-allowed">
           <button (click)="applyBulkVials()" 
                   class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
             <i class="fa-solid fa-check"></i>
             <span>Áp dụng</span>
+          </button>
+        </div>
+
+        <!-- Quick KL & F defaults -->
+        <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800/80 rounded-lg px-2.5 py-1 text-xs">
+          <span class="font-bold text-slate-500 dark:text-slate-400">KL mặc định:</span>
+          <input type="text" 
+                 [(ngModel)]="bulkDefaultKhoiLuong"
+                 placeholder="5.00" 
+                 class="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+          <span class="font-bold text-slate-500 dark:text-slate-400">F:</span>
+          <input type="text" 
+                 [(ngModel)]="bulkDefaultF"
+                 placeholder="1" 
+                 class="w-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-cyan-500 outline-none">
+          <button (click)="applyBulkKhoiLuongF()" 
+                  class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold transition flex items-center gap-1 active:scale-95 shadow-sm"
+                  title="Áp dụng khối lượng và hệ số pha loãng cho tất cả các mẫu">
+            <i class="fa-solid fa-check"></i>
+            <span>Áp KL+F</span>
           </button>
         </div>
       </div>

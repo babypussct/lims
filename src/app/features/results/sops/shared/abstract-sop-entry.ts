@@ -229,21 +229,14 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /**
    * Khởi tạo điểm chuẩn đường hiệu chuẩn
-   * @param count số điểm (5 hoặc 6)
-   * @param defaults danh sách điểm mặc định (nếu không cung cấp, tự động tạo)
+   * Quy tắc: loSo = tên điểm (C0, C1…), vialNo = số vial, hamLuong = nồng độ
    */
   protected initCalibrationPoints(count: 5 | 6, defaults?: CalibPoint[]) {
-    const defaultCalib5: CalibPoint[] = [
-      { loSo: '1', hamLuong: '0' },
-      { loSo: '2', hamLuong: '5' },
-      { loSo: '3', hamLuong: '10' },
-      { loSo: '4', hamLuong: '20' },
-      { loSo: '5', hamLuong: '50' }
-    ];
-    const defaultCalib6: CalibPoint[] = [
-      ...defaultCalib5,
-      { loSo: '6', hamLuong: '100' }
-    ];
+    const makePoints = (nongs: string[]): any[] =>
+      nongs.map((hamLuong, idx) => ({ loSo: `C${idx}`, vialNo: String(idx + 1), hamLuong }));
+
+    const defaultCalib5 = makePoints(['0', '5', '10', '20', '50']);
+    const defaultCalib6 = makePoints(['0', '5', '10', '20', '50', '100']);
 
     const defaultCalib = defaults ?? (count === 6 ? defaultCalib6 : defaultCalib5);
     const calibPoints = this.draft.page1Data['calibPoints'];
@@ -253,7 +246,17 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     } else {
       calibPoints.forEach((pt: any, idx: number) => {
         if (!pt.hamLuong) pt.hamLuong = defaultCalib[idx].hamLuong;
-        if (!pt.loSo) pt.loSo = defaultCalib[idx].loSo;
+        // Migration: nếu loSo là số (dữ liệu cũ) → chuyển sang vialNo, set loSo = tên điểm
+        if (!pt.vialNo) {
+          if (/^\d+$/.test(String(pt.loSo || ''))) {
+            pt.vialNo = pt.loSo; // giữ số vial cũ
+          } else {
+            pt.vialNo = defaultCalib[idx].vialNo;
+          }
+        }
+        if (!pt.loSo || /^\d+$/.test(String(pt.loSo))) {
+          pt.loSo = `C${idx}`; // đặt tên điểm chuẩn đúng
+        }
       });
     }
   }
@@ -555,7 +558,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (calibPoints && calibPoints.length > 0) {
       calibPoints.forEach((pt: any, idx: number) => {
-        pt['loSo'] = String(start + idx);
+        pt['vialNo'] = String(start + idx); // Điền số vial (không đụng tên điểm loSo)
       });
       this.syncSpreadsheetVialsFromCalibration();
       this.onDataChanged();
@@ -565,8 +568,10 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   syncSpreadsheetVialsFromCalibration() {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (!calibPoints || calibPoints.length === 0) return;
-    const lastCalibVialStr = calibPoints[calibPoints.length - 1]?.loSo;
-    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+    // Đọc số vial từ vialNo (mới). Fallback sang loSo nếu loSo là số (dữ liệu cũ chưa migrate)
+    const lastPt = calibPoints[calibPoints.length - 1];
+    const lastVialStr = lastPt?.vialNo || ((/^\d+$/.test(String(lastPt?.loSo || ''))) ? lastPt?.loSo : undefined);
+    const lastCalibVial = parseInt(String(lastVialStr), 10);
     if (isNaN(lastCalibVial)) return;
 
     const len = calibPoints.length;

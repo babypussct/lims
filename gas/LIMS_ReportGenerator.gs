@@ -172,7 +172,9 @@ function generateReport(sopId, metadata, samples, version) {
   const doc = DocumentApp.openById(docId);
   const body = doc.getBody();
 
-  if (sopConfig.formType === 'type3b') {
+  const isFormDon = metadata && metadata.printFormType === 'formDon';
+  if (sopConfig.formType === 'type3b' || isFormDon) {
+    Logger.log(`[Router] Routed to generateType3bReport (FormType: ${sopConfig.formType}, isFormDon: ${isFormDon})`);
     generateType3bReport(body, sopConfig, metadata, samples);
   } else {
     generateType2_3aReport(body, sopConfig, metadata, samples);

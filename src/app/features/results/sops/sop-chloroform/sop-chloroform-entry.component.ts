@@ -30,6 +30,8 @@ export class SopChloroformEntryComponent implements OnInit {
   bulkVialEnd = 1;
   bulkCalibVialStart = 1;
   bulkCalibVialEnd = 6;
+  bulkDefaultKhoiLuong = '5.00';
+  bulkDefaultF = '1';
 
   async ngOnInit() {
     try {
@@ -51,16 +53,32 @@ export class SopChloroformEntryComponent implements OnInit {
       this.draft.page1Data['spikeName'] = '';
     }
 
-    // Initialize 6 calibration points for Chloroform if not exists or empty
-    if (!this.draft.page1Data['calibPoints'] || this.draft.page1Data['calibPoints'].length === 0) {
+    // Initialize 6 calibration points for Chloroform
+    const existingCalibPoints = this.draft.page1Data['calibPoints'];
+    if (!existingCalibPoints || existingCalibPoints.length === 0) {
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '1', hamLuong: '0' },
-        { loSo: '2', hamLuong: '2' },
-        { loSo: '3', hamLuong: '5' },
-        { loSo: '4', hamLuong: '10' },
-        { loSo: '5', hamLuong: '20' },
-        { loSo: '6', hamLuong: '50' }
+        { loSo: 'C0', vialNo: '37', hamLuong: '0' },
+        { loSo: 'C1', vialNo: '38', hamLuong: '2' },
+        { loSo: 'C2', vialNo: '39', hamLuong: '5' },
+        { loSo: 'C3', vialNo: '40', hamLuong: '10' },
+        { loSo: 'C4', vialNo: '41', hamLuong: '20' },
+        { loSo: 'C5', vialNo: '42', hamLuong: '50' }
       ];
+    } else {
+      // Migration dữ liệu cũ: loSo là số → chuyển sang vialNo, đặt tên điểm đúng
+      existingCalibPoints.forEach((pt: any, idx: number) => {
+        if (!pt.vialNo) {
+          if (/^\d+$/.test(String(pt.loSo || ''))) {
+            pt.vialNo = pt.loSo;
+          }
+        }
+        if (!pt.loSo || /^\d+$/.test(String(pt.loSo))) {
+          pt.loSo = `C${idx}`;
+        }
+        if (!pt.hamLuong) {
+          pt.hamLuong = ['0', '2', '5', '10', '20', '50'][idx] || '';
+        }
+      });
     }
     
     // Default R^2 if not set
@@ -149,6 +167,13 @@ export class SopChloroformEntryComponent implements OnInit {
       this.onDataChanged();
     }
 
+    // Khởi tạo bulkCalibVialStart từ vialNo của calibPoints tồn tại
+    const existingCalib = this.draft.page1Data['calibPoints'];
+    if (existingCalib && existingCalib.length > 0) {
+      const firstVial = existingCalib[0]?.vialNo || existingCalib[0]?.loSo;
+      this.bulkCalibVialStart = parseInt(String(firstVial), 10) || 1;
+    }
+
     this.onBulkVialStartChange();
     this.onBulkCalibVialStartChange();
     this.syncSpreadsheetVialsFromCalibration();
@@ -177,7 +202,7 @@ export class SopChloroformEntryComponent implements OnInit {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (calibPoints && calibPoints.length > 0) {
       calibPoints.forEach((pt: any, idx: number) => {
-        pt['loSo'] = String(start + idx);
+        pt['vialNo'] = String(start + idx); // Điền số vial, giữ nguyên tên điểm loSo
       });
       this.syncSpreadsheetVialsFromCalibration();
       this.onDataChanged();
@@ -187,23 +212,20 @@ export class SopChloroformEntryComponent implements OnInit {
   syncSpreadsheetVialsFromCalibration() {
     const calibPoints = this.draft.page1Data['calibPoints'];
     if (!calibPoints || calibPoints.length < 6) return;
-    
-    // Lấy lọ số của điểm chuẩn cuối cùng (C5 ở index 5)
-    const lastCalibVialStr = calibPoints[5]?.loSo;
-    const lastCalibVial = parseInt(String(lastCalibVialStr), 10);
+
+    // Đọc số vial từ vialNo (đúng). Fallback loSo nếu là số (dữ liệu cũ)
+    const lastPt = calibPoints[5];
+    const lastVialStr = lastPt?.vialNo || ((/^\d+$/.test(String(lastPt?.loSo || ''))) ? lastPt?.loSo : undefined);
+    const lastCalibVial = parseInt(String(lastVialStr), 10);
     if (isNaN(lastCalibVial)) return;
 
-    // Cập nhật QC_BLANK
     if (this.draft.resultData['QC_BLANK']) {
       this.draft.resultData['QC_BLANK']['loSo'] = String(lastCalibVial + 1);
     }
-
-    // Cập nhật QC_SPIKE
     if (this.draft.resultData['QC_SPIKE']) {
       this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + 2);
     }
 
-    // Cập nhật các mẫu thử thông thường
     const regularSamples = this.getVisibleRegularSamples();
     regularSamples.forEach((sampleCode: string, idx: number) => {
       if (this.draft.resultData[sampleCode]) {
@@ -211,12 +233,10 @@ export class SopChloroformEntryComponent implements OnInit {
       }
     });
 
-    // Cập nhật QC_FINAL (đồng bộ từ QC_SPIKE)
     if (this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = String(lastCalibVial + 2);
     }
 
-    // Cập nhật bulkVialStart và bulkVialEnd để đồng bộ
     this.bulkVialStart = lastCalibVial + 3;
     this.onBulkVialStartChange();
   }
@@ -264,20 +284,46 @@ export class SopChloroformEntryComponent implements OnInit {
 
   applyBulkVials() {
     const start = parseInt(String(this.bulkVialStart), 10);
-    const end = parseInt(String(this.bulkVialEnd), 10);
-    if (isNaN(start) || isNaN(end) || start > end) {
-      return;
-    }
+    if (isNaN(start)) return;
     const visible = this.getVisibleRegularSamples();
     visible.forEach((sample: string, idx: number) => {
-      const val = start + idx;
-      if (val <= end) {
-        if (!this.draft.resultData[sample]) {
-          this.draft.resultData[sample] = { selected: true };
-        }
-        this.draft.resultData[sample]['loSo'] = String(val);
+      if (!this.draft.resultData[sample]) {
+        this.draft.resultData[sample] = { selected: true };
+      }
+      this.draft.resultData[sample]['loSo'] = String(start + idx);
+      if (!this.draft.resultData[sample]['khoiLuong']) {
+        this.draft.resultData[sample]['khoiLuong'] = this.bulkDefaultKhoiLuong;
+      }
+      if (!this.draft.resultData[sample]['heSoPhaLoang']) {
+        this.draft.resultData[sample]['heSoPhaLoang'] = this.bulkDefaultF;
       }
     });
+    this.onBulkVialStartChange();
+    this.onDataChanged();
+  }
+
+  applyBulkKhoiLuongF() {
+    const visible = this.getVisibleRegularSamples();
+    visible.forEach((sample: string) => {
+      if (!this.draft.resultData[sample]) {
+        this.draft.resultData[sample] = { selected: true };
+      }
+      this.draft.resultData[sample]['khoiLuong'] = this.bulkDefaultKhoiLuong;
+      this.draft.resultData[sample]['heSoPhaLoang'] = this.bulkDefaultF;
+    });
+    // Áp dụng cho QC_BLANK và QC_SPIKE nếu chưa có
+    if (this.draft.resultData['QC_BLANK']) {
+      if (!this.draft.resultData['QC_BLANK']['khoiLuong'])
+        this.draft.resultData['QC_BLANK']['khoiLuong'] = this.bulkDefaultKhoiLuong;
+      if (!this.draft.resultData['QC_BLANK']['heSoPhaLoang'])
+        this.draft.resultData['QC_BLANK']['heSoPhaLoang'] = this.bulkDefaultF;
+    }
+    if (this.draft.resultData['QC_SPIKE']) {
+      if (!this.draft.resultData['QC_SPIKE']['khoiLuong'])
+        this.draft.resultData['QC_SPIKE']['khoiLuong'] = this.bulkDefaultKhoiLuong;
+      if (!this.draft.resultData['QC_SPIKE']['heSoPhaLoang'])
+        this.draft.resultData['QC_SPIKE']['heSoPhaLoang'] = this.bulkDefaultF;
+    }
     this.onDataChanged();
   }
 
