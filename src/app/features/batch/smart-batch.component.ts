@@ -9,7 +9,8 @@ import { CalculatorService } from '../../core/services/calculator.service';
 import { RecipeService } from '../recipes/recipe.service';
 import { TargetService } from '../targets/target.service'; 
 import { InventoryService } from '../inventory/inventory.service';
-import { Sop, SopTarget, CalculatedItem, TargetGroup } from '../../core/models/sop.model';
+import { Sop, SopTarget, CalculatedItem, TargetGroup, MatrixType } from '../../core/models/sop.model';
+import { MatrixTypeService } from '../config/matrix-type.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
@@ -28,6 +29,7 @@ interface JobBlock {
     targetSearch: string;
     isCollapsed: boolean;
     forcedSopId?: string;
+    matrixType?: string;
 }
 
 interface AnalysisTask {
@@ -35,6 +37,7 @@ interface AnalysisTask {
     targetId: string;
     targetName: string;
     covered: boolean;
+    matrixType?: string;
 }
 
 interface ProposedBatch {
@@ -86,16 +89,28 @@ export class SmartBatchComponent {
   toast = inject(ToastService);
   confirmation = inject(ConfirmationService);
   printService = inject(PrintService);
+  matrixTypeService = inject(MatrixTypeService);
   formatNum = formatNum;
   formatSampleList = formatSampleList;
 
   get GHS_DICT() { return GHS_DICTIONARY; }
   step = signal<number>(1);
-  blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined } ]);
+  blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
+  availableMatrices = signal<MatrixType[]>([]);
+
+  constructor() {
+      this.matrixTypeService.getAll().then(m => {
+          this.availableMatrices.set(m);
+          const defaultMatrix = m.find(x => x.isDefault);
+          if (defaultMatrix && this.blocks().length === 1 && !this.blocks()[0].matrixType) {
+              this.updateBlockMatrix(0, defaultMatrix.id);
+          }
+      });
+  }
   
   // Quick Generate Modal State
   quickGenerateModalOpen = signal(false);
@@ -323,7 +338,8 @@ export class SmartBatchComponent {
 
   // ... Block management helpers ...
   addBlock() {
-      this.blocks.update(b => [...b, { id: Date.now(), name: `Nhóm Mẫu #${b.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined }]);
+      const defaultMatrix = this.availableMatrices().find(m => m.isDefault);
+      this.blocks.update(b => [...b, { id: Date.now(), name: `Nhóm Mẫu #${b.length + 1}`, rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: defaultMatrix?.id }]);
   }
   removeBlock(index: number) { this.blocks.update(b => b.filter((_, i) => i !== index)); }
   duplicateBlock(index: number) {
@@ -343,6 +359,23 @@ export class SmartBatchComponent {
           n[index] = { ...n[index], forcedSopId: sopId };
           return n;
       });
+  }
+  updateBlockMatrix(index: number, val: string | undefined) {
+      this.blocks.update(b => {
+          const n = [...b];
+          n[index] = { ...n[index], matrixType: val || undefined };
+          return n;
+      });
+  }
+
+  getMatrixLabel(id?: string): string {
+      if (!id) return '';
+      return this.availableMatrices().find(m => m.id === id)?.name || id;
+  }
+
+  getMatrixColor(id?: string): string {
+      if (!id) return '#94a3b8';
+      return this.availableMatrices().find(m => m.id === id)?.color || '#94a3b8';
   }
 
   getEligibleSops(block: JobBlock): Sop[] {
@@ -442,10 +475,10 @@ export class SmartBatchComponent {
                               const tName = foundTarget?.name || targetId;
                               // Only mark 'covered: true' if the SOP ACTUALLY supports it
                               const isCovered = validSopTargets.has(targetId);
-                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered });
+                              blockTasks.push({ sample, targetId, targetName: tName, covered: isCovered, matrixType: block.matrixType });
                               // If not covered, we still add it to allTasks so greedy algorithm can handle it
                               if (!isCovered) {
-                                  allTasks.push({ sample, targetId, targetName: tName, covered: false });
+                                  allTasks.push({ sample, targetId, targetName: tName, covered: false, matrixType: block.matrixType });
                               }
                           }
                       }
@@ -458,6 +491,9 @@ export class SmartBatchComponent {
                           forcedSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
                       );
 
+                      const tags = ['Forced-SOP'];
+                      if (block.matrixType) tags.push(this.getMatrixLabel(block.matrixType));
+                      
                       const batchId = `batch_${Date.now()}_${batches.length}`;
                       batches.push({
                           id: batchId,
@@ -471,7 +507,7 @@ export class SmartBatchComponent {
                           safetyMargin: -1,
                           resourceImpact: needs,
                           status: 'ready',
-                          tags: ['Forced-SOP'],
+                          tags: tags,
                           isExpanded: false
                       });
                       
@@ -487,7 +523,8 @@ export class SmartBatchComponent {
                           sample,
                           targetId,
                           targetName: tName,
-                          covered: false
+                          covered: false,
+                          matrixType: block.matrixType
                       });
                   }
               }
@@ -504,9 +541,15 @@ export class SmartBatchComponent {
               const candidates = sops.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
                   const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
+                  const sopMatrices = sop.matrixTags || [];
                   
-                  // Filter tasks that this SOP can cover
-                  const coverableTasks = remainingTasks.filter(t => sopTargetIds.has(t.targetId));
+                  // --- MATRIX HARD FILTER ---
+                  const coverableTasks = remainingTasks.filter(t => {
+                      if (!sopTargetIds.has(t.targetId)) return false;
+                      if (sopMatrices.length === 0) return true;
+                      if (!t.matrixType) return true;
+                      return sopMatrices.includes(t.matrixType);
+                  });
                   if (coverableTasks.length === 0) return null;
 
                   // --- WEIGHTED SCORING SYSTEM ---
@@ -526,16 +569,20 @@ export class SmartBatchComponent {
                       }
                   });
 
-                  // 3. Stock Penalty (-20 per missing item)
+                  // 3. Coverage Ratio (MỚI)
+                  const uniqueCovered = new Set(coverableTasks.map(t=>t.targetId)).size;
+                  score += (uniqueCovered / sop.targets.length) * 30;
+
+                  // 4. Stock Penalty (-20 per missing item)
                   let missingStockCount = 0;
                   sop.consumables.forEach(c => {
                       if (c.type === 'simple' && !this.inventoryCache[c.name]) missingStockCount++;
                   });
                   score -= (missingStockCount * 20);
 
-                  // 4. Efficiency Penalty (-1 per extraneous capability)
+                  // 5. Efficiency Penalty (-1 per extraneous capability)
                   // If SOP covers 50 targets but we only need 1, it's wasteful (maybe)
-                  const extraneous = sop.targets.length - new Set(coverableTasks.map(t => t.targetId)).size;
+                  const extraneous = sop.targets.length - uniqueCovered;
                   score -= (extraneous * 1);
 
                   return { sop, coverableTasks, score };
@@ -562,6 +609,10 @@ export class SmartBatchComponent {
                   bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
               );
 
+              const tags = ['Auto-Optimized'];
+              const matrixTypes = new Set(bestFit.coverableTasks.map(t => t.matrixType).filter(m => !!m));
+              matrixTypes.forEach(m => tags.push(this.getMatrixLabel(m)));
+
               const batchId = `batch_${Date.now()}_${batches.length}`;
               
               batches.push({
@@ -576,7 +627,7 @@ export class SmartBatchComponent {
                   safetyMargin: -1, // Auto
                   resourceImpact: needs,
                   status: 'ready',
-                  tags: ['Auto-Optimized'],
+                  tags: tags,
                   isExpanded: false // Collapsed by default
               });
 

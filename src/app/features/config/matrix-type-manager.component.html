@@ -1,0 +1,126 @@
+<div class="p-6 max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <span class="text-3xl">🧪</span> Quản Lý Nền Mẫu Phân Tích
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">Quản lý danh sách các nền mẫu áp dụng cho SOP và khai báo mẻ.</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <a routerLink="/config" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors">
+        Quay lại Config
+      </a>
+      <button (click)="openAddModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Thêm Nền Mẫu
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex justify-center p-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (item of matrices(); track item.id) {
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
+          
+          <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+            <button (click)="setDefault(item)" class="p-1.5 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 bg-slate-50 dark:bg-slate-700 rounded transition-colors" [title]="item.isDefault ? 'Đang là mặc định' : 'Đặt làm mặc định'">
+              <i class="fa-solid fa-star" [class.text-amber-500]="item.isDefault"></i>
+            </button>
+            <button (click)="openEditModal(item)" class="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-700 rounded transition-colors" title="Sửa">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </button>
+            <button (click)="deleteItem(item)" class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-700 rounded transition-colors" title="Xóa">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" [style.background-color]="(item.color || '#94a3b8') + '20'">
+               <div class="w-4 h-4 rounded-full" [style.background-color]="item.color || '#94a3b8'"></div>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                {{ item.name }}
+                @if (item.isDefault) {
+                  <span class="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-bold uppercase border border-amber-200 dark:border-amber-800">Mặc định</span>
+                }
+              </h3>
+              <p class="text-xs text-slate-500 font-mono mt-0.5">{{ item.id }}</p>
+            </div>
+          </div>
+          
+          @if (item.description) {
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">{{ item.description }}</p>
+          }
+        </div>
+      }
+      
+      @if (matrices().length === 0) {
+        <div class="col-span-full py-12 text-center text-slate-500">
+          Chưa có nền mẫu nào. Nhấn "Thêm Nền Mẫu" để tạo.
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+      <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+        <h3 class="font-bold text-lg text-slate-800 dark:text-white">
+          {{ isEditMode ? 'Sửa Nền Mẫu' : 'Thêm Nền Mẫu Mới' }}
+        </h3>
+        <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      
+      <div class="p-4 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Nền Mẫu *</label>
+          <input type="text" [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Nước, Thực Phẩm...">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mã (ID) *</label>
+          <input type="text" [(ngModel)]="formData.id" [disabled]="isEditMode" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg disabled:opacity-70 outline-none font-mono text-sm" placeholder="VD: water">
+          @if (!isEditMode) {
+             <p class="text-xs text-slate-500 mt-1">Mã ID không thể thay đổi sau khi tạo.</p>
+          }
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Màu Sắc</label>
+          <div class="flex items-center gap-3">
+            <input type="color" [(ngModel)]="formData.color" class="w-10 h-10 rounded cursor-pointer border-0 p-0 bg-transparent">
+            <input type="text" [(ngModel)]="formData.color" class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
+          <textarea [(ngModel)]="formData.description" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ghi chú thêm..."></textarea>
+        </div>
+      </div>
+      
+      <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 flex justify-end gap-2">
+        <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          Hủy
+        </button>
+        <button (click)="save()" [disabled]="isSaving()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+          @if (isSaving()) {
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          }
+          Lưu Nền Mẫu
+        </button>
+      </div>
+    </div>
+  </div>
+}

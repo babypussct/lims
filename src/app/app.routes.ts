@@ -86,6 +86,12 @@ export const routes: Routes = [
     data: { role: 'manager' } // Cấu hình hệ thống — chỉ manager
   },
   {
+    path: 'matrix-types',
+    loadComponent: () => import('./features/config/matrix-type-manager.component').then(m => m.MatrixTypeManagerComponent),
+    canActivate: [permissionGuard],
+    data: { role: 'manager' }
+  },
+  {
     path: 'requests',
     loadComponent: () => import('./features/requests/request-list.component').then(m => m.RequestListComponent),
     canActivate: [permissionGuard],

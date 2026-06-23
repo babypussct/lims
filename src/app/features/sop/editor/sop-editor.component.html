@@ -67,6 +67,33 @@
                                           <input formControlName="ref" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-sm outline-none focus:border-blue-500 dark:focus:border-blue-400 transition" placeholder="VD: AOAC 2007.01">
                                       </div>
                                   </div>
+                                  
+                                  <!-- Matrix Tags -->
+                                  <div class="space-y-2 border-t border-slate-100 dark:border-slate-700/50 pt-4 mt-2">
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                                      Nền Mẫu Áp Dụng
+                                    </label>
+                                    <div class="flex flex-wrap gap-2">
+                                      @for (m of availableMatrices(); track m.id) {
+                                        <button type="button" (click)="toggleMatrixTag(m.id)"
+                                          [class]="selectedMatrixTags().includes(m.id)
+                                            ? 'ring-2 ring-offset-1 opacity-100 dark:ring-offset-slate-800'
+                                            : 'opacity-60 hover:opacity-80'"
+                                          class="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800"
+                                          [style.border-color]="m.color || '#94a3b8'"
+                                          [style.color]="m.color || '#94a3b8'">
+                                          <div class="w-2 h-2 rounded-full" [style.background-color]="m.color || '#94a3b8'"></div>
+                                          {{ m.name }}
+                                          @if (selectedMatrixTags().includes(m.id)) { <i class="fa-solid fa-check ml-1 text-[10px]"></i> }
+                                        </button>
+                                      }
+                                    </div>
+                                    @if (selectedMatrixTags().length === 0) {
+                                      <p class="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg inline-block border border-amber-100 dark:border-amber-900/30">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Không gán nền mẫu → SOP này được xét trong mọi trường hợp (áp dụng chung).
+                                      </p>
+                                    }
+                                  </div>
                               </div>
 
                               <!-- INPUTS CONFIG -->

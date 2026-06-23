@@ -11,8 +11,9 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { InventoryService } from '../../inventory/inventory.service';
 import { RecipeService } from '../../recipes/recipe.service'; 
 import { TargetService } from '../../targets/target.service';
-import { Sop, CalculatedItem, SopTarget, TargetGroup } from '../../../core/models/sop.model';
+import { Sop, CalculatedItem, SopTarget, TargetGroup, MatrixType } from '../../../core/models/sop.model';
 import { FirebaseService } from '../../../core/services/firebase.service';
+import { MatrixTypeService } from '../../config/matrix-type.service';
 import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
@@ -42,6 +43,7 @@ export class SopEditorComponent implements OnDestroy {
   recipeService = inject(RecipeService);
   targetService = inject(TargetService); 
   masterTargetService = inject(MasterTargetService);
+  matrixTypeService = inject(MatrixTypeService);
   toast = inject(ToastService);
   confirmationService = inject(ConfirmationService);
   calcService = inject(CalculatorService);
@@ -60,6 +62,8 @@ export class SopEditorComponent implements OnDestroy {
   currentTab = signal<'general' | 'logic' | 'consumables' | 'targets'>('general');
   isLoading = signal(false);
   previewResults = signal<CalculatedItem[]>([]);
+  availableMatrices = signal<MatrixType[]>([]);
+  selectedMatrixTags = signal<string[]>([]);
   
   // SEARCH STATE
   searchSubject = new Subject<string>();
@@ -226,7 +230,18 @@ export class SopEditorComponent implements OnDestroy {
         sop.targets.forEach(t => this.addTargetRaw(t));
     }
 
+    if (this.availableMatrices().length === 0) {
+      this.matrixTypeService.getAll().then(m => this.availableMatrices.set(m));
+    }
+    this.selectedMatrixTags.set(sop.matrixTags || []);
+
     this.runPreview(this.form.value);
+  }
+
+  toggleMatrixTag(id: string) {
+    this.selectedMatrixTags.update(tags =>
+      tags.includes(id) ? tags.filter(t => t !== id) : [...tags, id]
+    );
   }
 
   // --- Preview & Save ---
@@ -310,6 +325,7 @@ export class SopEditorComponent implements OnDestroy {
       targets: (formVal.targets as any[])
           .filter(t => t.id && t.name)
           .map(t => ({ id: t.id, name: t.name, unit: t.unit, lod: t.lod, loq: t.loq })),
+      matrixTags: this.selectedMatrixTags().length > 0 ? this.selectedMatrixTags() : undefined,
       version: formVal.version || this.currentVersion() 
     };
     

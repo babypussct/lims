@@ -29,6 +29,15 @@ export interface TargetGroup {
   lastUpdated?: any;
 }
 
+export interface MatrixType {
+  id: string;           // e.g. 'water', 'food', 'soil'
+  name: string;         // e.g. 'Nước', 'Thực Phẩm', 'Đất'
+  color?: string;       // e.g. '#3b82f6'
+  description?: string;
+  isDefault?: boolean;  // Mark if this is the default matrix
+  lastUpdated?: any;
+}
+
 // NEW: Master Data for Analytes
 export interface MasterAnalyte {
   id: string; // Unique slug (e.g., 'chloramphenicol')
@@ -98,6 +107,9 @@ export interface Sop {
   
   // Soft Delete Flag
   isArchived?: boolean; 
+  
+  // Matrix / Nền mẫu áp dụng
+  matrixTags?: string[];  // e.g. ['water'] | ['food'] | ['food','water']
 }
 
 // --- Calculated Results ---
