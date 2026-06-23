@@ -239,9 +239,16 @@ export class SopEditorComponent implements OnDestroy {
   }
 
   toggleMatrixTag(id: string) {
-    this.selectedMatrixTags.update(tags =>
-      tags.includes(id) ? tags.filter(t => t !== id) : [...tags, id]
-    );
+    const current = this.selectedMatrixTags();
+    if (current.includes(id)) {
+      this.selectedMatrixTags.set(current.filter(x => x !== id));
+    } else {
+      this.selectedMatrixTags.set([...current, id]);
+    }
+  }
+
+  clearMatrixTags() {
+    this.selectedMatrixTags.set([]);
   }
 
   // --- Preview & Save ---

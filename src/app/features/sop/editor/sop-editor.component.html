@@ -74,6 +74,15 @@
                                       Nền Mẫu Áp Dụng
                                     </label>
                                     <div class="flex flex-wrap gap-2">
+                                      <button type="button" (click)="clearMatrixTags()"
+                                        [class]="selectedMatrixTags().length === 0
+                                          ? 'ring-2 ring-offset-1 opacity-100 dark:ring-offset-slate-800'
+                                          : 'opacity-60 hover:opacity-80'"
+                                        class="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800 border-slate-400 text-slate-500 dark:text-slate-400">
+                                        <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+                                        Dùng chung (ANY)
+                                        @if (selectedMatrixTags().length === 0) { <i class="fa-solid fa-check ml-1 text-[10px]"></i> }
+                                      </button>
                                       @for (m of availableMatrices(); track m.id) {
                                         <button type="button" (click)="toggleMatrixTag(m.id)"
                                           [class]="selectedMatrixTags().includes(m.id)
