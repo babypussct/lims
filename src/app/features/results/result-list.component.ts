@@ -9,6 +9,7 @@ import { ResultService } from './services/result.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ToastService } from '../../core/services/toast.service';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { PrintService } from '../../core/services/print.service';
 
 @Component({
   selector: 'app-result-list',
@@ -382,9 +383,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                   <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
                     @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                       <button (click)="openReportHub(run); $event.stopPropagation()"
-                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
-                        <i class="fa-solid fa-file-word text-blue-500 text-[11px]"></i>
-                        <span>Báo cáo Docs</span>
+                              class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/40 rounded-xl text-xs font-black transition active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
+                        <span>Báo cáo PDF</span>
                       </button>
                     }
                     <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
@@ -501,9 +502,9 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                           <div class="flex items-center justify-end gap-2">
                             @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                               <button (click)="openReportHub(run); $event.stopPropagation()"
-                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 rounded-xl text-xs font-black transition active:scale-95">
-                                <i class="fa-solid fa-file-word text-blue-500 text-[11px]"></i>
-                                <span>Báo cáo Docs</span>
+                                      class="flex items-center gap-1.5 px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 rounded-xl text-xs font-black transition active:scale-95">
+                                <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
+                                <span>Báo cáo PDF</span>
                               </button>
                             }
                             <button (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
@@ -650,6 +651,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
+                      @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
+                        <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
+                           class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
+                          <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
+                        </button>
+                      }
                       @if (unifiedAllSamplesReport().docsUrl) {
                         <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                            class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
@@ -676,6 +683,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                       </div>
                       <div class="flex items-center gap-2 shrink-0">
                         @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).docsUrl || getPrefixReportForSelected(pref).pdfUrl)) {
+                          @if (getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl) {
+                            <button (click)="openPdfPreview(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, getPrefixReportForSelected(pref).docsUrl, pref); closeReportHub()"
+                               class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
+                              <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
+                            </button>
+                          }
                           @if (getPrefixReportForSelected(pref).docsUrl) {
                             <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                                class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
@@ -743,6 +756,12 @@ import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
                             <div class="text-[9px] text-slate-400 mt-0.5">{{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm dd/MM/yy' }}</div>
                           </div>
                           <div class="flex items-center gap-1.5 shrink-0">
+                            @if (hist.pdfViewUrl || hist.pdfUrl) {
+                              <button (click)="openPdfPreview(hist.pdfViewUrl || hist.pdfUrl, hist.docsUrl, hist.prefix === '_NO_PREFIX_' ? '' : hist.prefix, hist.version, hist.publishedBy, hist.publishedAt); closeReportHub()"
+                                 class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 border-0 cursor-pointer" title="Mở PDF bản này">
+                                <i class="fa-solid fa-file-pdf text-[10px]"></i>
+                              </button>
+                            }
                             @if (hist.docsUrl) {
                               <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
                                  class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này (Xem)">
@@ -784,6 +803,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private resultService = inject(ResultService);
   private fb = inject(FirebaseService);
   private toast = inject(ToastService);
+  private printService = inject(PrintService);
 
   formatSampleList = formatSampleList;
   getSafeGoogleUrl = getSafeGoogleUrl;
@@ -861,6 +881,54 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.reportHubSubscription();
       this.reportHubSubscription = undefined;
     }
+  }
+
+  openPdfPreview(pdfUrl: string | null | undefined, docsUrl?: string | null | undefined, prefix?: string, versionOverride?: number, analystOverride?: string, dateOverride?: any) {
+    if (!pdfUrl) return;
+    const run = this.selectedRequestForReport();
+    const sopName = run?.sopName || '';
+    const filterName = prefix === 'ALL' || !prefix ? 'Tất cả mẫu' : (prefix === '' ? 'Không tiền tố' : `Nhóm ${prefix}`);
+    const previewUrl = this.getGoogleDrivePreviewUrl(pdfUrl);
+    const docPreviewUrl = docsUrl ? this.getGoogleDrivePreviewUrl(docsUrl) : undefined;
+    const version = versionOverride !== undefined ? versionOverride : (run?.analysisResultSummary?.version || run?.analysisResult?.version || 1);
+    const analyst = analystOverride !== undefined ? analystOverride : (run?.user || 'Chưa rõ');
+    const publishDate = dateOverride !== undefined ? dateOverride : (run?.analysisResultSummary?.updatedAt || run?.analysisResult?.pdfCreatedAt);
+
+    this.printService.openPdfPreview(
+      previewUrl,
+      `Báo cáo kết quả — ${sopName} (${filterName})`,
+      version,
+      analyst,
+      publishDate,
+      undefined,
+      'iframe',
+      docPreviewUrl
+    );
+  }
+
+  getGoogleDrivePreviewUrl(url: string | null | undefined): string {
+    if (!url) return '';
+    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileDMatch && fileDMatch[1]) {
+      return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
+    }
+    const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+    if (docDMatch && docDMatch[1]) {
+      return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
+    }
+    try {
+      const urlObj = new URL(url);
+      const id = urlObj.searchParams.get('id');
+      if (id) {
+        return `https://drive.google.com/file/d/${id}/preview`;
+      }
+    } catch (e) {
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+      }
+    }
+    return url;
   }
 
   asReport(val: unknown): any {
