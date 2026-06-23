@@ -265,13 +265,13 @@
                                         {{previewSop()!.suggestion.sop.name}}
                                     </h3>
                                     <div class="flex items-center gap-2 mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                                        @if(previewSop()!.suggestion.sop.matrixTags && previewSop()!.suggestion.sop.matrixTags.length > 0) {
+                                        @if((previewSop()!.suggestion.sop.matrixTags?.length || 0) > 0) {
                                             <span class="flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                                <div class="w-1.5 h-1.5 rounded-full" [style.background-color]="getMatrixColor(previewSop()!.suggestion.sop.matrixTags[0])"></div>
-                                                {{getMatrixLabel(previewSop()!.suggestion.sop.matrixTags[0])}}
+                                                <div class="w-1.5 h-1.5 rounded-full" [style.background-color]="getMatrixColor(previewSop()!.suggestion.sop.matrixTags![0])"></div>
+                                                {{getMatrixLabel(previewSop()!.suggestion.sop.matrixTags![0])}}
                                             </span>
                                         }
-                                        <span class="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">{{previewSop()!.suggestion.sop.targets.length}} chỉ tiêu</span>
+                                        <span class="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">{{previewSop()!.suggestion.sop.targets?.length || 0}} chỉ tiêu</span>
                                     </div>
                                 </div>
                                 <button (click)="closeSopPreview()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 transition">
