@@ -105,7 +105,10 @@ export class MatrixTypeManagerComponent implements OnInit {
   }
 
   async deleteItem(item: MatrixType) {
-    const ok = await this.confirmation.confirm('Xóa nền mẫu', `Bạn có chắc chắn muốn xóa nền mẫu "${item.name}" không?`);
+    const ok = await this.confirmation.confirm({
+      message: `Bạn có chắc chắn muốn xóa nền mẫu "${item.name}" không?`,
+      isDangerous: true
+    });
     if (!ok) return;
 
     try {
