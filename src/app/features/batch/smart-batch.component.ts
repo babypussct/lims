@@ -172,7 +172,13 @@ export class SmartBatchComponent {
       map.set(block.id, active.filter(sop => {
         if (!sop.targets) return false;
         const ids = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-        return reqTargets.every(id => ids.has(id));
+        if (!reqTargets.every(id => ids.has(id))) return false;
+        
+        // Matrix Filter
+        const sopMatrices = sop.matrixTags || [];
+        if (sopMatrices.length === 0) return true; // Universal SOP
+        if (!block.matrixType) return true; // Block allows ANY
+        return sopMatrices.includes(block.matrixType); // Specific match
       }));
     }
     return map;
@@ -384,7 +390,12 @@ export class SmartBatchComponent {
       return this.activeSops().filter(sop => {
           if (!sop.targets) return false;
           const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-          return requiredTargets.every(reqId => sopTargetIds.has(reqId));
+          if (!requiredTargets.every(reqId => sopTargetIds.has(reqId))) return false;
+          
+          const sopMatrices = sop.matrixTags || [];
+          if (sopMatrices.length === 0) return true;
+          if (!block.matrixType) return true;
+          return sopMatrices.includes(block.matrixType);
       });
   }
   
