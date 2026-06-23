@@ -142,21 +142,72 @@
                                         
                                         @if(block.selectedTargets.size === 0) {
                                             <p class="text-[11px] text-slate-500 dark:text-slate-400 italic font-medium">Vui lòng chọn ít nhất 1 chỉ tiêu để xem các quy trình phù hợp.</p>
-                                        } @else if (getEligibleSops(block).length === 0) {
-                                            <p class="text-[11px] text-orange-600 dark:text-orange-400 italic font-medium">Không có SOP đơn lẻ nào bao phủ toàn bộ mục tiêu. Nhóm sẽ tự động phân tách mẻ ở Bước 2.</p>
                                         } @else {
-                                            <div class="flex flex-wrap gap-2">
-                                                @for(sop of getEligibleSops(block); track sop.id) {
-                                                    <button (click)="updateBlockForcedSop(i, sop.id)"
-                                                            class="text-xs px-3 py-1.5 rounded-lg border transition font-bold flex items-center gap-1.5 cursor-pointer"
-                                                            [class]="block.forcedSopId === sop.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-md transform scale-105' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500'">
-                                                        @if(block.forcedSopId === sop.id) { <i class="fa-solid fa-check"></i> }
-                                                        {{sop.name}}
-                                                    </button>
+                                            @if ((sopSuggestionsMap().get(block.id) || []).length === 0) {
+                                                <p class="text-[11px] text-orange-600 dark:text-orange-400 italic font-medium">Không tìm thấy bất kỳ quy trình nào phù hợp. Bạn cần kiểm tra lại cấu hình Nền Mẫu hoặc Hệ thống chỉ tiêu.</p>
+                                            } @else {
+                                                @if((sopSuggestionsMap().get(block.id) || [])[0].isPartial) {
+                                                    <div class="mb-2 text-[11px] text-orange-600 dark:text-orange-400 font-medium flex items-start gap-1.5">
+                                                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                                                        <p>Không có quy trình nào bao phủ toàn bộ mục tiêu. Các quy trình gần nhất dưới đây chỉ mang tính tham khảo, nhóm sẽ tự động phân tách mẻ ở Bước 2.</p>
+                                                    </div>
                                                 }
-                                            </div>
-                                            @if(!block.forcedSopId) {
-                                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2 italic">* Nếu không chỉ định cứng, hệ thống sẽ tự động ghép tối ưu nhất ở Bước 2.</p>
+
+                                                <div class="flex flex-wrap gap-2">
+                                                    @for(sug of sopSuggestionsMap().get(block.id) || []; track sug.sop.id) {
+                                                        <div class="flex flex-col rounded-lg border transition bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-hidden"
+                                                             [class.ring-2]="block.forcedSopId === sug.sop.id"
+                                                             [class.ring-indigo-500]="block.forcedSopId === sug.sop.id">
+                                                             
+                                                             <!-- Thân nút: Nhấn để chỉ định -->
+                                                             <button (click)="updateBlockForcedSop(i, sug.sop.id)"
+                                                                     [disabled]="sug.isPartial"
+                                                                     class="px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-75 disabled:cursor-not-allowed transition">
+                                                                 
+                                                                 <div class="flex items-center gap-2 mb-1">
+                                                                     @if(sug.isBest && !sug.isPartial) {
+                                                                         <span class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase"><i class="fa-solid fa-star mr-0.5"></i> Tốt nhất</span>
+                                                                     }
+                                                                     <span class="text-xs font-bold text-slate-700 dark:text-slate-200 flex-1">{{sug.sop.name}}</span>
+                                                                     @if(block.forcedSopId === sug.sop.id) {
+                                                                         <i class="fa-solid fa-circle-check text-indigo-600 dark:text-indigo-400"></i>
+                                                                     }
+                                                                 </div>
+                                                                 
+                                                                 <div class="flex items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
+                                                                     @if(sug.sop.matrixTags && sug.sop.matrixTags.length > 0) {
+                                                                         <span class="flex items-center gap-1">
+                                                                             <div class="w-1.5 h-1.5 rounded-full" [style.background-color]="getMatrixColor(sug.sop.matrixTags[0])"></div>
+                                                                             {{getMatrixLabel(sug.sop.matrixTags[0])}}
+                                                                         </span>
+                                                                     } @else {
+                                                                         <span class="flex items-center gap-1">
+                                                                             <div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Dùng chung
+                                                                         </span>
+                                                                     }
+                                                                     <span [class.text-red-500]="sug.isPartial" class="font-medium">
+                                                                         <i class="fa-solid fa-bullseye mr-0.5"></i> {{sug.coverageCount}}/{{sug.totalRequired}}
+                                                                     </span>
+                                                                     @if(sug.isMissingStock) {
+                                                                         <span class="text-red-500 font-bold" title="Có hóa chất bị hết (Tồn = 0)"><i class="fa-solid fa-triangle-exclamation"></i> Kho</span>
+                                                                     } @else {
+                                                                         <span class="text-teal-600 dark:text-teal-400"><i class="fa-solid fa-check"></i> Kho</span>
+                                                                     }
+                                                                 </div>
+                                                             </button>
+                                                             
+                                                             <!-- Chân nút: Icon Xem -->
+                                                             <div class="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700/50 py-1 px-3 text-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition" (click)="openSopPreview(i, sug); $event.stopPropagation()">
+                                                                 <button class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline w-full pointer-events-none">
+                                                                     <i class="fa-regular fa-eye mr-1"></i> Xem chi tiết
+                                                                 </button>
+                                                             </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                @if(!block.forcedSopId && !(sopSuggestionsMap().get(block.id) || [])[0].isPartial) {
+                                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2 italic">* Nếu không chỉ định cứng, hệ thống sẽ tự động ghép tối ưu nhất ở Bước 2.</p>
+                                                }
                                             }
                                         }
                                     </div>
@@ -197,6 +248,107 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- SOP Quick Preview Side Panel -->
+                @if(previewSop()) {
+                    <div class="fixed inset-0 z-50 flex justify-end">
+                        <!-- Overlay -->
+                        <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" (click)="closeSopPreview()"></div>
+                        
+                        <!-- Panel -->
+                        <div class="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col transform transition-transform border-l border-slate-200 dark:border-slate-800 animate-slide-in-right">
+                            <!-- Header -->
+                            <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                                <div>
+                                    <h3 class="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                        <i class="fa-solid fa-microscope text-indigo-500"></i>
+                                        {{previewSop()!.suggestion.sop.name}}
+                                    </h3>
+                                    <div class="flex items-center gap-2 mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                        @if(previewSop()!.suggestion.sop.matrixTags && previewSop()!.suggestion.sop.matrixTags.length > 0) {
+                                            <span class="flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                                <div class="w-1.5 h-1.5 rounded-full" [style.background-color]="getMatrixColor(previewSop()!.suggestion.sop.matrixTags[0])"></div>
+                                                {{getMatrixLabel(previewSop()!.suggestion.sop.matrixTags[0])}}
+                                            </span>
+                                        }
+                                        <span class="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">{{previewSop()!.suggestion.sop.targets.length}} chỉ tiêu</span>
+                                    </div>
+                                </div>
+                                <button (click)="closeSopPreview()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 transition">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+                                <!-- Covered Targets -->
+                                @if(previewSop()!.suggestion.coveredTargets.length > 0) {
+                                    <div>
+                                        <h4 class="text-xs font-bold text-teal-700 dark:text-teal-400 mb-2 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                            Sẽ xử lý ({{previewSop()!.suggestion.coveredTargets.length}})
+                                        </h4>
+                                        <div class="bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/30 rounded-xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                            @for(t of previewSop()!.suggestion.coveredTargets; track t.id) {
+                                                <div class="px-2 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 border-b border-teal-100 dark:border-teal-900/30 last:border-0 truncate">
+                                                    {{t.name}}
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                
+                                <!-- Missing Targets -->
+                                @if(previewSop()!.suggestion.missingTargets.length > 0) {
+                                    <div>
+                                        <h4 class="text-xs font-bold text-red-600 dark:text-red-400 mb-2 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-circle-xmark"></i>
+                                            Sẽ bị thiếu ({{previewSop()!.suggestion.missingTargets.length}})
+                                        </h4>
+                                        <p class="text-[10px] text-slate-500 mb-2 italic">Hệ thống sẽ tự động tìm SOP khác để xử lý các chỉ tiêu này.</p>
+                                        <div class="bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                            @for(t of previewSop()!.suggestion.missingTargets; track t.id) {
+                                                <div class="px-2 py-1.5 text-[11px] font-bold text-red-700 dark:text-red-300 border-b border-red-100 dark:border-red-900/30 last:border-0 truncate">
+                                                    {{t.name}}
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                
+                                <!-- Extra Targets -->
+                                @if(previewSop()!.suggestion.extraTargets.length > 0) {
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            Có dư ({{previewSop()!.suggestion.extraTargets.length}})
+                                        </h4>
+                                        <p class="text-[10px] text-slate-400 mb-2 italic">SOP có nhưng Nhóm Mẫu không yêu cầu.</p>
+                                        <div class="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-xl p-2 max-h-40 overflow-y-auto custom-scrollbar opacity-60 hover:opacity-100 transition-opacity">
+                                            @for(t of previewSop()!.suggestion.extraTargets; track t.id) {
+                                                <div class="px-2 py-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 last:border-0 truncate">
+                                                    {{t.name}}
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <!-- Footer -->
+                            <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                <button (click)="assignSopFromPreview()" 
+                                        [disabled]="previewSop()!.suggestion.isPartial"
+                                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-check-to-slot"></i> Chỉ định SOP này
+                                </button>
+                                @if(previewSop()!.suggestion.isPartial) {
+                                    <p class="text-center text-[10px] text-slate-500 mt-2 italic">Tính năng chỉ định nhiều quy trình (Multi-Force) sẽ ra mắt trong tương lai.</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
             }
 
             <!-- STEP 2: REVIEW PLAN -->

@@ -56,6 +56,19 @@ interface ProposedBatch {
     isExpanded?: boolean; 
 }
 
+export interface SopSuggestion {
+    sop: Sop;
+    coverageCount: number;
+    totalRequired: number;
+    coverageRatio: number;
+    coveredTargets: {id: string, name: string}[];
+    missingTargets: {id: string, name: string}[];
+    extraTargets: {id: string, name: string}[];
+    isMissingStock: boolean;
+    isBest: boolean;
+    isPartial: boolean;
+}
+
 // Wizard State for Split Modal
 interface SplitWizardState {
     step: 1 | 2 | 3;
@@ -138,6 +151,9 @@ export class SmartBatchComponent {
   availableGroups = signal<TargetGroup[]>([]);
   currentBlockIndexForGroupImport = signal<number>(-1);
 
+  // --- PREVIEW PANEL STATE ---
+  previewSop = signal<{blockIndex: number, suggestion: SopSuggestion} | null>(null);
+
   // --- QUICK IMPORT STATE ---
   showQuickImport = signal(false);
   quickImportState = signal<{id: string, name: string, unit: string, currentStock: number, missingAmount: number}>({
@@ -163,23 +179,99 @@ export class SmartBatchComponent {
     return map;
   });
 
-  eligibleSopsMap = computed(() => {
-    const map = new Map<number, Sop[]>();
+  sopSuggestionsMap = computed(() => {
+    const map = new Map<number, SopSuggestion[]>();
     const active = this.activeSops();
+    const inventory = this.state.inventoryMap();
+
     for (const block of this.blocks()) {
       if (block.selectedTargets.size === 0) { map.set(block.id, []); continue; }
-      const reqTargets = Array.from(block.selectedTargets);
-      map.set(block.id, active.filter(sop => {
-        if (!sop.targets) return false;
-        const ids = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-        if (!reqTargets.every(id => ids.has(id))) return false;
+      
+      const reqTargetIds = Array.from(block.selectedTargets);
+      const allTargets = this.allAvailableTargets();
+      
+      const candidates: SopSuggestion[] = [];
+
+      for (const sop of active) {
+        if (!sop.targets || sop.targets.length === 0) continue;
         
         // Matrix Filter
         const sopMatrices = sop.matrixTags || [];
-        if (sopMatrices.length === 0) return true; // Universal SOP
-        if (!block.matrixType) return true; // Block allows ANY
-        return sopMatrices.includes(block.matrixType); // Specific match
-      }));
+        if (sopMatrices.length > 0 && block.matrixType && !sopMatrices.includes(block.matrixType)) {
+            continue; // doesn't match matrix
+        }
+
+        const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
+        
+        const covered: {id: string, name: string}[] = [];
+        const missing: {id: string, name: string}[] = [];
+        
+        reqTargetIds.forEach(reqId => {
+            const foundName = allTargets.find(t => t.uniqueKey === reqId)?.name || reqId;
+            if (sopTargetIds.has(reqId)) {
+                covered.push({id: reqId, name: foundName});
+            } else {
+                missing.push({id: reqId, name: foundName});
+            }
+        });
+
+        if (covered.length === 0) continue; // No overlap
+
+        const extra: {id: string, name: string}[] = [];
+        sop.targets.forEach(t => {
+            const id = getCanonicalId(t.name);
+            if (!block.selectedTargets.has(id)) {
+                extra.push({id, name: t.name});
+            }
+        });
+
+        // Check stock
+        let isMissingStock = false;
+        if (sop.consumables) {
+            for (const c of sop.consumables) {
+                if (c.type === 'simple') {
+                    const stockItem = inventory[c.name];
+                    if (!stockItem || stockItem.stock <= 0) {
+                        isMissingStock = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        const ratio = covered.length / sop.targets.length; // high ratio means less waste
+
+        candidates.push({
+            sop,
+            coverageCount: covered.length,
+            totalRequired: reqTargetIds.length,
+            coverageRatio: ratio,
+            coveredTargets: covered,
+            missingTargets: missing,
+            extraTargets: extra,
+            isMissingStock,
+            isBest: false,
+            isPartial: missing.length > 0
+        });
+      }
+
+      // We have all candidates.
+      // Filter logic: if there are 100% matches (missing.length === 0), only show them.
+      // If no 100% matches, show top 5 partial matches.
+      const fullMatches = candidates.filter(c => !c.isPartial);
+      let results: SopSuggestion[] = [];
+
+      if (fullMatches.length > 0) {
+          results = fullMatches.sort((a, b) => b.coverageRatio - a.coverageRatio);
+      } else {
+          results = candidates.sort((a, b) => b.coverageCount - a.coverageCount || b.coverageRatio - a.coverageRatio).slice(0, 5);
+      }
+
+      if (results.length > 0) {
+          results[0].isBest = true; // Best overall based on sort order
+      }
+
+      map.set(block.id, results);
     }
     return map;
   });
@@ -384,19 +476,21 @@ export class SmartBatchComponent {
       return this.availableMatrices().find(m => m.id === id)?.color || '#94a3b8';
   }
 
-  getEligibleSops(block: JobBlock): Sop[] {
-      if (block.selectedTargets.size === 0) return [];
-      const requiredTargets = Array.from(block.selectedTargets);
-      return this.activeSops().filter(sop => {
-          if (!sop.targets) return false;
-          const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-          if (!requiredTargets.every(reqId => sopTargetIds.has(reqId))) return false;
-          
-          const sopMatrices = sop.matrixTags || [];
-          if (sopMatrices.length === 0) return true;
-          if (!block.matrixType) return true;
-          return sopMatrices.includes(block.matrixType);
-      });
+  // --- PREVIEW PANEL METHODS ---
+  openSopPreview(blockIndex: number, suggestion: SopSuggestion) {
+      this.previewSop.set({blockIndex, suggestion});
+  }
+
+  closeSopPreview() {
+      this.previewSop.set(null);
+  }
+
+  assignSopFromPreview() {
+      const data = this.previewSop();
+      if (data) {
+          this.updateBlockForcedSop(data.blockIndex, data.suggestion.sop.id);
+          this.closeSopPreview();
+      }
   }
   
   countSamples(raw: string): number { return raw.split('\n').filter(s => s.trim()).length; }
