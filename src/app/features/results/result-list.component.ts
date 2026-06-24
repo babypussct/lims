@@ -654,7 +654,7 @@ import { PrintService } from '../../core/services/print.service';
                       <div class="flex items-center gap-2 shrink-0">
                         @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
                           <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
-                             class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
+                             class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
                             <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
                           </button>
                         }
@@ -673,18 +673,25 @@ import { PrintService } from '../../core/services/print.service';
                           <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ allChips.length }} mẫu được báo cáo
                         </div>
                         <div class="flex flex-wrap gap-1">
-                          @let limit = expandedChipKeys()['unified'] ? allChips.length : 8;
-                          @for (s of allChips.slice(0, limit); track s) {
-                            <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
-                          }
-                          @if (allChips.length > 8) {
-                            @if (expandedChipKeys()['unified']) {
-                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold border border-indigo-250/20 dark:border-indigo-800/20 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition active:scale-95 border-0">
-                                Thu gọn ▲
+                          @if (expandedChipKeys()['unified']) {
+                            @for (s of allChips; track s) {
+                              <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
+                            }
+                            <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold border border-indigo-250/20 dark:border-indigo-800/20 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition active:scale-95 border-0">
+                              Thu gọn ▲
+                            </button>
+                          } @else {
+                            @let shortChips = getShortenedSampleChips(allChips);
+                            @for (s of shortChips.slice(0, 8); track s) {
+                              <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
+                            }
+                            @if (shortChips.length > 8) {
+                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition active:scale-95 border-0" [title]="shortChips.slice(8).join('; ')">
+                                +{{ shortChips.length - 8 }} nhóm nữa ▼
                               </button>
-                            } @else {
-                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition active:scale-95 border-0" [title]="allChips.slice(8).join(', ')">
-                                +{{ allChips.length - 8 }} mẫu nữa ▼
+                            } @else if (allChips.length > shortChips.length) {
+                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 text-[9px] font-semibold border border-indigo-200/20 cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/40 transition active:scale-95 border-0">
+                                Chi tiết ▼
                               </button>
                             }
                           }
@@ -740,18 +747,25 @@ import { PrintService } from '../../core/services/print.service';
                             </div>
                             <div class="flex flex-wrap gap-1">
                               @let prefKey = 'pref_' + pref;
-                              @let limit = expandedChipKeys()[prefKey] ? prefChips.length : 8;
-                              @for (s of prefChips.slice(0, limit); track s) {
-                                <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
-                              }
-                              @if (prefChips.length > 8) {
-                                @if (expandedChipKeys()[prefKey]) {
-                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-bold border border-fuchsia-200/20 dark:border-fuchsia-800/20 cursor-pointer hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/60 transition active:scale-95 border-0">
-                                    Thu gọn ▲
+                              @if (expandedChipKeys()[prefKey]) {
+                                @for (s of prefChips; track s) {
+                                  <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
+                                }
+                                <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-bold border border-fuchsia-200/20 dark:border-fuchsia-800/20 cursor-pointer hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/60 transition active:scale-95 border-0">
+                                  Thu gọn ▲
+                                </button>
+                              } @else {
+                                @let shortPrefChips = getShortenedSampleChips(prefChips);
+                                @for (s of shortPrefChips.slice(0, 8); track s) {
+                                  <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
+                                }
+                                @if (shortPrefChips.length > 8) {
+                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 transition active:scale-95 border-0" [title]="shortPrefChips.slice(8).join('; ')">
+                                    +{{ shortPrefChips.length - 8 }} nhóm nữa ▼
                                   </button>
-                                } @else {
-                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 transition active:scale-95 border-0" [title]="prefChips.slice(8).join(', ')">
-                                    +{{ prefChips.length - 8 }} mẫu nữa ▼
+                                } @else if (prefChips.length > shortPrefChips.length) {
+                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-semibold border border-fuchsia-200/20 cursor-pointer hover:bg-fuchsia-100/60 dark:hover:bg-fuchsia-900/40 transition active:scale-95 border-0">
+                                    Chi tiết ▼
                                   </button>
                                 }
                               }
@@ -837,18 +851,25 @@ import { PrintService } from '../../core/services/print.service';
                             <div class="border-t border-slate-200/40 dark:border-slate-800/40 pt-1.5">
                               <div class="flex flex-wrap gap-1 items-center">
                                 @let histKey = 'hist_' + hist.version + '_' + (hist.prefix || 'all');
-                                @let limit = expandedChipKeys()[histKey] ? hist.includedSamples.length : 12;
-                                @for (s of hist.includedSamples.slice(0, limit); track s) {
-                                  <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-mono font-bold border border-slate-200/20 dark:border-slate-700/20">{{ s }}</span>
-                                }
-                                @if (hist.includedSamples.length > 12) {
-                                  @if (expandedChipKeys()[histKey]) {
-                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[8px] font-bold border border-slate-300/35 cursor-pointer hover:bg-slate-350 dark:hover:bg-slate-600 transition active:scale-95 border-0">
-                                      Thu gọn ▲
+                                @if (expandedChipKeys()[histKey]) {
+                                  @for (s of hist.includedSamples; track s) {
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-mono font-bold border border-slate-200/20 dark:border-slate-700/20">{{ s }}</span>
+                                  }
+                                  <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[8px] font-bold border border-slate-300/35 cursor-pointer hover:bg-slate-350 dark:hover:bg-slate-600 transition active:scale-95 border-0">
+                                    Thu gọn ▲
+                                  </button>
+                                } @else {
+                                  @let shortHist = getShortenedSampleChips(hist.includedSamples);
+                                  @for (s of shortHist.slice(0, 8); track s) {
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-mono font-bold border border-slate-200/20 dark:border-slate-700/20">{{ s }}</span>
+                                  }
+                                  @if (shortHist.length > 8) {
+                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 border-0" [title]="shortHist.slice(8).join('; ')">
+                                      +{{ shortHist.length - 8 }} nhóm nữa ▼
                                     </button>
-                                  } @else {
-                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 border-0" [title]="hist.includedSamples.slice(12).join(', ')">
-                                      +{{ hist.includedSamples.length - 12 }} mẫu nữa ▼
+                                  } @else if (hist.includedSamples.length > shortHist.length) {
+                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-150 dark:bg-slate-800/40 text-slate-500 dark:text-slate-450 text-[8px] font-semibold border border-slate-200/25 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 border-0">
+                                      Chi tiết ▼
                                     </button>
                                   }
                                 }
@@ -1063,15 +1084,25 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   /**
    * Format danh sách mẫu thành chuỗi ngắn gọn, thông minh:
-   * - Nếu consecutive (B001, B002, B003) → "B001-B003"
-   * - Nếu rời rạc → "B001, B004, B008"
-   * - Nếu quá dài → cắt và thêm "+N mẫu nữa"
+   * - Nếu consecutive (B001, B002, B003) → "B001 -> B003"
+   * - Nếu rời rạc → "B001; B004; B008"
+   * - Nếu quá dài → cắt và thêm "+N nhóm nữa"
    */
   formatSampleRange(samples: string[], maxDisplay = 999): string {
     if (!samples || samples.length === 0) return '';
-    if (samples.length <= maxDisplay) return samples.join(', ');
-    const shown = samples.slice(0, maxDisplay).join(', ');
-    return `${shown} +${samples.length - maxDisplay} mẫu nữa`;
+    const shortened = this.getShortenedSampleChips(samples);
+    if (shortened.length <= maxDisplay) return shortened.join('; ');
+    const shown = shortened.slice(0, maxDisplay).join('; ');
+    return `${shown} +${shortened.length - maxDisplay} nhóm nữa`;
+  }
+
+  /**
+   * Nhóm danh sách mẫu thành các đoạn liên tục dưới dạng mảng (để render các chip rút gọn)
+   */
+  getShortenedSampleChips(samples: string[]): string[] {
+    const formatted = formatSampleList(samples);
+    if (!formatted) return [];
+    return formatted.split('; ').map(s => s.trim());
   }
 
   /**
