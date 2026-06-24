@@ -1112,7 +1112,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     for (const [key, rep] of Object.entries(reports)) {
       const repPrefix = (rep as any).prefix || key;
       if (repPrefix === prefixKey && ((rep as any).pdfUrl || (rep as any).pdfViewUrl)) {
-        result.push({ ...rep, _id: key });
+        result.push({ ...(rep as any), _id: key });
       }
     }
     
