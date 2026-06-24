@@ -601,7 +601,8 @@ export class ResultService {
     requestId: string,
     draftData: Partial<AnalysisResultDraft>,
     payload: GenerateReportPayload,
-    prefix?: string
+    prefix?: string,
+    includedSamples?: string[]
   ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string }> {
     try {
       const ref = this.getDocRef(requestId);
@@ -656,6 +657,7 @@ export class ResultService {
             pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${prefixReport.version}`,
             publishedAt: prefixReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
             publishedBy: currentDraft.updatedBy || 'Unknown',
+            includedSamples: prefixReport.includedSamples || [],
             page1DataBackup: prefixReport.publishedBackup?.page1Data || {},
             resultDataBackup: prefixReport.publishedBackup?.resultData || {},
             status: 'published'
@@ -699,6 +701,7 @@ export class ResultService {
             pdfCreatedAt: new Date().toISOString(),
             version: nextVersion,
             status: 'completed',
+            includedSamples: includedSamples || [],
             publishedBackup: backup
           }
         } as AnalysisResultDraft['reports'];

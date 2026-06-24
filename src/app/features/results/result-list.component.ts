@@ -644,64 +644,102 @@ import { PrintService } from '../../core/services/print.service';
                 </h4>
 
                 @if (unifiedAllSamplesReport()) {
-                  <div class="bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <span class="inline-block px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wide border border-indigo-200/30 mb-1.5">Tất cả mẫu</span>
-                      <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ unifiedAllSamplesReport().version }}</span></div>
-                      <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
+                  <div class="bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span class="inline-block px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wide border border-indigo-200/30 mb-1.5">Tất cả mẫu</span>
+                        <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ unifiedAllSamplesReport().version }}</span></div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0">
+                        @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
+                          <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
+                             class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
+                            <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
+                          </button>
+                        }
+                        @if (unifiedAllSamplesReport().docsUrl) {
+                          <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                             class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                            <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
+                          </a>
+                        }
+                      </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                      @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
-                        <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
-                           class="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
-                          <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
-                        </button>
-                      }
-                      @if (unifiedAllSamplesReport().docsUrl) {
-                        <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                           class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                          <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
-                        </a>
-                      }
-                    </div>
+                    @let allChips = getSampleChipsForReport(unifiedAllSamplesReport());
+                    @if (allChips.length > 0) {
+                      <div class="border-t border-indigo-100/40 dark:border-indigo-900/20 pt-2.5">
+                        <div class="text-[9px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-widest mb-1.5">
+                          <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ allChips.length }} mẫu được báo cáo
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                          @for (s of allChips.slice(0, 8); track s) {
+                            <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
+                          }
+                          @if (allChips.length > 8) {
+                            <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30" [title]="allChips.slice(8).join(', ')">+{{ allChips.length - 8 }} mẫu nữa</span>
+                          }
+                        </div>
+                      </div>
+                    }
                   </div>
                 }
 
                 @if (shouldShowPrefixLoop()) {
                   @for (pref of getSelectedRunPrefixes(); track pref) {
-                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-950/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <span class="inline-block px-2 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-black uppercase tracking-wide border border-fuchsia-200/20 mb-1.5">
-                          {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
-                        </span>
-                        @if (getPrefixReportForSelected(pref)) {
-                          <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ getPrefixReportForSelected(pref).version || 1 }}</span></div>
-                          <div class="text-[10px] text-slate-400 mt-0.5">{{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
-                        } @else {
-                          <div class="text-[11px] text-slate-400 font-semibold">Chưa có file in</div>
-                        }
-                      </div>
-                      <div class="flex items-center gap-2 shrink-0">
-                        @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).docsUrl || getPrefixReportForSelected(pref).pdfUrl)) {
-                          @if (getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl) {
-                            <button (click)="openPdfPreview(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, getPrefixReportForSelected(pref).docsUrl, pref); closeReportHub()"
-                               class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
-                              <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
+                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-950/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col gap-3">
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <span class="inline-block px-2 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-black uppercase tracking-wide border border-fuchsia-200/20 mb-1.5">
+                            {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
+                          </span>
+                          @if (getPrefixReportForSelected(pref)) {
+                            <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ getPrefixReportForSelected(pref).version || 1 }}</span></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">{{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
+                          } @else {
+                            <div class="text-[11px] text-slate-400 font-semibold">Chưa có file in</div>
+                          }
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).docsUrl || getPrefixReportForSelected(pref).pdfUrl)) {
+                            @if (getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl) {
+                              <button (click)="openPdfPreview(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, getPrefixReportForSelected(pref).docsUrl, pref); closeReportHub()"
+                                 class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
+                                <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
+                              </button>
+                            }
+                            @if (getPrefixReportForSelected(pref).docsUrl) {
+                              <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                                 class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
+                                <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
+                              </a>
+                            }
+                          } @else {
+                            <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
+                                    class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
+                              <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
                             </button>
                           }
-                          @if (getPrefixReportForSelected(pref).docsUrl) {
-                            <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                               class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                              <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
-                            </a>
-                          }
-                        } @else {
-                          <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
-                                  class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
-                            <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
-                          </button>
-                        }
+                        </div>
                       </div>
+                      @if (getPrefixReportForSelected(pref)) {
+                        @let prefChips = getSampleChipsForReport(getPrefixReportForSelected(pref), pref === '' ? '_NO_PREFIX_' : pref);
+                        @if (prefChips.length > 0) {
+                          <div class="border-t border-fuchsia-100/30 dark:border-fuchsia-900/20 pt-2.5">
+                            <div class="text-[9px] font-black text-fuchsia-400 dark:text-fuchsia-500 uppercase tracking-widest mb-1.5">
+                              <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ prefChips.length }} mẫu được báo cáo
+                            </div>
+                            <div class="flex flex-wrap gap-1">
+                              @for (s of prefChips.slice(0, 8); track s) {
+                                <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
+                              }
+                              @if (prefChips.length > 8) {
+                                <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30" [title]="prefChips.slice(8).join(', ')">+{{ prefChips.length - 8 }} mẫu nữa</span>
+                              }
+                            </div>
+                          </div>
+                        }
+                      }
                     </div>
                   }
                 }
@@ -740,35 +778,49 @@ import { PrintService } from '../../core/services/print.service';
                   @if (selectedRequestHistoryList().length > 0) {
                     <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                       @for (hist of selectedRequestHistoryList(); track hist.version + '_' + hist.prefix) {
-                        <div class="flex items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/60 rounded-xl px-3 py-2.5 text-xs">
-                          <div>
-                            <div class="flex items-center gap-1.5">
-                              <span class="font-extrabold text-slate-700 dark:text-slate-300">v{{ hist.version }}</span>
-                              @if (hist.prefix) {
-                                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-500 text-[8px] font-bold uppercase">
-                                  {{ hist.prefix === '_NO_PREFIX_' ? 'No prefix' : hist.prefix }}
-                                </span>
+                        <div class="flex flex-col gap-1.5 bg-slate-50/60 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/60 rounded-xl px-3 py-2.5 text-xs">
+                          <div class="flex items-center justify-between gap-3">
+                            <div>
+                              <div class="flex items-center gap-1.5">
+                                <span class="font-extrabold text-slate-700 dark:text-slate-300">v{{ hist.version }}</span>
+                                @if (hist.prefix) {
+                                  <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-500 text-[8px] font-bold uppercase">
+                                    {{ hist.prefix === '_NO_PREFIX_' ? 'No prefix' : hist.prefix }}
+                                  </span>
+                                }
+                                @if (hist.status === 'archived') {
+                                  <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase">Lưu trữ</span>
+                                }
+                                @if (hist.includedSamples?.length > 0) {
+                                  <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                                    <i class="fa-solid fa-vials text-[8px]"></i> {{ hist.includedSamples.length }} mẫu
+                                  </span>
+                                }
+                              </div>
+                              <div class="text-[9px] text-slate-400 mt-0.5">{{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm dd/MM/yy' }}</div>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                              @if (hist.pdfViewUrl || hist.pdfUrl) {
+                                <button (click)="openPdfPreview(hist.pdfViewUrl || hist.pdfUrl, hist.docsUrl, hist.prefix === '_NO_PREFIX_' ? '' : hist.prefix, hist.version, hist.publishedBy, hist.publishedAt); closeReportHub()"
+                                   class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 border-0 cursor-pointer" title="Mở PDF bản này">
+                                  <i class="fa-solid fa-file-pdf text-[10px]"></i>
+                                </button>
                               }
-                              @if (hist.status === 'archived') {
-                                <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase">Lưu trữ</span>
+                              @if (hist.docsUrl) {
+                                <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                                   class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này (Xem)">
+                                  <i class="fa-solid fa-file-word text-[10px]"></i>
+                                </a>
                               }
                             </div>
-                            <div class="text-[9px] text-slate-400 mt-0.5">{{ hist.publishedBy }} — {{ hist.publishedAt | date:'HH:mm dd/MM/yy' }}</div>
                           </div>
-                          <div class="flex items-center gap-1.5 shrink-0">
-                            @if (hist.pdfViewUrl || hist.pdfUrl) {
-                              <button (click)="openPdfPreview(hist.pdfViewUrl || hist.pdfUrl, hist.docsUrl, hist.prefix === '_NO_PREFIX_' ? '' : hist.prefix, hist.version, hist.publishedBy, hist.publishedAt); closeReportHub()"
-                                 class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 border-0 cursor-pointer" title="Mở PDF bản này">
-                                <i class="fa-solid fa-file-pdf text-[10px]"></i>
-                              </button>
-                            }
-                            @if (hist.docsUrl) {
-                              <a [href]="getSafeGoogleUrl(hist.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                                 class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600 flex items-center justify-center text-slate-500 transition active:scale-90" title="Mở Docs bản này (Xem)">
-                                <i class="fa-solid fa-file-word text-[10px]"></i>
-                              </a>
-                            }
-                          </div>
+                          @if (hist.includedSamples?.length > 0) {
+                            <div class="border-t border-slate-200/40 dark:border-slate-800/40 pt-1.5">
+                              <div class="text-[9px] font-mono text-slate-400 dark:text-slate-500 leading-relaxed">
+                                {{ formatSampleRange(hist.includedSamples, 12) }}
+                              </div>
+                            </div>
+                          }
                         </div>
                       }
                     </div>
@@ -963,6 +1015,39 @@ export class ResultListComponent implements OnInit, OnDestroy {
   hasAnyPrefixReport(): boolean {
     const prefixes = this.getSelectedRunPrefixes();
     return prefixes.some(pref => this.getPrefixReportForSelected(pref) !== null);
+  }
+
+  /**
+   * Format danh sách mẫu thành chuỗi ngắn gọn, thông minh:
+   * - Nếu consecutive (B001, B002, B003) → "B001-B003"
+   * - Nếu rời rạc → "B001, B004, B008"
+   * - Nếu quá dài → cắt và thêm "+N mẫu nữa"
+   */
+  formatSampleRange(samples: string[], maxDisplay = 999): string {
+    if (!samples || samples.length === 0) return '';
+    if (samples.length <= maxDisplay) return samples.join(', ');
+    const shown = samples.slice(0, maxDisplay).join(', ');
+    return `${shown} +${samples.length - maxDisplay} mẫu nữa`;
+  }
+
+  /**
+   * Lấy includedSamples từ report object.
+   * Fallback: lọc từ run.sampleList theo prefix nếu không có includedSamples (dữ liệu cũ).
+   */
+  getSampleChipsForReport(report: any, prefix?: string): string[] {
+    if (report?.includedSamples && report.includedSamples.length > 0) {
+      return report.includedSamples;
+    }
+    // Fallback cho dữ liệu cũ chưa có includedSamples
+    const run = this.selectedRequestForReport();
+    if (!run?.sampleList) return [];
+    return (run.sampleList as string[]).filter((s: string) => {
+      if (!prefix && prefix !== '') return true; // Tất cả mẫu
+      const startsWithLetter = /^[a-zA-Z]/.test(s);
+      const sPrefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+      const prefixKey = prefix === '_NO_PREFIX_' ? '' : prefix;
+      return sPrefix === prefixKey;
+    });
   }
 
   // Helper for Report Hub: Get the unified 'All Samples' report object

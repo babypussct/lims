@@ -39,7 +39,7 @@ export interface AnalysisResultDraft {
   version?: number;
   pdfHistory?: AnalysisResultVersion[];
   
-  // Danh sách báo cáo theo tiền tố (cho SOP-03)
+  // Danh sách báo cáo theo tiền tố (cho SOP-03 và tất cả SOP có prefix)
   reports?: Record<string, {
     pdfUrl: string | null;
     pdfViewUrl?: string | null;
@@ -50,6 +50,8 @@ export interface AnalysisResultDraft {
     publishedBy?: string;
     version: number;
     status?: string;
+    /** Danh sách mã số mẫu (sampleCode LIMS) được include vào bản in này */
+    includedSamples?: string[];
     publishedBackup?: {
       page1Data: any;
       resultData: any;

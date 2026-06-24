@@ -786,7 +786,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         );
       }
 
-      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport);
+      // Tính danh sách mẫu được include vào bản in này (chỉ mẫu thường, không tính QC rows)
+      const includedSamples = (currentRun.sampleList || []).filter((s: string) => {
+        const resObj = currentDraft.resultData[s] || {};
+        const startsWithLetter = /^[a-zA-Z]/.test(s);
+        const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+        const isSelected = resObj['selected'] !== false;
+        const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
+        return isSelected && matchesFilter;
+      });
+
+      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport, includedSamples);
       if (result.success) {
         this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
 
