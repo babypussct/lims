@@ -82,12 +82,12 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
     if (!this.draft.page1Data['dichlorvosMethod']) {
       this.draft.page1Data['dichlorvosMethod'] = 'GC/MS';
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '51', hamLuong: '0' },
-        { loSo: '52', hamLuong: '5' },
-        { loSo: '53', hamLuong: '10' },
-        { loSo: '54', hamLuong: '20' },
-        { loSo: '55', hamLuong: '30' },
-        { loSo: '56', hamLuong: '40' }
+        { loSo: 'C0', vialNo: '51', hamLuong: '0' },
+        { loSo: 'C1', vialNo: '52', hamLuong: '5' },
+        { loSo: 'C2', vialNo: '53', hamLuong: '10' },
+        { loSo: 'C3', vialNo: '54', hamLuong: '20' },
+        { loSo: 'C4', vialNo: '55', hamLuong: '30' },
+        { loSo: 'C5', vialNo: '56', hamLuong: '40' }
       ];
       this.bulkVialStart = 1;
     } else {
@@ -173,7 +173,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
     const method = this.draft.page1Data['dichlorvosMethod'] || 'GC/MS';
     const calPoints = this.draft.page1Data['calibPoints'];
     if (calPoints && calPoints.length > 0) {
-      this.bulkCalibVialStart = parseInt(calPoints[0].loSo, 10) || (method === 'GC/MSMS' ? 1 : 51);
+      this.bulkCalibVialStart = parseInt(calPoints[0].vialNo || calPoints[0].loSo, 10) || (method === 'GC/MSMS' ? 1 : 51);
     } else {
       this.bulkCalibVialStart = method === 'GC/MSMS' ? 1 : 51;
     }
@@ -212,12 +212,12 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
     // Switch default configurations
     if (method === 'GC/MS') {
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '51', hamLuong: '0' },
-        { loSo: '52', hamLuong: '5' },
-        { loSo: '53', hamLuong: '10' },
-        { loSo: '54', hamLuong: '20' },
-        { loSo: '55', hamLuong: '30' },
-        { loSo: '56', hamLuong: '40' }
+        { loSo: 'C0', vialNo: '51', hamLuong: '0' },
+        { loSo: 'C1', vialNo: '52', hamLuong: '5' },
+        { loSo: 'C2', vialNo: '53', hamLuong: '10' },
+        { loSo: 'C3', vialNo: '54', hamLuong: '20' },
+        { loSo: 'C4', vialNo: '55', hamLuong: '30' },
+        { loSo: 'C5', vialNo: '56', hamLuong: '40' }
       ];
       this.bulkVialStart = 59;
       this.bulkCalibVialStart = 51;
@@ -228,11 +228,11 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
       if (this.draft.resultData['QC_FINAL']) this.draft.resultData['QC_FINAL']['loSo'] = '58';
     } else {
       this.draft.page1Data['calibPoints'] = [
-        { loSo: '1', hamLuong: '0' },
-        { loSo: '2', hamLuong: '5' },
-        { loSo: '3', hamLuong: '10' },
-        { loSo: '4', hamLuong: '20' },
-        { loSo: '5', hamLuong: '50' }
+        { loSo: 'C0', vialNo: '1', hamLuong: '0' },
+        { loSo: 'C1', vialNo: '2', hamLuong: '5' },
+        { loSo: 'C2', vialNo: '3', hamLuong: '10' },
+        { loSo: 'C3', vialNo: '4', hamLuong: '20' },
+        { loSo: 'C4', vialNo: '5', hamLuong: '50' }
       ];
       this.bulkVialStart = 9;
       this.bulkCalibVialStart = 1;

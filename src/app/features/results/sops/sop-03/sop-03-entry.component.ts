@@ -201,6 +201,13 @@ export class Sop03EntryComponent implements OnInit {
     this.syncSpreadsheetVialsFromCalibration();
 
     this.onBulkVialStartChange();
+    
+    // Áp dụng số vial bắt đầu từ 1 cho các mẫu nếu chưa được khởi tạo
+    const samples = this.getVisibleRegularSamples();
+    const needsInit = samples.some(s => !this.draft.resultData[s] || !this.draft.resultData[s]['loSo']);
+    if (needsInit) {
+      this.applyBulkVials();
+    }
   }
 
   onBulkVialStartChange() {
@@ -246,13 +253,6 @@ export class Sop03EntryComponent implements OnInit {
     if (this.draft.resultData['QC_SPIKE']) {
       this.draft.resultData['QC_SPIKE']['loSo'] = String(lastCalibVial + 2);
     }
-    
-    const regularSamples = this.getVisibleRegularSamples();
-    regularSamples.forEach((sampleCode: string, idx: number) => {
-      if (this.draft.resultData[sampleCode]) {
-        this.draft.resultData[sampleCode]['loSo'] = String(lastCalibVial + 3 + idx);
-      }
-    });
 
     const prefixes = new Set<string>();
     (this.run.sampleList || []).forEach((sample: string) => {
@@ -268,9 +268,6 @@ export class Sop03EntryComponent implements OnInit {
         this.draft.resultData[key]['loSo'] = String(lastCalibVial + 2);
       }
     });
-
-    this.bulkVialStart = lastCalibVial + 3;
-    this.onBulkVialStartChange();
   }
 
   onCalibrationPointsChanged() {

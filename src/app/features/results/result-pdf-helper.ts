@@ -366,7 +366,16 @@ export function buildDichlorvosPdfPayload(currentDraft: any, currentRun: any, ac
     
     // Thêm các biến dự phòng cho R2
     R2: currentDraft.page1Data['r2'] || '',
-    heSoR2: currentDraft.page1Data['r2'] || ''
+    heSoR2: currentDraft.page1Data['r2'] || '',
+    
+    // Các biến flatten cho calibPoints để hiển thị trên PDF Form Đơn
+    ...(currentDraft.page1Data['calibPoints'] || []).reduce((acc: any, pt: any, index: number) => {
+      acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
+      acc[`calib_loSo_${index}`] = pt.loSo;
+      acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
+      acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+      return acc;
+    }, {})
   };
 
   if (mappedMetadata.calibPoints && Array.isArray(mappedMetadata.calibPoints)) {
@@ -1392,7 +1401,15 @@ export function buildChlorHuuCoPdfPayload(currentDraft: any, currentRun: any, ac
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
-      runSamplesList: runSamplesList
+      runSamplesList: runSamplesList,
+      // Các biến flatten cho calibPoints để hiển thị trên PDF Form Đơn
+      ...(currentDraft.page1Data['calibPoints'] || []).reduce((acc: any, pt: any, index: number) => {
+        acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
+        acc[`calib_loSo_${index}`] = pt.loSo;
+        acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
+        acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+        return acc;
+      }, {})
     },
     samples: samplesPayload
   };
@@ -1735,7 +1752,15 @@ export function buildNhomCucPdfPayload(currentDraft: any, currentRun: any, activ
       ngayNguoiPhanTich: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
       ngayNguoiThamTra: formatAnalysisDate(currentDraft.page1Data['ngayNguoiThamTra'] || new Date().toISOString().split('T')[0]),
       ngayBaoCao: formatAnalysisDate(currentDraft.page1Data['ngayNguoiPhanTich'] || getRunDate()),
-      runSamplesList: runSamplesList
+      runSamplesList: runSamplesList,
+      // Các biến flatten cho calibPoints để hiển thị trên PDF Form Đơn
+      ...(currentDraft.page1Data['calibPoints'] || []).reduce((acc: any, pt: any, index: number) => {
+        acc[`calib_tenDiem_${index}`] = pt.tenDiem || pt.loSo;
+        acc[`calib_loSo_${index}`] = pt.loSo;
+        acc[`calib_vialNo_${index}`] = pt.vialNo || pt.loSo;
+        acc[`calib_hamLuong_${index}`] = pt.hamLuong || '';
+        return acc;
+      }, {})
     },
     samples: samplesPayload
   };

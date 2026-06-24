@@ -79,6 +79,7 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Pirimiphos-methyl':   'pirimiphos_methyl',
   'PirimiphosMethyl':     'pirimiphos_methyl',
   'Pirimifos-methyl':    'pirimiphos_methyl',
+  'Pirimifos methyl':    'pirimiphos_methyl',
   'Parathion-methyl':    'parathion_methyl',
   'ParathionMethyl':     'parathion_methyl',
   'Parathion':           'parathion',
@@ -350,7 +351,7 @@ export function getCanonicalId(name: string): string {
   }
 
   // 3. Fallback to slugified phonetic ID
-  return lowerName.replace(/[\s\-]/g, '_');
+  return lowerName.trim().replace(/[\s\-]+/g, '_');
 }
 
 /**
