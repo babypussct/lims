@@ -673,11 +673,20 @@ import { PrintService } from '../../core/services/print.service';
                           <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ allChips.length }} mẫu được báo cáo
                         </div>
                         <div class="flex flex-wrap gap-1">
-                          @for (s of allChips.slice(0, 8); track s) {
+                          @let limit = expandedChipKeys()['unified'] ? allChips.length : 8;
+                          @for (s of allChips.slice(0, limit); track s) {
                             <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
                           }
                           @if (allChips.length > 8) {
-                            <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30" [title]="allChips.slice(8).join(', ')">+{{ allChips.length - 8 }} mẫu nữa</span>
+                            @if (expandedChipKeys()['unified']) {
+                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold border border-indigo-250/20 dark:border-indigo-800/20 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition active:scale-95 border-0">
+                                Thu gọn ▲
+                              </button>
+                            } @else {
+                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition active:scale-95 border-0" [title]="allChips.slice(8).join(', ')">
+                                +{{ allChips.length - 8 }} mẫu nữa ▼
+                              </button>
+                            }
                           }
                         </div>
                       </div>
@@ -717,7 +726,7 @@ import { PrintService } from '../../core/services/print.service';
                           } @else {
                             <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
                                     class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
-                              <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
+                               <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
                             </button>
                           }
                         </div>
@@ -730,11 +739,21 @@ import { PrintService } from '../../core/services/print.service';
                               <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ prefChips.length }} mẫu được báo cáo
                             </div>
                             <div class="flex flex-wrap gap-1">
-                              @for (s of prefChips.slice(0, 8); track s) {
+                              @let prefKey = 'pref_' + pref;
+                              @let limit = expandedChipKeys()[prefKey] ? prefChips.length : 8;
+                              @for (s of prefChips.slice(0, limit); track s) {
                                 <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
                               }
                               @if (prefChips.length > 8) {
-                                <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30" [title]="prefChips.slice(8).join(', ')">+{{ prefChips.length - 8 }} mẫu nữa</span>
+                                @if (expandedChipKeys()[prefKey]) {
+                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-bold border border-fuchsia-200/20 dark:border-fuchsia-800/20 cursor-pointer hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/60 transition active:scale-95 border-0">
+                                    Thu gọn ▲
+                                  </button>
+                                } @else {
+                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 transition active:scale-95 border-0" [title]="prefChips.slice(8).join(', ')">
+                                    +{{ prefChips.length - 8 }} mẫu nữa ▼
+                                  </button>
+                                }
                               }
                             </div>
                           </div>
@@ -816,8 +835,23 @@ import { PrintService } from '../../core/services/print.service';
                           </div>
                           @if (hist.includedSamples?.length > 0) {
                             <div class="border-t border-slate-200/40 dark:border-slate-800/40 pt-1.5">
-                              <div class="text-[9px] font-mono text-slate-400 dark:text-slate-500 leading-relaxed">
-                                {{ formatSampleRange(hist.includedSamples, 12) }}
+                              <div class="flex flex-wrap gap-1 items-center">
+                                @let histKey = 'hist_' + hist.version + '_' + (hist.prefix || 'all');
+                                @let limit = expandedChipKeys()[histKey] ? hist.includedSamples.length : 12;
+                                @for (s of hist.includedSamples.slice(0, limit); track s) {
+                                  <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[8px] font-mono font-bold border border-slate-200/20 dark:border-slate-700/20">{{ s }}</span>
+                                }
+                                @if (hist.includedSamples.length > 12) {
+                                  @if (expandedChipKeys()[histKey]) {
+                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[8px] font-bold border border-slate-300/35 cursor-pointer hover:bg-slate-350 dark:hover:bg-slate-600 transition active:scale-95 border-0">
+                                      Thu gọn ▲
+                                    </button>
+                                  } @else {
+                                    <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 border-0" [title]="hist.includedSamples.slice(12).join(', ')">
+                                      +{{ hist.includedSamples.length - 12 }} mẫu nữa ▼
+                                    </button>
+                                  }
+                                }
                               </div>
                             </div>
                           }
@@ -896,9 +930,11 @@ export class ResultListComponent implements OnInit, OnDestroy {
   selectedRequestForReport = signal<any | null>(null);
   selectedRequestHistoryList = signal<any[]>([]);
   isLoadingHistory = signal<boolean>(false);
+  expandedChipKeys = signal<Record<string, boolean>>({});
   private reportHubSubscription?: any;
 
   async openReportHub(run: any) {
+    this.expandedChipKeys.set({});
     this.selectedRequestForReport.set(run);
     this.showReportHubModal.set(true);
     this.isLoadingHistory.set(true);
@@ -925,6 +961,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   closeReportHub() {
+    this.expandedChipKeys.set({});
     this.showReportHubModal.set(false);
     this.selectedRequestForReport.set(null);
     this.selectedRequestHistoryList.set([]);
@@ -933,6 +970,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.reportHubSubscription();
       this.reportHubSubscription = undefined;
     }
+  }
+
+  toggleChipExpand(key: string) {
+    this.expandedChipKeys.update(map => ({
+      ...map,
+      [key]: !map[key]
+    }));
   }
 
   openPdfPreview(pdfUrl: string | null | undefined, docsUrl?: string | null | undefined, prefix?: string, versionOverride?: number, analystOverride?: string, dateOverride?: any) {
