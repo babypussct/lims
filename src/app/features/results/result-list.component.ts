@@ -644,60 +644,94 @@ import { PrintService } from '../../core/services/print.service';
                 </h4>
 
                 @if (unifiedAllSamplesReport()) {
-                  <div class="bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex flex-col gap-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <span class="inline-block px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wide border border-indigo-200/30 mb-1.5">Tất cả mẫu</span>
-                        <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ unifiedAllSamplesReport().version }}</span></div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">{{ unifiedAllSamplesReport().updatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
+                  <div class="flex flex-col gap-3 mb-6 last:mb-0">
+                    
+                    <!-- HEADER -->
+                    <div class="flex items-center justify-between border-b border-indigo-100/80 dark:border-indigo-900/40 pb-2.5">
+                      <div class="flex items-center gap-2.5">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-white font-black text-[10px] shadow-sm shadow-indigo-500/20">
+                          <i class="fa-solid fa-layer-group"></i>
+                        </span>
+                        <span class="font-black text-slate-800 dark:text-slate-150 uppercase tracking-widest text-[11px]">
+                          BÁO CÁO CHUNG
+                        </span>
                       </div>
-                      <div class="flex items-center gap-2 shrink-0">
-                        @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
-                          <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
-                             class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
-                            <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
-                          </button>
-                        }
-                        @if (unifiedAllSamplesReport().docsUrl) {
-                          <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                             class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                            <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
-                          </a>
-                        }
-                      </div>
+                      <button (click)="enterResults(selectedRequestForReport().id, undefined, true); closeReportHub()"
+                              class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl text-[10px] font-black transition active:scale-95 shadow-sm shadow-indigo-500/5 cursor-pointer">
+                         <i class="fa-solid fa-plus text-[9px]"></i> TẠO LẠI BẢN IN
+                      </button>
                     </div>
-                    @let allChips = getSampleChipsForReport(unifiedAllSamplesReport());
-                    @if (allChips.length > 0) {
-                      <div class="border-t border-indigo-100/40 dark:border-indigo-900/20 pt-2.5">
-                        <div class="text-[9px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-widest mb-1.5">
-                          <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ allChips.length }} mẫu được báo cáo
-                        </div>
-                        <div class="flex flex-wrap gap-1">
-                          @if (expandedChipKeys()['unified']) {
-                            @for (s of allChips; track s) {
-                              <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
-                            }
-                            <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold border border-indigo-250/20 dark:border-indigo-800/20 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition active:scale-95 border-0">
-                              Thu gọn ▲
-                            </button>
-                          } @else {
-                            @let shortChips = getShortenedSampleChips(allChips);
-                            @for (s of shortChips.slice(0, 8); track s) {
-                              <span class="px-1.5 py-0.5 rounded-md bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200/30 dark:border-indigo-800/30">{{ s }}</span>
-                            }
-                            @if (shortChips.length > 8) {
-                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition active:scale-95 border-0" [title]="shortChips.slice(8).join('; ')">
-                                +{{ shortChips.length - 8 }} nhóm nữa ▼
-                              </button>
-                            } @else if (allChips.length > shortChips.length) {
-                              <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 text-[9px] font-semibold border border-indigo-200/20 cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/40 transition active:scale-95 border-0">
-                                Chi tiết ▼
-                              </button>
-                            }
+
+                    <!-- GRID CÁC BẢN IN -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <!-- THẺ BẢN IN KÍNH -->
+                      <div class="relative overflow-hidden bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 border border-indigo-200/50 dark:border-indigo-900/40 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-800 transition-all group flex flex-col justify-between h-full">
+                        
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-400/10 to-blue-400/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none transition-all group-hover:from-indigo-400/20"></div>
+
+                        <div class="relative z-10 flex flex-col gap-3 flex-1">
+                          <div class="flex justify-between items-start">
+                            <div class="flex flex-col">
+                              <div class="flex items-center gap-1.5 mb-1">
+                                <span class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold uppercase border border-indigo-200/50 dark:border-indigo-800/50 shadow-xs">v{{ unifiedAllSamplesReport().version || 1 }}</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                              </div>
+                              <div class="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
+                                <i class="fa-regular fa-clock text-[8px]"></i> {{ unifiedAllSamplesReport().updatedAt | date:'HH:mm dd/MM/yy' }}
+                              </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5">
+                              @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
+                                <button (click)="openPdfPreview(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL'); closeReportHub()"
+                                   class="w-8 h-8 rounded-xl bg-white hover:bg-red-50 text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 shadow-sm cursor-pointer" title="Xem PDF">
+                                  <i class="fa-solid fa-file-pdf text-xs"></i>
+                                </button>
+                              }
+                              @if (unifiedAllSamplesReport().docsUrl) {
+                                <a [href]="getSafeGoogleUrl(unifiedAllSamplesReport().docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                                   class="w-8 h-8 rounded-xl bg-white hover:bg-blue-50 text-blue-500 dark:bg-slate-800 dark:hover:bg-blue-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 shadow-sm" title="Mở Docs">
+                                  <i class="fa-solid fa-file-word text-xs"></i>
+                                </a>
+                              }
+                            </div>
+                          </div>
+
+                          @let allChips = getSampleChipsForReport(unifiedAllSamplesReport());
+                          @if (allChips.length > 0) {
+                            <div class="mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
+                              <div class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <i class="fa-solid fa-vials text-[8px] text-indigo-400"></i> {{ allChips.length }} mẫu được chọn
+                              </div>
+                              <div class="flex flex-wrap gap-1">
+                                @if (expandedChipKeys()['unified']) {
+                                  @for (s of allChips; track s) {
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
+                                  }
+                                  <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-200/50 dark:border-indigo-800/30 hover:bg-indigo-100 transition active:scale-95 border-0 cursor-pointer">
+                                    Thu gọn ▲
+                                  </button>
+                                } @else {
+                                  @let shortChips = getShortenedSampleChips(allChips);
+                                  @for (s of shortChips.slice(0, 5); track s) {
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
+                                  }
+                                  @if (shortChips.length > 5) {
+                                    <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100 transition active:scale-95 border-0 cursor-pointer" [title]="shortChips.slice(5).join('; ')">
+                                      +{{ shortChips.length - 5 }} ▼
+                                    </button>
+                                  } @else if (allChips.length > shortChips.length) {
+                                    <button (click)="toggleChipExpand('unified')" class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-200/50 dark:border-indigo-800/30 hover:bg-indigo-100 transition active:scale-95 border-0 cursor-pointer">
+                                      Chi tiết ▼
+                                    </button>
+                                  }
+                                }
+                              </div>
+                            </div>
                           }
                         </div>
                       </div>
-                    }
+                    </div>
                   </div>
                 }
 
