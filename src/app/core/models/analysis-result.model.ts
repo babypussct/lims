@@ -39,8 +39,10 @@ export interface AnalysisResultDraft {
   version?: number;
   pdfHistory?: AnalysisResultVersion[];
   
-  // Danh sách báo cáo theo tiền tố (cho SOP-03 và tất cả SOP có prefix)
+  // Danh sách báo cáo theo ID. (Cũ: theo tiền tố. Mới: Unique ID)
   reports?: Record<string, {
+    id?: string;
+    prefix?: string;
     pdfUrl: string | null;
     pdfViewUrl?: string | null;
     docsUrl?: string | null;

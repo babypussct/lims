@@ -703,75 +703,107 @@ import { PrintService } from '../../core/services/print.service';
 
                 @if (shouldShowPrefixLoop()) {
                   @for (pref of getSelectedRunPrefixes(); track pref) {
-                    <div class="bg-fuchsia-50/15 dark:bg-fuchsia-950/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex flex-col gap-3">
-                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <span class="inline-block px-2 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-black uppercase tracking-wide border border-fuchsia-200/20 mb-1.5">
-                            {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
+                    @let prefReports = getReportsForPrefix(pref);
+                    <div class="flex flex-col gap-3 mb-6 last:mb-0">
+                      
+                      <!-- HEADER TIỀN TỐ -->
+                      <div class="flex items-center justify-between border-b border-fuchsia-100/80 dark:border-fuchsia-900/40 pb-2.5">
+                        <div class="flex items-center gap-2.5">
+                          <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white font-black text-[10px] shadow-sm shadow-fuchsia-500/20">
+                            <i class="fa-solid fa-layer-group"></i>
                           </span>
-                          @if (getPrefixReportForSelected(pref)) {
-                            <div class="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phiên bản: <span class="text-fuchsia-600 dark:text-fuchsia-400">v{{ getPrefixReportForSelected(pref).version || 1 }}</span></div>
-                            <div class="text-[10px] text-slate-400 mt-0.5">{{ getPrefixReportForSelected(pref).pdfCreatedAt | date:'HH:mm — dd/MM/yyyy' }}</div>
-                          } @else {
-                            <div class="text-[11px] text-slate-400 font-semibold">Chưa có file in</div>
-                          }
+                          <span class="font-black text-slate-800 dark:text-slate-150 uppercase tracking-widest text-[11px]">
+                            {{ pref === '' ? 'KHÔNG TIỀN TỐ' : 'TIỀN TỐ ' + pref }}
+                          </span>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                          @if (getPrefixReportForSelected(pref) && (getPrefixReportForSelected(pref).docsUrl || getPrefixReportForSelected(pref).pdfUrl)) {
-                            @if (getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl) {
-                              <button (click)="openPdfPreview(getPrefixReportForSelected(pref).pdfViewUrl || getPrefixReportForSelected(pref).pdfUrl, getPrefixReportForSelected(pref).docsUrl, pref); closeReportHub()"
-                                 class="flex items-center gap-1.5 px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 cursor-pointer border-0">
-                                <i class="fa-solid fa-file-pdf text-[11px]"></i> XEM PDF
-                              </button>
-                            }
-                            @if (getPrefixReportForSelected(pref).docsUrl) {
-                              <a [href]="getSafeGoogleUrl(getPrefixReportForSelected(pref).docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
-                                 class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm active:scale-95 no-underline">
-                                <i class="fa-solid fa-file-word text-[11px]"></i> MỞ DOCS (XEM)
-                              </a>
-                            }
-                          } @else {
-                            <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
-                                    class="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition active:scale-95">
-                               <i class="fa-solid fa-arrows-rotate text-[10px]"></i> TẠO FILE IN
-                            </button>
-                          }
-                        </div>
+                        <button (click)="enterResults(selectedRequestForReport().id, pref, true); closeReportHub()"
+                                class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 border border-fuchsia-200 dark:border-fuchsia-900/50 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 rounded-xl text-[10px] font-black transition active:scale-95 shadow-sm shadow-fuchsia-500/5 cursor-pointer">
+                           <i class="fa-solid fa-plus text-[9px]"></i> TẠO BẢN IN
+                        </button>
                       </div>
-                      @if (getPrefixReportForSelected(pref)) {
-                        @let prefChips = getSampleChipsForReport(getPrefixReportForSelected(pref), pref === '' ? '_NO_PREFIX_' : pref);
-                        @if (prefChips.length > 0) {
-                          <div class="border-t border-fuchsia-100/30 dark:border-fuchsia-900/20 pt-2.5">
-                            <div class="text-[9px] font-black text-fuchsia-400 dark:text-fuchsia-500 uppercase tracking-widest mb-1.5">
-                              <i class="fa-solid fa-vials text-[8px] mr-1"></i>{{ prefChips.length }} mẫu được báo cáo
+
+                      <!-- GRID CÁC BẢN IN (REPORTS) -->
+                      @if (prefReports.length > 0) {
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          @for (rep of prefReports; track rep._id) {
+                            <!-- THẺ BẢN IN KÍNH (GLASSMORPHISM) -->
+                            <div class="relative overflow-hidden bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 border border-fuchsia-200/50 dark:border-fuchsia-900/40 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition-all group flex flex-col justify-between h-full">
+                              
+                              <!-- Dải gradient trang trí -->
+                              <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-fuchsia-400/10 to-pink-400/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none transition-all group-hover:from-fuchsia-400/20"></div>
+
+                              <div class="relative z-10 flex flex-col gap-3 flex-1">
+                                <div class="flex justify-between items-start">
+                                  <div class="flex flex-col">
+                                    <div class="flex items-center gap-1.5 mb-1">
+                                      <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-extrabold uppercase border border-fuchsia-200/50 dark:border-fuchsia-800/50 shadow-xs">v{{ rep.version || 1 }}</span>
+                                      @if (rep.status === 'completed') {
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                                      }
+                                    </div>
+                                    <div class="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
+                                      <i class="fa-regular fa-clock text-[8px]"></i> {{ rep.pdfCreatedAt | date:'HH:mm dd/MM/yy' }}
+                                    </div>
+                                  </div>
+                                  
+                                  <div class="flex items-center gap-1.5">
+                                    @if (rep.pdfViewUrl || rep.pdfUrl) {
+                                      <button (click)="openPdfPreview(rep.pdfViewUrl || rep.pdfUrl, rep.docsUrl, pref); closeReportHub()"
+                                         class="w-8 h-8 rounded-xl bg-white hover:bg-red-50 text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 shadow-sm cursor-pointer" title="Xem PDF">
+                                        <i class="fa-solid fa-file-pdf text-xs"></i>
+                                      </button>
+                                    }
+                                    @if (rep.docsUrl) {
+                                      <a [href]="getSafeGoogleUrl(rep.docsUrl, 'doc')" target="_blank" rel="noopener noreferrer"
+                                         class="w-8 h-8 rounded-xl bg-white hover:bg-blue-50 text-blue-500 dark:bg-slate-800 dark:hover:bg-blue-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 shadow-sm" title="Mở Docs">
+                                        <i class="fa-solid fa-file-word text-xs"></i>
+                                      </a>
+                                    }
+                                  </div>
+                                </div>
+
+                                <!-- CHI TIẾT MẪU (CHIPS) -->
+                                @let prefChips = getSampleChipsForReport(rep, pref === '' ? '_NO_PREFIX_' : pref);
+                                @if (prefChips.length > 0) {
+                                  <div class="mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
+                                    <div class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      <i class="fa-solid fa-vials text-[8px] text-fuchsia-400"></i> {{ prefChips.length }} mẫu được chọn
+                                    </div>
+                                    <div class="flex flex-wrap gap-1">
+                                      @let histKey = 'rep_' + rep._id;
+                                      @if (expandedChipKeys()[histKey]) {
+                                        @for (s of prefChips; track s) {
+                                          <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
+                                        }
+                                        <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold border border-fuchsia-200/50 dark:border-fuchsia-800/30 hover:bg-fuchsia-100 transition active:scale-95 border-0 cursor-pointer">
+                                          Thu gọn ▲
+                                        </button>
+                                      } @else {
+                                        @let shortPrefChips = getShortenedSampleChips(prefChips);
+                                        @for (s of shortPrefChips.slice(0, 5); track s) {
+                                          <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-mono font-bold border border-slate-200/50 dark:border-slate-700/50">{{ s }}</span>
+                                        }
+                                        @if (shortPrefChips.length > 5) {
+                                          <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100 transition active:scale-95 border-0 cursor-pointer" [title]="shortPrefChips.slice(5).join('; ')">
+                                            +{{ shortPrefChips.length - 5 }} ▼
+                                          </button>
+                                        } @else if (prefChips.length > shortPrefChips.length) {
+                                          <button (click)="toggleChipExpand(histKey)" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[9px] font-bold border border-fuchsia-200/50 dark:border-fuchsia-800/30 hover:bg-fuchsia-100 transition active:scale-95 border-0 cursor-pointer">
+                                            Chi tiết ▼
+                                          </button>
+                                        }
+                                      }
+                                    </div>
+                                  </div>
+                                }
+                              </div>
                             </div>
-                            <div class="flex flex-wrap gap-1">
-                              @let prefKey = 'pref_' + pref;
-                              @if (expandedChipKeys()[prefKey]) {
-                                @for (s of prefChips; track s) {
-                                  <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
-                                }
-                                <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-bold border border-fuchsia-200/20 dark:border-fuchsia-800/20 cursor-pointer hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/60 transition active:scale-95 border-0">
-                                  Thu gọn ▲
-                                </button>
-                              } @else {
-                                @let shortPrefChips = getShortenedSampleChips(prefChips);
-                                @for (s of shortPrefChips.slice(0, 8); track s) {
-                                  <span class="px-1.5 py-0.5 rounded-md bg-fuchsia-100/70 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[9px] font-mono font-bold border border-fuchsia-200/30 dark:border-fuchsia-800/30">{{ s }}</span>
-                                }
-                                @if (shortPrefChips.length > 8) {
-                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold border border-slate-200/30 dark:border-slate-700/30 cursor-pointer hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 transition active:scale-95 border-0" [title]="shortPrefChips.slice(8).join('; ')">
-                                    +{{ shortPrefChips.length - 8 }} nhóm nữa ▼
-                                  </button>
-                                } @else if (prefChips.length > shortPrefChips.length) {
-                                  <button (click)="toggleChipExpand(prefKey)" class="px-1.5 py-0.5 rounded-md bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 text-[9px] font-semibold border border-fuchsia-200/20 cursor-pointer hover:bg-fuchsia-100/60 dark:hover:bg-fuchsia-900/40 transition active:scale-95 border-0">
-                                    Chi tiết ▼
-                                  </button>
-                                }
-                              }
-                            </div>
-                          </div>
-                        }
+                          }
+                        </div>
+                      } @else {
+                        <div class="text-center py-5 text-slate-400 dark:text-slate-500 text-[10px] font-semibold italic border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/20">
+                          Chưa có bản in nào được tạo.
+                        </div>
                       }
                     </div>
                   }
@@ -1068,18 +1100,28 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return Array.from(prefixes).sort();
   }
 
-  getPrefixReportForSelected(prefix: string): any {
+  getReportsForPrefix(prefix: string): any[] {
     const run = this.selectedRequestForReport();
-    if (!run) return null;
+    if (!run) return [];
     const reports = run.analysisResultSummary?.reports || run.analysisResult?.reports;
-    if (!reports) return null;
+    if (!reports) return [];
+    
     const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix;
-    return reports[prefixKey] || null;
+    const result: any[] = [];
+    
+    for (const [key, rep] of Object.entries(reports)) {
+      const repPrefix = (rep as any).prefix || key;
+      if (repPrefix === prefixKey && ((rep as any).pdfUrl || (rep as any).pdfViewUrl)) {
+        result.push({ ...rep, _id: key });
+      }
+    }
+    
+    return result.sort((a, b) => (b.version || 0) - (a.version || 0));
   }
 
   hasAnyPrefixReport(): boolean {
     const prefixes = this.getSelectedRunPrefixes();
-    return prefixes.some(pref => this.getPrefixReportForSelected(pref) !== null);
+    return prefixes.some(pref => this.getReportsForPrefix(pref).length > 0);
   }
 
   /**
@@ -1144,8 +1186,9 @@ export class ResultListComponent implements OnInit, OnDestroy {
     // 2. If no root report, check if this is a single prefix scenario (any single prefix)
     const prefixes = this.getSelectedRunPrefixes();
     if (prefixes.length === 1) {
-      const singlePrefixReport = this.getPrefixReportForSelected(prefixes[0]);
-      if (singlePrefixReport) {
+      const singlePrefixReports = this.getReportsForPrefix(prefixes[0]);
+      if (singlePrefixReports.length === 1) {
+        const singlePrefixReport = singlePrefixReports[0];
         return {
           version: singlePrefixReport.version || 1,
           updatedAt: singlePrefixReport.pdfCreatedAt,

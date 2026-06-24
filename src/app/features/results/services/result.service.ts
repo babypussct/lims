@@ -622,11 +622,34 @@ export class ResultService {
 
       // Xác định xem đây là báo cáo theo nhóm tiền tố hay báo cáo chung (Tất cả mẫu)
       const isPrefixReport = prefix !== undefined && prefix !== null && prefix !== 'ALL';
+      let targetReportId = '';
 
       if (isPrefixReport) {
         const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
-        const prefixReport = reports[prefixKey] || {};
-        nextVersion = (prefixReport.version || 0) + 1;
+        const sortedIncluded = [...(includedSamples || [])].sort().join(',');
+        
+        let matchedId = '';
+        let matchedReport: any = null;
+        
+        for (const [key, rep] of Object.entries(reports)) {
+          const repPrefix = (rep as any).prefix || key;
+          if (repPrefix === prefixKey) {
+            const repSamples = [...((rep as any).includedSamples || [])].sort().join(',');
+            if (repSamples === sortedIncluded) {
+              matchedId = key;
+              matchedReport = rep;
+              break;
+            }
+          }
+        }
+        
+        if (matchedId) {
+          targetReportId = matchedId;
+          nextVersion = (matchedReport.version || 0) + 1;
+        } else {
+          targetReportId = `${prefixKey}_${Date.now()}`;
+          nextVersion = 1;
+        }
       } else {
         nextVersion = currentVersion + 1;
       }
@@ -645,21 +668,22 @@ export class ResultService {
       // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
       if (isPrefixReport) {
         const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
-        const prefixReport = reports[prefixKey];
-        if (prefixReport && prefixReport.pdfUrl) {
-          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${prefixReport.version}_${prefixKey}`);
+        const existingReport = targetReportId ? reports[targetReportId] : null;
+        if (existingReport && existingReport.pdfUrl) {
+          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${existingReport.version}_${targetReportId}`);
           await setDoc(historyDocRef, {
-            version: prefixReport.version || 1,
+            version: existingReport.version || 1,
             prefix: prefixKey,
-            pdfUrl: prefixReport.pdfUrl,
-            pdfViewUrl: prefixReport.pdfViewUrl || '',
-            docsUrl: prefixReport.docsUrl || '',
-            pdfFileName: prefixReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${prefixReport.version}`,
-            publishedAt: prefixReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            reportId: targetReportId,
+            pdfUrl: existingReport.pdfUrl,
+            pdfViewUrl: existingReport.pdfViewUrl || '',
+            docsUrl: existingReport.docsUrl || '',
+            pdfFileName: existingReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${existingReport.version}`,
+            publishedAt: existingReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
             publishedBy: currentDraft.updatedBy || 'Unknown',
-            includedSamples: prefixReport.includedSamples || [],
-            page1DataBackup: prefixReport.publishedBackup?.page1Data || {},
-            resultDataBackup: prefixReport.publishedBackup?.resultData || {},
+            includedSamples: existingReport.includedSamples || [],
+            page1DataBackup: existingReport.publishedBackup?.page1Data || {},
+            resultDataBackup: existingReport.publishedBackup?.resultData || {},
             status: 'published'
           });
         }
@@ -693,7 +717,9 @@ export class ResultService {
         const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
         const updatedReports = {
           ...reports,
-          [prefixKey]: {
+          [targetReportId]: {
+            id: targetReportId,
+            prefix: prefixKey,
             pdfUrl: response.pdfUrl || null,
             pdfViewUrl: response.pdfViewUrl || null,
             docsUrl: response.docsUrl || null,
@@ -841,16 +867,18 @@ export class ResultService {
       if (currentDraft.status === 'completed') {
         const currentReports2 = currentDraft.reports || {};
         if (Object.keys(currentReports2).length > 0) {
-          for (const prefix of Object.keys(currentReports2)) {
-            const rep = currentReports2[prefix];
-            const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${prefix}`);
+          for (const reportId of Object.keys(currentReports2)) {
+            const rep = currentReports2[reportId];
+            const repPrefix = rep.prefix || reportId; // backward compatibility
+            const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${reportId}`);
             await setDoc(historyRef, {
               version: rep.version,
-              prefix: prefix,
+              prefix: repPrefix,
+              reportId: reportId,
               pdfUrl: rep.pdfUrl || '',
               pdfViewUrl: rep.pdfViewUrl || '',
               docsUrl: rep.docsUrl || '',
-              pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${prefix}_Bản_v${rep.version}`,
+              pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${repPrefix}_Bản_v${rep.version}`,
               publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
               publishedBy: currentDraft.updatedBy || 'Unknown',
               page1DataBackup: rep.publishedBackup?.page1Data || {},
