@@ -72,7 +72,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                           
                           <div class="flex items-center gap-1.5">
                             @if (unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl) {
-                              <button (click)="triggerPreviewPdf(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL')"
+                              <button (click)="triggerPreviewPdf(unifiedAllSamplesReport().pdfViewUrl || unifiedAllSamplesReport().pdfUrl, unifiedAllSamplesReport().docsUrl, 'ALL', unifiedAllSamplesReport().version, undefined, unifiedAllSamplesReport().updatedAt)"
                                  class="w-8 h-8 rounded-xl bg-white hover:bg-red-50 text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 shadow-sm cursor-pointer" title="Xem PDF">
                                 <i class="fa-solid fa-file-pdf text-xs"></i>
                               </button>
@@ -167,7 +167,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                                 
                                 <div class="flex items-center gap-1.5">
                                   @if (rep.pdfViewUrl || rep.pdfUrl) {
-                                    <button (click)="triggerPreviewPdf(rep.pdfViewUrl || rep.pdfUrl, rep.docsUrl, pref)"
+                                    <button (click)="triggerPreviewPdf(rep.pdfViewUrl || rep.pdfUrl, rep.docsUrl, pref, rep.version, undefined, rep.pdfCreatedAt)"
                                        class="w-8 h-8 rounded-xl bg-white hover:bg-red-50 text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 flex items-center justify-center transition active:scale-90 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 shadow-sm cursor-pointer" title="Xem PDF">
                                       <i class="fa-solid fa-file-pdf text-xs"></i>
                                     </button>
@@ -335,6 +335,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                   Không có bản in cũ trong lịch sử.
                 </div>
               }
+            }
             </div>
 
           </div>
@@ -446,7 +447,8 @@ export class ReportHubModalComponent {
         updatedAt: this.run.analysisResultSummary?.pdfCreatedAt || this.run.analysisResult?.pdfCreatedAt || this.run.updatedAt,
         pdfUrl: this.run.analysisResultSummary?.pdfUrl || this.run.analysisResult?.pdfUrl,
         pdfViewUrl: this.run.analysisResultSummary?.pdfViewUrl || this.run.analysisResult?.pdfViewUrl,
-        docsUrl: this.run.analysisResultSummary?.docsUrl || this.run.analysisResult?.docsUrl
+        docsUrl: this.run.analysisResultSummary?.docsUrl || this.run.analysisResult?.docsUrl,
+        includedSamples: this.run.analysisResultSummary?.includedSamples || this.run.analysisResult?.includedSamples
       };
     }
     
@@ -460,7 +462,8 @@ export class ReportHubModalComponent {
           updatedAt: singlePrefixReport.pdfCreatedAt,
           pdfUrl: singlePrefixReport.pdfUrl,
           pdfViewUrl: singlePrefixReport.pdfViewUrl,
-          docsUrl: singlePrefixReport.docsUrl
+          docsUrl: singlePrefixReport.docsUrl,
+          includedSamples: singlePrefixReport.includedSamples
         };
       }
     }
@@ -477,6 +480,17 @@ export class ReportHubModalComponent {
     if (prefixKey && reportObj.samples && typeof reportObj.samples === 'object') {
       const samples = Object.keys(reportObj.samples).filter(k => reportObj.samples[k]?.included !== false);
       if (samples.length > 0) return samples.sort();
+    }
+    
+    // Fallback cho dữ liệu cũ chưa có includedSamples
+    if (this.run?.sampleList) {
+      return (this.run.sampleList as string[]).filter((s: string) => {
+        if (!prefixKey || prefixKey === 'ALL') return true;
+        const startsWithLetter = /^[a-zA-Z]/.test(s);
+        const sPrefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+        const pKey = prefixKey === '_NO_PREFIX_' ? '' : prefixKey;
+        return sPrefix === pKey;
+      });
     }
     
     return [];

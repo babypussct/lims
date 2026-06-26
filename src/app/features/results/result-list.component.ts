@@ -785,10 +785,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
     if (!formatted) return [];
     return formatted.split('; ').map(s => s.trim());
   }
-
-  /**
-
-
   averageCompletion = computed(() => {
     const runs = this.allApprovedRuns();
     if (runs.length === 0) return 0;
