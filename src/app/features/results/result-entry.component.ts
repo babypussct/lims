@@ -452,10 +452,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         { loSo: '6', hamLuong: '50' }
       ];
     } else if (sopConf.checkboxLines) {
-      // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG bằng false
+      // Tự động gán các checkbox phụ từ cấu hình SOP_CONFIG
       Object.values(sopConf.checkboxLines).forEach((field: any) => {
         if (field !== 'checkTatCaND' && field !== 'checkCoMauPhatHien') {
-          defaultPage1[field] = false;
+          if (field === 'qcNhanDang') {
+            defaultPage1[field] = null; // N/A
+          } else if (typeof field === 'string' && field.startsWith('qc')) {
+            defaultPage1[field] = true; // Đạt
+          } else {
+            defaultPage1[field] = false;
+          }
         }
       });
     }
@@ -463,6 +469,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     if (sopConf.formType === 'type3b') {
       defaultPage1['checkGopInChung'] = true;
       defaultPage1['printFormType'] = 'formCheck';
+      defaultPage1['loaiMau'] = 'Thủy sản';
+      defaultPage1['tinhTrangMau'] = 'Bình thường';
+      defaultPage1['khoiLuong'] = '10.0';
     }
 
     const defaultResultData: Record<string, any> = {};
@@ -1003,6 +1012,37 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     report = r?.analysisResultSummary?.reports?.[reportKey] || r?.analysisResult?.reports?.[reportKey];
     if (report && (report.pdfUrl || report.pdfViewUrl || report.docsUrl)) {
       return report;
+    }
+    return null;
+  }
+
+  getGeneralReport(): any | null {
+    const d = this.draft();
+    const r = this.run();
+    
+    // Ưu tiên draft nếu có
+    if (d && (d.pdfUrl || d.pdfViewUrl || (d as any).docsUrl)) {
+      return {
+        version: d.version,
+        publishedBy: d.updatedBy,
+        pdfUrl: d.pdfUrl,
+        pdfViewUrl: d.pdfViewUrl,
+        docsUrl: (d as any).docsUrl
+      };
+    }
+    
+    // Lấy từ run
+    if (r) {
+       const sum = r.analysisResultSummary || r.analysisResult;
+       if (sum && (sum.pdfUrl || sum.pdfViewUrl || sum.docsUrl)) {
+         return {
+           version: sum.version || d?.version || 1,
+           publishedBy: sum.updatedBy || sum.publishedBy || 'System',
+           pdfUrl: sum.pdfUrl,
+           pdfViewUrl: sum.pdfViewUrl,
+           docsUrl: sum.docsUrl
+         };
+       }
     }
     return null;
   }

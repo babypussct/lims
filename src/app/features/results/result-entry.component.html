@@ -376,16 +376,16 @@
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
-            <!-- Báo cáo chung (Tất cả mẫu) -->
-            @if (draft()?.pdfUrl || draft()?.pdfViewUrl || draft()?.docsUrl) {
+            <!-- Báo cáo chung (Full batch report) -->
+            @if (getGeneralReport()) {
               <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-3.5 hover:shadow-xs transition">
                 <div class="min-w-0">
                   <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-                  <span class="text-[11px] font-bold text-slate-650 dark:text-slate-400 block mt-1">Phiên bản: v{{ draft()?.version }}</span>
-                  <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ draft()?.updatedBy }}</span>
+                  <span class="text-[11px] font-bold text-slate-650 dark:text-slate-400 block mt-1">Phiên bản: v{{ getGeneralReport().version || draft()?.version }}</span>
+                  <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ getGeneralReport().publishedBy || draft()?.updatedBy }}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button (click)="openPdfPreview(draft()?.pdfViewUrl || draft()?.pdfUrl || draft()?.docsUrl, draft()?.docsUrl)"
+                  <button (click)="openPdfPreview(getGeneralReport().pdfViewUrl || getGeneralReport().pdfUrl || getGeneralReport().docsUrl, getGeneralReport().docsUrl)"
                      class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-955/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
                     <i class="fa-solid fa-file-pdf"></i> XEM PDF
                   </button>
