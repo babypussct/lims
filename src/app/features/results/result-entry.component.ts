@@ -903,15 +903,72 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
   }
 
+  findReportForFilter(activeFilter: string): any | null {
+    const d = this.draft();
+    const r = this.run();
+    if (!d || activeFilter === 'ALL') return null;
+    const prefixKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
+
+    // Compute current included samples for this filter to match exactly if possible
+    const currentRun = r;
+    const currentDraft = d;
+    const includedSamples = (currentRun?.sampleList || []).filter((s: string) => {
+      const resObj = currentDraft?.resultData?.[s] || {};
+      const startsWithLetter = /^[a-zA-Z]/.test(s);
+      const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
+      const isSelected = resObj['selected'] !== false;
+      return isSelected && prefix === activeFilter;
+    });
+    const sortedCurrent = [...includedSamples].sort().join(',');
+
+    const findInReports = (reportsObj: any) => {
+      if (!reportsObj) return null;
+      const candidates = Object.entries(reportsObj).map(([key, rep]: [string, any]) => {
+        if (!rep) return null;
+        const repPrefix = rep.prefix || key;
+        return { ...rep, repPrefix, originalKey: key };
+      }).filter((rep: any) => {
+        return rep && rep.repPrefix === prefixKey;
+      });
+      if (candidates.length === 0) return null;
+
+      // 1. Try to find exact match on includedSamples
+      const exactMatch = candidates.find((rep: any) => {
+        const repSamples = [...(rep.includedSamples || [])].sort().join(',');
+        return repSamples === sortedCurrent;
+      });
+      if (exactMatch) return exactMatch;
+
+      // 2. Fallback to the latest report for this prefix
+      candidates.sort((a: any, b: any) => {
+        const valA = a.version || 0;
+        const valB = b.version || 0;
+        return valB - valA;
+      });
+      return candidates[0];
+    };
+
+    const draftReport = findInReports(d.reports);
+    if (draftReport && (draftReport.pdfUrl || draftReport.pdfViewUrl || draftReport.docsUrl)) {
+      return draftReport;
+    }
+
+    const runReports = r?.analysisResultSummary?.reports || r?.analysisResult?.reports;
+    const runReport = findInReports(runReports);
+    if (runReport && (runReport.pdfUrl || runReport.pdfViewUrl || runReport.docsUrl)) {
+      return runReport;
+    }
+
+    return null;
+  }
+
   getPrintButtonLabel(): string {
     const activeFilter = this.activeFilter();
     if (activeFilter === 'ALL') {
       const v = (this.draft()?.version || 0) + 1;
       return `Tạo & In bản v${v} (Tất cả mẫu)`;
     }
-    const reports = this.draft()?.reports || {};
-    const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-    const reportForFilter = reports[reportKey] || {};
+    const reportForFilter = this.findReportForFilter(activeFilter) || {};
     const v = (reportForFilter.version || 0) + 1;
     const filterName = activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`;
     return `Tạo & In bản v${v} (${filterName})`;
@@ -930,16 +987,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
       }
     } else {
-      const reports = d.reports || {};
-      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      const reportForFilter = reports[reportKey] || {};
+      const reportForFilter = this.findReportForFilter(activeFilter) || {};
       url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
-      if (!url && r) {
-        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-        if (runReports && runReports[reportKey]) {
-          url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
-        }
-      }
     }
     return getSafeGoogleUrl(url, 'pdf');
   }
@@ -976,16 +1025,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
       }
     } else {
-      const reports = d.reports || {};
-      const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      const reportForFilter = reports[reportKey] || {};
+      const reportForFilter = this.findReportForFilter(activeFilter) || {};
       url = reportForFilter.docsUrl || null;
-      if (!url && r) {
-        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-        if (runReports && runReports[reportKey]) {
-          url = runReports[reportKey].docsUrl || null;
-        }
-      }
     }
     return getSafeGoogleUrl(url, 'doc');
   }
@@ -1002,18 +1043,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   getPrefixReport(prefix: string): any | null {
-    const d = this.draft();
-    const r = this.run();
-    const reportKey = prefix === '' ? '_NO_PREFIX_' : prefix;
-    let report = d?.reports?.[reportKey];
-    if (report && (report.pdfUrl || report.pdfViewUrl || report.docsUrl)) {
-      return report;
-    }
-    report = r?.analysisResultSummary?.reports?.[reportKey] || r?.analysisResult?.reports?.[reportKey];
-    if (report && (report.pdfUrl || report.pdfViewUrl || report.docsUrl)) {
-      return report;
-    }
-    return null;
+    return this.findReportForFilter(prefix);
   }
 
   getGeneralReport(): any | null {
