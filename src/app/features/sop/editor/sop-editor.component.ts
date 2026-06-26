@@ -18,6 +18,8 @@ import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firest
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
 import { MasterTargetService } from '../../targets/master-target.service';
+import { MasterDeviceService } from '../../config/master-device.service';
+import { MasterDevice } from '../../../core/models/sop.model';
 import { UNIT_OPTIONS, formatNum, formatDate, generateSlug } from '../../../shared/utils/utils';
 import { getCanonicalId } from '../../results/shared/compound-id-resolver';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -48,6 +50,7 @@ export class SopEditorComponent implements OnDestroy {
   confirmationService = inject(ConfirmationService);
   calcService = inject(CalculatorService);
   fbService = inject(FirebaseService);
+  masterDeviceService = inject(MasterDeviceService);
   router: Router = inject(Router);
   fb: FormBuilder = inject(FormBuilder);
   
@@ -64,6 +67,8 @@ export class SopEditorComponent implements OnDestroy {
   previewResults = signal<CalculatedItem[]>([]);
   availableMatrices = signal<MatrixType[]>([]);
   selectedMatrixTags = signal<string[]>([]);
+  availableDevices = signal<MasterDevice[]>([]);
+  selectedAllowedDevices = signal<string[]>([]);
   
   // SEARCH STATE
   searchSubject = new Subject<string>();
@@ -79,6 +84,7 @@ export class SopEditorComponent implements OnDestroy {
   form = this.fb.group({
     id: [''], category: ['', Validators.required], name: ['', Validators.required], ref: [''],
     version: [1, [Validators.required, Validators.min(1)]],
+    device: [''],
     inputs: this.fb.array([]), 
     variablesList: this.fb.array([]), 
     consumables: this.fb.array([]),
@@ -190,7 +196,8 @@ export class SopEditorComponent implements OnDestroy {
 
   createNew() {
     this.currentId.set(null); this.currentVersion.set(1); this.currentTab.set('general');
-    this.form.reset({ id: '', category: '', name: '', ref: '', version: 1 });
+    this.form.reset({ id: '', category: '', name: '', ref: '', version: 1, device: '' });
+    this.selectedAllowedDevices.set([]);
     this.inputs.clear(); this.variablesList.clear(); this.consumables.clear(); this.targets.clear();
     this.CORE_INPUTS.forEach(ci => { this.addInputRaw(ci.var, ci.label, ci.default, ci.type as any, ci.step, ci.unitLabel); });
     this.previewResults.set([]);
@@ -200,7 +207,13 @@ export class SopEditorComponent implements OnDestroy {
     if (sop.id) this.currentId.set(sop.id);
     this.currentVersion.set(sop.version || 1); 
     this.currentTab.set('general');
-    this.form.patchValue({ id: sop.id, category: sop.category, name: sop.name, ref: sop.ref, version: sop.version || 1 });
+    this.form.patchValue({ id: sop.id, category: sop.category, name: sop.name, ref: sop.ref, version: sop.version || 1, device: sop.device || '' });
+    
+    this.selectedAllowedDevices.set(sop.allowedDevices || []);
+    
+    if (this.availableDevices().length === 0) {
+      this.masterDeviceService.getAll().then(d => this.availableDevices.set(d));
+    }
     
     this.inputs.clear(); 
     const loadedVars = new Set<string>();
@@ -249,6 +262,23 @@ export class SopEditorComponent implements OnDestroy {
 
   clearMatrixTags() {
     this.selectedMatrixTags.set([]);
+  }
+
+  toggleAllowedDevice(name: string) {
+    const current = this.selectedAllowedDevices();
+    let next: string[];
+    if (current.includes(name)) {
+      next = current.filter(x => x !== name);
+    } else {
+      next = [...current, name];
+    }
+    this.selectedAllowedDevices.set(next);
+    
+    // Nếu thiết bị mặc định hiện tại không nằm trong danh sách mới, reset về rỗng
+    const currentDefault = this.form.get('device')?.value;
+    if (currentDefault && !next.includes(currentDefault)) {
+      this.form.patchValue({ device: '' });
+    }
   }
 
   // --- Preview & Save ---
@@ -333,6 +363,8 @@ export class SopEditorComponent implements OnDestroy {
           .filter(t => t.id && t.name)
           .map(t => ({ id: t.id, name: t.name, unit: t.unit, lod: t.lod, loq: t.loq })),
       matrixTags: this.selectedMatrixTags().length > 0 ? this.selectedMatrixTags() : undefined,
+      device: formVal.device || undefined,
+      allowedDevices: this.selectedAllowedDevices().length > 0 ? this.selectedAllowedDevices() : undefined,
       version: formVal.version || this.currentVersion() 
     };
     

@@ -9,8 +9,9 @@ import { CalculatorService } from '../../core/services/calculator.service';
 import { RecipeService } from '../recipes/recipe.service';
 import { TargetService } from '../targets/target.service'; 
 import { InventoryService } from '../inventory/inventory.service';
-import { Sop, SopTarget, CalculatedItem, TargetGroup, MatrixType } from '../../core/models/sop.model';
+import { Sop, SopTarget, CalculatedItem, TargetGroup, MatrixType, MasterDevice } from '../../core/models/sop.model';
 import { MatrixTypeService } from '../config/matrix-type.service';
+import { MasterDeviceService } from '../config/master-device.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
@@ -103,6 +104,7 @@ export class SmartBatchComponent {
   confirmation = inject(ConfirmationService);
   printService = inject(PrintService);
   matrixTypeService = inject(MatrixTypeService);
+  masterDeviceService = inject(MasterDeviceService);
   formatNum = formatNum;
   formatSampleList = formatSampleList;
 
@@ -114,6 +116,7 @@ export class SmartBatchComponent {
   isProcessing = signal(false);
   isEditingName = signal<number | null>(null);
   availableMatrices = signal<MatrixType[]>([]);
+  availableDevices = signal<MasterDevice[]>([]);
 
   constructor() {
       this.matrixTypeService.getAll().then(m => {
@@ -123,6 +126,7 @@ export class SmartBatchComponent {
               this.updateBlockMatrix(0, defaultMatrix.id);
           }
       });
+      this.masterDeviceService.getAll().then(d => this.availableDevices.set(d));
   }
   
   // Quick Generate Modal State
@@ -591,6 +595,9 @@ export class SmartBatchComponent {
                       const inputs: Record<string, any> = {};
                       forcedSop.inputs.forEach(i => inputs[i.var] = i.default);
                       inputs['n_sample'] = blockSamples.size;
+                      if (forcedSop.device) {
+                          inputs['device'] = forcedSop.device;
+                      }
 
                       const needs = this.calculator.calculateSopNeeds(
                           forcedSop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
@@ -709,6 +716,9 @@ export class SmartBatchComponent {
               const inputs: Record<string, any> = {};
               bestFit.sop.inputs.forEach(i => inputs[i.var] = i.default);
               inputs['n_sample'] = batchSamples.size;
+              if (bestFit.sop.device) {
+                  inputs['device'] = bestFit.sop.device;
+              }
 
               const needs = this.calculator.calculateSopNeeds(
                   bestFit.sop, inputs, -1, this.inventoryCache, this.recipeCache, this.state.safetyConfig()
@@ -977,6 +987,9 @@ export class SmartBatchComponent {
           if (sourceBatch.inputValues[k] !== undefined) newInputs[k] = sourceBatch.inputValues[k];
       });
       newInputs['n_sample'] = uniqueSamplesNew.size;
+      if (targetSop.device && !newInputs['device']) {
+          newInputs['device'] = targetSop.device;
+      }
 
       const newNeeds = this.calculator.calculateSopNeeds(targetSop, newInputs, sourceBatch.safetyMargin, this.inventoryCache, this.recipeCache, this.state.safetyConfig());
 

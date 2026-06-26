@@ -219,6 +219,9 @@ service cloud.firestore {
     match /artifacts/{appId}/matrix_types/{docId} {
       allow read, write: if isSignedIn();
     }
+    match /artifacts/{appId}/master_devices/{docId} {
+      allow read, write: if isSignedIn();
+    }
 
     // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
     match /artifacts/{appId}/logs/{logId} {

@@ -29,6 +29,14 @@ export interface TargetGroup {
   lastUpdated?: any;
 }
 
+export interface MasterDevice {
+  id: string;          // e.g. 'gcmsms', 'gcms', 'lcmsms'
+  name: string;        // e.g. 'GC-MS/MS', 'GC-MS', 'LC-MS/MS'
+  description?: string;
+  isDefault?: boolean;
+  lastUpdated?: any;
+}
+
 export interface MatrixType {
   id: string;           // e.g. 'water', 'food', 'soil'
   name: string;         // e.g. 'Nước', 'Thực Phẩm', 'Đất'
@@ -110,6 +118,10 @@ export interface Sop {
   
   // Matrix / Nền mẫu áp dụng
   matrixTags?: string[];  // e.g. ['water'] | ['food'] | ['food','water']
+
+  // Device configuration
+  device?: string;          // Thiết bị mặc định (tên hiển thị, e.g. 'GC-MS/MS')
+  allowedDevices?: string[]; // Danh sách tên thiết bị khả dụng (e.g. ['GC-MS/MS', 'GC-MS'])
 }
 
 // --- Calculated Results ---

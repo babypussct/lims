@@ -92,6 +92,12 @@ export const routes: Routes = [
     data: { role: 'manager' }
   },
   {
+    path: 'master-devices',
+    loadComponent: () => import('./features/config/master-device-manager.component').then(m => m.MasterDeviceManagerComponent),
+    canActivate: [permissionGuard],
+    data: { role: 'manager' }
+  },
+  {
     path: 'requests',
     loadComponent: () => import('./features/requests/request-list.component').then(m => m.RequestListComponent),
     canActivate: [permissionGuard],

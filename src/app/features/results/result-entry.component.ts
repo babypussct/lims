@@ -224,6 +224,31 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     };
   });
 
+  getDisplayDevice(): string {
+    const r = this.run();
+    if (!r) return 'GC-MS/MS / LC-MS/MS';
+    
+    // Tier 1 & 2: Explicitly passed from smart batch or legacy input
+    if (r.inputs?.device) return r.inputs.device;
+    if (r.inputs?.instrument) return r.inputs.instrument;
+
+    // Tier 3: Custom entry field (e.g. dichlorvosMethod for Trichlorfon/Dichlorvos)
+    const d = this.draft();
+    if (d?.page1Data?.['dichlorvosMethod']) return d.page1Data['dichlorvosMethod'];
+
+    // Tier 4: Default from SOP metadata
+    const sopList = this.state.sops();
+    const sopObj = sopList.find(s => s.id === r.sopId);
+    if (sopObj?.device) return sopObj.device;
+
+    // Tier 5: System fallback based on configKey or generic
+    const key = this.configKey();
+    if (key && key.includes('gcms')) return 'GC-MS/MS';
+    if (key && key.includes('lcms')) return 'LC-MS/MS';
+    
+    return 'GC-MS/MS / LC-MS/MS';
+  }
+
   unsubscribeFromDraft?: () => void;
 
   constructor() {
