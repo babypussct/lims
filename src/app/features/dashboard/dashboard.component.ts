@@ -25,6 +25,11 @@ interface PriorityStandard {
     status: 'expired' | 'warning' | 'safe';
 }
 
+// Thêm interface để cache _date
+interface ParsedRequest extends any {
+    _date: Date;
+}
+
 interface BatchHistoryItem {
     id: string; // Request ID / Trace ID
     timestamp: any;
@@ -202,12 +207,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return { icon: 'fa-bolt', bg: 'bg-gray-100 dark:bg-slate-700', text: 'text-gray-600 dark:text-gray-300' };
   }
 
-  recentLogs = computed(() => this.state.logs().slice(0, 12)); 
+  private readonly _actionTextMap: Record<string, string> = {
+      'CREATE_VIRTUAL_MASTER': 'đã tạo mẻ master ảo',
+      'SAVE_RESULT_DRAFT': 'đã lưu nháp kết quả',
+      'PUBLISH_RESULT_REPORT': 'đã xuất bản báo cáo',
+      'REVERT_RESULT_DRAFT': 'đã hủy xuất bản báo cáo',
+      'RESET_RESULT_DATA': 'đã reset số liệu kết quả',
+      'RESTORE_RESULT_BACKUP': 'đã khôi phục số liệu lưu trữ',
+      'RESTORE_RESULT_VERSION': 'đã khôi phục phiên bản cũ',
+      'DIRECT_APPROVE': 'đã duyệt trực tiếp SOP',
+      'EDIT_REQUEST': 'đã chỉnh sửa phiếu yêu cầu',
+      'REQUEST_STANDARD': 'đã yêu cầu mượn chuẩn',
+      'CREATE_STANDARD_REQUEST': 'đã yêu cầu mượn chuẩn',
+      'APPROVE_STANDARD_REQUEST': 'đã duyệt mượn chuẩn',
+      'REJECT_STANDARD_REQUEST': 'đã từ chối mượn chuẩn',
+      'REPORT_RETURN_STANDARD': 'đã báo cáo trả chuẩn',
+      'RETURN_STANDARD': 'đã nhận lại chuẩn',
+      'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn'
+  };
+
+  private readonly _todayStr = new Date().toISOString().split('T')[0];
   todayActivityCount = computed(() => {
-      const todayStr = new Date().toISOString().split('T')[0];
       return this.state.logs().filter(l => {
           const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
-          return d.toISOString().split('T')[0] === todayStr;
+          return d.toISOString().split('T')[0] === this._todayStr;
       }).length;
   });
 
@@ -222,9 +245,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
   }
 
+  // MỚI: Computed trung gian — parse date 1 lần duy nhất, filter isVirtualMaster
+  private _parsedRequests = computed<ParsedRequest[]>(() => {
+      return this.state.approvedRequests()
+          .filter(r => !r.isVirtualMaster)
+          .map(r => ({ ...r, _date: this.parseRequestDate(r) }));
+  });
+
+  // MỚI: Computed slice theo date range hiện tại — dùng chung cho kanbanBoard, chartKpis, trendInfo(current)
+  private _rangeFilteredRequests = computed<ParsedRequest[]>(() => {
+      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
+      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const filter = this.selectedSopFilter();
+      
+      return this._parsedRequests().filter(r => {
+          const inRange = r._date >= start && r._date <= end;
+          const inSop = !filter || r.sopName === filter;
+          return inRange && inSop;
+      });
+  });
+
   // TREND INDICATOR (Dynamic Comparison based on Date Filter)
   trendInfo = computed(() => {
-      let history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
+      let history = this._parsedRequests();
       const filter = this.selectedSopFilter();
       if (filter) {
           history = history.filter(r => r.sopName === filter);
@@ -241,14 +284,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const tCurrStart = currentStart.getTime();
       const tCurrEnd = currentEnd.getTime();
 
-      history.forEach(req => {
-          const timestamp = this.parseRequestDate(req).getTime();
-          if (timestamp >= tCurrStart && timestamp <= tCurrEnd) {
-              let count = 1;
-              if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
-              else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
-              currentTotal += count;
-          }
+      const currentFiltered = this._rangeFilteredRequests();
+      currentFiltered.forEach(req => {
+          let count = 1;
+          if (req.sampleList && req.sampleList.length > 0) count = req.sampleList.length;
+          else if (req.inputs?.['n_sample']) count = Number(req.inputs['n_sample']);
+          currentTotal += count;
       });
 
       const currentAvg = diffDays > 0 ? currentTotal / diffDays : currentTotal;
@@ -264,7 +305,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       // Daily totals for history
       const dailyTotals = new Array(historyDays).fill(0);
       history.forEach(req => {
-          const timestamp = this.parseRequestDate(req).getTime();
+          const timestamp = req._date.getTime();
           if (timestamp >= tHistStart && timestamp <= tHistEnd) {
               const dayIndex = Math.floor((timestamp - tHistStart) / (1000 * 60 * 60 * 24));
               if (dayIndex >= 0 && dayIndex < historyDays) {
@@ -325,16 +366,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // KANBAN COMPUTED
   kanbanBoard = computed<KanbanColumn[]>(() => {
-      const approvedReqs = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
+      const currentReqs = this._rangeFilteredRequests();
       const groups = new Map<string, KanbanColumn>();
-      
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
 
-      approvedReqs.forEach(req => {
-          const d = this.parseRequestDate(req);
-          
-          if (d < start || d > end) return;
+      currentReqs.forEach(req => {
+          const d = req._date;
 
           const key = req.sopName;
           
@@ -394,29 +430,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
 
   chartKpis = computed(() => {
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
-      let history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
-      
-      const filter = this.selectedSopFilter();
-      if (filter) {
-          history = history.filter(req => req.sopName === filter);
-      }
-      
+      const currentReqs = this._rangeFilteredRequests();
       let totalSamples = 0;
       let totalBatches = 0;
 
-      history.forEach(req => {
-          const d = this.parseRequestDate(req);
-          
-          if (d >= start && d <= end) {
-              totalBatches++;
-              let samples = 0;
-              if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-              else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-              else samples = 1;
-              totalSamples += samples;
-          }
+      currentReqs.forEach(req => {
+          totalBatches++;
+          let samples = 0;
+          if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
+          else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
+          else samples = 1;
+          totalSamples += samples;
       });
 
       const avgSamplesPerBatch = totalBatches > 0 ? (totalSamples / totalBatches).toFixed(1) : '0';
@@ -429,16 +453,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
   doughnutChartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('doughnutChart');
   chartInstance: any = null;
   doughnutChartInstance: any = null;
+  
+  private _chartDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _lastDarkMode: boolean | null = null;
 
   constructor() {
       effect(() => {
-          const reqs = this.state.approvedRequests();
-          const start = this.startDate();
-          const end = this.endDate();
-          const filter = this.selectedSopFilter();
-          const isDark = this.state.darkMode();
-          if (reqs.length >= 0 && !this.isLoading()) {
-              setTimeout(() => this.initChart(), 300);
+          // Read dependencies to track
+          this.state.approvedRequests();
+          this.startDate();
+          this.endDate();
+          this.selectedSopFilter();
+          this.state.darkMode();
+          
+          if (!this.isLoading()) {
+              if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
+              this._chartDebounceTimer = setTimeout(() => this.initChart(), 300);
           }
       });
   }
@@ -496,6 +526,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+      if (this._chartDebounceTimer) clearTimeout(this._chartDebounceTimer);
       if (this.chartInstance) {
           this.chartInstance.destroy();
           this.chartInstance = null;
@@ -556,22 +587,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       const dCanvas = this.doughnutChartCanvas()?.nativeElement;
-      if (!canvas || !dCanvas) return;
+      const isDark = this.state.darkMode();
+      
+      // Force recreate if dark mode changed
+      const forceRecreate = this._lastDarkMode !== null && this._lastDarkMode !== isDark;
+      this._lastDarkMode = isDark;
 
-      const existingChart = Chart.getChart(canvas);
-      if (existingChart) existingChart.destroy();
-      const existingDChart = Chart.getChart(dCanvas);
-      if (existingDChart) existingDChart.destroy();
+      if (forceRecreate) {
+          if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
+          if (this.doughnutChartInstance) { this.doughnutChartInstance.destroy(); this.doughnutChartInstance = null; }
+      }
 
-      if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
-      if (this.doughnutChartInstance) { this.doughnutChartInstance.destroy(); this.doughnutChartInstance = null; }
+      if (!this.chartInstance || !this.doughnutChartInstance) {
+          const existingChart = Chart.getChart(canvas);
+          if (existingChart) existingChart.destroy();
+          const existingDChart = Chart.getChart(dCanvas);
+          if (existingDChart) existingDChart.destroy();
+      }
 
       const ctx = canvas.getContext('2d');
       const dCtx = dCanvas.getContext('2d');
       if (!ctx || !dCtx) return;
 
       // Dark Mode adaptation colors
-      const isDark = this.state.darkMode();
       const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9';
       const tooltipBg = isDark ? '#1e293b' : '#fff';
       const tooltipTitleColor = isDark ? '#f1f5f9' : '#1e293b';
@@ -632,11 +670,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const sopCounts = new Map<string, number>();
 
-      const history = this.state.approvedRequests().filter(r => !r.isVirtualMaster);
+      const history = this._parsedRequests();
       const filter = this.selectedSopFilter();
 
       history.forEach(req => {
-          const d = this.parseRequestDate(req);
+          const d = req._date;
           
           // Only count data within the chart's display range
           if (d >= chartStart && d <= chartEnd) {
@@ -671,72 +709,93 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
       // Line Chart
-      this.chartInstance = new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: labels,
-              datasets: [
-                  { 
-                      label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
-                      pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
-                  },
-                  { 
-                      label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barBg, borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
-                  }
-              ]
-          },
-          options: { 
-              responsive: true, maintainAspectRatio: false, 
-              layout: {
-                  padding: {
-                      top: 10,
-                      bottom: 15,
-                      left: 10,
-                      right: 15
-                  }
-              },
-              plugins: { 
-                  legend: { display: false }, 
-                  tooltip: { 
-                      backgroundColor: tooltipBg, 
-                      titleColor: tooltipTitleColor, 
-                      bodyColor: tooltipBodyColor, 
-                      borderColor: tooltipBorderColor, 
-                      borderWidth: 1, 
-                      padding: 10, 
-                      displayColors: true, 
-                      usePointStyle: true,
-                      callbacks: {
-                          afterBody: (context: any) => {
-                              const index = context[0].dataIndex;
-                              const details = dailyDetails[index];
-                              if (!details || Object.keys(details).length === 0) return '';
-                              let text = '\nChi tiết mẫu theo SOP:';
-                              for (const [sop, count] of Object.entries(details)) {
-                                  text += `\n- ${sop}: ${count} mẫu`;
-                              }
-                              return text;
-                          }
+      if (this.chartInstance) {
+          // Update existing chart
+          this.chartInstance.data.labels = labels;
+          this.chartInstance.data.datasets[0].data = sampleData;
+          this.chartInstance.data.datasets[1].data = runData;
+          
+          // Update the tooltip callback closure reference
+          this.chartInstance.options.plugins.tooltip.callbacks.afterBody = (context: any) => {
+              const index = context[0].dataIndex;
+              const details = dailyDetails[index];
+              if (!details || Object.keys(details).length === 0) return '';
+              let text = '\nChi tiết mẫu theo SOP:';
+              for (const [sop, count] of Object.entries(details)) {
+                  text += `\n- ${sop}: ${count} mẫu`;
+              }
+              return text;
+          };
+          this.chartInstance.update('active');
+      } else {
+          // Initialize chart
+          this.chartInstance = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: labels,
+                  datasets: [
+                      { 
+                          label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
+                          pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
+                      },
+                      { 
+                          label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barBg, borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
                       }
-                  } 
-              }, 
-              interaction: { mode: 'index', intersect: false },
-              scales: { 
-                  x: { 
-                      display: true,
-                      grid: { display: false }, 
-                      border: { display: false }, 
-                      ticks: { 
-                          display: true,
-                          font: { size: 10, family: "'Open Sans', sans-serif" }, 
-                          color: '#94a3b8' 
+                  ]
+              },
+              options: { 
+                  responsive: true, maintainAspectRatio: false, 
+                  layout: {
+                      padding: {
+                          top: 10,
+                          bottom: 15,
+                          left: 10,
+                          right: 15
+                      }
+                  },
+                  plugins: { 
+                      legend: { display: false }, 
+                      tooltip: { 
+                          backgroundColor: tooltipBg, 
+                          titleColor: tooltipTitleColor, 
+                          bodyColor: tooltipBodyColor, 
+                          borderColor: tooltipBorderColor, 
+                          borderWidth: 1, 
+                          padding: 10, 
+                          displayColors: true, 
+                          usePointStyle: true,
+                          callbacks: {
+                              afterBody: (context: any) => {
+                                  const index = context[0].dataIndex;
+                                  const details = dailyDetails[index];
+                                  if (!details || Object.keys(details).length === 0) return '';
+                                  let text = '\nChi tiết mẫu theo SOP:';
+                                  for (const [sop, count] of Object.entries(details)) {
+                                      text += `\n- ${sop}: ${count} mẫu`;
+                                  }
+                                  return text;
+                              }
+                          }
                       } 
                   }, 
-                  y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: gridColor }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
-                  y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
-              } 
-          }
-      });
+                  interaction: { mode: 'index', intersect: false },
+                  scales: { 
+                      x: { 
+                          display: true,
+                          grid: { display: false }, 
+                          border: { display: false }, 
+                          ticks: { 
+                              display: true,
+                              font: { size: 10, family: "'Open Sans', sans-serif" }, 
+                              color: '#94a3b8' 
+                          } 
+                      }, 
+                      y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { tickBorderDash: [5, 5], color: gridColor }, border: { display: false }, ticks: { font: { size: 10, family: "'Open Sans', sans-serif" }, color: '#94a3b8', maxTicksLimit: 5 } }, 
+                      y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } } 
+                  } 
+              }
+          });
+      }
 
       // Doughnut Chart & Custom Legend calculation
       const sopLabels = Array.from(sopCounts.keys());
@@ -753,51 +812,58 @@ export class DashboardComponent implements OnInit, OnDestroy {
       dist.sort((a, b) => b.count - a.count);
       this.sopDistribution.set(dist);
 
-      this.doughnutChartInstance = new Chart(dCtx, {
-          type: 'doughnut',
-          data: {
-              labels: sopLabels,
-              datasets: [{
-                  data: sopData,
-                  backgroundColor: bgColors.slice(0, sopLabels.length),
-                  borderWidth: 0,
-                  hoverOffset: 4
-              }]
-          },
-          options: {
-              responsive: true, maintainAspectRatio: false,
-              cutout: '70%',
-              onClick: (event, elements, chart) => {
-                  if (elements && elements.length > 0) {
-                      const index = elements[0].index;
-                      const label = chart.data.labels?.[index] as string;
-                      this.toggleSopFilter(label);
-                  }
+      if (this.doughnutChartInstance) {
+          this.doughnutChartInstance.data.labels = sopLabels;
+          this.doughnutChartInstance.data.datasets[0].data = sopData;
+          this.doughnutChartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, sopLabels.length);
+          this.doughnutChartInstance.update('active');
+      } else {
+          this.doughnutChartInstance = new Chart(dCtx, {
+              type: 'doughnut',
+              data: {
+                  labels: sopLabels,
+                  datasets: [{
+                      data: sopData,
+                      backgroundColor: bgColors.slice(0, sopLabels.length),
+                      borderWidth: 0,
+                      hoverOffset: 4
+                  }]
               },
-              plugins: {
-                  legend: { display: false },
-                  tooltip: { 
-                      backgroundColor: tooltipBg, 
-                      titleColor: tooltipTitleColor, 
-                      bodyColor: tooltipBodyColor, 
-                      borderColor: tooltipBorderColor, 
-                      borderWidth: 1, 
-                      padding: 6, 
-                      displayColors: false, 
-                      usePointStyle: true,
-                      callbacks: {
-                          title: () => '',
-                          label: (context: any) => {
-                              const value = context.raw || 0;
-                              const total = context.chart._metasets[context.datasetIndex].total;
-                              const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                              return `${value} mẫu (${percentage}%)`;
+              options: {
+                  responsive: true, maintainAspectRatio: false,
+                  cutout: '70%',
+                  onClick: (event, elements, chart) => {
+                      if (elements && elements.length > 0) {
+                          const index = elements[0].index;
+                          const label = chart.data.labels?.[index] as string;
+                          this.toggleSopFilter(label);
+                      }
+                  },
+                  plugins: {
+                      legend: { display: false },
+                      tooltip: { 
+                          backgroundColor: tooltipBg, 
+                          titleColor: tooltipTitleColor, 
+                          bodyColor: tooltipBodyColor, 
+                          borderColor: tooltipBorderColor, 
+                          borderWidth: 1, 
+                          padding: 6, 
+                          displayColors: false, 
+                          usePointStyle: true,
+                          callbacks: {
+                              title: () => '',
+                              label: (context: any) => {
+                                  const value = context.raw || 0;
+                                  const total = context.chart._metasets[context.datasetIndex].total;
+                                  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                  return `${value} mẫu (${percentage}%)`;
+                              }
                           }
                       }
                   }
               }
-          }
-      });
+          });
+      }
   }
 
   processPriorityStandard(std: ReferenceStandard | null) {
@@ -838,22 +904,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   getLogActionText(action: string): string {
-      if (action === 'CREATE_VIRTUAL_MASTER') return 'đã tạo mẻ master ảo';
-      if (action === 'SAVE_RESULT_DRAFT') return 'đã lưu nháp kết quả';
-      if (action === 'PUBLISH_RESULT_REPORT') return 'đã xuất bản báo cáo';
-      if (action === 'REVERT_RESULT_DRAFT') return 'đã hủy xuất bản báo cáo';
-      if (action === 'RESET_RESULT_DATA') return 'đã reset số liệu kết quả';
-      if (action === 'RESTORE_RESULT_BACKUP') return 'đã khôi phục số liệu lưu trữ';
-      if (action === 'RESTORE_RESULT_VERSION') return 'đã khôi phục phiên bản cũ';
-      if (action === 'DIRECT_APPROVE') return 'đã duyệt trực tiếp SOP';
-      if (action === 'EDIT_REQUEST') return 'đã chỉnh sửa phiếu yêu cầu';
-
-      if (action === 'REQUEST_STANDARD' || action === 'CREATE_STANDARD_REQUEST') return 'đã yêu cầu mượn chuẩn';
-      if (action === 'APPROVE_STANDARD_REQUEST') return 'đã duyệt mượn chuẩn';
-      if (action === 'REJECT_STANDARD_REQUEST') return 'đã từ chối mượn chuẩn';
-      if (action === 'REPORT_RETURN_STANDARD') return 'đã báo cáo trả chuẩn';
-      if (action === 'RETURN_STANDARD') return 'đã nhận lại chuẩn';
-      if (action === 'ASSIGN_STANDARD') return 'đã gán chuẩn cho mượn';
+      if (this._actionTextMap[action]) return this._actionTextMap[action];
       
       if (action.includes('APPROVE')) return 'đã duyệt yêu cầu'; 
       if (action.includes('STOCK_IN')) return 'đã nhập kho';
