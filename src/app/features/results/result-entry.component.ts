@@ -911,13 +911,26 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   getCurrentPdfUrl(): string | null {
     const activeFilter = this.activeFilter();
     let url: string | null = null;
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
     if (activeFilter === 'ALL') {
-      url = this.draft()?.pdfViewUrl || this.draft()?.pdfUrl || null;
+      url = d.pdfViewUrl || (d as any).pdfUrl || null;
+      if (!url && r) {
+        url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
+      }
     } else {
-      const reports = this.draft()?.reports || {};
+      const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
       const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
+      if (!url && r) {
+        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+        if (runReports && runReports[reportKey]) {
+          url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
+        }
+      }
     }
     return getSafeGoogleUrl(url, 'pdf');
   }
@@ -944,30 +957,51 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   getCurrentDocsUrl(): string | null {
     const activeFilter = this.activeFilter();
     let url: string | null = null;
+    const d = this.draft();
+    const r = this.run();
+    if (!d) return null;
+
     if (activeFilter === 'ALL') {
-      url = this.draft()?.docsUrl || null;
+      url = d.docsUrl || null;
+      if (!url && r) {
+        url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
+      }
     } else {
-      const reports = this.draft()?.reports || {};
+      const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
       const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.docsUrl || null;
+      if (!url && r) {
+        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+        if (runReports && runReports[reportKey]) {
+          url = runReports[reportKey].docsUrl || null;
+        }
+      }
     }
     return getSafeGoogleUrl(url, 'doc');
   }
 
   hasAnyActiveReports(): boolean {
     const d = this.draft();
-    if (!d) return false;
-    if (d.pdfUrl || d.pdfViewUrl) return true;
+    const r = this.run();
+    if (!d || !r) return false;
+    if (d.pdfUrl || d.pdfViewUrl || (d as any).docsUrl || r.analysisResultSummary?.pdfUrl || r.analysisResultSummary?.pdfViewUrl || r.analysisResult?.pdfUrl || r.analysisResult?.pdfViewUrl) return true;
     const reports = d.reports || {};
-    return Object.values(reports).some((r: any) => r && (r.pdfUrl || r.pdfViewUrl));
+    if (Object.values(reports).some((rep: any) => rep && (rep.pdfUrl || rep.pdfViewUrl || rep.docsUrl))) return true;
+    const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports || {};
+    return Object.values(runReports).some((rep: any) => rep && (rep.pdfUrl || rep.pdfViewUrl || rep.docsUrl));
   }
 
   getPrefixReport(prefix: string): any | null {
-    const reports = this.draft()?.reports || {};
+    const d = this.draft();
+    const r = this.run();
     const reportKey = prefix === '' ? '_NO_PREFIX_' : prefix;
-    const report = reports[reportKey];
-    if (report && (report.pdfUrl || report.pdfViewUrl)) {
+    let report = d?.reports?.[reportKey];
+    if (report && (report.pdfUrl || report.pdfViewUrl || report.docsUrl)) {
+      return report;
+    }
+    report = r?.analysisResultSummary?.reports?.[reportKey] || r?.analysisResult?.reports?.[reportKey];
+    if (report && (report.pdfUrl || report.pdfViewUrl || report.docsUrl)) {
       return report;
     }
     return null;

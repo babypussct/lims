@@ -759,8 +759,38 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
   availableReports = computed(() => {
     const d = this.draft();
-    if (!d || !d.reports) return [];
-    return Object.entries(d.reports).map(([key, value]: [string, any]) => {
+    const r = this.run();
+    const reportsMap = new Map<string, any>();
+
+    // Load reports from draft first
+    if (d?.reports) {
+      Object.entries(d.reports).forEach(([key, value]) => {
+         reportsMap.set(key, value);
+      });
+    }
+
+    // Merge reports from run to get the latest published PDFs
+    if (r) {
+       const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+       if (runReports) {
+          Object.entries(runReports).forEach(([key, value]) => {
+             if (!reportsMap.has(key)) {
+                reportsMap.set(key, value);
+             } else {
+                const existing = reportsMap.get(key);
+                reportsMap.set(key, { 
+                   ...existing, 
+                   pdfViewUrl: existing.pdfViewUrl || (value as any).pdfViewUrl, 
+                   pdfUrl: existing.pdfUrl || (value as any).pdfUrl,
+                   docsUrl: existing.docsUrl || (value as any).docsUrl
+                });
+             }
+          });
+       }
+    }
+
+    // Convert map to array for UI
+    return Array.from(reportsMap.entries()).map(([key, value]: [string, any]) => {
       const displayLabel = key === '_NO_PREFIX_' ? 'Không tiền tố' : `Tiền tố ${key}`;
       return {
         key: key === '_NO_PREFIX_' ? '' : key,
@@ -967,36 +997,46 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     if (activeFilter === 'ALL') {
       const selected = this.selectedPdfPrefix();
-      if (selected !== null && selected !== undefined && d.reports) {
+      if (selected !== null && selected !== undefined) {
          const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
-         if (d.reports[reportKey]) {
+         // Lấy từ draft
+         if (d.reports && d.reports[reportKey]) {
            url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
          }
+         // Hoặc lấy từ run
+         if (!url && r) {
+           const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+           if (runReports && runReports[reportKey]) {
+             url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
+           }
+         }
       }
+      
+      // Fallback chung
       if (!url) {
-        // Fallback 1: lấy từ draft gốc
         url = d.pdfViewUrl || (d as any).pdfUrl || null;
-        // Fallback 2: lấy từ run.analysisResultSummary (nơi lưu bản PDF mới nhất)
         if (!url && r) {
           url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl
              || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
         }
-        if (!url && d.reports) {
-          const prefixes = this.detectedPrefixes();
-          if (prefixes.length > 0) {
-            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-            if (d.reports[firstReportKey]) {
-              url = d.reports[firstReportKey].pdfViewUrl || d.reports[firstReportKey].pdfUrl || null;
+        // Fallback to first available report if selected one doesn't exist
+        if (!url) {
+          const available = this.availableReports();
+          if (available.length > 0) {
+            url = available[0].url;
+            // Optionally auto-select it in the UI if it was invalid
+            if (this.selectedPdfPrefix() !== available[0].key) {
+               // Schedule a microtask to update signal to avoid ExpressionChangedAfterItHasBeenCheckedError
+               setTimeout(() => this.selectedPdfPrefix.set(available[0].key), 0);
             }
           }
         }
       }
     } else {
-      const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      const reportForFilter = reports[reportKey] || {};
-      url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
-      // Fallback từ run nếu draft.reports chưa được sync
+      if (d.reports && d.reports[reportKey]) {
+        url = d.reports[reportKey].pdfViewUrl || d.reports[reportKey].pdfUrl || null;
+      }
       if (!url && r) {
         const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
         if (runReports && runReports[reportKey]) {
@@ -1017,34 +1057,40 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
 
     if (activeFilter === 'ALL') {
       const selected = this.selectedPdfPrefix();
-      if (selected !== null && selected !== undefined && d.reports) {
+      if (selected !== null && selected !== undefined) {
          const reportKey = selected === '' ? '_NO_PREFIX_' : selected;
-         if (d.reports[reportKey]) {
+         // Lấy từ draft
+         if (d.reports && d.reports[reportKey]) {
            url = d.reports[reportKey].docsUrl || null;
          }
+         // Hoặc lấy từ run
+         if (!url && r) {
+           const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+           if (runReports && runReports[reportKey]) {
+             url = runReports[reportKey].docsUrl || null;
+           }
+         }
       }
+      
+      // Fallback chung
       if (!url) {
         url = d.docsUrl || null;
-        // Fallback từ run.analysisResultSummary
         if (!url && r) {
           url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
         }
-        if (!url && d.reports) {
-          const prefixes = this.detectedPrefixes();
-          if (prefixes.length > 0) {
-            const firstReportKey = prefixes[0] === '' ? '_NO_PREFIX_' : prefixes[0];
-            if (d.reports[firstReportKey]) {
-              url = d.reports[firstReportKey].docsUrl || null;
-            }
+        // Fallback to first available report if selected one doesn't exist
+        if (!url) {
+          const available = this.availableReports();
+          if (available.length > 0) {
+            url = available[0].docsUrl;
           }
         }
       }
     } else {
-      const reports = d.reports || {};
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
-      const reportForFilter = reports[reportKey] || {};
-      url = reportForFilter.docsUrl || null;
-      // Fallback từ run nếu draft.reports chưa được sync
+      if (d.reports && d.reports[reportKey]) {
+        url = d.reports[reportKey].docsUrl || null;
+      }
       if (!url && r) {
         const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
         if (runReports && runReports[reportKey]) {

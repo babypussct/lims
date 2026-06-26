@@ -1518,7 +1518,16 @@ export class ResultListComponent implements OnInit, OnDestroy {
       this.saveState();
     } catch (e) {}
 
-    this.router.navigate(['/results-view', requestId]);
+    const queryParams: any = {};
+    if (prefix !== undefined) {
+      queryParams.prefix = prefix;
+    }
+
+    if (forceEdit) {
+      this.router.navigate(['/results', requestId], { queryParams });
+    } else {
+      this.router.navigate(['/results-view', requestId], { queryParams });
+    }
   }
 
   openUrl(url: string) {
