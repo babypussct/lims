@@ -395,11 +395,14 @@ export class ReportHubModalComponent {
     }));
   }
 
-  // --- Logic helpers copied from result-list ---
+  // Chỉ hiển thị vòng lặp prefix nếu có NHIỀU HƠN 1 tiền tố
+  // VÀ không có unified report ở root level (tránh hiển thị trùng lặp)
   shouldShowPrefixLoop(): boolean {
     if (!this.run) return false;
-    const reports = this.run.analysisResultSummary?.reports || this.run.analysisResult?.reports;
-    return !!reports && Object.keys(reports).length > 0;
+    // Nếu đã có BÁO CÁO CHUNG (unified), không cần show prefix loop nữa
+    if (this.unifiedAllSamplesReport()) return false;
+    const prefixes = this.getSelectedRunPrefixes();
+    return prefixes.length > 1;
   }
 
   getSelectedRunPrefixes(): string[] {

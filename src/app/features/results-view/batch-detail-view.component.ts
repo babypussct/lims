@@ -962,6 +962,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     const activeFilter = this.activeFilter();
     let url: string | null = null;
     const d = this.draft();
+    const r = this.run();
     if (!d) return null;
 
     if (activeFilter === 'ALL') {
@@ -973,7 +974,13 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
          }
       }
       if (!url) {
-        url = d.pdfViewUrl || d.pdfUrl || null;
+        // Fallback 1: lấy từ draft gốc
+        url = d.pdfViewUrl || (d as any).pdfUrl || null;
+        // Fallback 2: lấy từ run.analysisResultSummary (nơi lưu bản PDF mới nhất)
+        if (!url && r) {
+          url = r.analysisResultSummary?.pdfViewUrl || r.analysisResultSummary?.pdfUrl
+             || r.analysisResult?.pdfViewUrl || r.analysisResult?.pdfUrl || null;
+        }
         if (!url && d.reports) {
           const prefixes = this.detectedPrefixes();
           if (prefixes.length > 0) {
@@ -989,14 +996,23 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
       const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.pdfViewUrl || reportForFilter.pdfUrl || null;
+      // Fallback từ run nếu draft.reports chưa được sync
+      if (!url && r) {
+        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+        if (runReports && runReports[reportKey]) {
+          url = runReports[reportKey].pdfViewUrl || runReports[reportKey].pdfUrl || null;
+        }
+      }
     }
     return url;
   }
+
 
   getCurrentDocsUrl(): string | null {
     const activeFilter = this.activeFilter();
     let url: string | null = null;
     const d = this.draft();
+    const r = this.run();
     if (!d) return null;
 
     if (activeFilter === 'ALL') {
@@ -1009,6 +1025,10 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       }
       if (!url) {
         url = d.docsUrl || null;
+        // Fallback từ run.analysisResultSummary
+        if (!url && r) {
+          url = r.analysisResultSummary?.docsUrl || r.analysisResult?.docsUrl || null;
+        }
         if (!url && d.reports) {
           const prefixes = this.detectedPrefixes();
           if (prefixes.length > 0) {
@@ -1024,9 +1044,17 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       const reportKey = activeFilter === '' ? '_NO_PREFIX_' : activeFilter;
       const reportForFilter = reports[reportKey] || {};
       url = reportForFilter.docsUrl || null;
+      // Fallback từ run nếu draft.reports chưa được sync
+      if (!url && r) {
+        const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
+        if (runReports && runReports[reportKey]) {
+          url = runReports[reportKey].docsUrl || null;
+        }
+      }
     }
     return url ? getSafeGoogleUrl(url, 'doc') : null;
   }
+
 
   openPdfInModal(url: string) {
     const activeFilter = this.activeFilter();
