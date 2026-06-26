@@ -358,13 +358,12 @@ export class SopEditorComponent implements OnDestroy {
               ingredients: (c.ingredients || []).map((ing: any) => ({ name: ing.name, amount: ing.amount, unit: ing.unit, _displayName: ing._displayName }))
           };
       }),
-      // Map valid targets only
       targets: (formVal.targets as any[])
           .filter(t => t.id && t.name)
           .map(t => ({ id: t.id, name: t.name, unit: t.unit, lod: t.lod, loq: t.loq })),
-      matrixTags: this.selectedMatrixTags().length > 0 ? this.selectedMatrixTags() : undefined,
-      device: formVal.device || undefined,
-      allowedDevices: this.selectedAllowedDevices().length > 0 ? this.selectedAllowedDevices() : undefined,
+      matrixTags: this.selectedMatrixTags().length > 0 ? this.selectedMatrixTags() : null as any,
+      device: formVal.device || null as any,
+      allowedDevices: this.selectedAllowedDevices().length > 0 ? this.selectedAllowedDevices() : null as any,
       version: formVal.version || this.currentVersion() 
     };
     
