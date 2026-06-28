@@ -9,6 +9,7 @@ import { InventoryService } from '../inventory/inventory.service';
 import { StandardService } from '../standards/standard.service'; 
 import { InventoryItem } from '../../core/models/inventory.model';
 import { ReferenceStandard } from '../../core/models/standard.model';
+import { Request } from '../../core/models/request.model';
 import { ToastService } from '../../core/services/toast.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { QrGlobalService } from '../../core/services/qr-global.service'; // Import Global Service
@@ -26,8 +27,7 @@ interface PriorityStandard {
 }
 
 // Thêm interface để cache _date
-interface ParsedRequest {
-    [key: string]: any;
+interface ParsedRequest extends Request {
     _date: Date;
 }
 
