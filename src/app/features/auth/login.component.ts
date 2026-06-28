@@ -119,8 +119,8 @@ declare let QRious: any;
                             <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start"
                                    [class.opacity-40]="isSharedDevice()"
                                    [class.pointer-events-none]="isSharedDevice()">
-                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
-                                     [class.bg-fuchsia-50]="rememberSession()" [class.border-fuchsia-500]="rememberSession()" [class.dark:bg-fuchsia-950/50]="rememberSession()">
+                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 group-hover:border-fuchsia-400 transition-colors shrink-0 animate-all duration-200" 
+                                     [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
                                     <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
                                     @if (rememberSession()) {
                                         <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
@@ -133,8 +133,8 @@ declare let QRious: any;
                             <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start"
                                    [class.opacity-40]="rememberSession()"
                                    [class.pointer-events-none]="rememberSession()">
-                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
-                                     [class.bg-fuchsia-50]="isSharedDevice()" [class.border-fuchsia-500]="isSharedDevice()" [class.dark:bg-fuchsia-950/50]="isSharedDevice()">
+                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 group-hover:border-fuchsia-400 transition-colors shrink-0 animate-all duration-200" 
+                                     [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
                                     <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
                                     @if (isSharedDevice()) {
                                         <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
@@ -143,7 +143,6 @@ declare let QRious: any;
                                 <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Đây là máy tính dùng chung</span>
                             </label>
                         </div>
-                        
                         @if (errorMsg()) {
                             <div class="mt-4 px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center justify-center gap-2 animate-shake">
                                 <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() }}
@@ -193,12 +192,11 @@ declare let QRious: any;
                                            [disabled]="isLoading()">
                                 </div>
                             </div>
-
                             <!-- Remember Session Checkbox in Password Mode -->
                             <div class="pt-1">
                                 <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start">
-                                    <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
-                                         [class.bg-fuchsia-50]="rememberSession()" [class.border-fuchsia-500]="rememberSession()" [class.dark:bg-fuchsia-950/50]="rememberSession()">
+                                    <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 group-hover:border-fuchsia-400 transition-colors shrink-0 animate-all duration-200" 
+                                         [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
                                         <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer">
                                         @if (rememberSession()) {
                                             <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
@@ -207,7 +205,6 @@ declare let QRious: any;
                                     <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Duy trì đăng nhập (Bỏ tự thoát 30p)</span>
                                 </label>
                             </div>
-
                             @if (errorMsg()) {
                                 <div class="px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center gap-2 animate-shake">
                                     <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() }}

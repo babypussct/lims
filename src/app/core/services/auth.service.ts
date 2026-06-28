@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   setPersistence,
   browserSessionPersistence,
-  localPersistence,
+  browserLocalPersistence,
   EmailAuthProvider,
   reauthenticateWithCredential,
   linkWithCredential,
@@ -129,7 +129,7 @@ export class AuthService {
 
     // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
+    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
       console.warn('[Auth] Failed to set session persistence:', err);
     });
 
@@ -207,7 +207,7 @@ export class AuthService {
 
   async login(email: string, pass: string) {
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
       console.warn('[Auth] Failed to set session persistence dynamically:', err);
     });
 
@@ -228,7 +228,7 @@ export class AuthService {
     provider.setCustomParameters({ prompt: 'select_account' });
 
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
       console.warn('[Auth] Failed to set session persistence dynamically:', err);
     });
 
