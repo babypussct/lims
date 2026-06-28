@@ -21,6 +21,12 @@ export class IdleTimeoutService {
   private resetFn = () => this.resetTimer();
 
   private shouldDisableTimeout(): boolean {
+    // 1. Kiểm tra cấu hình duy trì đăng nhập của người dùng
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    if (rememberSession) {
+      return true; // Bỏ qua tự thoát nếu người dùng chủ động duy trì đăng nhập
+    }
+
     const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isMobileWidth = window.innerWidth <= 768;
     

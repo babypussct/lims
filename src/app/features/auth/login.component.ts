@@ -16,21 +16,22 @@ declare let QRious: any;
   imports: [CommonModule, FormsModule, PwaInstallPromptComponent],
   template: `
     @if (!auth.currentUser()) {
-      <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc]">
+      <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
         
         <!-- Animated Light Gradient Background (Fluid Shapes) -->
         <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-fuchsia-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob"></div>
             <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-pink-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-2000"></div>
             <div class="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-purple-400/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-4000"></div>
+            <div class="absolute bottom-[30%] right-[10%] w-[35vw] h-[35vw] bg-blue-400/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-6000"></div>
             <!-- Subtle Grid Pattern Overlay for a "Lab" feel -->
-            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNCkiLz48L3N2Zz4=')] opacity-60"></div>
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNCkiLz48L3N2Zz4=')] opacity-60 dark:opacity-20"></div>
         </div>
 
         <!-- Centered Glass Card -->
         <div class="relative z-10 w-full max-w-[420px] mx-4 sm:mx-auto">
             
-            <div class="bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_20px_27px_0_rgba(0,0,0,0.05)] rounded-[2.5rem] p-8 sm:p-10 relative overflow-hidden">
+            <div class="bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 shadow-[0_20px_27px_0_rgba(0,0,0,0.05)] rounded-[2.5rem] p-8 sm:p-10 relative overflow-hidden">
                 
                 <!-- Subtle inner shine -->
                 <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
@@ -39,18 +40,18 @@ declare let QRious: any;
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[linear-gradient(310deg,#7928ca,#ff0080)] shadow-lg shadow-pink-500/30 text-white mb-6 transform hover:scale-105 transition-transform duration-300">
                         <i class="fa-solid fa-microscope text-3xl"></i>
                     </div>
-                    <h1 class="text-2xl font-black text-gray-700 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
-                    <p class="text-gray-500 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
+                    <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
+                    <p class="text-gray-500 dark:text-slate-400 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
                 </div>
 
                 <!-- LOGOUT REASON NOTIFICATION -->
                 @if (logoutReason()) {
-                  <div class="relative z-10 mb-6 p-4 rounded-2xl bg-amber-50/90 backdrop-blur-sm border border-amber-200 text-amber-800 text-[13px] font-medium animate-fade-in-up flex gap-3 shadow-[0_4px_12px_rgba(217,119,6,0.08)]">
+                  <div class="relative z-10 mb-6 p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 backdrop-blur-sm border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[13px] font-medium animate-fade-in-up flex gap-3 shadow-[0_4px_12px_rgba(217,119,6,0.08)]">
                     <div class="shrink-0 text-amber-500 text-base mt-0.5">
                       <i class="fa-solid fa-circle-exclamation"></i>
                     </div>
                     <div class="flex-1 text-left">
-                      <div class="font-bold text-amber-900 mb-0.5">Thông báo hệ thống</div>
+                      <div class="font-bold text-amber-900 dark:text-amber-200 mb-0.5">Thông báo hệ thống</div>
                       <div>
                         @if (logoutReason() === 'idle') {
                           Phiên đăng nhập đã hết hạn do hệ thống không hoạt động trong 30 phút. Vui lòng đăng nhập lại.
@@ -67,48 +68,80 @@ declare let QRious: any;
                   </div>
                 }
 
+                <!-- TAB SWITCHER: PILL SEGMENTED CONTROL -->
+                <div class="relative z-10 bg-gray-100/80 dark:bg-slate-800/80 backdrop-blur-sm p-1 rounded-2xl flex items-center mb-6 border border-gray-200/30 dark:border-slate-700/30 shadow-inner relative h-10 select-none">
+                    <!-- Sliding highlight indicator -->
+                    <div class="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm transition-all duration-300 ease-out pointer-events-none"
+                         [style.width.%]="31"
+                         [style.left.%]="mode() === 'google' ? 1.5 : (mode() === 'qr' ? 34.5 : 67.5)">
+                    </div>
+                    
+                    <button (click)="switchMode('google')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                            [class.text-fuchsia-600]="mode() === 'google'"
+                            [class.dark:text-fuchsia-400]="mode() === 'google'"
+                            [class.text-gray-500]="mode() !== 'google'">
+                        <i class="fa-brands fa-google mr-1"></i> Google
+                    </button>
+                    <button (click)="switchMode('qr')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                            [class.text-fuchsia-600]="mode() === 'qr'"
+                            [class.dark:text-fuchsia-400]="mode() === 'qr'"
+                            [class.text-gray-500]="mode() !== 'qr'">
+                        <i class="fa-solid fa-qrcode mr-1"></i> Mã QR
+                    </button>
+                    <button (click)="switchMode('password')" class="flex-1 py-1.5 text-center text-xs font-bold transition-all relative z-10 cursor-pointer select-none rounded-xl"
+                            [class.text-fuchsia-600]="mode() === 'password'"
+                            [class.dark:text-fuchsia-400]="mode() === 'password'"
+                            [class.text-gray-500]="mode() !== 'password'">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Tài khoản
+                    </button>
+                </div>
+
                 <!-- LOGIN MODE: GOOGLE (PRIMARY) -->
                 @if (mode() === 'google') {
                     <div class="animate-fade-in-up relative z-10 text-center">
                         <button (click)="loginGoogle()" [disabled]="isLoading()"
-                                class="w-full py-4 mt-2 bg-white backdrop-blur-md border border-white hover:bg-gray-50 text-gray-700 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
+                                class="w-full py-4 mt-2 bg-white dark:bg-slate-800 backdrop-blur-md border border-white dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] group relative overflow-hidden">
                             <!-- Subtle pink hover glow -->
-                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-50/50 to-transparent dark:via-pink-950/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             
                             @if (isGoogleLoading()) { <i class="fa-solid fa-spinner fa-spin text-gray-400"></i> } 
                             @else { 
-                                <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                                <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
                                     <i class="fa-brands fa-google text-red-500 text-[16px] group-hover:scale-110 transition-transform"></i> 
                                 </div>
                             }
                             <span class="text-[15px]">Đăng nhập với Google</span>
                         </button>
 
-                        <!-- Shared Device Checkbox -->
-                        <div class="mt-5 flex items-center justify-center">
-                            <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 px-4 py-2 rounded-xl border border-white/60 shadow-sm hover:bg-white/60 transition-all">
-                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 group-hover:border-fuchsia-400 transition-colors" [class.bg-fuchsia-50]="isSharedDevice()" [class.border-fuchsia-500]="isSharedDevice()">
-                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer">
-                                    @if (isSharedDevice()) {
-                                        <i class="fa-solid fa-check text-[11px] text-fuchsia-600 animate-fade-in"></i>
+                        <!-- Shared Device & Remember Session Checkboxes -->
+                        <div class="mt-5 flex flex-col gap-3 items-center justify-center">
+                            <!-- Checkbox 1: Remember session -->
+                            <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start"
+                                   [class.opacity-40]="isSharedDevice()"
+                                   [class.pointer-events-none]="isSharedDevice()">
+                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
+                                     [class.bg-fuchsia-50]="rememberSession()" [class.border-fuchsia-500]="rememberSession()" [class.dark:bg-fuchsia-950/50]="rememberSession()">
+                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
+                                    @if (rememberSession()) {
+                                        <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
                                     }
                                 </div>
-                                <span class="text-[13px] font-semibold text-gray-500 group-hover:text-gray-700 transition-colors">Đây là máy tính dùng chung</span>
+                                <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Duy trì đăng nhập (Bỏ tự thoát 30p)</span>
                             </label>
-                        </div>
 
-                        <div class="mt-6 flex flex-col gap-4">
-                            <button (click)="switchMode('qr')" class="inline-flex items-center justify-center gap-2 text-fuchsia-600 hover:text-fuchsia-700 font-bold text-[13px] transition px-4 py-2.5 rounded-xl hover:bg-fuchsia-50/50 border border-transparent hover:border-fuchsia-100/50">
-                                <i class="fa-solid fa-qrcode text-[15px]"></i>
-                                <span>Đăng nhập qua mã QR</span>
-                            </button>
-                            
-                            <!-- Admin Link hidden nicely -->
-                            <div class="pt-4 border-t border-gray-200/50">
-                                <button (click)="switchMode('password')" class="text-gray-400 hover:text-gray-600 font-medium text-[11px] uppercase tracking-wider transition hover:underline decoration-gray-300 underline-offset-4">
-                                    <i class="fa-solid fa-shield-halved mr-1"></i> Đăng nhập bằng tài khoản được cấp
-                                </button>
-                            </div>
+                            <!-- Checkbox 2: Shared Device -->
+                            <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start"
+                                   [class.opacity-40]="rememberSession()"
+                                   [class.pointer-events-none]="rememberSession()">
+                                <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
+                                     [class.bg-fuchsia-50]="isSharedDevice()" [class.border-fuchsia-500]="isSharedDevice()" [class.dark:bg-fuchsia-950/50]="isSharedDevice()">
+                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
+                                    @if (isSharedDevice()) {
+                                        <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                    }
+                                </div>
+                                <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Đây là máy tính dùng chung</span>
+                            </label>
                         </div>
                         
                         @if (errorMsg()) {
@@ -130,7 +163,7 @@ declare let QRious: any;
                                         <i class="fa-regular fa-user text-gray-400 group-focus-within:text-fuchsia-500 transition-colors"></i>
                                     </div>
                                     <input type="text" [(ngModel)]="email" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 backdrop-blur-sm border border-white/40 rounded-2xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400" 
+                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500" 
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="Nhập username..."
@@ -153,12 +186,26 @@ declare let QRious: any;
                                         <i class="fa-solid fa-lock text-gray-400 group-focus-within:text-fuchsia-500 transition-colors"></i>
                                     </div>
                                     <input type="password" [(ngModel)]="password" (keyup.enter)="login()"
-                                           class="w-full pl-11 pr-4 py-3.5 bg-white/50 backdrop-blur-sm border border-white/40 rounded-2xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400" 
+                                           class="w-full pl-11 pr-4 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500" 
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="••••••••"
                                            [disabled]="isLoading()">
                                 </div>
+                            </div>
+
+                            <!-- Remember Session Checkbox in Password Mode -->
+                            <div class="pt-1">
+                                <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start">
+                                    <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0" 
+                                         [class.bg-fuchsia-50]="rememberSession()" [class.border-fuchsia-500]="rememberSession()" [class.dark:bg-fuchsia-950/50]="rememberSession()">
+                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer">
+                                        @if (rememberSession()) {
+                                            <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                        }
+                                    </div>
+                                    <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Duy trì đăng nhập (Bỏ tự thoát 30p)</span>
+                                </label>
                             </div>
 
                             @if (errorMsg()) {
@@ -168,16 +215,11 @@ declare let QRious: any;
                             }
 
                             <button (click)="login()" [disabled]="isLoading()"
-                                    class="w-full py-4 mt-2 bg-[linear-gradient(310deg,#7928ca,#ff0080)] hover:opacity-90 text-white rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(203,12,159,0.2)] hover:shadow-[0_8px_15px_-6px_rgba(203,12,159,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2">
+                                    class="w-full py-4 mt-2 bg-[linear-gradient(310deg,#7928ca,#ff0080)] hover:opacity-90 text-white rounded-2xl font-bold text-sm shadow-[0_4px_6px_-1px_rgba(203,12,159,0.2)] hover:shadow-[0_8px_15px_-6px_rgba(203,12,159,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 relative overflow-hidden group">
+                                <div class="absolute inset-0 w-1/2 h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:animate-shimmer"></div>
                                 @if (isLoading() && !isGoogleLoading()) { <i class="fa-solid fa-circle-notch fa-spin"></i> }
                                 @else { <i class="fa-solid fa-shield-halved text-xs"></i> <span>Đăng Nhập Quản Trị</span> }
                             </button>
-
-                            <div class="mt-6 text-center pt-4 border-t border-gray-200/50">
-                                <button (click)="switchMode('google')" class="text-gray-500 hover:text-fuchsia-600 font-bold text-[13px] transition flex items-center justify-center gap-2 mx-auto">
-                                    <i class="fa-solid fa-arrow-left"></i> Trở về đăng nhập chính
-                                </button>
-                            </div>
                         </div>
                     </div>
                 }
@@ -185,45 +227,47 @@ declare let QRious: any;
                 <!-- LOGIN MODE: QR SHOW -->
                 @if (mode() === 'qr') {
                     <div class="animate-fade-in-up relative z-10 flex flex-col items-center text-center">
-                        <h2 class="text-xl font-bold text-gray-700 mb-2">Đăng nhập nhanh</h2>
-                        <p class="text-gray-500 text-[13px] mb-8 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
+                        <h2 class="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">Đăng nhập nhanh</h2>
+                        <p class="text-gray-500 dark:text-slate-400 text-[13px] mb-8 px-4">Sử dụng ứng dụng LIMS trên điện thoại để quét mã này.</p>
 
-                        <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-gray-100 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
-                            <canvas #qrCanvas class="w-56 h-56"></canvas>
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 relative group w-64 h-64 mx-auto flex items-center justify-center overflow-hidden">
+                            <canvas #qrCanvas class="w-56 h-56 relative z-10"></canvas>
+                            
+                            <!-- Scanner Line Overlay (Laser Pulse) -->
+                            @if (qrStatus() === 'waiting' || qrStatus() === 'scanned') {
+                                <div class="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-fuchsia-500 to-transparent shadow-[0_0_8px_#d946ef] z-20 animate-laser"></div>
+                            }
                             
                             <!-- Overlay status -->
                             @if (qrStatus() === 'approved') {
-                                <div class="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in">
-                                    <div class="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner"><i class="fa-solid fa-check"></i></div>
-                                    <span class="font-bold text-green-700 text-lg">Thành công!</span>
-                                    <span class="text-[13px] text-green-600/80 font-medium mt-1">Đang chuyển hướng...</span>
+                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in z-30">
+                                    <div class="w-16 h-16 bg-green-50 dark:bg-green-950/50 text-green-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner"><i class="fa-solid fa-check"></i></div>
+                                    <span class="font-bold text-green-700 dark:text-green-400 text-lg">Thành công!</span>
+                                    <span class="text-[13px] text-green-600/80 dark:text-green-550/80 font-medium mt-1">Đang chuyển hướng...</span>
                                 </div>
                             }
                             @if (qrStatus() === 'expired') {
-                                <div class="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in cursor-pointer group-hover:bg-gray-50 transition-colors" (click)="generateSession()">
-                                    <div class="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-rotate-right"></i></div>
-                                    <span class="font-bold text-gray-700">Mã hết hạn</span>
-                                    <span class="text-[13px] text-fuchsia-600 font-bold mt-1">Nhấn để tải lại</span>
+                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in cursor-pointer group-hover:bg-gray-50 dark:group-hover:bg-slate-700/60 transition-colors z-30" (click)="generateSession()">
+                                    <div class="w-16 h-16 bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-rotate-right"></i></div>
+                                    <span class="font-bold text-gray-700 dark:text-slate-300">Mã hết hạn</span>
+                                    <span class="text-[13px] text-fuchsia-600 dark:text-fuchsia-400 font-bold mt-1">Nhấn để tải lại</span>
                                 </div>
                             }
                             @if (errorMsg() && mode() === 'qr') {
-                                <div class="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in p-6 text-center">
-                                    <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                                    <span class="font-bold text-red-700 text-sm">Lỗi kết nối</span>
+                                <div class="absolute inset-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem] animate-fade-in p-6 text-center z-30">
+                                    <div class="w-12 h-12 bg-red-50 dark:bg-red-950/50 text-red-500 rounded-full flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                    <span class="font-bold text-red-700 dark:text-red-400 text-sm">Lỗi kết nối</span>
                                     <span class="text-[11px] text-red-500/80 mt-1 mb-4">{{ errorMsg() }}</span>
-                                    <button (click)="generateSession()" class="px-4 py-2 bg-red-50 text-red-700 border border-red-100 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">Thử lại</button>
+                                    <button (click)="generateSession()" class="px-4 py-2 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/50 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900 transition-colors">Thử lại</button>
                                 </div>
                             }
                         </div>
 
                         <div class="mt-8 flex flex-col gap-4 w-full">
-                            <div class="flex items-center gap-2 justify-center text-[13px] font-semibold text-gray-500 bg-white/50 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/60 shadow-sm">
+                            <div class="flex items-center gap-2 justify-center text-[13px] font-semibold text-gray-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm">
                                 <div class="w-2 h-2 rounded-full" [class.bg-fuchsia-500]="qrStatus() === 'waiting'" [class.animate-pulse]="qrStatus() === 'waiting'" [class.bg-gray-300]="qrStatus() !== 'waiting'"></div>
                                 {{ qrStatus() === 'waiting' ? 'Đang chờ quét mã...' : (qrStatus() === 'scanned' ? 'Đã quét! Vui lòng xác nhận.' : 'Trạng thái: ' + qrStatus()) }}
                             </div>
-                            <button (click)="switchMode('google')" class="text-gray-500 hover:text-fuchsia-600 font-bold text-[13px] transition flex items-center justify-center gap-2 mx-auto">
-                                <i class="fa-solid fa-arrow-left"></i> Trở về
-                            </button>
                         </div>
                     </div>
                 }
@@ -260,6 +304,22 @@ declare let QRious: any;
     .animate-blob { animation: blob 10s infinite; }
     .animation-delay-2000 { animation-delay: 2s; }
     .animation-delay-4000 { animation-delay: 4s; }
+    .animation-delay-6000 { animation-delay: 6s; }
+
+    @keyframes laser {
+      0% { top: 4%; }
+      50% { top: 96%; }
+      100% { top: 4%; }
+    }
+    .animate-laser { animation: laser 3s infinite ease-in-out; }
+
+    @keyframes shimmer {
+      0% { transform: skewX(-12deg) translateX(-100%); }
+      100% { transform: skewX(-12deg) translateX(250%); }
+    }
+    .group:hover .group-hover\:animate-shimmer {
+      animation: shimmer 1s ease-in-out forwards;
+    }
   `]
 })
 export class LoginComponent implements OnInit, OnDestroy {
@@ -270,6 +330,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   mode = signal<'google' | 'password' | 'qr'>('google');
   logoutReason = signal<string | null>(null);
   isSharedDevice = signal(false);
+  rememberSession = signal(false);
   
   email = '';
   password = '';
@@ -285,15 +346,34 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (sharedPref === 'true') {
       this.isSharedDevice.set(true);
     }
+    const rememberPref = localStorage.getItem('lims_remember_session');
+    if (rememberPref === 'true') {
+      this.rememberSession.set(true);
+    }
   }
 
   toggleSharedDevice() {
     this.isSharedDevice.set(!this.isSharedDevice());
     localStorage.setItem('lims_shared_device', this.isSharedDevice() ? 'true' : 'false');
+    if (this.isSharedDevice()) {
+      this.rememberSession.set(false);
+      localStorage.setItem('lims_remember_session', 'false');
+    }
   }
+
+  toggleRememberSession() {
+    this.rememberSession.set(!this.rememberSession());
+    localStorage.setItem('lims_remember_session', this.rememberSession() ? 'true' : 'false');
+    if (this.rememberSession()) {
+      this.isSharedDevice.set(false);
+      localStorage.setItem('lims_shared_device', 'false');
+    }
+  }
+
   isLoading = signal(false);
   isGoogleLoading = signal(false);
   year = new Date().getFullYear();
+
 
   // QR Handshake State
   @ViewChild('qrCanvas') qrCanvas!: ElementRef;

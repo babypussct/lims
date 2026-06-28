@@ -10,6 +10,7 @@ import {
   GoogleAuthProvider,
   setPersistence,
   browserSessionPersistence,
+  localPersistence,
   EmailAuthProvider,
   reauthenticateWithCredential,
   linkWithCredential,
@@ -126,8 +127,9 @@ export class AuthService {
   constructor() {
     this.auth = getAuth(this.fb.app);
 
-    // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab
-    setPersistence(this.auth, browserSessionPersistence).catch(err => {
+    // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
       console.warn('[Auth] Failed to set session persistence:', err);
     });
 
@@ -204,6 +206,11 @@ export class AuthService {
   // --- AUTH METHODS ---
 
   async login(email: string, pass: string) {
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    await setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
+      console.warn('[Auth] Failed to set session persistence dynamically:', err);
+    });
+
     await signInWithEmailAndPassword(this.auth, email, pass);
     // Save for QR functionality
     this.saveLocalCredentials(email, pass);
@@ -219,6 +226,11 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     // Force account picker — important for shared workstations
     provider.setCustomParameters({ prompt: 'select_account' });
+
+    const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
+    await setPersistence(this.auth, rememberSession ? localPersistence : browserSessionPersistence).catch(err => {
+      console.warn('[Auth] Failed to set session persistence dynamically:', err);
+    });
 
     try {
         // ── 1. Try popup first ──
@@ -280,6 +292,7 @@ export class AuthService {
         console.warn('[Auth] Failed to destroy DeltaSync singletons:', e);
     }
     this.clearLocalCredentials(); // Security cleanup
+    localStorage.removeItem('lims_remember_session'); // Clear remember session flag
     
     // Xóa FCM token của thiết bị này để ngừng nhận Push Notifications
     const currentUser = this.currentUser();
