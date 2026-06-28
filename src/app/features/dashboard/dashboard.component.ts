@@ -26,7 +26,8 @@ interface PriorityStandard {
 }
 
 // Thêm interface để cache _date
-interface ParsedRequest extends any {
+interface ParsedRequest {
+    [key: string]: any;
     _date: Date;
 }
 
@@ -587,6 +588,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async initChart() {
       const canvas = this.chartCanvas()?.nativeElement;
       const dCanvas = this.doughnutChartCanvas()?.nativeElement;
+      if (!canvas || !dCanvas) return;
+
       const isDark = this.state.darkMode();
       
       // Force recreate if dark mode changed
