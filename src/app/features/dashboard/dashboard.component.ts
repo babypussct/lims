@@ -613,16 +613,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (!ctx || !dCtx) return;
 
       // Dark Mode adaptation colors
-      const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9';
-      const tooltipBg = isDark ? '#1e293b' : '#fff';
-      const tooltipTitleColor = isDark ? '#f1f5f9' : '#1e293b';
-      const tooltipBodyColor = isDark ? '#cbd5e1' : '#1e293b';
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+      const tooltipBg = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+      const tooltipTitleColor = isDark ? '#f8fafc' : '#0f172a';
+      const tooltipBodyColor = isDark ? '#cbd5e1' : '#334155';
       const tooltipBorderColor = isDark ? '#334155' : '#e2e8f0';
-      const barBg = isDark ? '#3b82f6' : '#3a416f';
+      
+      const barGradient = ctx.createLinearGradient(0, 0, 0, 400);
+      barGradient.addColorStop(0, isDark ? '#818cf8' : '#6366f1'); 
+      barGradient.addColorStop(1, isDark ? '#4f46e5' : '#4338ca');
 
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(203, 12, 159, 0.2)'); 
-      gradient.addColorStop(1, 'rgba(203, 12, 159, 0)');
+      gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.2)'); 
+      gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
       const start = new Date(this.startDate()); start.setHours(0,0,0,0);
       const end = new Date(this.endDate()); end.setHours(23,59,59,999);
@@ -738,11 +741,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
                   labels: labels,
                   datasets: [
                       { 
-                          label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#cb0c9f', borderWidth: 3, 
-                          pointRadius: 4, pointBackgroundColor: '#cb0c9f', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
+                          label: 'Số mẫu', data: sampleData, backgroundColor: gradient, borderColor: '#6366f1', borderWidth: 3, 
+                          pointRadius: 4, pointBackgroundColor: '#6366f1', pointBorderColor: '#fff', pointHoverRadius: 6, fill: true, tension: 0.4, yAxisID: 'y'
                       },
                       { 
-                          label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barBg, borderRadius: 4, barThickness: 10, order: 1, yAxisID: 'y1' 
+                          label: 'Số mẻ', data: runData, type: 'bar', backgroundColor: barGradient, borderRadius: 6, barThickness: 12, borderSkipped: false, order: 1, yAxisID: 'y1' 
                       }
                   ]
               },
@@ -764,7 +767,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
                           bodyColor: tooltipBodyColor, 
                           borderColor: tooltipBorderColor, 
                           borderWidth: 1, 
-                          padding: 10, 
+                          padding: 12,
+                          cornerRadius: 8,
+                          titleFont: { size: 13, family: "'Inter', 'Open Sans', sans-serif" },
+                          bodyFont: { size: 12, family: "'Inter', 'Open Sans', sans-serif" },
                           displayColors: true, 
                           usePointStyle: true,
                           callbacks: {
@@ -803,7 +809,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       // Doughnut Chart & Custom Legend calculation
       const sopLabels = Array.from(sopCounts.keys());
       const sopData = Array.from(sopCounts.values());
-      const bgColors = ['#cb0c9f', '#3a416f', '#17c1e8', '#82d616', '#ea0606', '#ff9800', '#9c27b0', '#00bcd4'];
+      // Modern Tailwind color palette
+      const bgColors = ['#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
 
       const totalSopSamples = sopData.reduce((a, b) => a + b, 0);
       const dist = sopLabels.map((name, i) => {
@@ -829,7 +836,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                       data: sopData,
                       backgroundColor: bgColors.slice(0, sopLabels.length),
                       borderWidth: 0,
-                      hoverOffset: 4
+                      hoverOffset: 8
                   }]
               },
               options: {
@@ -850,7 +857,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
                           bodyColor: tooltipBodyColor, 
                           borderColor: tooltipBorderColor, 
                           borderWidth: 1, 
-                          padding: 6, 
+                          padding: 10, 
+                          cornerRadius: 8,
+                          titleFont: { size: 13, family: "'Inter', 'Open Sans', sans-serif" },
+                          bodyFont: { size: 12, family: "'Inter', 'Open Sans', sans-serif" },
                           displayColors: false, 
                           usePointStyle: true,
                           callbacks: {
