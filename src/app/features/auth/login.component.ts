@@ -209,19 +209,55 @@ declare let QRious: any;
                                            [disabled]="isLoading()">
                                 </div>
                             </div>
-                            <!-- Remember Session Checkbox in Password Mode -->
-                            <div class="pt-1">
-                                <label class="flex items-center gap-2.5 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-4 py-2.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all w-full justify-start">
-                                    <div class="relative flex items-center justify-center w-5 h-5 rounded border-2 group-hover:border-fuchsia-400 transition-colors shrink-0 animate-all duration-200" 
+
+                            <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
+                            <div class="mt-4 flex items-center justify-between gap-2 text-left relative">
+                                <!-- Checkbox 1: Remember session -->
+                                <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
+                                       [class.opacity-40]="isSharedDevice()"
+                                       [class.pointer-events-none]="isSharedDevice()">
+                                    <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
                                          [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
-                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer">
+                                        <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
                                         @if (rememberSession()) {
-                                            <i class="fa-solid fa-check text-[11px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                            <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
                                         }
                                     </div>
-                                    <span class="text-[13px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-750 dark:group-hover:text-slate-300 transition-colors text-left">Duy trì đăng nhập (Bỏ tự thoát 30p)</span>
+                                    <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Duy trì đăng nhập</span>
                                 </label>
+
+                                <!-- Checkbox 2: Shared Device -->
+                                <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
+                                       [class.opacity-40]="rememberSession()"
+                                       [class.pointer-events-none]="rememberSession()">
+                                    <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
+                                         [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
+                                        <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
+                                        @if (isSharedDevice()) {
+                                            <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                        }
+                                    </div>
+                                    <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Máy dùng chung</span>
+                                </label>
+
+                                <!-- Tooltip Help Info -->
+                                <div class="relative group/tooltip shrink-0">
+                                    <button type="button" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
+                                        <i class="fa-regular fa-circle-question text-[13px]"></i>
+                                    </button>
+                                    <!-- Tooltip content -->
+                                    <div class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
+                                        <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
+                                        </div>
+                                        <div class="space-y-1.5 text-slate-300">
+                                            <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
+                                            <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            
                             @if (errorMsg()) {
                                 <div class="px-4 py-3 rounded-2xl bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-600 text-[13px] font-medium flex items-center gap-2 animate-shake">
                                     <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ errorMsg() }}
@@ -277,7 +313,55 @@ declare let QRious: any;
                             }
                         </div>
 
-                        <div class="mt-8 flex flex-col gap-4 w-full">
+                        <!-- Shared Device & Remember Session Checkboxes (Horizontal Row) -->
+                        <div class="mt-6 flex items-center justify-between gap-2 text-left relative w-full">
+                            <!-- Checkbox 1: Remember session -->
+                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
+                                   [class.opacity-40]="isSharedDevice()"
+                                   [class.pointer-events-none]="isSharedDevice()">
+                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
+                                     [ngClass]="rememberSession() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
+                                    <input type="checkbox" [checked]="rememberSession()" (change)="toggleRememberSession()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="isSharedDevice()">
+                                    @if (rememberSession()) {
+                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                    }
+                                </div>
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Duy trì đăng nhập</span>
+                            </label>
+
+                            <!-- Checkbox 2: Shared Device -->
+                            <label class="flex items-center gap-2 cursor-pointer group select-none bg-white/40 dark:bg-slate-850/40 px-2.5 py-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm hover:bg-white/60 dark:hover:bg-slate-800/65 transition-all flex-1 min-w-0"
+                                   [class.opacity-40]="rememberSession()"
+                                   [class.pointer-events-none]="rememberSession()">
+                                <div class="relative flex items-center justify-center w-4 h-4 rounded border border-gray-300 dark:border-slate-650 group-hover:border-fuchsia-400 transition-colors shrink-0 duration-200" 
+                                     [ngClass]="isSharedDevice() ? 'bg-fuchsia-50 border-fuchsia-500 dark:bg-fuchsia-950/50' : 'border-gray-300 dark:border-slate-650'">
+                                    <input type="checkbox" [checked]="isSharedDevice()" (change)="toggleSharedDevice()" class="opacity-0 absolute inset-0 cursor-pointer" [disabled]="rememberSession()">
+                                    @if (isSharedDevice()) {
+                                        <i class="fa-solid fa-check text-[9px] text-fuchsia-600 dark:text-fuchsia-450 animate-fade-in"></i>
+                                    }
+                                </div>
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-slate-400 group-hover:text-gray-755 dark:group-hover:text-slate-300 transition-colors truncate">Máy dùng chung</span>
+                            </label>
+
+                            <!-- Tooltip Help Info -->
+                            <div class="relative group/tooltip shrink-0">
+                                <button type="button" class="w-7 h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-gray-400 dark:text-slate-500 hover:text-fuchsia-600 dark:hover:text-fuchsia-450 flex items-center justify-center text-xs transition-colors cursor-help border border-white/50 dark:border-slate-700/50 shadow-sm">
+                                    <i class="fa-regular fa-circle-question text-[13px]"></i>
+                                </button>
+                                <!-- Tooltip content -->
+                                <div class="absolute bottom-full right-0 mb-2 w-64 bg-slate-900/95 dark:bg-slate-950/95 text-white text-[11px] p-3.5 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-md opacity-0 scale-95 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 transition-all duration-200 z-50 origin-bottom-right leading-relaxed">
+                                    <div class="font-bold text-fuchsia-400 mb-1.5 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-shield-halved"></i> Hướng dẫn bảo mật phiên
+                                    </div>
+                                    <div class="space-y-1.5 text-slate-300">
+                                        <div><strong>• Duy trì đăng nhập:</strong> Tắt tự động đăng xuất sau 30 phút không hoạt động và giữ phiên đăng nhập qua ngày (dành cho máy cá nhân).</div>
+                                        <div><strong>• Máy dùng chung:</strong> Kích hoạt tự thoát 30 phút và tự động đăng xuất tài khoản Google khi nhấn Logout để bảo mật.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex flex-col gap-4 w-full">
                             <div class="flex items-center gap-2 justify-center text-[13px] font-semibold text-gray-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm py-2 px-4 rounded-xl border border-white/60 dark:border-slate-700/60 shadow-sm">
                                 <div class="w-2 h-2 rounded-full" [class.bg-fuchsia-500]="qrStatus() === 'waiting'" [class.animate-pulse]="qrStatus() === 'waiting'" [class.bg-gray-300]="qrStatus() !== 'waiting'"></div>
                                 {{ qrStatus() === 'waiting' ? 'Đang chờ quét mã...' : (qrStatus() === 'scanned' ? 'Đã quét! Vui lòng xác nhận.' : 'Trạng thái: ' + qrStatus()) }}
