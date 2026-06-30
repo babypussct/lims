@@ -6,6 +6,7 @@ import { AuthService } from '../services/auth.service';
 import { StateService } from '../services/state.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
+import { LogoComponent } from '../../shared/components/logo.component';
 import { filter } from 'rxjs/operators';
 
 interface MenuItem {
@@ -43,7 +44,7 @@ interface VisitedPage {
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule, NotificationBellComponent],
+  imports: [CommonModule, RouterModule, NotificationBellComponent, LogoComponent],
   template: `
     <!-- INSTALL GUIDE OVERLAY (iOS Style) -->
     @if (showInstallGuide()) {
@@ -51,7 +52,7 @@ interface VisitedPage {
             <div class="w-full max-w-sm px-6 text-center animate-slide-up" (click)="$event.stopPropagation()">
                 <div class="mb-6 flex justify-center">
                     <div class="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center">
-                        <i class="fa-solid fa-flask text-3xl text-indigo-600"></i>
+                        <app-logo size="36px" mode="currentColor" class="text-indigo-600"></app-logo>
                     </div>
                 </div>
                 <h3 class="text-white font-bold text-xl mb-2">Cài đặt LIMS Pro</h3>

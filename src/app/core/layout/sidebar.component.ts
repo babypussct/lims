@@ -8,6 +8,7 @@ import { QrGlobalService } from '../services/qr-global.service';
 import { ToastService } from '../services/toast.service';
 import { getAvatarUrl } from '../../shared/utils/utils';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
+import { LogoComponent } from '../../shared/components/logo.component';
 
 export interface MenuItem {
   name: string;
@@ -27,7 +28,7 @@ export interface MenuGroup {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, NotificationBellComponent],
+  imports: [CommonModule, FormsModule, NotificationBellComponent, LogoComponent],
   template: `
     <aside class="fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-soft-xl z-50 flex flex-col transition-all duration-300 ease-in-out"
            [class.w-64]="!state.sidebarCollapsed()"
@@ -42,7 +43,7 @@ export interface MenuGroup {
            (click)="state.toggleSidebarCollapse()"
            title="Nhấn để Thu gọn / Mở rộng">
          <div class="w-8 h-8 rounded-lg bg-gradient-soft flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-110">
-             <i class="fa-solid fa-flask text-white text-xs"></i>
+             <app-logo size="18px" mode="currentColor" class="text-white"></app-logo>
          </div>
          @if (!state.sidebarCollapsed()) {
             <span class="font-bold text-gray-700 dark:text-slate-200 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">

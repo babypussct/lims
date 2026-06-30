@@ -1,5 +1,6 @@
 
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -129,7 +130,7 @@ export class AuthService {
 
     // Yêu cầu LIMS tự động thoát khi đóng trình duyệt/tab (hoặc giữ nếu lưu trạng thái)
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
+    setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
       console.warn('[Auth] Failed to set session persistence:', err);
     });
 
@@ -153,10 +154,10 @@ export class AuthService {
       this.isProcessingRedirect.set(true); // ← Khoá màn hình Login
       
       const credential = GoogleAuthProvider.credential(pendingIdToken);
-      signInWithCredential(this.auth, credential).then(result => {
+      signInWithCredential(this.auth, credential).then((result: any) => {
           console.log('[Auth] Successfully authenticated with ID Token:', result.user.email);
           // onAuthStateChanged sẽ set isProcessingRedirect = false sau khi syncUser xong
-      }).catch(e => {
+      }).catch((e: any) => {
           console.error('[Auth] Failed to authenticate with ID Token:', e);
           this.isProcessingRedirect.set(false); // Mở lại Login nếu lỗi
       });
@@ -207,7 +208,7 @@ export class AuthService {
 
   async login(email: string, pass: string) {
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
       console.warn('[Auth] Failed to set session persistence dynamically:', err);
     });
 
@@ -228,7 +229,7 @@ export class AuthService {
     provider.setCustomParameters({ prompt: 'select_account' });
 
     const rememberSession = localStorage.getItem('lims_remember_session') === 'true';
-    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch(err => {
+    await setPersistence(this.auth, rememberSession ? browserLocalPersistence : browserSessionPersistence).catch((err: any) => {
       console.warn('[Auth] Failed to set session persistence dynamically:', err);
     });
 
@@ -258,7 +259,7 @@ export class AuthService {
    * Completely bypasses Firebase's cross-domain redirect handlers.
    */
   private _authViaDirectOidc(): void {
-      const config = require('../../../environments/environment').environment.googleDrive;
+      const config = environment.googleDrive;
       if (!config?.clientId) {
           console.error('[Auth] No clientId found for manual OIDC redirect.');
           return;
@@ -333,7 +334,7 @@ export class AuthService {
         console.warn("[Auth] Failed to sync roles_config:", err);
     });
     
-    this.userUnsub = onSnapshot(userRef, async (snap) => {
+    this.userUnsub = onSnapshot(userRef, async (snap: any) => {
         try {
             if (snap.exists()) {
               const data = snap.data() as UserProfile;
@@ -343,7 +344,7 @@ export class AuthService {
               if (firebaseUser.photoURL && data.photoURL !== firebaseUser.photoURL) {
                   data.photoURL = firebaseUser.photoURL;
                   // Don't await here to avoid blocking UI sync, let it update in background
-                  updateDoc(userRef, { photoURL: firebaseUser.photoURL }).catch(e => console.error("Could not sync photoURL to Firestore", e));
+                  updateDoc(userRef, { photoURL: firebaseUser.photoURL }).catch((e: any) => console.error("Could not sync photoURL to Firestore", e));
               }
               
               this.currentUser.set(data);
@@ -365,7 +366,7 @@ export class AuthService {
         } finally {
             this.isAuthReady.set(true);
         }
-    }, async (error) => {
+    }, async (error: any) => {
         console.error("Error listening to user:", error);
         
         // Critical Fix: If we get a permission denied or listener is cancelled, 
@@ -392,7 +393,7 @@ export class AuthService {
 
   listenToAuthSession(sessionId: string, onUpdate: (session: AuthSession) => void) {
       const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/auth_sessions/${sessionId}`);
-      return onSnapshot(ref, (snap) => {
+      return onSnapshot(ref, (snap: any) => {
           if (snap.exists()) {
               onUpdate({ id: snap.id, ...snap.data() } as AuthSession);
           }
@@ -429,7 +430,7 @@ export class AuthService {
 
   isGoogleUser(): boolean {
       const authObj = getAuth(this.fb.app);
-      return authObj.currentUser?.providerData?.some(p => p.providerId === 'google.com') || false;
+      return authObj.currentUser?.providerData?.some((p: any) => p.providerId === 'google.com') || false;
   }
 
   generateDeterministicPassword(uid: string): string {
@@ -439,7 +440,7 @@ export class AuthService {
 
   async linkPasswordProviderIfNeeded(user: User) {
       try {
-          const hasPassword = user.providerData.some(p => p.providerId === 'password');
+          const hasPassword = user.providerData.some((p: any) => p.providerId === 'password');
           if (!hasPassword && user.email) {
               const pass = this.generateDeterministicPassword(user.uid);
               const credential = EmailAuthProvider.credential(user.email, pass);
@@ -487,14 +488,14 @@ export class AuthService {
     await this.initializeDefaultRolesIfNeeded();
     
     const rolesRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/roles_config`);
-    this.rolesUnsub = onSnapshot(rolesRef, (snap) => {
+    this.rolesUnsub = onSnapshot(rolesRef, (snap: any) => {
         const config: Record<string, string[]> = {};
-        snap.forEach((doc) => {
+        snap.forEach((doc: any) => {
             const data = doc.data();
             config[doc.id] = data['permissions'] || [];
         });
         this.rolesConfig.set(config);
-    }, (err) => {
+    }, (err: any) => {
         console.warn("[Auth] Failed to listen to roles_config:", err);
     });
   }

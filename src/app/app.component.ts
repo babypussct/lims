@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 
 import { SidebarComponent } from './core/layout/sidebar.component';
+import { LogoComponent } from './shared/components/logo.component';
 import { BottomNavComponent } from './core/layout/bottom-nav.component';
 import { ConfirmationModalComponent } from './shared/components/confirmation-modal/confirmation-modal.component';
 import { PrintPreviewModalComponent } from './shared/components/print-preview-modal/print-preview-modal.component';
@@ -36,7 +37,8 @@ import { filter } from 'rxjs/operators';
     Gs1InfoModalComponent,
     LoginComponent,
     NotificationPanelComponent,
-    ProgressOverlayComponent
+    ProgressOverlayComponent,
+    LogoComponent
   ],
   template: `
     @if (isPrintMode()) {
@@ -161,8 +163,8 @@ import { filter } from 'rxjs/operators';
 
       @if (!auth.isAuthReady()) {
         <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
-           <i class="fa-solid fa-flask text-5xl text-blue-500 animate-pulse mb-4"></i>
-           <div class="text-white font-bold tracking-widest animate-pulse">NAFIQPM6 | LIMS CLOUD</div>
+           <app-logo size="64px" mode="multicolor" class="animate-pulse mb-4"></app-logo>
+           <div class="text-white font-bold tracking-widest animate-pulse mt-4">NAFIQPM6 | LIMS CLOUD</div>
         </div>
       } @else if (auth.isProcessingRedirect()) {
         <!-- Overlay khi đang xử lý token từ Google redirect — không cho tương tác trang login -->

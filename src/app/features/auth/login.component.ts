@@ -7,13 +7,14 @@ import { ToastService } from '../../core/services/toast.service';
 import { Unsubscribe } from 'firebase/firestore';
 import { PwaInstallPromptComponent } from '../../shared/components/pwa-install-prompt.component';
 import { StateService } from '../../core/services/state.service';
+import { LogoComponent } from '../../shared/components/logo.component';
 
 declare let QRious: any;
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, PwaInstallPromptComponent],
+  imports: [CommonModule, FormsModule, PwaInstallPromptComponent, LogoComponent],
   template: `
     @if (!auth.currentUser()) {
       <div class="min-h-screen w-full flex items-center justify-center overflow-hidden relative font-sans selection:bg-fuchsia-500 selection:text-white bg-[#f8fafc] dark:bg-slate-950">
@@ -38,7 +39,7 @@ declare let QRious: any;
 
                 <div class="text-center mb-8 relative z-10">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[linear-gradient(310deg,#7928ca,#ff0080)] shadow-lg shadow-pink-500/30 text-white mb-6 transform hover:scale-105 transition-transform duration-300">
-                        <i class="fa-solid fa-microscope text-3xl"></i>
+                        <app-logo size="36px" mode="currentColor" class="text-white"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
                     <p class="text-gray-500 dark:text-slate-400 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>
@@ -531,7 +532,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
       // 4. Listen for Approval
       try {
-          this.sessionSub = this.auth.listenToAuthSession(this.currentSessionId, (session) => {
+          this.sessionSub = this.auth.listenToAuthSession(this.currentSessionId, (session: any) => {
               if (session.status === 'approved' && session.encryptedCreds) {
                   this.handleApproval(session.encryptedCreds);
               }
