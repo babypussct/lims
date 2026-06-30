@@ -13,18 +13,14 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   host: {
-    '[style.display]': '"inline-flex"',
-    '[style.align-items]': '"center"',
-    '[style.justify-content]': '"center"',
-    '[style.flex-shrink]': '"0"'
+    'class': 'inline-flex items-center justify-center shrink-0',
+    '[style.width]': 'size',
+    '[style.height]': 'size'
   },
   template: `
     <img
       [src]="getIconPath()"
-      [style.width]="size"
-      [style.height]="size"
-      class="object-contain select-none pointer-events-none"
-      [ngStyle]="{ display: 'block', flexShrink: '0' }"
+      class="w-full h-full object-contain select-none pointer-events-none block shrink-0"
       alt="LIMS NAFIQPM6 Logo"
     />
   `

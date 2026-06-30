@@ -42,7 +42,7 @@ export interface MenuGroup {
            [class.justify-center]="state.sidebarCollapsed()"
            (click)="state.toggleSidebarCollapse()"
            title="Nhấn để Thu gọn / Mở rộng">
-         <div class="w-10 h-10 rounded-xl overflow-visible flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105">
+         <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105">
              <app-logo size="40px"></app-logo>
          </div>
          @if (!state.sidebarCollapsed()) {

@@ -51,7 +51,7 @@ interface VisitedPage {
         <div class="fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm fade-in flex flex-col items-center justify-end pb-10" (click)="toggleInstallGuide()">
             <div class="w-full max-w-sm px-6 text-center animate-slide-up" (click)="$event.stopPropagation()">
                 <div class="mb-6 flex justify-center">
-                    <div class="w-24 h-24 rounded-[2rem] overflow-visible shadow-xl flex items-center justify-center">
+                    <div class="w-24 h-24 rounded-[2rem] overflow-hidden shadow-xl flex items-center justify-center">
                         <app-logo size="96px"></app-logo>
                     </div>
                 </div>
