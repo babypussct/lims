@@ -42,8 +42,8 @@ export interface MenuGroup {
            [class.justify-center]="state.sidebarCollapsed()"
            (click)="state.toggleSidebarCollapse()"
            title="Nhấn để Thu gọn / Mở rộng">
-         <div class="w-8 h-8 rounded-lg bg-gradient-soft flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-110">
-             <app-logo size="18px" mode="currentColor" class="text-white"></app-logo>
+         <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-110">
+             <app-logo size="32px"></app-logo>
          </div>
          @if (!state.sidebarCollapsed()) {
             <span class="font-bold text-gray-700 dark:text-slate-200 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">

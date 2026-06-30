@@ -51,8 +51,8 @@ interface VisitedPage {
         <div class="fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm fade-in flex flex-col items-center justify-end pb-10" (click)="toggleInstallGuide()">
             <div class="w-full max-w-sm px-6 text-center animate-slide-up" (click)="$event.stopPropagation()">
                 <div class="mb-6 flex justify-center">
-                    <div class="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center">
-                        <app-logo size="36px" mode="currentColor" class="text-indigo-600"></app-logo>
+                    <div class="w-16 h-16 rounded-3xl overflow-hidden shadow-xl flex items-center justify-center">
+                        <app-logo size="64px"></app-logo>
                     </div>
                 </div>
                 <h3 class="text-white font-bold text-xl mb-2">Cài đặt LIMS Pro</h3>
