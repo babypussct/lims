@@ -38,8 +38,8 @@ declare let QRious: any;
                 <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
 
                 <div class="text-center mb-8 relative z-10">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-indigo-500/10 mb-6 transform hover:scale-105 transition-transform duration-300">
-                        <app-logo size="64px"></app-logo>
+                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] overflow-visible shadow-lg shadow-indigo-500/10 mb-6 transform hover:scale-105 transition-transform duration-300">
+                        <app-logo size="96px"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
                     <p class="text-gray-500 dark:text-slate-400 text-[13px] mt-2 font-medium">Hệ thống Quản trị Dữ liệu Phòng thí nghiệm</p>

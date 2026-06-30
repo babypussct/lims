@@ -163,7 +163,7 @@ import { filter } from 'rxjs/operators';
 
       @if (!auth.isAuthReady()) {
          <div class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-slate-900">
-            <app-logo size="128px" class="animate-pulse mb-4"></app-logo>
+            <app-logo size="180px" class="animate-pulse mb-4"></app-logo>
             <div class="text-white font-bold tracking-widest animate-pulse mt-4">NAFIQPM6 | LIMS CLOUD</div>
          </div>
       } @else if (auth.isProcessingRedirect()) {

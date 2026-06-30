@@ -12,6 +12,12 @@ import { CommonModule } from '@angular/common';
   selector: 'app-logo',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    '[style.display]': '"inline-flex"',
+    '[style.align-items]': '"center"',
+    '[style.justify-content]': '"center"',
+    '[style.flex-shrink]': '"0"'
+  },
   template: `
     <img
       [src]="getIconPath()"

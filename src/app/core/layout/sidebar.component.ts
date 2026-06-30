@@ -42,12 +42,12 @@ export interface MenuGroup {
            [class.justify-center]="state.sidebarCollapsed()"
            (click)="state.toggleSidebarCollapse()"
            title="Nhấn để Thu gọn / Mở rộng">
-         <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-110">
-             <app-logo size="32px"></app-logo>
+         <div class="w-10 h-10 rounded-xl overflow-visible flex items-center justify-center shadow-soft-md shrink-0 transition-transform group-hover:scale-105">
+             <app-logo size="40px"></app-logo>
          </div>
          @if (!state.sidebarCollapsed()) {
-            <span class="font-bold text-gray-700 dark:text-slate-200 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
-                LIMS Cloud <span class="font-light text-gray-400 dark:text-slate-500">Pro</span>
+            <span class="font-bold text-gray-700 dark:text-slate-200 text-sm tracking-wide ml-3 fade-in group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors flex items-center h-10">
+                LIMS Cloud <span class="font-light text-gray-400 dark:text-slate-500 ml-1">Pro</span>
             </span>
          }
          <button (click)="state.closeSidebar(); $event.stopPropagation()" class="md:hidden ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 active:bg-gray-200 dark:active:bg-slate-700">
