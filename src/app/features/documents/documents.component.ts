@@ -34,30 +34,33 @@ type ViewMode = 'list' | 'grid';
   template: `
     <div class="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-900 p-4 md:p-6 relative animate-fade-in">
       
-      <!-- Header -->
-      <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
-            <i class="fa-solid fa-folder-open text-fuchsia-500"></i>
-            Phiếu giao nhận mẫu
-          </h1>
+      <!-- Header Card -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-800/30 shadow-sm shrink-0">
+            <i class="fa-solid fa-folder-open text-base"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Phiếu Giao Nhận Mẫu</h2>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản lý và theo dõi các tài liệu giao nhận mẫu phòng thí nghiệm.</p>
+          </div>
         </div>
 
         <!-- Toolbar Actions -->
         <div class="flex items-center gap-2">
           <!-- View Toggle -->
-          <div class="flex items-center bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center bg-slate-50 dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-inner">
             <button (click)="viewMode.set('list')" 
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-                    [class.bg-slate-100]="viewMode() === 'list'" [class.dark:bg-slate-700]="viewMode() === 'list'"
-                    [class.text-fuchsia-600]="viewMode() === 'list'" [class.text-slate-400]="viewMode() !== 'list'"
+                    [class.bg-white]="viewMode() === 'list'" [class.dark:bg-slate-800]="viewMode() === 'list'"
+                    [class.text-fuchsia-600]="viewMode() === 'list'" [class.text-slate-450]="viewMode() !== 'list'"
                     title="Chế độ danh sách">
               <i class="fa-solid fa-list"></i>
             </button>
             <button (click)="viewMode.set('grid')" 
                     class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-                    [class.bg-slate-100]="viewMode() === 'grid'" [class.dark:bg-slate-700]="viewMode() === 'grid'"
-                    [class.text-fuchsia-600]="viewMode() === 'grid'" [class.text-slate-400]="viewMode() !== 'grid'"
+                    [class.bg-white]="viewMode() === 'grid'" [class.dark:bg-slate-800]="viewMode() === 'grid'"
+                    [class.text-fuchsia-600]="viewMode() === 'grid'" [class.text-slate-455]="viewMode() !== 'grid'"
                     title="Chế độ lưới">
               <i class="fa-solid fa-border-all"></i>
             </button>
@@ -66,10 +69,10 @@ type ViewMode = 'list' | 'grid';
           <!-- Refresh Button -->
           <button (click)="forceRefresh()" 
                   [disabled]="!isOnline()"
-                  class="h-10 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold"
                   title="Làm mới dữ liệu">
             <i class="fa-solid fa-rotate-right" [class.fa-spin]="loading() && isOnline()"></i>
-            <span class="hidden sm:inline text-sm font-medium">Làm mới</span>
+            <span class="hidden sm:inline font-bold">Làm mới</span>
           </button>
         </div>
       </div>

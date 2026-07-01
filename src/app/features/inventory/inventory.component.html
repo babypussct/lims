@@ -1,5 +1,17 @@
-    <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative">
-      
+    <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-2 md:p-4">
+      <!-- Header Area -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0 mx-4 md:mx-0">
+          <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
+                  <i class="fa-solid fa-boxes-stacked text-base"></i>
+              </div>
+              <div>
+                  <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản lý Kho Hóa chất</h2>
+                  <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhật ký tồn kho, thông tin định lượng và cảnh báo hạn dùng.</p>
+              </div>
+          </div>
+      </div>
+
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
       @if (activeTab() !== 'labels') {
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 shrink-0 pt-4 px-4 md:pt-0 md:px-0">

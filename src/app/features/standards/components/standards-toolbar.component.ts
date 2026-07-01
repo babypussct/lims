@@ -6,14 +6,15 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0 bg-white dark:bg-slate-800 p-2 px-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none">
-      <div>
-          <h2 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm dark:shadow-none">
-                  <i class="fa-solid fa-vial-circle-check text-xs"></i>
-              </div>
-              Quản lý Chuẩn Đối Chiếu
-          </h2>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm dark:shadow-none mb-4">
+      <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
+              <i class="fa-solid fa-vial-circle-check text-base"></i>
+          </div>
+          <div>
+              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản lý Chuẩn Đối Chiếu</h2>
+              <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản lý danh sách chất chuẩn, in tem và cập nhật thông tin lô sản xuất.</p>
+          </div>
       </div>
       
       <div class="flex gap-2 items-center">

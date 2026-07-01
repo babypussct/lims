@@ -19,32 +19,30 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
   standalone: true,
   imports: [CommonModule, RouterModule, SkeletonComponent, DateRangeFilterComponent, ReportHubModalComponent, MergeRunsModalComponent],
   template: `
-    <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10">
+    <div class="h-full flex flex-col fade-in relative bg-slate-50/30 dark:bg-slate-950/10 p-2 md:p-4">
 
       <!-- ══════════════════════════════════════════════════════
            HEADER: Title + Status Tabs
       ══════════════════════════════════════════════════════ -->
-      <div class="shrink-0 px-6 pt-6 pb-0">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+      <div class="shrink-0 pb-0">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
           <!-- Page Title -->
-          <div>
-            <h2 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 tracking-tight">
-              <span class="w-8 h-8 rounded-xl bg-fuchsia-600 flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0">
-                <i class="fa-solid fa-square-poll-vertical text-white text-sm"></i>
-              </span>
-              Tra cứu & Quản lý Kết quả Mẻ Chạy
-            </h2>
-            <p class="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 ml-10">
-              Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.
-            </p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-800/30 shadow-sm shrink-0">
+              <i class="fa-solid fa-square-poll-vertical text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Tra cứu & Quản lý Kết quả Mẻ Chạy</h2>
+              <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động.</p>
+            </div>
           </div>
 
           <!-- Status Filter Tabs -->
-          <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-1 rounded-2xl shadow-sm shrink-0 self-start lg:self-auto">
+          <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-2xl shadow-inner shrink-0 overflow-x-auto max-w-full scrollbar-none self-stretch sm:self-start lg:self-auto">
             <button (click)="filterStatus.set('all')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'all'
-                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-sm'
+                      ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-150 shadow-sm'
                       : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
               Tất cả
               @if(filteredCount('all') > 0) {
@@ -54,8 +52,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <button (click)="filterStatus.set('pending')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'pending'
-                      ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 shadow-sm border border-amber-100/60 dark:border-amber-900/20'
-                      : 'text-slate-450 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
+                      ? 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 shadow-sm border border-amber-100/60 dark:border-amber-900/20'
+                      : 'text-slate-455 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400'">
               Chờ nhập
               @if(filteredCount('pending') > 0) {
                 <span class="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('pending')}}</span>
@@ -64,25 +62,26 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <button (click)="filterStatus.set('draft')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'draft'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 shadow-sm border border-indigo-100/60 dark:border-indigo-900/20'
-                      : 'text-slate-450 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
+                      ? 'bg-indigo-50 dark:bg-indigo-955/20 text-indigo-700 dark:text-indigo-400 shadow-sm border border-indigo-100/60 dark:border-indigo-900/20'
+                      : 'text-slate-455 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'">
               Đang nháp
               @if(filteredCount('draft') > 0) {
-                <span class="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('draft')}}</span>
+                <span class="bg-indigo-100 dark:bg-indigo-955/40 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('draft')}}</span>
               }
             </button>
             <button (click)="filterStatus.set('completed')"
                     class="px-4 py-2 text-xs font-black rounded-xl transition duration-150 active:scale-95 flex items-center gap-1.5"
                     [class]="filterStatus() === 'completed'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 shadow-sm border border-emerald-100/60 dark:border-emerald-900/20'
-                      : 'text-slate-450 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
+                      ? 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 shadow-sm border border-emerald-100/60 dark:border-emerald-900/20'
+                      : 'text-slate-455 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'">
               Hoàn thành
               @if(filteredCount('completed') > 0) {
-                <span class="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('completed')}}</span>
+                <span class="bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums">{{filteredCount('completed')}}</span>
               }
             </button>
           </div>
         </div>
+      </div>
 
         <!-- ══════════════════════════════════════════════════════
              KPI STRIP: 3 số liệu gọn + SOP distribution

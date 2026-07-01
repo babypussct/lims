@@ -1,21 +1,27 @@
     <div class="pb-20 fade-in font-sans">
         
         <!-- HEADER: Welcome & Scan -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                    Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
-                </h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
+                    <i class="fa-solid fa-house text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">
+                        Xin chào, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{{auth.currentUser()?.displayName}}</span>!
+                    </h1>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Hệ thống Quản lý Phòng thí nghiệm (LIMS) sẵn sàng.</p>
+                </div>
             </div>
             
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
                 <!-- Calls Global Service (Hidden on md and larger screens) -->
                 <button (click)="qrService.startScan()" class="md:hidden px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-lg shadow-slate-300 dark:shadow-none hover:bg-black dark:hover:bg-slate-600 transition flex items-center gap-2 font-bold text-xs uppercase tracking-wide active:scale-95">
                     <i class="fa-solid fa-qrcode"></i> Quét Mã
                 </button>
             </div>
         </div>
+
 
         <!-- SECTION 1: KPI CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">

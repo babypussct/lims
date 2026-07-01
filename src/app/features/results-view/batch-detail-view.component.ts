@@ -24,23 +24,22 @@ import { MasterTargetService } from '../targets/master-target.service';
     <div class="h-full flex flex-col animate-fade-in bg-slate-50/60 dark:bg-slate-900 p-4 lg:p-6 space-y-4 lg:space-y-5">
       
       <!-- TOP HEADER & BREADCRUMBS -->
-      <div class="flex flex-col gap-4 shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-4 lg:p-5 rounded-3xl shadow-sm">
+      <div class="flex flex-col gap-4 shrink-0 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
         <!-- Title and actions row -->
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div class="flex items-center gap-3.5">
+          <div class="flex items-center gap-3">
             <button (click)="goBack()" 
-                    class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95 border border-slate-200/50 dark:border-slate-700">
-              <i class="fa-solid fa-arrow-left text-xs"></i>
+                    class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 group shrink-0">
+              <i class="fa-solid fa-arrow-left group-hover:-translate-x-0.5 transition-transform text-base"></i>
             </button>
             <div>
-              <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+              <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-0.5">
                 <span>Kết quả phân tích</span>
-                <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-600"></i>
-                <span class="text-indigo-600 dark:text-indigo-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
+                <i class="fa-solid fa-chevron-right text-[8px] text-slate-300 dark:text-slate-650"></i>
+                <span class="text-indigo-650 dark:text-indigo-400">{{ run() ? run().sopName : 'Đang tải...' }}</span>
               </div>
-              <h3 class="text-lg font-extrabold text-slate-800 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
+              <h3 class="text-xl font-black text-slate-855 dark:text-slate-100 flex flex-wrap items-center gap-2 m-0 tracking-tight">
                 Chi Tiết Kết Quả Mẻ Phân Tích
-                
                 @if (run() && draft() && config()) {
                   <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border shadow-xs">
                     <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{

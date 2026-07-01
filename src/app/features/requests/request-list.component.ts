@@ -17,16 +17,19 @@ import { Router } from '@angular/router';
   imports: [CommonModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent],
   template: `
     <div class="h-full flex flex-col fade-in relative">
-        <!-- Header & Tabs -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 mb-6">
-            <div>
-                <h2 class="text-2xl font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <i class="fa-solid fa-list-check text-blue-600 dark:text-blue-500"></i> Quản lý Yêu cầu
-                </h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Phê duyệt yêu cầu và in phiếu pha chế.</p>
+        <!-- Header Card -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
+                    <i class="fa-solid fa-list-check text-base"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Quản lý Yêu cầu</h2>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Phê duyệt yêu cầu và in phiếu pha chế.</p>
+                </div>
             </div>
             
-            <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl self-start border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto max-w-full scrollbar-none shrink-0 self-stretch sm:self-start">
                <button (click)="currentTab.set('pending')" 
                        class="px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2" 
                        [class]="currentTab() === 'pending' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">

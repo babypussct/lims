@@ -21,13 +21,15 @@ declare let QRious: any;
   template: `
     <div class="w-full h-screen overflow-y-auto max-w-7xl mx-auto pb-20 fade-in px-4 md:px-0">
         <!-- HEADER -->
-        <div class="flex items-center gap-4 mb-8 pt-6">
-            <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-300">
-                <i class="fa-solid fa-qrcode text-xl"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Truy xuất Nguồn gốc</h1>
-                <p class="text-sm text-slate-500 font-medium">Chi tiết nhật ký hoạt động và thông tin minh bạch.</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-350 flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-sm shrink-0">
+                    <i class="fa-solid fa-qrcode text-base"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Truy xuất Nguồn gốc</h2>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Chi tiết nhật ký hoạt động và thông tin minh bạch.</p>
+                </div>
             </div>
         </div>
 

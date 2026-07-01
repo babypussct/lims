@@ -20,26 +20,28 @@ import { ConfigRolesComponent } from './components/config-roles.component';
   imports: [CommonModule, FormsModule, ConfigGeneralComponent, ConfigSafetyComponent, ConfigUsersComponent, ConfigRolesComponent],
   template: `
     <div class="w-full max-w-7xl mx-auto space-y-6 pb-24 fade-in px-4 md:px-8">
-        
-        <!-- Header -->
+        <!-- Header Card -->
         @if(state.isAdmin()) {
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-3xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
-                        <i class="fa-solid fa-gears text-slate-400 dark:text-slate-500"></i> Cấu hình Hệ thống
-                    </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium ml-1">Quản trị viên: {{auth.currentUser()?.displayName}}</p>
-                </div>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
                 <div class="flex items-center gap-3">
-                    <button (click)="enableNotifications()" class="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-full transition flex items-center gap-2 shadow-sm">
-                        <i class="fa-regular fa-bell"></i> Bật Thông Báo
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
+                        <i class="fa-solid fa-gears text-base"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Cấu hình Hệ thống</h2>
+                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Quản trị viên: {{auth.currentUser()?.displayName}}.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button (click)="enableNotifications()" class="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition duration-200 active:scale-95">
+                        <i class="fa-regular fa-bell text-sm"></i> Bật Thông Báo
                     </button>
-                    <div class="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
                         Version: <span class="text-blue-600 dark:text-blue-400 font-mono">{{state.systemVersion()}}</span>
                     </div>
                 </div>
             </div>
-
             <!-- TABS -->
             <div class="flex gap-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar whitespace-nowrap">
                 <button (click)="activeTab.set('profile')" class="pb-3 px-2 text-sm font-bold border-b-2 transition flex items-center gap-2 min-w-max shrink-0" [class]="activeTab() === 'profile' ? 'border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'">
