@@ -81,7 +81,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </button>
           </div>
         </div>
-      </div>
 
         <!-- ══════════════════════════════════════════════════════
              KPI STRIP: 3 số liệu gọn + SOP distribution
