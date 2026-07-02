@@ -109,7 +109,16 @@ export class SmartBatchComponent {
   formatSampleList = formatSampleList;
 
   get GHS_DICT() { return GHS_DICTIONARY; }
-  step = signal<number>(1);
+  step = signal<number>(0);
+  smartBatchMode = signal<'multiple' | 'single'>('multiple');
+
+  // Single mode state
+  singleSampleCode = signal<string>('');
+  singleSelectedTargets = signal<Set<string>>(new Set());
+  singleMatrixType = signal<string | undefined>(undefined);
+  singleTargetSearch = signal<string>('');
+  singleForcedSopId = signal<string | undefined>(undefined);
+
   blocks = signal<JobBlock[]>([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
   batches = signal<ProposedBatch[]>([]);
   unmappedTasks = signal<AnalysisTask[]>([]);
@@ -280,10 +289,118 @@ export class SmartBatchComponent {
     return map;
   });
 
-  totalUniqueSamples = computed(() => { const allSamples = new Set<string>(); this.blocks().forEach(b => { const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s); samples.forEach(s => allSamples.add(s)); }); return allSamples.size; });
-  
+  singleSopSuggestions = computed(() => {
+    if (this.singleSelectedTargets().size === 0) return [];
+    
+    const reqTargetIds = Array.from(this.singleSelectedTargets());
+    const allTargets = this.allAvailableTargets();
+    const active = this.activeSops();
+    const inventory = this.state.inventoryMap();
+    const matrixType = this.singleMatrixType();
+    
+    const candidates: SopSuggestion[] = [];
 
-  totalUniqueTargets = computed(() => { const allTargets = new Set<string>(); this.blocks().forEach(b => { b.selectedTargets.forEach(t => allTargets.add(t)); }); return allTargets.size; });
+    for (const sop of active) {
+      if (!sop.targets || sop.targets.length === 0) continue;
+      
+      // Matrix Filter
+      const sopMatrices = sop.matrixTags || [];
+      if (sopMatrices.length > 0 && matrixType && !sopMatrices.includes(matrixType)) {
+          continue; // doesn't match matrix
+      }
+
+      const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
+      
+      const covered: {id: string, name: string}[] = [];
+      const missing: {id: string, name: string}[] = [];
+      
+      reqTargetIds.forEach(reqId => {
+          const foundName = allTargets.find(t => t.uniqueKey === reqId)?.name || reqId;
+          if (sopTargetIds.has(reqId)) {
+              covered.push({id: reqId, name: foundName});
+          } else {
+              missing.push({id: reqId, name: foundName});
+          }
+      });
+
+      if (covered.length === 0) continue; // No overlap
+
+      const extra: {id: string, name: string}[] = [];
+      sop.targets.forEach(t => {
+          const id = getCanonicalId(t.name);
+          if (!this.singleSelectedTargets().has(id)) {
+              extra.push({id, name: t.name});
+          }
+      });
+
+      // Check stock
+      let isMissingStock = false;
+      if (sop.consumables) {
+          for (const c of sop.consumables) {
+              if (c.type === 'simple') {
+                  const stockItem = inventory[c.name];
+                  if (!stockItem || stockItem.stock <= 0) {
+                      isMissingStock = true;
+                      break;
+                  }
+              }
+          }
+      }
+
+      const ratio = covered.length / sop.targets.length;
+
+      candidates.push({
+          sop,
+          coverageCount: covered.length,
+          totalRequired: reqTargetIds.length,
+          coverageRatio: ratio,
+          coveredTargets: covered,
+          missingTargets: missing,
+          extraTargets: extra,
+          isMissingStock,
+          isBest: false,
+          isPartial: missing.length > 0
+      });
+    }
+
+    const fullMatches = candidates.filter(c => !c.isPartial);
+    let results: SopSuggestion[] = [];
+
+    if (fullMatches.length > 0) {
+        results = fullMatches.sort((a, b) => b.coverageRatio - a.coverageRatio);
+    } else {
+        results = candidates.sort((a, b) => b.coverageCount - a.coverageCount || b.coverageRatio - a.coverageRatio).slice(0, 5);
+    }
+
+    if (results.length > 0) {
+        results[0].isBest = true;
+    }
+
+    return results;
+  });
+
+  totalUniqueSamples = computed(() => {
+    if (this.smartBatchMode() === 'single') {
+      return this.singleSampleCode().trim() ? 1 : 0;
+    }
+    const allSamples = new Set<string>();
+    this.blocks().forEach(b => {
+      const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(s => s);
+      samples.forEach(s => allSamples.add(s));
+    });
+    return allSamples.size;
+  });
+
+  totalUniqueTargets = computed(() => {
+    if (this.smartBatchMode() === 'single') {
+      return this.singleSelectedTargets().size;
+    }
+    const allTargets = new Set<string>();
+    this.blocks().forEach(b => {
+      b.selectedTargets.forEach(t => allTargets.add(t));
+    });
+    return allTargets.size;
+  });
   
   hasCriticalMissing = computed(() => this.batches().some(b => b.status === 'missing_stock'));
   
@@ -489,13 +606,17 @@ export class SmartBatchComponent {
       this.previewSop.set(null);
   }
 
-  assignSopFromPreview() {
-      const data = this.previewSop();
-      if (data) {
-          this.updateBlockForcedSop(data.blockIndex, data.suggestion.sop.id);
-          this.closeSopPreview();
-      }
-  }
+   assignSopFromPreview() {
+       const data = this.previewSop();
+       if (data) {
+           if (data.blockIndex === -1) {
+               this.singleForcedSopId.set(data.suggestion.sop.id);
+           } else {
+               this.updateBlockForcedSop(data.blockIndex, data.suggestion.sop.id);
+           }
+           this.closeSopPreview();
+       }
+   }
   
   countSamples(raw: string): number { return raw.split('\n').filter(s => s.trim()).length; }
   
@@ -526,6 +647,51 @@ export class SmartBatchComponent {
       this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set(), forcedSopId: undefined }; return n; });
   }
 
+  getFilteredSingleTargets() {
+      const term = this.singleTargetSearch().toLowerCase().trim();
+      const all = this.allAvailableTargets();
+      if (!term) return all;
+      return all.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
+  }
+  
+  toggleSingleTarget(targetId: string) {
+      this.singleSelectedTargets.update(set => {
+          const next = new Set(set);
+          if (next.has(targetId)) next.delete(targetId); else next.add(targetId);
+          return next;
+      });
+  }
+
+  selectAllSingleTargets() {
+      const filtered = this.getFilteredSingleTargets();
+      this.singleSelectedTargets.update(set => {
+          const next = new Set(set);
+          filtered.forEach(t => next.add(t.uniqueKey));
+          return next;
+      });
+  }
+
+  deselectAllSingleTargets() {
+      this.singleSelectedTargets.set(new Set());
+  }
+
+  openSingleTargetGroupModal() {
+      this.currentBlockIndexForGroupImport.set(-2); // Special value for single sample mode
+      if (this.availableGroups().length === 0) {
+          this.targetService.getAllGroups().then(groups => this.availableGroups.set(groups));
+      }
+      this.showGroupModal.set(true);
+  }
+
+  selectMode(mode: 'multiple' | 'single') {
+      this.smartBatchMode.set(mode);
+      this.step.set(1);
+  }
+
+  goBackToStep0() {
+      this.step.set(0);
+  }
+
   // --- GROUP MODAL ---
   async openGroupModal(blockIndex: number) {
       this.currentBlockIndexForGroupImport.set(blockIndex);
@@ -536,7 +702,14 @@ export class SmartBatchComponent {
   }
   importGroup(g: TargetGroup) {
       const idx = this.currentBlockIndexForGroupImport();
-      if (idx >= 0) {
+      if (idx === -2) {
+          this.singleSelectedTargets.update(set => {
+              const next = new Set(set);
+              g.targets.forEach(t => next.add(t.id));
+              return next;
+          });
+          this.toast.show(`Đã thêm ${g.targets.length} chỉ tiêu cho mẫu.`, 'success');
+      } else if (idx >= 0) {
           this.blocks.update(b => {
               const n = [...b]; const set = new Set(n[idx].selectedTargets);
               g.targets.forEach(t => set.add(t.id));
@@ -549,6 +722,30 @@ export class SmartBatchComponent {
 
   // --- REWRITTEN: TARGET-CENTRIC GREEDY ALGORITHM (WEIGHTED) ---
   async analyzePlan() {
+      if (this.smartBatchMode() === 'single') {
+          const sample = this.singleSampleCode().trim();
+          if (!sample) {
+              this.toast.show('Vui lòng nhập Mã mẫu duy nhất.', 'error');
+              return;
+          }
+          if (this.singleSelectedTargets().size === 0) {
+              this.toast.show('Vui lòng chọn ít nhất 1 chỉ tiêu kiểm nghiệm.', 'error');
+              return;
+          }
+          // Construct single mock block
+          const mockBlock: JobBlock = {
+              id: Date.now(),
+              name: `Mẫu ${sample}`,
+              rawSamples: sample,
+              selectedTargets: new Set(this.singleSelectedTargets()),
+              targetSearch: '',
+              isCollapsed: false,
+              forcedSopId: this.singleForcedSopId(),
+              matrixType: this.singleMatrixType()
+          };
+          this.blocks.set([mockBlock]);
+      }
+
       this.isProcessing.set(true);
       try {
           // 1. Prefetch Data
@@ -1158,17 +1355,34 @@ export class SmartBatchComponent {
 
   // --- Auto-Fix Logic (Simple Re-run) ---
   fixCoverage() {
-      // In a complex system, this would identify exactly what is missing and run a targeted greedy search.
-      // For now, we will simply reset and let the user re-analyze, as the greedy algorithm is deterministic and fast.
-      // OR better: Just show a toast guiding them.
       this.toast.show('Đang tính toán lại để phủ kín các mẫu còn thiếu...', 'info');
-      // To implement true "Partial Re-run", we would need to pass `missingTasks` to analyzePlan. 
-      // Current implementation clears existing batches on analyzePlan. 
-      // We will leave the "Fix" button as a visual cue or trigger a Reset -> Re-Analyze flow for now.
-      this.step.set(1); // Go back to config to let them add/adjust blocks.
+      this.goBackFromStep2();
   }
 
-  reset() { this.step.set(1); this.batches.set([]); this.unmappedTasks.set([]); }
+  reset() {
+      this.step.set(0);
+      this.batches.set([]);
+      this.unmappedTasks.set([]);
+      this.blocks.set([ { id: Date.now(), name: 'Nhóm Mẫu #1', rawSamples: '', selectedTargets: new Set<string>(), targetSearch: '', isCollapsed: false, forcedSopId: undefined, matrixType: undefined } ]);
+      this.singleSampleCode.set('');
+      this.singleSelectedTargets.set(new Set());
+      this.singleMatrixType.set(undefined);
+      this.singleTargetSearch.set('');
+      this.singleForcedSopId.set(undefined);
+  }
+
+  goBackFromStep2() {
+      if (this.smartBatchMode() === 'single' && this.blocks().length > 0) {
+          const mockBlock = this.blocks()[0];
+          this.singleSampleCode.set(mockBlock.rawSamples.trim());
+          this.singleSelectedTargets.set(new Set(mockBlock.selectedTargets));
+          this.singleMatrixType.set(mockBlock.matrixType);
+          this.singleForcedSopId.set(mockBlock.forcedSopId);
+      }
+      this.batches.set([]);
+      this.unmappedTasks.set([]);
+      this.step.set(1);
+  }
 
   async executeAll() {
       if (!this.auth.canApprove()) {
