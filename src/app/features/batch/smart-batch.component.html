@@ -6,11 +6,24 @@
                     <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight">Chạy Mẻ Thông Minh (Smart Batch)</h2>
+                    <h2 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight flex items-center gap-2">
+                        Chạy Mẻ Thông Minh (Smart Batch)
+                        @if (step() >= 1) {
+                            @if (smartBatchMode() === 'multiple') {
+                                <span class="text-[10px] bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full font-bold border border-teal-200 dark:border-teal-800 shrink-0">
+                                    <i class="fa-solid fa-layer-group text-[9px] mr-1"></i>Ghép Nhiều Mẫu
+                                </span>
+                            } @else {
+                                <span class="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold border border-indigo-200 dark:border-indigo-800 shrink-0">
+                                    <i class="fa-solid fa-vial text-[9px] mr-1"></i>1 Mẫu Duy Nhất
+                                </span>
+                            }
+                        }
+                    </h2>
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tự động ghép SOP theo chỉ tiêu & tối ưu hóa chất.</p>
                 </div>
             </div>
-            
+
             <div class="flex gap-2">
                 @if(step() === 1) {
                     <button (click)="goBackToStep0()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition">
@@ -33,10 +46,10 @@
                         <h3 class="text-2xl font-black text-slate-850 dark:text-slate-100 tracking-tight">Chọn Chế Độ Chạy Mẻ</h3>
                         <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2">Vui lòng chọn chế độ thiết lập phù hợp với nhu cầu phân tích của bạn</p>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Mode 1: Multiple Samples -->
-                        <div (click)="selectMode('multiple')" 
+                        <div (click)="selectMode('multiple')"
                              class="group cursor-pointer bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-750 p-6 shadow-sm hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px]">
                             <div>
                                 <div class="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-100 dark:border-teal-800/30 shadow-sm mb-4 group-hover:scale-110 transition-transform">
@@ -53,7 +66,7 @@
                         </div>
 
                         <!-- Mode 2: Single Sample -->
-                        <div (click)="selectMode('single')" 
+                        <div (click)="selectMode('single')"
                              class="group cursor-pointer bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-750 p-6 shadow-sm hover:shadow-xl hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px]">
                             <div>
                                 <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm mb-4 group-hover:scale-110 transition-transform">
@@ -74,7 +87,7 @@
 
             @if(step() > 0) {
                 <div class="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 min-h-fit w-full">
-            
+
             <!-- STEP 1: JOB BUILDER -->
             @if(step() === 1) {
                 <!-- Left: Blocks List / Single Sample Config -->
@@ -84,12 +97,12 @@
                             @for (block of blocks(); track block.id; let i = $index) {
                                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden animate-slide-up transition-all hover:shadow-md group">
                                     <!-- Block Header -->
-                                    <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 cursor-pointer" 
+                                    <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 cursor-pointer"
                                          (click)="toggleBlockCollapse(i)">
                                         <div class="flex items-center gap-3">
                                             <div class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs font-bold">{{i + 1}}</div>
                                             @if(isEditingName() === block.id) {
-                                                <input [ngModel]="block.name" (ngModelChange)="updateBlockName(i, $event)" 
+                                                <input [ngModel]="block.name" (ngModelChange)="updateBlockName(i, $event)"
                                                        (blur)="isEditingName.set(null)" (keyup.enter)="isEditingName.set(null)" (click)="$event.stopPropagation()"
                                                        class="font-bold text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:border-teal-500 dark:focus:border-teal-400 text-slate-800 dark:text-slate-200">
                                             } @else {
@@ -161,14 +174,14 @@
                                                         <i class="fa-solid fa-xmark text-xs"></i>
                                                     </button>
                                                 </div>
-                                                
+
                                                 <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white dark:bg-slate-900">
                                                     @for (t of getFilteredTargets(block); track t.uniqueKey) {
                                                         <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer group"
                                                                [ngClass]="{'bg-teal-50 dark:bg-teal-900/20': block.selectedTargets.has(t.uniqueKey)}">
-                                                            <input type="checkbox" 
-                                                                   [checked]="block.selectedTargets.has(t.uniqueKey)" 
-                                                                   (change)="toggleBlockTarget(i, t.uniqueKey)" 
+                                                            <input type="checkbox"
+                                                                   [checked]="block.selectedTargets.has(t.uniqueKey)"
+                                                                   (change)="toggleBlockTarget(i, t.uniqueKey)"
                                                                    class="w-3.5 h-3.5 accent-teal-600 rounded cursor-pointer">
                                                             <div class="flex-1 min-w-0">
                                                                 <div class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate group-hover:text-teal-700 dark:group-hover:text-teal-400">{{t.name}}</div>
@@ -190,7 +203,7 @@
                                                     <button (click)="updateBlockForcedSop(i, undefined)" class="text-xs text-red-500 hover:text-red-600 capitalize font-medium transition cursor-pointer">Bỏ chỉ định</button>
                                                 }
                                             </label>
-                                            
+
                                             @if(block.selectedTargets.size === 0) {
                                                 <p class="text-[11px] text-slate-500 dark:text-slate-400 italic font-medium">Vui lòng chọn ít nhất 1 chỉ tiêu để xem các quy trình phù hợp.</p>
                                             } @else {
@@ -209,12 +222,12 @@
                                                             <div class="flex flex-col rounded-lg border transition bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-hidden"
                                                                  [class.ring-2]="block.forcedSopId === sug.sop.id"
                                                                  [class.ring-indigo-500]="block.forcedSopId === sug.sop.id">
-                                                                 
+
                                                                  <!-- Thân nút: Nhấn để chỉ định -->
                                                                  <button (click)="updateBlockForcedSop(i, sug.sop.id)"
                                                                          [disabled]="sug.isPartial"
                                                                          class="px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-75 disabled:cursor-not-allowed transition">
-                                                                     
+
                                                                      <div class="flex items-center gap-2 mb-1">
                                                                          @if(sug.isBest && !sug.isPartial) {
                                                                              <span class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase"><i class="fa-solid fa-star mr-0.5"></i> Tốt nhất</span>
@@ -224,7 +237,7 @@
                                                                              <i class="fa-solid fa-circle-check text-indigo-600 dark:text-indigo-400"></i>
                                                                          }
                                                                      </div>
-                                                                     
+
                                                                      <div class="flex items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
                                                                          @if(sug.sop.matrixTags && sug.sop.matrixTags.length > 0) {
                                                                              <span class="flex items-center gap-1">
@@ -246,7 +259,7 @@
                                                                          }
                                                                      </div>
                                                                  </button>
-                                                                 
+
                                                                  <!-- Chân nút: Icon Xem -->
                                                                  <div class="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700/50 py-1 px-3 text-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition" (click)="openSopPreview(i, sug); $event.stopPropagation()">
                                                                      <button class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline w-full pointer-events-none">
@@ -264,7 +277,7 @@
                                     }
                                 </div>
                             }
-                            
+
                             <button (click)="addBlock()" class="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl text-slate-500 dark:text-slate-400 font-bold text-sm hover:border-teal-400 dark:hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-plus-circle"></i> Thêm Nhóm Mẫu Mới
                             </button>
@@ -287,12 +300,15 @@
                                 <div class="flex flex-col gap-4">
                                     <div>
                                         <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1.5 ml-1">Mã mẫu duy nhất *</label>
-                                        <input [ngModel]="singleSampleCode()" (ngModelChange)="singleSampleCode.set($event)" 
-                                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 transition shadow-sm" 
+                                        <input [ngModel]="singleSampleCode()" (ngModelChange)="singleSampleCode.set($event)"
+                                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 transition shadow-sm"
                                                placeholder="Nhập mã mẫu (ví dụ: M-TEST-001)...">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1.5 ml-1">Nền mẫu (Matrix Type)</label>
+                                        <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1 mb-1.5 ml-1">
+                                            Nền mẫu (Matrix Type)
+                                            <i class="fa-regular fa-circle-question text-slate-300 dark:text-slate-600 cursor-help" title="Lọc các SOP chỉ tương thích với chất nền phân tích cụ thể này (Ví dụ: Nước thải, Đất, bùn). Để trống = Dùng chung (ANY)"></i>
+                                        </label>
                                         <select [ngModel]="singleMatrixType() || ''" (ngModelChange)="singleMatrixType.set($event === '' ? undefined : $event); singleForcedSopId.set(undefined)"
                                                 class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-350 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 cursor-pointer shadow-sm">
                                             <option value="">Dùng chung (ANY)</option>
@@ -325,14 +341,14 @@
                                             <i class="fa-solid fa-xmark text-xs"></i>
                                         </button>
                                     </div>
-                                    
+
                                     <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white dark:bg-slate-900">
                                         @for (t of getFilteredSingleTargets(); track t.uniqueKey) {
                                             <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer group"
                                                    [ngClass]="{'bg-indigo-50/50 dark:bg-indigo-900/10': singleSelectedTargets().has(t.uniqueKey)}">
-                                                <input type="checkbox" 
-                                                       [checked]="singleSelectedTargets().has(t.uniqueKey)" 
-                                                       (change)="toggleSingleTarget(t.uniqueKey)" 
+                                                <input type="checkbox"
+                                                       [checked]="singleSelectedTargets().has(t.uniqueKey)"
+                                                       (change)="toggleSingleTarget(t.uniqueKey)"
                                                        class="w-3.5 h-3.5 accent-indigo-600 rounded cursor-pointer">
                                                 <div class="flex-1 min-w-0">
                                                     <div class="text-xs font-bold text-slate-750 dark:text-slate-350 truncate group-hover:text-indigo-700 dark:group-hover:text-indigo-400">{{t.name}}</div>
@@ -349,17 +365,31 @@
                             <!-- Realtime SOP Suggestions -->
                             <div class="bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3 mt-2 animate-fade-in">
                                 <label class="text-[10px] font-bold text-indigo-750 dark:text-indigo-400 uppercase mb-2 flex items-center justify-between">
-                                    <span><i class="fa-solid fa-code-branch mr-1"></i> Quy trình (SOP) gợi ý</span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-code-branch mr-1"></i> Quy trình (SOP) gợi ý
+                                        <i class="fa-regular fa-circle-question text-slate-350 dark:text-slate-500 cursor-help" title="Nhấn vào quy trình để chỉ định chạy cố định quy trình này. Thuật toán phân tích sẽ ưu tiên sử dụng SOP đã chọn ở Bước 2."></i>
+                                    </span>
                                     @if(singleForcedSopId()) {
                                         <button (click)="singleForcedSopId.set(undefined)" class="text-xs text-red-500 hover:text-red-600 capitalize font-medium transition cursor-pointer">Bỏ chỉ định</button>
                                     }
                                 </label>
                                 
                                 @if(singleSelectedTargets().size === 0) {
-                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 italic font-medium">Vui lòng chọn ít nhất 1 chỉ tiêu để xem các quy trình phù hợp.</p>
+                                    <div class="border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl p-4 text-center group cursor-default">
+                                        <i class="fa-solid fa-vials text-2xl text-slate-300 dark:text-slate-650 mb-1.5 block group-hover:animate-bounce"></i>
+                                        <h5 class="text-[11px] font-bold text-slate-750 dark:text-slate-350 mb-0.5">Chưa chọn chỉ tiêu kiểm nghiệm</h5>
+                                        <p class="text-[10px] text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Hãy chọn ít nhất 1 chỉ tiêu kiểm nghiệm ở khung bên phải để hệ thống tự động gợi ý quy trình phù hợp.</p>
+                                    </div>
                                 } @else {
                                     @if (singleSopSuggestions().length === 0) {
-                                        <p class="text-[11px] text-orange-600 dark:text-orange-400 italic font-medium">Không tìm thấy bất kỳ quy trình nào phù hợp. Bạn cần kiểm tra lại cấu hình Nền Mẫu hoặc Hệ thống chỉ tiêu.</p>
+                                        <div class="border border-orange-100 dark:border-orange-950 bg-orange-50/30 dark:bg-orange-900/10 rounded-xl p-4 text-center">
+                                            <i class="fa-solid fa-microscope text-2xl text-orange-400 dark:text-orange-550 mb-1.5 block"></i>
+                                            <h5 class="text-[11px] font-bold text-orange-700 dark:text-orange-400 mb-0.5">Không tìm thấy quy trình phù hợp</h5>
+                                            <p class="text-[10px] text-orange-500 dark:text-orange-550 max-w-xs mx-auto leading-relaxed mb-2">Chưa có SOP nào được cấu hình cho các chỉ tiêu đã chọn tương thích với Nền mẫu này.</p>
+                                            <button (click)="singleMatrixType.set(undefined); singleForcedSopId.set(undefined)" class="text-[9px] bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 text-orange-700 dark:text-orange-400 px-2.5 py-1 rounded font-bold transition">
+                                                Thử đặt lại Nền mẫu
+                                            </button>
+                                        </div>
                                     } @else {
                                         @if(singleSopSuggestions()[0].isPartial) {
                                             <div class="mb-2 text-[11px] text-orange-600 dark:text-orange-400 font-medium flex items-start gap-1.5">
@@ -373,12 +403,12 @@
                                                 <div class="flex flex-col rounded-lg border transition bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-hidden"
                                                      [class.ring-2]="singleForcedSopId() === sug.sop.id"
                                                      [class.ring-indigo-500]="singleForcedSopId() === sug.sop.id">
-                                                     
+
                                                      <!-- Thân nút: Nhấn để chỉ định -->
                                                      <button (click)="singleForcedSopId.set(sug.sop.id)"
                                                              [disabled]="sug.isPartial"
                                                              class="px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-75 disabled:cursor-not-allowed transition">
-                                                         
+
                                                          <div class="flex items-center gap-2 mb-1">
                                                              @if(sug.isBest && !sug.isPartial) {
                                                                  <span class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase"><i class="fa-solid fa-star mr-0.5"></i> Tốt nhất</span>
@@ -388,7 +418,7 @@
                                                                  <i class="fa-solid fa-circle-check text-indigo-600 dark:text-indigo-400"></i>
                                                              }
                                                          </div>
-                                                         
+
                                                          <div class="flex items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
                                                              @if(sug.sop.matrixTags && sug.sop.matrixTags.length > 0) {
                                                                  <span class="flex items-center gap-1">
@@ -410,7 +440,7 @@
                                                              }
                                                          </div>
                                                      </button>
-                                                     
+
                                                      <!-- Chân nút: Icon Xem -->
                                                      <div class="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700/50 py-1 px-3 text-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition" (click)="openSopPreview(-1, sug); $event.stopPropagation()">
                                                          <button class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline w-full pointer-events-none">
@@ -430,9 +460,13 @@
                 <!-- Right: Summary Dashboard -->
                 <div class="w-full lg:w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm h-fit sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
                     <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-teal-500"></i> Cấu hình Phân tích
+                        @if(smartBatchMode() === 'single') {
+                            <i class="fa-solid fa-vial text-indigo-500"></i> Thông tin Mẫu
+                        } @else {
+                            <i class="fa-solid fa-chart-pie text-teal-500"></i> Cấu hình Phân tích
+                        }
                     </h4>
-                    
+
                     <div class="space-y-4 mb-6">
                         <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
                             <span class="text-xs text-slate-500 dark:text-slate-400 font-bold">Tổng mẫu (Unique)</span>
@@ -446,7 +480,7 @@
 
                     <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
                         <button (click)="analyzePlan()" [disabled]="totalUniqueSamples() === 0 || totalUniqueTargets() === 0 || isProcessing()"
-                                class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group">
+                                [class]="smartBatchMode() === 'single' ? 'w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group' : 'w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group'">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                             @else { <span>Phân tích & Lập Kế hoạch</span> <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i> }
                         </button>
@@ -458,7 +492,7 @@
                     <div class="fixed inset-0 z-50 flex justify-end">
                         <!-- Overlay -->
                         <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" (click)="closeSopPreview()"></div>
-                        
+
                         <!-- Panel -->
                         <div class="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col transform transition-transform border-l border-slate-200 dark:border-slate-800 animate-slide-in-right">
                             <!-- Header -->
@@ -482,7 +516,7 @@
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
-                            
+
                             <!-- Content -->
                             <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
                                 <!-- Covered Targets -->
@@ -501,7 +535,7 @@
                                         </div>
                                     </div>
                                 }
-                                
+
                                 <!-- Missing Targets -->
                                 @if(previewSop()!.suggestion.missingTargets.length > 0) {
                                     <div>
@@ -519,7 +553,7 @@
                                         </div>
                                     </div>
                                 }
-                                
+
                                 <!-- Extra Targets -->
                                 @if(previewSop()!.suggestion.extraTargets.length > 0) {
                                     <div>
@@ -538,10 +572,10 @@
                                     </div>
                                 }
                             </div>
-                            
+
                             <!-- Footer -->
                             <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                                <button (click)="assignSopFromPreview()" 
+                                <button (click)="assignSopFromPreview()"
                                         [disabled]="previewSop()!.suggestion.isPartial"
                                         class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
                                     <i class="fa-solid fa-check-to-slot"></i> Chỉ định SOP này
@@ -559,7 +593,7 @@
             @if(step() === 2) {
                 <!-- Left: Batches -->
                 <div class="flex-1 lg:w-2/3 flex flex-col gap-4 animate-fade-in">
-                    
+
                     <div class="relative w-full shadow-sm shrink-0 sticky top-0 z-10">
                         <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs"></i>
                         <input [ngModel]="sampleSearchTerm()" (ngModelChange)="sampleSearchTerm.set($event)"
@@ -601,7 +635,7 @@
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600">{{batch.sop.category}}</span>
-                                        
+
                                         @if(batch.tags) {
                                             @for(tag of batch.tags; track tag) {
                                                 @if(tag !== 'Auto-Optimized') {
@@ -621,7 +655,7 @@
                                             </span>
                                         }
                                     </div>
-                                    
+
                                     <!-- Action Buttons -->
                                     <div class="flex gap-2">
                                          <button (click)="openSplitModal(batchIdx); $event.stopPropagation()" class="text-xs px-2 py-1.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-500 transition shadow-sm active:scale-95 flex items-center gap-1" title="Tách mẻ này">
@@ -638,12 +672,12 @@
                                     <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">
                                         {{batch.name}} <span class="text-slate-400 dark:text-slate-500 font-normal text-xs">({{batch.sop.name}})</span>
                                     </h3>
-                                    
+
                                     <!-- Consolidated Sample Display -->
                                     <div class="flex items-start gap-2 w-full mt-1" (click)="$event.stopPropagation()">
                                         <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 px-2 py-1.5 rounded text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-800 flex items-start gap-2 shadow-sm w-full">
                                             <span class="bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] shadow-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 shrink-0 mt-0.5">{{batch.samples.size}} mẫu</span>
-                                            <div class="break-words whitespace-normal flex-1" 
+                                            <div class="break-words whitespace-normal flex-1"
                                                  [class.line-clamp-2]="!batch.isExpanded">
                                                 {{ batch.isExpanded ? getFullSampleString(batch.samples) : formatSampleList(batch.samples) }}
                                             </div>
@@ -656,7 +690,7 @@
                                     @for(t of batch.targets; track t.id) {
                                         <span class="px-1.5 py-0.5 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded text-[9px] border border-slate-200 dark:border-slate-600 font-bold flex items-center gap-1 group/tag">
                                             {{t._displayName || t.name}}
-                                            <i class="fa-solid fa-xmark cursor-pointer hover:text-red-500 transition opacity-0 group-hover/tag:opacity-100" 
+                                            <i class="fa-solid fa-xmark cursor-pointer hover:text-red-500 transition opacity-0 group-hover/tag:opacity-100"
                                                (click)="removeTargetFromBatch(batchIdx, t.id); $event.stopPropagation()" title="Loại bỏ khỏi mẻ"></i>
                                         </span>
                                     }
@@ -672,7 +706,7 @@
                                             <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" [title]="inp.label">{{inp.label}}</label>
                                             @switch (inp.type) {
                                                 @case ('select') {
-                                                    <select [ngModel]="batch.inputValues[inp.var]" 
+                                                    <select [ngModel]="batch.inputValues[inp.var]"
                                                             (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 dark:focus:border-teal-400 cursor-pointer h-8 shadow-sm">
                                                         @for (opt of inp.options; track opt.value) {
@@ -683,8 +717,8 @@
                                                 @case ('checkbox') {
                                                     <div class="flex items-center h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2">
                                                         <label class="flex items-center gap-2 cursor-pointer w-full">
-                                                            <input type="checkbox" 
-                                                                   [ngModel]="batch.inputValues[inp.var]" 
+                                                            <input type="checkbox"
+                                                                   [ngModel]="batch.inputValues[inp.var]"
                                                                    (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                                    class="w-4 h-4 accent-teal-600 rounded">
                                                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{batch.inputValues[inp.var] ? 'Bật' : 'Tắt'}}</span>
@@ -693,8 +727,8 @@
                                                 }
                                                 @default {
                                                     <div class="relative">
-                                                        <input type="number" 
-                                                               [ngModel]="batch.inputValues[inp.var]" 
+                                                        <input type="number"
+                                                               [ngModel]="batch.inputValues[inp.var]"
                                                                (ngModelChange)="updateBatchInput(batchIdx, inp.var, $event)"
                                                                [step]="inp.step || 1"
                                                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 text-center outline-none focus:border-teal-500 dark:focus:border-teal-400 transition h-8 shadow-sm">
@@ -711,22 +745,22 @@
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1">Hao hụt (%)</label>
                                     @if(batch.safetyMargin === -1) {
-                                        <div (click)="setBatchMarginManual(batchIdx)" 
+                                        <div (click)="setBatchMarginManual(batchIdx)"
                                              class="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shadow-sm h-8">
                                             <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
                                         </div>
                                     } @else {
-                                        <input type="number" 
-                                               [ngModel]="batch.safetyMargin" 
+                                        <input type="number"
+                                               [ngModel]="batch.safetyMargin"
                                                (ngModelChange)="updateBatchMargin(batchIdx, $event)"
                                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 text-center outline-none focus:border-orange-500 dark:focus:border-orange-400 transition h-8 shadow-sm">
                                     }
                                 </div>
-                                
+
                                 <!-- Device Selection -->
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase block mb-1 truncate" title="Thiết bị phân tích">Thiết bị</label>
-                                    <select [ngModel]="batch.inputValues['device'] || ''" 
+                                    <select [ngModel]="batch.inputValues['device'] || ''"
                                             (ngModelChange)="updateBatchInput(batchIdx, 'device', $event)"
                                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-teal-500 dark:focus:border-teal-400 cursor-pointer h-8 shadow-sm truncate">
                                         <option value="">-- Mặc định --</option>
@@ -782,7 +816,7 @@
                                                         <tr class="bg-slate-50/30 dark:bg-slate-800/30">
                                                             <td class="px-5 py-2 pl-8 align-middle">
                                                                 <div class="break-words whitespace-normal text-[10px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 mt-0.5" [ngClass]="{'text-red-500 dark:text-red-400': sub.isMissing}">
-                                                                    <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0 mt-1.5"></div> 
+                                                                    <div class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0 mt-1.5"></div>
                                                                     <span>{{sub.displayName || sub.name}}</span>
                                                                 </div>
                                                             </td>
@@ -816,7 +850,7 @@
                                                         {{formatNum(item.stockNeed)}} <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal">{{item.stockUnit}}</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 @if(item.isMissing && !item.isComposite) {
                                                     <div class="flex justify-end mt-3">
                                                         <button (click)="openQuickImport(item)" class="text-[11px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-4 py-2 rounded-xl font-bold border border-red-100 dark:border-red-800 flex items-center gap-1.5 transition active:scale-95 w-full justify-center">
@@ -824,7 +858,7 @@
                                                         </button>
                                                     </div>
                                                 }
-                                                
+
                                                 @if(item.isComposite) {
                                                     <div class="mt-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-800 space-y-3">
                                                         @for(sub of item.breakdown; track sub.name) {
@@ -928,7 +962,7 @@
                                 <h4 class="font-bold text-orange-800 dark:text-orange-400 text-xs mb-2 uppercase flex items-center gap-2">
                                     <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Hướng dẫn An toàn Trước Pha chế
                                 </h4>
-                                
+
                                 <!-- GHS Icons -->
                                 <div class="flex flex-wrap gap-2 mb-3">
                                     @for(code of aggregateGHSWarnings(); track code) {
@@ -939,7 +973,7 @@
                                         }
                                     }
                                 </div>
-                                
+
                                 <!-- Safety Checklist (H/P codes + Custom) -->
                                 <ul class="space-y-1.5 text-[11px] text-orange-700 dark:text-orange-300 font-medium">
                                     @for(code of aggregateGHSWarnings(); track code) {
@@ -950,7 +984,7 @@
                                             </li>
                                         }
                                     }
-                                    
+
                                     <!-- Generic Precautionary Statements associated with the GHS modules -->
                                     @for(code of aggregateGHSWarnings(); track code) {
                                         @if(code.startsWith('GHS')) {
@@ -980,7 +1014,7 @@
         @if(step() === 2) {
             <div class="sticky bottom-0 w-full shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)] z-40 transition-transform duration-300">
                 <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                    
+
                     <!-- Metrics -->
                     <div class="flex items-center gap-6 text-sm flex-1">
                         <div class="flex items-center gap-2">
@@ -993,12 +1027,12 @@
                                     {{ coverageMetrics().isFullyCovered ? 'Đã phủ kín toàn bộ yêu cầu' : 'Cảnh báo: Chưa phủ hết yêu cầu!' }}
                                 </div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">
-                                    Thiếu <b>{{coverageMetrics().missingCount}}</b> chỉ tiêu/mẫu. 
+                                    Thiếu <b>{{coverageMetrics().missingCount}}</b> chỉ tiêu/mẫu.
                                     @if(coverageMetrics().duplicateCount > 0) { <span class="text-orange-600 dark:text-orange-400 ml-1">(Trùng lặp: {{coverageMetrics().duplicateCount}})</span> }
                                 </div>
                             </div>
                         </div>
-                        
+
                         @if(!coverageMetrics().isFullyCovered) {
                             <div class="hidden md:block text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-800">
                                 <i class="fa-solid fa-circle-info mr-1"></i> Kiểm tra các mẫu: {{ coverageMetrics().missingSampleNames }}
@@ -1013,9 +1047,9 @@
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Tự sửa
                             </button>
                         }
-                        
-                        <button (click)="executeAll()" 
-                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered" 
+
+                        <button (click)="executeAll()"
+                                [disabled]="isProcessing() || batches().length === 0 || hasCriticalMissing() || !coverageMetrics().isFullyCovered"
                                 class="flex-[2] md:flex-none px-4 lg:px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white hover:bg-black dark:hover:bg-slate-600 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Xử lý... }
                             @else { <i class="fa-solid fa-paper-plane"></i> Duyệt & In Phiếu }
@@ -1072,7 +1106,7 @@
                         </div>
                         <button (click)="showQuickImport.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-times"></i></button>
                     </div>
-                    
+
                     <div class="p-5 space-y-4">
                         <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                             <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hóa chất</div>
