@@ -50,7 +50,8 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     this.initActiveCompound();
 
     // Thay đổi printFormType default thành formDayDu
-    if (!this.draft.page1Data['printFormType']) {
+    const currentPrintFormType = this.draft.page1Data['printFormType'];
+    if (!currentPrintFormType || currentPrintFormType === 'formCheck' || currentPrintFormType === 'formDon') {
       this.draft.page1Data['printFormType'] = 'formDayDu';
     }
 
@@ -85,12 +86,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     });
 
     // QC Initialization
-    ['QC_SPIKE', 'QC_BLANK'].forEach(qc => {
-      const qcRes = this.draft.resultData[qc];
-      if (qcRes && !qcRes['khoiLuong']) {
-        qcRes['khoiLuong'] = '10.0';
-      }
-    });
+    this.ensureQcRows();
 
     if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) {
       this.draft.page1Data['uploadMassHunterToDrive'] = true;
@@ -101,6 +97,25 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     }
   }
 
+  private ensureQcRows() {
+    this.ensureQcRow('QC_BLANK', '1.7');
+    this.ensureQcRow('QC_SPIKE', '1.8');
+    if (this.draft.page1Data['hasCheckSample']) {
+      this.ensureQcRow('QC_CHECK', '1.9');
+    }
+  }
+
+  private ensureQcRow(key: string, defaultLoSo: string) {
+    if (!this.draft.resultData[key]) {
+      this.draft.resultData[key] = {};
+    }
+    const row = this.draft.resultData[key];
+    if (row['loSo'] === undefined || row['loSo'] === '') row['loSo'] = defaultLoSo;
+    if (row['selected'] === undefined) row['selected'] = true;
+    if (!row['khoiLuong']) row['khoiLuong'] = '10.0';
+    if (!row['heSoPhaLoang']) row['heSoPhaLoang'] = '1';
+    if (!row['hSoPhaLoang']) row['hSoPhaLoang'] = '1';
+  }
   // ── Override: mass default (10.0g) ─────────────
   override on10gCheckChange(event: any) {
     this.draft.page1Data['is10gChecked'] = event.target.checked;
@@ -150,6 +165,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   onHasCheckSampleChange() {
     if (this.draft.page1Data['hasCheckSample']) {
+      this.ensureQcRow('QC_CHECK', '1.9');
       this.draft.page1Data['qcKiemTraNoiBo'] = true;
     } else {
       this.draft.page1Data['qcKiemTraNoiBo'] = null;
