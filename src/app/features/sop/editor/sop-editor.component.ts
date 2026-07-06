@@ -70,10 +70,43 @@ export class SopEditorComponent implements OnDestroy {
   availableDevices = signal<MasterDevice[]>([]);
   selectedAllowedDevices = signal<string[]>([]);
   
-  // SEARCH STATE
-  searchSubject = new Subject<string>();
-  searchResults = signal<any[]>([]); // Can be InventoryItem or Recipe
-  activeSearch: { index: number, isIngredient: boolean, subIndex?: number } | null = null;
+  // Consumables Validation & Modal
+  masterInventory = signal<InventoryItem[]>([]);
+  masterRecipes = signal<Recipe[]>([]);
+  
+  showConsumableModal = signal(false);
+  consumableSearchTerm = signal('');
+  activeConsumableSearch: { index: number, isIngredient: boolean, subIndex?: number } | null = null;
+  
+  validInventoryMap = computed(() => {
+      const map = new Map<string, InventoryItem>();
+      this.masterInventory().forEach(i => map.set(i.id, i));
+      return map;
+  });
+
+  validRecipeMap = computed(() => {
+      const map = new Map<string, Recipe>();
+      this.masterRecipes().forEach(r => map.set(r.id, r));
+      return map;
+  });
+
+  filteredConsumables = computed(() => {
+      const term = this.consumableSearchTerm().toLowerCase().trim();
+      const active = this.activeConsumableSearch;
+      if (!active) return [];
+      
+      const conType = !active.isIngredient ? this.consumables.at(active.index).get('type')?.value : 'simple';
+      
+      if (conType === 'shared_recipe') {
+          const all = this.masterRecipes();
+          if (!term) return all.slice(0, 50); // limit to avoid lag
+          return all.filter(r => r.name.toLowerCase().includes(term) || r.id.includes(term)).slice(0, 50);
+      } else {
+          const all = this.masterInventory();
+          if (!term) return all.slice(0, 50);
+          return all.filter(i => (i.name && i.name.toLowerCase().includes(term)) || i.id.includes(term) || (i.category && i.category.toLowerCase().includes(term))).slice(0, 50);
+      }
+  });
 
   // Import Group Modal
   showGroupModal = signal(false);
@@ -130,33 +163,12 @@ export class SopEditorComponent implements OnDestroy {
       onCleanup(() => sub.unsubscribe());
     }, { allowSignalWrites: true });
 
-    // Unified Search Listener
-    this.searchSubject.pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        switchMap(term => {
-            if (!term || term.trim().length < 1 || !this.activeSearch) return of([]);
-            const index = this.activeSearch.index;
-            const conType = this.consumables.at(index).get('type')?.value;
-            
-            // Determine search source based on type
-            if (!this.activeSearch.isIngredient && conType === 'shared_recipe') {
-                return this.recipeService.getAllRecipes()
-                    .then(all => all.filter(r => r.name.toLowerCase().includes(term.toLowerCase())))
-                    .catch(e => {
-                        console.warn('Recipe search failed:', e);
-                        return [];
-                    });
-            } else {
-                return this.invService.getInventoryPage(10, null, 'all', term).then(res => res.items);
-            }
-        })
-    ).subscribe(items => {
-        this.searchResults.set(items);
-    });
+    // Load Master Data
+    this.invService.getAllInventory().then(inv => this.masterInventory.set(inv));
+    this.recipeService.getAllRecipes().then(rec => this.masterRecipes.set(rec));
   }
 
-  ngOnDestroy() { this.searchSubject.complete(); }
+  ngOnDestroy() {}
 
   // --- Strict Mode Form Logic ---
   onTypeChange(index: number) {
@@ -170,20 +182,16 @@ export class SopEditorComponent implements OnDestroy {
       if (display) con.patchValue({ name: 'mix_' + generateSlug(display) });
   }
 
-  onSearchInput(event: any, index: number, isIngredient: boolean, subIndex?: number) {
-      this.activeSearch = { index, isIngredient, subIndex };
-      this.searchSubject.next(event.target.value);
+  openConsumableModal(index: number, isIngredient: boolean, subIndex?: number) {
+      this.activeConsumableSearch = { index, isIngredient, subIndex };
+      this.consumableSearchTerm.set('');
+      this.showConsumableModal.set(true);
   }
 
-  onSearchFocus(index: number, isIngredient: boolean, subIndex?: number) {
-      this.activeSearch = { index, isIngredient, subIndex };
-      const control = isIngredient ? this.getIngredients(index).at(subIndex!).get('_displayName') : this.consumables.at(index).get('_displayName');
-      const val = control?.value || '';
-      if(val) this.searchSubject.next(val);
-  }
-
-  selectItem(item: any, index: number, isIngredient: boolean, subIndex?: number) {
-      // Item can be InventoryItem or Recipe
+  selectConsumable(item: any) {
+      if (!this.activeConsumableSearch) return;
+      const { index, isIngredient, subIndex } = this.activeConsumableSearch;
+      
       if (isIngredient) {
           const control = this.getIngredients(index).at(subIndex!);
           control.patchValue({ name: item.id, unit: item.unit, _displayName: item.name }); 
@@ -202,10 +210,9 @@ export class SopEditorComponent implements OnDestroy {
               control.patchValue({ name: item.id, unit: item.unit, _displayName: item.name });
           }
       }
-      this.closeSearchDropdown();
+      this.showConsumableModal.set(false);
+      this.activeConsumableSearch = null;
   }
-
-  closeSearchDropdown() { this.searchResults.set([]); this.activeSearch = null; }
 
   // --- Getters & Form Manipulation ---
   get inputs() { return this.form.get('inputs') as FormArray; }
