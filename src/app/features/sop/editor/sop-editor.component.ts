@@ -11,7 +11,7 @@ import { ConfirmationService } from '../../../core/services/confirmation.service
 import { InventoryService } from '../../inventory/inventory.service';
 import { RecipeService } from '../../recipes/recipe.service'; 
 import { TargetService } from '../../targets/target.service';
-import { Sop, CalculatedItem, SopTarget, TargetGroup, MatrixType } from '../../../core/models/sop.model';
+import { Sop, CalculatedItem, SopTarget, TargetGroup, MatrixType, MasterAnalyte } from '../../../core/models/sop.model';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { MatrixTypeService } from '../../config/matrix-type.service';
 import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -394,9 +394,6 @@ export class SopEditorComponent implements OnDestroy {
     try { 
         await this.sopService.saveSop(sop); 
         this.toast.show('Đã lưu quy trình thành công!'); 
-        
-        // AUTO-SYNC TO MASTER TARGETS
-        await this.autoSyncToMasterTargets(sop.targets);
         
         this.state.selectedSop.set(sop); 
         this.state.editingSop.set(null); 
