@@ -148,7 +148,31 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   // ── SPREADSHEET (FORM RÚT GỌN) METHODS ────────────────────────────
 
-  applyBulkVials() {
+  onHasCheckSampleChange() {
+    if (this.draft.page1Data['hasCheckSample']) {
+      this.draft.page1Data['qcKiemTraNoiBo'] = true;
+    } else {
+      this.draft.page1Data['qcKiemTraNoiBo'] = null;
+    }
+    this.onDataChanged();
+  }
+
+  fillNDForCurrentSample() {
+    const sample = this.activeSampleCode();
+    if (!sample) return;
+    if (!this.draft.resultData[sample]) this.draft.resultData[sample] = {};
+    const targets = this.filteredCompounds();
+    targets.forEach(c => {
+      if (this.isTargetAssigned(sample, c)) {
+        if (!this.draft.resultData[sample][c] || this.draft.resultData[sample][c].trim() === '') {
+          this.draft.resultData[sample][c] = 'ND';
+        }
+      }
+    });
+    this.onDataChanged();
+  }
+
+  override applyBulkVials() {
     const rackStart = parseInt(String(this.bulkRackStart), 10);
     const vialStart = parseInt(String(this.bulkVialStartFip), 10);
     const perRack = parseInt(String(this.bulkVialsPerRack), 10);
@@ -235,66 +259,6 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   handleGridNavigation(event: KeyboardEvent, rowIndex: number, colKey: string, colIndex: number) {
-    navigateGrid(event, rowIndex, colKey, colIndex, this.getDisplayRows().length, this.shortFormColumns.length);
+    navigateGrid(event, rowIndex, colIndex, ['loSo', ...this.shortFormColumns], this.getDisplayRows().length, 0);
   }
-
-  async importMassHunterExcel(event: any) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      if (this.draft.page1Data['uploadMassHunterToDrive']) {
-        const uploadRes = await this.reportService.uploadRawFile(file, this.run?.runId);
-        if (uploadRes && uploadRes.url) {
-          this.draft.page1Data['massHunterExcelUrl'] = uploadRes.url;
-          this.toast.success('Đã tải tệp Excel lên Google Drive');
-        }
-      }
-    } catch (e) {
-      console.warn('Could not upload excel to Drive', e);
-    }
-
-    try {
-      const parsedData = await parseMassHunterWorkbook(file);
-      let matchedCount = 0;
-      
-      const allRows = this.getDisplayRows();
-      
-      for (const row of allRows) {
-        const rowData = this.draft.resultData[row.key];
-        if (!rowData || !rowData['loSo']) continue;
-        
-        const rowVial = String(rowData['loSo']).trim();
-        if (!rowVial) continue;
-
-        const importedRow = parsedData.find(d => {
-          const v = d['Vial'] || d['Data File'];
-          if (!v) return false;
-          const vStr = String(v).trim();
-          return vStr === rowVial || vStr.includes(`-${rowVial}-`);
-        });
-
-        if (importedRow) {
-          this.shortFormColumns.forEach(col => {
-            let cellVal = importedRow[col] || importedRow[col.toLowerCase()];
-            if (cellVal !== undefined) {
-              if (typeof cellVal === 'number') {
-                cellVal = cellVal.toFixed(this.decimalPlaces);
-              }
-              this.draft.resultData[row.key][col] = String(cellVal);
-              matchedCount++;
-            }
-          });
-        }
-      }
-
-      this.toast.success(`Đã trích xuất và điền ${matchedCount} kết quả từ tệp Excel.`);
-      this.onDataChanged();
-    } catch (err: any) {
-      this.toast.error(`Lỗi đọc tệp Excel: ${err.message}`);
-    }
-    
-    event.target.value = '';
-  }
-
 }
