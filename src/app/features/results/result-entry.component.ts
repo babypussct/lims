@@ -26,6 +26,7 @@ import { SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent } from './sops/sop
 import { SopLanHuuCoEntryComponent } from './sops/sop-lan-huu-co/sop-lan-huu-co-entry.component';
 import { Sop1767856825928EntryComponent } from './sops/sop-1767856825928/sop-1767856825928-entry.component';
 import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nuoc-gcmsms/sop-tbvtv-trong-nuoc-gcmsms-entry.component';
+import { SopTbvtvThucPhamGcmsmsEntryComponent } from './sops/sop-tbvtv-thuc-pham-gcmsms/sop-tbvtv-thuc-pham-gcmsms-entry.component';
 import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
 import { isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
@@ -54,6 +55,7 @@ import {
     SopLanHuuCoEntryComponent,
     Sop1767856825928EntryComponent,
     SopTbvtvTrongNuocGcmsmsEntryComponent,
+    SopTbvtvThucPhamGcmsmsEntryComponent,
     SopChloroformEntryComponent
   ],
   templateUrl: './result-entry.component.html'

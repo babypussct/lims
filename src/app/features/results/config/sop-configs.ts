@@ -11,6 +11,7 @@ export const SOP_ID_MAP: Record<string, string> = {
   'sop_1767857642144': 'nhom-i',      // Nhóm I (GC-MS/MS)
   'tbvtv_trong_nuoc_-_gc-msms_1781345295676': 'tbvtv-trong-nuoc-gcmsms',
   '9.16-tbvtv-water': 'tbvtv-trong-nuoc-gcmsms',
+  '9.14-tbvtv-gcmsms': 'tbvtv-thuc-pham-gcmsms',
 };
 
 // ── Bảng fuzzy match: từ khóa trong sopName → config key ────────────────────
@@ -24,6 +25,7 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'], configKey: 'nhom-cuc' },
   { keywords: ['nhóm i', 'nhom i'], configKey: 'nhom-i' },
   { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc', '9.16-tbvtv-water'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
+  { keywords: ['9.14', 'thực phẩm', 'tbvtv thực phẩm', 'tbvtv thuc pham'], configKey: 'tbvtv-thuc-pham-gcmsms' },
 ];
 
 export const ANGULAR_SOP_CONFIG: Record<string, {

@@ -487,6 +487,17 @@
                 </app-sop-tbvtv-trong-nuoc-gcmsms-entry>
               </div>
             }
+            @case ('tbvtv-thuc-pham-gcmsms') {
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-tbvtv-thuc-pham-gcmsms-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-tbvtv-thuc-pham-gcmsms-entry>
+              </div>
+            }
             @default {
               <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
                 <app-result-entry-type3b 
