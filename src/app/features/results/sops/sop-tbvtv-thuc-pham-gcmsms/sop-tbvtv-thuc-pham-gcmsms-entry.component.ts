@@ -261,4 +261,89 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   handleGridNavigation(event: KeyboardEvent, rowIndex: number, colKey: string, colIndex: number) {
     navigateGrid(event, rowIndex, colIndex, ['loSo', ...this.shortFormColumns], this.getDisplayRows().length, 0);
   }
+
+  async importMassHunterExcel(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    try {
+      const XLSX = await import('xlsx');
+      const reader = new FileReader();
+
+      reader.onload = async (e: any) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+          
+          const sheetMap: Record<string, string> = {
+            'fipron': 'fipronil',
+            'fipronil': 'fipronil',
+            'fipronildesulfinyl': 'fipronil_desulfinyl',
+            'fipronil_desulfinyl': 'fipronil_desulfinyl',
+            'fipronilsulfide': 'fipronil_sulfide',
+            'fipronil_sulfide': 'fipronil_sulfide',
+            'fipronilsulfone': 'fipronil_sulfone',
+            'fipronil_sulfone': 'fipronil_sulfone',
+            'chlorpyrifos': 'chlorpyrifos',
+            'chlorpyrifosmethyl': 'chlorpyrifos_methyl',
+            'chlorpyrifos_methyl': 'chlorpyrifos_methyl',
+            'chlorpyriphosmethyl': 'chlorpyrifos_methyl'
+          };
+
+          const displayRows = this.getDisplayRows();
+          const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
+
+          parseMassHunterWorkbook(
+            XLSX,
+            workbook,
+            displayRows,
+            this.draft.resultData,
+            this.decimalPlaces,
+            checkSampleName,
+            sheetMap
+          );
+
+          this.toast.show('Đã nhập kết quả từ tệp Excel thành công!', 'success');
+          this.onDataChanged();
+
+          if (this.draft.page1Data['uploadMassHunterToDrive'] !== false) {
+            const readerForUpload = new FileReader();
+            readerForUpload.onload = async (uploadEvent: any) => {
+              const base64String = uploadEvent.target.result;
+              try {
+                const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
+                const sopId = this.draft.sopId;
+                const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
+                const ext = file.name.substring(file.name.lastIndexOf('.'));
+                const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
+
+                const uploadRes = await this.reportService.uploadExcelToDrive(
+                  this.draft.requestId, 
+                  normalizedFileName, 
+                  base64String,
+                  this.draft.sopId
+                );
+                
+                if (uploadRes && uploadRes.url) {
+                  this.draft.page1Data['massHunterExcelUrl'] = uploadRes.url;
+                  this.toast.show('Đã tải tệp gốc lên Google Drive.', 'success');
+                  this.onDataChanged();
+                }
+              } catch (upErr: any) {
+                this.toast.show(`Lỗi khi upload: ${upErr.message}`, 'error');
+              }
+            };
+            readerForUpload.readAsDataURL(file);
+          }
+        } catch (err: any) {
+          this.toast.show(`Lỗi đọc tệp Excel: ${err.message}`, 'error');
+        }
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } catch (err: any) {
+      this.toast.show(`Lỗi nạp thư viện Excel: ${err.message}`, 'error');
+    }
+  }
 }
