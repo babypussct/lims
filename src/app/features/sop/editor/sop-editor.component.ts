@@ -84,6 +84,7 @@ export class SopEditorComponent implements OnDestroy {
   showTargetModal = signal(false);
   targetSearchTerm = signal('');
   selectedMasterTargets = signal<Set<string>>(new Set());
+  replacingTargetIndex = signal<number | null>(null);
 
   filteredMasterTargets = computed(() => {
       const term = this.targetSearchTerm().toLowerCase().trim();
@@ -512,7 +513,12 @@ export class SopEditorComponent implements OnDestroy {
       this.showGroupModal.set(false);
   }
 
-  openTargetModal() {
+  openTargetModal(index?: number) {
+      if (typeof index === 'number') {
+          this.replacingTargetIndex.set(index);
+      } else {
+          this.replacingTargetIndex.set(null);
+      }
       this.targetSearchTerm.set('');
       this.selectedMasterTargets.set(new Set());
       this.showTargetModal.set(true);
@@ -520,6 +526,18 @@ export class SopEditorComponent implements OnDestroy {
 
   toggleMasterTargetSelection(id: string) {
       const current = this.selectedMasterTargets();
+      
+      if (this.replacingTargetIndex() !== null) {
+          if (current.has(id)) {
+              current.delete(id);
+          } else {
+              current.clear();
+              current.add(id);
+          }
+          this.selectedMasterTargets.set(new Set(current));
+          return;
+      }
+
       if (current.has(id)) current.delete(id);
       else current.add(id);
       this.selectedMasterTargets.set(new Set(current));
@@ -528,6 +546,26 @@ export class SopEditorComponent implements OnDestroy {
   confirmTargetSelection() {
       const selectedIds = this.selectedMasterTargets();
       const masters = this.masterTargets();
+      
+      const replaceIdx = this.replacingTargetIndex();
+      if (replaceIdx !== null) {
+          if (selectedIds.size === 1) {
+              const selectedId = Array.from(selectedIds)[0];
+              const m = masters.find(x => x.id === selectedId);
+              if (m) {
+                  const targetCtrl = this.targets.at(replaceIdx);
+                  targetCtrl.patchValue({
+                      id: m.id,
+                      name: m.name,
+                      unit: m.default_unit || 'ppb'
+                  });
+                  this.toast.show(`Đã cập nhật chỉ tiêu thành: ${m.name}`, 'success');
+              }
+          }
+          this.showTargetModal.set(false);
+          return;
+      }
+
       const currentIds = new Set(this.targets.value.map((t: any) => t.id));
 
       let addedCount = 0;
