@@ -79,6 +79,26 @@ export class SopEditorComponent implements OnDestroy {
   showGroupModal = signal(false);
   availableGroups = signal<TargetGroup[]>([]);
 
+  // Master Targets Selection Modal
+  masterTargets = signal<MasterAnalyte[]>([]);
+  showTargetModal = signal(false);
+  targetSearchTerm = signal('');
+  selectedMasterTargets = signal<Set<string>>(new Set());
+
+  filteredMasterTargets = computed(() => {
+      const term = this.targetSearchTerm().toLowerCase().trim();
+      const all = this.masterTargets();
+      if (!term) return all;
+      return all.filter(t => t.name.toLowerCase().includes(term) || t.id.includes(term));
+  });
+
+  validTargetMap = computed(() => {
+      const masters = this.masterTargets();
+      const map = new Map<string, boolean>();
+      masters.forEach(m => map.set(m.id, true));
+      return map;
+  });
+
   readonly CORE_INPUTS = [{ var: 'n_sample', label: 'Số lượng mẫu', type: 'number', default: 1, step: 1, unitLabel: 'mẫu' }, { var: 'n_qc', label: 'Số lượng QC', type: 'number', default: 8, step: 1, unitLabel: 'mẫu' }, { var: 'w_sample', label: 'Khối lượng mẫu', type: 'number', default: 10, step: 0.1, unitLabel: 'g' }];
 
   form = this.fb.group({
@@ -248,7 +268,11 @@ export class SopEditorComponent implements OnDestroy {
     }
     this.selectedMatrixTags.set(sop.matrixTags || []);
 
-    this.runPreview(this.form.value);
+    if (this.masterTargets().length === 0) {
+      this.masterTargetService.getAll().then(m => this.masterTargets.set(m));
+    }
+    
+    this.runPreview(this.form.getRawValue());
   }
 
   toggleMatrixTag(id: string) {
@@ -491,162 +515,44 @@ export class SopEditorComponent implements OnDestroy {
       this.showGroupModal.set(false);
   }
 
-  async syncToMasterTargets() {
-      const rawTargets = this.form.value.targets as any[];
-      const validTargets = rawTargets.filter(t => t.id && t.name);
-      
-      if (validTargets.length === 0) {
-          this.toast.show('Không có chỉ tiêu hợp lệ để đồng bộ.', 'info');
-          return;
-      }
-
-      this.isLoading.set(true);
-      try {
-          const masterAnalytes: any[] = validTargets.map(t => ({
-              id: t.id,
-              name: t.name,
-              default_unit: t.unit || 'ppb'
-          }));
-
-          await this.masterTargetService.saveBatch(masterAnalytes);
-          this.toast.show(`Đã đồng bộ ${masterAnalytes.length} chỉ tiêu về thư viện chung!`, 'success');
-      } catch (e: any) {
-          this.toast.show('Lỗi đồng bộ: ' + (e.message || 'Unknown'), 'error');
-      } finally {
-          this.isLoading.set(false);
-      }
+  openTargetModal() {
+      this.targetSearchTerm.set('');
+      this.selectedMasterTargets.set(new Set());
+      this.showTargetModal.set(true);
   }
 
-  // Helper cho auto-sync khi save
-  private async autoSyncToMasterTargets(targets: SopTarget[] | undefined) {
-      if (!targets || targets.length === 0) return;
-      
-      const masterAnalytes: any[] = targets.map(t => ({
-          id: t.id,
-          name: t.name,
-          default_unit: t.unit || 'ppb',
-          // Optional: có thể lấy LOD/LOQ nếu cần ở đây
-      }));
-      
-      try {
-          await this.masterTargetService.saveBatch(masterAnalytes);
-      } catch (e) {
-          console.warn('Auto-sync to master analytes failed', e);
-      }
+  toggleMasterTargetSelection(id: string) {
+      const current = this.selectedMasterTargets();
+      if (current.has(id)) current.delete(id);
+      else current.add(id);
+      this.selectedMasterTargets.set(new Set(current));
   }
 
-  // --- GIAI ĐOẠN 2: MIGRATION SCRIPT ---
-  async runFullMigration() {
-      if (!confirm('CẢNH BÁO: Quá trình này sẽ quét toàn bộ SOPs và Runs/Batches để cập nhật Target ID sang Canonical ID. Đảm bảo bạn đang không chạy tác vụ nào khác. Tiếp tục?')) return;
-      this.isLoading.set(true);
-      try {
-          // 1. Quét toàn bộ SOPs
-          const sops = await this.sopService.getAll();
-          const uuidToCanonical = new Map<string, string>();
-          let sopsUpdated = 0;
-          
-          for (const sop of sops) {
-              let changed = false;
-              if (sop.targets) {
-                  sop.targets.forEach((t: any) => {
-                      if (t.name) {
-                          const canonical = getCanonicalId(t.name);
-                          if (t.id !== canonical) {
-                              uuidToCanonical.set(t.id, canonical); // Map old ID to new Canonical ID
-                              t.id = canonical;
-                              changed = true;
-                          }
-                      }
-                  });
-              }
-              if (changed) {
-                  await this.sopService.saveSop(sop);
-                  sopsUpdated++;
+  confirmTargetSelection() {
+      const selectedIds = this.selectedMasterTargets();
+      const masters = this.masterTargets();
+      const currentIds = new Set(this.targets.value.map((t: any) => t.id));
+
+      let addedCount = 0;
+      selectedIds.forEach(id => {
+          if (!currentIds.has(id)) {
+              const m = masters.find(x => x.id === id);
+              if (m) {
+                  this.targets.push(this.fb.group({
+                      id: [m.id],
+                      name: [m.name],
+                      unit: [m.default_unit || 'ppb'],
+                      lod: [''],
+                      loq: ['']
+                  }));
+                  addedCount++;
               }
           }
-          this.toast.show(`Đã cập nhật xong ${sopsUpdated} SOPs! Đang cập nhật Runs...`, 'info');
-
-          // 2. Quét toàn bộ Runs/Batches (Requests)
-          let runsUpdated = 0;
-          const reqRef = collection(this.fbService.db, 'artifacts', this.fbService.APP_ID, 'requests');
-          const reqSnap = await getDocs(reqRef);
-          
-          let batch = writeBatch(this.fbService.db);
-          let opCount = 0;
-
-          reqSnap.forEach(docSnap => {
-              const data = docSnap.data();
-              let docChanged = false;
-              const updates: any = {};
-
-              // Update targetIds array if exists
-              if (data['targetIds'] && Array.isArray(data['targetIds'])) {
-                  const newTargetIds = data['targetIds'].map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
-                  if (JSON.stringify(newTargetIds) !== JSON.stringify(data['targetIds'])) {
-                      updates['targetIds'] = Array.from(new Set(newTargetIds));
-                      docChanged = true;
-                  }
-              }
-
-              // Update sampleTargetMap at root level
-              if (data['sampleTargetMap']) {
-                  const newMap: any = {};
-                  let mapChanged = false;
-                  Object.keys(data['sampleTargetMap']).forEach(sampleId => {
-                      const oldArr = data['sampleTargetMap'][sampleId] || [];
-                      const newArr = oldArr.map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
-                      newMap[sampleId] = Array.from(new Set(newArr));
-                      if (JSON.stringify(newArr) !== JSON.stringify(oldArr)) mapChanged = true;
-                  });
-                  if (mapChanged) {
-                      updates['sampleTargetMap'] = newMap;
-                      docChanged = true;
-                  }
-              }
-
-              // Update sampleTargetMap inside inputs object
-              if (data['inputs'] && data['inputs']['sampleTargetMap']) {
-                  const inputsCopy = { ...data['inputs'] };
-                  const newMap: any = {};
-                  let mapChanged = false;
-                  Object.keys(inputsCopy['sampleTargetMap']).forEach(sampleId => {
-                      const oldArr = inputsCopy['sampleTargetMap'][sampleId] || [];
-                      const newArr = oldArr.map((tid: string) => uuidToCanonical.has(tid) ? uuidToCanonical.get(tid) : tid);
-                      newMap[sampleId] = Array.from(new Set(newArr));
-                      if (JSON.stringify(newArr) !== JSON.stringify(oldArr)) mapChanged = true;
-                  });
-                  if (mapChanged) {
-                      inputsCopy['sampleTargetMap'] = newMap;
-                      updates['inputs'] = inputsCopy;
-                      docChanged = true;
-                  }
-              }
-
-              if (docChanged) {
-                  batch.update(docSnap.ref, updates);
-                  opCount++;
-                  runsUpdated++;
-
-                  if (opCount >= 400) {
-                      // commit
-                      batch.commit();
-                      batch = writeBatch(this.fbService.db);
-                      opCount = 0;
-                  }
-              }
-          });
-
-          if (opCount > 0) {
-              await batch.commit();
-          }
-
-          this.toast.show(`Migration Hoàn Tất! Đã cập nhật ${sopsUpdated} SOPs và ${runsUpdated} Mẻ phân tích.`, 'success');
-
-      } catch (e: any) {
-          console.error(e);
-          this.toast.show('Lỗi migration: ' + e.message, 'error');
-      } finally {
-          this.isLoading.set(false);
+      });
+      
+      if (addedCount > 0) {
+          this.toast.show(`Đã thêm ${addedCount} chỉ tiêu vào danh sách.`, 'success');
       }
+      this.showTargetModal.set(false);
   }
 }

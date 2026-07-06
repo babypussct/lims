@@ -402,16 +402,12 @@
                                           <i class="fa-solid fa-bullseye text-emerald-500 dark:text-emerald-400"></i> Danh sách Chỉ tiêu (Targets)
                                       </h3>
                                       <div class="flex gap-2">
-                                          <button type="button" (click)="syncToMasterTargets()" class="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
-                                              <i class="fa-solid fa-cloud-arrow-up"></i> Đồng bộ về Thư viện
-                                          </button>
-                                          <button type="button" (click)="runFullMigration()" class="text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/50 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
-                                              <i class="fa-solid fa-triangle-exclamation"></i> Chạy Data Migration
-                                          </button>
                                           <button type="button" (click)="openGroupImport()" class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
                                               <i class="fa-solid fa-layer-group"></i> Nhập từ Bộ
                                           </button>
-                                          <button type="button" (click)="addTarget()" class="text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Chỉ tiêu</button>
+                                          <button type="button" (click)="openTargetModal()" class="text-xs bg-emerald-500 text-white hover:bg-emerald-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-sm shadow-emerald-500/20">
+                                              <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Thư viện Gốc
+                                          </button>
                                       </div>
                                   </div>
                                   <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
@@ -420,18 +416,26 @@
 
                                   <div formArrayName="targets" class="space-y-3">
                                       @for (t of targets.controls; track t; let i = $index) {
-                                          <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 group">
-                                              <div class="w-8 h-8 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs font-bold mt-1">{{i+1}}</div>
+                                          @let masterItem = validTargetMap().get(t.get('id')?.value || '');
+                                          <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border group transition-colors" [class.border-red-200]="!masterItem" [class.dark:border-red-900]="!masterItem" [class.border-slate-100]="masterItem" [class.dark:border-slate-700]="masterItem">
+                                              <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors" [class.bg-red-100]="!masterItem" [class.text-red-600]="!masterItem" [class.bg-slate-200]="masterItem" [class.text-slate-500]="masterItem" [class.dark:bg-slate-700]="masterItem" [class.dark:text-slate-400]="masterItem">{{i+1}}</div>
                                               
                                               <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
                                                   <!-- Name & ID -->
                                                   <div class="md:col-span-4">
-                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Tên Chỉ tiêu <span class="text-red-500">*</span></label>
-                                                      <input formControlName="name" (input)="onTargetNameChange(i, $event)" placeholder="VD: Chloramphenicol" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
+                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 flex justify-between items-center">
+                                                          <span>Tên Chỉ tiêu</span>
+                                                          @if (masterItem) {
+                                                              <span class="text-[9px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1 rounded flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> Khớp Thư viện</span>
+                                                          } @else {
+                                                              <span class="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 rounded flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi: Không tồn tại!</span>
+                                                          }
+                                                      </label>
+                                                      <input formControlName="name" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 rounded px-2 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed">
                                                   </div>
                                                   <div class="md:col-span-3">
-                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Mã ID (Auto)</label>
-                                                      <input formControlName="id" placeholder="chloramphenicol" class="w-full border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs font-mono text-slate-500 dark:text-slate-400 outline-none bg-slate-100 dark:bg-slate-900">
+                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Mã ID (Locked)</label>
+                                                      <input formControlName="id" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 rounded px-2 py-1.5 text-xs font-mono text-slate-400 dark:text-slate-500 outline-none cursor-not-allowed">
                                                   </div>
                                                   
                                                   <!-- Unit, LOD, LOQ -->
@@ -518,6 +522,72 @@
                                 </div>
                             }
                         }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Master Targets Selection Modal -->
+        @if(showTargetModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up">
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shrink-0">
+                        <div>
+                            <h3 class="font-black text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass-plus text-emerald-500"></i> Chọn từ Thư viện Gốc
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Chọn các chỉ tiêu phân tích để thêm vào SOP hiện tại.</p>
+                        </div>
+                        <button (click)="showTargetModal.set(false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-full transition-colors"><i class="fa-solid fa-times text-sm"></i></button>
+                    </div>
+                    
+                    <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                            <input [value]="targetSearchTerm()" (input)="targetSearchTerm.set($any($event.target).value)" type="text" placeholder="Tìm kiếm chỉ tiêu theo Tên hoặc ID..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar bg-slate-50 dark:bg-slate-800/30">
+                        @if (filteredMasterTargets().length === 0) {
+                            <div class="p-12 text-center text-slate-400 dark:text-slate-500 italic text-sm">
+                                <i class="fa-solid fa-box-open text-3xl mb-3 opacity-50"></i><br>
+                                Không tìm thấy chỉ tiêu nào phù hợp.<br>
+                            </div>
+                        } @else {
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 p-1">
+                                @for (m of filteredMasterTargets(); track m.id) {
+                                    <div (click)="toggleMasterTargetSelection(m.id)" 
+                                         class="p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 select-none"
+                                         [class.bg-emerald-50]="selectedMasterTargets().has(m.id)" [class.dark:bg-emerald-900/20]="selectedMasterTargets().has(m.id)" [class.border-emerald-500]="selectedMasterTargets().has(m.id)" [class.dark:border-emerald-400]="selectedMasterTargets().has(m.id)"
+                                         [class.bg-white]="!selectedMasterTargets().has(m.id)" [class.dark:bg-slate-800]="!selectedMasterTargets().has(m.id)" [class.border-slate-200]="!selectedMasterTargets().has(m.id)" [class.dark:border-slate-700]="!selectedMasterTargets().has(m.id)" [class.hover:border-slate-300]="!selectedMasterTargets().has(m.id)" [class.dark:hover:border-slate-600]="!selectedMasterTargets().has(m.id)">
+                                        
+                                        <div class="w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors"
+                                             [class.bg-emerald-500]="selectedMasterTargets().has(m.id)" [class.border-emerald-500]="selectedMasterTargets().has(m.id)" [class.text-white]="selectedMasterTargets().has(m.id)"
+                                             [class.bg-transparent]="!selectedMasterTargets().has(m.id)" [class.border-slate-300]="!selectedMasterTargets().has(m.id)" [class.dark:border-slate-600]="!selectedMasterTargets().has(m.id)">
+                                            @if (selectedMasterTargets().has(m.id)) { <i class="fa-solid fa-check text-[10px]"></i> }
+                                        </div>
+                                        
+                                        <div class="flex-1 overflow-hidden">
+                                            <div class="font-bold text-slate-700 dark:text-slate-200 text-sm truncate">{{m.name}}</div>
+                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">{{m.id}}</div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex justify-between items-center shrink-0">
+                        <div class="text-sm font-bold text-slate-600 dark:text-slate-400">
+                            Đã chọn: <span class="text-emerald-600 dark:text-emerald-400">{{selectedMasterTargets().size}}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button (click)="showTargetModal.set(false)" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Hủy</button>
+                            <button (click)="confirmTargetSelection()" [disabled]="selectedMasterTargets().size === 0" class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-emerald-500/20 flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Thêm vào SOP
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

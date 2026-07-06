@@ -117,14 +117,38 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'Cypermethrins':         'cypermethrins',
   'Cypermethrin':          'cypermethrins',
 
-  // Trifluralin / Dichlorvos
+  // Trifluralin / Dichlorvos / Trichlorfon
   'Trifluralin':   'trifluralin',
-  'Dichlorvos':    'trichlorfondipterexdichlorvos',
-  'Trichlorfon':   'trichlorfondipterexdichlorvos',
+  'Dichlorvos':    'dichlorvos',                    // SOP 9.14 — ID riêng trong Master
+  'Trichlorfon':   'trichlorfondipterexdichlorvos', // Trichlorfon(Dipterex)/Dichlorvos — entry ghép
+  'Trichlorfon(Dipterex)/Dichlorvos': 'trichlorfondipterexdichlorvos',
 
   // Others
   'Ethoprophos': 'ethoprophos_ethoprop',
   'Ethoprophos (Ethoprop)': 'ethoprophos_ethoprop',
+
+  // ── SOP 9.14 USDA — chất chưa có trong mapping ─────────────────────────────
+  // Lưu ý: LIMS đã migrate toàn bộ hyphen (-) sang underscore (_) để đồng bộ ID
+  'MGK-264':                  'mgk_264',
+  'MGK264':                   'mgk_264',
+  '1-Naphthol':               '1_naphthol',
+  '1-naphthol':               '1_naphthol',
+  'Acetamiprid':              'acetamiprid',
+  'Chloroneb':                'chloroneb',
+  'Chlorpropham':             'chlorpropham',
+  'Metolachlor':              'metolachlor',
+  'Nonachlor cis':            'nonachlor_cis',
+  'Nonachlor-cis':            'nonachlor_cis',
+  'NonachlorCis':             'nonachlor_cis',
+  'Nonachlor trans':          'nonachlor_trans',
+  'Nonachlor-trans':          'nonachlor_trans',
+  'NonachlorTrans':           'nonachlor_trans',
+  'Pentachloroaniline':       'pentachloroaniline',
+  'Pentachloroaniline (PCA)': 'pentachloroaniline',
+  'PCA':                      'pentachloroaniline',
+  'Pentachlorobenzene':       'pentachlorobenzene',
+  'Pentachlorobenzene (PCB)': 'pentachlorobenzene',
+  'Pronamide':                'pronamide',
 
   // Chlor hữu cơ — simple-name compounds (canonical id = lowercase)
   // Cần thiết cho migrateResultDataKeys() reverse-lookup từ draft v1 (capital key)
