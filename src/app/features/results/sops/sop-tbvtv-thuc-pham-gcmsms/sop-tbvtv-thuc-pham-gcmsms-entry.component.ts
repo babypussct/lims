@@ -341,8 +341,8 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
                   this.draft.sopId
                 );
                 
-                if (uploadRes && uploadRes.url) {
-                  this.draft.page1Data['massHunterExcelUrl'] = uploadRes.url;
+                if (uploadRes.success && uploadRes.fileUrl) {
+                  this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
                   this.toast.show('Đã tải tệp gốc lên Google Drive.', 'success');
                   this.onDataChanged();
                 }
