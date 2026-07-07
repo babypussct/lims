@@ -1,4 +1,32 @@
 <div class="space-y-6 animate-fade-in">
+  <!-- Form Selection Switcher -->
+  <div class="sticky top-0 z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-violet-200/70 dark:border-violet-900/40 shadow-sm">
+    <div class="min-w-0">
+      <span class="block text-[10px] font-black text-violet-650 dark:text-violet-400 uppercase tracking-widest">Dạng nhập kết quả SOP 9.14</span>
+      <span class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+        Đầy đủ: Form Check tất cả target · Rút gọn: giao diện SOP-01
+      </span>
+    </div>
+
+    <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200 dark:border-slate-800 select-none items-center shadow-3xs w-full lg:w-auto">
+      <button type="button"
+              (click)="setPrintFormMode('formDayDu')"
+              [class]="draft.page1Data['printFormType'] !== 'formRutGon'
+                ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
+                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+        FORM ĐẦY ĐỦ
+        <span class="hidden sm:inline font-extrabold opacity-80">(CHECK - TẤT CẢ TARGET)</span>
+      </button>
+      <button type="button"
+              (click)="setPrintFormMode('formRutGon')"
+              [class]="draft.page1Data['printFormType'] === 'formRutGon'
+                ? 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95'
+                : 'flex-1 lg:flex-none px-3.5 py-2 text-[11px] font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
+        FORM RÚT GỌN
+        <span class="hidden sm:inline font-extrabold opacity-80">(SOP-01)</span>
+      </button>
+    </div>
+  </div>
   
   <!-- 1. Metadata Form & Checkboxes -->
   <app-sop-header-metadata
@@ -168,31 +196,8 @@
     </div>
   </div>
   
-  <!-- Form Selection Switcher -->
-  <div class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 shadow-sm mb-4">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-black text-slate-700 dark:text-slate-355 uppercase tracking-wider">Hình thức in kết quả:</span>
-      <div class="inline-flex bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200 dark:border-slate-800 select-none items-center shadow-3xs">
-        <button type="button"
-                (click)="setPrintFormMode('formDayDu')"
-                [class]="draft.page1Data['printFormType'] === 'formDayDu'
-                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
-          FORM ĐẦY ĐỦ
-        </button>
-        <button type="button"
-                (click)="setPrintFormMode('formRutGon')"
-                [class]="draft.page1Data['printFormType'] === 'formRutGon'
-                  ? 'px-3.5 py-2 text-xs font-black rounded-lg bg-violet-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                  : 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-550 hover:text-slate-855 dark:hover:text-slate-250 transition duration-155'">
-          FORM RÚT GỌN
-        </button>
-      </div>
-    </div>
-  </div>
-  
   <!-- TAB 1: FORM ĐẦY ĐỦ -->
-  <div *ngIf="draft.page1Data['printFormType'] === 'formDayDu'" class="space-y-6 animate-fade-in">
+  <div *ngIf="draft.page1Data['printFormType'] !== 'formRutGon'" class="space-y-6 animate-fade-in">
     
     <!-- 2. Sample Navigation Tabs & Print Configuration -->
     <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
