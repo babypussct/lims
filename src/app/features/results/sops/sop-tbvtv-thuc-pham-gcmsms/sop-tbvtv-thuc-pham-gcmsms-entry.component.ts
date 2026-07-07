@@ -106,18 +106,21 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
       this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
     }
 
-    const qcKeys = [
+    const qcKeysTrue = [
       'qcThoiGianLuu',
-      'qcNhanDangMauNhiem',
       'qcNhanDangSpike',
       'qcThuHoiIS',
       'qcDanhGiaChung'
     ];
-    qcKeys.forEach(k => {
+    qcKeysTrue.forEach(k => {
       if (this.draft.page1Data[k] === undefined || this.draft.page1Data[k] === null || this.draft.page1Data[k] === '') {
         this.draft.page1Data[k] = true;
       }
     });
+
+    if (this.draft.page1Data['qcNhanDangMauNhiem'] === undefined || this.draft.page1Data['qcNhanDangMauNhiem'] === '') {
+      this.draft.page1Data['qcNhanDangMauNhiem'] = null;
+    }
     if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
       this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
     }
@@ -232,6 +235,40 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   protected override onSetPrintFormType(_type: 'formCheck' | 'formDon') {
     // Bắt buộc override từ abstract
+  }
+
+  override onDataChanged() {
+    let hasPositive = false;
+    const sampleList = this.run?.sampleList || [];
+    const compounds = this.config?.compounds || [];
+    
+    for (const sample of sampleList) {
+      const row = this.draft.resultData[sample];
+      if (!row) continue;
+      
+      for (const c of compounds) {
+        const val = row[c];
+        if (val === undefined || val === null) continue;
+        const vStr = val.toString().trim().toUpperCase();
+        if (vStr !== '' && vStr !== 'ND' && vStr !== 'N/A' && vStr !== 'KPH') {
+          hasPositive = true;
+          break;
+        }
+      }
+      if (hasPositive) break;
+    }
+
+    if (hasPositive) {
+      if (this.draft.page1Data['qcNhanDangMauNhiem'] === null || this.draft.page1Data['qcNhanDangMauNhiem'] === undefined) {
+        this.draft.page1Data['qcNhanDangMauNhiem'] = true;
+      }
+    } else {
+      if (this.draft.page1Data['qcNhanDangMauNhiem'] === true) {
+         this.draft.page1Data['qcNhanDangMauNhiem'] = null;
+      }
+    }
+    
+    super.onDataChanged();
   }
 
   // ── SPREADSHEET (FORM RÚT GỌN, SPREADSHEET UI/DATA) METHODS ──────────────────
