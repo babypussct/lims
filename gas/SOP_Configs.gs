@@ -274,8 +274,8 @@ const CONFIG = {
     'nhom-i-don':             '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE',   // Nhóm I (GC-MS/MS) - Form Đơn
     'tbvtv-trong-nuoc-gcmsms':      '1IOPpgtydsZegD0RNP246c0Rq5asvdU6RJZ7MJ1c1KCs',
     'tbvtv-trong-nuoc-gcmsms-don':  '1cF4lX-lotjbV2GSDOqpsfwFuQK2TJcxg8w1RsCMMBLE',
-    'tbvtv-thuc-pham-gcmsms':       '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
-    'tbvtv-thuc-pham-gcmsms-rut-gon': '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4',
+    'tbvtv-thuc-pham-gcmsms':       '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4',
+    'tbvtv-thuc-pham-gcmsms-rut-gon': '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)

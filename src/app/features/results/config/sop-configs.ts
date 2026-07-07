@@ -29,8 +29,8 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
 ];
 
 export const SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS = {
-  formDayDu: '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
-  formRutGon: '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4'
+  formDayDu: '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4',
+  formRutGon: '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4'
 } as const;
 
 export const SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS = {
