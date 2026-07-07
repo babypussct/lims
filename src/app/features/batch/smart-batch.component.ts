@@ -192,9 +192,77 @@ export class SmartBatchComponent {
     return map;
   });
 
+  private buildSopSuggestion(
+    sop: Sop,
+    reqTargetIds: string[],
+    allTargets: {uniqueKey: string, name: string}[],
+    inventory: Record<string, any>,
+    matrixType?: string
+  ): SopSuggestion | null {
+    if (!sop.targets || sop.targets.length === 0) return null;
+    
+    // Matrix Filter
+    const sopMatrices = sop.matrixTags || [];
+    if (sopMatrices.length > 0 && matrixType && !sopMatrices.includes(matrixType)) {
+        return null; // doesn't match matrix
+    }
+
+    const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
+    const covered: {id: string, name: string}[] = [];
+    const missing: {id: string, name: string}[] = [];
+    
+    reqTargetIds.forEach(reqId => {
+        const foundName = allTargets.find(t => t.uniqueKey === reqId)?.name || reqId;
+        if (sopTargetIds.has(reqId)) {
+            covered.push({id: reqId, name: foundName});
+        } else {
+            missing.push({id: reqId, name: foundName});
+        }
+    });
+
+    if (covered.length === 0) return null; // No overlap
+
+    const extra: {id: string, name: string}[] = [];
+    sop.targets.forEach(t => {
+        const id = getCanonicalId(t.name);
+        if (!reqTargetIds.includes(id)) {
+            extra.push({id, name: t.name});
+        }
+    });
+
+    // Check stock
+    let isMissingStock = false;
+    if (sop.consumables) {
+        for (const c of sop.consumables) {
+            if (c.type === 'simple') {
+                const stockItem = inventory[c.name];
+                if (!stockItem || stockItem.stock <= 0) {
+                    isMissingStock = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    const ratio = covered.length / sop.targets.length; // high ratio means less waste
+
+    return {
+        sop,
+        coverageCount: covered.length,
+        totalRequired: reqTargetIds.length,
+        coverageRatio: ratio,
+        coveredTargets: covered,
+        missingTargets: missing,
+        extraTargets: extra,
+        isMissingStock,
+        isBest: false,
+        isPartial: missing.length > 0
+    };
+  }
+
   sopSuggestionsMap = computed(() => {
     const map = new Map<number, SopSuggestion[]>();
-    const active = this.activeSops();
+    const activeNormal = this.activeSops().filter(s => !s.isManualOnly);
     const inventory = this.state.inventoryMap();
 
     for (const block of this.blocks()) {
@@ -205,67 +273,9 @@ export class SmartBatchComponent {
       
       const candidates: SopSuggestion[] = [];
 
-      for (const sop of active) {
-        if (!sop.targets || sop.targets.length === 0) continue;
-        
-        // Matrix Filter
-        const sopMatrices = sop.matrixTags || [];
-        if (sopMatrices.length > 0 && block.matrixType && !sopMatrices.includes(block.matrixType)) {
-            continue; // doesn't match matrix
-        }
-
-        const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-        
-        const covered: {id: string, name: string}[] = [];
-        const missing: {id: string, name: string}[] = [];
-        
-        reqTargetIds.forEach(reqId => {
-            const foundName = allTargets.find(t => t.uniqueKey === reqId)?.name || reqId;
-            if (sopTargetIds.has(reqId)) {
-                covered.push({id: reqId, name: foundName});
-            } else {
-                missing.push({id: reqId, name: foundName});
-            }
-        });
-
-        if (covered.length === 0) continue; // No overlap
-
-        const extra: {id: string, name: string}[] = [];
-        sop.targets.forEach(t => {
-            const id = getCanonicalId(t.name);
-            if (!block.selectedTargets.has(id)) {
-                extra.push({id, name: t.name});
-            }
-        });
-
-        // Check stock
-        let isMissingStock = false;
-        if (sop.consumables) {
-            for (const c of sop.consumables) {
-                if (c.type === 'simple') {
-                    const stockItem = inventory[c.name];
-                    if (!stockItem || stockItem.stock <= 0) {
-                        isMissingStock = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        const ratio = covered.length / sop.targets.length; // high ratio means less waste
-
-        candidates.push({
-            sop,
-            coverageCount: covered.length,
-            totalRequired: reqTargetIds.length,
-            coverageRatio: ratio,
-            coveredTargets: covered,
-            missingTargets: missing,
-            extraTargets: extra,
-            isMissingStock,
-            isBest: false,
-            isPartial: missing.length > 0
-        });
+      for (const sop of activeNormal) {
+          const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, block.matrixType);
+          if (sug) candidates.push(sug);
       }
 
       // We have all candidates.
@@ -284,6 +294,20 @@ export class SmartBatchComponent {
           results[0].isBest = true; // Best overall based on sort order
       }
 
+      // Inject forced SOP if needed
+      if (block.forcedSopId) {
+          const alreadyInResults = results.some(r => r.sop.id === block.forcedSopId);
+          if (!alreadyInResults) {
+              const forcedSop = this.activeSops().find(s => s.id === block.forcedSopId);
+              if (forcedSop) {
+                  const forcedSug = this.buildSopSuggestion(forcedSop, reqTargetIds, allTargets, inventory, block.matrixType);
+                  if (forcedSug) {
+                      results = [forcedSug, ...results];
+                  }
+              }
+          }
+      }
+
       map.set(block.id, results);
     }
     return map;
@@ -294,73 +318,15 @@ export class SmartBatchComponent {
     
     const reqTargetIds = Array.from(this.singleSelectedTargets());
     const allTargets = this.allAvailableTargets();
-    const active = this.activeSops();
+    const activeNormal = this.activeSops().filter(s => !s.isManualOnly);
     const inventory = this.state.inventoryMap();
     const matrixType = this.singleMatrixType();
     
     const candidates: SopSuggestion[] = [];
 
-    for (const sop of active) {
-      if (!sop.targets || sop.targets.length === 0) continue;
-      
-      // Matrix Filter
-      const sopMatrices = sop.matrixTags || [];
-      if (sopMatrices.length > 0 && matrixType && !sopMatrices.includes(matrixType)) {
-          continue; // doesn't match matrix
-      }
-
-      const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-      
-      const covered: {id: string, name: string}[] = [];
-      const missing: {id: string, name: string}[] = [];
-      
-      reqTargetIds.forEach(reqId => {
-          const foundName = allTargets.find(t => t.uniqueKey === reqId)?.name || reqId;
-          if (sopTargetIds.has(reqId)) {
-              covered.push({id: reqId, name: foundName});
-          } else {
-              missing.push({id: reqId, name: foundName});
-          }
-      });
-
-      if (covered.length === 0) continue; // No overlap
-
-      const extra: {id: string, name: string}[] = [];
-      sop.targets.forEach(t => {
-          const id = getCanonicalId(t.name);
-          if (!this.singleSelectedTargets().has(id)) {
-              extra.push({id, name: t.name});
-          }
-      });
-
-      // Check stock
-      let isMissingStock = false;
-      if (sop.consumables) {
-          for (const c of sop.consumables) {
-              if (c.type === 'simple') {
-                  const stockItem = inventory[c.name];
-                  if (!stockItem || stockItem.stock <= 0) {
-                      isMissingStock = true;
-                      break;
-                  }
-              }
-          }
-      }
-
-      const ratio = covered.length / sop.targets.length;
-
-      candidates.push({
-          sop,
-          coverageCount: covered.length,
-          totalRequired: reqTargetIds.length,
-          coverageRatio: ratio,
-          coveredTargets: covered,
-          missingTargets: missing,
-          extraTargets: extra,
-          isMissingStock,
-          isBest: false,
-          isPartial: missing.length > 0
-      });
+    for (const sop of activeNormal) {
+        const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, matrixType);
+        if (sug) candidates.push(sug);
     }
 
     const fullMatches = candidates.filter(c => !c.isPartial);
@@ -374,6 +340,21 @@ export class SmartBatchComponent {
 
     if (results.length > 0) {
         results[0].isBest = true;
+    }
+
+    // Inject forced SOP if needed
+    if (this.singleForcedSopId()) {
+        const forcedId = this.singleForcedSopId();
+        const alreadyInResults = results.some(r => r.sop.id === forcedId);
+        if (!alreadyInResults) {
+            const forcedSop = this.activeSops().find(s => s.id === forcedId);
+            if (forcedSop) {
+                const forcedSug = this.buildSopSuggestion(forcedSop, reqTargetIds, allTargets, inventory, matrixType);
+                if (forcedSug) {
+                    results = [forcedSug, ...results];
+                }
+            }
+        }
     }
 
     return results;
@@ -844,10 +825,12 @@ export class SmartBatchComponent {
           let iterationLimit = 0;
           const MAX_ITERATIONS = 50;
 
+          const sopsForAuto = sops.filter(s => !s.isManualOnly);
+
           while (remainingTasks.length > 0 && iterationLimit < MAX_ITERATIONS) {
               iterationLimit++;
 
-              const candidates = sops.map(sop => {
+              const candidates = sopsForAuto.map(sop => {
                   if (!sop.targets || sop.targets.length === 0) return null;
                   const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
                   const sopMatrices = sop.matrixTags || [];

@@ -142,7 +142,8 @@ export class SopEditorComponent implements OnDestroy {
     inputs: this.fb.array([]), 
     variablesList: this.fb.array([]), 
     consumables: this.fb.array([]),
-    targets: this.fb.array([]) // New Targets Array
+    targets: this.fb.array([]), // New Targets Array
+    isManualOnly: [false]
   });
 
   constructor() {
@@ -224,7 +225,7 @@ export class SopEditorComponent implements OnDestroy {
 
   createNew() {
     this.currentId.set(null); this.currentVersion.set(1); this.currentTab.set('general');
-    this.form.reset({ id: '', category: '', name: '', ref: '', version: 1, device: '' });
+    this.form.reset({ id: '', category: '', name: '', ref: '', version: 1, device: '', isManualOnly: false });
     this.selectedAllowedDevices.set([]);
     this.inputs.clear(); this.variablesList.clear(); this.consumables.clear(); this.targets.clear();
     this.CORE_INPUTS.forEach(ci => { this.addInputRaw(ci.var, ci.label, ci.default, ci.type as any, ci.step, ci.unitLabel); });
@@ -235,7 +236,7 @@ export class SopEditorComponent implements OnDestroy {
     if (sop.id) this.currentId.set(sop.id);
     this.currentVersion.set(sop.version || 1); 
     this.currentTab.set('general');
-    this.form.patchValue({ id: sop.id, category: sop.category, name: sop.name, ref: sop.ref, version: sop.version || 1, device: sop.device || '' });
+    this.form.patchValue({ id: sop.id, category: sop.category, name: sop.name, ref: sop.ref, version: sop.version || 1, device: sop.device || '', isManualOnly: sop.isManualOnly || false });
     
     this.selectedAllowedDevices.set(sop.allowedDevices || []);
     
@@ -396,6 +397,7 @@ export class SopEditorComponent implements OnDestroy {
       matrixTags: this.selectedMatrixTags().length > 0 ? this.selectedMatrixTags() : null as any,
       device: formVal.device || null as any,
       allowedDevices: this.selectedAllowedDevices().length > 0 ? this.selectedAllowedDevices() : null as any,
+      isManualOnly: formVal.isManualOnly || false,
       version: formVal.version || this.currentVersion() 
     };
     

@@ -122,6 +122,9 @@ export interface Sop {
   // Device configuration
   device?: string;          // Thiết bị mặc định (tên hiển thị, e.g. 'GC-MS/MS')
   allowedDevices?: string[]; // Danh sách tên thiết bị khả dụng (e.g. ['GC-MS/MS', 'GC-MS'])
+  
+  // Smart Batch auto-assign filter
+  isManualOnly?: boolean;    // Nếu true, SOP chỉ được chọn khi gán cưỡng bức (forced)
 }
 
 // --- Calculated Results ---
