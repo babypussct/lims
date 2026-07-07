@@ -33,7 +33,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   searchQuery = signal<string>('');
 
-  // Các thuộc tính cho Form Rút Gọn (Grid Spreadsheet, giống SOP-01)
+  // Các thuộc tính cho Form Rút Gọn (Grid Spreadsheet)
   bulkRackStart = 1;
   bulkVialStartFip = 10;
   bulkVialsPerRack = 54;
@@ -63,6 +63,15 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   // ── SOP-specific initialization ───────────────────────────────────────────
   protected override onSopSpecificInit() {
+    this.checkboxList = [
+      { key: 'qcKiemTraNoiBo', label: 'Mẫu kiểm tra nội bộ' },
+      { key: 'qcThoiGianLuu', label: 'Độ lệch thời gian lưu' },
+      { key: 'qcNhanDangMauNhiem', label: 'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm' },
+      { key: 'qcNhanDangSpike', label: 'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb' },
+      { key: 'qcThuHoiIS', label: 'Độ thu hồi IS' },
+      { key: 'qcDanhGiaChung', label: 'Đánh giá chung' }
+    ];
+
     // TBVTV Thực Phẩm dùng 5 điểm chuẩn (C0-C4)
     this.initCalibrationPoints(5);
     this.initActiveCompound();
@@ -83,7 +92,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
       this.draft.page1Data['khoiLuong'] = '10.0';
     }
 
-    // Khởi tạo các trường dùng cho form rút gọn kiểu SOP-01
+    // Khởi tạo các trường dùng cho form rút gọn dạng Spreadsheet
     if (this.draft.page1Data['maHoSo'] === undefined) this.draft.page1Data['maHoSo'] = '';
     if (this.draft.page1Data['heSoPhaLoang'] === undefined) this.draft.page1Data['heSoPhaLoang'] = '1';
     if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
@@ -98,10 +107,10 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     }
 
     const qcKeys = [
-      'qcR2',
       'qcThoiGianLuu',
-      'qcThemChuan',
-      'qcThuHoi',
+      'qcNhanDangMauNhiem',
+      'qcNhanDangSpike',
+      'qcThuHoiIS',
       'qcDanhGiaChung'
     ];
     qcKeys.forEach(k => {
@@ -111,9 +120,6 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     });
     if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
       this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
-    }
-    if (this.draft.page1Data['qcNhanDang'] === undefined) {
-      this.draft.page1Data['qcNhanDang'] = null;
     }
 
     (this.run?.sampleList || []).forEach((sampleCode: string, idx: number) => {
@@ -228,7 +234,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     // Bắt buộc override từ abstract
   }
 
-  // ── SPREADSHEET (FORM RÚT GỌN, SOP-01 UI/DATA) METHODS ──────────────────
+  // ── SPREADSHEET (FORM RÚT GỌN, SPREADSHEET UI/DATA) METHODS ──────────────────
 
   onHasCheckSampleChange() {
     if (this.draft.page1Data['hasCheckSample']) {
@@ -303,7 +309,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
     if (!this.run || !targetMap) return;
 
-    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    const allRowKeys = this.getDisplayRowsForSpreadsheet().map(row => row.key);
     let changed = false;
 
     allRowKeys.forEach((sampleCode: string) => {
@@ -360,7 +366,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     return `QC_SPIKE_${n}`;
   }
 
-  getDisplayRowsForFipronil(): any[] {
+  getDisplayRowsForSpreadsheet(): any[] {
     const list: any[] = [];
     const blankName = this.draft.page1Data['blankName'] || 'BLANK';
     const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
@@ -379,15 +385,11 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     };
 
     ensureKey('QC_BLANK', '1.7');
-    if (this.draft.resultData['QC_BLANK']['kqFip'] === undefined || this.draft.resultData['QC_BLANK']['kqFip'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFip'] = 'ND';
-    }
-    if (this.draft.resultData['QC_BLANK']['kqFipDesl'] === undefined || this.draft.resultData['QC_BLANK']['kqFipDesl'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFipDesl'] = 'ND';
-    }
-    if (this.draft.resultData['QC_BLANK']['kqFipSulf'] === undefined || this.draft.resultData['QC_BLANK']['kqFipSulf'] === '') {
-      this.draft.resultData['QC_BLANK']['kqFipSulf'] = 'ND';
-    }
+    this.activeColumns.forEach(col => {
+      if (this.draft.resultData['QC_BLANK'][col] === undefined || this.draft.resultData['QC_BLANK'][col] === '') {
+        this.draft.resultData['QC_BLANK'][col] = 'ND';
+      }
+    });
 
     list.push({
       key: 'QC_BLANK',
@@ -467,23 +469,10 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   getDisplayRows() {
-    return this.getDisplayRowsForFipronil();
+    return this.getDisplayRowsForSpreadsheet();
   }
 
-  fillNDForCurrentSample() {
-    const sample = this.activeSampleCode();
-    if (!sample) return;
-    if (!this.draft.resultData[sample]) this.draft.resultData[sample] = {};
-    const targets = this.filteredCompounds();
-    targets.forEach(c => {
-      if (this.isTargetAssigned(sample, c)) {
-        if (!this.draft.resultData[sample][c] || this.draft.resultData[sample][c].trim() === '') {
-          this.draft.resultData[sample][c] = 'ND';
-        }
-      }
-    });
-    this.onDataChanged();
-  }
+
 
   override applyBulkVials() {
     const rackStart = parseInt(String(this.bulkRackStart), 10);
@@ -518,7 +507,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   bulkFillND() {
-    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    const allRowKeys = this.getDisplayRowsForSpreadsheet().map(row => row.key);
 
     allRowKeys.forEach((key: string) => {
       const row = this.draft.resultData[key];
@@ -526,8 +515,11 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
         this.activeColumns.forEach((col: string) => {
           if (!this.isTargetAssigned(key, col)) {
             row[col] = 'N/A';
-          } else if (!row[col] || row[col].toString().trim() === '') {
-            row[col] = 'ND';
+          } else {
+            const val = row[col];
+            if (val === undefined || val === null || val.toString().trim() === '') {
+              row[col] = 'ND';
+            }
           }
         });
         this.updateRecovery(key);
@@ -540,7 +532,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   bulkClearAll() {
-    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    const allRowKeys = this.getDisplayRowsForSpreadsheet().map(row => row.key);
     allRowKeys.forEach((key: string) => {
       const row = this.draft.resultData[key];
       if (row) {
@@ -580,7 +572,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   handleGridNavigation(event: KeyboardEvent, rowIdx: number, _colName: string, colIdx: number) {
     const columnsList = ['loSo', ...this.activeColumns];
-    const rows = this.getDisplayRowsForFipronil();
+    const rows = this.getDisplayRowsForSpreadsheet();
     navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
   }
 
@@ -614,7 +606,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
           'chlorpyrifos_methyl_desmethyl': 'kqClpMeDes'
         };
 
-        const displayRows = this.getDisplayRowsForFipronil();
+        const displayRows = this.getDisplayRowsForSpreadsheet();
         const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
 
         const { r2Values } = parseMassHunterWorkbook(
