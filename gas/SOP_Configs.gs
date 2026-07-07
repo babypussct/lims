@@ -270,7 +270,7 @@ const CONFIG = {
     'lan-huu-co':             '1nSWI-KDXhcnzZK3k0X5o0Wn2rXQ2XeRx87jx8WJAM60',   // SOP-02 | TÊN Nhóm Lân hữu cơ (GC-MS/MS)
     'nhom-cuc':               '1ugk8Xx-LHYD7xrarxE01pG96fIA5Po7OMdjQ8htrys0',   // Nhóm Cúc (GC-MS/MS) - Form Check
     'nhom-cuc-don':           '1rlN0iNEG_beYHBX7VRsoJ6QQsMerKxian8OJni0Ha9A',   // Nhóm Cúc (GC-MS/MS) - Form Đơn
-    'nhom-i':                 'PASTE_GOOGLE_DOC_ID_HERE',                       // Nhóm I (GC-MS/MS) - Form Check
+    'nhom-i':                 '10mLbrtKEa7g9wSfT-Iprjfm4KuOY9YBd-yfof_Z-Ckw',   // Nhóm I (GC-MS/MS) - Form Check
     'nhom-i-don':             '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE',   // Nhóm I (GC-MS/MS) - Form Đơn
     'tbvtv-trong-nuoc-gcmsms':      '1IOPpgtydsZegD0RNP246c0Rq5asvdU6RJZ7MJ1c1KCs',
     'tbvtv-trong-nuoc-gcmsms-don':  '1cF4lX-lotjbV2GSDOqpsfwFuQK2TJcxg8w1RsCMMBLE',
