@@ -136,6 +136,27 @@ export class SmartBatchComponent {
           }
       });
       this.masterDeviceService.getAll().then(d => this.availableDevices.set(d));
+      
+      effect(() => {
+          const activeIds = new Set(this.activeSops().map(s => s.id));
+          
+          if (this.singleForcedSopId() && !activeIds.has(this.singleForcedSopId()!)) {
+              this.singleForcedSopId.set(undefined);
+          }
+          
+          let changed = false;
+          const updatedBlocks = this.blocks().map(b => {
+              if (b.forcedSopId && !activeIds.has(b.forcedSopId)) {
+                  changed = true;
+                  return { ...b, forcedSopId: undefined };
+              }
+              return b;
+          });
+          
+          if (changed) {
+              this.blocks.set(updatedBlocks);
+          }
+      }, { allowSignalWrites: true });
   }
   
   // Quick Generate Modal State
@@ -178,7 +199,7 @@ export class SmartBatchComponent {
   activeSops = computed(() => this.state.sops().filter(s => !s.isArchived));
   allAvailableTargets = computed(() => { const targets = new Map<string, {id: string, name: string, uniqueKey: string}>(); this.state.sops().forEach(sop => { if (sop.targets) { sop.targets.forEach(t => { if (t.name) { const canonical = getCanonicalId(t.name); if (!targets.has(canonical)) targets.set(canonical, { id: canonical, name: t.name, uniqueKey: canonical }); } }); } }); return Array.from(targets.values()).sort((a,b) => a.name.localeCompare(b.name)); });
 
-  // COMPUTED MAPS: Thay thế getFilteredTargets() và getEligibleSops() method calls trong template
+  // --- COMPUTED MAPS ---
   // Tránh tính lại không cần thiết mỗi change detection cycle trong @for loops
   filteredTargetsMap = computed(() => {
     const map = new Map<number, {id: string, name: string, uniqueKey: string}[]>();
@@ -190,6 +211,13 @@ export class SmartBatchComponent {
       ));
     }
     return map;
+  });
+
+  singleFilteredTargets = computed(() => {
+    const term = this.singleTargetSearch().toLowerCase().trim();
+    const all = this.allAvailableTargets();
+    if (!term) return all;
+    return all.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
   });
 
   private buildSopSuggestion(
@@ -264,12 +292,12 @@ export class SmartBatchComponent {
     const map = new Map<number, SopSuggestion[]>();
     const activeNormal = this.activeSops().filter(s => !s.isManualOnly);
     const inventory = this.state.inventoryMap();
+    const allTargets = this.allAvailableTargets(); // Extracted from loop
 
     for (const block of this.blocks()) {
       if (block.selectedTargets.size === 0) { map.set(block.id, []); continue; }
       
       const reqTargetIds = Array.from(block.selectedTargets);
-      const allTargets = this.allAvailableTargets();
       
       const candidates: SopSuggestion[] = [];
 
@@ -309,6 +337,27 @@ export class SmartBatchComponent {
       }
 
       map.set(block.id, results);
+    }
+    return map;
+  });
+
+  eligibleManualSopsMap = computed(() => {
+    const map = new Map<number, SopSuggestion[]>();
+    const manualSops = this.activeSops().filter(s => s.isManualOnly);
+    const inventory = this.state.inventoryMap();
+    const allTargets = this.allAvailableTargets(); // Extracted from loop
+
+    for (const block of this.blocks()) {
+      if (block.selectedTargets.size === 0) { map.set(block.id, []); continue; }
+      
+      const reqTargetIds = Array.from(block.selectedTargets);
+      
+      const eligibles: SopSuggestion[] = [];
+      for (const sop of manualSops) {
+          const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, block.matrixType);
+          if (sug) eligibles.push(sug);
+      }
+      map.set(block.id, eligibles);
     }
     return map;
   });
@@ -358,6 +407,23 @@ export class SmartBatchComponent {
     }
 
     return results;
+  });
+
+  singleEligibleManualSops = computed(() => {
+    if (this.singleSelectedTargets().size === 0) return [];
+    
+    const reqTargetIds = Array.from(this.singleSelectedTargets());
+    const allTargets = this.allAvailableTargets();
+    const manualSops = this.activeSops().filter(s => s.isManualOnly);
+    const inventory = this.state.inventoryMap();
+    const matrixType = this.singleMatrixType();
+    
+    const eligibles: SopSuggestion[] = [];
+    for (const sop of manualSops) {
+        const sug = this.buildSopSuggestion(sop, reqTargetIds, allTargets, inventory, matrixType);
+        if (sug) eligibles.push(sug);
+    }
+    return eligibles;
   });
 
   totalUniqueSamples = computed(() => {
@@ -517,16 +583,16 @@ export class SmartBatchComponent {
 
       if (reqTargets.size === 0) return []; // Should not happen due to validation
 
-      // Filter Logic: SOP must cover ALL selected targets (100% match of requirement)
-      // Note: SOP can do *more* targets, but must cover *at least* the requested ones.
+      // Filter Logic: Reuse buildSopSuggestion for consistency
+      const inventory = this.state.inventoryMap();
+      const allTargets = this.allAvailableTargets();
+      
       return allSops.filter(sop => {
-          if (!sop.targets) return false;
-          const sopTargetIds = new Set(sop.targets.map(t => getCanonicalId(t.name)));
-          
-          for (const reqId of Array.from(reqTargets)) {
-              if (!sopTargetIds.has(reqId)) return false; // Missing one -> Invalid
-          }
-          return true;
+          const reqIdsArray = Array.from(reqTargets);
+          // Matrix type is undefined here since split wizard doesn't care about matrix constraint initially, 
+          // or we assume the source block's matrix? Actually split wizard doesn't have matrixType.
+          const sug = this.buildSopSuggestion(sop, reqIdsArray, allTargets, inventory, undefined);
+          return sug && !sug.isPartial; // Must cover 100% of the selected targets
       });
   });
 
@@ -601,12 +667,8 @@ export class SmartBatchComponent {
   
   countSamples(raw: string): number { return raw.split('\n').filter(s => s.trim()).length; }
   
-  getFilteredTargets(block: JobBlock) {
-      const term = block.targetSearch.toLowerCase().trim();
-      const all = this.allAvailableTargets();
-      if (!term) return all;
-      return all.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
-  }
+  // getFilteredTargets method removed as it's replaced by filteredTargetsMap
+
   
   toggleBlockTarget(index: number, targetId: string) {
       this.blocks.update(b => {
@@ -618,7 +680,7 @@ export class SmartBatchComponent {
   }
   selectAllTargets(index: number) {
       this.blocks.update(b => {
-          const n = [...b]; const filtered = this.getFilteredTargets(n[index]);
+          const n = [...b]; const filtered = this.filteredTargetsMap().get(n[index].id) || [];
           const set = new Set(n[index].selectedTargets);
           filtered.forEach(t => set.add(t.uniqueKey));
           n[index] = { ...n[index], selectedTargets: set, forcedSopId: undefined }; return n;
@@ -628,12 +690,7 @@ export class SmartBatchComponent {
       this.blocks.update(b => { const n = [...b]; n[index] = { ...n[index], selectedTargets: new Set(), forcedSopId: undefined }; return n; });
   }
 
-  getFilteredSingleTargets() {
-      const term = this.singleTargetSearch().toLowerCase().trim();
-      const all = this.allAvailableTargets();
-      if (!term) return all;
-      return all.filter(t => t.name.toLowerCase().includes(term) || t.id.toLowerCase().includes(term));
-  }
+  // getFilteredSingleTargets method removed as it's replaced by singleFilteredTargets signal
   
   toggleSingleTarget(targetId: string) {
       this.singleSelectedTargets.update(set => {
@@ -644,7 +701,7 @@ export class SmartBatchComponent {
   }
 
   selectAllSingleTargets() {
-      const filtered = this.getFilteredSingleTargets();
+      const filtered = this.singleFilteredTargets();
       this.singleSelectedTargets.update(set => {
           const next = new Set(set);
           filtered.forEach(t => next.add(t.uniqueKey));

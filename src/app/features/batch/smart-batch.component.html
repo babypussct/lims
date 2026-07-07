@@ -176,7 +176,7 @@
                                                 </div>
 
                                                 <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white dark:bg-slate-900">
-                                                    @for (t of getFilteredTargets(block); track t.uniqueKey) {
+                                                    @for (t of filteredTargetsMap().get(block.id) || []; track t.uniqueKey) {
                                                         <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer group"
                                                                [ngClass]="{'bg-teal-50 dark:bg-teal-900/20': block.selectedTargets.has(t.uniqueKey)}">
                                                             <input type="checkbox"
@@ -188,7 +188,7 @@
                                                             </div>
                                                         </label>
                                                     }
-                                                    @if(getFilteredTargets(block).length === 0) {
+                                                    @if((filteredTargetsMap().get(block.id) || []).length === 0) {
                                                         <div class="text-center py-4 text-slate-400 dark:text-slate-500 text-[10px] italic">Không tìm thấy.</div>
                                                     }
                                                 </div>
@@ -286,28 +286,19 @@
                                                     </div>
                                                 }
                                                 
-                                                <div class="mt-3 pt-2.5 border-t border-indigo-100/50 dark:border-indigo-950/20 flex items-center gap-2">
-                                                    <span class="text-[10px] font-black text-indigo-750 dark:text-indigo-400 whitespace-nowrap">CHỈ ĐỊNH THỦ CÔNG:</span>
-                                                    <select [ngModel]="block.forcedSopId || ''" 
-                                                            (ngModelChange)="updateBlockForcedSop(i, $event === '' ? undefined : $event)"
-                                                            class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-indigo-500 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                                                        <option value="">-- Tự động (Greedy) --</option>
-                                                        <optgroup label="─── Quy trình thông thường ───">
-                                                            @for(sop of activeSops(); track sop.id) {
-                                                                @if(!sop.isManualOnly) {
-                                                                    <option [value]="sop.id">{{sop.name}}</option>
-                                                                }
+                                                @if((eligibleManualSopsMap().get(block.id) || []).length > 0) {
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-100/50 dark:border-indigo-950/20 flex items-center gap-2">
+                                                        <span class="text-[10px] font-black text-indigo-750 dark:text-indigo-400 whitespace-nowrap">CHỈ ĐỊNH THỦ CÔNG:</span>
+                                                        <select [ngModel]="block.forcedSopId || ''" 
+                                                                (ngModelChange)="updateBlockForcedSop(i, $event === '' ? undefined : $event)"
+                                                                class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-indigo-500 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
+                                                            <option value="">-- Tự động (Greedy) --</option>
+                                                            @for(sug of eligibleManualSopsMap().get(block.id) || []; track sug.sop.id) {
+                                                                <option [value]="sug.sop.id">{{sug.sop.name}} ({{sug.coverageCount}}/{{sug.totalRequired}} chỉ tiêu)</option>
                                                             }
-                                                        </optgroup>
-                                                        <optgroup label="─── Yêu cầu riêng (Chỉ định) ───">
-                                                            @for(sop of activeSops(); track sop.id) {
-                                                                @if(sop.isManualOnly) {
-                                                                    <option [value]="sop.id">{{sop.name}} (Yêu cầu riêng)</option>
-                                                                }
-                                                            }
-                                                        </optgroup>
-                                                    </select>
-                                                </div>
+                                                        </select>
+                                                    </div>
+                                                }
                                             }
                                         </div>
 
@@ -392,7 +383,7 @@
                                     </div>
 
                                     <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-y-auto custom-scrollbar p-1 bg-white dark:bg-slate-900">
-                                        @for (t of getFilteredSingleTargets(); track t.uniqueKey) {
+                                        @for (t of singleFilteredTargets(); track t.uniqueKey) {
                                             <label class="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer group"
                                                    [ngClass]="{'bg-indigo-50/50 dark:bg-indigo-900/10': singleSelectedTargets().has(t.uniqueKey)}">
                                                 <input type="checkbox"
@@ -404,7 +395,7 @@
                                                 </div>
                                             </label>
                                         }
-                                        @if(getFilteredSingleTargets().length === 0) {
+                                        @if(singleFilteredTargets().length === 0) {
                                             <div class="text-center py-4 text-slate-400 dark:text-slate-500 text-[10px] italic">Không tìm thấy.</div>
                                         }
                                     </div>
@@ -527,28 +518,19 @@
                                         </div>
                                     }
                                     
-                                    <div class="mt-3 pt-2.5 border-t border-indigo-100/50 dark:border-indigo-950/20 flex items-center gap-2">
-                                        <span class="text-[10px] font-black text-indigo-750 dark:text-indigo-400 whitespace-nowrap">CHỈ ĐỊNH THỦ CÔNG:</span>
-                                        <select [ngModel]="singleForcedSopId() || ''" 
-                                                (ngModelChange)="singleForcedSopId.set($event === '' ? undefined : $event)"
-                                                class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-indigo-500 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                                            <option value="">-- Tự động --</option>
-                                            <optgroup label="─── Quy trình thông thường ───">
-                                                @for(sop of activeSops(); track sop.id) {
-                                                    @if(!sop.isManualOnly) {
-                                                        <option [value]="sop.id">{{sop.name}}</option>
-                                                    }
+                                    @if(singleEligibleManualSops().length > 0) {
+                                        <div class="mt-3 pt-2.5 border-t border-indigo-100/50 dark:border-indigo-950/20 flex items-center gap-2">
+                                            <span class="text-[10px] font-black text-indigo-750 dark:text-indigo-400 whitespace-nowrap">CHỈ ĐỊNH THỦ CÔNG:</span>
+                                            <select [ngModel]="singleForcedSopId() || ''" 
+                                                    (ngModelChange)="singleForcedSopId.set($event === '' ? undefined : $event)"
+                                                    class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-indigo-500 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
+                                                <option value="">-- Tự động (Greedy) --</option>
+                                                @for(sug of singleEligibleManualSops(); track sug.sop.id) {
+                                                    <option [value]="sug.sop.id">{{sug.sop.name}} ({{sug.coverageCount}}/{{sug.totalRequired}} chỉ tiêu)</option>
                                                 }
-                                            </optgroup>
-                                            <optgroup label="─── Yêu cầu riêng (Chỉ định) ───">
-                                                @for(sop of activeSops(); track sop.id) {
-                                                    @if(sop.isManualOnly) {
-                                                        <option [value]="sop.id">{{sop.name}} (Yêu cầu riêng)</option>
-                                                    }
-                                                }
-                                            </optgroup>
-                                        </select>
-                                    </div>
+                                            </select>
+                                        </div>
+                                    }
                                 }
                             </div>
                         </div>
