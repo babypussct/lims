@@ -476,6 +476,17 @@
                 </app-sop-1767856825928-entry>
               </div>
             }
+            @case ('nhom-i') {
+              <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
+                <app-sop-nhom-i-entry
+                  [run]="filteredRun()!"
+                  [draft]="draft()!"
+                  [config]="config()!"
+                  [isReadOnly]="isReadOnly()"
+                  (draftChanged)="onDraftChanged($event)">
+                </app-sop-nhom-i-entry>
+              </div>
+            }
             @case ('tbvtv-trong-nuoc-gcmsms') {
               <div [class.pointer-events-none]="isReadOnly()" [class.opacity-95]="isReadOnly()">
                 <app-sop-tbvtv-trong-nuoc-gcmsms-entry

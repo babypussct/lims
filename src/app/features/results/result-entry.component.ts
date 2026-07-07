@@ -33,6 +33,7 @@ import { Sop1767856825928EntryComponent } from './sops/sop-1767856825928/sop-176
 import { SopTbvtvTrongNuocGcmsmsEntryComponent } from './sops/sop-tbvtv-trong-nuoc-gcmsms/sop-tbvtv-trong-nuoc-gcmsms-entry.component';
 import { SopTbvtvThucPhamGcmsmsEntryComponent } from './sops/sop-tbvtv-thuc-pham-gcmsms/sop-tbvtv-thuc-pham-gcmsms-entry.component';
 import { SopChloroformEntryComponent } from './sops/sop-chloroform/sop-chloroform-entry.component';
+import { SopNhomIEntryComponent } from './sops/sop-nhom-i/sop-nhom-i-entry.component';
 import { isCompoundAssigned } from './shared/compound-id-resolver';
 import { 
   buildTrifluralinPdfPayload, 
@@ -59,6 +60,7 @@ import {
     SopNhomLanHuuCoGcMsmsCopy1768036876719EntryComponent,
     SopLanHuuCoEntryComponent,
     Sop1767856825928EntryComponent,
+    SopNhomIEntryComponent,
     SopTbvtvTrongNuocGcmsmsEntryComponent,
     SopTbvtvThucPhamGcmsmsEntryComponent,
     SopChloroformEntryComponent
