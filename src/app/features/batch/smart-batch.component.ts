@@ -84,6 +84,43 @@ interface SplitWizardState {
     selectedSopId: string | null; // Step 3 Output
 }
 
+// --- FIX COVERAGE STATE ---
+
+interface DiagGroup1Item {
+  targetId: string;
+  targetName: string;
+  affectedSamples: string[];          
+  blockId: number;                     
+  candidateSops: Sop[];               
+  chosenSopId: string | null;          
+}
+
+interface DiagGroup2Item {
+  targetId: string;
+  targetName: string;
+  affectedSamples: string[];
+  blockId: number;
+  currentMatrix: string | undefined;   
+  compatibleSops: { sop: Sop; matrices: string[] }[]; 
+  action: 'remove' | 'ignore_matrix';
+}
+
+interface DiagGroup3Item {
+  targetId: string;
+  targetName: string;
+  affectedSamples: string[];
+  blockId: number;
+  action: 'remove' | 'keep_unmapped';
+}
+
+interface FixCoverageState {
+  isOpen: boolean;
+  isProcessing: boolean;
+  group1: DiagGroup1Item[];  
+  group2: DiagGroup2Item[];  
+  group3: DiagGroup3Item[];  
+}
+
 import { QuickGenerateSampleModalComponent } from '../../shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component';
 import { BatchSplitWizardComponent } from './components/batch-split-wizard.component';
 
@@ -194,6 +231,15 @@ export class SmartBatchComponent {
       id: '', name: '', unit: '', currentStock: 0, missingAmount: 0
   });
   quickImportInput = 0;
+
+  // --- FIX COVERAGE MODAL STATE ---
+  fixCoverageState = signal<FixCoverageState>({
+    isOpen: false,
+    isProcessing: false,
+    group1: [],
+    group2: [],
+    group3: []
+  });
 
   // --- COMPUTED: GENERAL ---
   activeSops = computed(() => this.state.sops().filter(s => !s.isArchived));
@@ -1393,10 +1439,185 @@ export class SmartBatchComponent {
       }
   }
 
-  // --- Auto-Fix Logic (Simple Re-run) ---
+  // --- Auto-Fix Logic (Modal) ---
   fixCoverage() {
-      this.toast.show('Đang tính toán lại để phủ kín các mẫu còn thiếu...', 'info');
-      this.goBackFromStep2();
+      const unmapped = this.unmappedTasks();
+      if (unmapped.length === 0) return;
+
+      const allSops = this.activeSops();
+      const normalSops = allSops.filter(s => !s.isManualOnly);
+      const manualSops = allSops.filter(s => s.isManualOnly);
+
+      const group1: DiagGroup1Item[] = [];
+      const group2: DiagGroup2Item[] = [];
+      const group3: DiagGroup3Item[] = [];
+
+      // --- Gom theo (targetId, blockId, matrixType) ---
+      const keyMap = new Map<string, { targetId: string, targetName: string, blockId: number, matrixType?: string, samples: string[] }>();
+      
+      for (const task of unmapped) {
+        const block = this.blocks().find(b => {
+          const samples = b.rawSamples.split('\n').map(s => s.trim()).filter(Boolean);
+          // check if sample is in this block and target is selected
+          return samples.includes(task.sample) && b.selectedTargets.has(task.targetId);
+        });
+        
+        const blockId = block?.id ?? -1;
+        const key = `${task.targetId}__${blockId}`;
+        
+        if (!keyMap.has(key)) {
+          keyMap.set(key, { targetId: task.targetId, targetName: task.targetName, blockId, matrixType: task.matrixType, samples: [] });
+        }
+        keyMap.get(key)!.samples.push(task.sample);
+      }
+
+      // --- Phân loại từng nhóm ---
+      for (const [, item] of keyMap) {
+        const { targetId, targetName, blockId, matrixType, samples } = item;
+
+        const normalSopsWithTarget = normalSops.filter(s =>
+          s.targets?.some(t => getCanonicalId(t.name) === targetId)
+        );
+
+        const manualSopsWithTarget = manualSops.filter(s =>
+          s.targets?.some(t => getCanonicalId(t.name) === targetId)
+        );
+
+        if (normalSopsWithTarget.length === 0 && manualSopsWithTarget.length === 0) {
+          // --- NHÓM 3: Không có SOP nào ---
+          group3.push({ targetId, targetName, affectedSamples: samples, blockId, action: 'remove' });
+
+        } else if (normalSopsWithTarget.length === 0 && manualSopsWithTarget.length > 0) {
+          // --- NHÓM 1: Chỉ có SOP Đặc thù ---
+          const autoChosen = manualSopsWithTarget.length === 1 ? manualSopsWithTarget[0].id : null;
+          group1.push({
+            targetId, targetName, affectedSamples: samples, blockId,
+            candidateSops: manualSopsWithTarget,
+            chosenSopId: autoChosen
+          });
+
+        } else {
+          // --- NHÓM 2: Sai Matrix ---
+          const compatibleSops = normalSopsWithTarget.map(sop => ({
+            sop,
+            matrices: sop.matrixTags || []
+          }));
+          group2.push({
+            targetId, targetName, affectedSamples: samples, blockId,
+            currentMatrix: matrixType,
+            compatibleSops,
+            action: 'ignore_matrix'
+          });
+        }
+      }
+
+      this.fixCoverageState.set({
+        isOpen: true,
+        isProcessing: false,
+        group1, group2, group3
+      });
+  }
+
+  updateFixGroup1Sop(idx: number, sopId: string | null) {
+      this.fixCoverageState.update(s => {
+          const g1 = [...s.group1];
+          g1[idx] = { ...g1[idx], chosenSopId: sopId };
+          return { ...s, group1: g1 };
+      });
+  }
+
+  updateFixGroup2Action(idx: number, action: 'remove' | 'ignore_matrix') {
+      this.fixCoverageState.update(s => {
+          const g2 = [...s.group2];
+          g2[idx] = { ...g2[idx], action };
+          return { ...s, group2: g2 };
+      });
+  }
+
+  updateFixGroup3Action(idx: number, action: 'remove' | 'keep_unmapped') {
+      this.fixCoverageState.update(s => {
+          const g3 = [...s.group3];
+          g3[idx] = { ...g3[idx], action };
+          return { ...s, group3: g3 };
+      });
+  }
+
+  applyFixCoverage() {
+      const state = this.fixCoverageState();
+      this.fixCoverageState.update(s => ({ ...s, isProcessing: true }));
+
+      // Process Group 1
+      for (const item of state.group1) {
+          if (item.chosenSopId === null) {
+              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
+              if (blockIdx !== -1) {
+                  this.blocks.update(bs => {
+                      const n = [...bs];
+                      const set = new Set(n[blockIdx].selectedTargets);
+                      set.delete(item.targetId);
+                      n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
+                      return n;
+                  });
+              }
+          } else {
+              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
+              if (blockIdx !== -1) {
+                  this.updateBlockForcedSop(blockIdx, item.chosenSopId);
+              }
+          }
+      }
+
+      // Process Group 2
+      for (const item of state.group2) {
+          const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
+          if (blockIdx === -1) continue;
+
+          if (item.action === 'remove') {
+              this.blocks.update(bs => {
+                  const n = [...bs];
+                  const set = new Set(n[blockIdx].selectedTargets);
+                  set.delete(item.targetId);
+                  n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
+                  return n;
+              });
+          } else {
+              this.blocks.update(bs => {
+                  const n = [...bs];
+                  n[blockIdx] = { ...n[blockIdx], matrixType: undefined };
+                  return n;
+              });
+          }
+      }
+
+      // Process Group 3
+      for (const item of state.group3) {
+          if (item.action === 'remove') {
+              const blockIdx = this.blocks().findIndex(b => b.id === item.blockId);
+              if (blockIdx !== -1) {
+                  this.blocks.update(bs => {
+                      const n = [...bs];
+                      const set = new Set(n[blockIdx].selectedTargets);
+                      set.delete(item.targetId);
+                      n[blockIdx] = { ...n[blockIdx], selectedTargets: set };
+                      return n;
+                  });
+              }
+          }
+      }
+
+      this.fixCoverageState.update(s => ({ ...s, isOpen: false, isProcessing: false }));
+      this.analyzePlan();
+  }
+
+  closeFixCoverageModal() {
+      this.fixCoverageState.update(s => ({ ...s, isOpen: false }));
+  }
+
+  getCompatibleMatricesLabel(item: DiagGroup2Item): string {
+      if (!item.compatibleSops || item.compatibleSops.length === 0) return '';
+      const matrices = item.compatibleSops[0].matrices;
+      const labels = matrices.map(m => this.getMatrixLabel(m) || 'Dùng chung');
+      return labels.join(', ');
   }
 
   reset() {
