@@ -18,14 +18,14 @@ export const SOP_ID_MAP: Record<string, string> = {
 export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['trifluralin'], configKey: 'trifluralin-gcms' },
   { keywords: ['chloroform'], configKey: 'chloroform-gcms' },
+  { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc', '9.16-tbvtv-water'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
+  { keywords: ['9.14', 'usda', 'thực phẩm', 'thuc pham', 'tbvtv thực phẩm', 'tbvtv thuc pham', 'xác định dư lượng tbvtv', 'xac dinh du luong tbvtv'], configKey: 'tbvtv-thuc-pham-gcmsms' },
   { keywords: ['fipronil', 'chlorpyrifos'], configKey: 'fipronil-chlorpyrifos' },
   { keywords: ['dichlorvos'], configKey: 'dichlorvos-gcms' },
   { keywords: ['chlor hữu cơ', 'clo hữu cơ', 'chlor hc'], configKey: 'chlor-huu-co' },
   { keywords: ['lân hữu cơ', 'lan hữu cơ', 'lan hc'], configKey: 'lan-huu-co' },
   { keywords: ['nhóm cúc', 'cuc', 'pyrethroid'], configKey: 'nhom-cuc' },
   { keywords: ['nhóm i', 'nhom i'], configKey: 'nhom-i' },
-  { keywords: ['tbvtv trong nước', 'tbvtv_trong_nuoc', 'tbvtv trong nuoc', '9.16-tbvtv-water'], configKey: 'tbvtv-trong-nuoc-gcmsms' },
-  { keywords: ['9.14', 'thực phẩm', 'tbvtv thực phẩm', 'tbvtv thuc pham'], configKey: 'tbvtv-thuc-pham-gcmsms' },
 ];
 
 export const SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS = {
@@ -429,6 +429,34 @@ export function resolveConfigKey(
   ].filter(Boolean).map(s => s!.toLowerCase());
 
   const combinedText = searchTexts.join(' ');
+
+  // Ưu tiên SOP TBVTV theo chính tên/category của SOP trước khi xét danh sách targets.
+  // SOP 9.14 USDA có thể chứa Fipronil/Chlorpyrifos nên nếu chỉ fuzzy theo targets sẽ bị nhận nhầm là SOP-01.
+  const sopIdentityText = [
+    sopName,
+    sopObj?.name,
+    sopObj?.category
+  ].filter(Boolean).map(s => s!.toLowerCase()).join(' ');
+
+  const isTbvtvIdentity = sopIdentityText.includes('tbvtv') ||
+    sopIdentityText.includes('thuốc bảo vệ thực vật') ||
+    sopIdentityText.includes('thuoc bao ve thuc vat');
+  const isWaterIdentity = sopIdentityText.includes('trong nước') ||
+    sopIdentityText.includes('trong nuoc') ||
+    sopIdentityText.includes('9.16') ||
+    sopIdentityText.includes('water');
+  const isFoodUsdaIdentity = sopIdentityText.includes('usda') ||
+    sopIdentityText.includes('9.14') ||
+    sopIdentityText.includes('thực phẩm') ||
+    sopIdentityText.includes('thuc pham') ||
+    sopIdentityText.includes('gc-ms/ms');
+
+  if (isTbvtvIdentity && isWaterIdentity) {
+    return 'tbvtv-trong-nuoc-gcmsms';
+  }
+  if (isTbvtvIdentity && isFoodUsdaIdentity) {
+    return 'tbvtv-thuc-pham-gcmsms';
+  }
 
   // 3+4. Fuzzy match theo từ khóa trong tất cả nguồn
   for (const entry of SOP_NAME_MAP) {
