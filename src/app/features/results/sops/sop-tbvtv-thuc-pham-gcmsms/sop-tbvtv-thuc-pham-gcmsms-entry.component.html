@@ -19,8 +19,8 @@
                class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
       </div>
 
-      <!-- Khối lượng mẫu -->
-      <div>
+      <!-- Khối lượng mẫu (Form đầy đủ) -->
+      <div *ngIf="draft.page1Data['printFormType'] !== 'formRutGon'">
         <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">2. Khối lượng mẫu (m)</label>
         <div class="flex items-center gap-1.5 p-1 bg-white/60 dark:bg-slate-900/50 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
           <label class="flex items-center gap-2 px-2 py-1.5 cursor-pointer shrink-0">
@@ -36,6 +36,26 @@
                  placeholder="Khác..."
                  [disabled]="draft.page1Data['is10gChecked'] !== false"
                  class="w-full bg-white dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition outline-none disabled:opacity-50 disabled:bg-slate-50">
+        </div>
+      </div>
+
+      <!-- Hệ số pha loãng (Form rút gọn - SOP-01) -->
+      <div *ngIf="draft.page1Data['printFormType'] === 'formRutGon'">
+        <label class="block text-[10px] font-black text-indigo-650 dark:text-indigo-400 mb-1.5 uppercase tracking-widest">3. Hệ số pha loãng (f)</label>
+        <div class="flex items-center gap-1.5">
+          <button type="button"
+                  (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
+                  [class]="draft.page1Data['heSoPhaLoang'] === '1' 
+                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-indigo-600 text-white shadow-sm border border-indigo-600 transition shrink-0 active:scale-95' 
+                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
+                  title="Chọn f=1">
+            f=1
+          </button>
+          <input type="text" 
+                 [(ngModel)]="draft.page1Data['heSoPhaLoang']" 
+                 (ngModelChange)="onDataChanged()"
+                 placeholder="Hệ số f..."
+                 class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
         </div>
       </div>
 
@@ -448,7 +468,7 @@
             <span>Xóa hết bảng</span>
           </button>
 
-          <!-- Quick Vial Rack Input -->
+          <!-- Quick Vial Rack Input for Fipronil -->
           <div class="flex items-center gap-2 bg-indigo-50/15 dark:bg-indigo-955/5 border border-indigo-100/40 dark:border-indigo-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
             <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest">Nhập Vial nhanh:</span>
             <div class="flex items-center gap-1.5">
@@ -493,10 +513,10 @@
               <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Vial No.</th>
               <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[140px]">Mẫu thử</th>
               
-              <!-- Dynamic short form columns -->
-              @for (col of shortFormColumns; track col) {
+              <!-- Dynamic active columns -->
+              @for (col of activeColumns; track col) {
                 <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">
-                  {{ compoundDisplayNames()[col] || col }} (µg/kg)
+                  {{ columnDisplayNames()[col] || col }} (µg/kg)
                 </th>
               }
               
@@ -505,7 +525,7 @@
           </thead>
           
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
-            @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
+            @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
               @if (draft.resultData[row.key]) {
                 <tr [class]="row.isQC 
                       ? 'bg-amber-50/15 dark:bg-amber-955/5 border-l-4 border-l-amber-500/80 hover:bg-amber-50/25 dark:hover:bg-amber-955/10 transition-colors' 
@@ -534,17 +554,18 @@
                     }
                   </td>
                   
-                  <!-- Dynamic shortForm columns inputs -->
-                  @for (col of shortFormColumns; track col; let colIdx = $index) {
+                  <!-- Dynamic active columns inputs -->
+                  @for (col of activeColumns; track col; let colIdx = $index) {
                     <td class="py-1.5 px-2">
                       <input type="text"
                              [(ngModel)]="draft.resultData[row.key][col]"
-                             (ngModelChange)="onDataChanged()"
+                             (ngModelChange)="onCellChanged(row.key)"
                              [id]="'cell-' + rowIdx + '-' + col"
+                             [disabled]="!isTargetAssigned(row.key, col)"
                              (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
                              (focus)="$any($event.target).select()"
                              placeholder="..."
-                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner">
+                             class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-105 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
                     </td>
                   }
                   

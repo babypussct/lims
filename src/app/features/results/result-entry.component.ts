@@ -10,7 +10,12 @@ import { ResultEntryType2Component } from './result-entry-type2.component';
 import { ResultEntryType3bComponent } from './result-entry-type3b.component';
 import { ToastService } from '../../core/services/toast.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { resolveConfigKey, ANGULAR_SOP_CONFIG } from './config/sop-configs';
+import {
+  resolveConfigKey,
+  ANGULAR_SOP_CONFIG,
+  SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS,
+  SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS
+} from './config/sop-configs';
 import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { PrintService } from '../../core/services/print.service';
 import { Subject, Subscription } from 'rxjs';
@@ -714,7 +719,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     // Bắt buộc điền Mã hồ sơ, Tên Blank, Tên Spike cho SOP-01 trước khi xuất bản PDF
     const key = this.configKey();
-    if (key === 'fipronil-chlorpyrifos') {
+    const isSop914ShortForm = key === 'tbvtv-thuc-pham-gcmsms' && currentDraft.page1Data['printFormType'] === 'formRutGon';
+    if (key === 'fipronil-chlorpyrifos' || isSop914ShortForm) {
       const maHoSo = String(currentDraft.page1Data['maHoSo'] || '').trim();
       const blankName = String(currentDraft.page1Data['blankName'] || '').trim();
       const spikeName = String(currentDraft.page1Data['spikeName'] || '').trim();
@@ -771,6 +777,47 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           this.formatAnalysisDate.bind(this),
           this.getRunDate.bind(this)
         );
+      } else if (key === 'tbvtv-thuc-pham-gcmsms') {
+        const isRutGon = currentDraft.page1Data['printFormType'] === 'formRutGon';
+        if (isRutGon) {
+          const shortConf = {
+            ...ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon'],
+            id: 'tbvtv-thuc-pham-gcmsms-rut-gon'
+          };
+          reportPayload = buildFipronilPdfPayload(
+            currentDraft,
+            currentRun,
+            activeFilter,
+            shortConf,
+            this.formatAnalysisDate.bind(this),
+            this.getRunDate.bind(this),
+            this.masterTargets()
+          );
+          reportPayload.sopId = 'tbvtv-thuc-pham-gcmsms-rut-gon';
+          reportPayload.metadata = {
+            ...reportPayload.metadata,
+            printFormType: 'formRutGon',
+            sourceSopId: currentDraft.sopId || currentRun.sopId,
+            templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formRutGon,
+            templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formRutGon
+          };
+        } else {
+          reportPayload = buildUnifiedType3bPdfPayload(
+            currentDraft,
+            currentRun,
+            activeFilter,
+            currentConf,
+            this.formatAnalysisDate.bind(this),
+            this.getRunDate.bind(this),
+            this.masterTargets()
+          );
+          reportPayload.metadata = {
+            ...reportPayload.metadata,
+            printFormType: 'formDayDu',
+            templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formDayDu,
+            templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formDayDu
+          };
+        }
       } else if (key === 'lan-huu-co' || key === 'chlor-huu-co' || key === 'nhom-cuc' || key === 'nhom-i' || currentConf.formType === 'type3b') {
         // Unified builder cho tất cả SOP type-3b (compounds[] = canonical id)
         reportPayload = buildUnifiedType3bPdfPayload(

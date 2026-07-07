@@ -228,8 +228,29 @@ const COMPOUND_TO_CANONICAL = {
   'Chlorpyrifos-methyl-desmethyl':  'chlorpyrifos_methyl_desmethyl',
 
   // ── Trifluralin / Dichlorvos ──────────────────────────────────────────────
-  'Dichlorvos':                     'trichlorfondipterexdichlorvos',
+  'Dichlorvos':                     'dichlorvos',
   'Trichlorfon':                    'trichlorfondipterexdichlorvos',
+  'Trichlorfon(Dipterex)/Dichlorvos': 'trichlorfondipterexdichlorvos',
+
+  // ── TBVTV thực phẩm SOP 9.14 ─────────────────────────────────────────────
+  '1-Naphthol':                     '1_naphthol',
+  '1-naphthol':                     '1_naphthol',
+  'Acetamiprid':                    'acetamiprid',
+  'Chloroneb':                      'chloroneb',
+  'Chlorpropham':                   'chlorpropham',
+  'MGK-264':                        'mgk_264',
+  'MGK264':                         'mgk_264',
+  'Metolachlor':                    'metolachlor',
+  'Nonachlor cis':                  'nonachlor_cis',
+  'Nonachlor-cis':                  'nonachlor_cis',
+  'Nonachlor trans':                'nonachlor_trans',
+  'Nonachlor-trans':                'nonachlor_trans',
+  'Pentachloroaniline':             'pentachloroaniline',
+  'Pentachloroaniline (PCA)':       'pentachloroaniline',
+  'PCA':                            'pentachloroaniline',
+  'Pentachlorobenzene':             'pentachlorobenzene',
+  'Pentachlorobenzene (PCB)':       'pentachlorobenzene',
+  'Pronamide':                      'pronamide',
 };
 
 const CONFIG = {
@@ -251,6 +272,8 @@ const CONFIG = {
     'nhom-i-don':             '14mDxiC6v8Xf_Eq4s-WC1xgxvjBvF2lWHMnNNB_qH-UE',   // Nhóm I (GC-MS/MS) - Form Đơn
     'tbvtv-trong-nuoc-gcmsms':      '1IOPpgtydsZegD0RNP246c0Rq5asvdU6RJZ7MJ1c1KCs',
     'tbvtv-trong-nuoc-gcmsms-don':  '1cF4lX-lotjbV2GSDOqpsfwFuQK2TJcxg8w1RsCMMBLE',
+    'tbvtv-thuc-pham-gcmsms':       '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
+    'tbvtv-thuc-pham-gcmsms-rut-gon': '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4',
   },
 
   // Cấu hình định dạng biểu mẫu cho từng SOP (đọc/ghi dữ liệu bảng)
@@ -490,6 +513,87 @@ const CONFIG = {
         'Alachlor', 'Piperonyl butoxide', 'Propanil', 'Propoxur', 'Silafluofen', 'Simazine',
         'Tebufenpyrad', 'Atrazine', 'Tebuthiuron', 'Thiabendazole', 'Chlorfenapyr', 'Vinclozolin',
         'Trifluralin', 'Chlorothalonil'
+      ]
+    },
+    'tbvtv-thuc-pham-gcmsms-rut-gon': {
+      folderName: 'TBVTV thực phẩm (GC-MS/MS)',
+      formType: 'type2',
+      defaultFontSize: 9,
+      sampleTableIndex: 2,
+      columns: {
+        maSoMau:       0,
+        loSo:          1,
+        kqFip:         2,
+        kqFipDesl:     3,
+        kqFipSulf:     4,
+        kqFipSulf2:    5,
+        kqClp:         6,
+        kqClpMe:       7,
+        kqClpMeDes:    8
+      },
+      headerRows: 2,
+      textReplacements: {},
+      checkboxLines: {
+        'Tất cả mẫu thử đều không phát hiện':                          'checkTatCaND',
+        'Có mẫu thử phát hiện':                                         'checkCoMauPhatHien',
+        'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
+        'Hệ số hồi quy tuyến tính':                                      'qcR2',
+        'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
+        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDang',
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcThemChuan',
+        'Độ thu hồi IS':                                                 'qcThuHoi',
+        'Đánh giá chung':                                                'qcDanhGiaChung'
+      },
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      }
+    },
+    'tbvtv-thuc-pham-gcmsms': {
+      folderName: 'TBVTV thực phẩm (GC-MS/MS)',
+      formType: 'type3b',
+      defaultFontSize: 13,
+      columns: {},
+      checkboxLines: {},
+      signaturePlaceholders: {
+        'date1': 'ngayNguoiPhanTich',
+        'date2': 'ngayNguoiThamTra',
+      },
+      resultColumns: [
+        { key: '1_naphthol' }, { key: 'acetamiprid' }, { key: 'aldrin' }, { key: 'azinphos_methyl' }, { key: 'azoxystrobin' },
+        { key: 'bhc_alpha_benzene_hexachloride' }, { key: 'bhc_beta' }, { key: 'bhc_delta' }, { key: 'bhc_epsilon' },
+        { key: 'bhc_gamma_lindane_gamma_hch' }, { key: 'bifenthrin' }, { key: 'chlordane_cis_alpha' }, { key: 'chlordane_oxy' },
+        { key: 'chlordane_trans_gamma' }, { key: 'chloroneb' }, { key: 'chlorothalonil' }, { key: 'chlorpropham' },
+        { key: 'chlorpyrifos' }, { key: 'chlorpyrifos_methyl' }, { key: 'ddd_op' }, { key: 'ddd_pp' }, { key: 'dde_op' },
+        { key: 'dde_pp' }, { key: 'ddt_op' }, { key: 'ddt_pp' }, { key: 'diazinon' }, { key: 'dichlorvos' }, { key: 'dieldrin' },
+        { key: 'difenoconazole' }, { key: 'dimethoate' }, { key: 'endosulfan_i_alpha_isomer' }, { key: 'endosulfan_ii_beta_isomer' },
+        { key: 'endosulfan_sulfate' }, { key: 'endrin' }, { key: 'ethion' }, { key: 'fenpropathrin' }, { key: 'fipronil' },
+        { key: 'fipronil_desulfinyl' }, { key: 'fipronil_sulfide' }, { key: 'fipronil_sulfone' }, { key: 'heptachlor' },
+        { key: 'heptachlor_endo_epoxide_isomer_a' }, { key: 'heptachlor_exo_epoxide_isomer_b' }, { key: 'hexachlorobenzene' },
+        { key: 'imazalil' }, { key: 'isodrin' }, { key: 'malathion' }, { key: 'metalaxyl' }, { key: 'methoxychlor_pp_' },
+        { key: 'mirex' }, { key: 'mgk_264' }, { key: 'metolachlor' }, { key: 'nonachlor_cis' }, { key: 'nonachlor_trans' },
+        { key: 'pentachloroaniline' }, { key: 'pentachlorobenzene' }, { key: 'permethrin_cis' }, { key: 'permethrin_trans' },
+        { key: 'pronamide' }, { key: 'omethoate' }, { key: 'piperonyl_butoxide' }, { key: 'pirimiphos_methyl' },
+        { key: 'profenofos' }, { key: 'propanil' }, { key: 'propiconazole' }, { key: 'simazine' }, { key: 'tefluthrin' },
+        { key: 'tetraconazole' }
+      ],
+      compounds: [
+        '1-Naphthol', 'Acetamiprid', 'Aldrin', 'Azinphos-methyl', 'Azoxystrobin',
+        'BHC-alpha (benzene hexachloride)', 'BHC-beta', 'BHC-delta', 'BHC-epsilon',
+        'BHC-gamma (Lindane, gamma HCH)', 'Bifenthrin', 'Chlordane-cis (alpha)', 'Chlordane-oxy',
+        'Chlordane-trans (gamma)', 'Chloroneb', 'Chlorothalonil', 'Chlorpropham',
+        'Chlorpyrifos', 'Chlorpyrifos-methyl', 'DDD-o,p\'', 'DDD-p,p\'', 'DDE-o,p\'',
+        'DDE-p,p\'', 'DDT-o,p\'', 'DDT-p,p\'', 'Diazinon', 'Dichlorvos', 'Dieldrin',
+        'Difenoconazole', 'Dimethoate', 'Endosulfan I (alpha isomer)', 'Endosulfan II (beta isomer)',
+        'Endosulfan sulfate', 'Endrin', 'Ethion', 'Fenpropathrin', 'Fipronil',
+        'Fipronil-desulfinyl', 'Fipronil-sulfide', 'Fipronil-sulfone', 'Heptachlor',
+        'Heptachlor endo-epoxide (isomer A)', 'Heptachlor exo-epoxide (isomer B)', 'Hexachlorobenzene',
+        'Imazalil', 'Isodrin', 'Malathion', 'Metalaxyl', 'Methoxychlor, p,p\'-',
+        'Mirex', 'MGK-264', 'Metolachlor', 'Nonachlor cis', 'Nonachlor trans',
+        'Pentachloroaniline', 'Pentachlorobenzene', 'Permethrin cis', 'Permethrin trans',
+        'Pronamide', 'Omethoate', 'Piperonyl butoxide', 'Pirimiphos-methyl',
+        'Profenofos', 'Propanil', 'Propiconazole', 'Simazine', 'Tefluthrin',
+        'Tetraconazole'
       ]
     },
     'tbvtv-trong-nuoc-gcmsms': {

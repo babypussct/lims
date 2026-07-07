@@ -4,10 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
 import { parseMassHunterWorkbook } from '../shared/mass-hunter-parser';
 import { navigateGrid } from '../shared/sop-grid-helper';
+import { SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
+import { ProgressService } from '../../../../core/services/progress.service';
 import { ReportService } from '../../../../core/services/report.service';
 import { ToastService } from '../../../../core/services/toast.service';
+
+const SOP914_FULL_TEMPLATE_DOC_ID = '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4';
+const SOP914_SHORT_TEMPLATE_DOC_ID = '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4';
+const SOP914_FULL_TEMPLATE_URL = `https://docs.google.com/document/d/${SOP914_FULL_TEMPLATE_DOC_ID}/edit`;
+const SOP914_SHORT_TEMPLATE_URL = `https://docs.google.com/document/d/${SOP914_SHORT_TEMPLATE_DOC_ID}/edit`;
 
 @Component({
   selector: 'app-sop-tbvtv-thuc-pham-gcmsms-entry',
@@ -17,6 +25,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 })
 export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry implements OnChanges {
 
+  private progressService = inject(ProgressService);
   private reportService = inject(ReportService);
   private toast = inject(ToastService);
 
@@ -24,14 +33,23 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   searchQuery = signal<string>('');
 
-  // Các thuộc tính cho Form Rút Gọn (Grid Spreadsheet)
+  // Các thuộc tính cho Form Rút Gọn (Grid Spreadsheet, giống SOP-01)
   bulkRackStart = 1;
   bulkVialStartFip = 10;
   bulkVialsPerRack = 54;
   decimalPlaces = 2;
-  
-  // Form Rút Gọn chỉ hiển thị các hợp chất giống hệt SOP-01 (Fipronil & Chlorpyrifos)
-  shortFormColumns = ['fipronil', 'fipronil_desulfinyl', 'fipronil_sulfide', 'fipronil_sulfone', 'chlorpyrifos', 'chlorpyrifos_methyl'];
+  columnDisplayNames = signal<Record<string, string>>({});
+
+  readonly activeColumns = [
+    'kqFip',
+    'kqFipDesl',
+    'kqFipSulf',
+    'kqFipSulf2',
+    'kqClp',
+    'kqClpMe',
+    'kqClpMeDes'
+  ];
+  readonly shortFormColumns = this.activeColumns;
 
   filteredCompounds = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
@@ -45,24 +63,57 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   // ── SOP-specific initialization ───────────────────────────────────────────
   protected override onSopSpecificInit() {
-    // TBVTV Thực Phẩm dùng 5 điểm chuẩn (C0–C4)
+    // TBVTV Thực Phẩm dùng 5 điểm chuẩn (C0-C4)
     this.initCalibrationPoints(5);
     this.initActiveCompound();
+    this.buildColumnDisplayNames();
 
     // Thay đổi printFormType default thành formDayDu
     const currentPrintFormType = this.draft.page1Data['printFormType'];
     if (!currentPrintFormType || currentPrintFormType === 'formCheck' || currentPrintFormType === 'formDon') {
       this.draft.page1Data['printFormType'] = 'formDayDu';
     }
+    this.applyTemplateMetadata(this.draft.page1Data['printFormType']);
 
-    // Khởi tạo trạng thái checkbox m = 10.0 g mặc định là true (được chọn) nếu chưa có giá trị
+    // Khởi tạo trạng thái checkbox m = 10.0 g mặc định là true cho form đầy đủ
     if (this.draft.page1Data['is10gChecked'] === undefined) {
       this.draft.page1Data['is10gChecked'] = true;
     }
-
-    // Thiết lập khối lượng mặc định là 10.0g cho mọi mẫu
     if (!this.draft.page1Data['khoiLuong']) {
       this.draft.page1Data['khoiLuong'] = '10.0';
+    }
+
+    // Khởi tạo các trường dùng cho form rút gọn kiểu SOP-01
+    if (this.draft.page1Data['maHoSo'] === undefined) this.draft.page1Data['maHoSo'] = '';
+    if (this.draft.page1Data['heSoPhaLoang'] === undefined) this.draft.page1Data['heSoPhaLoang'] = '1';
+    if (this.draft.page1Data['hasCheckSample'] === undefined) this.draft.page1Data['hasCheckSample'] = false;
+    if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) this.draft.page1Data['uploadMassHunterToDrive'] = true;
+    if (this.draft.page1Data['checkSampleName'] === undefined) this.draft.page1Data['checkSampleName'] = 'CHECK_SAMPLE';
+
+    if (!this.draft.page1Data['loaiMau']) {
+      this.draft.page1Data['loaiMau'] = 'Thủy sản';
+    }
+    if (!this.draft.page1Data['tinhTrangMau']) {
+      this.draft.page1Data['tinhTrangMau'] = 'Bình thường';
+    }
+
+    const qcKeys = [
+      'qcR2',
+      'qcThoiGianLuu',
+      'qcThemChuan',
+      'qcThuHoi',
+      'qcDanhGiaChung'
+    ];
+    qcKeys.forEach(k => {
+      if (this.draft.page1Data[k] === undefined || this.draft.page1Data[k] === null || this.draft.page1Data[k] === '') {
+        this.draft.page1Data[k] = true;
+      }
+    });
+    if (this.draft.page1Data['qcKiemTraNoiBo'] === undefined || this.draft.page1Data['qcKiemTraNoiBo'] === '') {
+      this.draft.page1Data['qcKiemTraNoiBo'] = this.draft.page1Data['hasCheckSample'] ? true : null;
+    }
+    if (this.draft.page1Data['qcNhanDang'] === undefined) {
+      this.draft.page1Data['qcNhanDang'] = null;
     }
 
     (this.run?.sampleList || []).forEach((sampleCode: string, idx: number) => {
@@ -85,24 +136,33 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
       }
     });
 
-    // QC Initialization
+    this.migrateLegacyShortFormColumns();
     this.ensureQcRows();
+    this.prefillShortFormUnassignedTargets();
+  }
 
-    if (this.draft.page1Data['uploadMassHunterToDrive'] === undefined) {
-      this.draft.page1Data['uploadMassHunterToDrive'] = true;
-    }
+  override buildDisplayNameMap() {
+    super.buildDisplayNameMap();
+    this.buildColumnDisplayNames();
+  }
 
-    if (!this.draft.page1Data['loaiMau']) {
-      this.draft.page1Data['loaiMau'] = 'Thủy sản';
-    }
+  private applyTemplateMetadata(type: 'formDayDu' | 'formRutGon' | string) {
+    const isShort = type === 'formRutGon';
+    this.draft.page1Data['templateDocId'] = isShort ? SOP914_SHORT_TEMPLATE_DOC_ID : SOP914_FULL_TEMPLATE_DOC_ID;
+    this.draft.page1Data['templateDocUrl'] = isShort ? SOP914_SHORT_TEMPLATE_URL : SOP914_FULL_TEMPLATE_URL;
+    this.draft.page1Data['reportFormLabel'] = isShort ? 'FORM RÚT GỌN' : 'FORM ĐẦY ĐỦ';
   }
 
   private ensureQcRows() {
     this.ensureQcRow('QC_BLANK', '1.7');
     this.ensureQcRow('QC_SPIKE', '1.8');
     if (this.draft.page1Data['hasCheckSample']) {
-      this.ensureQcRow('QC_CHECK', '1.9');
+      if (!this.draft.resultData['QC_CHECK_SAMPLE'] && this.draft.resultData['QC_CHECK']) {
+        this.draft.resultData['QC_CHECK_SAMPLE'] = this.draft.resultData['QC_CHECK'];
+      }
+      this.ensureQcRow('QC_CHECK_SAMPLE', '1.9');
     }
+    this.ensureQcRow('QC_FINAL', '1.8');
   }
 
   private ensureQcRow(key: string, defaultLoSo: string) {
@@ -116,7 +176,8 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     if (!row['heSoPhaLoang']) row['heSoPhaLoang'] = '1';
     if (!row['hSoPhaLoang']) row['hSoPhaLoang'] = '1';
   }
-  // ── Override: mass default (10.0g) ─────────────
+
+  // ── Override: mass default (10.0g) ───────────────────────────────────────
   override on10gCheckChange(event: any) {
     this.draft.page1Data['is10gChecked'] = event.target.checked;
     if (this.draft.page1Data['is10gChecked']) {
@@ -151,26 +212,262 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     this.onDataChanged();
   }
 
-  // ── Override: View Mode Switcher ─────────────────────────────
+  // ── Override: View Mode Switcher ─────────────────────────────────────────
   setPrintFormMode(type: 'formDayDu' | 'formRutGon') {
     this.draft.page1Data['printFormType'] = type;
+    this.applyTemplateMetadata(type);
+    if (type === 'formRutGon') {
+      this.migrateLegacyShortFormColumns();
+      this.ensureQcRows();
+      this.prefillShortFormUnassignedTargets();
+    }
     this.onDataChanged();
   }
 
-  protected override onSetPrintFormType(type: 'formCheck' | 'formDon') {
+  protected override onSetPrintFormType(_type: 'formCheck' | 'formDon') {
     // Bắt buộc override từ abstract
   }
 
-  // ── SPREADSHEET (FORM RÚT GỌN) METHODS ────────────────────────────
+  // ── SPREADSHEET (FORM RÚT GỌN, SOP-01 UI/DATA) METHODS ──────────────────
 
   onHasCheckSampleChange() {
     if (this.draft.page1Data['hasCheckSample']) {
-      this.ensureQcRow('QC_CHECK', '1.9');
+      this.ensureQcRow('QC_CHECK_SAMPLE', '1.9');
       this.draft.page1Data['qcKiemTraNoiBo'] = true;
     } else {
       this.draft.page1Data['qcKiemTraNoiBo'] = null;
     }
     this.onDataChanged();
+  }
+
+  formatColumnName(colKey: string): string {
+    return getSop01DisplayName(colKey, this.masterTargets());
+  }
+
+  buildColumnDisplayNames() {
+    const map: Record<string, string> = {};
+    for (const col of this.activeColumns) {
+      map[col] = this.formatColumnName(col);
+    }
+    this.columnDisplayNames.set(map);
+  }
+
+  override isTargetAssigned(sampleCode: string, compoundOrCol: string): boolean {
+    if (SOP01_COLUMN_TO_CANONICAL[compoundOrCol]) {
+      if (sampleCode.startsWith('QC_')) {
+        return this.isTargetAssignedToAnySample(compoundOrCol);
+      }
+      if (!this.run) return true;
+      const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+      if (!targetMap) return true;
+
+      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+      if (!assigned || assigned.length === 0) return true;
+
+      const canonicalId = SOP01_COLUMN_TO_CANONICAL[compoundOrCol];
+      if (assigned.includes(canonicalId)) return true;
+      return assigned.some(tid => tid.toLowerCase() === canonicalId.toLowerCase());
+    }
+
+    return super.isTargetAssigned(sampleCode, compoundOrCol);
+  }
+
+  isTargetAssignedToAnySample(col: string): boolean {
+    if (!this.run) return true;
+    const targetMap = this.run.sampleTargetMap || (this.run.inputs && this.run.inputs.sampleTargetMap);
+    if (!targetMap) return true;
+    const sampleList = this.run.sampleList || [];
+    if (sampleList.length === 0) return true;
+
+    const canonicalId = SOP01_COLUMN_TO_CANONICAL[col];
+    return sampleList.some((sampleCode: string) => {
+      const matchKey = Object.keys(targetMap).find(k => k.toLowerCase().trim() === sampleCode.toLowerCase().trim());
+      const assigned: string[] | null = matchKey ? targetMap[matchKey] : null;
+      if (!assigned || assigned.length === 0) return true;
+
+      if (canonicalId) {
+        if (assigned.includes(canonicalId)) return true;
+        return assigned.some(tid => tid.toLowerCase() === canonicalId.toLowerCase());
+      }
+      return assigned.some(tid => tid.toLowerCase() === col.toLowerCase());
+    });
+  }
+
+  override prefillUnassignedTargets() {
+    super.prefillUnassignedTargets();
+    this.prefillShortFormUnassignedTargets();
+  }
+
+  private prefillShortFormUnassignedTargets() {
+    const targetMap = this.run?.sampleTargetMap || (this.run?.inputs && this.run.inputs.sampleTargetMap);
+    if (!this.run || !targetMap) return;
+
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    let changed = false;
+
+    allRowKeys.forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = {};
+      }
+      const row = this.draft.resultData[sampleCode];
+      this.activeColumns.forEach((c: string) => {
+        if (!this.isTargetAssigned(sampleCode, c) && row[c] !== 'N/A') {
+          row[c] = 'N/A';
+          changed = true;
+        }
+      });
+    });
+
+    if (changed) {
+      this.onDataChanged();
+    }
+  }
+
+  private migrateLegacyShortFormColumns() {
+    const legacyToSop01: Record<string, string> = {
+      fipronil: 'kqFip',
+      fipronil_desulfinyl: 'kqFipDesl',
+      fipronil_sulfide: 'kqFipSulf',
+      fipronil_sulfone: 'kqFipSulf2',
+      chlorpyrifos: 'kqClp',
+      chlorpyrifos_methyl: 'kqClpMe',
+      chlorpyrifos_methyl_desmethyl: 'kqClpMeDes'
+    };
+
+    Object.values(this.draft.resultData || {}).forEach((row: any) => {
+      if (!row || typeof row !== 'object') return;
+      Object.entries(legacyToSop01).forEach(([legacyKey, sop01Key]) => {
+        if ((row[sop01Key] === undefined || row[sop01Key] === '') && row[legacyKey] !== undefined && row[legacyKey] !== '') {
+          row[sop01Key] = row[legacyKey];
+        }
+      });
+    });
+  }
+
+  onCellChanged(sampleCode: string) {
+    this.updateRecovery(sampleCode);
+    this.onDataChanged();
+  }
+
+  override updateRecovery(sampleCode: string) {
+    const row = this.draft.resultData[sampleCode];
+    if (!row) return;
+    row['ghiChu'] = calculateSop01Recovery(row, sampleCode);
+  }
+
+  getSpikeNKey(n: number): string {
+    return `QC_SPIKE_${n}`;
+  }
+
+  getDisplayRowsForFipronil(): any[] {
+    const list: any[] = [];
+    const blankName = this.draft.page1Data['blankName'] || 'BLANK';
+    const spikeName = this.draft.page1Data['spikeName'] || 'SPIKE';
+    const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
+
+    const ensureKey = (key: string, defaultVial: string) => {
+      if (!this.draft.resultData[key]) {
+        this.draft.resultData[key] = {
+          loSo: defaultVial,
+          selected: true
+        };
+      }
+      if (!this.draft.resultData[key]['loSo']) {
+        this.draft.resultData[key]['loSo'] = defaultVial;
+      }
+    };
+
+    ensureKey('QC_BLANK', '1.7');
+    if (this.draft.resultData['QC_BLANK']['kqFip'] === undefined || this.draft.resultData['QC_BLANK']['kqFip'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFip'] = 'ND';
+    }
+    if (this.draft.resultData['QC_BLANK']['kqFipDesl'] === undefined || this.draft.resultData['QC_BLANK']['kqFipDesl'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFipDesl'] = 'ND';
+    }
+    if (this.draft.resultData['QC_BLANK']['kqFipSulf'] === undefined || this.draft.resultData['QC_BLANK']['kqFipSulf'] === '') {
+      this.draft.resultData['QC_BLANK']['kqFipSulf'] = 'ND';
+    }
+
+    list.push({
+      key: 'QC_BLANK',
+      type: 'QC_BLANK',
+      label: blankName,
+      isQC: true
+    });
+
+    ensureKey('QC_SPIKE', '1.8');
+    list.push({
+      key: 'QC_SPIKE',
+      type: 'QC_SPIKE',
+      label: spikeName,
+      isQC: true
+    });
+
+    if (this.draft.page1Data['hasCheckSample']) {
+      ensureKey('QC_CHECK_SAMPLE', '1.9');
+      list.push({
+        key: 'QC_CHECK_SAMPLE',
+        type: 'QC_CHECK_SAMPLE',
+        label: checkSampleName,
+        isQC: true
+      });
+    }
+
+    let regularCount = 0;
+    (this.run.sampleList || []).forEach((sampleCode: string) => {
+      if (!this.draft.resultData[sampleCode]) {
+        this.draft.resultData[sampleCode] = {
+          loSo: '',
+          selected: true
+        };
+      }
+      list.push({
+        key: sampleCode,
+        type: 'REGULAR',
+        label: sampleCode,
+        isQC: false
+      });
+
+      regularCount++;
+      if (regularCount % 10 === 0) {
+        const isLastSample = regularCount === (this.run.sampleList || []).length;
+        if (!isLastSample) {
+          const n = regularCount / 10;
+          const spikeNKey = this.getSpikeNKey(n);
+          const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || '1.8';
+          if (!this.draft.resultData[spikeNKey]) {
+            this.draft.resultData[spikeNKey] = {
+              loSo: spikeVial,
+              selected: true
+            };
+          } else {
+            this.draft.resultData[spikeNKey]['loSo'] = spikeVial;
+          }
+          list.push({
+            key: spikeNKey,
+            type: 'QC_SPIKE_N',
+            label: `SP_${n}`,
+            isQC: true,
+            n
+          });
+        }
+      }
+    });
+
+    ensureKey('QC_FINAL', '1.8');
+    list.push({
+      key: 'QC_FINAL',
+      type: 'QC_FINAL',
+      label: 'FINAL',
+      isQC: true
+    });
+
+    return list;
+  }
+
+  getDisplayRows() {
+    return this.getDisplayRowsForFipronil();
   }
 
   fillNDForCurrentSample() {
@@ -193,9 +490,11 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     const vialStart = parseInt(String(this.bulkVialStartFip), 10);
     const perRack = parseInt(String(this.bulkVialsPerRack), 10);
 
-    if (isNaN(rackStart) || isNaN(vialStart) || isNaN(perRack) || perRack <= 0) return;
+    if (isNaN(rackStart) || isNaN(vialStart) || isNaN(perRack) || perRack <= 0) {
+      return;
+    }
 
-    const visible = this.run?.sampleList || [];
+    const visible = this.run.sampleList || [];
     let currentRack = rackStart;
     let currentVial = vialStart;
 
@@ -204,78 +503,85 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
         currentRack += 1;
         currentVial = 1;
       }
+
       if (!this.draft.resultData[sample]) {
-        this.draft.resultData[sample] = { loSo: '', selected: true };
+        this.draft.resultData[sample] = {
+          loSo: '',
+          selected: true
+        };
       }
       this.draft.resultData[sample]['loSo'] = `${currentRack}.${currentVial}`;
       currentVial += 1;
     });
+
     this.onDataChanged();
   }
 
   bulkFillND() {
-    const allRowKeys = this.getDisplayRows().map(r => r.key);
-    allRowKeys.forEach((key) => {
-      if (!this.draft.resultData[key]) this.draft.resultData[key] = {};
-      this.shortFormColumns.forEach((col: string) => {
-        if (!this.draft.resultData[key][col] || this.draft.resultData[key][col].trim() === '') {
-          this.draft.resultData[key][col] = 'ND';
-        }
-      });
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+
+    allRowKeys.forEach((key: string) => {
+      const row = this.draft.resultData[key];
+      if (row) {
+        this.activeColumns.forEach((col: string) => {
+          if (!this.isTargetAssigned(key, col)) {
+            row[col] = 'N/A';
+          } else if (!row[col] || row[col].toString().trim() === '') {
+            row[col] = 'ND';
+          }
+        });
+        this.updateRecovery(key);
+      }
     });
+
+    this.draft.page1Data['checkTatCaND'] = true;
+    this.draft.page1Data['checkCoMauPhatHien'] = false;
     this.onDataChanged();
   }
 
   bulkClearAll() {
-    if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ kết quả trong bảng? Hành động này không thể hoàn tác!')) {
-      return;
-    }
-    const allRowKeys = this.getDisplayRows().map(r => r.key);
-    allRowKeys.forEach((key) => {
-      if (this.draft.resultData[key]) {
-        this.shortFormColumns.forEach((col: string) => {
-          this.draft.resultData[key][col] = '';
+    const allRowKeys = this.getDisplayRowsForFipronil().map(row => row.key);
+    allRowKeys.forEach((key: string) => {
+      const row = this.draft.resultData[key];
+      if (row) {
+        this.activeColumns.forEach((col: string) => {
+          row[col] = this.isTargetAssigned(key, col) ? '' : 'N/A';
         });
+        row['ghiChu'] = '';
       }
     });
     this.onDataChanged();
   }
 
   copyRowToAll(sourceKey: string) {
-    if (!this.draft.resultData[sourceKey]) return;
     const sourceData = this.draft.resultData[sourceKey];
-    const allRowKeys = this.getDisplayRows().map(r => r.key);
+    if (!sourceData) return;
 
-    allRowKeys.forEach((key) => {
-      if (key !== sourceKey && !key.startsWith('QC_')) {
-        if (!this.draft.resultData[key]) this.draft.resultData[key] = {};
-        this.shortFormColumns.forEach((col: string) => {
-          if (sourceData[col] !== undefined) {
-            this.draft.resultData[key][col] = sourceData[col];
+    const sampleList = this.run.sampleList || [];
+    sampleList.forEach((targetKey: string) => {
+      if (targetKey !== sourceKey) {
+        if (!this.draft.resultData[targetKey]) {
+          this.draft.resultData[targetKey] = { selected: true };
+        }
+        const destRow = this.draft.resultData[targetKey];
+        this.activeColumns.forEach((col: string) => {
+          if (!this.isTargetAssigned(targetKey, col)) {
+            destRow[col] = 'N/A';
+          } else {
+            const sourceValue = this.isTargetAssigned(sourceKey, col) ? sourceData[col] : '';
+            destRow[col] = (sourceValue === 'N/A' && this.isTargetAssigned(targetKey, col)) ? '' : (sourceValue || '');
           }
         });
+        this.updateRecovery(targetKey);
       }
     });
     this.onDataChanged();
   }
 
-  getDisplayRows() {
-    const rows: {key: string, label: string, isQC: boolean}[] = [];
-    rows.push({ key: 'QC_BLANK', label: this.draft.page1Data['blankName'] || 'BLANK', isQC: true });
-    rows.push({ key: 'QC_SPIKE', label: this.draft.page1Data['spikeName'] || 'SPIKE', isQC: true });
-    
-    if (this.draft.page1Data['hasCheckSample']) {
-      rows.push({ key: 'QC_CHECK', label: this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE', isQC: true });
-    }
-
-    (this.run?.sampleList || []).forEach((sampleCode: string) => {
-      rows.push({ key: sampleCode, label: sampleCode, isQC: false });
-    });
-    return rows;
-  }
-
-  handleGridNavigation(event: KeyboardEvent, rowIndex: number, colKey: string, colIndex: number) {
-    navigateGrid(event, rowIndex, colIndex, ['loSo', ...this.shortFormColumns], this.getDisplayRows().length, 0);
+  handleGridNavigation(event: KeyboardEvent, rowIdx: number, _colName: string, colIdx: number) {
+    const columnsList = ['loSo', ...this.activeColumns];
+    const rows = this.getDisplayRowsForFipronil();
+    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
   }
 
   async importMassHunterExcel(event: Event) {
@@ -283,83 +589,118 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
 
-    try {
-      const XLSX = await import('xlsx');
-      const reader = new FileReader();
+    const XLSX = await import('xlsx');
+    const reader = new FileReader();
 
-      reader.onload = async (e: any) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array', cellDates: false });
-          
-          const sheetMap: Record<string, string> = {
-            'fipron': 'fipronil',
-            'fipronil': 'fipronil',
-            'fipronildesulfinyl': 'fipronil_desulfinyl',
-            'fipronil_desulfinyl': 'fipronil_desulfinyl',
-            'fipronilsulfide': 'fipronil_sulfide',
-            'fipronil_sulfide': 'fipronil_sulfide',
-            'fipronilsulfone': 'fipronil_sulfone',
-            'fipronil_sulfone': 'fipronil_sulfone',
-            'chlorpyrifos': 'chlorpyrifos',
-            'chlorpyrifosmethyl': 'chlorpyrifos_methyl',
-            'chlorpyrifos_methyl': 'chlorpyrifos_methyl',
-            'chlorpyriphosmethyl': 'chlorpyrifos_methyl'
+    reader.onload = (e: any) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+
+        const sheetMap: Record<string, string> = {
+          'fipron': 'kqFip',
+          'fipronil': 'kqFip',
+          'fipronildesulfinyl': 'kqFipDesl',
+          'fipronil_desulfinyl': 'kqFipDesl',
+          'fipronilsulfide': 'kqFipSulf',
+          'fipronil_sulfide': 'kqFipSulf',
+          'fipronilsulfone': 'kqFipSulf2',
+          'fipronil_solid': 'kqFipSulf',
+          'fipronil_sulfone': 'kqFipSulf2',
+          'chlorpyrifos': 'kqClp',
+          'chlorpyrifosmethyl': 'kqClpMe',
+          'chlorpyrifos_methyl': 'kqClpMe',
+          'chlorpyriphos-methyl-desmethyl': 'kqClpMeDes',
+          'chlorpyrifos_methyl_desmethyl': 'kqClpMeDes'
+        };
+
+        const displayRows = this.getDisplayRowsForFipronil();
+        const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
+
+        const { r2Values } = parseMassHunterWorkbook(
+          XLSX,
+          workbook,
+          displayRows,
+          this.draft.resultData,
+          this.decimalPlaces,
+          checkSampleName,
+          sheetMap,
+          (key) => this.updateRecovery(key)
+        );
+
+        if (r2Values.length > 0) {
+          const allR2Ok = r2Values.every(v => v >= 0.99);
+          this.draft.page1Data['qcR2'] = allR2Ok;
+        }
+
+        const spikeRow = this.draft.resultData['QC_SPIKE'];
+        if (spikeRow && spikeRow['kqFip'] !== undefined && spikeRow['kqFip'] !== '') {
+          const fipVal = parseFloat(String(spikeRow['kqFip']));
+          if (!isNaN(fipVal)) {
+            const recovery = (fipVal / 5) * 100;
+            this.draft.page1Data['qcThuHoi'] = recovery >= 70 && recovery <= 120;
+          }
+        }
+
+        this.onDataChanged();
+
+        if (this.draft.page1Data['uploadMassHunterToDrive'] !== false) {
+          const readerForUpload = new FileReader();
+          readerForUpload.onload = async (uploadEvent: any) => {
+            const base64String = uploadEvent.target.result;
+
+            this.progressService.start(
+              'Đang lưu tệp Excel gốc',
+              'Đang kết nối và truyền dữ liệu nhị phân gốc sang Google Drive...',
+              100
+            );
+            this.progressService.update(30, 'Đang gửi yêu cầu ghi tệp...');
+
+            try {
+              this.progressService.update(60, 'Đang ghi tệp gốc vào thư mục Google Drive...');
+              const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
+              const sopId = this.draft.sopId;
+              const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
+              const ext = file.name.substring(file.name.lastIndexOf('.'));
+              const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
+
+              const uploadRes = await this.reportService.uploadExcelToDrive(
+                this.draft.requestId,
+                normalizedFileName,
+                base64String,
+                this.draft.sopId
+              );
+
+              if (uploadRes.success && uploadRes.fileUrl) {
+                this.progressService.update(90, 'Liên kết tệp nguồn với mẻ chạy...');
+                this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
+                this.draft.page1Data['massHunterExcelName'] = normalizedFileName;
+                this.onDataChanged();
+
+                this.progressService.complete();
+                this.toast.show('Nhập dữ liệu thành công và đã tải tệp Excel MassHunter gốc lên Google Drive!', 'success');
+              } else {
+                throw new Error(uploadRes.error || 'Lỗi không thể tạo file trên Drive.');
+              }
+            } catch (err: any) {
+              this.progressService.stop();
+              console.error('Lỗi upload Excel lên Drive:', err);
+              this.toast.show('Đã nhập số liệu thành công nhưng không thể tải tệp Excel gốc lên Google Drive: ' + err.message, 'error');
+            }
           };
 
-          const displayRows = this.getDisplayRows();
-          const checkSampleName = this.draft.page1Data['checkSampleName'] || 'CHECK_SAMPLE';
-
-          parseMassHunterWorkbook(
-            XLSX,
-            workbook,
-            displayRows,
-            this.draft.resultData,
-            this.decimalPlaces,
-            checkSampleName,
-            sheetMap
-          );
-
-          this.toast.show('Đã nhập kết quả từ tệp Excel thành công!', 'success');
-          this.onDataChanged();
-
-          if (this.draft.page1Data['uploadMassHunterToDrive'] !== false) {
-            const readerForUpload = new FileReader();
-            readerForUpload.onload = async (uploadEvent: any) => {
-              const base64String = uploadEvent.target.result;
-              try {
-                const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || new Date().toISOString().split('T')[0];
-                const sopId = this.draft.sopId;
-                const vSuffix = this.draft.version ? `_v${this.draft.version}` : '';
-                const ext = file.name.substring(file.name.lastIndexOf('.'));
-                const normalizedFileName = `RAW_${sopId}_${batchCode}${vSuffix}${ext}`;
-
-                const uploadRes = await this.reportService.uploadExcelToDrive(
-                  this.draft.requestId, 
-                  normalizedFileName, 
-                  base64String,
-                  this.draft.sopId
-                );
-                
-                if (uploadRes.success && uploadRes.fileUrl) {
-                  this.draft.page1Data['massHunterExcelUrl'] = uploadRes.fileUrl;
-                  this.toast.show('Đã tải tệp gốc lên Google Drive.', 'success');
-                  this.onDataChanged();
-                }
-              } catch (upErr: any) {
-                this.toast.show(`Lỗi khi upload: ${upErr.message}`, 'error');
-              }
-            };
-            readerForUpload.readAsDataURL(file);
-          }
-        } catch (err: any) {
-          this.toast.show(`Lỗi đọc tệp Excel: ${err.message}`, 'error');
+          readerForUpload.readAsDataURL(file);
+        } else {
+          this.toast.show('Nhập số liệu thành công! (Không tải tệp lên Google Drive)', 'success');
         }
-      };
-      
-      reader.readAsArrayBuffer(file);
-    } catch (err: any) {
-      this.toast.show(`Lỗi nạp thư viện Excel: ${err.message}`, 'error');
-    }
+
+      } catch (err: any) {
+        console.error('Lỗi khi đọc file Excel MassHunter:', err);
+        this.toast.show('Có lỗi xảy ra khi đọc tệp Excel: ' + err.message, 'error');
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    input.value = '';
   }
 }

@@ -1,12 +1,20 @@
 
 function generateCustomReport_fipronil_chlorpyrifos(templateId, metadata, samples, folder, fileName, version) {
+  return generateFipronilChlorpyrifosStyleReport_(templateId, metadata, samples, folder, fileName, version, 'fipronil-chlorpyrifos');
+}
+
+function generateCustomReport_tbvtv_thuc_pham_gcmsms_rut_gon(templateId, metadata, samples, folder, fileName, version) {
+  return generateFipronilChlorpyrifosStyleReport_(templateId, metadata, samples, folder, fileName, version, 'tbvtv-thuc-pham-gcmsms-rut-gon');
+}
+
+function generateFipronilChlorpyrifosStyleReport_(templateId, metadata, samples, folder, fileName, version, sopConfigKey) {
   const templateFile = DriveApp.getFileById(templateId);
   const newFile = templateFile.makeCopy(fileName, folder);
   const docId = newFile.getId();
   const doc = DocumentApp.openById(docId);
   const body = doc.getBody();
 
-  const sopConfig = CONFIG.SOP_CONFIG['fipronil-chlorpyrifos'];
+  const sopConfig = CONFIG.SOP_CONFIG[sopConfigKey] || CONFIG.SOP_CONFIG['fipronil-chlorpyrifos'];
 
   // 1. Điền các text fields & checkbox chung bằng bộ khung mặc định
   fillTextFields(body, sopConfig, metadata);

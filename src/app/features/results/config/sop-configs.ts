@@ -28,6 +28,16 @@ export const SOP_NAME_MAP: { keywords: string[]; configKey: string }[] = [
   { keywords: ['9.14', 'thực phẩm', 'tbvtv thực phẩm', 'tbvtv thuc pham'], configKey: 'tbvtv-thuc-pham-gcmsms' },
 ];
 
+export const SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS = {
+  formDayDu: '1b-bv_9mAxnTNWz2ve0n0OeBj4UrhCB5X3DHXsG5EOc4',
+  formRutGon: '1a-6dDufswdWaOJ2oqtzZD4j6ncj5EEvtbi8xo3019K4'
+} as const;
+
+export const SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS = {
+  formDayDu: `https://docs.google.com/document/d/${SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formDayDu}/edit`,
+  formRutGon: `https://docs.google.com/document/d/${SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formRutGon}/edit`
+} as const;
+
 export const ANGULAR_SOP_CONFIG: Record<string, {
   formType: 'type2' | 'type3a' | 'type3b';
   columns: Record<string, number>;
@@ -52,6 +62,25 @@ export const ANGULAR_SOP_CONFIG: Record<string, {
     signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
   },
   'fipronil-chlorpyrifos': {
+    formType: 'type2',
+    columns: {
+      maSoMau: 0, loSo: 1, kqFip: 2, kqFipDesl: 3, kqFipSulf: 4,
+      kqFipSulf2: 5, kqClp: 6, kqClpMe: 7, kqClpMeDes: 8
+    },
+    checkboxLines: {
+      'Tất cả mẫu thử đều không phát hiện': 'checkTatCaND',
+      'Có mẫu thử phát hiện': 'checkCoMauPhatHien',
+      'Mẫu kiểm tra nội bộ': 'qcKiemTraNoiBo',
+      'Hệ số hồi quy tuyến tính': 'qcR2',
+      'Độ lệch thời gian lưu': 'qcThoiGianLuu',
+      'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm': 'qcNhanDang',
+      'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb': 'qcThemChuan',
+      'Độ thu hồi IS': 'qcThuHoi',
+      'Đánh giá chung': 'qcDanhGiaChung'
+    },
+    signaturePlaceholders: { 'date1': 'ngayNguoiPhanTich', 'date2': 'ngayNguoiThamTra' }
+  },
+  'tbvtv-thuc-pham-gcmsms-rut-gon': {
     formType: 'type2',
     columns: {
       maSoMau: 0, loSo: 1, kqFip: 2, kqFipDesl: 3, kqFipSulf: 4,
