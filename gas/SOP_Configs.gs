@@ -168,6 +168,8 @@ const COMPOUND_TO_CANONICAL = {
   'PermethrinCis':                  'permethrin_cis',
   'Permethrin trans':               'permethrin_trans',
   'PermethrinTrans':                'permethrin_trans',
+  'Permethrins':                    'permethrins',
+  'Permethrin':                     'permethrins',
   'Fenpropathrin':                  'fenpropathrin',
   'Silafluofen':                    'silafluofen',
   'Flucythrinate':                  'flucythrinate',
@@ -572,7 +574,7 @@ const CONFIG = {
         { key: 'heptachlor_endo_epoxide_isomer_a' }, { key: 'heptachlor_exo_epoxide_isomer_b' }, { key: 'hexachlorobenzene' },
         { key: 'imazalil' }, { key: 'isodrin' }, { key: 'malathion' }, { key: 'metalaxyl' }, { key: 'methoxychlor_pp_' },
         { key: 'mirex' }, { key: 'mgk_264' }, { key: 'metolachlor' }, { key: 'nonachlor_cis' }, { key: 'nonachlor_trans' },
-        { key: 'pentachloroaniline' }, { key: 'pentachlorobenzene' }, { key: 'permethrin_cis' }, { key: 'permethrin_trans' },
+        { key: 'pentachloroaniline' }, { key: 'pentachlorobenzene' }, { key: 'permethrins' },
         { key: 'pronamide' }, { key: 'omethoate' }, { key: 'piperonyl_butoxide' }, { key: 'pirimiphos_methyl' },
         { key: 'profenofos' }, { key: 'propanil' }, { key: 'propiconazole' }, { key: 'simazine' }, { key: 'tefluthrin' },
         { key: 'tetraconazole' }
@@ -590,7 +592,7 @@ const CONFIG = {
         'Heptachlor endo-epoxide (isomer A)', 'Heptachlor exo-epoxide (isomer B)', 'Hexachlorobenzene',
         'Imazalil', 'Isodrin', 'Malathion', 'Metalaxyl', 'Methoxychlor, p,p\'-',
         'Mirex', 'MGK-264', 'Metolachlor', 'Nonachlor cis', 'Nonachlor trans',
-        'Pentachloroaniline', 'Pentachlorobenzene', 'Permethrin cis', 'Permethrin trans',
+        'Pentachloroaniline', 'Pentachlorobenzene', 'Permethrins',
         'Pronamide', 'Omethoate', 'Piperonyl butoxide', 'Pirimiphos-methyl',
         'Profenofos', 'Propanil', 'Propiconazole', 'Simazine', 'Tefluthrin',
         'Tetraconazole'

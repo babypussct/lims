@@ -114,6 +114,8 @@ export const COMPOUND_TO_FIRESTORE_ID: Record<string, string> = {
   'PermethrinCis':         'permethrin_cis',
   'Permethrin trans':      'permethrin_trans',
   'PermethrinTrans':       'permethrin_trans',
+  'Permethrins':           'permethrins',
+  'Permethrin':            'permethrins',
   'Cypermethrins':         'cypermethrins',
   'Cypermethrin':          'cypermethrins',
 
