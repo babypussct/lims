@@ -184,6 +184,29 @@ export class Sop01EntryComponent implements OnInit {
     this.columnDisplayNames.set(map);
   }
 
+  // ── Helper cho Mã Hồ Sơ ───────────────────────────────────────────────────
+  autoFillMaHoSo() {
+    const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || '';
+    const match = batchCode.match(/(\d{2})$/);
+    
+    let dateStr = '';
+    const dateSrc = this.run?.createdAt ? new Date(this.run.createdAt) : new Date();
+    const month = String(dateSrc.getMonth() + 1).padStart(2, '0');
+    const year = String(dateSrc.getFullYear());
+
+    if (match) {
+      // Lấy 2 số cuối của batchCode làm ngày (vd: 08)
+      const day = match[1];
+      dateStr = `${day}/${month}/${year}`;
+    } else {
+      const day = String(dateSrc.getDate()).padStart(2, '0');
+      dateStr = `${day}/${month}/${year}`;
+    }
+
+    this.draft.page1Data['maHoSo'] = `U (${dateStr})`;
+    this.onDataChanged();
+  }
+
   onDataChanged() {
     this.draftChanged.emit(this.draft);
   }

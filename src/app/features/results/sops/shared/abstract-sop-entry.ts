@@ -533,6 +533,17 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     if (changed) this.onDataChanged();
   }
 
+  // ── Helper cho Mã Hồ Sơ ───────────────────────────────────────────────────
+  autoFillMaHoSo() {
+    const selectedSamples = (this.run?.sampleList || []).filter((sampleCode: string) => 
+      this.draft.resultData[sampleCode]?.['selected'] !== false
+    );
+    if (selectedSamples.length > 0) {
+      this.draft.page1Data['maHoSo'] = selectedSamples.join(', ');
+      this.onDataChanged();
+    }
+  }
+
   // ── Data Change Handlers ──────────────────────────────────────────────────
 
   onDataChanged() {
