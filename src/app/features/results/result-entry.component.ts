@@ -883,7 +883,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
       const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport, includedSamples);
       if (result.success) {
-        this.draft.update((d: any) => d ? { ...d, status: 'completed', version: (d.version || 0) + 1 } as any : null);
+        this.draft.update((d: any) => d ? { ...d, status: result.newStatus || 'completed', version: (d.version || 0) + 1 } as any : null);
 
         const hist = await this.resultService.getHistory(this.requestId);
         this.historyList.set(hist);

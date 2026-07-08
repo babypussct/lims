@@ -603,7 +603,7 @@ export class ResultService {
     payload: GenerateReportPayload,
     prefix?: string,
     includedSamples?: string[]
-  ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string }> {
+  ): Promise<{ success: boolean; pdfUrl?: string; pdfViewUrl?: string; newStatus?: string }> {
     try {
       const ref = this.getDocRef(requestId);
       const docSnap = await getDoc(ref);
@@ -712,6 +712,7 @@ export class ResultService {
       };
 
       let updatePayload: Partial<AnalysisResultDraft>;
+      let newStatus: 'completed' | 'draft' = 'completed';
 
       if (isPrefixReport) {
         const prefixKey = prefix! === '' ? '_NO_PREFIX_' : prefix!;
@@ -731,9 +732,26 @@ export class ResultService {
             publishedBackup: backup
           }
         } as AnalysisResultDraft['reports'];
+
+        // Kiểm tra xem tất cả các mẫu được chọn đã được xuất bản chưa
+        const publishedSamples = new Set<string>();
+        for (const rep of Object.values(updatedReports)) {
+          if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
+            (rep.includedSamples || []).forEach((s: string) => publishedSamples.add(s));
+          }
+        }
+        
+        const allSelectedSamples = (docSnap.data()?.['sampleList'] || []).filter((s: string) => {
+          const resObj = currentDraft.resultData?.[s] || {};
+          return resObj['selected'] !== false;
+        });
+        
+        const allPublished = allSelectedSamples.every((s: string) => publishedSamples.has(s));
+        newStatus = allPublished ? 'completed' : 'draft';
+
         updatePayload = {
           ...draftData,
-          status: 'completed' as const,
+          status: newStatus,
           reports: updatedReports
         };
       } else {
@@ -768,7 +786,7 @@ export class ResultService {
       );
 
       this.toast.show(`Báo cáo PDF ${isPrefixReport ? (prefix === '' ? 'Không tiền tố' : 'nhóm ' + prefix) : 'chung'} bản v${nextVersion} đã được tạo và lưu thành công!`, 'success');
-      return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl };
+      return { success: true, pdfUrl: response.pdfUrl, pdfViewUrl: response.pdfViewUrl, newStatus: newStatus };
     } catch (e: any) {
       console.error('Error publishing report:', e);
       this.toast.show('Lỗi xuất bản báo cáo: ' + e.message, 'error');
