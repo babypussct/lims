@@ -178,6 +178,121 @@ function fillType3bSampleForElements(elements, sopConfig, metadata, sample) {
     element.replaceText('{{MaSoMau}}', sample.maSoMau || '');
     element.replaceText('1. Mã số mẫu:', '1. Mã số mẫu:  ' + (sample.maSoMau || ''));
     
+    // 1.0.1 custom: Điền Mã hồ sơ
+    try {
+      const maHoSoVal = (metadata.maHoSo || "").trim();
+      if (maHoSoVal) {
+        let found = element.findText('(?i)Mã\\s*hồ\\s*sơ[^:\\n]*:');
+        while (found) {
+          const textElement = found.getElement().asText();
+          const end = found.getEndOffsetInclusive();
+          const fullText = textElement.getText();
+          
+          let cursor = end + 1;
+          while (cursor < fullText.length && fullText[cursor] === ' ') {
+            cursor++;
+          }
+          
+          let hasDots = false;
+          let dotsEnd = cursor;
+          while (dotsEnd < fullText.length && (fullText[dotsEnd] === '.' || fullText[dotsEnd] === '…')) {
+            hasDots = true;
+            dotsEnd++;
+          }
+          
+          if (hasDots) {
+            textElement.deleteText(cursor, dotsEnd - 1);
+            textElement.insertText(cursor, maHoSoVal);
+          } else {
+            if (end + 1 < fullText.length && fullText[end + 1] === ' ') {
+              textElement.insertText(end + 2, maHoSoVal);
+            } else {
+              textElement.insertText(end + 1, ' ' + maHoSoVal);
+            }
+          }
+          
+          found = element.findText('(?i)Mã\\s*hồ\\s*sơ[^:\\n]*:', found);
+        }
+      }
+    } catch (e) {
+      Logger.log(`[Type3BCustom] Lỗi khi điền Mã hồ sơ: ${e.toString()}`);
+    }
+
+    // 1.0.2 custom: Điền bảng đường chuẩn (6 dòng)
+    try {
+      let tables = [];
+      if (element.getType() === DocumentApp.ElementType.TABLE) {
+        tables.push(element.asTable());
+      } else if (typeof element.getTables === 'function') {
+        tables = element.getTables();
+      }
+      
+      let calibrationTable = null;
+      for (let t = 0; t < tables.length; t++) {
+        const candidate = tables[t];
+        if (candidate.getNumRows() === 6) {
+          const cellText = candidate.getRow(0).getCell(0).getText();
+          if (cellText.includes("Điểm chuẩn") || cellText.includes("Vial No") || cellText.includes("Vial") || cellText.includes("Điểm")) {
+            calibrationTable = candidate;
+            break;
+          }
+        }
+      }
+
+      if (calibrationTable) {
+        const calibPoints = metadata.calibPoints || [];
+        const numRows = calibrationTable.getNumRows();
+        for (let i = 0; i < Math.min(calibPoints.length, numRows - 1); i++) {
+          const pt = calibPoints[i] || { vialNo: '', loSo: '', hamLuong: '' };
+          const rowIdx = 1 + i;
+          const row = calibrationTable.getRow(rowIdx);
+          
+          const hRow = calibrationTable.getRow(0);
+          let vialCol = -1, nongDoCol = -1;
+          for (let c = 0; c < hRow.getNumCells(); c++) {
+            const txt = hRow.getCell(c).getText().toLowerCase();
+            if (txt.includes('vial') || txt.includes('lọ') || txt.includes('lo')) vialCol = c;
+            if (txt.includes('nồng độ') || txt.includes('nong do') || txt.includes('ppb') || txt.includes('µg') || txt.includes('ng')) nongDoCol = c;
+          }
+          if (vialCol === -1) vialCol = 1;
+          if (nongDoCol === -1) nongDoCol = 2;
+          
+          try {
+            if (vialCol >= 0 && vialCol < row.getNumCells()) {
+              row.getCell(vialCol).setText(pt.vialNo || pt.loSo || '');
+            }
+            if (nongDoCol >= 0 && nongDoCol < row.getNumCells() && pt.hamLuong !== undefined && pt.hamLuong !== null) {
+              row.getCell(nongDoCol).setText(pt.hamLuong.toString());
+            }
+          } catch(e) {}
+        }
+        
+        // Điền hệ số R2
+        const r2Val = (metadata.r2 || metadata.R2 || '').toString();
+        if (r2Val) {
+          for (let r = 0; r < numRows; r++) {
+            const rowText = calibrationTable.getRow(r).getText().toLowerCase();
+            if (rowText.includes('r2') || rowText.includes('r²')) {
+              const row = calibrationTable.getRow(r);
+              const lastCell = row.getCell(row.getNumCells() - 1);
+              const cellText = lastCell.getText();
+              if (cellText.includes('…') || cellText.includes('...')) {
+                if (typeof replaceDotsSafely === 'function') {
+                  replaceDotsSafely(lastCell, '[…\\.]{2,}', r2Val);
+                } else {
+                  lastCell.setText(cellText.replace(/[…\.]+/, r2Val));
+                }
+              } else {
+                lastCell.setText(r2Val);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log(`[Type3BCustom] Lỗi khi điền bảng đường chuẩn: ${e.toString()}`);
+    }
+
     // 1.1 Gọi hàm dùng chung để tick Checkbox Khối lượng, Loại mẫu, Tình trạng mẫu
     fillCommonSampleCheckboxes(element, metadata, sample);
     

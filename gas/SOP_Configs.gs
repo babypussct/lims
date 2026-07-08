@@ -556,7 +556,15 @@ const CONFIG = {
       formType: 'type3b',
       defaultFontSize: 13,
       columns: {},
-      checkboxLines: {},
+      checkboxLines: {
+        'Mẫu kiểm tra nội bộ':                                          'qcKiemTraNoiBo',
+        'Hệ số hồi quy tuyến tính':                                      'qcR2',
+        'Độ lệch thời gian lưu':                                         'qcThoiGianLuu',
+        'Các yêu cầu về nhận dạng khi phát hiện mẫu nhiễm':            'qcNhanDangMauNhiem',
+        'Các yêu cầu về nhận dạng của mẫu thêm chuẩn tại 5ppb':       'qcNhanDangSpike',
+        'Độ thu hồi IS':                                                 'qcThuHoiIS',
+        'Đánh giá chung':                                                'qcDanhGiaChung'
+      },
       signaturePlaceholders: {
         'date1': 'ngayNguoiPhanTich',
         'date2': 'ngayNguoiThamTra',

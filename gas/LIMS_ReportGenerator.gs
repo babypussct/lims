@@ -122,6 +122,9 @@ function doPost(e) {
 
 // ── Core: Tạo báo cáo & Định tuyến thông minh (Dynamic Routing) ────────
 function generateReport(sopId, metadata, samples, version) {
+  if (metadata) {
+    metadata.sopId = sopId;
+  }
   let templateId = CONFIG.TEMPLATES[sopId];
   if (sopId === 'lan-huu-co' && metadata && metadata.printFormType === 'formDon') {
     templateId = CONFIG.TEMPLATES['lan-huu-co-don'] || '1kR2sljh1LPoXj8jkmYq5f3ZZapkBg4XlWqQTO5Z3c1Y';
@@ -611,6 +614,18 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
       replaceDotsSafely(element, 'm\\s*=\\s*[…\\.]+', ' 10.0 ');
     }
 
+    // --- Phân giải và xử lý Hệ số pha loãng ---
+    const fVal = (sample.heSoPhaLoang || sample.hSoPhaLoang || metadata.heSoPhaLoang || '1').toString().trim();
+    const isF1 = fVal === '1';
+    const f1Check = isF1 ? '☑' : '☐';
+    const fOtherCheck = !isF1 ? '☑' : '☐';
+    
+    replaceCheckboxSafely(element, 'Hệ số pha loãng:\\s*' + cbPattern, f1Check);
+    replaceCheckboxSafely(element, 'f\\s*=\\s*1\\s*;\\s*' + cbPattern, fOtherCheck);
+    if (!isF1) {
+      replaceDotsSafely(element, 'f\\s*=\\s*[…\\.]+', fVal);
+    }
+
     // --- Phân giải giá trị Loại mẫu ---
     const loaiMauVal = (sample.loaiMau || metadata.loaiMau || 'Thuỷ sản').toString().trim();
     
@@ -629,17 +644,26 @@ function fillCommonSampleCheckboxes(element, metadata, sample) {
     let isLmKhac = !isTuoi && !isKho && !isThuySan && !isUong && !isSanXuat && !isSinhHoat && !isNuoiTrong;
     let lmKhacText = isLmKhac ? loaiMauVal : '………';
     
-    // -- Xử lý Checkbox Nông sản / Thuỷ sản --
-    replaceCheckboxSafely(element, 'Loại mẫu:\\s*' + cbPattern, (isTuoi || isUong) ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'tươi\\s*;\\s*' + cbPattern, isKho ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'khô\\s*;\\s*' + cbPattern, isThuySan ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'sản\\s*;\\s*' + cbPattern, isLmKhac ? '☑' : '☐'); // Note: 'sản' might match 'Thủy sản' if template has 'sản;'. The pattern is strict.
+    const isSopTbvtvThucPham = metadata.sopId === 'tbvtv-thuc-pham-gcmsms' || metadata.sopId === 'tbvtv-thuc-pham-gcmsms-rut-gon' || metadata.sourceSopId === 'tbvtv-thuc-pham-gcmsms';
+    if (isSopTbvtvThucPham) {
+      // SOP TBVTV Thực phẩm chỉ có: ☐ Thuỷ sản; ☐ Khác:............
+      replaceCheckboxSafely(element, 'Loại mẫu:\\s*' + cbPattern, isThuySan ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'sản\\s*;\\s*' + cbPattern, isLmKhac ? '☑' : '☐');
+    } else {
+      // -- Xử lý Checkbox Nông sản / Thuỷ sản --
+      replaceCheckboxSafely(element, 'Loại mẫu:\\s*' + cbPattern, (isTuoi || isUong) ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'tươi\\s*;\\s*' + cbPattern, isKho ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'khô\\s*;\\s*' + cbPattern, isThuySan ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'sản\\s*;\\s*' + cbPattern, isLmKhac ? '☑' : '☐'); // Note: 'sản' might match 'Thủy sản' if template has 'sản;'. The pattern is strict.
+    }
 
     // -- Xử lý Checkbox Nước (TBVTV Trong Nước) --
-    replaceCheckboxSafely(element, 'Uống\\s*;\\s*' + cbPattern, isSanXuat ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'xuất\\s*;\\s*' + cbPattern, isSinhHoat ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'hoạt\\s*;\\s*' + cbPattern, isNuoiTrong ? '☑' : '☐');
-    replaceCheckboxSafely(element, 'trồng\\s*;\\s*' + cbPattern, isLmKhac ? '☑' : '☐');
+    if (!isSopTbvtvThucPham) {
+      replaceCheckboxSafely(element, 'Uống\\s*;\\s*' + cbPattern, isSanXuat ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'xuất\\s*;\\s*' + cbPattern, isSinhHoat ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'hoạt\\s*;\\s*' + cbPattern, isNuoiTrong ? '☑' : '☐');
+      replaceCheckboxSafely(element, 'trồng\\s*;\\s*' + cbPattern, isLmKhac ? '☑' : '☐');
+    }
 
     if (isLmKhac) {
       replaceDotsSafely(element, 'Khác\\s*:\\s*[…\\.]+', lmKhacText);
