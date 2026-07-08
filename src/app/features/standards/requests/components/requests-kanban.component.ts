@@ -232,8 +232,13 @@ import { AuthService } from '../../../../core/services/auth.service';
                   <button (click)="actionReturn.emit({req: req, isForce: true})" class="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition active:scale-95 text-[11px] font-bold" title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand mr-1"></i> THU HỒI</button>
               }
           }
-          @if(req.status === 'PENDING_RETURN' && canApproveRequest(req)) {
-              <button (click)="actionAdminReceive.emit(req)" class="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95 text-[11px] font-bold"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
+          @if(req.status === 'PENDING_RETURN') {
+              @if(isCurrentUser(req.requestedBy)) {
+                  <button (click)="actionUndoReturn.emit(req)" class="px-2 py-1 bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition shadow-sm active:scale-95 text-[11px] font-bold mr-1" title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left mr-1"></i> HỦY BÁO CÁO</button>
+              }
+              @if(canApproveRequest(req)) {
+                  <button (click)="actionAdminReceive.emit(req)" class="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95 text-[11px] font-bold"><i class="fa-solid fa-check-to-slot mr-1"></i> NHẬN TRẢ</button>
+              }
           }
           @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
               <div class="text-[11px] font-bold text-slate-400 flex items-center gap-1 px-1"><i class="fa-solid fa-lock"></i> Đã khóa</div>
@@ -280,6 +285,7 @@ export class RequestsKanbanComponent {
   @Output() actionReject = new EventEmitter<StandardRequest>();
   @Output() actionLogUsage = new EventEmitter<StandardRequest>();
   @Output() actionReturn = new EventEmitter<{req: StandardRequest, isForce: boolean}>();
+  @Output() actionUndoReturn = new EventEmitter<StandardRequest>();
   @Output() actionAdminReceive = new EventEmitter<StandardRequest>();
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 

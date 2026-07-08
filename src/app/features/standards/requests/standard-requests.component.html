@@ -131,6 +131,7 @@
                   (actionReject)="openRejectModal($event)"
                   (actionLogUsage)="openLogUsageModal($event)"
                   (actionReturn)="openReturnModal($event.req, $event.isForce)"
+                  (actionUndoReturn)="undoReturn($event)"
                   (actionAdminReceive)="openAdminReceiveModal($event)"
                   (actionDelete)="hardDeleteHistory($event)">
               </app-requests-kanban>
@@ -144,6 +145,7 @@
                   (actionReject)="openRejectModal($event)"
                   (actionLogUsage)="openLogUsageModal($event)"
                   (actionReturn)="openReturnModal($event.req, $event.isForce)"
+                  (actionUndoReturn)="undoReturn($event)"
                   (actionAdminReceive)="openAdminReceiveModal($event)"
                   (actionDelete)="hardDeleteHistory($event)">
               </app-requests-table>

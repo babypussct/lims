@@ -149,10 +149,17 @@ import { AuthService } from '../../../../core/services/auth.service';
                                                     title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand"></i></button>
                                         }
                                     }
-                                    @if(req.status === 'PENDING_RETURN' && canApproveRequest(req)) {
-                                        <button (click)="actionAdminReceive.emit(req)" 
-                                                class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-xs font-black" 
-                                                title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
+                                    @if(req.status === 'PENDING_RETURN') {
+                                        @if(isCurrentUser(req.requestedBy)) {
+                                            <button (click)="actionUndoReturn.emit(req)" 
+                                                    class="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition shadow-lg shadow-amber-500/20 active:scale-90 mr-1" 
+                                                    title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left"></i></button>
+                                        }
+                                        @if(canApproveRequest(req)) {
+                                            <button (click)="actionAdminReceive.emit(req)" 
+                                                    class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-90 text-xs font-black" 
+                                                    title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot mr-1"></i>NHẬN TRẢ</button>
+                                        }
                                     }
                                     @if(req.status === 'COMPLETED' || req.status === 'REJECTED') {
                                         <button class="p-2 text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl cursor-default" title="Đã khóa"><i class="fa-solid fa-lock"></i></button>
@@ -211,6 +218,7 @@ export class RequestsTableComponent {
   @Output() actionReject = new EventEmitter<StandardRequest>();
   @Output() actionLogUsage = new EventEmitter<StandardRequest>();
   @Output() actionReturn = new EventEmitter<{req: StandardRequest, isForce: boolean}>();
+  @Output() actionUndoReturn = new EventEmitter<StandardRequest>();
   @Output() actionAdminReceive = new EventEmitter<StandardRequest>();
   @Output() actionDelete = new EventEmitter<StandardRequest>();
 

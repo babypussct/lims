@@ -134,7 +134,7 @@ service cloud.firestore {
         )
         || (
           hasPermission(appId, 'standard_request') && (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['has_pending_request', 'restock_requested', 'lastUpdated'])
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['has_pending_request', 'restock_requested', 'coa_requested_by', 'lastUpdated'])
             || (
               resource.data.current_holder_uid == request.auth.uid &&
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'current_holder', 'current_holder_uid', 'current_request_id', 'current_amount', 'date_opened', 'lastUpdated'])

@@ -453,6 +453,32 @@ export class StandardRequestsComponent implements OnInit, OnDestroy {
       }
   }
 
+  async undoReturn(req: StandardRequest) {
+      if (this.isProcessing() || req.status !== 'PENDING_RETURN') return;
+      
+      this.confirmationService.confirm({
+          message: `Hủy báo cáo trả và quay lại trạng thái "Đang sử dụng" cho chuẩn "${req.standardName}"?`,
+          confirmText: 'Đồng ý hủy báo cáo',
+          cancelText: 'Quay lại'
+      }).then(async (confirmed) => {
+          if (confirmed) {
+              this.isProcessing.set(true);
+              try {
+                  const sumLogs = (req.usageLogs || []).reduce((sum, log) => sum + (log.amount_used || 0), 0);
+                  await this.stdService.updateRequestStatus(req.id!, 'IN_PROGRESS', { 
+                      totalAmountUsed: sumLogs,
+                      reportedDepleted: false
+                  });
+                  this.toast.show('Đã hủy báo cáo trả', 'success');
+              } catch (e: any) {
+                  this.toast.show('Lỗi: ' + e.message, 'error');
+              } finally {
+                  this.isProcessing.set(false);
+              }
+          }
+      });
+  }
+
   openLogUsageModal(req: StandardRequest) {
       if (this.isProcessing()) return;
       this.selectedRequest.set(req);
