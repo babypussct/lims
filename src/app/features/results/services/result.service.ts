@@ -735,7 +735,7 @@ export class ResultService {
 
         // Kiểm tra xem tất cả các mẫu được chọn đã được xuất bản chưa
         const publishedSamples = new Set<string>();
-        for (const rep of Object.values(updatedReports)) {
+        for (const rep of Object.values(updatedReports || {})) {
           if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
             (rep.includedSamples || []).forEach((s: string) => publishedSamples.add(s));
           }
