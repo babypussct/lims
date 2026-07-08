@@ -755,9 +755,29 @@ export class ResultService {
           reports: updatedReports
         };
       } else {
+        // Tính xem tất cả mẫu đã được xuất bản chưa
+        // (Kể cả báo cáo ALL vừa tạo + tất cả prefix reports đã có trước đó)
+        const publishedSamplesAll = new Set<string>();
+        // Thêm mẫu từ các prefix reports đã có
+        for (const rep of Object.values(reports || {})) {
+          if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
+            (rep.includedSamples || []).forEach((s: string) => publishedSamplesAll.add(s));
+          }
+        }
+        // Thêm mẫu từ báo cáo ALL vừa tạo
+        (includedSamples || []).forEach((s: string) => publishedSamplesAll.add(s));
+
+        const allSelectedSamplesForAll = (docSnap.data()?.['sampleList'] || []).filter((s: string) => {
+          const resObj = currentDraft.resultData?.[s] || {};
+          return resObj['selected'] !== false;
+        });
+
+        const allPublishedForAll = allSelectedSamplesForAll.length > 0 && allSelectedSamplesForAll.every((s: string) => publishedSamplesAll.has(s));
+        newStatus = allPublishedForAll ? 'completed' : 'draft';
+
         updatePayload = {
           ...draftData,
-          status: 'completed' as const,
+          status: newStatus,
           version: nextVersion,
           publishedBackup: backup,
           pdfUrl: response.pdfUrl || undefined,

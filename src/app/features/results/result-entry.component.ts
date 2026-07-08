@@ -233,6 +233,38 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     };
   });
 
+  samplePublishProgress = computed(() => {
+    const r = this.run();
+    const d = this.draft();
+    if (!r || !d) return { published: 0, total: 0, percent: 0, unpublishedSamples: [] as string[] };
+
+    const allSelected = (r.sampleList || []).filter((s: string) => {
+      return (d.resultData?.[s] || {})['selected'] !== false;
+    });
+
+    const publishedSamples = new Set<string>();
+    const reports = d.reports || {};
+    for (const rep of Object.values(reports)) {
+      if (rep && ((rep as any).status === 'completed' || (rep as any).pdfUrl)) {
+        ((rep as any).includedSamples || []).forEach((s: string) => publishedSamples.add(s));
+      }
+    }
+    // Báo cáo chung (non-prefix)
+    if (d.pdfUrl) {
+      allSelected.forEach((s: string) => publishedSamples.add(s));
+    }
+
+    const publishedCount = allSelected.filter((s: string) => publishedSamples.has(s)).length;
+    const unpublishedSamples = allSelected.filter((s: string) => !publishedSamples.has(s));
+
+    return {
+      published: publishedCount,
+      total: allSelected.length,
+      percent: allSelected.length > 0 ? Math.round(publishedCount / allSelected.length * 100) : 0,
+      unpublishedSamples
+    };
+  });
+
   getDisplayDevice(): string {
     const r = this.run();
     if (!r) return 'GC-MS/MS / LC-MS/MS';
@@ -259,6 +291,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   unsubscribeFromDraft?: () => void;
+  private previousDraftStatus: string | null = null;
 
   constructor() {
     effect(() => {
@@ -267,6 +300,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.activeFilter.set(prefixes[0]);
       }
     }, { allowSignalWrites: true });
+
+    effect(() => {
+      const status = this.draft()?.status;
+      if (status === 'completed' && this.previousDraftStatus === 'draft') {
+        this.toast.show(
+          '🔒 Mẻ đã được khoá — Toàn bộ mẫu đã có báo cáo PDF. Dùng "Mở khóa & chỉnh sửa" nếu cần sửa.',
+          'success'
+        );
+      }
+      this.previousDraftStatus = status || null;
+    }, { allowSignalWrites: false });
 
     // Tự động giành khóa một cách phản ứng (Reactive Lock Acquisition)
     effect(() => {
