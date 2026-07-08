@@ -265,6 +265,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     };
   });
 
+  publishedSampleSet = computed(() => {
+    const progress = this.samplePublishProgress();
+    const allSelected = (this.run()?.sampleList || []);
+    const published = new Set<string>(allSelected.filter((s: string) => !progress.unpublishedSamples.includes(s)));
+    return published;
+  });
+
   getDisplayDevice(): string {
     const r = this.run();
     if (!r) return 'GC-MS/MS / LC-MS/MS';

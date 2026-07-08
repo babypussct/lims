@@ -277,6 +277,7 @@ export class ResultEntryType3bComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() publishedSampleSet: Set<string> | null = null;
 
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 

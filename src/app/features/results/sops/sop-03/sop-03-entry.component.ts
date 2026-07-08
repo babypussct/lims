@@ -19,6 +19,7 @@ export class Sop03EntryComponent implements OnInit {
   @Input() run!: any;
   @Input() draft!: AnalysisResultDraft;
   @Input() config!: any;
+  @Input() publishedSampleSet: Set<string> | null = null;
   @Input() activeFilter: string = 'ALL';
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
