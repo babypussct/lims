@@ -85,8 +85,6 @@
         <app-sop-calibration-points
           title="6 Điểm Đường chuẩn (Calibration Curve Points)"
           [calibPoints]="draft.page1Data['calibPoints']"
-          [pointLabels]="['0 ppb', '0.5 ppb', '1.0 ppb', '5.0 ppb', '10.0 ppb', '30.0 ppb']"
-          pointPrefix="Điểm "
           [isSuffixVisible]="false"
           [isFuchsiaRing]="true"
           (pointsChanged)="onCalibrationPointsChanged()">
