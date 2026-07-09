@@ -1,0 +1,37 @@
+<div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/20 flex flex-wrap items-center gap-2">
+  <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2 flex items-center gap-1.5">
+    <i class="fa-solid fa-filter text-fuchsia-500 opacity-70"></i> Lọc tiền tố:
+  </span>
+  <div class="inline-flex bg-slate-100/80 dark:bg-slate-800/80 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+    <button (click)="filterChange.emit('ALL')"
+            class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
+            [class.text-indigo-700]="activeFilter === 'ALL'"
+            [class.dark:text-indigo-300]="activeFilter === 'ALL'"
+            [class.text-slate-500]="activeFilter !== 'ALL'"
+            [class.dark:text-slate-400]="activeFilter !== 'ALL'"
+            [class.hover:text-slate-700]="activeFilter !== 'ALL'"
+            [class.dark:hover:text-slate-300]="activeFilter !== 'ALL'"
+            [class.bg-transparent]="true">
+      @if (activeFilter === 'ALL') {
+        <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+      }
+      <span class="relative z-20">Tất cả mẫu</span>
+    </button>
+    @for (prefix of prefixes; track prefix) {
+      <button (click)="filterChange.emit(prefix)"
+              class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
+              [class.text-indigo-700]="activeFilter === prefix"
+              [class.dark:text-indigo-300]="activeFilter === prefix"
+              [class.text-slate-500]="activeFilter !== prefix"
+              [class.dark:text-slate-400]="activeFilter !== prefix"
+              [class.hover:text-slate-700]="activeFilter !== prefix"
+              [class.dark:hover:text-slate-300]="activeFilter !== prefix"
+              [class.bg-transparent]="true">
+        @if (activeFilter === prefix) {
+          <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+        }
+        <span class="relative z-20">{{ prefix === '' ? 'Không có tiền tố' : 'Tiền tố ' + prefix }}</span>
+      </button>
+    }
+  </div>
+</div>

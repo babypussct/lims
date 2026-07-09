@@ -1,0 +1,261 @@
+<!-- Sticky Header (Glassmorphism design) -->
+<div class="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 px-6 py-4 flex items-center justify-between shrink-0 z-40 transition-colors duration-300">
+  <!-- Left: Back + Title -->
+  <div class="flex items-center gap-3.5">
+    <button (click)="goBack.emit()"
+            class="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center transition active:scale-95 duration-150 border border-slate-200/10 dark:border-slate-700/20">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </button>
+    <div>
+      <span class="text-[10px] font-black uppercase text-fuchsia-600 dark:text-fuchsia-450 tracking-wider mb-0.5 flex items-center gap-2">
+        {{ run ? run.sopName : 'Đang tải...' }}
+        @if (run?.parentMasterId) {
+          <a [routerLink]="['/results', run.parentMasterId]"
+             class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
+             title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới Master Ảo.">
+            <i class="fa-solid fa-link text-[7px] animate-pulse"></i> Đã gộp Master Ảo
+          </a>
+        }
+      </span>
+      <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0 tracking-tight">
+        Nhập Dữ Liệu Phân Tích — Mẻ Chạy
+      </h3>
+    </div>
+  </div>
+
+  <!-- Right: Toolbar Buttons -->
+  @if (run && draft) {
+    <div class="flex items-center gap-2">
+
+      <!-- Restore Version Dropdown -->
+      @if (historyList.length > 0) {
+        <div class="relative">
+          <button [disabled]="isProcessing"
+                  (click)="toggleRestoreMenu.emit()"
+                  class="px-4 py-2 text-xs font-bold text-slate-650 dark:text-slate-355 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200/40 dark:border-slate-700/40 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50 active:scale-95 shadow-sm hover:shadow"
+                  [class.bg-slate-200]="showRestoreMenu"
+                  [class.dark:bg-slate-750]="showRestoreMenu"
+                  title="Khôi phục số liệu từ các bản in cũ">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span class="hidden md:inline">Khôi phục bản cũ</span>
+            <i class="fa-solid fa-chevron-down text-[9px] opacity-70 transition-transform duration-200"
+               [class.rotate-180]="showRestoreMenu"></i>
+          </button>
+
+          @if (showRestoreMenu) {
+            <!-- Backdrop -->
+            <div class="fixed inset-0 z-40 bg-transparent" (click)="closeRestoreMenu.emit()"></div>
+            <!-- Dropdown -->
+            <div class="absolute right-0 top-full mt-1.5 w-80 bg-white dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-2xl z-50 py-2 max-h-80 overflow-y-auto custom-scrollbar">
+              <div class="px-3.5 py-1.5 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/80 mb-1.5 flex items-center justify-between">
+                <span>Lịch sử phiên bản in</span>
+                <span class="text-[8px] font-normal text-slate-400 lowercase select-none">(Click dòng để khôi phục số liệu)</span>
+              </div>
+
+              <!-- Bản hiện tại -->
+              @if (draft?.version) {
+                <div class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-center justify-between gap-2 border-b border-slate-100/60 dark:border-slate-800/50">
+                  <div (click)="restoreVersion.emit({ version: draft.version })"
+                       class="flex-1 min-w-0 cursor-pointer group/item">
+                    <span class="font-black text-indigo-600 dark:text-indigo-400 text-xs block group-hover/item:underline">Bản hiện tại (v{{ draft?.version }})</span>
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Người in gần nhất: {{ draft?.updatedBy }}</span>
+                  </div>
+                  <div class="flex items-center gap-1 shrink-0">
+                    @if (draft?.pdfViewUrl || draft?.pdfUrl) {
+                      <button (click)="openPdf.emit({ pdfUrl: draft?.pdfViewUrl || draft?.pdfUrl, docsUrl: draft?.docsUrl })"
+                              class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-400 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
+                              title="Mở PDF bản này">
+                        <i class="fa-solid fa-file-pdf text-[10px]"></i>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Các bản cũ -->
+              @for (hist of historyList; track hist.version + '_' + (hist.prefix || '')) {
+                @if (hist.version !== draft?.version || hist.prefix) {
+                  <div class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-center justify-between gap-2 border-b border-slate-100/60 dark:border-slate-800/50 last:border-b-0">
+                    <div (click)="restoreVersion.emit({ version: hist.version, prefix: hist.prefix })"
+                         class="flex-1 min-w-0 cursor-pointer group/item">
+                      <span class="font-bold text-slate-700 dark:text-slate-200 text-xs block group-hover/item:underline">
+                        Bản v{{ hist.version }} {{ hist.prefix ? (hist.prefix === '_NO_PREFIX_' ? '(Không tiền tố)' : '(' + hist.prefix + ')') : '' }}
+                        @if (hist.status === 'archived') {
+                          <span class="text-[9px] text-slate-400 dark:text-slate-500 font-normal ml-1">(đã lưu trữ)</span>
+                        }
+                      </span>
+                      <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-0.5">Người in: {{ hist.publishedBy }}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      @if (hist.pdfViewUrl || hist.pdfUrl) {
+                        <button (click)="openPdf.emit({ pdfUrl: hist.pdfViewUrl || hist.pdfUrl, docsUrl: hist.docsUrl })"
+                                class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-950/30 dark:hover:bg-red-900/40 dark:text-red-450 flex items-center justify-center transition active:scale-90 no-underline cursor-pointer"
+                                title="Mở PDF bản này">
+                          <i class="fa-solid fa-file-pdf text-[10px]"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Cloud Save Button -->
+      <button (click)="saveDraft.emit()"
+              [disabled]="isProcessing || autoSaveStatus === 'saving' || autoSaveStatus === 'synced'"
+              class="px-4 py-2 text-xs font-bold rounded-xl border transition-all duration-300 flex items-center gap-2 shadow-sm active:scale-95 disabled:opacity-75"
+              [ngClass]="{
+                'bg-emerald-50/40 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-800/30 cursor-default': autoSaveStatus === 'synced',
+                'bg-amber-50/50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 hover:shadow': autoSaveStatus === 'modified',
+                'bg-indigo-50/70 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30': autoSaveStatus === 'saving'
+              }"
+              [title]="autoSaveStatus === 'synced' ? 'Dữ liệu phân tích đã được tự động đồng bộ thời gian thực' : 'Lưu nháp số liệu hiện tại lên đám mây'">
+        @if (autoSaveStatus === 'saving') {
+          <i class="fa-solid fa-spinner fa-spin text-indigo-500 text-sm"></i>
+          <span class="text-[10px] uppercase tracking-wider font-black">Đang lưu...</span>
+        } @else if (autoSaveStatus === 'synced') {
+          <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+          <span class="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">Đã lưu tự động</span>
+        } @else {
+          <i class="fa-solid fa-cloud-arrow-up text-amber-500 animate-pulse text-sm"></i>
+          <span class="text-[10px] uppercase tracking-wider font-black">Có thay đổi...</span>
+        }
+      </button>
+
+      <!-- View PDF button -->
+      @if (currentPdfUrl) {
+        <button (click)="openPdf.emit({ pdfUrl: currentPdfUrl, docsUrl: currentDocsUrl })"
+                class="px-4 py-2 text-xs font-bold text-red-655 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-800/30 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl transition flex items-center gap-1.5 cursor-pointer no-underline shadow-sm hover:shadow active:scale-95 duration-150">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Xem PDF Báo cáo</span>
+        </button>
+      }
+
+      <!-- Tách phiếu -->
+      @if (!isReadOnly) {
+        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-1.5 h-[40px]">
+          <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">Tách phiếu:</label>
+          <input type="number"
+                 [value]="samplesPerReport || ''"
+                 (input)="samplesPerReportChange.emit($any($event.target).valueAsNumber || null)"
+                 placeholder="Auto"
+                 class="w-12 bg-transparent border-none text-xs font-bold text-slate-700 dark:text-slate-300 focus:ring-0 p-0 text-center"
+                 min="1" />
+          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">mẫu</span>
+        </div>
+      }
+
+      <!-- Publish / Generate PDF -->
+      <button (click)="publishReport.emit()"
+              [disabled]="isProcessing || isReadOnly"
+              class="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-indigo-700 rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center gap-2 disabled:opacity-50"
+              [title]="printButtonLabel">
+        <i class="fa-solid" [class.fa-circle-check]="!isPublishing" [class.fa-spinner]="isPublishing" [class.fa-spin]="isPublishing"></i>
+        <span>{{ printButtonLabel }}</span>
+      </button>
+
+      <!-- "Thao tác khác" Dropdown / Bottom Sheet -->
+      <div class="relative">
+        <button (click)="toggleActionsMenu.emit()"
+                [disabled]="isProcessing"
+                class="px-4 py-2.5 text-xs font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition flex items-center gap-2 active:scale-95 disabled:opacity-50 duration-150"
+                [class.bg-slate-200]="showActionsMenu"
+                [class.dark:bg-slate-750]="showActionsMenu">
+          <i class="fa-solid fa-gear" [class.fa-spin]="showActionsMenu"></i>
+          <span>THAO TÁC</span>
+          <i class="fa-solid fa-chevron-down text-[9px] opacity-60 transition-transform duration-200"
+             [class.rotate-180]="showActionsMenu"></i>
+        </button>
+
+        @if (showActionsMenu) {
+          <!-- Backdrop -->
+          <div class="fixed inset-0 z-40 bg-black/40 md:bg-transparent" (click)="closeActionsMenu.emit()"></div>
+
+          <!-- Menu: Bottom sheet on mobile, dropdown on desktop -->
+          <div class="fixed inset-x-0 bottom-0 z-50 p-4 pt-0
+                      md:absolute md:inset-auto md:right-0 md:top-full md:mt-2.5 md:p-0 md:bottom-auto">
+            <div class="w-full max-w-lg mx-auto
+                        md:w-80 md:max-w-none md:mx-0
+                        bg-white dark:bg-slate-900
+                        rounded-t-3xl md:rounded-2xl
+                        border border-slate-200 dark:border-slate-700
+                        shadow-2xl
+                        p-4 md:p-3
+                        animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-top-2 duration-200">
+
+              <!-- Mobile drag handle -->
+              <div class="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-4 md:hidden"></div>
+
+              <!-- Mobile header -->
+              <div class="flex items-center justify-between mb-3 md:hidden">
+                <h3 class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <i class="fa-solid fa-gear text-slate-400"></i>
+                  Thao tác nhanh
+                </h3>
+                <button (click)="closeActionsMenu.emit()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-90">
+                  <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+
+              <!-- Section 1: Tài liệu & Báo cáo -->
+              @if (currentPdfUrl || currentDocsUrl) {
+                <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Báo cáo &amp; Tài liệu
+                </div>
+                @if (currentPdfUrl) {
+                  <button (click)="openPdf.emit({ pdfUrl: currentPdfUrl, docsUrl: currentDocsUrl }); closeActionsMenu.emit()"
+                          class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-red-655 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                    <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+                      <i class="fa-solid fa-file-pdf text-red-500"></i>
+                    </div>
+                    <span>Xem PDF Báo cáo</span>
+                  </button>
+                }
+                <div class="border-t border-slate-200 dark:border-slate-800 my-2 mx-2"></div>
+              }
+
+              <!-- Section 2: Quản lý mẻ chạy -->
+              <div class="px-3 py-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Quản trị mẻ chạy
+              </div>
+              @if (draft?.status === 'completed') {
+                <button (click)="closeActionsMenu.emit(); unlockToEdit.emit()"
+                        [disabled]="isProcessing"
+                        class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-955/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                  <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-unlock-keyhole text-amber-500"></i>
+                  </div>
+                  <span>Mở khóa và chỉnh sửa</span>
+                </button>
+              }
+              <button (click)="closeActionsMenu.emit(); openResetModal.emit()"
+                      [disabled]="isProcessing"
+                      class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98]">
+                <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-trash-can text-red-500"></i>
+                </div>
+                <span>Xóa hoàn toàn kết quả</span>
+              </button>
+
+              @if (run?.isVirtualMaster) {
+                <button (click)="closeActionsMenu.emit(); deleteVirtualMaster.emit()"
+                        [disabled]="isProcessing"
+                        class="w-full text-left px-4 py-3.5 md:py-3 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-all duration-150 flex items-center gap-3 border-0 bg-transparent cursor-pointer active:scale-[0.98] mt-1 border-t border-slate-100 dark:border-slate-800">
+                  <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-unlink text-rose-500"></i>
+                  </div>
+                  <span>Gỡ gộp &amp; Xóa mẻ ảo</span>
+                </button>
+              }
+
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+</div>

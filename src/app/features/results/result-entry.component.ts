@@ -44,6 +44,13 @@ import {
   buildChloroformPdfPayload
 } from './result-pdf-helper';
 
+// Refactored sub-components
+import { ResultPrefixTabsComponent } from './components/result-prefix-tabs.component';
+import { ResultRunMetadataComponent } from './components/result-run-metadata.component';
+import { ResultEntryStatusBannerComponent } from './components/result-entry-status-banner.component';
+import { ResultActiveReportsPanelComponent } from './components/result-active-reports-panel.component';
+import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
+
 @Component({
   selector: 'app-result-entry',
   standalone: true,
@@ -63,7 +70,13 @@ import {
     SopNhomIEntryComponent,
     SopTbvtvTrongNuocGcmsmsEntryComponent,
     SopTbvtvThucPhamGcmsmsEntryComponent,
-    SopChloroformEntryComponent
+    SopChloroformEntryComponent,
+    // Refactored sub-components
+    ResultPrefixTabsComponent,
+    ResultRunMetadataComponent,
+    ResultEntryStatusBannerComponent,
+    ResultActiveReportsPanelComponent,
+    ResultEntryHeaderComponent
   ],
   templateUrl: './result-entry.component.html'
 })
