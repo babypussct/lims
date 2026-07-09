@@ -733,7 +733,7 @@ export class ResultService {
           }
         } as AnalysisResultDraft['reports'];
 
-        // Kiểm tra xem tất cả các mẫu được chọn đã được xuất bản chưa
+        // Kiểm tra xem tất cả các mẫu trong mẻ đã được xuất bản chưa
         const publishedSamples = new Set<string>();
         for (const rep of Object.values(updatedReports || {})) {
           if (rep && (rep.status === 'completed' || rep.pdfUrl)) {
@@ -741,12 +741,8 @@ export class ResultService {
           }
         }
         
-        const allSelectedSamples = (docSnap.data()?.['sampleList'] || []).filter((s: string) => {
-          const resObj = currentDraft.resultData?.[s] || {};
-          return resObj['selected'] !== false;
-        });
-        
-        const allPublished = allSelectedSamples.every((s: string) => publishedSamples.has(s));
+        const allSamples = docSnap.data()?.['sampleList'] || [];
+        const allPublished = allSamples.length > 0 && allSamples.every((s: string) => publishedSamples.has(s));
         newStatus = allPublished ? 'completed' : 'draft';
 
         updatePayload = {
@@ -767,12 +763,8 @@ export class ResultService {
         // Thêm mẫu từ báo cáo ALL vừa tạo
         (includedSamples || []).forEach((s: string) => publishedSamplesAll.add(s));
 
-        const allSelectedSamplesForAll = (docSnap.data()?.['sampleList'] || []).filter((s: string) => {
-          const resObj = currentDraft.resultData?.[s] || {};
-          return resObj['selected'] !== false;
-        });
-
-        const allPublishedForAll = allSelectedSamplesForAll.length > 0 && allSelectedSamplesForAll.every((s: string) => publishedSamplesAll.has(s));
+        const allSamplesForAll = docSnap.data()?.['sampleList'] || [];
+        const allPublishedForAll = allSamplesForAll.length > 0 && allSamplesForAll.every((s: string) => publishedSamplesAll.has(s));
         newStatus = allPublishedForAll ? 'completed' : 'draft';
 
         updatePayload = {

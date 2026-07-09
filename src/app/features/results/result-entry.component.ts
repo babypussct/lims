@@ -199,6 +199,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.showActionsMenu.set(false);
   }
 
+  // Restore Version dropdown toggle (click-based instead of hover)
+  showRestoreMenu = signal(false);
+
+  toggleRestoreMenu() {
+    this.showRestoreMenu.update(v => !v);
+  }
+
+  closeRestoreMenu() {
+    this.showRestoreMenu.set(false);
+  }
+
   // Global Prefix Filtering
   activeFilter = signal<string>('ALL');
   
@@ -750,6 +761,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const confirmed = confirm(`Bạn có chắc chắn muốn khôi phục số liệu nhập liệu của bản v${version}${displayName}? Dữ liệu chưa lưu hiện tại sẽ bị ghi đè.`);
     if (!confirmed) return;
 
+    this.closeRestoreMenu();
     this.isSavingDraft.set(true);
     const restored = await this.resultService.restoreFromVersion(this.requestId, version, prefix);
     if (restored) {
@@ -793,17 +805,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     try {
       this.autoSaveStatus.set('saving');
-      const saveSuccess = await this.resultService.saveDraft(this.requestId, currentDraft, true);
-      if (!saveSuccess) {
-        this.toast.show('Không thể lưu dữ liệu nháp mới nhất trước khi tạo PDF!', 'error');
-        this.isPublishing.set(false);
-        this.autoSaveStatus.set('modified');
-        return;
-      }
+      // Bỏ saveDraft vì publishReport bên service sẽ tự gọi saveDraft/updateDoc
       this.autoSaveStatus.set('synced');
 
       const activeFilter = this.activeFilter();
-      const prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
+      let prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
       const key = this.configKey();
       let reportPayload: any;
 
@@ -931,6 +937,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         const matchesFilter = activeFilter === 'ALL' || prefix === activeFilter;
         return isSelected && matchesFilter;
       });
+
+      // Bug 3: Tự động phân tách tiền tố khi người dùng chọn lọc "ALL"
+      if (activeFilter === 'ALL' && includedSamples.length > 0) {
+        const detectedPrefixes = new Set<string>();
+        includedSamples.forEach((s: string) => {
+          const startsWithLetter = /^[a-zA-Z]/.test(s);
+          detectedPrefixes.add(startsWithLetter ? s.charAt(0).toUpperCase() : '');
+        });
+        
+        // Nếu TẤT CẢ các mẫu được chọn đều CHUNG 1 tiền tố, tự động phân nhóm thành tiền tố đó
+        if (detectedPrefixes.size === 1) {
+          prefixForReport = Array.from(detectedPrefixes)[0];
+        }
+      }
 
       const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport, includedSamples);
       if (result.success) {
