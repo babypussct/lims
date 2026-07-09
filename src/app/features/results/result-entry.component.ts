@@ -851,8 +851,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         });
 
         // Khi tách phiếu (nhiều chunk), tự động điền maHoSo = danh sách mẫu của chunk đó
-        // Đây là quy tắc cho SOP TBVTV Thực Phẩm: mã hồ sơ = tên các mẫu trong phiếu
-        if (chunks.length > 1 && chunk.length > 0) {
+        // Chỉ áp dụng cho SOP TBVTV Thực Phẩm — các SOP khác (vd: SOP-01) có format maHoSo riêng
+        if (chunks.length > 1 && chunk.length > 0 && key === 'tbvtv-thuc-pham-gcmsms') {
           if (!chunkDraft.page1Data) chunkDraft.page1Data = {};
           chunkDraft.page1Data['maHoSo'] = chunk.join(', ');
         }

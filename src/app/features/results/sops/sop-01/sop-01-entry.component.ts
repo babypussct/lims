@@ -187,24 +187,29 @@ export class Sop01EntryComponent implements OnInit {
 
   // ── Helper cho Mã Hồ Sơ ───────────────────────────────────────────────────
   autoFillMaHoSo() {
-    const batchCode = this.run?.inputs?.['batchCode'] || this.run?.id || '';
-    const match = batchCode.match(/(\d{2})$/);
-    
-    let dateStr = '';
+    // Format mã mẫu: [tiền tố chữ cái (tuỳ chọn)] + [2 số XX] + [2 số hậu tố = ngày]
+    // Ví dụ: U0108 → tiền tố U, XX=01, ngày=08
+    //        0108  → không tiền tố, XX=01, ngày=08
+    const sampleList: string[] = this.run?.sampleList || [];
+
+    // Lấy 2 số cuối của mỗi mã mẫu → ngày
+    const days: number[] = sampleList
+      .map((code: string) => {
+        const match = code.match(/(\d{2})$/);
+        return match ? parseInt(match[1], 10) : null;
+      })
+      .filter((d): d is number => d !== null && d >= 1 && d <= 31);
+
     const dateSrc = this.run?.createdAt ? new Date(this.run.createdAt) : new Date();
     const month = String(dateSrc.getMonth() + 1).padStart(2, '0');
     const year = String(dateSrc.getFullYear());
 
-    if (match) {
-      // Lấy 2 số cuối của batchCode làm ngày (vd: 08)
-      const day = match[1];
-      dateStr = `${day}/${month}/${year}`;
-    } else {
-      const day = String(dateSrc.getDate()).padStart(2, '0');
-      dateStr = `${day}/${month}/${year}`;
-    }
+    // Lấy ngày cao nhất trong mẻ (nếu không parse được thì fallback về ngày hiện tại)
+    const day = days.length > 0
+      ? String(Math.max(...days)).padStart(2, '0')
+      : String(dateSrc.getDate()).padStart(2, '0');
 
-    this.draft.page1Data['maHoSo'] = `U (${dateStr})`;
+    this.draft.page1Data['maHoSo'] = `U (${day}/${month}/${year})`;
     this.onDataChanged();
   }
 
