@@ -157,7 +157,7 @@ export class Sop03EntryComponent implements OnInit {
 
     // Look for any existing non-empty final result to use as source
     let existingFinal: any = null;
-    for (const p of prefixes) {
+    for (const p of Array.from(prefixes)) {
       const k = `QC_FINAL_QC_${p}`;
       if (this.draft.resultData[k] && (this.draft.resultData[k]['kqTrifluralin'] || this.draft.resultData[k]['ghiChu'])) {
         existingFinal = this.draft.resultData[k];

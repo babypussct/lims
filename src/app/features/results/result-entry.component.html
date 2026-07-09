@@ -98,6 +98,8 @@
               }
           </div>
         }
+      </div>
+    }
 
         <!-- Smart Cloud Save Button (Combined Auto-save status & Manual trigger) -->
         <button (click)="triggerSaveDraft()" 
@@ -131,6 +133,20 @@
           </button>
         }
  
+        <!-- Split Report Option -->
+        @if (!isReadOnly() && activeFilter() === 'ALL') {
+          <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-1.5 h-[40px]">
+            <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">Tách phiếu:</label>
+            <input type="number" 
+                   [value]="samplesPerReport() || ''" 
+                   (input)="samplesPerReport.set($any($event.target).valueAsNumber || null)"
+                   placeholder="Auto" 
+                   class="w-12 bg-transparent border-none text-xs font-bold text-slate-700 dark:text-slate-300 focus:ring-0 p-0 text-center"
+                   min="1" />
+            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">mẫu</span>
+          </div>
+        }
+
         <!-- Publish / Generate PDF -->
         <button (click)="triggerPublishReport()" 
                 [disabled]="isProcessing() || isReadOnly()"
@@ -471,16 +487,38 @@
           <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mr-2 flex items-center gap-1.5">
             <i class="fa-solid fa-filter text-fuchsia-500 opacity-70"></i> Lọc tiền tố:
           </span>
-          <button (click)="activeFilter.set('ALL')"
-                  [class]="activeFilter() === 'ALL' ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs border border-fuchsia-200/50 dark:border-fuchsia-900/30' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
-            Tất cả mẫu
-          </button>
-          @for (prefix of detectedPrefixes(); track prefix) {
-            <button (click)="activeFilter.set(prefix)"
-                    [class]="activeFilter() === prefix ? 'px-3 py-1.5 text-xs font-bold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 rounded-lg transition active:scale-95 shadow-xs border border-fuchsia-200/50 dark:border-fuchsia-900/30' : 'px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95'">
-              {{ prefix === '' ? 'Không tiền tố' : 'Tiền tố ' + prefix }}
+          <div class="inline-flex bg-slate-100/80 dark:bg-slate-800/80 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+            <button (click)="activeFilter.set('ALL')"
+                    class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
+                    [class.text-indigo-700]="activeFilter() === 'ALL'"
+                    [class.dark:text-indigo-300]="activeFilter() === 'ALL'"
+                    [class.text-slate-500]="activeFilter() !== 'ALL'"
+                    [class.dark:text-slate-400]="activeFilter() !== 'ALL'"
+                    [class.hover:text-slate-700]="activeFilter() !== 'ALL'"
+                    [class.dark:hover:text-slate-300]="activeFilter() !== 'ALL'"
+                    [class.bg-transparent]="true">
+              @if (activeFilter() === 'ALL') {
+                <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+              }
+              <span class="relative z-20">Tất cả mẫu</span>
             </button>
-          }
+            @for (prefix of detectedPrefixes(); track prefix) {
+              <button (click)="activeFilter.set(prefix)"
+                      class="relative px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 z-10 cursor-pointer border-0"
+                      [class.text-indigo-700]="activeFilter() === prefix"
+                      [class.dark:text-indigo-300]="activeFilter() === prefix"
+                      [class.text-slate-500]="activeFilter() !== prefix"
+                      [class.dark:text-slate-400]="activeFilter() !== prefix"
+                      [class.hover:text-slate-700]="activeFilter() !== prefix"
+                      [class.dark:hover:text-slate-300]="activeFilter() !== prefix"
+                      [class.bg-transparent]="true">
+                @if (activeFilter() === prefix) {
+                  <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+                }
+                <span class="relative z-20">{{ prefix === '' ? 'Không có tiền tố' : 'Tiền tố ' + prefix }}</span>
+              </button>
+            }
+          </div>
         </div>
       }
 

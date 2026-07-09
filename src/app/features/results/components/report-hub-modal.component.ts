@@ -26,14 +26,45 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
             </button>
           </div>
 
-          <div class="p-5 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
+          <!-- Tabs Segmented Control -->
+          <div class="px-6 pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <div class="inline-flex bg-slate-100/80 dark:bg-slate-800/80 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 w-full sm:w-auto">
+              <button (click)="activeTab.set('general')"
+                      class="flex-1 sm:flex-none relative px-6 py-2 text-xs font-bold rounded-lg transition-all duration-300 z-10 text-center cursor-pointer border-0"
+                      [class.text-indigo-700]="activeTab() === 'general'"
+                      [class.dark:text-indigo-300]="activeTab() === 'general'"
+                      [class.text-slate-500]="activeTab() !== 'general'"
+                      [class.dark:text-slate-400]="activeTab() !== 'general'"
+                      [class.hover:text-slate-700]="activeTab() !== 'general'"
+                      [class.dark:hover:text-slate-300]="activeTab() !== 'general'"
+                      [class.bg-transparent]="true">
+                @if (activeTab() === 'general') {
+                  <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+                }
+                <span class="relative z-20">Báo cáo chung</span>
+              </button>
+              <button (click)="activeTab.set('prefix')"
+                      class="flex-1 sm:flex-none relative px-6 py-2 text-xs font-bold rounded-lg transition-all duration-300 z-10 text-center cursor-pointer border-0"
+                      [class.text-indigo-700]="activeTab() === 'prefix'"
+                      [class.dark:text-indigo-300]="activeTab() === 'prefix'"
+                      [class.text-slate-500]="activeTab() !== 'prefix'"
+                      [class.dark:text-slate-400]="activeTab() !== 'prefix'"
+                      [class.hover:text-slate-700]="activeTab() !== 'prefix'"
+                      [class.dark:hover:text-slate-300]="activeTab() !== 'prefix'"
+                      [class.bg-transparent]="true">
+                @if (activeTab() === 'prefix') {
+                  <div class="absolute inset-0 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 -z-10 animate-fade-in"></div>
+                }
+                <span class="relative z-20">Báo cáo theo nhóm</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-5 overflow-y-auto space-y-5 flex-1 custom-scrollbar bg-slate-50/30 dark:bg-slate-950/10">
 
             <div class="space-y-2.5">
-              <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-1.5">
-                <i class="fa-solid fa-print text-fuchsia-500"></i> Bản in đang hoạt động
-              </h4>
 
-              @if (unifiedAllSamplesReport()) {
+              @if (activeTab() === 'general' && unifiedAllSamplesReport()) {
                 <div class="flex flex-col gap-3 mb-6 last:mb-0">
                   
                   <!-- HEADER -->
@@ -124,7 +155,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
                 </div>
               }
 
-              @if (shouldShowPrefixLoop()) {
+              @if (activeTab() === 'prefix' && shouldShowPrefixLoop()) {
                 @for (pref of getSelectedRunPrefixes(); track pref) {
                   @let prefReports = getReportsForPrefix(pref);
                   <div class="flex flex-col gap-3 mb-6 last:mb-0">
@@ -368,6 +399,7 @@ export class ReportHubModalComponent {
   @Output() previewPdf = new EventEmitter<{pdfUrl: string, docsUrl?: string, prefix: string, version?: number, publishedBy?: string, publishedAt?: string}>();
 
   private sanitizer = inject(DomSanitizer);
+  activeTab = signal<'general' | 'prefix'>('general');
   expandedChipKeys = signal<Record<string, boolean>>({});
 
   closeModal() {

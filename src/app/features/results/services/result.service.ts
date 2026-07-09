@@ -728,8 +728,7 @@ export class ResultService {
             pdfCreatedAt: new Date().toISOString(),
             version: nextVersion,
             status: 'completed',
-            includedSamples: includedSamples || [],
-            publishedBackup: backup
+            includedSamples: includedSamples || []
           }
         } as AnalysisResultDraft['reports'];
 
@@ -743,7 +742,15 @@ export class ResultService {
         
         const allSamples = docSnap.data()?.['sampleList'] || [];
         const allPublished = allSamples.length > 0 && allSamples.every((s: string) => publishedSamples.has(s));
-        newStatus = allPublished ? 'completed' : 'draft';
+        
+        // Kiểm tra xem tất cả các mẫu trong mẻ đã có dữ liệu kết quả thực sự chưa (tránh khóa mẻ nếu chỉ in phiếu nháp)
+        const hasResultForAllSamples = allSamples.length > 0 && allSamples.every((s: string) => {
+          const sData = backup.resultData?.[s];
+          if (!sData) return false;
+          return Object.keys(sData).some(k => k !== 'selected' && sData[k] !== null && sData[k] !== undefined && sData[k] !== '');
+        });
+
+        newStatus = (allPublished && hasResultForAllSamples) ? 'completed' : 'draft';
 
         updatePayload = {
           ...draftData,
@@ -765,13 +772,20 @@ export class ResultService {
 
         const allSamplesForAll = docSnap.data()?.['sampleList'] || [];
         const allPublishedForAll = allSamplesForAll.length > 0 && allSamplesForAll.every((s: string) => publishedSamplesAll.has(s));
-        newStatus = allPublishedForAll ? 'completed' : 'draft';
+
+        // Kiểm tra xem tất cả các mẫu trong mẻ đã có dữ liệu kết quả thực sự chưa
+        const hasResultForAllSamplesForAll = allSamplesForAll.length > 0 && allSamplesForAll.every((s: string) => {
+          const sData = backup.resultData?.[s];
+          if (!sData) return false;
+          return Object.keys(sData).some(k => k !== 'selected' && sData[k] !== null && sData[k] !== undefined && sData[k] !== '');
+        });
+
+        newStatus = (allPublishedForAll && hasResultForAllSamplesForAll) ? 'completed' : 'draft';
 
         updatePayload = {
           ...draftData,
           status: newStatus,
           version: nextVersion,
-          publishedBackup: backup,
           pdfUrl: response.pdfUrl || undefined,
           pdfViewUrl: response.pdfViewUrl || undefined,
           docsUrl: response.docsUrl || undefined,

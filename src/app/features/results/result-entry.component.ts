@@ -212,6 +212,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   // Global Prefix Filtering
   activeFilter = signal<string>('ALL');
+  samplesPerReport = signal<number | null>(null);
   
   detectedPrefixes = computed(() => {
     const r = this.run();
@@ -777,26 +778,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Xuất bản kết quả -> Tạo tệp PDF
    */
   async triggerPublishReport() {
-    const currentDraft = this.draft();
+    if (this.isPublishing()) return;
+    
     const currentRun = this.run();
+    const currentDraft = this.draft();
     const currentConf = this.config();
-    if (!currentDraft || !currentRun || !currentConf) return;
+    if (!currentRun || !currentDraft || !currentConf) return;
 
-    // Bắt buộc điền Mã hồ sơ, Tên Blank, Tên Spike cho SOP-01 trước khi xuất bản PDF
-    const key = this.configKey();
-    const isSop914ShortForm = key === 'tbvtv-thuc-pham-gcmsms' && currentDraft.page1Data['printFormType'] === 'formRutGon';
-    if (key === 'fipronil-chlorpyrifos' || isSop914ShortForm) {
-      const maHoSo = String(currentDraft.page1Data['maHoSo'] || '').trim();
-      const blankName = String(currentDraft.page1Data['blankName'] || '').trim();
-      const spikeName = String(currentDraft.page1Data['spikeName'] || '').trim();
-
-      const missingFields: string[] = [];
-      if (!maHoSo) missingFields.push('1. Mã hồ sơ');
-      if (!blankName) missingFields.push('Tên Blank');
-      if (!spikeName) missingFields.push('Tên Spike');
-
-      if (missingFields.length > 0) {
-        this.toast.show(`Vui lòng điền đầy đủ thông tin bắt buộc: ${missingFields.join(', ')} trước khi xuất bản PDF!`, 'error');
+    if (this.isReadOnly()) {
+      if (currentDraft.status !== 'completed') {
+        this.toast.show('Mẻ chạy đang bị khóa bởi người khác, không thể xuất báo cáo mới!', 'error');
         return;
       }
     }
@@ -805,131 +796,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     try {
       this.autoSaveStatus.set('saving');
-      // Bỏ saveDraft vì publishReport bên service sẽ tự gọi saveDraft/updateDoc
       this.autoSaveStatus.set('synced');
 
       const activeFilter = this.activeFilter();
-      let prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
       const key = this.configKey();
-      let reportPayload: any;
-
-      if (key === 'trifluralin-gcms') {
-        const sampleList = currentRun.sampleList || [];
-        const hasSelected = sampleList.some((s: string) => {
-          const resObj = currentDraft.resultData[s] || {};
-          const startsWithLetter = /^[a-zA-Z]/.test(s);
-          const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
-          const isSelected = resObj['selected'] !== false;
-          return isSelected && (activeFilter === 'ALL' || prefix === activeFilter);
-        });
-
-        if (!hasSelected) {
-          this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
-          this.isPublishing.set(false);
-          return;
-        }
-
-        reportPayload = buildTrifluralinPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
-        );
-      } else if (key === 'tbvtv-thuc-pham-gcmsms') {
-        const isRutGon = currentDraft.page1Data['printFormType'] === 'formRutGon';
-        if (isRutGon) {
-          const shortConf = {
-            ...ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon'],
-            id: 'tbvtv-thuc-pham-gcmsms-rut-gon'
-          };
-          reportPayload = buildFipronilPdfPayload(
-            currentDraft,
-            currentRun,
-            activeFilter,
-            shortConf,
-            this.formatAnalysisDate.bind(this),
-            this.getRunDate.bind(this),
-            this.masterTargets()
-          );
-          reportPayload.sopId = 'tbvtv-thuc-pham-gcmsms-rut-gon';
-          reportPayload.metadata = {
-            ...reportPayload.metadata,
-            printFormType: 'formRutGon',
-            sourceSopId: currentDraft.sopId || currentRun.sopId,
-            templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formRutGon,
-            templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formRutGon
-          };
-        } else {
-          reportPayload = buildUnifiedType3bPdfPayload(
-            currentDraft,
-            currentRun,
-            activeFilter,
-            currentConf,
-            this.formatAnalysisDate.bind(this),
-            this.getRunDate.bind(this),
-            this.masterTargets()
-          );
-          reportPayload.metadata = {
-            ...reportPayload.metadata,
-            printFormType: 'formDayDu',
-            templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formDayDu,
-            templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formDayDu
-          };
-        }
-      } else if (key === 'lan-huu-co' || key === 'chlor-huu-co' || key === 'nhom-cuc' || key === 'nhom-i' || currentConf.formType === 'type3b') {
-        // Unified builder cho tất cả SOP type-3b (compounds[] = canonical id)
-        reportPayload = buildUnifiedType3bPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this),
-          this.masterTargets()
-        );
-      } else if (key === 'fipronil-chlorpyrifos') {
-        reportPayload = buildFipronilPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this),
-          this.masterTargets()
-        );
-      } else if (key === 'dichlorvos-gcms') {
-        reportPayload = buildDichlorvosPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
-        );
-      } else if (key === 'chloroform-gcms') {
-        reportPayload = buildChloroformPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this)
-        );
-      } else {
-        reportPayload = buildDefaultSopPdfPayload(
-          currentDraft,
-          currentRun,
-          activeFilter,
-          currentConf,
-          this.formatAnalysisDate.bind(this),
-          this.getRunDate.bind(this),
-          this.masterTargets()
-        );
-      }
-
-      // Tính danh sách mẫu được include vào bản in này (chỉ mẫu thường, không tính QC rows)
-      const includedSamples = (currentRun.sampleList || []).filter((s: string) => {
+      
+      // 1. Get all included samples based on activeFilter
+      const allIncludedSamples = (currentRun.sampleList || []).filter((s: string) => {
         const resObj = currentDraft.resultData[s] || {};
         const startsWithLetter = /^[a-zA-Z]/.test(s);
         const prefix = startsWithLetter ? s.charAt(0).toUpperCase() : '';
@@ -938,28 +811,80 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         return isSelected && matchesFilter;
       });
 
-      // Bug 3: Tự động phân tách tiền tố khi người dùng chọn lọc "ALL"
-      if (activeFilter === 'ALL' && includedSamples.length > 0) {
-        const detectedPrefixes = new Set<string>();
-        includedSamples.forEach((s: string) => {
-          const startsWithLetter = /^[a-zA-Z]/.test(s);
-          detectedPrefixes.add(startsWithLetter ? s.charAt(0).toUpperCase() : '');
-        });
-        
-        // Nếu TẤT CẢ các mẫu được chọn đều CHUNG 1 tiền tố, tự động phân nhóm thành tiền tố đó
-        if (detectedPrefixes.size === 1) {
-          prefixForReport = Array.from(detectedPrefixes)[0];
-        }
+      if (allIncludedSamples.length === 0) {
+        this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
+        this.isPublishing.set(false);
+        return;
       }
 
-      const result = await this.resultService.publishReport(this.requestId, currentDraft, reportPayload, prefixForReport, includedSamples);
-      if (result.success) {
-        this.draft.update((d: any) => d ? { ...d, status: result.newStatus || 'completed', version: (d.version || 0) + 1 } as any : null);
+      // 2. Chunking
+      const chunkSize = this.samplesPerReport() || allIncludedSamples.length;
+      const chunks = [];
+      for (let i = 0; i < allIncludedSamples.length; i += chunkSize) {
+        chunks.push(allIncludedSamples.slice(i, i + chunkSize));
+      }
 
+      let lastResult = null;
+
+      // 3. Process each chunk
+      for (const chunk of chunks) {
+        // Clone draft and set selected=false for non-chunk samples
+        const chunkDraft = JSON.parse(JSON.stringify(currentDraft));
+        (currentRun.sampleList || []).forEach((s: string) => {
+          if (!chunk.includes(s)) {
+            if (!chunkDraft.resultData[s]) chunkDraft.resultData[s] = {};
+            chunkDraft.resultData[s].selected = false;
+          }
+        });
+
+        let prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
+        if (activeFilter === 'ALL' && chunk.length > 0) {
+          const detectedPrefixes = new Set<string>();
+          chunk.forEach((s: string) => {
+            const startsWithLetter = /^[a-zA-Z]/.test(s);
+            detectedPrefixes.add(startsWithLetter ? s.charAt(0).toUpperCase() : '');
+          });
+          if (detectedPrefixes.size === 1) {
+            prefixForReport = Array.from(detectedPrefixes)[0];
+          }
+        }
+
+        let reportPayload = null;
+
+        if (key === 'trifluralin-gcms') {
+          reportPayload = buildTrifluralinPdfPayload(chunkDraft, currentRun, activeFilter, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this));
+        } else if (key === 'tbvtv-thuc-pham-gcmsms') {
+          const isRutGon = chunkDraft.page1Data['printFormType'] === 'formRutGon';
+          if (isRutGon) {
+            const shortConf = { ...ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon'], id: 'tbvtv-thuc-pham-gcmsms-rut-gon' };
+            reportPayload = buildFipronilPdfPayload(chunkDraft, currentRun, activeFilter, shortConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
+            reportPayload.sopId = 'tbvtv-thuc-pham-gcmsms-rut-gon';
+            reportPayload.metadata = { ...reportPayload.metadata, printFormType: 'formRutGon', sourceSopId: chunkDraft.sopId || currentRun.sopId, templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formRutGon, templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formRutGon };
+          } else {
+            reportPayload = buildUnifiedType3bPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
+            reportPayload.metadata = { ...reportPayload.metadata, printFormType: 'formDayDu', templateDocId: SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS.formDayDu, templateDocUrl: SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS.formDayDu };
+          }
+        } else if (key === 'lan-huu-co' || key === 'chlor-huu-co' || key === 'nhom-cuc' || key === 'nhom-i' || currentConf.formType === 'type3b') {
+          reportPayload = buildUnifiedType3bPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
+        } else if (key === 'fipronil-chlorpyrifos') {
+          reportPayload = buildFipronilPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
+        } else if (key === 'dichlorvos-gcms') {
+          reportPayload = buildDichlorvosPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this));
+        } else if (key === 'chloroform-gcms') {
+          reportPayload = buildChloroformPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this));
+        } else {
+          reportPayload = buildDefaultSopPdfPayload(chunkDraft, currentRun, activeFilter, currentConf, this.formatAnalysisDate.bind(this), this.getRunDate.bind(this), this.masterTargets());
+        }
+
+        const result = await this.resultService.publishReport(this.requestId, chunkDraft, reportPayload, prefixForReport, chunk);
+        lastResult = result;
+      }
+
+      if (lastResult && lastResult.success) {
+        this.draft.update((d: any) => d ? { ...d, status: lastResult.newStatus || 'completed', version: (d.version || 0) + 1 } as any : null);
         const hist = await this.resultService.getHistory(this.requestId);
         this.historyList.set(hist);
-
-        const url = result.pdfViewUrl || result.pdfUrl;
+        const url = lastResult.pdfViewUrl || lastResult.pdfUrl;
         if (url) {
           this.openPdfPreview(url);
         } else {
@@ -974,8 +899,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   /**
    * Hủy xuất bản kết quả (Mở khóa chỉnh sửa)
    */
-
-
   async triggerUnlockToEdit() {
     if (this.isProcessing()) return;
     const confirmed = confirm('Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nSau khi chỉnh sửa xong, lần xuất bản tiếp theo sẽ tạo ra một bản báo cáo phiên bản mới (tăng 1 version) mà không xóa bản cũ.');
