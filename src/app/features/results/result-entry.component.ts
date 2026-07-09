@@ -1116,6 +1116,35 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     return this.findReportForFilter(prefix);
   }
 
+  /**
+   * Trả về TẤT CẢ các báo cáo (chunks) thuộc một prefix,
+   * bao gồm cả trường hợp tách phiếu nhiều chunk cùng tiền tố.
+   * Sắp xếp theo thời gian tạo (cũ → mới).
+   */
+  getAllReportsForPrefix(prefix: string): any[] {
+    const d = this.draft();
+    const r = this.run();
+    const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix;
+
+    const extractFromReports = (reportsObj: any): any[] => {
+      if (!reportsObj) return [];
+      return Object.values(reportsObj)
+        .filter((rep: any) => rep && (rep.prefix || '') === prefixKey && (rep.pdfUrl || rep.pdfViewUrl || rep.docsUrl))
+        .sort((a: any, b: any) => {
+          // Sort by creation time ascending
+          const ta = a.pdfCreatedAt || '';
+          const tb = b.pdfCreatedAt || '';
+          return ta.localeCompare(tb);
+        });
+    };
+
+    const draftReports = extractFromReports(d?.reports);
+    if (draftReports.length > 0) return draftReports;
+
+    const runReports = r?.analysisResultSummary?.reports || r?.analysisResult?.reports;
+    return extractFromReports(runReports);
+  }
+
   getGeneralReport(): any | null {
     const d = this.draft();
     const r = this.run();
