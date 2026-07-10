@@ -80,9 +80,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   priorityStandard = signal<PriorityStandard | null>(null);
   userPhotoMap = signal<Record<string, string>>({});
   
-  // Date Filters
-  startDate = signal<string>(this.getThisWeekStart());
-  endDate = signal<string>(this.getToday());
+  // Date Filters — init inline to avoid calling methods before they are available
+  private static _getLocalStr(d: Date): string {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  private static _initWeekStart(): string {
+      const today = new Date();
+      const day = today.getDay();
+      const mon = new Date(today);
+      mon.setDate(today.getDate() - day + (day === 0 ? -6 : 1));
+      return DashboardComponent._getLocalStr(mon);
+  }
+  startDate = signal<string>(DashboardComponent._initWeekStart());
+  endDate = signal<string>(DashboardComponent._getLocalStr(new Date()));
 
   // Custom SOP distribution list for charts legend
   sopDistribution = signal<{ name: string, count: number, percent: number, color: string }[]>([]);
@@ -119,6 +129,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // - canApprove (SOP): đếm SOP requests đang pending
   // - canApproveStandards: đếm Standard requests cần action (PENDING_APPROVAL + PENDING_RETURN)
   // - User thường: chỉ đếm request CỦA CHÍNH MÌNH đang ở trạng thái PENDING_APPROVAL
+  totalPendingRequests = computed(() => {
       const counts = this.pendingCounts();
       return counts.sop + counts.std;
   });
