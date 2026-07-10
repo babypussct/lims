@@ -21,7 +21,7 @@ import { FormsModule } from '@angular/forms';
 
       <!-- Layout thống nhất: Grid các thẻ điểm chuẩn -->
       <div [class]="'grid gap-3 ' + gridCols">
-        @for (pt of calibPoints; track $index) {
+        @for (pt of (calibPoints || []); track $index) {
           <div [class]="cardClass($index)">
 
             <!-- Header thẻ: Tên điểm (C0/C1…) + màu dot -->
@@ -29,19 +29,19 @@ import { FormsModule } from '@angular/forms';
               <span [class]="badgeClass($index)">
                 {{ pt['loSo'] || (pointPrefix + $index) }}
               </span>
-              @if (pointLabels.length > $index) {
+              @if ((pointLabels || []).length > $index) {
                 <span class="text-[10px] font-extrabold text-slate-600 dark:text-slate-300">
-                  {{ pointLabels[$index] }}
+                  {{ (pointLabels || [])[$index] }}
                 </span>
               }
               <span [class]="'w-1.5 h-1.5 rounded-full ' + dotColor"></span>
             </div>
 
             <!-- 3 Cột: Tên điểm | Số vial | Nồng độ -->
-            <div [class]="'grid gap-1.5 ' + (pointLabels.length > 0 ? 'grid-cols-1' : 'grid-cols-3')">
+            <div [class]="'grid gap-1.5 ' + ((pointLabels || []).length > 0 ? 'grid-cols-1' : 'grid-cols-3')">
 
               <!-- Cột 1: Tên điểm chuẩn (loSo) — chỉ hiển thị nếu pointLabels rỗng -->
-              @if (pointLabels.length === 0) {
+              @if ((pointLabels || []).length === 0) {
                 <div>
                   <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Tên điểm</label>
                   <input type="text"
@@ -67,7 +67,7 @@ import { FormsModule } from '@angular/forms';
               </div>
 
               <!-- Cột 3: Nồng độ (hamLuong) — chỉ hiển thị nếu pointLabels rỗng -->
-              @if (pointLabels.length === 0) {
+              @if ((pointLabels || []).length === 0) {
                 <div>
                   <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{{ valLabel }}</label>
                   <input type="text"
@@ -107,7 +107,7 @@ export class SopCalibrationPointsComponent {
   }
 
   get gridCols(): string {
-    const n = this.calibPoints.length;
+    const n = (this.calibPoints || []).length;
     if (n <= 3) return 'grid-cols-1 sm:grid-cols-3';
     if (n === 5) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
     // 6 điểm
