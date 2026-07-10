@@ -278,7 +278,7 @@ export class StateService implements OnDestroy {
       queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
     };
 
-    if (this.auth.canViewReports()) {
+    if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run') || this.auth.canViewReports()) {
       const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
         this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
       });

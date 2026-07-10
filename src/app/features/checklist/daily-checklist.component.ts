@@ -97,7 +97,7 @@ export class DailyChecklistComponent {
    * 3. A single sample may appear in multiple requests (re-runs) — all entries kept.
    */
   groupedChecklist = computed<ChecklistSopGroup[]>(() => {
-    const allRequests = this.state.requests();
+    const allRequests = [...this.state.requests(), ...this.state.approvedRequests()];
     const dayStr = this.selectedDay();
     const targetMap = this.targetMap();
     const collapsed = this.collapsedGroups();
