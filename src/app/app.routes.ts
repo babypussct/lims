@@ -56,6 +56,12 @@ export const routes: Routes = [
     data: { permission: PERMISSIONS.STANDARD_VIEW }
   },
   {
+    path: 'daily-checklist',
+    loadComponent: () => import('./features/checklist/daily-checklist.component').then(m => m.DailyChecklistComponent),
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.SOP_VIEW }
+  },
+  {
     path: 'standard-requests',
     loadComponent: () => import('./features/standards/requests/standard-requests.component').then(m => m.StandardRequestsComponent),
     canActivate: [permissionGuard],

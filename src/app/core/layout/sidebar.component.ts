@@ -241,6 +241,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       id: 'operation',
       title: 'Vận hành',
       items: [
+        { name: 'Check mẫu ngày', icon: 'fa-list-check', path: 'daily-checklist', activeMatch: ['/daily-checklist'], hidden: !this.auth.canViewSop() },
         { name: 'Chạy Mẻ (Smart)', icon: 'fa-wand-magic-sparkles', path: 'smart-batch', activeMatch: ['/smart-batch'], hidden: !this.auth.canViewSop() },
         { name: 'Vận hành (SOP)', icon: 'fa-play pl-0.5', path: 'calculator', activeMatch: ['/calculator', '/editor', '/recipes'], hidden: !this.auth.canViewSop() },
         { name: 'Trạm Pha Chế', icon: 'fa-flask-vial', path: 'prep', activeMatch: ['/prep'], hidden: !this.auth.canViewInventory() },
