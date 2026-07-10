@@ -1,242 +1,285 @@
-<div class="h-full flex flex-col bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200">
-
-  <!-- ═══════════════════════════════════════════════════════════════ HEADER -->
-  <header class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 shadow-sm">
-
-    <!-- Row 1: Title + Date picker -->
-    <div class="flex items-center justify-between gap-4 flex-wrap">
-      <div class="flex items-center gap-3">
+<div class="flex-1 min-h-0 flex flex-col bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 overflow-hidden">
+  <header class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-5 lg:px-6 py-3 sm:py-4 shadow-sm z-10">
+    <div class="flex items-start lg:items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3 min-w-0">
         <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center border border-indigo-100 dark:border-indigo-500/20 shrink-0">
-          <i class="fa-solid fa-list-check text-indigo-600 dark:text-indigo-400 text-lg"></i>
+          <i class="fa-solid fa-list-check text-indigo-600 dark:text-indigo-400 text-lg" aria-hidden="true"></i>
         </div>
-        <div>
-          <h1 class="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 tracking-tight leading-none mb-0.5">
+        <div class="min-w-0">
+          <h1 class="text-lg sm:text-xl font-semibold text-indigo-600 dark:text-indigo-400 tracking-tight leading-tight truncate">
             Bảng Check Mẫu Ngày
           </h1>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Lọc theo <span class="font-semibold text-indigo-500 dark:text-indigo-400">hậu tố 2 số cuối</span> của mã mẫu</p>
+          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+            Lọc theo hậu tố 2 số cuối của mã mẫu
+          </p>
         </div>
       </div>
 
-      <!-- Date controls -->
-      <div class="flex items-center gap-2">
-        <!-- Today shortcut -->
-        <button (click)="goToToday()"
-                title="Về hôm nay"
-                class="px-3 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-colors border border-slate-200 dark:border-slate-700">
+      <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <button type="button" (click)="goToToday()"
+                class="min-h-10 px-3 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-colors border border-slate-200 dark:border-slate-700">
           Hôm nay
         </button>
 
-        <!-- Date picker -->
-        <div class="relative">
-          <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <i class="fa-regular fa-calendar text-slate-400 text-sm"></i>
-          </div>
-          <input type="date"
-                 [(ngModel)]="selectedDate"
-                 class="pl-9 pr-3 py-2 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition w-44 text-slate-700 dark:text-slate-200" />
+        <label class="relative flex-1 sm:flex-none min-w-[8.5rem]">
+          <span class="sr-only">Ngày trong tháng</span>
+          <i class="fa-regular fa-calendar absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm pointer-events-none" aria-hidden="true"></i>
+          <select [ngModel]="selectedDay()"
+                  (ngModelChange)="onDayChange($event)"
+                  class="w-full sm:w-36 min-h-10 pl-9 pr-8 py-2 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition text-slate-700 dark:text-slate-200">
+            @for (day of dayOptions; track day) {
+              <option [value]="day">Ngày {{day}}</option>
+            }
+          </select>
+        </label>
+
+        <div class="min-h-10 px-3 py-2 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-bold font-mono min-w-11 text-center shadow-md" aria-label="Hậu tố mã mẫu">
+          -{{selectedDay()}}
         </div>
 
-        <!-- Suffix badge -->
-        <div class="px-3 py-2 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-bold font-mono min-w-[2.75rem] text-center shadow-md">
-          -{{selectedDate().split('-')[2]}}
-        </div>
-
-        <!-- Collapse / Expand controls -->
         @if (groupedChecklist().length > 0) {
-          <div class="flex items-center gap-1 border-l border-slate-200 dark:border-slate-700 pl-2 ml-1">
-            <button (click)="expandAll()" title="Mở tất cả"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-              <i class="fa-solid fa-angles-down text-xs"></i>
+          <div class="flex items-center gap-1 border-l border-slate-200 dark:border-slate-700 pl-2">
+            <button type="button" (click)="expandAll()" title="Mở tất cả" aria-label="Mở tất cả SOP"
+                    class="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors">
+              <i class="fa-solid fa-angles-down text-xs" aria-hidden="true"></i>
             </button>
-            <button (click)="collapseAll()" title="Thu gọn tất cả"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-              <i class="fa-solid fa-angles-up text-xs"></i>
+            <button type="button" (click)="collapseAll()" title="Thu gọn tất cả" aria-label="Thu gọn tất cả SOP"
+                    class="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors">
+              <i class="fa-solid fa-angles-up text-xs" aria-hidden="true"></i>
             </button>
           </div>
         }
       </div>
     </div>
 
-    <!-- Row 2: Summary bar (only when data exists) -->
-    @if (summary().total > 0) {
-      <div class="mt-4 flex items-center gap-2 flex-wrap animate-fade-in">
-        <!-- Total -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
-          <i class="fa-regular fa-flask text-slate-400"></i>
-          <span>{{summary().total}} mẫu</span>
+    @if (summary().assignments > 0 || hasActiveFilters()) {
+      <div class="mt-3 space-y-3 checklist-fade-in">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <i class="fa-solid fa-flask text-slate-400" aria-hidden="true"></i>
+            <span>{{summary().uniqueSamples}} mẫu</span>
+          </div>
+          <div class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            {{summary().assignments}} lượt chỉ tiêu
+          </div>
+          <div class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            {{summary().batches}} mẻ
+          </div>
+
+          @for (option of statusOptions; track option.value) {
+            @if (summary().statuses[option.value] > 0) {
+              <button type="button" (click)="setStatusFilter(option.value)"
+                      [attr.aria-pressed]="statusFilter() === option.value"
+                      [ngClass]="[option.chipClass, option.ringClass, statusFilter() === option.value ? 'ring-2' : '']"
+                      class="min-h-8 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:brightness-95 focus-visible:ring-2 transition">
+                <span class="w-1.5 h-1.5 rounded-full" [ngClass]="option.dotClass"></span>
+                {{summary().statuses[option.value]}} {{option.label}}
+              </button>
+            }
+          }
+
+          @if (summary().legacyAssignments > 0 || summary().dayMismatches > 0) {
+            <div class="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs font-semibold text-amber-700 dark:text-amber-300"
+                 [title]="summary().legacyAssignments + ' lượt dữ liệu cũ · ' + summary().dayMismatches + ' lượt lệch hậu tố'">
+              <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>
+              {{summary().legacyAssignments + summary().dayMismatches}} cảnh báo dữ liệu
+            </div>
+          }
         </div>
 
-        <!-- Status chips (clickable filter) -->
-        @if (summary().completed > 0) {
-          <button (click)="setStatusFilter('completed')"
-                  [class.ring-2]="statusFilter() === 'completed'"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:brightness-95 transition ring-emerald-400">
-            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-            {{summary().completed}} Đã xong
-          </button>
-        }
-        @if (summary().approved > 0) {
-          <button (click)="setStatusFilter('approved')"
-                  [class.ring-2]="statusFilter() === 'approved'"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:brightness-95 transition ring-blue-400">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-            {{summary().approved}} Đã duyệt
-          </button>
-        }
-        @if (summary().draft > 0) {
-          <button (click)="setStatusFilter('draft')"
-                  [class.ring-2]="statusFilter() === 'draft'"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-xs font-semibold text-violet-700 dark:text-violet-300 hover:brightness-95 transition ring-violet-400">
-            <div class="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
-            {{summary().draft}} Đang chạy
-          </button>
-        }
-        @if (summary().pending > 0) {
-          <button (click)="setStatusFilter('pending')"
-                  [class.ring-2]="statusFilter() === 'pending'"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:brightness-95 transition ring-amber-400">
-            <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-            {{summary().pending}} Chờ duyệt
-          </button>
-        }
-        @if (summary().rejected > 0) {
-          <button (click)="setStatusFilter('rejected')"
-                  [class.ring-2]="statusFilter() === 'rejected'"
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-xs font-semibold text-red-700 dark:text-red-300 hover:brightness-95 transition ring-red-400">
-            <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-            {{summary().rejected}} Từ chối
-          </button>
-        }
+        <div class="flex flex-col xl:flex-row xl:items-center gap-2">
+          <label class="relative flex-1 min-w-0">
+            <span class="sr-only">Tìm mã mẫu, SOP, chỉ tiêu hoặc mã mẻ</span>
+            <i class="fa-solid fa-magnifying-glass absolute inset-y-0 left-3 flex items-center text-slate-400 text-xs pointer-events-none" aria-hidden="true"></i>
+            <input type="search"
+                   [ngModel]="searchTerm()"
+                   (ngModelChange)="searchTerm.set($event)"
+                   placeholder="Tìm mã mẫu, SOP, chỉ tiêu hoặc mã mẻ..."
+                   class="w-full min-h-10 pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none text-slate-700 dark:text-slate-200" />
+          </label>
 
-        <!-- Clear filter -->
-        @if (statusFilter()) {
-          <button (click)="setStatusFilter(null)"
-                  class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <i class="fa-solid fa-xmark"></i>
-            Bỏ lọc
-          </button>
-        }
+          <div class="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-x-auto" aria-label="Lọc trạng thái check">
+            <button type="button" (click)="setCheckFilter('all')" [attr.aria-pressed]="checkFilter() === 'all'"
+                    [ngClass]="checkFilter() === 'all' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'"
+                    class="min-h-8 px-3 rounded-md text-xs font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500">Tất cả</button>
+            <button type="button" (click)="setCheckFilter('unchecked')" [attr.aria-pressed]="checkFilter() === 'unchecked'"
+                    [ngClass]="checkFilter() === 'unchecked' ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'"
+                    class="min-h-8 px-3 rounded-md text-xs font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500">Chưa check</button>
+            <button type="button" (click)="setCheckFilter('checked')" [attr.aria-pressed]="checkFilter() === 'checked'"
+                    [ngClass]="checkFilter() === 'checked' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'"
+                    class="min-h-8 px-3 rounded-md text-xs font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-indigo-500">Đã check</button>
+          </div>
+
+          @if (hasActiveFilters()) {
+            <button type="button" (click)="clearFilters()"
+                    class="min-h-10 px-3 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500 whitespace-nowrap">
+              <i class="fa-solid fa-xmark mr-1" aria-hidden="true"></i>Bỏ lọc
+            </button>
+          }
+
+          @if (canCheck() && filteredAssignments().length > 0) {
+            <div class="flex items-center gap-1">
+              <button type="button" (click)="setAllVisibleChecked(true)"
+                      class="min-h-10 px-3 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-400 whitespace-nowrap">
+                <i class="fa-solid fa-check-double mr-1" aria-hidden="true"></i>Check đang hiển thị
+              </button>
+              <button type="button" (click)="setAllVisibleChecked(false)" title="Bỏ check các mục đang hiển thị" aria-label="Bỏ check các mục đang hiển thị"
+                      class="w-10 h-10 rounded-lg text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/60 hover:bg-red-50 dark:hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="flex items-center gap-3" aria-label="Tiến độ check mẫu">
+          <div class="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300"
+                 [style.width.%]="checkedPercent()"></div>
+          </div>
+          <span class="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            {{summary().checkedAssignments}}/{{summary().assignments}} · {{checkedPercent()}}%
+          </span>
+        </div>
       </div>
     }
   </header>
 
-  <!-- ════════════════════════════════════════════════════════════════ CONTENT -->
-  <main class="flex-1 overflow-hidden relative">
-    <div class="absolute inset-0 overflow-y-auto p-6 scroll-smooth">
-      <div class="max-w-5xl mx-auto space-y-4">
+  <main class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 scroll-smooth custom-scrollbar">
+    <div class="max-w-6xl mx-auto space-y-4">
+      @if (checklist.error()) {
+        <div role="alert" class="flex items-start gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-sm text-amber-800 dark:text-amber-200">
+          <i class="fa-solid fa-triangle-exclamation mt-0.5" aria-hidden="true"></i>
+          <div class="flex-1">{{checklist.error()}}</div>
+          <button type="button" (click)="retryCheckState()" class="shrink-0 min-h-8 px-3 rounded-lg border border-amber-300 dark:border-amber-500/30 font-semibold hover:bg-amber-100 dark:hover:bg-amber-500/10 focus-visible:ring-2 focus-visible:ring-amber-400">Thử lại</button>
+        </div>
+      }
 
-        <!-- Empty State -->
-        @if (groupedChecklist().length === 0) {
-          <div class="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-            <div class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-5">
-              <i class="fa-regular fa-calendar-xmark text-3xl text-slate-300 dark:text-slate-600"></i>
-            </div>
-            <h3 class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Không tìm thấy mẫu
-            </h3>
-            <p class="text-sm text-slate-500 dark:text-slate-500 max-w-xs">
-              Không có mã mẫu nào có hậu tố <span class="font-mono font-bold text-indigo-500">-{{selectedDate().split('-')[2]}}</span> trong ngày này.
-            </p>
+      @if (checklist.loading() && baseAssignments().length === 0) {
+        <div class="space-y-3" aria-label="Đang tải checklist">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="h-24 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse"></div>
+          }
+        </div>
+      } @else if (baseAssignments().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 sm:py-24 text-center checklist-fade-in">
+          <div class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-5">
+            <i class="fa-regular fa-calendar-xmark text-3xl text-slate-300 dark:text-slate-600" aria-hidden="true"></i>
           </div>
-        }
+          <h2 class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">Không có mẫu hậu tố -{{selectedDay()}}</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-500 max-w-md">
+            Chưa tìm thấy mã mẫu nào kết thúc bằng {{selectedDay()}} trong các mẻ gần đây.
+          </p>
+        </div>
+      } @else if (groupedChecklist().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 sm:py-24 text-center checklist-fade-in">
+          <div class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-5">
+            <i class="fa-solid fa-filter-circle-xmark text-3xl text-slate-300 dark:text-slate-600" aria-hidden="true"></i>
+          </div>
+          <h2 class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">Không khớp bộ lọc</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-500 max-w-md mb-4">Dữ liệu ngày này vẫn tồn tại nhưng không có mục nào khớp điều kiện hiện tại.</p>
+          <button type="button" (click)="clearFilters()" class="min-h-10 px-4 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-400">Bỏ tất cả bộ lọc</button>
+        </div>
+      } @else {
+        @for (sopGroup of groupedChecklist(); track sopGroup.sopId; let index = $index) {
+          <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden checklist-fade-in-up"
+                   [style.animation-delay]="(index * 40) + 'ms'">
+            <div class="bg-slate-50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-800 flex items-stretch">
+              <button type="button" (click)="toggleCollapse(sopGroup.sopId)"
+                      [attr.aria-expanded]="!sopGroup.collapsed"
+                      class="min-w-0 flex-1 px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500">
+                <span class="w-9 h-9 rounded-lg bg-indigo-100/70 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <i class="fa-solid fa-vial text-sm" aria-hidden="true"></i>
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{{sopGroup.sopName}}</span>
+                  <span class="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {{groupUniqueSampleCount(sopGroup)}} mẫu · {{sopGroup.targets.length}} chỉ tiêu · {{groupCheckedCount(sopGroup)}}/{{groupAssignmentCount(sopGroup)}} đã check
+                  </span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform shrink-0"
+                   [class.rotate-180]="!sopGroup.collapsed" aria-hidden="true"></i>
+              </button>
 
-        <!-- SOP Groups -->
-        @for (sopGroup of groupedChecklist(); track sopGroup.sopId; let i = $index) {
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-in-up"
-               [style.animation-delay]="(i * 60) + 'ms'">
+              @if (canCheck()) {
+                <div class="flex items-center gap-1 px-2 border-l border-slate-200 dark:border-slate-700">
+                  <button type="button" (click)="setGroupChecked(sopGroup, true)" title="Check toàn bộ SOP" [attr.aria-label]="'Check toàn bộ SOP ' + sopGroup.sopName"
+                          class="w-9 h-9 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 focus-visible:ring-2 focus-visible:ring-emerald-400">
+                    <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" (click)="setGroupChecked(sopGroup, false)" title="Bỏ check toàn bộ SOP" [attr.aria-label]="'Bỏ check toàn bộ SOP ' + sopGroup.sopName"
+                          class="w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            </div>
 
-            <!-- SOP Header (clickable to collapse) -->
-            <button type="button"
-                    (click)="toggleCollapse(sopGroup.sopId)"
-                    class="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 hover:bg-slate-100/50 dark:hover:bg-slate-800/60 transition-colors text-left group">
-
-              <div class="w-8 h-8 rounded-lg bg-indigo-100/70 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                <i class="fa-solid fa-vial text-sm"></i>
-              </div>
-
-              <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1 truncate">
-                {{sopGroup.sopName}}
-              </h2>
-
-              <!-- Counts -->
-              <span class="text-xs text-slate-500 dark:text-slate-400 shrink-0">
-                {{sopGroup.targets.length}} chỉ tiêu
-                · {{totalSamples(sopGroup.targets)}} mẫu
-              </span>
-
-              <!-- Collapse indicator -->
-              <i class="fa-solid fa-chevron-down text-xs text-slate-400 dark:text-slate-500 transition-transform shrink-0"
-                 [class.rotate-180]="!sopGroup.collapsed"></i>
-            </button>
-
-            <!-- Target rows -->
             @if (!sopGroup.collapsed) {
               <div class="divide-y divide-slate-100 dark:divide-slate-800/50">
-                @for (tg of sopGroup.targets; track tg.targetId) {
-                  <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-
-                    <!-- Left: target name -->
-                    <div class="sm:w-56 shrink-0">
-                      <div class="flex items-center gap-2">
-                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-px shrink-0"></div>
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug">{{tg.targetName}}</span>
-                      </div>
-                      <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500 pl-3.5">{{tg.samples.length}} mẫu</p>
-                    </div>
-
-                    <!-- Right: sample badges -->
-                    <div class="flex-1 flex flex-wrap gap-2">
-                      @for (sample of tg.samples; track sample.sampleId + sample.requestId) {
-                        <div class="group/badge relative flex items-center gap-1.5 pl-2.5 pr-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm hover:shadow-md hover:-translate-y-px transition-all cursor-default">
-
-                          <!-- Status dot -->
-                          <div class="w-1.5 h-1.5 rounded-full shrink-0 {{getStatusDot(sample.status)}}"></div>
-
-                          <!-- Sample ID (suffix highlighted) -->
-                          <span class="text-xs font-mono font-semibold text-slate-700 dark:text-slate-100">
-                            {{sample.sampleId.slice(0, -2)}}<span class="text-indigo-500 dark:text-indigo-400">{{sample.sampleId.slice(-2)}}</span>
-                          </span>
-
-                          <!-- Divider -->
-                          <div class="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
-
-                          <!-- Status label -->
-                          <span class="text-[10px] font-bold uppercase tracking-wide {{getStatusClass(sample.status)}} px-1.5 py-0.5 rounded-full">
-                            {{getStatusLabel(sample.status)}}
-                          </span>
-
-                          <!-- Tooltip: batch ID on hover -->
-                          <div class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover/badge:opacity-100 group-hover/badge:visible transition-all whitespace-nowrap z-30">
-                            <span class="text-slate-400 mr-1">Mẻ:</span>{{sample.requestId}}
-                            <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-[5px] border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
+                @for (target of sopGroup.targets; track target.targetId) {
+                  <div class="px-4 sm:px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                    <div class="flex flex-col lg:flex-row lg:items-start gap-3">
+                      <div class="lg:w-64 shrink-0 flex items-start gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-2 shrink-0"></span>
+                        <div class="min-w-0 flex-1">
+                          <div class="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug break-words">{{target.targetName}}</div>
+                          <div class="mt-1 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                            <span>{{target.samples.length}} lượt</span>
+                            <span>·</span>
+                            <span>{{targetCheckedCount(target)}} đã check</span>
                           </div>
+                          @if (canCheck()) {
+                            <div class="mt-2 flex gap-1">
+                              <button type="button" (click)="setTargetChecked(target, true)" class="min-h-8 px-2.5 rounded-md text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 focus-visible:ring-2 focus-visible:ring-emerald-400">Check chỉ tiêu</button>
+                              <button type="button" (click)="setTargetChecked(target, false)" title="Bỏ check chỉ tiêu" aria-label="Bỏ check chỉ tiêu" class="w-8 h-8 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button>
+                            </div>
+                          }
                         </div>
-                      }
-                    </div>
+                      </div>
 
+                      <div class="flex-1 min-w-0 flex flex-wrap gap-2">
+                        @for (sample of target.samples; track sample.key) {
+                          <div class="relative flex items-stretch rounded-xl border shadow-sm transition"
+                               [ngClass]="sample.checked ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30' : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700'">
+                            <button type="button"
+                                    (click)="toggleSampleCheck(sample)"
+                                    [disabled]="!canCheck() || isPending(sample)"
+                                    [attr.aria-pressed]="sample.checked"
+                                    [title]="getCheckTooltip(sample)"
+                                    class="min-h-11 flex items-center gap-2 pl-2.5 pr-2 py-1.5 rounded-l-xl focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 disabled:cursor-not-allowed"
+                                    [ngClass]="canCheck() ? 'hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer' : 'cursor-default'">
+                              @if (isPending(sample)) {
+                                <i class="fa-solid fa-spinner fa-spin text-indigo-500 text-xs" aria-hidden="true"></i>
+                              } @else {
+                                <i class="fa-solid text-sm" [ngClass]="sample.checked ? 'fa-square-check text-emerald-600 dark:text-emerald-400' : 'fa-square text-slate-300 dark:text-slate-600'" aria-hidden="true"></i>
+                              }
+
+                              <span class="text-xs font-mono font-semibold text-slate-700 dark:text-slate-100">
+                                {{sample.sampleId.slice(0, -2)}}<span class="text-indigo-500 dark:text-indigo-400">{{sample.sampleId.slice(-2)}}</span>
+                              </span>
+
+                              <span class="w-1.5 h-1.5 rounded-full shrink-0" [ngClass]="getStatusDot(sample.status)" [title]="getStatusLabel(sample.status)"></span>
+
+                              @if (sample.isLegacyDate || sample.hasDayMismatch) {
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500 text-[10px]" title="Dữ liệu ngày hoặc hậu tố cần kiểm tra" aria-label="Dữ liệu cần kiểm tra"></i>
+                              }
+                            </button>
+
+                            <button type="button" (click)="openBatch(sample.requestId)" title="Mở chi tiết mẻ" [attr.aria-label]="'Mở mẻ ' + sample.requestId"
+                                    class="w-9 min-h-11 rounded-r-xl border-l border-slate-200 dark:border-slate-700 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500">
+                              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
                   </div>
                 }
               </div>
             }
-          </div>
+          </section>
         }
-
-      </div>
-      <div class="h-10"></div>
+      }
     </div>
   </main>
-
 </div>
-
-<style>
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in-up {
-  animation: fade-in-up 0.35s ease-out both;
-}
-.animate-fade-in {
-  animation: fade-in-up 0.25s ease-out both;
-}
-</style>
