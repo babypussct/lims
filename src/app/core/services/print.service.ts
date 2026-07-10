@@ -131,7 +131,9 @@ export class PrintService {
           this.isPrinting.set(true);
           this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
           await this.googleDriveService.ensureAuthenticated();
-          const blob = await this.googleDriveService.downloadFile(id);
+          const rawBlob = await this.googleDriveService.downloadFile(id);
+          // Ép kiểu Blob thành application/pdf để trình duyệt hiển thị trong iframe thay vì tải xuống
+          const blob = new Blob([rawBlob], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
 
           const iframe = document.createElement('iframe');
