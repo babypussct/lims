@@ -187,7 +187,8 @@ service cloud.firestore {
 
     // MODULE YÊU CẦU KIỂM NGHIỆM VÀ KẾT QUẢ (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
-      allow read: if true; // Public read cho phép truy xuất kết quả/QR code không cần đăng nhập
+      allow get: if true; // Public read cho phép truy xuất kết quả/QR code không cần đăng nhập
+      allow list: if isSignedIn();
       allow write: if isManager(appId) || hasPermission(appId, 'batch_run');
 
       match /history/{histId} {
@@ -226,7 +227,8 @@ service cloud.firestore {
     // Lịch sử Audit Trail / Nhật ký hệ thống chung (Logs)
     match /artifacts/{appId}/logs/{logId} {
       allow create: if isSignedIn();
-      allow read: if true; // Public read cho phép quét QR code truy xuất nguồn gốc
+      allow get: if true; // Public read cho phép quét QR code truy xuất nguồn gốc
+      allow list: if isSignedIn();
       allow update, delete: if isManager(appId);
     }
   }

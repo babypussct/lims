@@ -145,9 +145,7 @@ export class DateRangeFilterComponent {
       if (!start && !end) return { preset: 'all', label: 'Tất cả thời gian' };
 
       const toStr = (d: Date) => {
-          const offset = d.getTimezoneOffset();
-          const local = new Date(d.getTime() - (offset * 60 * 1000));
-          return local.toISOString().split('T')[0];
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       };
       const today = new Date();
       const todayStr = toStr(today);
@@ -164,9 +162,7 @@ export class DateRangeFilterComponent {
       const day = weekStart.getDay();
       weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1));
       const weekStartStr = toStr(weekStart);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      const weekEndStr = toStr(weekEnd);
+      const weekEndStr = todayStr; // Cap at today
 
       if (start === todayStr && end === todayStr) return { preset: 'today', label: 'Hôm nay' };
       if (start === yesterdayStr && end === yesterdayStr) return { preset: 'yesterday', label: 'Hôm qua' };
@@ -210,9 +206,7 @@ export class DateRangeFilterComponent {
 
       // Helper: To Local YYYY-MM-DD string
       const toStr = (d: Date) => {
-          const offset = d.getTimezoneOffset();
-          const local = new Date(d.getTime() - (offset * 60 * 1000));
-          return local.toISOString().split('T')[0];
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       };
 
       switch (preset) {
@@ -233,8 +227,7 @@ export class DateRangeFilterComponent {
               const day = today.getDay(); 
               const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
               start.setDate(diffToMon);
-              end = new Date(start);
-              end.setDate(start.getDate() + 6); // Sunday
+              end = new Date(today); // Cap at today
               break;
 
           case 'last_week':
@@ -249,6 +242,7 @@ export class DateRangeFilterComponent {
           case 'this_month':
               label = 'Tháng này';
               start = new Date(today.getFullYear(), today.getMonth(), 1);
+              end = new Date(today); // Cap at today
               break;
 
           case 'last_month':

@@ -138,14 +138,13 @@ export class StandardCacheService {
   }
 
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
-    try {
-      const stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
-      const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
-      if (active.length > 0) {
-        return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
-      }
-      return null;
-    } catch { return null; }
+    const stds = this.deltaSync.getCache<ReferenceStandard>(this._deltaCacheKey);
+    if (!stds) throw new Error("Standards cache not ready");
+    const active = stds.filter(s => s.expiry_date && s.expiry_date !== '' && !s._isDeleted);
+    if (active.length > 0) {
+      return active.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime())[0];
+    }
+    return null;
   }
 
   // ─── Optimistic Cache Update ────────────────────────────────────────────────

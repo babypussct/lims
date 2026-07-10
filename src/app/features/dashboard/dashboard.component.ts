@@ -23,7 +23,7 @@ interface PriorityStandard {
     name: string;
     daysLeft: number;
     date: string;
-    status: 'expired' | 'warning' | 'safe';
+    status: 'expired' | 'warning' | 'safe' | 'error';
 }
 
 // Thêm interface để cache _date
@@ -74,7 +74,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   formatSampleList = formatSampleList;
   
   isLoading = signal(true);
-  lowStockItems = signal<InventoryItem[]>([]); 
+  lowStockItems = computed(() => {
+      return this.state.inventory().filter(i => i.stock <= (i.threshold || 5));
+  });
   priorityStandard = signal<PriorityStandard | null>(null);
   userPhotoMap = signal<Record<string, string>>({});
   
@@ -91,48 +93,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Active SOP Filter
   selectedSopFilter = signal<string | null>(null);
 
+  showPendingRequestsPopover = signal(false);
+
+  // Computed for separate counts
+  pendingCounts = computed(() => {
+      const uid = this.auth.currentUser()?.uid;
+      let sop = 0; let std = 0;
+      
+      if (this.auth.canApprove()) { 
+          sop = this.state.requests().length; 
+      } else if (uid) { 
+          sop = this.state.requests().filter(r => r.user === this.auth.currentUser()?.displayName).length; 
+      }
+      
+      if (this.auth.canApproveStandards()) { 
+          std = this.state.standardRequests().filter(r => r.status === 'PENDING_APPROVAL' || r.status === 'PENDING_RETURN').length; 
+      } else if (uid) { 
+          std = this.state.standardRequests().filter(r => r.status === 'PENDING_APPROVAL').length; 
+      }
+      return { sop, std };
+  });
+
   // LIVE DATA COMPUTED
   // Phân nhánh logic đếm theo từng quyền cụ thể:
   // - canApprove (SOP): đếm SOP requests đang pending
   // - canApproveStandards: đếm Standard requests cần action (PENDING_APPROVAL + PENDING_RETURN)
   // - User thường: chỉ đếm request CỦA CHÍNH MÌNH đang ở trạng thái PENDING_APPROVAL
-  totalPendingRequests = computed(() => {
-      const uid = this.auth.currentUser()?.uid;
-      const canApproveSop = this.auth.canApprove();
-      const canApproveStd = this.auth.canApproveStandards();
-
-      // Approver — tính từng phần theo quyền tương ứng
-      if (canApproveSop || canApproveStd) {
-          let count = 0;
-
-          // SOP: state.requests() đã được Firestore query chỉ lấy status='pending'
-          // => toàn bộ đều cần duyệt, không cần filter thêm
-          if (canApproveSop) {
-              count += this.state.requests().length;
-          }
-
-          // Standard: phân biệt 2 loại cần hành động
-          // - PENDING_APPROVAL: Manager cần phê duyệt cho mượn
-          // - PENDING_RETURN: Manager cần xác nhận nhận lại chuẩn
-          if (canApproveStd) {
-              count += this.state.standardRequests()
-                  .filter(r => r.status === 'PENDING_APPROVAL' || r.status === 'PENDING_RETURN').length;
-          }
-
-          return count;
-      }
-
-      if (!uid) return 0;
-
-      // User thường: chỉ đếm request CỦA CHÍNH MÌNH đang chờ duyệt (PENDING_APPROVAL)
-      // state.requests() chứa TẤT CẢ pending SOP của mọi người → phải filter theo tên
-      const myPendingSopReqs = this.state.requests()
-          .filter(r => r.user === this.auth.currentUser()?.displayName).length;
-      // state.standardRequests() đã được filter theo requestedBy=uid ở Firestore
-      // nhưng bao gồm IN_PROGRESS + PENDING_RETURN → chỉ lấy PENDING_APPROVAL
-      const myPendingStdReqs = this.state.standardRequests()
-          .filter(r => r.status === 'PENDING_APPROVAL').length;
-      return myPendingSopReqs + myPendingStdReqs;
+      const counts = this.pendingCounts();
+      return counts.sop + counts.std;
   });
   // Activity Feed Filters
   logSearchTerm = signal<string>('');
@@ -227,7 +215,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'ASSIGN_STANDARD': 'đã gán chuẩn cho mượn'
   };
 
-  private readonly _todayStr = new Date().toISOString().split('T')[0];
+  private getLocalYYYYMMDD(d: Date): string {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  private _todayStr = this.getLocalYYYYMMDD(new Date());
   todayActivityCount = computed(() => {
       return this.state.logs().filter(l => {
           const d = l.timestamp?.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
@@ -255,11 +247,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // MỚI: Computed slice theo date range hiện tại — dùng chung cho kanbanBoard, chartKpis, trendInfo(current)
   private _rangeFilteredRequests = computed<ParsedRequest[]>(() => {
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      const all = this._parsedRequests();
+      let startStr = this.startDate();
+      let endStr = this.endDate();
+      if (!startStr || !endStr) return all; // Tất cả thời gian
+      
+      const start = new Date(startStr); start.setHours(0,0,0,0);
+      const end = new Date(endStr); end.setHours(23,59,59,999);
       const filter = this.selectedSopFilter();
       
-      return this._parsedRequests().filter(r => {
+      return all.filter(r => {
           const inRange = r._date >= start && r._date <= end;
           const inSop = !filter || r.sopName === filter;
           return inRange && inSop;
@@ -274,8 +271,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
           history = history.filter(r => r.sopName === filter);
       }
       
-      const currentStart = new Date(this.startDate()); currentStart.setHours(0,0,0,0);
-      const currentEnd = new Date(this.endDate()); currentEnd.setHours(23,59,59,999);
+      const startStr = this.startDate();
+      const endStr = this.endDate();
+      
+      let currentStart = new Date(); currentStart.setHours(0,0,0,0);
+      let currentEnd = new Date(); currentEnd.setHours(23,59,59,999);
+      if (startStr && endStr) {
+          currentStart = new Date(startStr); currentStart.setHours(0,0,0,0);
+          currentEnd = new Date(endStr); currentEnd.setHours(23,59,59,999);
+      }
       
       const diffTime = Math.abs(currentEnd.getTime() - currentStart.getTime());
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -476,16 +480,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
       this.isLoading.set(true);
-      
-      // 1. Tải danh sách tồn kho thấp
-      try {
-          if (this.auth.hasPermission('inventory_view')) {
-              const lowStock = await this.invService.getLowStockItems(5);
-              this.lowStockItems.set(lowStock);
-          }
-      } catch (e) {
-          console.warn("Dashboard: Lỗi khi tải danh sách tồn kho thấp:", e);
-      }
 
       // 2. Tải thông tin chuẩn sắp hết hạn
       try {
@@ -493,6 +487,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.processPriorityStandard(nearestStd);
       } catch (e) {
           console.warn("Dashboard: Lỗi khi tải thông tin chất chuẩn sắp hết hạn:", e);
+          this.priorityStandard.set({ name: 'Lỗi kết nối / dữ liệu', daysLeft: 0, date: '', status: 'error' });
       }
 
       // 3. Tải danh sách người dùng cho bản đồ ảnh đại diện (Graceful fallback nếu chưa có quyền/chưa đăng nhập xong)
@@ -538,15 +533,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
   }
 
-  private getToday(): string { return new Date().toISOString().split('T')[0]; }
-  private getFirstDayOfMonth(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; }
+  private getToday(): string { return this.getLocalYYYYMMDD(new Date()); }
+  private getFirstDayOfMonth(): string { const d = new Date(); return this.getLocalYYYYMMDD(new Date(d.getFullYear(), d.getMonth(), 1)); }
   private getThisWeekStart(): string {
       const today = new Date();
       const day = today.getDay();
       const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
       const start = new Date(today);
       start.setDate(diffToMon);
-      return start.toISOString().split('T')[0];
+      return this.getLocalYYYYMMDD(start);
   }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
@@ -627,8 +622,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
       gradient.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.2)'); 
       gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
-      const start = new Date(this.startDate()); start.setHours(0,0,0,0);
-      const end = new Date(this.endDate()); end.setHours(23,59,59,999);
+      let startStr = this.startDate();
+      let endStr = this.endDate();
+      if (!startStr || !endStr) {
+          const history = this._parsedRequests();
+          if (history.length > 0) {
+              startStr = this.getLocalYYYYMMDD(history[history.length - 1]._date);
+          } else {
+              const t = new Date();
+              t.setDate(t.getDate() - 30);
+              startStr = this.getLocalYYYYMMDD(t);
+          }
+          endStr = this.getLocalYYYYMMDD(new Date());
+          
+          const tempStart = new Date(startStr);
+          const tempEnd = new Date(endStr);
+          const diffDays = Math.round(Math.abs(tempEnd.getTime() - tempStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          if (diffDays > 90) {
+             const t = new Date(tempEnd);
+             t.setDate(t.getDate() - 89);
+             startStr = this.getLocalYYYYMMDD(t);
+          }
+      }
+
+      const start = new Date(startStr); start.setHours(0,0,0,0);
+      const end = new Date(endStr); end.setHours(23,59,59,999);
       
       const origStart = new Date(start);
       const origEnd = new Date(end);
@@ -639,20 +657,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       let chartStart = new Date(start);
       let chartEnd = new Date(end);
       let chartDays = diffDays;
-
-      // If selected range is <= 7 days, force chart to show Monday-Sunday of that week
-      if (diffDays <= 7) {
-          const dayOfWeek = start.getDay(); // 0 is Sunday, 1 is Monday
-          const diffToMonday = start.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-          chartStart = new Date(start.setDate(diffToMonday));
-          chartStart.setHours(0,0,0,0);
-          
-          chartEnd = new Date(chartStart);
-          chartEnd.setDate(chartStart.getDate() + 6);
-          chartEnd.setHours(23,59,59,999);
-          
-          chartDays = 7;
-      }
       
       const labels = [];
       const sampleData = new Array(chartDays).fill(0);
@@ -666,7 +670,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           // Format label: 'T2 15/3'
           const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
           const dayName = days[d.getDay()];
-          const key = diffDays <= 7 ? `${dayName} ${d.getDate()}/${d.getMonth() + 1}` : `${d.getDate()}/${d.getMonth() + 1}`;
+          const key = `${d.getDate()}/${d.getMonth() + 1}`;
           
           labels.push(key); 
           // Use a consistent key for mapping data
@@ -895,10 +899,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   handlePendingRequestsClick() {
       if (!this.auth.canViewSop() && !this.auth.canViewStandards()) return;
       
-      const pendingSop = this.state.requests().length;
-      const pendingStandard = this.state.standardRequests().length;
+      const counts = this.pendingCounts();
 
-      if (pendingSop === 0 && pendingStandard > 0 && this.auth.canViewStandards()) {
+      if (counts.sop > 0 && counts.std > 0) {
+          this.showPendingRequestsPopover.update(v => !v);
+      } else if (counts.sop > 0 && this.auth.canViewSop()) {
+          this.navTo('requests');
+      } else if (counts.std > 0 && this.auth.canViewStandards()) {
           this.navTo('standard-requests');
       } else if (this.auth.canViewSop()) {
           this.navTo('requests');

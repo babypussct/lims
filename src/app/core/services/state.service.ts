@@ -235,7 +235,7 @@ export class StateService implements OnDestroy {
     }
 
     // 3. Requests Listeners
-    if (this.auth.hasPermission('standard_view')) { // Hoặc quyền khác phù hợp với requests
+    if (this.auth.hasPermission('sop_view') || this.auth.hasPermission('batch_run')) {
       const reqSub = onSnapshot(query(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests'), where('status', '==', 'pending'), orderBy('timestamp', 'desc')),
         (s) => { const items: Request[] = []; s.forEach(d => items.push({ id: d.id, ...d.data() } as Request)); this.requests.set(items); }, handleError('Requests'));
       this.listeners.push(reqSub);
@@ -278,10 +278,12 @@ export class StateService implements OnDestroy {
       queryConstraints: [where('status', 'in', ['approved', 'draft', 'completed', 'pending', 'rejected'])]
     };
 
-    const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
-      this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
-    });
-    this.listeners.push(appSub);
+    if (this.auth.canViewReports()) {
+      const appSub = this.deltaSync.startSingletonListener<Request>(approvedRunsConfig, (runs) => {
+        this.approvedRequests.set(runs.filter(r => ['approved', 'draft', 'completed'].includes(r.status)));
+      });
+      this.listeners.push(appSub);
+    }
 
     // 4. Logs Listener — OPTIMIZED: migrated to DeltaSyncService singleton listener (caching 200 logs)
     const logsSyncConfig: DeltaSyncConfig = {
@@ -293,11 +295,13 @@ export class StateService implements OnDestroy {
       orderDirection: 'desc'
     };
 
-    const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
-      this.logs.set(items);
-      this.printableLogs.set(items.filter(l => l.printable === true));
-    });
-    this.listeners.push(logSub);
+    if (this.auth.canViewReports()) {
+      const logSub = this.deltaSync.startSingletonListener<Log>(logsSyncConfig, (items) => {
+        this.logs.set(items);
+        this.printableLogs.set(items.filter(l => l.printable === true));
+      });
+      this.listeners.push(logSub);
+    }
 
     // 5. Stats — OPTIMIZED: replaced onSnapshot with single getDoc
     try {
