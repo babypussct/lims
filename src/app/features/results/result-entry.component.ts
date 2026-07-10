@@ -850,12 +850,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           }
         });
 
-        // Khi tách phiếu (nhiều chunk), tự động điền maHoSo = danh sách mẫu của chunk đó
-        // Chỉ áp dụng cho SOP TBVTV Thực Phẩm — các SOP khác (vd: SOP-01) có format maHoSo riêng
-        if (chunks.length > 1 && chunk.length > 0 && key === 'tbvtv-thuc-pham-gcmsms') {
+        // SOP TBVTV Thực Phẩm: maHoSo = danh sách mẫu trong chunk
+        // Nếu user chưa nhập (trống) → tự động điền; nếu đã nhập → giữ nguyên khi 1 chunk
+        // Khi có nhiều chunk (tách phiếu) → luôn override để đúng với mỗi phiếu
+        if (key === 'tbvtv-thuc-pham-gcmsms' && chunk.length > 0) {
           if (!chunkDraft.page1Data) chunkDraft.page1Data = {};
-          chunkDraft.page1Data['maHoSo'] = chunk.join(', ');
+          const currentMaHoSo = chunkDraft.page1Data['maHoSo'] || '';
+          if (chunks.length > 1 || !currentMaHoSo.trim()) {
+            chunkDraft.page1Data['maHoSo'] = chunk.join(', ');
+          }
         }
+
 
         let prefixForReport = activeFilter === 'ALL' ? 'ALL' : activeFilter;
         if (activeFilter === 'ALL' && chunk.length > 0) {
