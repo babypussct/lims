@@ -73,6 +73,7 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly statusFilter = signal<ChecklistRequestStatus | null>(null);
   readonly checkFilter = signal<ChecklistCheckFilter>('all');
   readonly searchTerm = signal('');
+  readonly mobileFiltersOpen = signal(false);
   readonly pendingKeys = signal<Set<string>>(new Set());
 
   readonly statusOptions: StatusOption[] = [
@@ -237,6 +238,12 @@ export class DailyChecklistComponent implements OnDestroy {
     this.statusFilter() || this.checkFilter() !== 'all' || this.searchTerm().trim()
   ));
 
+  readonly activeFilterCount = computed(() =>
+    Number(Boolean(this.statusFilter())) +
+    Number(this.checkFilter() !== 'all') +
+    Number(Boolean(this.searchTerm().trim()))
+  );
+
   readonly checkedPercent = computed(() => {
     const summary = this.summary();
     return summary.assignments ? Math.round(summary.checkedAssignments / summary.assignments * 100) : 0;
@@ -268,6 +275,10 @@ export class DailyChecklistComponent implements OnDestroy {
 
   setCheckFilter(filter: ChecklistCheckFilter): void {
     this.checkFilter.set(filter);
+  }
+
+  toggleMobileFilters(): void {
+    this.mobileFiltersOpen.update(open => !open);
   }
 
   clearFilters(): void {
