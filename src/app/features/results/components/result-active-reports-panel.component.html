@@ -35,10 +35,32 @@
         <div class="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/40 rounded-lg pl-2 pr-1 py-1 hover:border-indigo-400/60 transition">
           <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Tất cả</span>
           <span class="text-[9px] text-slate-400 mx-0.5">v{{ generalReport.version }}</span>
-          <button (click)="openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl || generalReport.docsUrl, docsUrl: generalReport.docsUrl })"
-             class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer">
-            <i class="fa-solid fa-file-pdf text-[8px]"></i> PDF
+          <!-- Nút XEM PDF -->
+          <button (click)="openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl, docsUrl: generalReport.docsUrl })"
+             class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+             title="Xem PDF">
+            <i class="fa-solid fa-file-pdf text-[8px]"></i>
           </button>
+          <!-- Nút Google Docs -->
+          @if (generalReport.docsUrl) {
+            <button (click)="openDocsUrl(generalReport.docsUrl)"
+               class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+               title="Mở Google Docs">
+              <i class="fa-brands fa-google-drive text-[8px]"></i>
+            </button>
+          }
+          <!-- Nút In nhanh -->
+          @if (generalReport.pdfViewUrl || generalReport.pdfUrl) {
+            <button (click)="quickPrintReport(generalReport.pdfViewUrl || generalReport.pdfUrl)"
+               [disabled]="printService.isPrinting()"
+               class="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+               title="In nhanh">
+              <i class="fa-solid text-[8px]"
+                 [class.fa-print]="!printService.isPrinting()"
+                 [class.fa-circle-notch]="printService.isPrinting()"
+                 [class.fa-spin]="printService.isPrinting()"></i>
+            </button>
+          }
         </div>
       }
 
@@ -56,15 +78,36 @@
             }
             <!-- Sample names -->
             @if ((rep.includedSamples || []).length > 0) {
-              <span class="text-[9px] text-slate-400 dark:text-slate-500 max-w-[120px] truncate" [title]="(rep.includedSamples || []).join(', ')">
+              <span class="text-[9px] text-slate-400 dark:text-slate-500 max-w-[110px] truncate" [title]="(rep.includedSamples || []).join(', ')">
                 {{ (rep.includedSamples || []).join(', ') }}
               </span>
             }
-            <!-- PDF button -->
-            @if (rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl) {
-              <button (click)="openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl, docsUrl: rep.docsUrl })"
-                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-file-pdf text-[8px]"></i> PDF
+            <!-- Nút XEM PDF -->
+            @if (rep.pdfViewUrl || rep.pdfUrl) {
+              <button (click)="openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl, docsUrl: rep.docsUrl })"
+                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+                 title="Xem PDF">
+                <i class="fa-solid fa-file-pdf text-[8px]"></i>
+              </button>
+            }
+            <!-- Nút Google Docs -->
+            @if (rep.docsUrl) {
+              <button (click)="openDocsUrl(rep.docsUrl)"
+                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer"
+                 title="Mở Google Docs">
+                <i class="fa-brands fa-google-drive text-[8px]"></i>
+              </button>
+            }
+            <!-- Nút In nhanh -->
+            @if (rep.pdfViewUrl || rep.pdfUrl) {
+              <button (click)="quickPrintReport(rep.pdfViewUrl || rep.pdfUrl)"
+                 [disabled]="printService.isPrinting()"
+                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+                 title="In nhanh">
+                <i class="fa-solid text-[8px]"
+                   [class.fa-print]="!printService.isPrinting()"
+                   [class.fa-circle-notch]="printService.isPrinting()"
+                   [class.fa-spin]="printService.isPrinting()"></i>
               </button>
             }
           </div>

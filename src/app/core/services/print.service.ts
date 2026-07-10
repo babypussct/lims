@@ -4,6 +4,7 @@ import { CalculatorService } from './calculator.service';
 import { CalculatedItem } from '../models/sop.model';
 import { ToastService } from './toast.service';
 import { StateService } from './state.service';
+import { GoogleDriveService } from './google-drive.service';
 
 export interface PrintJob {
   sop: any; 
@@ -26,6 +27,10 @@ export interface PrintOptions {
 @Injectable({ providedIn: 'root' })
 export class PrintService {
   private toast = inject(ToastService);
+  private googleDriveService = inject(GoogleDriveService);
+
+  // Print state
+  isPrinting = signal<boolean>(false);
   
   // Loading state
   isProcessing = signal<boolean>(false);
@@ -108,7 +113,48 @@ export class PrintService {
       this.onRepublishCallback.set(null);
   }
 
-  // NOTE: Actual printing/PDF generation logic is now handled by 
+  // --- 4. QUICK PRINT (No modal required) ---
+  private getFileId(url: string | null): string | null {
+      if (!url) return null;
+      const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      return match ? match[1] : null;
+  }
+
+  async quickPrint(pdfUrl: string): Promise<void> {
+      const id = this.getFileId(pdfUrl);
+      if (!id) {
+          window.open(pdfUrl, '_blank');
+          return;
+      }
+      try {
+          this.isPrinting.set(true);
+          this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
+          await this.googleDriveService.ensureAuthenticated();
+          const blob = await this.googleDriveService.downloadFile(id);
+          const blobUrl = URL.createObjectURL(blob);
+
+          const iframe = document.createElement('iframe');
+          iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+          iframe.src = blobUrl;
+          document.body.appendChild(iframe);
+
+          iframe.onload = () => {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              setTimeout(() => {
+                  if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                  URL.revokeObjectURL(blobUrl);
+              }, 60000);
+          };
+      } catch (err: any) {
+          window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
+          this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
+      } finally {
+          this.isPrinting.set(false);
+      }
+  }
+
+  // NOTE: Actual printing/PDF generation logic is now handled by
   // PrintPreviewModalComponent using native window.print() (Direct DOM)
   // and html2canvas + jsPDF (High-Fidelity PDF Export).
   // This service now strictly manages the Preview State.

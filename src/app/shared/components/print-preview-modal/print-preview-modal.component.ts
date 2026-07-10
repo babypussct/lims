@@ -5,7 +5,6 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
 import { PrintLayoutComponent } from '../print-layout/print-layout.component';
 import { ToastService } from '../../../core/services/toast.service';
-import { GoogleDriveService } from '../../../core/services/google-drive.service';
 
 @Component({
   selector: 'app-print-preview-modal',
@@ -125,17 +124,12 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
                                 </a>
                             }
 
-                            <!-- Open in New Tab Button -->
-                            <a [href]="rawPdfUrl()" target="_blank" rel="noopener noreferrer"
-                               class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                <span>MỞ TAB MỚI</span>
-                            </a>
+
 
                             <!-- Print Button -->
-                            <button (click)="printPdf()" [disabled]="isPrinting()"
+                            <button (click)="printPdf()" [disabled]="printService.isPrinting()"
                                     class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                @if (isPrinting()) {
+                                @if (printService.isPrinting()) {
                                     <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
                                     <span>ĐANG CHUẨN BỊ...</span>
                                 } @else {
@@ -144,12 +138,7 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
                                 }
                             </button>
 
-                            <!-- Download Button -->
-                            <button (click)="downloadPdf()" 
-                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                <i class="fa-solid fa-download"></i>
-                                <span>TẢI TÀI LIỆU</span>
-                            </button>
+
 
                             <!-- Copy Link Button -->
                             <button (click)="copyPdfLink()" 
@@ -158,15 +147,7 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
                                 <span>{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LINK' }}</span>
                             </button>
 
-                            <!-- Re-generate / Re-publish Button -->
-                            @if (printService.onRepublishCallback()) {
-                                <button (click)="triggerRepublishFromModal()" 
-                                        [disabled]="isPublishing()"
-                                        class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800/40 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
-                                    <i class="fa-solid" [class.fa-arrows-rotate]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()"></i>
-                                    <span>TẠO LẠI BẢN MỚI</span>
-                                </button>
-                            }
+
 
                             <div class="h-6 w-[1px] bg-white/20 mx-1 hidden sm:block"></div>
 
@@ -232,8 +213,8 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
                             <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-500"></i>
                             <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu...</span>
                             <p class="text-xs text-slate-500 text-center max-w-md leading-relaxed">
-                                Nếu tài liệu không hiển thị do giới hạn bảo mật trình duyệt, vui lòng nhấp nút 
-                                <strong class="text-indigo-500">MỞ TAB MỚI</strong> ở phía trên góc phải để xem trực tiếp.
+                                Nếu tài liệu không hiển thị, vui lòng nhấn nút
+                                <strong class="text-indigo-500">GOOGLE DOCS</strong> ở góc trên để xem trực tiếp.
                             </p>
                         </div>
                     }
@@ -246,7 +227,6 @@ import { GoogleDriveService } from '../../../core/services/google-drive.service'
 export class PrintPreviewModalComponent {
   printService = inject(PrintService);
   toast = inject(ToastService);
-  googleDriveService = inject(GoogleDriveService);
   private sanitizer = inject(DomSanitizer);
   
   // HTML A4 Print options & levels
@@ -258,7 +238,7 @@ export class PrintPreviewModalComponent {
   isFullscreen = signal(false);
   isCopying = signal(false);
   isPublishing = signal(false);
-  isPrinting = signal(false);
+  // isPrinting now delegated to printService.isPrinting()
 
   // Safe resource computed URL
   pdfModalSafeUrl = computed(() => {
@@ -409,53 +389,8 @@ export class PrintPreviewModalComponent {
 
   async printPdf() {
       const url = this.printService.pdfUrl();
-      const id = this.getFileId(url);
-      if (id) {
-          try {
-              this.isPrinting.set(true);
-              this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
-              
-              // Tự động xác thực tài khoản Google Drive (tái sử dụng token nếu có, hoặc hiển thị đăng nhập)
-              await this.googleDriveService.ensureAuthenticated();
-              
-              // Tải tệp và in ẩn trực tiếp tại trang
-              const blob = await this.googleDriveService.downloadFile(id);
-              const blobUrl = URL.createObjectURL(blob);
-              
-              const iframe = document.createElement('iframe');
-              iframe.style.position = 'fixed';
-              iframe.style.right = '0';
-              iframe.style.bottom = '0';
-              iframe.style.width = '0';
-              iframe.style.height = '0';
-              iframe.style.border = '0';
-              iframe.src = blobUrl;
-              
-              document.body.appendChild(iframe);
-              
-              iframe.onload = () => {
-                  iframe.contentWindow?.focus();
-                  iframe.contentWindow?.print();
-                  
-                  setTimeout(() => {
-                      document.body.removeChild(iframe);
-                      URL.revokeObjectURL(blobUrl);
-                  }, 60000);
-              };
-              
-              this.isPrinting.set(false);
-          } catch (err: any) {
-              console.error('[Print] Direct printing failed, falling back to preview tab:', err);
-              this.isPrinting.set(false);
-              
-              // Fallback an toàn nếu người dùng đóng cửa sổ đăng nhập hoặc bị chặn popup
-              window.open(`https://drive.google.com/file/d/${id}/preview`, '_blank');
-              this.toast.show('Đang mở trang xem trước. Vui lòng nhấn biểu tượng Máy in ở góc trên bên phải.', 'info');
-          }
-      } else {
-          // Fallback cho liên kết không phải Google Drive
-          window.open(this.rawPdfUrl(), '_blank');
-          this.toast.show('Đang mở tài liệu. Vui lòng nhấn Ctrl + P để in.', 'info');
+      if (url) {
+          await this.printService.quickPrint(url);
       }
   }
 
