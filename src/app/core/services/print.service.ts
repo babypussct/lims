@@ -29,8 +29,9 @@ export class PrintService {
   private toast = inject(ToastService);
   private googleDriveService = inject(GoogleDriveService);
 
-  // Print state
+  // Operations state
   isPrinting = signal<boolean>(false);
+  isDownloading = signal<boolean>(false);
   
   // Loading state
   isProcessing = signal<boolean>(false);
@@ -151,6 +152,45 @@ export class PrintService {
           this.toast.show('Đang mở trang xem trước. Nhấn biểu tượng Máy in để in.', 'info');
       } finally {
           this.isPrinting.set(false);
+      }
+  }
+
+  // --- 5. QUICK DOWNLOAD (Silent background download) ---
+  async quickDownload(pdfUrl: string, fileName: string = 'document.pdf'): Promise<void> {
+      const id = this.getFileId(pdfUrl);
+      if (!id) {
+          window.open(pdfUrl, '_blank');
+          return;
+      }
+      try {
+          this.isDownloading.set(true);
+          this.toast.show('Đang tải dữ liệu, vui lòng đợi...', 'info');
+          
+          await this.googleDriveService.ensureAuthenticated();
+          const blob = await this.googleDriveService.downloadFile(id);
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // Tạo thẻ <a> ảo để trigger download
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = blobUrl;
+          a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+          
+          document.body.appendChild(a);
+          a.click();
+          
+          // Cleanup
+          setTimeout(() => {
+              if (document.body.contains(a)) document.body.removeChild(a);
+              URL.revokeObjectURL(blobUrl);
+          }, 1000);
+          
+      } catch (err: any) {
+          console.error('[Download] Failed to download silently:', err);
+          this.toast.show('Tải thất bại, chuyển sang tab mới...', 'warning');
+          window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');
+      } finally {
+          this.isDownloading.set(false);
       }
   }
 

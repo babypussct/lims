@@ -138,7 +138,17 @@ import { ToastService } from '../../../core/services/toast.service';
                                 }
                             </button>
 
-
+                            <!-- Download Button -->
+                            <button (click)="downloadPdf()" [disabled]="printService.isDownloading()"
+                                    class="px-3.5 py-2 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-xl transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer">
+                                @if (printService.isDownloading()) {
+                                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+                                    <span>ĐANG TẢI...</span>
+                                } @else {
+                                    <i class="fa-solid fa-download"></i>
+                                    <span>TẢI TÀI LIỆU</span>
+                                }
+                            </button>
 
                             <!-- Copy Link Button -->
                             <button (click)="copyPdfLink()" 
@@ -394,12 +404,14 @@ export class PrintPreviewModalComponent {
       }
   }
 
-  downloadPdf() {
-      const id = this.getFileId(this.printService.pdfUrl());
-      if (id) {
-          window.open(`https://drive.google.com/uc?export=download&id=${id}`, '_blank');
-      } else {
-          this.toast.show('Không thể tải: Thiếu File ID', 'error');
+  async downloadPdf() {
+      const url = this.printService.pdfUrl();
+      const title = this.printService.pdfTitle();
+      const version = this.printService.pdfVersion();
+      if (url) {
+          // Gợi ý tên file: Tiêu_đề_v[Version].pdf
+          const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
+          await this.printService.quickDownload(url, fileName);
       }
   }
 
