@@ -263,9 +263,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const d = this.draft();
     if (!r || !d) return { published: 0, total: 0, percent: 0, unpublishedSamples: [] as string[] };
 
-    const allSelected = (r.sampleList || []).filter((s: string) => {
-      return (d.resultData?.[s] || {})['selected'] !== false;
-    });
+    // Tổng mẫu = TẤT CẢ mẫu thực trong mẻ (loại trừ QC nội bộ như QC_SPIKE, QC_FINAL…)
+    // Không lọc theo `selected` để tránh hiển thị sai tiến độ khi đang filter prefix
+    const allSamples = (r.sampleList || []).filter((s: string) => !s.startsWith('QC_'));
 
     const publishedSamples = new Set<string>();
     const reports = d.reports || {};
@@ -276,24 +276,24 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
     // Báo cáo chung (non-prefix)
     if (d.pdfUrl) {
-      allSelected.forEach((s: string) => publishedSamples.add(s));
+      allSamples.forEach((s: string) => publishedSamples.add(s));
     }
 
-    const publishedCount = allSelected.filter((s: string) => publishedSamples.has(s)).length;
-    const unpublishedSamples = allSelected.filter((s: string) => !publishedSamples.has(s));
+    const publishedCount = allSamples.filter((s: string) => publishedSamples.has(s)).length;
+    const unpublishedSamples = allSamples.filter((s: string) => !publishedSamples.has(s));
 
     return {
       published: publishedCount,
-      total: allSelected.length,
-      percent: allSelected.length > 0 ? Math.round(publishedCount / allSelected.length * 100) : 0,
+      total: allSamples.length,
+      percent: allSamples.length > 0 ? Math.round(publishedCount / allSamples.length * 100) : 0,
       unpublishedSamples
     };
   });
 
   publishedSampleSet = computed(() => {
     const progress = this.samplePublishProgress();
-    const allSelected = (this.run()?.sampleList || []);
-    const published = new Set<string>(allSelected.filter((s: string) => !progress.unpublishedSamples.includes(s)));
+    const allSamples = (this.run()?.sampleList || []).filter((s: string) => !s.startsWith('QC_'));
+    const published = new Set<string>(allSamples.filter((s: string) => !progress.unpublishedSamples.includes(s)));
     return published;
   });
 

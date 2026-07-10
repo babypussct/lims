@@ -1,97 +1,85 @@
-<!-- Danh sách báo cáo đang hoạt động -->
+<!-- Báo cáo đang hoạt động + Tiến độ — gộp thành 1 section compact -->
 @if (hasAnyReports) {
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 p-5 transition-all duration-300">
-    <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-4 flex items-center gap-2">
-      <i class="fa-solid fa-file-invoice text-indigo-500"></i> Các báo cáo đang hoạt động
-    </h4>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 px-4 py-3 transition-all duration-300">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Row: tiêu đề + tiến độ -->
+    <div class="flex items-center justify-between gap-3 mb-2.5">
+      <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+        <i class="fa-solid fa-file-invoice text-indigo-400"></i> Các báo cáo
+      </h4>
 
-      <!-- Báo cáo chung (Full batch report) -->
+      <!-- Progress inline -->
+      @if (draftStatus !== 'completed') {
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500"
+                 [class.bg-emerald-500]="progress.percent === 100"
+                 [class.bg-fuchsia-500]="progress.percent < 100"
+                 [style.width.%]="progress.percent">
+            </div>
+          </div>
+          <span class="text-[10px] font-black tabular-nums shrink-0"
+                [class.text-emerald-600]="progress.percent === 100"
+                [class.text-amber-600]="progress.percent < 100">
+            {{ progress.published }}/{{ progress.total }}
+          </span>
+        </div>
+      }
+    </div>
+
+    <!-- Chips row: tất cả báo cáo -->
+    <div class="flex flex-wrap gap-1.5">
+
+      <!-- Báo cáo chung -->
       @if (generalReport) {
-        <div class="bg-indigo-50/10 dark:bg-indigo-950/5 border border-indigo-150/40 dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-3.5 hover:shadow-xs transition">
-          <div class="min-w-0">
-            <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/20 text-[9px] font-black uppercase tracking-wider">Tất cả mẫu</span>
-            <span class="text-[11px] font-bold text-slate-650 dark:text-slate-400 block mt-1">Phiên bản: v{{ generalReport.version }}</span>
-            <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ generalReport.publishedBy }}</span>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button (click)="openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl || generalReport.docsUrl, docsUrl: generalReport.docsUrl })"
-               class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-955/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
-              <i class="fa-solid fa-file-pdf"></i> XEM PDF
-            </button>
-          </div>
+        <div class="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/40 rounded-lg pl-2 pr-1 py-1 hover:border-indigo-400/60 transition">
+          <span class="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Tất cả</span>
+          <span class="text-[9px] text-slate-400 mx-0.5">v{{ generalReport.version }}</span>
+          <button (click)="openPdf.emit({ pdfUrl: generalReport.pdfViewUrl || generalReport.pdfUrl || generalReport.docsUrl, docsUrl: generalReport.docsUrl })"
+             class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer">
+            <i class="fa-solid fa-file-pdf text-[8px]"></i> PDF
+          </button>
         </div>
       }
 
-      <!-- Báo cáo theo phân nhóm (Prefix reports) — hỗ trợ nhiều chunk cùng prefix -->
+      <!-- Báo cáo theo prefix + chunk -->
       @for (pref of prefixes; track pref) {
         @for (rep of getPrefixReports(pref); track rep.id || rep.pdfCreatedAt; let repIdx = $index) {
-          <div class="bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-150/40 dark:border-fuchsia-900/30 rounded-2xl p-4 flex items-center justify-between gap-3.5 hover:shadow-xs transition">
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="px-2 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400 border border-fuchsia-200/20 text-[9px] font-black uppercase tracking-wider">
-                  {{ pref === '' ? 'Không tiền tố' : 'Tiền tố ' + pref }}
-                </span>
-                @if (getPrefixReports(pref).length > 1) {
-                  <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/30 text-[9px] font-black">
-                    Phiếu {{ repIdx + 1 }}/{{ getPrefixReports(pref).length }}
-                  </span>
-                }
-              </div>
-              <span class="text-[10px] text-slate-450 dark:text-slate-500 block mt-1 truncate">
-                {{ (rep.includedSamples || []).join(', ') || 'v' + (rep.version || 1) }}
+          <div class="flex items-center gap-1 bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200/50 dark:border-fuchsia-800/40 rounded-lg pl-2 pr-1 py-1 hover:border-fuchsia-400/60 transition">
+            <!-- Prefix badge -->
+            <span class="text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-wide">
+              {{ pref === '' ? 'N/A' : pref }}
+            </span>
+            <!-- Chunk index nếu có nhiều hơn 1 -->
+            @if (getPrefixReports(pref).length > 1) {
+              <span class="text-[8px] text-amber-600 dark:text-amber-400 font-bold">({{ repIdx + 1 }})</span>
+            }
+            <!-- Sample names -->
+            @if ((rep.includedSamples || []).length > 0) {
+              <span class="text-[9px] text-slate-400 dark:text-slate-500 max-w-[120px] truncate" [title]="(rep.includedSamples || []).join(', ')">
+                {{ (rep.includedSamples || []).join(', ') }}
               </span>
-              <span class="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 truncate">Người tạo: {{ rep.publishedBy || 'System' }}</span>
-            </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              @if (rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl) {
-                <button (click)="openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl, docsUrl: rep.docsUrl })"
-                   class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-655 dark:bg-red-955/20 dark:hover:bg-red-900/40 dark:text-red-455 border border-red-100/50 dark:border-red-800/30 rounded-xl transition active:scale-95 text-xs font-bold flex items-center gap-1 no-underline cursor-pointer">
-                  <i class="fa-solid fa-file-pdf"></i> XEM PDF
-                </button>
-              }
-            </div>
+            }
+            <!-- PDF button -->
+            @if (rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl) {
+              <button (click)="openPdf.emit({ pdfUrl: rep.pdfViewUrl || rep.pdfUrl || rep.docsUrl, docsUrl: rep.docsUrl })"
+                 class="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded text-[9px] font-bold transition active:scale-95 cursor-pointer">
+                <i class="fa-solid fa-file-pdf text-[8px]"></i> PDF
+              </button>
+            }
           </div>
         }
       }
 
     </div>
-  </div>
-}
 
-<!-- Progress Bar -->
-@if (hasAnyReports && draftStatus !== 'completed') {
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl shadow-sm mb-6 p-5">
-    <div class="flex items-center justify-between mb-3">
-      <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-        <i class="fa-solid fa-chart-pie text-fuchsia-500"></i>
-        Tiến độ xuất báo cáo
-      </h4>
-      <span class="text-xs font-black tabular-nums"
-            [class.text-emerald-600]="progress.percent === 100"
-            [class.text-amber-600]="progress.percent < 100">
-        {{ progress.published }}/{{ progress.total }} mẫu
-      </span>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-      <div class="h-full rounded-full transition-all duration-500"
-           [class.bg-emerald-500]="progress.percent === 100"
-           [class.bg-fuchsia-500]="progress.percent < 100"
-           [style.width.%]="progress.percent">
-      </div>
-    </div>
-
-    <!-- Danh sách mẫu chưa xuất -->
-    @if (progress.unpublishedSamples.length > 0) {
-      <p class="text-[10px] text-slate-400 mt-2 font-medium">
-        Chưa có báo cáo:
-        <span class="font-mono font-bold text-amber-600 dark:text-amber-400">
-          {{ progress.unpublishedSamples.join(', ') }}
-        </span>
+    <!-- Danh sách mẫu chưa xuất (compact) -->
+    @if (progress.unpublishedSamples.length > 0 && draftStatus !== 'completed') {
+      <p class="text-[9px] text-slate-400 mt-2 leading-relaxed">
+        <span class="font-semibold">Chưa xuất:</span>
+        <span class="font-mono text-amber-600 dark:text-amber-400 ml-1">{{ progress.unpublishedSamples.join(', ') }}</span>
       </p>
     }
+
   </div>
 }
