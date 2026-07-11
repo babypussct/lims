@@ -173,25 +173,28 @@ interface AvailableDateOption {
 
       /* Board body (content area) */
       body.daily-checklist-printing .cl-board-body {
+        display: block !important;
         padding: 20px 24px !important;
-        gap: 16px !important;
-      }
-
-      body.daily-checklist-printing .cl-board-body > * + * {
-        margin-top: 16px !important;
       }
 
       /* SOP sections */
       body.daily-checklist-printing .cl-sop-section {
-        break-inside: auto;
-        border-color: #e2e8f0 !important;
-        border-radius: 10px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        margin-bottom: 16px !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        background-color: #ffffff !important;
       }
 
       body.daily-checklist-printing .cl-sop-heading {
         break-after: avoid;
         page-break-after: avoid;
         padding: 10px 16px !important;
+        background-color: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
       }
 
       body.daily-checklist-printing .cl-sop-heading > div:first-child {
@@ -223,23 +226,15 @@ interface AvailableDateOption {
         line-height: 1.5 !important;
       }
 
-      /* Target table printing styles */
-      body.daily-checklist-printing .cl-work-group table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        margin-top: 8px !important;
-      }
-
-      body.daily-checklist-printing .cl-work-group th {
-        font-size: 10px !important;
-        border-bottom: 1px solid #cbd5e1 !important;
-        padding-bottom: 6px !important;
-      }
-
-      body.daily-checklist-printing .cl-work-group td {
+      /* Target badges printing style */
+      body.daily-checklist-printing .cl-work-group .flex-wrap span {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
         font-size: 11px !important;
-        padding: 6px 0 !important;
-        border-bottom: 1px solid #f1f5f9 !important;
+        display: inline-block !important;
       }
 
       /* Document footer (print-only) */
