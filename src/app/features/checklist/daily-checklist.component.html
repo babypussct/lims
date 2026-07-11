@@ -1,39 +1,39 @@
 <div class="cl-page-shell h-full min-h-0 flex flex-col font-sans text-slate-800 dark:text-slate-200 overflow-hidden">
 
-  <!-- ===== SCREEN-ONLY HEADER ===== -->
-  <header class="cl-screen-only shrink-0 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+  <!-- ===== SCREEN-ONLY HEADER (Compact) ===== -->
+  <header class="cl-screen-only shrink-0 mb-2.5 bg-white dark:bg-slate-800 p-2.5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
 
     <!-- Row 1: Icon + Title + Date nav + Print -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
 
       <!-- Left: Icon + Title -->
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
-          <i class="fa-solid fa-clipboard-check text-base" aria-hidden="true"></i>
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
+          <i class="fa-solid fa-clipboard-check text-sm" aria-hidden="true"></i>
         </div>
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng Check Mẫu Ngày</h1>
-            <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-base font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng Check Mẫu Ngày</h1>
+            <span class="hidden sm:inline-flex px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
           </div>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Chỉ tiêu cần kiểm và nhóm mẫu áp dụng từ các mẻ đã phê duyệt</p>
+          <p class="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Chỉ tiêu cần kiểm và nhóm mẫu áp dụng từ các mẻ đã phê duyệt</p>
         </div>
       </div>
 
-      <!-- Right: Date navigation + Print button -->
-      <div class="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto">
+      <!-- Right: Date navigation + Print button (More Compact) -->
+      <div class="flex items-center gap-1 w-full md:w-auto">
         <button type="button" (click)="moveAvailableDate('older')" [disabled]="!hasOlderDate()"
                 aria-label="Ngày có dữ liệu cũ hơn" title="Ngày có dữ liệu cũ hơn"
-                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
-          <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
+                class="w-8.5 h-8.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+          <i class="fa-solid fa-chevron-left text-[10px]" aria-hidden="true"></i>
         </button>
 
         <label class="relative flex-1 md:flex-none min-w-0">
           <span class="sr-only">Ngày có dữ liệu</span>
-          <i class="fa-regular fa-calendar absolute inset-y-0 left-3 hidden sm:flex items-center text-blue-500 text-sm pointer-events-none" aria-hidden="true"></i>
+          <i class="fa-regular fa-calendar absolute inset-y-0 left-2.5 hidden sm:flex items-center text-blue-500 text-xs pointer-events-none" aria-hidden="true"></i>
           <select [ngModel]="selectedDate()" (ngModelChange)="onDateChange($event)"
                   [disabled]="availableDateOptions().length === 0" aria-label="Ngày có dữ liệu"
-                  class="w-full md:w-56 h-10 pl-3 sm:pl-9 pr-7 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200 disabled:opacity-50">
+                  class="w-full md:w-48 h-8.5 pl-2.5 sm:pl-8 pr-6 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200 disabled:opacity-50">
             @if (availableDateOptions().length === 0) {
               <option value="">Chưa có ngày dữ liệu</option>
             }
@@ -45,31 +45,31 @@
 
         <button type="button" (click)="moveAvailableDate('newer')" [disabled]="!hasNewerDate()"
                 aria-label="Ngày có dữ liệu mới hơn" title="Ngày có dữ liệu mới hơn"
-                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
-          <i class="fa-solid fa-chevron-right text-xs" aria-hidden="true"></i>
+                class="w-8.5 h-8.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+          <i class="fa-solid fa-chevron-right text-[10px]" aria-hidden="true"></i>
         </button>
 
         <button type="button" (click)="printDocument()" [disabled]="boardSopGroups().length === 0"
                 aria-label="In bảng đang xem" title="In bảng đang xem"
-                class="w-10 sm:w-auto h-10 sm:px-4 rounded-xl bg-blue-600 text-white text-xs font-black shadow-sm hover:bg-blue-700 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-blue-400 shrink-0 transition-colors">
-          <i class="fa-solid fa-print sm:mr-1.5" aria-hidden="true"></i>
-          <span class="hidden sm:inline">In bảng đang xem</span>
+                class="w-8.5 sm:w-auto h-8.5 sm:px-3 rounded-lg bg-blue-600 text-white text-xs font-black shadow-sm hover:bg-blue-700 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-blue-400 shrink-0 transition-colors flex items-center justify-center gap-1">
+          <i class="fa-solid fa-print" aria-hidden="true"></i>
+          <span class="hidden sm:inline">In bảng</span>
         </button>
       </div>
     </div>
 
-    <!-- Row 2: Filter bar -->
-    <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(180px,240px)_auto] gap-2">
+    <!-- Row 2: Filter bar (Compact height) -->
+    <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(160px,220px)_auto] gap-1.5">
       <label class="relative min-w-0">
         <span class="sr-only">Tìm mã mẫu, SOP hoặc chỉ tiêu</span>
-        <i class="fa-solid fa-magnifying-glass absolute inset-y-0 left-3 flex items-center text-slate-400 text-xs pointer-events-none" aria-hidden="true"></i>
+        <i class="fa-solid fa-magnifying-glass absolute inset-y-0 left-2.5 flex items-center text-slate-400 text-xs pointer-events-none" aria-hidden="true"></i>
         <input type="search" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
                placeholder="Tìm mã mẫu, SOP hoặc chỉ tiêu..."
-               class="w-full h-10 pl-9 pr-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200" />
+               class="w-full h-8.5 pl-8 pr-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200" />
       </label>
 
       <select [ngModel]="sopFilter()" (ngModelChange)="sopFilter.set($event)" aria-label="Lọc theo SOP"
-              class="h-10 min-w-0 px-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-slate-700 dark:text-slate-200">
+              class="h-8.5 min-w-0 px-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg outline-none focus:ring-2 focus:ring-blue-500/30 text-slate-700 dark:text-slate-200">
         <option value="all">Tất cả SOP</option>
         @for (sop of sopOptions(); track sop.id) {
           <option [value]="sop.id">{{sop.name}}</option>
@@ -78,7 +78,7 @@
 
       @if (activeFilterCount() > 0) {
         <button type="button" (click)="clearFilters()"
-                class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap">
+                class="h-8.5 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap">
           <i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Đặt lại
         </button>
       }
@@ -86,28 +86,28 @@
   </header>
 
   <!-- ===== MAIN SCROLL AREA ===== -->
-  <main class="cl-board-scroll flex-1 min-h-0 overflow-y-auto p-0.5 sm:p-1 custom-scrollbar">
+  <main class="cl-board-scroll flex-1 min-h-0 overflow-y-auto p-0.5 custom-scrollbar">
 
     @if (dayBatches().length === 0) {
       <!-- Empty state A: Chưa có dữ liệu phê duyệt -->
-      <section class="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-20 text-center px-5 cl-board-enter">
-        <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 flex items-center justify-center mb-4">
-          <i class="fa-regular fa-calendar-xmark text-2xl" aria-hidden="true"></i>
+      <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-16 text-center px-4 cl-board-enter">
+        <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 flex items-center justify-center mb-3">
+          <i class="fa-regular fa-calendar-xmark text-xl" aria-hidden="true"></i>
         </div>
-        <h2 class="text-base font-black text-slate-700 dark:text-slate-200">Chưa có dữ liệu đã phê duyệt</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mt-1">Hệ thống sẽ tự mở ngày gần nhất ngay khi có mẻ phù hợp.</p>
+        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chưa có dữ liệu đã phê duyệt</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">Hệ thống sẽ tự mở ngày gần nhất ngay khi có mẻ phù hợp.</p>
       </section>
 
     } @else if (boardSopGroups().length === 0) {
       <!-- Empty state B: Không tìm thấy khi có filter -->
-      <section class="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-16 text-center px-5 cl-board-enter">
-        <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-300 dark:text-blue-400 flex items-center justify-center mb-3">
-          <i class="fa-solid fa-magnifying-glass text-xl" aria-hidden="true"></i>
+      <section class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center py-12 text-center px-4 cl-board-enter">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-300 dark:text-blue-400 flex items-center justify-center mb-3">
+          <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i>
         </div>
-        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Không tìm thấy nhóm mẫu phù hợp</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Thử mã mẫu, tên SOP hoặc tên chỉ tiêu khác.</p>
+        <h2 class="text-xs font-black text-slate-700 dark:text-slate-200">Không tìm thấy nhóm mẫu phù hợp</h2>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Thử mã mẫu, tên SOP hoặc tên chỉ tiêu khác.</p>
         <button type="button" (click)="clearFilters()"
-                class="mt-4 h-9 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
+                class="mt-3 h-8 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
           Hiển thị toàn bộ
         </button>
       </section>
@@ -116,7 +116,7 @@
       <!-- ===== DATA VIEW ===== -->
       <article class="cl-board-root cl-board-enter" [class.print-compact]="boardSummary().groups > 4 || boardSummary().targets > 12">
 
-        <!-- PRINT-ONLY: Document header (ẩn trên màn hình, hiện khi in) -->
+        <!-- PRINT-ONLY: Document header -->
         <header class="cl-doc-header cl-print-only border-b border-blue-100">
           <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div class="min-w-0">
@@ -147,104 +147,80 @@
           </div>
         </header>
 
-        <!-- SCREEN-ONLY: Stats chips bar -->
-        <div class="cl-screen-only mb-3 flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
-            <span class="text-lg font-black tabular-nums text-blue-700 dark:text-blue-300">{{boardSummary().samples}}</span>
-            <span class="text-[10px] font-bold uppercase tracking-wide text-blue-500 dark:text-blue-400">Mẫu</span>
+        <!-- SCREEN-ONLY: Stats chips bar (Compact) -->
+        <div class="cl-screen-only mb-2 flex flex-wrap items-center gap-1.5">
+          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+            <span class="text-sm font-black tabular-nums text-blue-700 dark:text-blue-300">{{boardSummary().samples}}</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide text-blue-500 dark:text-blue-400">Mẫu</span>
           </div>
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
-            <span class="text-lg font-black tabular-nums text-indigo-700 dark:text-indigo-300">{{boardSummary().sops}}</span>
-            <span class="text-[10px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">SOP</span>
+          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+            <span class="text-sm font-black tabular-nums text-indigo-700 dark:text-indigo-300">{{boardSummary().sops}}</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">SOP</span>
           </div>
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
-            <span class="text-lg font-black tabular-nums text-sky-700 dark:text-sky-300">{{boardSummary().targets}}</span>
-            <span class="text-[10px] font-bold uppercase tracking-wide text-sky-500 dark:text-sky-400">Chỉ tiêu</span>
+          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
+            <span class="text-sm font-black tabular-nums text-sky-700 dark:text-sky-300">{{boardSummary().targets}}</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide text-sky-500 dark:text-sky-400">Chỉ tiêu</span>
           </div>
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
-            <span class="text-lg font-black tabular-nums text-emerald-700 dark:text-emerald-300">{{boardSummary().groups}}</span>
-            <span class="text-[10px] font-bold uppercase tracking-wide text-emerald-500 dark:text-emerald-400">Nhóm</span>
+          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+            <span class="text-sm font-black tabular-nums text-emerald-700 dark:text-emerald-300">{{boardSummary().groups}}</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide text-emerald-500 dark:text-emerald-400">Nhóm</span>
           </div>
         </div>
 
-        <!-- SOP sections list -->
-        <div class="cl-board-body space-y-4">
+        <!-- SOP sections list (Kanban Grid) -->
+        <div class="cl-board-body grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           @for (sop of boardSopGroups(); track sop.sopId; let sopIndex = $index) {
-            <section class="cl-sop-section bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <section class="cl-sop-section bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between overflow-hidden">
 
-              <!-- SOP Heading -->
-              <div class="cl-sop-heading flex items-start sm:items-center gap-3 px-4 py-3 sm:px-5 border-b border-slate-100 dark:border-slate-700">
-                <div class="w-9 h-9 rounded-xl bg-slate-800 dark:bg-blue-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shadow-sm shrink-0">{{sopIndex + 1}}</div>
-                <div class="min-w-0 flex-1">
-                  <h3 class="text-sm font-black text-slate-900 dark:text-white leading-snug">{{sop.sopName}}</h3>
-                  <p class="mt-0.5 text-[11px] font-semibold text-slate-400">
-                    {{sop.uniqueSamples}} mẫu · {{sop.uniqueTargets}} chỉ tiêu
-                    @if (sop.groups.length > 1) { <span> · {{sop.groups.length}} tập áp dụng</span> }
-                  </p>
+              <!-- SOP Card Header (Dense) -->
+              <div class="cl-sop-heading shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-slate-50/80 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-6 h-6 rounded bg-slate-800 dark:bg-blue-600 text-white flex items-center justify-center text-[10px] font-black shrink-0">{{sopIndex + 1}}</div>
+                  <h3 class="text-xs font-black text-slate-800 dark:text-slate-200 truncate" [title]="sop.sopName">{{sop.sopName}}</h3>
                 </div>
+                <span class="shrink-0 text-[9px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50">
+                  {{sop.uniqueSamples}}M • {{sop.uniqueTargets}}CT
+                </span>
               </div>
 
-              <!-- Work groups (chia theo tập chỉ tiêu) -->
-              <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
+              <!-- Work groups list inside card (Dense & Flat) -->
+              <div class="p-3 space-y-2.5 flex-1 overflow-y-auto custom-scrollbar min-h-0 divide-y divide-dashed divide-slate-100 dark:divide-slate-700/50">
                 @for (group of sop.groups; track group.signature; let groupIndex = $index) {
-                  <div class="cl-work-group">
-
-                    <!-- Sub-header nếu có nhiều tập chỉ tiêu -->
+                  <div class="cl-work-group text-[11px] pt-2.5 first:pt-0">
+                    
                     @if (sop.groups.length > 1) {
-                      <div class="px-4 sm:px-5 py-2 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between gap-3">
-                        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600 dark:text-blue-300">Tập chỉ tiêu {{groupIndex + 1}}</span>
-                        <span class="text-[10px] font-bold text-slate-400">{{group.sampleIds.length}} mẫu áp dụng</span>
+                      <div class="text-[8px] font-black uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1">
+                        Tập chỉ tiêu {{groupIndex + 1}} ({{group.sampleIds.length}} mẫu)
                       </div>
                     }
 
-                    <!-- LIMS System Style: Flat list of samples & targets -->
-                    <div class="p-4 sm:p-5 flex flex-col gap-3">
-                      
-                      <!-- Khối mẫu áp dụng (style y hệt request-list) -->
-                      <div class="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/80 flex items-start gap-2 shadow-sm">
-                        <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5" aria-hidden="true"></i>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Mẫu áp dụng ({{group.sampleIds.length}} mẫu)</div>
-                          <span class="break-words font-mono font-bold text-slate-700 dark:text-slate-350 select-all leading-normal">{{group.formattedSamples}}</span>
-                        </div>
-                      </div>
-
-                      <!-- Khối chỉ tiêu (style bảng tối giản, phẳng) -->
-                      @if (group.targetNames.length === 0) {
-                        <div class="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 px-3 py-2.5 text-xs font-bold">
-                          Chưa xác định chỉ tiêu cho nhóm mẫu này.
-                        </div>
-                      } @else {
-                        <div class="bg-slate-50/50 dark:bg-slate-900/30 rounded-xl p-3 border border-slate-100 dark:border-slate-700/80">
-                          <table class="w-full text-left text-xs">
-                            <thead>
-                              <tr class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-wider border-b border-slate-200/50 dark:border-slate-700/50">
-                                <th class="pb-1.5 w-12">STT</th>
-                                <th class="pb-1.5">Tên chỉ tiêu cần kiểm</th>
-                              </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 font-bold">
-                              @for (targetName of group.targetNames; track targetName; let targetIndex = $index) {
-                                <tr>
-                                  <td class="py-1.5 text-slate-400 dark:text-slate-500 tabular-nums">#{{targetIndex + 1}}</td>
-                                  <td class="py-1.5 text-slate-700 dark:text-slate-200">{{targetName}}</td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-                      }
+                    <!-- Mẫu áp dụng (font-mono dạng phẳng) -->
+                    <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words mb-1">
+                      <span class="text-slate-400 dark:text-slate-500 font-sans select-none text-[10px]">Mẫu:</span> {{group.formattedSamples}}
                     </div>
+
+                    <!-- Chỉ tiêu cần kiểm (dòng text phân cách bằng dấu •) -->
+                    @if (group.targetNames.length === 0) {
+                      <div class="text-amber-600 dark:text-amber-400 font-semibold italic text-[10px]">Chưa cấu hình chỉ tiêu</div>
+                    } @else {
+                      <div class="text-slate-500 dark:text-slate-400 leading-normal">
+                        <span class="text-slate-400 dark:text-slate-500 font-sans font-semibold select-none text-[10px]">CT:</span>
+                        @for (targetName of group.targetNames; track targetName; let targetIndex = $index; let last = $last) {
+                          <span class="font-semibold">{{targetName}}</span>@if (!last) { <span class="text-slate-300 dark:text-slate-650 mx-1 font-bold">•</span> }
+                        }
+                      </div>
+                    }
 
                   </div>
                 }
               </div>
+
             </section>
           }
         </div>
 
         <!-- SCREEN-ONLY: Footer note -->
-        <div class="cl-screen-only mt-3 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] font-semibold text-slate-400">
+        <div class="cl-screen-only mt-2.5 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[9px] font-semibold text-slate-400">
           <span><i class="fa-solid fa-shield-check mr-1.5 text-emerald-500" aria-hidden="true"></i>Dữ liệu tổng hợp từ các mẻ đã qua phê duyệt.</span>
           <span>Mỗi mẫu chỉ xuất hiện một lần trong cùng SOP</span>
         </div>
