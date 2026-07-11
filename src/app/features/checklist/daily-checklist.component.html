@@ -1,15 +1,15 @@
-<div class="flex-1 min-h-0 flex flex-col bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 overflow-hidden">
-  <header class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-5 lg:px-6 py-2 sm:py-4 shadow-sm z-10">
+<div class="h-full min-h-0 flex flex-col fade-in relative font-sans text-slate-800 dark:text-slate-200 overflow-hidden">
+  <header class="shrink-0 mb-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 sm:p-4 shadow-sm z-10">
     <div class="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
       <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center border border-indigo-100 dark:border-indigo-500/20 shrink-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
           <i class="fa-solid fa-list-check text-indigo-600 dark:text-indigo-400 text-lg" aria-hidden="true"></i>
         </div>
         <div class="min-w-0">
-          <h1 class="text-base sm:text-xl font-semibold text-indigo-600 dark:text-indigo-400 tracking-tight leading-tight truncate">
+          <h1 class="text-base sm:text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">
             Bảng Check Mẫu Ngày
           </h1>
-          <p class="hidden sm:block text-xs text-slate-500 dark:text-slate-400">
+          <p class="hidden sm:block text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
             Lọc theo hậu tố 2 số cuối của mã mẫu
           </p>
         </div>
@@ -179,7 +179,7 @@
     }
   </header>
 
-  <main class="flex-1 min-h-0 overflow-y-auto p-2 sm:p-5 lg:p-6 scroll-smooth custom-scrollbar">
+  <main class="flex-1 min-h-0 overflow-y-auto p-2 lg:p-1 scroll-smooth custom-scrollbar">
     <div class="max-w-6xl mx-auto space-y-3 sm:space-y-4">
       @if (checklist.error()) {
         <div role="alert" class="flex items-start gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-sm text-amber-800 dark:text-amber-200">
