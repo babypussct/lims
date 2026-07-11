@@ -71,12 +71,24 @@ interface AvailableDateOption {
     @media print {
       @page { size: A4 landscape; margin: 8mm; }
 
-      html, body { background: white !important; }
+      html, body {
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        overflow: visible !important;
+      }
       body.daily-checklist-printing {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-      body.daily-checklist-printing #print-container,
+      body.daily-checklist-printing #print-container {
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        z-index: auto !important;
+      }
       body.daily-checklist-printing #print-container * {
         visibility: visible !important;
       }
