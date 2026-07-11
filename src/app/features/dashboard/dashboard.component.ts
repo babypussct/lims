@@ -52,10 +52,12 @@ interface KanbanColumn {
     history: BatchHistoryItem[]; // Detailed history for modal
 }
 
+import { DailyChecklistComponent } from '../checklist/daily-checklist.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, FormsModule, DateRangeFilterComponent], 
+  imports: [CommonModule, SkeletonComponent, FormsModule, DateRangeFilterComponent, DailyChecklistComponent], 
   templateUrl: './dashboard.component.html',
   styles: []
 })

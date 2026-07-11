@@ -215,18 +215,6 @@ interface AvailableDateOption {
         break-inside: avoid;
         page-break-inside: avoid;
         font-size: 13px !important;
-      }
-
-      body.daily-checklist-printing .cl-work-group > div:first-child:not(.grid) {
-        padding: 6px 16px !important;
-      }
-
-      body.daily-checklist-printing .cl-work-group > div.grid {
-        grid-template-columns: 240px 1fr !important;
-        display: grid !important;
-      }
-
-      body.daily-checklist-printing .cl-work-group > div.grid > div {
         padding: 12px 16px !important;
       }
 
@@ -235,28 +223,23 @@ interface AvailableDateOption {
         line-height: 1.5 !important;
       }
 
-      /* Target grid */
-      body.daily-checklist-printing .cl-target-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: 8px !important;
+      /* Target table printing styles */
+      body.daily-checklist-printing .cl-work-group table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 8px !important;
       }
 
-      body.daily-checklist-printing .cl-target-grid > div {
-        padding: 4px 8px !important;
-        gap: 6px !important;
-        border-radius: 6px !important;
-      }
-
-      body.daily-checklist-printing .cl-target-grid > div > span:first-child {
-        width: 18px !important;
-        height: 18px !important;
+      body.daily-checklist-printing .cl-work-group th {
         font-size: 10px !important;
-        border-radius: 4px !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding-bottom: 6px !important;
       }
 
-      body.daily-checklist-printing .cl-target-grid > div > span:last-child {
+      body.daily-checklist-printing .cl-work-group td {
         font-size: 11px !important;
-        line-height: 1.4 !important;
+        padding: 6px 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
       }
 
       /* Document footer (print-only) */
@@ -315,37 +298,15 @@ interface AvailableDateOption {
       }
       body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group {
         font-size: 10px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group > div:first-child:not(.grid) {
-        padding: 3px 8px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group > div.grid {
-        grid-template-columns: 180px 1fr !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group > div.grid > div {
-        padding: 6px 10px !important;
+        padding: 8px 12px !important;
       }
       body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group div.font-mono {
         font-size: 10px !important;
         line-height: 1.3 !important;
       }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-target-grid {
-        gap: 4px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-target-grid > div {
-        padding: 2px 5px !important;
-        gap: 3px !important;
-        border-radius: 3px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-target-grid > div > span:first-child {
-        width: 14px !important;
-        height: 14px !important;
-        font-size: 8px !important;
-        border-radius: 2px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-target-grid > div > span:last-child {
+      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group td {
         font-size: 9px !important;
-        line-height: 1.2 !important;
+        padding: 4px 0 !important;
       }
       body.daily-checklist-printing .cl-board-root.print-compact .cl-doc-footer {
         padding: 4px 10px !important;
