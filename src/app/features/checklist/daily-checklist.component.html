@@ -1,30 +1,39 @@
 <div class="cl-page-shell h-full min-h-0 flex flex-col font-sans text-slate-800 dark:text-slate-200 overflow-hidden">
 
-  <!-- ===== SCREEN-ONLY HEADER (Standard LIMS Style) ===== -->
-  <header class="cl-screen-only shrink-0 mb-4 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+  <!-- ===== SCREEN-ONLY HEADER & CONTROLS ===== -->
+  <header class="cl-screen-only shrink-0 mb-4" 
+          [class.bg-white]="!embedded" [class.dark:bg-slate-800]="!embedded" [class.p-4]="!embedded" [class.rounded-2xl]="!embedded" [class.shadow-sm]="!embedded" [class.border]="!embedded" [class.border-slate-100]="!embedded" [class.dark:border-slate-700]="!embedded">
 
-    <!-- Row 1: Icon + Title + Date nav + Print -->
+    <!-- Row 1: Title & Main Navigation (Hidden left side when embedded) -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 
-      <!-- Left: Icon + Title -->
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
-          <i class="fa-solid fa-clipboard-check text-base" aria-hidden="true"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng Check Mẫu Ngày</h1>
-            <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
+      <!-- Left: Icon + Title (Only show when NOT embedded) -->
+      @if (!embedded) {
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
+            <i class="fa-solid fa-clipboard-check text-base" aria-hidden="true"></i>
           </div>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Chỉ tiêu cần kiểm và nhóm mẫu áp dụng từ các mẻ đã phê duyệt</p>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-black text-slate-850 dark:text-slate-100 tracking-tight leading-tight truncate">Bảng Check Mẫu Ngày</h1>
+              <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[9px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">Bảng quan sát KNV</span>
+            </div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Chỉ tiêu cần kiểm và nhóm mẫu áp dụng từ các mẻ đã phê duyệt</p>
+          </div>
         </div>
-      </div>
+      } @else {
+        <!-- When embedded, show a clean flat widget title line instead of a heavy box header -->
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-4 bg-blue-600 rounded-full"></div>
+          <h2 class="text-base font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">Theo dõi Kiểm nghiệm & SOP Ngày</h2>
+        </div>
+      }
 
-      <!-- Right: Date navigation + Print button (LIMS Standard Buttons) -->
-      <div class="flex items-center gap-2 w-full md:w-auto">
+      <!-- Right: Date navigation + Print button -->
+      <div class="flex items-center gap-2 w-full md:w-auto ml-auto">
         <button type="button" (click)="moveAvailableDate('older')" [disabled]="!hasOlderDate()"
                 aria-label="Ngày có dữ liệu cũ hơn" title="Ngày có dữ liệu cũ hơn"
-                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95">
+                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
           <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
         </button>
 
@@ -33,7 +42,7 @@
           <i class="fa-regular fa-calendar absolute inset-y-0 left-3 hidden sm:flex items-center text-blue-500 text-sm pointer-events-none" aria-hidden="true"></i>
           <select [ngModel]="selectedDate()" (ngModelChange)="onDateChange($event)"
                   [disabled]="availableDateOptions().length === 0" aria-label="Ngày có dữ liệu"
-                  class="w-full md:w-56 h-10 pl-3 sm:pl-9 pr-7 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-205 disabled:opacity-50">
+                  class="w-full md:w-56 h-10 pl-3 sm:pl-9 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-205 disabled:opacity-50">
             @if (availableDateOptions().length === 0) {
               <option value="">Chưa có ngày dữ liệu</option>
             }
@@ -45,7 +54,7 @@
 
         <button type="button" (click)="moveAvailableDate('newer')" [disabled]="!hasNewerDate()"
                 aria-label="Ngày có dữ liệu mới hơn" title="Ngày có dữ liệu mới hơn"
-                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95">
+                class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 transition active:scale-95 flex items-center justify-center bg-white dark:bg-slate-800">
           <i class="fa-solid fa-chevron-right text-xs" aria-hidden="true"></i>
         </button>
 
@@ -58,18 +67,18 @@
       </div>
     </div>
 
-    <!-- Row 2: Filter bar (Standard LIMS Style) -->
+    <!-- Row 2: Filter bar -->
     <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(180px,240px)_auto] gap-2">
       <label class="relative min-w-0">
         <span class="sr-only">Tìm mã mẫu, SOP hoặc chỉ tiêu</span>
         <i class="fa-solid fa-magnifying-glass absolute inset-y-0 left-3 flex items-center text-slate-400 text-xs pointer-events-none" aria-hidden="true"></i>
         <input type="search" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
                placeholder="Tìm mã mẫu, SOP hoặc chỉ tiêu..."
-               class="w-full h-10 pl-9 pr-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-700 dark:text-slate-200" />
+               class="w-full h-10 pl-9 pr-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-slate-750 dark:text-slate-200" />
       </label>
 
       <select [ngModel]="sopFilter()" (ngModelChange)="sopFilter.set($event)" aria-label="Lọc theo SOP"
-              class="h-10 min-w-0 px-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-slate-700 dark:text-slate-200">
+              class="h-10 min-w-0 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-slate-700 dark:text-slate-200">
         <option value="all">Tất cả SOP</option>
         @for (sop of sopOptions(); track sop.id) {
           <option [value]="sop.id">{{sop.name}}</option>
@@ -78,7 +87,7 @@
 
       @if (activeFilterCount() > 0) {
         <button type="button" (click)="clearFilters()"
-                class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-350 transition active:scale-95 text-xs font-bold whitespace-nowrap flex items-center gap-1.5">
+                class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-350 transition active:scale-95 text-xs font-bold whitespace-nowrap flex items-center gap-1.5 bg-white dark:bg-slate-800">
           <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Đặt lại
         </button>
       }
@@ -148,54 +157,59 @@
         </header>
 
         <!-- SCREEN-ONLY: Stats chips bar (Compact) -->
-        <div class="cl-screen-only mb-2 flex flex-wrap items-center gap-1.5">
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+        <div class="cl-screen-only mb-3 flex flex-wrap items-center gap-1.5">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
             <span class="text-sm font-black tabular-nums text-blue-700 dark:text-blue-300">{{boardSummary().samples}}</span>
             <span class="text-[9px] font-bold uppercase tracking-wide text-blue-500 dark:text-blue-400">Mẫu</span>
           </div>
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
             <span class="text-sm font-black tabular-nums text-indigo-700 dark:text-indigo-300">{{boardSummary().sops}}</span>
             <span class="text-[9px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">SOP</span>
           </div>
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
             <span class="text-sm font-black tabular-nums text-sky-700 dark:text-sky-300">{{boardSummary().targets}}</span>
             <span class="text-[9px] font-bold uppercase tracking-wide text-sky-500 dark:text-sky-400">Chỉ tiêu</span>
           </div>
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
             <span class="text-sm font-black tabular-nums text-emerald-700 dark:text-emerald-300">{{boardSummary().groups}}</span>
             <span class="text-[9px] font-bold uppercase tracking-wide text-emerald-500 dark:text-emerald-400">Nhóm</span>
           </div>
         </div>
 
-        <!-- SOP sections list (Flexible Kanban Auto-fill Grid) -->
-        <div class="cl-board-body grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))">
+        <!-- SOP sections list (Flexible Kanban Auto-fill Grid - Flat Modern Cards) -->
+        <div class="cl-board-body grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))">
           @for (sop of boardSopGroups(); track sop.sopId; let sopIndex = $index) {
-            <section class="cl-sop-section bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between overflow-hidden">
+            <section class="cl-sop-section bg-white dark:bg-slate-800 rounded-2xl border border-slate-150 dark:border-slate-700 shadow-soft-xl dark:shadow-none flex flex-col justify-between overflow-hidden hover:border-slate-300 dark:hover:border-slate-600 transition-colors duration-200">
 
-              <!-- SOP Card Header (Full Name, No abbreviation) -->
-              <div class="cl-sop-heading shrink-0 flex items-start justify-between gap-3 px-3 py-2 bg-slate-50/80 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700">
+              <!-- SOP Card Header (Flat Style - No gray bg) -->
+              <div class="cl-sop-heading shrink-0 flex flex-col gap-1 px-4 pt-4 pb-2">
                 <div class="flex items-start gap-2 min-w-0">
-                  <div class="w-6 h-6 rounded bg-slate-800 dark:bg-blue-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">{{sopIndex + 1}}</div>
-                  <h3 class="text-xs font-black text-slate-800 dark:text-slate-200 leading-snug break-words" [title]="sop.sopName">{{sop.sopName}}</h3>
+                  <div class="w-5.5 h-5.5 rounded-lg bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">{{sopIndex + 1}}</div>
+                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words" [title]="sop.sopName">{{sop.sopName}}</h3>
                 </div>
-                <span class="shrink-0 text-[9px] font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 whitespace-nowrap self-start">
-                  {{sop.uniqueSamples}} mẫu • {{sop.uniqueTargets}} chỉ tiêu
-                </span>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">
+                  <span>{{sop.uniqueSamples}} mẫu</span>
+                  <span>•</span>
+                  <span>{{sop.uniqueTargets}} chỉ tiêu</span>
+                </div>
               </div>
 
+              <!-- Divider line thin -->
+              <div class="mx-4 border-t border-slate-100 dark:border-slate-700/80"></div>
+
               <!-- Work groups list inside card (Flat, Nhóm chỉ tiêu) -->
-              <div class="p-3 space-y-2.5 flex-1 overflow-y-auto custom-scrollbar min-h-0 divide-y divide-dashed divide-slate-105 dark:divide-slate-700/50">
+              <div class="p-4 space-y-3.5 flex-1 overflow-y-auto custom-scrollbar min-h-0 divide-y divide-dashed divide-slate-100 dark:divide-slate-700/50">
                 @for (group of sop.groups; track group.signature; let groupIndex = $index) {
-                  <div class="cl-work-group text-[11px] pt-2.5 first:pt-0">
+                  <div class="cl-work-group text-[11px] pt-3 first:pt-0">
                     
                     @if (sop.groups.length > 1) {
-                      <div class="text-[8px] font-black uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1">
+                      <div class="text-[8px] font-black uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1.5">
                         Nhóm chỉ tiêu {{groupIndex + 1}} ({{group.sampleIds.length}} mẫu)
                       </div>
                     }
 
                     <!-- Mẫu áp dụng (font-mono dạng phẳng) -->
-                    <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words mb-1.5">
+                    <div class="font-mono font-bold text-slate-750 dark:text-slate-350 break-words mb-2">
                       <span class="text-slate-400 dark:text-slate-500 font-sans select-none text-[10px]">Mẫu:</span> {{group.formattedSamples}}
                     </div>
 
@@ -203,11 +217,11 @@
                     @if (group.targetNames.length === 0) {
                       <div class="text-amber-600 dark:text-amber-400 font-semibold italic text-[10px]">Chưa cấu hình chỉ tiêu</div>
                     } @else {
-                      <div class="flex flex-col gap-1">
+                      <div class="flex flex-col gap-1.5">
                         <span class="text-slate-400 dark:text-slate-500 font-sans font-semibold select-none text-[10px]">Chỉ tiêu:</span>
-                        <div class="flex flex-wrap gap-1 items-center">
+                        <div class="flex flex-wrap gap-1.5 items-center">
                           @for (targetName of group.targetNames; track targetName) {
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-50 dark:bg-slate-700/50 text-slate-650 dark:text-slate-300 border border-slate-200/60 dark:border-slate-600/80">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-700/80 text-slate-750 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors">
                               {{targetName}}
                             </span>
                           }

@@ -367,6 +367,6 @@
             }
 
             <div [class.opacity-20]="!auth.canViewSop()" [class.blur-sm]="!auth.canViewSop()" [class.pointer-events-none]="!auth.canViewSop()">
-                <app-daily-checklist></app-daily-checklist>
+                <app-daily-checklist [embedded]="true"></app-daily-checklist>
             </div>
         </div>

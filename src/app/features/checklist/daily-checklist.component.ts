@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewEncapsulation, computed, effect, inject, signal } from '@angular/core';
+import { Component, Input, ViewEncapsulation, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../core/services/state.service';
 import {
@@ -316,6 +316,7 @@ interface AvailableDateOption {
   `]
 })
 export class DailyChecklistComponent {
+  @Input() embedded = false;
   readonly state = inject(StateService);
 
   readonly selectedDate = signal(toLocalDateInputValue());
