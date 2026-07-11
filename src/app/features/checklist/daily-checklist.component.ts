@@ -48,7 +48,7 @@ interface AvailableDateOption {
     /* Document article wrapper – không border/shadow trên màn hình */
     .cl-board-root {
       width: 100%;
-      max-width: 1280px;
+      max-width: none;
       margin-inline: auto;
     }
 
