@@ -47,3 +47,19 @@ export interface DailyApprovedSummary {
   targetAssignments: number;
   statuses: Record<ApprovedBatchStatus, number>;
 }
+
+export interface DailyPrintTargetSetGroup {
+  signature: string;
+  targetIds: string[];
+  targetNames: string[];
+  sampleIds: string[];
+  formattedSamples: string;
+}
+
+export interface DailyPrintSopGroup {
+  sopId: string;
+  sopName: string;
+  groups: DailyPrintTargetSetGroup[];
+  uniqueSamples: number;
+  uniqueTargets: number;
+}

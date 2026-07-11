@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, ViewEncapsulation, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
@@ -8,10 +8,12 @@ import {
   ApprovedBatchStatus,
   DailyApprovedSummary,
   DailyOverviewMode,
+  DailyPrintSopGroup,
   DailySampleOverview
 } from './daily-checklist.model';
 import {
   buildApprovedBatchOverviews,
+  buildDailyPrintSopGroups,
   buildDailySampleOverviews,
   getAvailableApprovedDates,
   getRequestDateValue,
@@ -39,6 +41,7 @@ interface AvailableDateOption {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './daily-checklist.component.html',
+  encapsulation: ViewEncapsulation.None,
   styles: [`
     :host {
       display: flex;
@@ -53,6 +56,61 @@ interface AvailableDateOption {
     }
 
     .daily-overview-enter { animation: daily-overview-enter 0.24s ease-out both; }
+
+    .daily-print-paper {
+      width: 1120px;
+      max-width: none;
+      min-height: 720px;
+    }
+
+    .daily-print-table thead { display: table-header-group; }
+    .daily-print-row { break-inside: avoid; page-break-inside: avoid; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 9mm; }
+
+      body.daily-checklist-printing { background: white !important; }
+      body.daily-checklist-printing * { visibility: hidden !important; }
+      body.daily-checklist-printing .daily-print-root,
+      body.daily-checklist-printing .daily-print-root * { visibility: visible !important; }
+      body.daily-checklist-printing .daily-print-overlay {
+        position: static !important;
+        display: block !important;
+        background: white !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      body.daily-checklist-printing .daily-print-shell {
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: none !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+      body.daily-checklist-printing .daily-print-controls { display: none !important; }
+      body.daily-checklist-printing .daily-print-scroll {
+        display: block !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        background: white !important;
+      }
+      body.daily-checklist-printing .daily-print-paper {
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+      }
+      body.daily-checklist-printing .daily-print-sop { break-inside: auto; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .daily-overview-enter { animation: none; }
@@ -71,6 +129,9 @@ export class DailyChecklistComponent {
   readonly mobileFiltersOpen = signal(false);
   readonly expandedSamples = signal<Set<string>>(new Set());
   readonly expandedBatches = signal<Set<string>>(new Set());
+  readonly printPreviewOpen = signal(false);
+  readonly printScope = signal<'day' | 'filtered'>('day');
+  readonly printGeneratedAt = signal(new Date());
 
   readonly statusOptions: BatchStatusOption[] = [
     {
@@ -216,6 +277,25 @@ export class DailyChecklistComponent {
     samples: this.sampleOverviews().length
   }));
 
+  readonly printBatches = computed(() =>
+    this.printScope() === 'filtered' ? this.filteredBatches() : this.dayBatches()
+  );
+
+  readonly printSopGroups = computed<DailyPrintSopGroup[]>(() =>
+    buildDailyPrintSopGroups(this.printBatches())
+  );
+
+  readonly printSummary = computed(() => {
+    const samples = new Set<string>();
+    this.printBatches().forEach(batch => batch.samples.forEach(sample => samples.add(sample.sampleId)));
+    return {
+      sops: this.printSopGroups().length,
+      samples: samples.size,
+      targetSets: this.printSopGroups().reduce((total, sop) => total + sop.groups.length, 0),
+      targets: this.printSopGroups().reduce((total, sop) => total + sop.uniqueTargets, 0)
+    };
+  });
+
   readonly activeFilterCount = computed(() =>
     Number(this.statusFilter() !== 'all') +
     Number(this.sopFilter() !== 'all') +
@@ -250,6 +330,31 @@ export class DailyChecklistComponent {
   goToLatestDate(): void {
     const latest = this.availableDates()[0];
     if (latest) this.onDateChange(latest);
+  }
+
+  openPrintPreview(): void {
+    if (this.dayBatches().length === 0) return;
+    this.printScope.set('day');
+    this.printGeneratedAt.set(new Date());
+    this.printPreviewOpen.set(true);
+  }
+
+  closePrintPreview(): void {
+    this.printPreviewOpen.set(false);
+  }
+
+  setPrintScope(scope: 'day' | 'filtered'): void {
+    this.printScope.set(scope);
+  }
+
+  printDocument(): void {
+    if (this.printSopGroups().length === 0) return;
+    document.body.classList.add('daily-checklist-printing');
+    try {
+      window.print();
+    } finally {
+      document.body.classList.remove('daily-checklist-printing');
+    }
   }
 
   setViewMode(mode: DailyOverviewMode): void {

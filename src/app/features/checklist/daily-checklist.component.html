@@ -44,6 +44,12 @@
                 class="hidden sm:flex h-10 px-3 items-center gap-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-indigo-400 shrink-0">
           <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Mới nhất
         </button>
+
+        <button type="button" (click)="openPrintPreview()" [disabled]="dayBatches().length === 0"
+                aria-label="In danh sách KNV" title="In danh sách KNV"
+                class="w-10 sm:w-auto h-10 sm:px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0">
+          <i class="fa-solid fa-print sm:mr-1.5" aria-hidden="true"></i><span class="hidden sm:inline">In danh sách KNV</span>
+        </button>
       </div>
     </div>
 
@@ -333,3 +339,125 @@
     </div>
   </main>
 </div>
+
+@if (printPreviewOpen()) {
+  <div class="daily-print-overlay fixed inset-0 z-[160] bg-slate-950/90 backdrop-blur-sm p-2 sm:p-4 flex items-center justify-center" (click)="closePrintPreview()">
+    <div class="daily-print-shell w-full max-w-7xl h-[95vh] bg-slate-100 dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+      <div class="daily-print-controls shrink-0 bg-slate-900 text-white px-3 sm:px-5 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-print" aria-hidden="true"></i>
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-sm sm:text-base font-black truncate">Xem trước danh sách KNV</h2>
+            <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">A4 ngang · Mẫu được nhóm theo cùng tập chỉ tiêu trong từng SOP</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex flex-1 sm:flex-none items-center p-1 rounded-xl bg-slate-800 border border-slate-700">
+            <button type="button" (click)="setPrintScope('day')"
+                    [ngClass]="printScope() === 'day' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300'"
+                    class="flex-1 sm:flex-none min-h-9 px-3 rounded-lg text-[11px] font-bold whitespace-nowrap">Toàn bộ ngày</button>
+            <button type="button" (click)="setPrintScope('filtered')" [disabled]="activeFilterCount() === 0"
+                    [ngClass]="printScope() === 'filtered' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300'"
+                    class="flex-1 sm:flex-none min-h-9 px-3 rounded-lg text-[11px] font-bold whitespace-nowrap disabled:opacity-35">Đang lọc</button>
+          </div>
+          <button type="button" (click)="printDocument()" [disabled]="printSopGroups().length === 0"
+                  class="min-h-11 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-black shadow-lg shadow-indigo-950/30 whitespace-nowrap">
+            <i class="fa-solid fa-print mr-1.5" aria-hidden="true"></i>In A4
+          </button>
+          <button type="button" (click)="closePrintPreview()" aria-label="Đóng xem trước"
+                  class="w-11 h-11 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="daily-print-scroll flex-1 overflow-auto p-2 sm:p-5">
+        <div class="daily-print-root daily-print-paper mx-auto bg-white text-slate-900 rounded-sm shadow-xl p-5 sm:p-8">
+          <header class="border-b-2 border-slate-900 pb-3 flex items-start justify-between gap-6">
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">NAFIQPM6 · LIMS Cloud</div>
+              <h1 class="text-xl font-black uppercase tracking-tight mt-1">Danh sách mẫu cần kiểm theo nhóm chỉ tiêu</h1>
+              <div class="text-xs text-slate-600 mt-1.5">
+                Ngày phân tích: <strong>{{formatDate(selectedDate())}}</strong>
+                <span class="mx-2">•</span>
+                Phạm vi: <strong>{{printScope() === 'day' ? 'Toàn bộ ngày' : 'Dữ liệu đang lọc'}}</strong>
+              </div>
+            </div>
+            <div class="text-right text-[10px] leading-5 text-slate-500 shrink-0">
+              <div>Thời điểm tạo: <strong class="text-slate-700">{{formatTimestamp(printGeneratedAt())}}</strong></div>
+              <div>Người tạo: <strong class="text-slate-700">{{state.currentUser()?.displayName || 'Không rõ'}}</strong></div>
+            </div>
+          </header>
+
+          <div class="grid grid-cols-4 border border-slate-300 rounded-lg overflow-hidden mt-3 text-center">
+            <div class="px-3 py-2 border-r border-slate-300"><div class="text-lg font-black">{{printSummary().sops}}</div><div class="text-[9px] uppercase font-bold text-slate-500">SOP</div></div>
+            <div class="px-3 py-2 border-r border-slate-300"><div class="text-lg font-black">{{printSummary().samples}}</div><div class="text-[9px] uppercase font-bold text-slate-500">Mẫu duy nhất</div></div>
+            <div class="px-3 py-2 border-r border-slate-300"><div class="text-lg font-black">{{printSummary().targets}}</div><div class="text-[9px] uppercase font-bold text-slate-500">Chỉ tiêu</div></div>
+            <div class="px-3 py-2"><div class="text-lg font-black">{{printSummary().targetSets}}</div><div class="text-[9px] uppercase font-bold text-slate-500">Nhóm thực hiện</div></div>
+          </div>
+
+          @if (printSopGroups().length === 0) {
+            <div class="py-20 text-center text-sm font-bold text-slate-500">Không có dữ liệu phù hợp để in.</div>
+          } @else {
+            @for (sop of printSopGroups(); track sop.sopId; let sopIndex = $index) {
+              <section class="daily-print-sop mt-5">
+                <div class="flex items-center justify-between gap-4 bg-slate-900 text-white px-3 py-2 rounded-t-lg">
+                  <h2 class="text-sm font-black">{{sopIndex + 1}}. {{sop.sopName}}</h2>
+                  <div class="text-[10px] font-bold text-slate-300 whitespace-nowrap">{{sop.uniqueSamples}} mẫu · {{sop.uniqueTargets}} chỉ tiêu · {{sop.groups.length}} nhóm</div>
+                </div>
+
+                <table class="daily-print-table w-full border-collapse table-fixed text-[10px]">
+                  <colgroup>
+                    <col class="w-[4%]" />
+                    <col class="w-[33%]" />
+                    <col class="w-[49%]" />
+                    <col class="w-[7%]" />
+                    <col class="w-[7%]" />
+                  </colgroup>
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 uppercase tracking-wide">
+                      <th class="border border-slate-300 px-2 py-2 text-center">STT</th>
+                      <th class="border border-slate-300 px-2 py-2 text-left">Chỉ tiêu cần kiểm</th>
+                      <th class="border border-slate-300 px-2 py-2 text-left">Mẫu áp dụng</th>
+                      <th class="border border-slate-300 px-2 py-2 text-center">Số mẫu</th>
+                      <th class="border border-slate-300 px-2 py-2 text-center">Xác nhận</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (group of sop.groups; track group.signature; let groupIndex = $index) {
+                      <tr class="daily-print-row align-top">
+                        <td class="border border-slate-300 px-2 py-2.5 text-center font-black">{{groupIndex + 1}}</td>
+                        <td class="border border-slate-300 px-2 py-2.5">
+                          @if (group.targetNames.length === 0) {
+                            <strong class="text-amber-700">Chưa xác định chỉ tiêu</strong>
+                          } @else {
+                            <div class="space-y-1">
+                              @for (targetName of group.targetNames; track targetName; let targetIndex = $index) {
+                                <div class="font-bold leading-snug"><span class="text-slate-400 mr-1">{{targetIndex + 1}}.</span>{{targetName}}</div>
+                              }
+                            </div>
+                          }
+                        </td>
+                        <td class="border border-slate-300 px-2 py-2.5 font-mono font-bold leading-relaxed break-words">{{group.formattedSamples}}</td>
+                        <td class="border border-slate-300 px-2 py-2.5 text-center font-black text-sm">{{group.sampleIds.length}}</td>
+                        <td class="border border-slate-300 px-2 py-2.5 text-center"><span class="inline-block w-5 h-5 border-2 border-slate-700 rounded-sm"></span></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            }
+          }
+
+          <footer class="mt-5 pt-2 border-t border-slate-300 flex justify-between text-[9px] text-slate-500">
+            <span>Danh sách được tổng hợp từ các mẻ đã qua phê duyệt.</span>
+            <span>Mỗi mẫu chỉ xuất hiện một lần trong một SOP theo tập chỉ tiêu hợp nhất.</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+  </div>
+}

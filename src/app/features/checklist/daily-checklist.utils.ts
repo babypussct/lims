@@ -1,8 +1,11 @@
 import { Request } from '../../core/models/request.model';
+import { formatSampleList, naturalCompare } from '../../shared/utils/utils';
 import {
   ApprovedBatchOverview,
   ApprovedBatchSample,
   ApprovedBatchStatus,
+  DailyPrintSopGroup,
+  DailyPrintTargetSetGroup,
   DailySampleOverview,
   SampleBatchReference
 } from './daily-checklist.model';
@@ -128,6 +131,75 @@ export function buildDailySampleOverviews(batches: ApprovedBatchOverview[]): Dai
   return Array.from(sampleMap.values()).sort((a, b) =>
     a.sampleId.localeCompare(b.sampleId, 'vi', { numeric: true })
   );
+}
+
+export function buildDailyPrintSopGroups(batches: ApprovedBatchOverview[]): DailyPrintSopGroup[] {
+  const sopMap = new Map<string, {
+    sopName: string;
+    samples: Map<string, Map<string, string>>;
+  }>();
+
+  batches.forEach(batch => {
+    let sop = sopMap.get(batch.sopId);
+    if (!sop) {
+      sop = { sopName: batch.sopName, samples: new Map<string, Map<string, string>>() };
+      sopMap.set(batch.sopId, sop);
+    }
+
+    batch.samples.forEach(sample => {
+      let targets = sop!.samples.get(sample.sampleId);
+      if (!targets) {
+        targets = new Map<string, string>();
+        sop!.samples.set(sample.sampleId, targets);
+      }
+      sample.targetIds.forEach((targetId, index) => {
+        targets!.set(targetId, sample.targetNames[index] || targetId);
+      });
+    });
+  });
+
+  return Array.from(sopMap, ([sopId, sop]) => {
+    const targetSetMap = new Map<string, DailyPrintTargetSetGroup>();
+    const allTargetIds = new Set<string>();
+
+    sop.samples.forEach((targets, sampleId) => {
+      const targetEntries = Array.from(targets.entries()).sort((a, b) => naturalCompare(a[0], b[0]));
+      targetEntries.forEach(([targetId]) => allTargetIds.add(targetId));
+      const targetIds = targetEntries.map(([targetId]) => targetId);
+      const signature = targetIds.length ? targetIds.join('\u0000') : '__unassigned__';
+      let group = targetSetMap.get(signature);
+      if (!group) {
+        group = {
+          signature,
+          targetIds,
+          targetNames: targetEntries.map(([, targetName]) => targetName),
+          sampleIds: [],
+          formattedSamples: ''
+        };
+        targetSetMap.set(signature, group);
+      }
+      group.sampleIds.push(sampleId);
+    });
+
+    const groups = Array.from(targetSetMap.values())
+      .map(group => {
+        const sampleIds = Array.from(new Set(group.sampleIds)).sort(naturalCompare);
+        return { ...group, sampleIds, formattedSamples: formatSampleList(new Set(sampleIds)) };
+      })
+      .sort((a, b) => {
+        if (a.signature === '__unassigned__') return 1;
+        if (b.signature === '__unassigned__') return -1;
+        return naturalCompare(a.targetNames.join(' '), b.targetNames.join(' '));
+      });
+
+    return {
+      sopId,
+      sopName: sop.sopName,
+      groups,
+      uniqueSamples: sop.samples.size,
+      uniqueTargets: allTargetIds.size
+    };
+  }).sort((a, b) => a.sopName.localeCompare(b.sopName, 'vi'));
 }
 
 function isApprovedPhysicalBatch(request: Request): boolean {
