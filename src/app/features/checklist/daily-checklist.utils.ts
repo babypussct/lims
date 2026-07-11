@@ -1,7 +1,13 @@
 import { Request } from '../../core/models/request.model';
-import { DailyChecklistAssignment } from './daily-checklist.model';
+import {
+  ApprovedBatchOverview,
+  ApprovedBatchSample,
+  ApprovedBatchStatus,
+  DailySampleOverview,
+  SampleBatchReference
+} from './daily-checklist.model';
 
-export const UNASSIGNED_TARGET_ID = '__unassigned__';
+const APPROVED_BATCH_STATUSES = new Set<Request['status']>(['approved', 'draft', 'completed']);
 
 export function toLocalDateInputValue(date = new Date()): string {
   const year = date.getFullYear();
@@ -10,90 +16,124 @@ export function toLocalDateInputValue(date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-export function toLocalDaySuffix(date = new Date()): string {
-  return String(date.getDate()).padStart(2, '0');
-}
-
 export function isValidDateInput(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function getSelectedDay(value: string): string {
-  return isValidDateInput(value) ? value.slice(-2) : '';
+export function toDate(value: unknown): Date | undefined {
+  if (!value) return undefined;
+  const timestamp = value as { toDate?: () => Date };
+  const candidate = typeof timestamp.toDate === 'function'
+    ? timestamp.toDate()
+    : value instanceof Date
+      ? value
+      : new Date(value as string | number);
+  return Number.isNaN(candidate.getTime()) ? undefined : candidate;
 }
 
-export function getDaySuffix(sampleId: string): string {
-  const match = sampleId.trim().match(/(\d{2})$/);
-  return match?.[1] ?? '';
+export function getRequestDateValue(request: Request): string {
+  if (isValidDateInput(request.analysisDate || '')) return request.analysisDate!;
+  const fallback = toDate(request.approvedAt || request.timestamp);
+  return fallback ? toLocalDateInputValue(fallback) : '';
 }
 
-export function buildAssignmentKey(requestId: string, sampleId: string, targetId: string): string {
-  return `${requestId}\u0000${sampleId}\u0000${targetId}`;
+export function getAvailableApprovedDates(requests: Request[]): string[] {
+  return Array.from(new Set(
+    requests
+      .filter(isApprovedPhysicalBatch)
+      .map(getRequestDateValue)
+      .filter(Boolean)
+  )).sort((a, b) => b.localeCompare(a));
 }
 
-export function buildDailyCheckId(requestId: string, sampleId: string, targetId: string): string {
-  return [requestId, sampleId, targetId]
-    .map(part => encodeURIComponent(part).replace(/%/g, '_'))
-    .join('__');
-}
-
-export function uniqueSampleKey(requestId: string, sampleId: string): string {
-  return `${requestId}\u0000${sampleId}`;
-}
-
-export function buildAssignments(
+export function buildApprovedBatchOverviews(
   requests: Request[],
-  selectedDay: string,
+  selectedDate: string,
   resolveTargetName: (sopId: string, targetId: string) => string
-): DailyChecklistAssignment[] {
-  if (!/^\d{2}$/.test(selectedDay)) return [];
+): ApprovedBatchOverview[] {
+  if (!isValidDateInput(selectedDate)) return [];
 
-  const result: DailyChecklistAssignment[] = [];
-  const seen = new Set<string>();
+  const uniqueRequests = new Map<string, Request>();
+  requests.forEach(request => uniqueRequests.set(request.id, request));
 
-  for (const request of requests) {
-    if (!request.sampleList?.length) continue;
-
-    const isLegacyDate = !isValidDateInput(request.analysisDate || '');
-
-    const sampleTargetMap: Record<string, string[]> =
-      request.sampleTargetMap ?? request.inputs?.sampleTargetMap ?? {};
-
-    for (const rawSampleId of request.sampleList) {
-      const sampleId = rawSampleId.trim();
-      if (!sampleId) continue;
-
-      const suffix = getDaySuffix(sampleId);
-      if (suffix !== selectedDay) continue;
-
-      const assignedTargets = sampleTargetMap[sampleId]?.length
-        ? sampleTargetMap[sampleId]
-        : [UNASSIGNED_TARGET_ID];
-
-      for (const targetId of assignedTargets) {
-        const key = buildAssignmentKey(request.id, sampleId, targetId);
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        result.push({
-          key,
-          requestId: request.id,
-          sopId: request.sopId,
-          sopName: request.sopName,
+  return Array.from(uniqueRequests.values())
+    .filter(request => isApprovedPhysicalBatch(request) && getRequestDateValue(request) === selectedDate)
+    .map(request => {
+      const sampleTargetMap: Record<string, string[]> =
+        request.sampleTargetMap ?? request.inputs?.sampleTargetMap ?? {};
+      const fallbackTargets = uniqueStrings(request.targetIds || request.inputs?.targetIds || []);
+      const samples = uniqueStrings(request.sampleList || []).map<ApprovedBatchSample>(sampleId => {
+        const targetIds = uniqueStrings(sampleTargetMap[sampleId]?.length
+          ? sampleTargetMap[sampleId]
+          : fallbackTargets);
+        return {
           sampleId,
-          targetId,
-          targetName: targetId === UNASSIGNED_TARGET_ID
-            ? 'Chưa gán chỉ tiêu'
-            : resolveTargetName(request.sopId, targetId),
-          status: request.status,
-          analysisDate: request.analysisDate,
-          daySuffix: selectedDay,
-          isLegacyDate,
-          hasDayMismatch: false
-        });
-      }
-    }
-  }
+          targetIds,
+          targetNames: targetIds.map(targetId => resolveTargetName(request.sopId, targetId))
+        };
+      });
+      const uniqueTargetNames = uniqueStrings(samples.flatMap(sample => sample.targetNames));
 
-  return result;
+      return {
+        requestId: request.id,
+        sopId: request.sopId,
+        sopName: request.sopName,
+        status: request.status as ApprovedBatchStatus,
+        analysisDate: selectedDate,
+        approvedAt: toDate(request.approvedAt || request.timestamp),
+        ownerName: request.user,
+        samples,
+        uniqueTargetNames,
+        targetAssignments: samples.reduce((total, sample) => total + sample.targetIds.length, 0)
+      };
+    })
+    .sort((a, b) => {
+      const timeDifference = (b.approvedAt?.getTime() || 0) - (a.approvedAt?.getTime() || 0);
+      return timeDifference || a.sopName.localeCompare(b.sopName, 'vi');
+    });
+}
+
+export function buildDailySampleOverviews(batches: ApprovedBatchOverview[]): DailySampleOverview[] {
+  const sampleMap = new Map<string, DailySampleOverview>();
+
+  batches.forEach(batch => {
+    batch.samples.forEach(sample => {
+      let overview = sampleMap.get(sample.sampleId);
+      if (!overview) {
+        overview = {
+          sampleId: sample.sampleId,
+          batches: [],
+          sopNames: [],
+          targetNames: [],
+          targetAssignments: 0
+        };
+        sampleMap.set(sample.sampleId, overview);
+      }
+
+      const reference: SampleBatchReference = {
+        requestId: batch.requestId,
+        sopId: batch.sopId,
+        sopName: batch.sopName,
+        status: batch.status,
+        targetIds: sample.targetIds,
+        targetNames: sample.targetNames
+      };
+      overview.batches.push(reference);
+      overview.sopNames = uniqueStrings([...overview.sopNames, batch.sopName]);
+      overview.targetNames = uniqueStrings([...overview.targetNames, ...sample.targetNames]);
+      overview.targetAssignments += sample.targetIds.length;
+    });
+  });
+
+  return Array.from(sampleMap.values()).sort((a, b) =>
+    a.sampleId.localeCompare(b.sampleId, 'vi', { numeric: true })
+  );
+}
+
+function isApprovedPhysicalBatch(request: Request): boolean {
+  return APPROVED_BATCH_STATUSES.has(request.status) && !request.isVirtualMaster;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values.map(value => String(value).trim()).filter(Boolean)));
 }
