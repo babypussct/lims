@@ -142,14 +142,15 @@ interface AvailableDateOption {
 
       /* SOP Card dạng hàng ngang rộng rãi, tránh ngắt trang giữa chừng */
       #print-container .cl-sop-section {
-        display: block !important;
+        display: inline-block !important;
         width: 100% !important;
-        margin-bottom: 14px !important;
+        margin-bottom: 12px !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         background-color: #ffffff !important;
+        box-shadow: none !important;
       }
 
       /* SOP Header trên trang in */
@@ -168,13 +169,11 @@ interface AvailableDateOption {
       }
 
       #print-container .cl-sop-heading h3 {
-        font-size: 14px !important;
         font-weight: 800 !important;
         color: #0f172a !important;
       }
 
       #print-container .cl-sop-heading span {
-        font-size: 11px !important;
         font-weight: 700 !important;
         color: #475569 !important;
       }
@@ -187,14 +186,12 @@ interface AvailableDateOption {
       }
 
       #print-container .cl-work-group div.font-mono {
-        font-size: 11px !important;
         line-height: 1.4 !important;
         color: #1e293b !important;
         margin-bottom: 6px !important;
       }
 
       #print-container .cl-work-group div.font-mono span.font-sans {
-        font-size: 10px !important;
         color: #64748b !important;
       }
 
@@ -213,8 +210,35 @@ interface AvailableDateOption {
         padding: 2px 6px !important;
         margin: 2px 4px 2px 0 !important;
         border-radius: 4px !important;
-        font-size: 10px !important;
         font-weight: 700 !important;
+      }
+
+      /* CẤU HÌNH CỠ CHỮ */
+      #print-container .cl-board-root.print-text-auto .cl-sop-heading h3 { font-size: 13px !important; }
+      #print-container .cl-board-root.print-text-auto .cl-work-group { font-size: 10.5px !important; }
+      #print-container .cl-board-root.print-text-auto .cl-work-group .flex-wrap span { font-size: 9.5px !important; }
+
+      #print-container .cl-board-root.print-text-small .cl-sop-heading h3 { font-size: 11px !important; }
+      #print-container .cl-board-root.print-text-small .cl-work-group { font-size: 9px !important; padding: 6px 8px !important; }
+      #print-container .cl-board-root.print-text-small .cl-work-group .flex-wrap span { font-size: 8px !important; padding: 1px 4px !important; }
+
+      #print-container .cl-board-root.print-text-medium .cl-sop-heading h3 { font-size: 14px !important; }
+      #print-container .cl-board-root.print-text-medium .cl-work-group { font-size: 11px !important; }
+      #print-container .cl-board-root.print-text-medium .cl-work-group .flex-wrap span { font-size: 10px !important; }
+
+      #print-container .cl-board-root.print-text-large .cl-sop-heading h3 { font-size: 16px !important; }
+      #print-container .cl-board-root.print-text-large .cl-work-group { font-size: 13px !important; }
+      #print-container .cl-board-root.print-text-large .cl-work-group .flex-wrap span { font-size: 12px !important; }
+
+      /* CẤU HÌNH ẨN BẢNG THỐNG KÊ */
+      #print-container .cl-board-root.print-stats-hide .cl-doc-header .cl-print-stats-grid {
+        display: none !important;
+      }
+
+      /* Document footer (print-only) */
+      #print-container .cl-doc-footer {
+        padding: 10px 16px !important;
+        font-size: 10px !important;
       }
     }
   `]
@@ -227,6 +251,13 @@ export class DailyChecklistComponent {
   readonly sopFilter = signal('all');
   readonly searchTerm = signal('');
   readonly printGeneratedAt = signal(new Date());
+
+  // Print Configuration Signals
+  readonly showPrintSettings = signal(false);
+  readonly printCols = signal<string | number>('auto');
+  readonly printFontSize = signal<string>('auto');
+  readonly printShowStats = signal(true);
+  readonly printGroupSamples = signal(true);
 
   private didInitializeDate = false;
 
@@ -374,6 +405,11 @@ export class DailyChecklistComponent {
 
   printDocument(): void {
     if (this.boardSopGroups().length === 0) return;
+    this.showPrintSettings.set(true);
+  }
+
+  executePrint(): void {
+    this.showPrintSettings.set(false);
     this.printGeneratedAt.set(new Date());
 
     const printContainer = document.getElementById('print-container');
@@ -388,19 +424,46 @@ export class DailyChecklistComponent {
       return;
     }
 
-    const clone = source.cloneNode(true) as HTMLElement;
-    printContainer.innerHTML = '';
-    printContainer.appendChild(clone);
+    // Đợi góc render của Angular cập nhật lại dải mẫu nếu tắt/bật gom mẫu
+    setTimeout(() => {
+      const clone = source.cloneNode(true) as HTMLElement;
 
-    const cleanupPrintMode = (): void => {
-      document.body.classList.remove('daily-checklist-printing');
+      const boardRoot = clone.querySelector('.cl-board-root');
+      if (boardRoot) {
+        // Cấu hình số cột
+        if (this.printCols() !== 'auto') {
+          boardRoot.classList.add(`print-layout-${this.printCols()}`);
+        } else {
+          boardRoot.classList.add('print-layout-auto');
+        }
+
+        // Cấu hình cỡ chữ
+        if (this.printFontSize() !== 'auto') {
+          boardRoot.classList.add(`print-text-${this.printFontSize()}`);
+        } else {
+          boardRoot.classList.add('print-text-auto');
+        }
+
+        // Cấu hình ẩn thống kê
+        if (!this.printShowStats()) {
+          boardRoot.classList.add('print-stats-hide');
+        }
+      }
+
       printContainer.innerHTML = '';
-      window.removeEventListener('afterprint', cleanupPrintMode);
-    };
+      printContainer.appendChild(clone);
 
-    document.body.classList.add('daily-checklist-printing');
-    window.addEventListener('afterprint', cleanupPrintMode, { once: true });
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      const cleanupPrintMode = () => {
+        printContainer.innerHTML = '';
+      };
+
+      window.addEventListener('afterprint', cleanupPrintMode, { once: true });
+      window.print();
+    }, 120);
+  }
+
+  joinWithCommas(ids: string[]): string {
+    return ids.join(', ');
   }
 
   formatTimestamp(date: Date): string {
