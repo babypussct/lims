@@ -132,12 +132,32 @@ interface AvailableDateOption {
         display: block !important;
         background: white !important;
       }
-
-      /* Thiết lập block dọc 100% chiều rộng cho danh sách SOP */
+      /* Thiết lập block dọc 100% cho container body in ấn */
       #print-container .cl-board-body {
         display: block !important;
         width: 100% !important;
-        padding: 16px 20px !important;
+        padding: 12px 16px !important;
+      }
+
+      /* CẤU HÌNH SỐ CỘT (CSS Columns Layout - Masonry tự khít) */
+      #print-container .cl-board-root.print-layout-auto .cl-board-body {
+        column-count: 3 !important;
+        column-gap: 12px !important;
+      }
+      #print-container .cl-board-root.print-layout-1 .cl-board-body {
+        column-count: 1 !important;
+      }
+      #print-container .cl-board-root.print-layout-2 .cl-board-body {
+        column-count: 2 !important;
+        column-gap: 12px !important;
+      }
+      #print-container .cl-board-root.print-layout-3 .cl-board-body {
+        column-count: 3 !important;
+        column-gap: 12px !important;
+      }
+      #print-container .cl-board-root.print-layout-4 .cl-board-body {
+        column-count: 4 !important;
+        column-gap: 8px !important;
       }
 
       /* SOP Card dạng hàng ngang rộng rãi, tránh ngắt trang giữa chừng */
