@@ -502,10 +502,27 @@ export class DailyChecklistComponent {
 
     // Gán class chỉ thị in vào body trước khi clone để CSS ăn theo
     document.body.classList.add('daily-checklist-printing');
+    
+    // SỬA LỖI TRANG TRẮNG: Gỡ bỏ khóa cứng kích thước 210x297mm của thẻ html trong index.html
+    // (CSS class binding không thể target trực tiếp thẻ html outside component ViewEncapsulation)
+    document.documentElement.style.setProperty('height', 'auto', 'important');
+    document.documentElement.style.setProperty('width', 'auto', 'important');
+    document.body.style.setProperty('height', 'auto', 'important');
+    document.body.style.setProperty('width', 'auto', 'important');
+    document.body.style.setProperty('overflow', 'visible', 'important');
 
     // Đợi góc render của Angular cập nhật lại dải mẫu nếu tắt/bật gom mẫu
     setTimeout(() => {
       const clone = source.cloneNode(true) as HTMLElement;
+      
+      // Khử animation và transform để tránh phá vỡ thuật toán phân trang CSS Columns của trình duyệt
+      clone.style.animation = 'none';
+      clone.style.transform = 'none';
+      const animatedElements = clone.querySelectorAll('.cl-board-enter, .animate-fade-in');
+      animatedElements.forEach((el: any) => {
+        el.style.animation = 'none';
+        el.style.transform = 'none';
+      });
 
       const boardRoot = clone.querySelector('.cl-board-root');
       if (boardRoot) {
@@ -534,6 +551,11 @@ export class DailyChecklistComponent {
 
       const cleanupPrintMode = () => {
         document.body.classList.remove('daily-checklist-printing');
+        document.documentElement.style.removeProperty('height');
+        document.documentElement.style.removeProperty('width');
+        document.body.style.removeProperty('height');
+        document.body.style.removeProperty('width');
+        document.body.style.removeProperty('overflow');
         printContainer.innerHTML = '';
       };
 
