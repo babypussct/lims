@@ -83,229 +83,138 @@ interface AvailableDateOption {
     @media print {
       @page { size: A4 landscape; margin: 8mm; }
 
+      /* Vô hiệu hóa khóa cứng kích thước dọc của index.html */
       html, body {
-        width: 100% !important;
+        width: auto !important;
         height: auto !important;
         background: white !important;
         overflow: visible !important;
       }
 
-      body.daily-checklist-printing {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      body.daily-checklist-printing #print-container {
+      /* Ẩn ứng dụng gốc khi in, chỉ hiện print-container */
+      app-root { display: none !important; }
+      
+      #print-container {
         display: block !important;
         position: relative !important;
         width: 100% !important;
         height: auto !important;
         overflow: visible !important;
         z-index: auto !important;
+        background: white !important;
       }
 
-      body.daily-checklist-printing #print-container * {
+      #print-container * {
         visibility: visible !important;
       }
 
-      /* Page shell và scroll area */
-      body.daily-checklist-printing .cl-page-shell,
-      body.daily-checklist-printing .cl-board-scroll {
+      /* Ẩn các nút bấm, bộ lọc khi in */
+      #print-container .cl-screen-only { display: none !important; }
+      #print-container .cl-print-only { display: flex !important; }
+
+      /* Reset Page Shell của bản in */
+      #print-container .cl-page-shell {
         display: block !important;
+        width: 100% !important;
         height: auto !important;
         overflow: visible !important;
         padding: 0 !important;
         margin: 0 !important;
       }
 
-      /* Ẩn các phần chỉ dành cho màn hình */
-      body.daily-checklist-printing .cl-screen-only { display: none !important; }
-
-      /* Hiện các phần chỉ dành cho in */
-      body.daily-checklist-printing .cl-print-only { display: flex !important; }
-
-      /* Board root – thêm border/rounded khi in */
-      body.daily-checklist-printing .cl-board-root {
+      /* Khối bao ngoài của bản in */
+      #print-container .cl-board-root {
         width: 100% !important;
         max-width: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: 1px solid #bfdbfe !important;
+        border: 1px solid #cbd5e1 !important;
         border-radius: 12px !important;
         overflow: hidden !important;
-        color: #0f172a !important;
-      }
-
-      /* Document header (print-only) */
-      body.daily-checklist-printing .cl-doc-header {
-        background: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #eef2ff 100%) !important;
-        border-color: #bfdbfe !important;
-      }
-
-      body.daily-checklist-printing .cl-doc-header > div {
-        padding: 16px 24px !important;
-        gap: 16px !important;
-      }
-
-      body.daily-checklist-printing .cl-doc-header h2 {
-        font-size: 24px !important;
-        margin-top: 4px !important;
-      }
-
-      body.daily-checklist-printing .cl-doc-header p {
-        font-size: 13px !important;
-        margin-top: 4px !important;
-      }
-
-      body.daily-checklist-printing .cl-print-stats-grid > div {
-        padding: 8px 12px !important;
-        border-radius: 12px !important;
-      }
-
-      body.daily-checklist-printing .cl-print-stats-grid > div > div:first-child {
-        font-size: 18px !important;
-      }
-
-      body.daily-checklist-printing .cl-print-stats-grid > div > div:last-child {
-        font-size: 9px !important;
-        margin-top: 2px !important;
-      }
-
-      /* Board body (content area) */
-      body.daily-checklist-printing .cl-board-body {
         display: block !important;
-        padding: 20px 24px !important;
+        background: white !important;
       }
 
-      /* SOP sections */
-      body.daily-checklist-printing .cl-sop-section {
-        display: flex !important;
-        flex-direction: column !important;
-        margin-bottom: 16px !important;
+      /* Thiết lập block dọc 100% chiều rộng cho danh sách SOP */
+      #print-container .cl-board-body {
+        display: block !important;
+        width: 100% !important;
+        padding: 16px 20px !important;
+      }
+
+      /* SOP Card dạng hàng ngang rộng rãi, tránh ngắt trang giữa chừng */
+      #print-container .cl-sop-section {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 14px !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
         background-color: #ffffff !important;
       }
 
-      body.daily-checklist-printing .cl-sop-heading {
-        break-after: avoid;
-        page-break-after: avoid;
-        padding: 10px 16px !important;
+      /* SOP Header trên trang in */
+      #print-container .cl-sop-heading {
+        display: block !important;
+        width: 100% !important;
+        padding: 8px 12px !important;
         background-color: #f8fafc !important;
-        border-bottom: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
       }
 
-      body.daily-checklist-printing .cl-sop-heading > div:first-child {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 13px !important;
-        border-radius: 8px !important;
+      #print-container .cl-sop-heading > div {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
       }
 
-      body.daily-checklist-printing .cl-sop-heading h3 {
-        font-size: 16px !important;
+      #print-container .cl-sop-heading h3 {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
       }
 
-      body.daily-checklist-printing .cl-sop-heading p {
+      #print-container .cl-sop-heading span {
         font-size: 11px !important;
-        margin-top: 2px !important;
+        font-weight: 700 !important;
+        color: #475569 !important;
       }
 
-      /* Work groups */
-      body.daily-checklist-printing .cl-work-group {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        font-size: 13px !important;
-        padding: 12px 16px !important;
+      /* Nhóm mẫu và chỉ tiêu */
+      #print-container .cl-work-group {
+        display: block !important;
+        width: 100% !important;
+        padding: 10px 12px !important;
       }
 
-      body.daily-checklist-printing .cl-work-group div.font-mono {
-        font-size: 13px !important;
-        line-height: 1.5 !important;
+      #print-container .cl-work-group div.font-mono {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+        color: #1e293b !important;
+        margin-bottom: 6px !important;
       }
 
-      /* Target badges printing style */
-      body.daily-checklist-printing .cl-work-group .flex-wrap span {
-        background-color: #f8fafc !important;
+      #print-container .cl-work-group div.font-mono span.font-sans {
+        font-size: 10px !important;
+        color: #64748b !important;
+      }
+
+      /* Thẻ badge chỉ tiêu trên trang in */
+      #print-container .cl-work-group .flex-wrap {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 4px !important;
+      }
+
+      #print-container .cl-work-group .flex-wrap span {
+        display: inline-block !important;
+        background-color: #f1f5f9 !important;
         border: 1px solid #cbd5e1 !important;
         color: #0f172a !important;
         padding: 2px 6px !important;
-        border-radius: 6px !important;
-        font-size: 11px !important;
-        display: inline-block !important;
-      }
-
-      /* Document footer (print-only) */
-      body.daily-checklist-printing .cl-doc-footer {
-        padding: 10px 16px !important;
-        font-size: 10px !important;
-      }
-
-      /* ============================================================ */
-      /* CHẾ ĐỘ IN THÔNG MINH – COMPACT MODE (khi dữ liệu lớn)       */
-      /* ============================================================ */
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-doc-header > div {
-        padding: 8px 12px !important;
-        gap: 8px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-doc-header h2 {
-        font-size: 18px !important;
-        margin-top: 2px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-doc-header p {
-        font-size: 10px !important;
-        margin-top: 1px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-print-stats-grid > div {
-        padding: 3px 5px !important;
-        border-radius: 6px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-print-stats-grid > div > div:first-child {
-        font-size: 13px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-print-stats-grid > div > div:last-child {
-        font-size: 8px !important;
-        margin-top: 0 !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-board-body {
-        padding: 10px 14px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-board-body > * + * {
-        margin-top: 8px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-sop-heading {
-        padding: 6px 12px !important;
-        gap: 6px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-sop-heading > div:first-child {
-        width: 20px !important;
-        height: 20px !important;
-        font-size: 10px !important;
+        margin: 2px 4px 2px 0 !important;
         border-radius: 4px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-sop-heading h3 {
-        font-size: 12px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-sop-heading p {
-        font-size: 9px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group {
         font-size: 10px !important;
-        padding: 8px 12px !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group div.font-mono {
-        font-size: 10px !important;
-        line-height: 1.3 !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-work-group td {
-        font-size: 9px !important;
-        padding: 4px 0 !important;
-      }
-      body.daily-checklist-printing .cl-board-root.print-compact .cl-doc-footer {
-        padding: 4px 10px !important;
-        font-size: 8px !important;
+        font-weight: 700 !important;
       }
     }
   `]
